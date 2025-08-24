@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
-import Navbar from "./Navbar";
+import {Navbar} from './Navbar';
+import { Hero } from './Hero';
 import Footer from "./Footer";
 
 
@@ -11,7 +12,9 @@ function LayoutLanding(){
 
             <main className="flex-1 p-6 bg-gray-50 w-full">
                 <Outlet />
+                <Hero/>
             </main>
+            
 
             <Footer />
         </div>
