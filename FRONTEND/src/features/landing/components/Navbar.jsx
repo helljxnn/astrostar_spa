@@ -1,66 +1,197 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from "react";
+import { NavLink } from "react-router-dom"; // Cambiado de Link a NavLink
+import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 
 export const Navbar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Función para las clases de los enlaces
+  const linkClasses = ({ isActive }) =>
+    `transition-colors duration-200 tracking-wide ${
+      isActive
+        ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+        : "text-black hover:text-[#B595FF]" // Negro por defecto, púrpura en hover
+    }`;
+
+  // Función para las clases del botón de login
+  const loginClasses = ({ isActive }) =>
+    `flex items-center text-lg transition-colors duration-200 tracking-wide ${
+      isActive
+        ? "text-[#9BE9FF] hover:text-[#9BE9FF]" // Azul siempre cuando está activo
+        : "text-black hover:text-[#9BE9FF]" // Negro por defecto, azul en hover
+    }`;
+
   return (
-    <nav className="flex items-center px-6 py-4 bg-white shadow-md relative">
-      {/* Logo a la izquierda */}
-      <div className="flex items-center space-x-2 ml-4">
-        <span className="text-2xl font-bold text-black">MA</span>
-        <img
-          src="/assets/images/logo-fundacion.png"
-          alt="Fundación Manuela Vanegas Logo"
-          className="h-10"
-        />
-      </div>
+    <nav className="fixed top-0 w-full z-50 bg-white shadow-md font-questrial">
+      <div className="flex items-center justify-between px-6 py-4">
+        {/* Logos */}
+        <NavLink to="/" className="flex items-center space-x-3">
+          <img
+            src="/assets/images/Logo1FundacionMV.png"
+            alt="Logo Fundación MV 1"
+            className="h-auto max-h-10 cursor-pointer"
+          />
+          <img
+            src="/assets/images/Logo2FundacionMV.png"
+            alt="Logo Fundación MV 2"
+            className="h-auto max-h-14 cursor-pointer"
+          />
+        </NavLink>
 
-      {/* Links centrados pero un poquito hacia la izquierda */}
-      <div className="flex-1 flex justify-center -translate-x-40">
-        <ul className="flex space-x-6">
-          <li>
-            <Link
-              to="/acerca"
-              className="text-black hover:text-[#B595FF] transition-colors duration-200 font-questrial"
-            >
-              Acerca de
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/eventos"
-              className="text-black hover:text-[#B595FF] transition-colors duration-200 font-questrial"
-            >
-              Eventos
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/categorias"
-              className="text-black hover:text-[#B595FF] transition-colors duration-200 font-questrial"
-            >
-              Categorias
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/servicios"
-              className="text-black hover:text-[#B595FF] transition-colors duration-200 font-questrial"
-            >
-              Servicios
-            </Link>
-          </li>
-        </ul>
-      </div>
+        {/* Enlaces de navegación (escritorio) */}
+        <div className="hidden md:flex flex-1 justify-center">
+          <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
+            <li>
+              <NavLink
+                to="/about"
+                className={linkClasses}
+                aria-label="Ir a la página Acerca de"
+              >
+                Acerca de
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/events"
+                className={linkClasses}
+                aria-label="Ir a la página de Eventos"
+              >
+                Eventos
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/categories"
+                className={linkClasses}
+                aria-label="Ir a la página de Categorías"
+              >
+                Categorías
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/services"
+                className={linkClasses}
+                aria-label="Ir a la página de Servicios"
+              >
+                Servicios
+              </NavLink>
+            </li>
+          </ul>
+        </div>
 
-      {/* Iniciar sesión a la derecha */}
-      <div className="absolute right-4">
-        <Link
-          to="/login"
-          className="text-black hover:text-[#9BE9FF] transition-colors duration-200 font-questrial"
+        {/* Botón de inicio de sesión (escritorio) */}
+        <div className="hidden md:flex md:ml-12">
+          <NavLink
+            to="/login"
+            className={loginClasses}
+            aria-label="Ir a la página de inicio de sesión"
+          >
+            Iniciar Sesión
+            <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+          </NavLink>
+        </div>
+
+        <button
+          className="md:hidden"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Alternar menú de navegación"
         >
-          Iniciar Sesión →
-        </Link>
+          {isOpen ? (
+            <FiX className="w-6 h-6" />
+          ) : (
+            <FiMenu className="w-6 h-6" />
+          )}
+        </button>
       </div>
+
+      {isOpen && (
+        <div className="md:hidden bg-white border-t border-gray-200">
+          <ul className="flex flex-col space-y-4 px-6 py-4 text-lg">
+            <li>
+              <NavLink
+                to="/about"
+                className={({ isActive }) =>
+                  `block transition-colors duration-200 tracking-wide ${
+                    isActive
+                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+                      : "text-black hover:text-[#B595FF]"
+                  }`
+                }
+                onClick={() => setIsOpen(false)}
+                aria-label="Ir a la página Acerca de"
+              >
+                Acerca de
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/events"
+                className={({ isActive }) =>
+                  `block transition-colors duration-200 tracking-wide ${
+                    isActive
+                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+                      : "text-black hover:text-[#B595FF]"
+                  }`
+                }
+                onClick={() => setIsOpen(false)}
+                aria-label="Ir a la página de Eventos"
+              >
+                Eventos
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/categories"
+                className={({ isActive }) =>
+                  `block transition-colors duration-200 tracking-wide ${
+                    isActive
+                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+                      : "text-black hover:text-[#B595FF]"
+                  }`
+                }
+                onClick={() => setIsOpen(false)}
+                aria-label="Ir a la página de Categorías"
+              >
+                Categorías
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to="/services"
+                className={({ isActive }) =>
+                  `block transition-colors duration-200 tracking-wide ${
+                    isActive
+                      ? "text-[#B595FF] hover:text-[#B595FF]" 
+                      : "text-black hover:text-[#B595FF]"
+                  }`
+                }
+                onClick={() => setIsOpen(false)}
+                aria-label="Ir a la página de Servicios"
+              >
+                Servicios
+              </NavLink>
+            </li>
+            <li className="border-t pt-4">
+              <NavLink
+                to="/login"
+                className={({ isActive }) =>
+                  `flex items-center transition-colors duration-200 tracking-wide ${
+                    isActive
+                      ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
+                      : "text-black hover:text-[#9BE9FF]" 
+                  }`
+                }
+                onClick={() => setIsOpen(false)}
+                aria-label="Ir a la página de inicio de sesión"
+              >
+                Iniciar Sesión
+                <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+              </NavLink>
+            </li>
+          </ul>
+        </div>
+      )}
     </nav>
   );
 };

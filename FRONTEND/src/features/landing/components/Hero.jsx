@@ -1,12 +1,48 @@
-import React from 'react';
+import React from "react";
 
-export const Hero = ({ title = 'OBJETIVO', description = 'Promover el desarrollo integral de las personas y su relación con el entorno...', imageUrl = '/assets/images/background-image.jpg' }) => {
+export const Hero = ({ title, imageUrl, subtitle }) => {
   return (
-    <div className="relative h-[600px] bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }}>
-      <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-8">
-        <h1 className="text-6xl font-bold text-[#9BE9FF] mb-4 font-questrial">{title}</h1>
-        <p className="text-lg text-white max-w-2xl font-questrial">{description}</p>
+    <section
+      className="relative w-screen min-h-screen overflow-hidden"
+      style={{
+        margin: 0,
+        padding: 0,
+        marginLeft: "calc(-50vw + 50%)",
+        marginRight: "calc(-50vw + 50%)",
+        width: "100vw",
+        maxWidth: "none",
+      }}
+    >
+      <img
+        src={imageUrl}
+        alt="Hero Background"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{
+          width: "100vw",
+          height: "100vh",
+          objectFit: "cover",
+          objectPosition: "center",
+        }}
+      />
+
+      <div
+        className="relative flex justify-center items-end text-center pb-16 min-h-screen z-10"
+        style={{ paddingLeft: "24px", paddingRight: "24px" }}
+      >
+        <div
+          className="bg-white p-12 rounded-2xl shadow-lg"
+          style={{ width: "100%", maxWidth: "1280px" }}
+        >
+          <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] mb-6 font-questrial">
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="text-xl text-gray-700 font-questrial mb-4">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
