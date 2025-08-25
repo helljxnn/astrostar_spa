@@ -112,7 +112,7 @@ export const Footer = () => {
 
               {/* Sección Ubicación */}
               <div className="lg:col-span-4 lg:pl-4 pt-5 ">
-                <h3 className="text-sm font-semibold mb-2 text-black flex items-center gap-2 border-b border-black pb-1 inline-block lg:text-2xl">
+                <h3 className="text-sm font-semibold mb-2 text-black flex items-center gap-2 border-b border-black pb-1  lg:text-2xl">
                   <svg
                     viewBox="0 0 24 24"
                     fill="currentColor"
