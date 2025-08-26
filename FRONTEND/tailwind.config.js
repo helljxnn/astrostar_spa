@@ -5,8 +5,15 @@ export default {
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'primary-purple': '#b595ff',
+        'primary-blue': '#9be9ff',
+      },
+      fontFamily: {
+        questrial: ['Questrial', 'sans-serif'],
+      },
+    },
   },
   plugins: [],
 }
-
