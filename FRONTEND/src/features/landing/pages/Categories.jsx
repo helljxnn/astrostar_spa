@@ -1,16 +1,13 @@
-import { Link } from "react-router-dom";
+import { Hero } from "../components/Hero";
 
 function Categories() {
   return (
-    <div className="p-10 text-center">
-      <h1 className="text-4xl font-extrabold text-teal-700 mb-4">
-        Bienvenido a categorias
-      </h1>
-
-      <p className="mt-4">
-        Ir a la sección <Link to="/about" className="text-blue-500 underline">About</Link>
-      </p>
-    </div>
+    <Hero
+      variant="background"
+      title="OBJETIVO"
+      subtitle="Promover el desarrollo integral de las personas y su relación con el entorno, fomentando el deporte, la recreación, la actividad física y el uso saludable del tiempo libre. También buscamos incentivar la participación ciudadana y el respeto por los derechos humanos, en línea con la Constitución colombiana y las leyes actuales."
+      imageUrl="/assets/images/AboutHero.png"
+    />
   );
 }
 
