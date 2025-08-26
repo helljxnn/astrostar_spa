@@ -1,24 +1,24 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom"; // Cambiado de Link a NavLink
+import { NavLink } from "react-router-dom"; 
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Función para las clases de los enlaces
+  
   const linkClasses = ({ isActive }) =>
     `transition-colors duration-200 tracking-wide ${
       isActive
-        ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
-        : "text-black hover:text-[#B595FF]" // Negro por defecto, púrpura en hover
+        ? "text-[#B595FF] hover:text-[#B595FF]" 
+        : "text-black hover:text-[#B595FF]" 
     }`;
 
-  // Función para las clases del botón de login
+  
   const loginClasses = ({ isActive }) =>
     `flex items-center text-lg transition-colors duration-200 tracking-wide ${
       isActive
-        ? "text-[#9BE9FF] hover:text-[#9BE9FF]" // Azul siempre cuando está activo
-        : "text-black hover:text-[#9BE9FF]" // Negro por defecto, azul en hover
+        ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
+        : "text-black hover:text-[#9BE9FF]" 
     }`;
 
   return (
@@ -27,18 +27,17 @@ export const Navbar = () => {
         {/* Logos */}
         <NavLink to="/" className="flex items-center space-x-3">
           <img
-            src="/assets/images/Logo1FundacionMV.png"
+            src="/assets/images/Logo1LFundacionMV.png"
             alt="Logo Fundación MV 1"
             className="h-auto max-h-10 cursor-pointer"
           />
           <img
-            src="/assets/images/Logo2FundacionMV.png"
+            src="/assets/images/Logo2LFundacionMV.png"
             alt="Logo Fundación MV 2"
             className="h-auto max-h-14 cursor-pointer"
           />
         </NavLink>
 
-        {/* Enlaces de navegación (escritorio) */}
         <div className="hidden md:flex flex-1 justify-center">
           <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
             <li>
@@ -130,7 +129,7 @@ export const Navbar = () => {
                 className={({ isActive }) =>
                   `block transition-colors duration-200 tracking-wide ${
                     isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+                      ? "text-[#B595FF] hover:text-[#B595FF]" 
                       : "text-black hover:text-[#B595FF]"
                   }`
                 }
@@ -146,7 +145,7 @@ export const Navbar = () => {
                 className={({ isActive }) =>
                   `block transition-colors duration-200 tracking-wide ${
                     isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
+                      ? "text-[#B595FF] hover:text-[#B595FF]" 
                       : "text-black hover:text-[#B595FF]"
                   }`
                 }
