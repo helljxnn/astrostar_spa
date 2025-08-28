@@ -1,9 +1,8 @@
-// src/shared/utils/Alerts.js
+// src/shared/utils/alerts.js
 import Swal from "sweetalert2";
 
-
-// Aqui está la configuración de los alertas
-const Alerts = {
+// Aquí está la configuración de los alertas
+const alerts = {
   customClass: {
     popup: "rounded-2xl border-0 shadow-2xl font-[Questrial]",
     title: "text-2xl font-bold mb-2 font-[Questrial]",
@@ -21,10 +20,10 @@ const Alerts = {
   hideClass: { popup: "swal2-hide" },
 };
 
-// Alerta de exito
+// Alerta de éxito
 export const showSuccessAlert = (title, text = "") => {
   return Swal.fire({
-    ...Alerts,
+    ...alerts,
     icon: "success",
     title: `<span style="color:#B595FF;">${title}</span>`,
     text,
@@ -33,10 +32,10 @@ export const showSuccessAlert = (title, text = "") => {
     allowEscapeKey: true,
     showCloseButton: true,
     customClass: {
-      ...Alerts.customClass,
-      popup: `${Alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
-      title: `${Alerts.customClass.title}`,
-      confirmButton: `${Alerts.customClass.confirmButton} bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] hover:opacity-90`,
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] hover:opacity-90`,
     },
     background: "linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%)",
   });
@@ -45,7 +44,7 @@ export const showSuccessAlert = (title, text = "") => {
 // Alerta de error
 export const showErrorAlert = (title, text = "") => {
   return Swal.fire({
-    ...Alerts,
+    ...alerts,
     icon: "error",
     title: `<span style="color:#ff4d4d;">${title}</span>`,
     text,
@@ -54,10 +53,10 @@ export const showErrorAlert = (title, text = "") => {
     allowEscapeKey: true,
     showCloseButton: true,
     customClass: {
-      ...Alerts.customClass,
-      popup: `${Alerts.customClass.popup} bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] border-l-4 border-l-[#B595FF]`,
-      title: `${Alerts.customClass.title}`,
-      confirmButton: `${Alerts.customClass.confirmButton} bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] hover:opacity-90`,
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] border-l-4 border-l-[#B595FF]`,
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] hover:opacity-90`,
     },
     background: "linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 100%)",
   });
@@ -72,7 +71,7 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
   };
 
   return Swal.fire({
-    ...Alerts,
+    ...alerts,
     icon: "question",
     title: `<span style="color:#B595FF;">${title}</span>`,
     text,
@@ -83,11 +82,11 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
     allowEscapeKey: true,
     showCloseButton: true,
     customClass: {
-      ...Alerts.customClass,
-      popup: `${Alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
-      title: `${Alerts.customClass.title}`,
-      confirmButton: `${Alerts.customClass.confirmButton} bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] hover:opacity-90`,
-      cancelButton: `${Alerts.customClass.cancelButton} text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50`,
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] hover:opacity-90`,
+      cancelButton: `${alerts.customClass.cancelButton} text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50`,
     },
     background: "linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%)",
   });
