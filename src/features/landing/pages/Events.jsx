@@ -4,7 +4,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../shared/utils/Alerts";
+} from "../../../shared/utils/alerts";
 
 function Events() {
   return (
@@ -16,9 +16,9 @@ function Events() {
         imageUrl="/assets/images/EventsHero.png"
       />
 
-      {/* Botones de prueba */}
+      // Botones de prueba para las alertas 
       <div className="flex flex-wrap gap-4 justify-center mt-10">
-        {/* ✅ Alert Éxito */}
+        
         <button
           onClick={() =>
             showSuccessAlert("Éxito", "La operación fue exitosa 🎉")
@@ -28,7 +28,6 @@ function Events() {
           Probar Éxito
         </button>
 
-        {/* ❌ Alert Error */}
         <button
           onClick={() => showErrorAlert("Error", "Algo salió mal 😢")}
           className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
@@ -36,12 +35,11 @@ function Events() {
           Probar Error
         </button>
 
-        {/* ❓ Alert Confirmación */}
         <button
           onClick={() =>
             showConfirmAlert(
               "¿Estás seguro?",
-              "Esta acción no se puede deshacer."
+              "Esta acción no se puede deshacer 🤔"
             )
           }
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
