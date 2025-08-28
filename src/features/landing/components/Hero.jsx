@@ -15,7 +15,6 @@ export const Hero = ({ title, imageUrl, subtitle }) => {
     >
       <img
         src={imageUrl}
-        alt="Hero Background"
         className="absolute inset-0 w-full h-full object-cover"
         style={{
           width: "100vw",

@@ -16,37 +16,37 @@ function Events() {
         imageUrl="/assets/images/EventsHero.png"
       />
 
-      // Botones de prueba para las alertas 
-      <div className="flex flex-wrap gap-4 justify-center mt-10">
-        
-        <button
-          onClick={() =>
-            showSuccessAlert("Éxito", "La operación fue exitosa 🎉")
-          }
-          className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-        >
-          Probar Éxito
-        </button>
+      <section className=" py-12">
+        <div className="flex flex-wrap gap-4 justify-center">
+          <button
+            onClick={() =>
+              showSuccessAlert("Éxito", "La operación fue exitosa 🎉")
+            }
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+          >
+            Probar Éxito
+          </button>
 
-        <button
-          onClick={() => showErrorAlert("Error", "Algo salió mal 😢")}
-          className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-        >
-          Probar Error
-        </button>
+          <button
+            onClick={() => showErrorAlert("Error", "Algo salió mal 😢")}
+            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            Probar Error
+          </button>
 
-        <button
-          onClick={() =>
-            showConfirmAlert(
-              "¿Estás seguro?",
-              "Esta acción no se puede deshacer 🤔"
-            )
-          }
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
-          Probar Confirmación
-        </button>
-      </div>
+          <button
+            onClick={() =>
+              showConfirmAlert(
+                "¿Estás seguro?",
+                "Esta acción no se puede deshacer 🤔"
+              )
+            }
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Probar Confirmación
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
