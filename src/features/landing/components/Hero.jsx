@@ -3,7 +3,7 @@ import React from "react";
 export const Hero = ({ title, imageUrl, subtitle }) => {
   return (
     <section
-      className="h-screen bg-cover bg-center bg-no-repeat flex justify-center items-end pb-16 px-6 mb-0"
+      className="h-screen bg-cover bg-center bg-no-repeat flex justify-center items-end pb-16 px-6 mb-0 -mt-6"
       style={{
         marginLeft: "calc(-50vw + 50%)",
         marginRight: "calc(-50vw + 50%)",
