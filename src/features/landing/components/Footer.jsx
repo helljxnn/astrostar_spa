@@ -63,9 +63,10 @@ export const Footer = () => {
                       href="https://www.instagram.com/fundacionmv.co"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-black font-medium text-sm"
+                      className="text-black font-medium text-sm relative pb-1 transition-colors duration-300 ease-in-out hover:text-primary-purple group"
                     >
                       fundacionmv.co
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-in-out origin-left"></span>
                     </a>
                   </div>
 
@@ -81,11 +82,12 @@ export const Footer = () => {
                       </svg>
                     </div>
                     <a
-                      href="mailto:fundacionmanuelavanuelvanegas@gmail.com" target="_blank"
-                      className="text-black font-medium text-sm"
+                      href="mailto:fundacionmanuelavanuelvanegas@gmail.com" 
+                      target="_blank"
+                      className="text-black font-medium text-sm relative pb-1 transition-colors duration-300 ease-in-out hover:text-primary-purple group"
                     >
-                      {" "}
                       fundacionmanuelavanegas@gmail.com
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-in-out origin-left"></span>
                     </a>
                   </div>
 
@@ -101,10 +103,12 @@ export const Footer = () => {
                       </svg>
                     </div>
                     <a
-                      href="https://wa.me/573245721322" target="_blank"
-                      className="text-black font-bold text-lg"
+                      href="https://wa.me/573245721322" 
+                      target="_blank"
+                      className="text-black font-bold text-lg relative pb-1 transition-colors duration-300 ease-in-out hover:text-primary-purple group"
                     >
                       3245721322
+                      <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-in-out origin-left"></span>
                     </a>
                   </div>
                 </div>
@@ -126,18 +130,19 @@ export const Footer = () => {
                   href="https://maps.app.goo.gl/UL4ZJaMrm5ndLEUE7"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-black font-medium text-sm leading-relaxed block"
+                  className="text-black font-medium text-sm leading-relaxed block relative pb-1 transition-colors duration-300 ease-in-out hover:text-primary-purple group"
                 >
                   Cra. 49 #39- 45, Unidad Deportiva Cristo Rey
                   <br />
                   Copacabana, Antioquia - Colombia
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white rounded-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-in-out origin-left"></span>
                 </a>
               </div>
 
               {/* Sección Información */}
-              <div className="lg:col-span-4">
-                <div className="bg-primary-purple rounded-lg p-6 w-25 h-30 text-center shadow-lg mt-2 border-r-2 border-b-2 border-primary-blue">
-                  <p className="text-black font-bold text-xs uppercase leading-tight">
+              <div className="lg:col-span-3">
+                <div className="bg-primary-purple rounded-lg p-3 w-15 h-30 text-center shadow-lg mt-2 border-r-2 border-b-2 border-primary-blue">
+                  <p className="text-white font-bold text-xs uppercase leading-tight">
                     PARA MÁS INFORMACIÓN
                     <br />
                     SOBRE EL PROCESO DE
