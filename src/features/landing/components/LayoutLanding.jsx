@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import {Navbar} from './Navbar';
 import { Hero } from './Hero';
-import {Footer} from "./Footer";
 import { Footer } from "./Footer";
 import { useLoading } from '../../../shared/contexts/loaderContext';
 import { Loader } from '../../../shared/components/loader';
