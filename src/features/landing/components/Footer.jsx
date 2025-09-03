@@ -2,7 +2,7 @@ import React from "react";
 
 export const Footer = () => {
   return (
-    <footer className="relative mt-auto">
+    <footer className="relative mt-0 w-full">
       {/* Contenedor principal del footer */}
       <div className="relative w-full" style={{ height: "290px" }}>
         {/* Onda morada (fondo) - usando el SVG original */}
@@ -115,8 +115,8 @@ export const Footer = () => {
               </div>
 
               {/* Sección Ubicación */}
-              <div className="lg:col-span-4 lg:pl-4 pt-5 ">
-                <h3 className="text-sm font-semibold mb-2 text-black flex items-center gap-2 border-b border-black pb-1  lg:text-2xl">
+              <div className="lg:col-span-4 lg:pl-4 pt-5">
+                <h3 className="text-sm font-semibold mb-2 text-black flex items-center gap-2 border-b border-black pb-1 lg:text-2xl">
                   <svg
                     viewBox="0 0 24 24"
                     fill="currentColor"
