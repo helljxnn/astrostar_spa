@@ -7,9 +7,9 @@ const PerfilLog = () => {
     const [isOpen, setIsOpen] = React.useState(false);
     const toggleMenu = () => setIsOpen(!isOpen);
     return (
-        <div id="container-PerfilLog" className="relative w-auto h-auto flex flex-row gap-2 justify-center items-center p-1 bg-primary-purple text-white rounded-lg">
+        <div id="container-PerfilLog" className="relative w-auto h-auto flex flex-row gap-2 justify-center items-center p-1 bg-primary-purple-light shadow-md text-white rounded-lg">
             <div id="photo">
-                <FaRegUserCircle size={42} className="text-white shrink-0" />
+                <FaRegUserCircle size={32} className="text-white shrink-0" />
             </div>
             <div id="name-user">
                 <h4>Estrella</h4>

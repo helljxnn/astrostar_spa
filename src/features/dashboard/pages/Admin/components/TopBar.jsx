@@ -8,7 +8,7 @@ export const TopBar = () => {
         {/* Container TopBar */}
         <div id="title-Rol" className="w-full h-full flex flex-row gap-2 items-center justify-start">
           {/* Container title-Rol and Icon */}
-          <FaUserTie size={32} className="text-gray-500 shrink-0" />
+          <FaUserTie size={18} className="text-gray-500 shrink-0" />
           <h4>Administrador</h4>
         </div>
         <div id="subMenu" className="w-full h-full flex flex-row gap-2 items-center justify-end">
