@@ -74,7 +74,7 @@ export const Footer = () => {
                 href="https://www.instagram.com/fundacionmv.co"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-primary-pink hover:bg-pink-600 rounded-full flex items-center justify-center transition-colors"
+                className="w-10 h-10 bg-primary-purple hover:opacity-75 rounded-full flex items-center justify-center transition-colors"
               >
                 <FaInstagram className="w-5 h-5 text-white" />
               </a>
@@ -84,7 +84,7 @@ export const Footer = () => {
                 href="https://wa.me/573245721322"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-primary-green hover:bg-green-600 rounded-full flex items-center justify-center transition-colors"
+                className="w-10 h-10 bg-primary-purple hover:opacity-75 rounded-full flex items-center justify-center transition-colors"
               >
                 <FaWhatsapp className="w-5 h-5 text-white" />
               </a>  
@@ -92,7 +92,7 @@ export const Footer = () => {
               {/* Gmail */}
               <a
                 href="mailto:fundacionmanuelavanuelvanegas@gmail.com"
-                className="w-10 h-10 bg-primary-yellow hover:bg-yellow-600 rounded-full flex items-center justify-center transition-colors"
+                className="w-10 h-10 bg-primary-purple hover:opacity-75 rounded-full flex items-center justify-center transition-colors"
               >
                 <SiGmail className="w-5 h-5 text-white" />
               </a>
@@ -102,7 +102,7 @@ export const Footer = () => {
                 href="https://www.youtube.com/@FundacionManuelaVanegas"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 bg-primary-red hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                className="w-10 h-10 bg-primary-purple hover:opacity-75 rounded-full flex items-center justify-center transition-colors"
               >
                 <FaYoutube className="w-5 h-5 text-white" />
               </a>
