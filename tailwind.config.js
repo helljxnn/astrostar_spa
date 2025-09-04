@@ -1,19 +1,16 @@
 module.exports = {
-  content: [
-    './src/**/*.{js,jsx}',
-  ],
+  content: ["./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        'primary-purple': '#b595ff',
-        'primary-blue': '#9be9ff',
+        "primary-purple": "#b595ff",
+        "primary-purple-light": "#d0bfff",
+        "primary-blue": "#9be9ff",
       },
       fontFamily: {
-        questrial: ['Questrial', 'sans-serif'],
+        questrial: ["Questrial", "sans-serif"],
       },
     },
   },
-  plugins: [
-    require("tailwindcss-text-fill-stroke"),
-  ],
-}
+  plugins: [require("tailwindcss-text-fill-stroke")],
+};
