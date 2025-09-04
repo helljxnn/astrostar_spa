@@ -2,12 +2,12 @@ import { Routes, Route } from "react-router-dom";
 
 /* Landing Pages*/
 import LayoutLanding from "../features/landing/components/LayoutLanding";
-import About from "../features/landing/pages/About";
+import About from "../features/landing/pages/About/About";
 import Categories from "../features/landing/pages/Categories";
 import Events from "../features/landing/pages/Events/Events";
 import Home from "../features/landing/pages/Home";
 import Login from "../features/auth/pages/Login";
-import Services from "../features/landing/pages/Services";
+import Services from "../features/landing/pages/Services/Services";
 
 /* Dashboard - Admin */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
@@ -52,7 +52,7 @@ function AppRoutes() {
     <Routes>
       {/* Rutas públicas con LayoutLanding */}
       <Route element={<LayoutLanding />}>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<About />} />
         <Route path="/about" element={<About />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
