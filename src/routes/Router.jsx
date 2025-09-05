@@ -24,7 +24,7 @@ import EventsAdmin from "../features/dashboard/pages/Admin/pages/Events";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
-import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportsEquipment";
+import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
 
 /* Dashboard - Sportsprofessional */
