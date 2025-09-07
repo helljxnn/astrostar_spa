@@ -1,7 +1,7 @@
 // Table.jsx
 import React from "react";
-import Thead from "./Thead";
-import Tbody from "./Tbody";
+import Thead from "./thead";
+import Tbody from "./tbody";
 
 const Table = ({ thead, tbody }) => {
   return (
