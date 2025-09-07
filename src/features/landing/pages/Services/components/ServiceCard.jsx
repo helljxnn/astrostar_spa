@@ -25,7 +25,7 @@ export const ServiceCard = ({ title, description, image }) => {
           <img
             src={image}
             alt={title}
-            className="w-50 h-50 object-cover rounded-2xl"
+            className="w-full h-full object-cover rounded-2xl"
           />
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent text-white py-6 text-center">
             <h3 className="text-xl font-bold">{title}</h3>
