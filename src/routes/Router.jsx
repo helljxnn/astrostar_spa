@@ -4,7 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import LayoutLanding from "../features/landing/components/LayoutLanding";
 import About from "../features/landing/pages/About/About";
 import Categories from "../features/landing/pages/Categories";
-import Events from "../features/landing/pages/Events/Events";
+import {Events} from"../features/landing/pages/Events/Events.jsx";""
 import Home from "../features/landing/pages/Home";
 import Login from "../features/auth/pages/Login";
 import Services from "../features/landing/pages/Services/Services";
