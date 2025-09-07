@@ -1,21 +1,22 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, User, Mail, Lock } from "lucide-react";
 import Requests from "../../../shared/hooks/requests";
-
+import { useNavigate } from "react-router-dom";
 
 const Form = () => {
+    const navigate = useNavigate();
 
-    const HandleForm = async (e) => {
+    const handleLogin = (e) => {
         e.preventDefault();
-        const data = await Requests("http",{},'POST')
+        // Aquí iría la lógica de autenticación con el backend.
+        // Por ahora, navegamos directamente al dashboard.
+        navigate("/dashboard");
     }
-
-
 
     return (
         <div className="w-full h-auto" id="Form">
             {/* Contenedor de formulario */}
-            <form className="w-full h-auto m-auto grid grid-rows-3 gap-4">
+            <form onSubmit={handleLogin} className="w-full h-auto m-auto grid grid-rows-3 gap-4">
                 <div className="w-ful h-5" id="headerForm">
                     {/* Contenedor de cabecera de formulario */}
                     <h1 className="text-4xl font-semibold text-center leading-tight bg-primary-blue bg-clip-text text-transparent text-stroke text-stroke-1 text-stroke-black">Iniciar</h1>
@@ -37,7 +38,7 @@ const Form = () => {
                 </div>
                 <div className="w-full h-auto justify-items-center" id="footerForm">
                     {/* Contenedor de pie de formulario */}
-                    <button onClick={HandleForm} className="w-full h-10 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple" id="buttonLogin">Entrar</button>
+                    <button type="submit" className="w-full h-10 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple" id="buttonLogin">Entrar</button>
                 </div>
             </form>
         </div>
