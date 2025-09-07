@@ -15,21 +15,21 @@ export const Navbar = () => {
 
   
   const loginClasses = ({ isActive }) =>
-    `flex items-center text-lg transition-colors duration-200 tracking-wide ${
+    `flex items-center text-xl transition-colors duration-200 tracking-wide ${
       isActive
         ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
         : "text-black hover:text-[#9BE9FF]" 
     }`;
 
   return (
-    <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-questrial">
-      <div className="flex items-center justify-between px-6 py-5">
+    <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-montserrat">
+      <div className="flex items-center justify-between px-6 py-6">
         {/* Logos */}
         <NavLink to="/" className="flex items-center space-x-3">
           <img
             src="/assets/images/Logo1LFundacionMV.png"
             alt="Logo Fundación MV 1"
-            className="h-auto max-h-14  cursor-pointer"
+            className="h-auto max-h-14 cursor-pointer"
           />
           <img
             src="/assets/images/Logo2LFundacionMV.png"
@@ -87,7 +87,7 @@ export const Navbar = () => {
             aria-label="Ir a la página de inicio de sesión"
           >
             Iniciar Sesión
-            <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+            <FiLogIn className="ml-2 text-[#9BE9FF] text-2xl" />
           </NavLink>
         </div>
 
@@ -185,7 +185,7 @@ export const Navbar = () => {
                 aria-label="Ir a la página de inicio de sesión"
               >
                 Iniciar Sesión
-                <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+                <FiLogIn className="ml-2 text-[#9BE9FF] text-2xl" />
               </NavLink>
             </li>
           </ul>

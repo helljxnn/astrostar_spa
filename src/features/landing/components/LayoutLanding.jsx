@@ -1,24 +1,26 @@
-import { Outlet } from 'react-router-dom';
-import {Navbar} from './Navbar';
-import { Hero } from './Hero';
+import { Outlet } from "react-router-dom";
+import { Navbar } from "./Navbar";
+import { Hero } from "./Hero";
 import { Footer } from "./Footer";
+import { ScrollTop } from "./ScrollTop";
 
+function LayoutLanding() {
+  return (
+    <div className="flex flex-col min-h-screen bg-white">
+      <Navbar />
 
-function LayoutLanding(){
-    return (
-        <div className="flex flex-col min-h-screen bg-white"> 
-            
-            <Navbar />
+      {/* Hero directamente después del navbar */}
+      <Hero />
 
-            <main className="flex-1 p-6 bg-gray-50 w-full">
-                <Outlet />
-                <Hero/>
-            </main>
-            
+      {/* Contenido dinámico de las páginas */}
+      <main className="flex-1 w-full">
+        <Outlet />
+      </main>
 
-            <Footer />
-        </div>
-    );
+      <Footer />
+      <ScrollTop />
+    </div>
+  );
 }
 
 export default LayoutLanding;

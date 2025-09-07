@@ -1,6 +1,6 @@
 module.exports = {
   content: [
-    './src/**/*.{js,jsx}',
+    './src/**/*.{js,jsx,ts,tsx}',
   ],
   theme: {
     extend: {
@@ -9,7 +9,7 @@ module.exports = {
         'primary-blue': '#9be9ff',
       },
       fontFamily: {
-        questrial: ['Questrial', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'],
       },
     },
   },

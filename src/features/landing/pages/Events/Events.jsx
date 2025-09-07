@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 import { Hero } from "../../components/Hero.jsx";
 import { Calendar } from "./components/Calendar.jsx";
@@ -20,7 +22,7 @@ import {
 export const Events = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [highlightedEventId, setHighlightedEventId] = useState(null);
-  const [selectedEventId, setSelectedEventId] = useState(null); // Nuevo estado
+  const [selectedEventId, setSelectedEventId] = useState(null);
 
   const {
     eventTypes,
@@ -32,27 +34,30 @@ export const Events = () => {
     allEvents,
   } = useEvents();
 
-  // Encontrar el evento seleccionado por ID
+  // Encontrar el evento seleccionado
   const selectedEvent = selectedEventId
     ? allEvents.find((event) => event.id === selectedEventId)
     : null;
 
   const handleEventSelect = (eventId) => {
-    setSelectedEventId(eventId); // Actualiza el evento seleccionado para el contador
-    setHighlightedEventId(eventId); // Sigue resaltando en EventsSection
+    setSelectedEventId(eventId);
+    setHighlightedEventId(eventId);
     setTimeout(() => setHighlightedEventId(null), 3000);
   };
 
   const handleDateSelect = (date) => {
     setSelectedDate(date);
-    // Si la fecha no tiene eventos, resetear el evento seleccionado
-    const eventsOnDate = allEvents.filter((event) => isSameDay(event.date, date));
+    const eventsOnDate = allEvents.filter((event) =>
+      isSameDay(event.date, date)
+    );
     if (eventsOnDate.length === 0) {
-      setSelectedEventId(null); // Vuelve al próximo evento
+      setSelectedEventId(null);
+    } else {
+      // Si hay eventos, selecciona el primero
+      setSelectedEventId(eventsOnDate[0].id);
     }
   };
 
-  // 🔹 Asegurar que siempre estén ordenados cronológicamente
   const orderedUpcoming = sortEventsByDateTime(upcomingEvents);
   const orderedPast = sortEventsByDateTime(pastEvents);
 
@@ -62,8 +67,13 @@ export const Events = () => {
       <Hero
         variant="background"
         title="Eventos"
-        subtitle="Promover el desarrollo integral de las personas y su relación con el entorno, fomentando el deporte, la recreación, la actividad física y el uso saludable del tiempo libre. También buscamos incentivar la participación ciudadana y el respeto por los derechos humanos, en línea con la Constitución colombiana y las leyes actuales."
-        imageUrl="/public/assets/images/EventsHero.jpg"
+        subtitle=" Nuestros eventos son el corazón de la Fundación, 
+        donde celebramos la pasión por el fútbol femenino. Organizamos 
+        torneos emocionantes,  y encuentros inspiradores para nuestras jugadoras 
+        y la comunidad. Estos espacios buscan desarrollar su talento, fomentar
+         la unión y promover los valores del deporte. ¡Consulta nuestro calendario
+          y únete a la celebración del fútbol femenino!"
+        imageUrl="/assets/images/EventsHero.jpg" // ✅ corregido
       />
 
       <div className="max-w-7xl mx-auto px-8 py-24">
@@ -83,9 +93,11 @@ export const Events = () => {
               onEventSelect={handleEventSelect}
               nextEvent={nextEvent}
             />
-
             <div className="flex justify-center">
-              <CountdownTimer selectedEvent={selectedEvent || nextEvent} />
+              <CountdownTimer
+                selectedEvent={selectedDate ? selectedEvent : nextEvent}
+                selectedDate={selectedDate}
+              />
             </div>
           </div>
         </div>
@@ -105,7 +117,7 @@ export const Events = () => {
         />
       </div>
 
-      {/* Botones de prueba de alertas */}
+      {/* Botones de prueba */}
       {process.env.NODE_ENV === "development" && (
         <section className="py-12">
           <div className="flex flex-wrap gap-4 justify-center">

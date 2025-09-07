@@ -107,7 +107,8 @@ export const Calendar = ({
       <button
         key={day}
         onClick={() => {
-          onDateSelect(date);
+          onDateSelect(date); // Siempre se actualiza la fecha seleccionada
+
           if (hasEvent) {
             const targetEvent = sortedDayEvents[0]; // el más cercano/temprano del día
             if (targetEvent?.id) {
@@ -119,6 +120,9 @@ export const Calendar = ({
             } else {
               console.log("targetEvent no tiene id:", targetEvent);
             }
+          } else {
+            // Si no hay eventos, deselecciona cualquier evento anterior.
+            onEventSelect?.(null);
           }
         }}
         className={`relative h-16 w-16 rounded-2xl font-montserrat font-bold text-lg transition-all duration-300 transform hover:scale-110
