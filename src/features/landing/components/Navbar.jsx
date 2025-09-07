@@ -23,23 +23,23 @@ export const Navbar = () => {
 
   return (
     <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-questrial">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-6 py-5">
         {/* Logos */}
         <NavLink to="/" className="flex items-center space-x-3">
           <img
             src="/assets/images/Logo1LFundacionMV.png"
             alt="Logo Fundación MV 1"
-            className="h-auto max-h-10 cursor-pointer"
+            className="h-auto max-h-14  cursor-pointer"
           />
           <img
             src="/assets/images/Logo2LFundacionMV.png"
             alt="Logo Fundación MV 2"
-            className="h-auto max-h-14 cursor-pointer"
+            className="h-auto max-h-16 cursor-pointer"
           />
         </NavLink>
 
         <div className="hidden md:flex flex-1 justify-center">
-          <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
+          <ul className="flex space-x-12 text-xl md:ml-0 lg:-ml-16 xl:-ml-32">
             <li>
               <NavLink
                 to="/about"
