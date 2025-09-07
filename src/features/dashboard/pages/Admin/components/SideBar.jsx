@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { MdDashboard, MdSearch, MdExpandMore, MdExpandLess } from "react-icons/md";
 import {
@@ -28,25 +28,25 @@ function SideBar() {
     location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <Fragment>
       {/* Botón hamburguesa (móvil) */}
-      <button aria-label="Abrir menú" className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-indigo-500 text-white shadow-md active:scale-95"onClick={() => setIsOpen(true)} >
+      <button aria-label="Abrir menú" className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-indigo-500 text-white shadow-md active:scale-95" onClick={() => setIsOpen(true)} >
         <FaBars size={18} />
       </button>
 
       {/* Backdrop (móvil) */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 lg:hidden"onClick={() => setIsOpen(false)}/>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 lg:hidden" onClick={() => setIsOpen(false)} aria-hidden="true" />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static top-0 left-0 h-full bg-white shadow-xl flex flex-col transition-transform duration-300 z-50 rounded-r-2xl w-72  ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
+      <aside className={`fixed lg:static top-0 left-0 h-full bg-white shadow-xl flex flex-col transition-transform duration-300 z-50 w-80 lg:w-72 ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
 
         {/* Header con logo grande */}
         <div className="relative border-b border-gray-200 px-6 pt-8 pb-6">
           <div className="flex items-center justify-center">
             <Link to="/dashboard" onClick={() => setIsOpen(false)} className="block">
-              <img  src="/assets/images/Logo2FundacionMV.png" alt="Logo" className="h-24 w-24 md:h-28 md:w-28 object-contain"/></Link>
+              <img src="/assets/images/Logo2FundacionMV.png" alt="Logo" className="h-24 w-24 md:h-28 md:w-28 object-contain" /></Link>
           </div>
         </div>
 
@@ -61,43 +61,43 @@ function SideBar() {
         {/* Navegación */}
         <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-2">
           {/* Dashboard */}
-          <Link to="/dashboard" onClick={() => setIsOpen(false)}className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${ isActive("/dashboard")? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"  }`}><MdDashboard size={22} className="shrink-0" /><span>Dashboard</span>
+          <Link to="/dashboard" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}><MdDashboard size={22} className="shrink-0" /><span>Dashboard</span>
           </Link>
 
           {/* Usuarios (submenu) */}
-<div className="mt-1">
-  <button onClick={() => toggleMenu("users")}className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${openMenu === "users" ||isActive("/dashboard/users-management") || isActive("/dashboard/access-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
+          <div className="mt-1">
+            <button onClick={() => toggleMenu("users")} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${openMenu === "users" || isActive("/dashboard/users-management") || isActive("/dashboard/access-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
 
-    <span className="flex items-center gap-4"><FaUsers size={20} />
-      Usuarios</span>  {openMenu === "users" ? <MdExpandLess /> : <MdExpandMore />}
-  </button>
+              <span className="flex items-center gap-4"><FaUsers size={20} />
+                Usuarios</span>  {openMenu === "users" ? <MdExpandLess /> : <MdExpandMore />}
+            </button>
 
-  {/* Contenido submenu */}
-  <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${ openMenu === "users" ? "grid-rows-[1fr]" : "grid-rows-[0fr]" }`} >
+            {/* Contenido submenu */}
+            <div className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${openMenu === "users" ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`} >
 
-    <div className="overflow-hidden">
-      <div className="pl-12 pr-3 py-2 space-y-1">
-        <Link to="/dashboard/UsersManagement" onClick={() => setIsOpen(false)}className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/users-management")? "bg-indigo-100 text-indigo-700": "text-gray-700 hover:bg-indigo-50"}`}>Gestión de usuarios </Link>
+              <div className="overflow-hidden">
+                <div className="pl-12 pr-3 py-2 space-y-1">
+                  <Link to="/dashboard/UsersManagement" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/users-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>Gestión de usuarios </Link>
 
-        <Link to="/dashboard/AccessManagement" onClick={() => setIsOpen(false)}className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/access-management")? "bg-indigo-100 text-indigo-700"
-        : "text-gray-700 hover:bg-indigo-50" }`} >Gestión de acceso</Link>
-      </div>
-    </div>
-  </div>
-</div>
+                  <Link to="/dashboard/AccessManagement" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/access-management") ? "bg-indigo-100 text-indigo-700"
+                    : "text-gray-700 hover:bg-indigo-50"}`} >Gestión de acceso</Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Roles */}
-          <Link to="/dashboard/roles"onClick={() => setIsOpen(false)}className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/roles") ? "bg-indigo-100 text-indigo-700"  : "text-gray-700 hover:bg-indigo-50"
+          <Link to="/dashboard/roles" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/roles") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"
             }`}> <FaUserShield size={20} className="shrink-0" /> <span>Roles</span>
           </Link>
 
           {/* Material Deportivo */}
-          <Link to="/dashboard/sportsequipment" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/sportsequipment")  ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50" }`}> <GiWeightLiftingUp size={20} className="shrink-0" /><span>Material Deportivo</span> </Link>
+          <Link to="/dashboard/sportsequipment" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/sportsequipment") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}> <GiWeightLiftingUp size={20} className="shrink-0" /><span>Material Deportivo</span> </Link>
 
           {/* Servicios (submenu) */}
           <div className="mt-1">
 
-            <button  onClick={() => toggleMenu("services")} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${ openMenu === "services" || isActive("/dashboard/employees") || isActive("/dashboard/employees-schedule") || isActive("/dashboard/appointment-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50" }`}>
+            <button onClick={() => toggleMenu("services")} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${openMenu === "services" || isActive("/dashboard/employees") || isActive("/dashboard/employees-schedule") || isActive("/dashboard/appointment-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
               <span className="flex items-center gap-4"> <FaBriefcase size={20} /> Servicios</span> {openMenu === "services" ? <MdExpandLess /> : <MdExpandMore />}
             </button>
 
@@ -106,11 +106,11 @@ function SideBar() {
 
               <div className="overflow-hidden">
                 <div className="pl-12 pr-3 py-2 space-y-1">
-                  <Link to="/dashboard/employees" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/employees")? "bg-indigo-100 text-indigo-700"  : "text-gray-700 hover:bg-indigo-50" }`}> Empleados</Link>
+                  <Link to="/dashboard/employees" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/employees") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}> Empleados</Link>
 
-                  <Link to="/dashboard/employees-schedule"onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${  isActive("/dashboard/employees-schedule") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>  Horario Empleados</Link>
+                  <Link to="/dashboard/employees-schedule" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/employees-schedule") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>  Horario Empleados</Link>
 
-                  <Link to="/dashboard/appointment-management"onClick={() => setIsOpen(false)}className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/appointment-management")? "bg-indigo-100 text-indigo-700": "text-gray-700 hover:bg-indigo-50" }`}>Gestión de citas</Link>
+                  <Link to="/dashboard/appointment-management" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/appointment-management") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>Gestión de citas</Link>
                 </div>
               </div>
             </div>
@@ -118,46 +118,46 @@ function SideBar() {
 
           {/* Deportistas (submenu) */}
           <div className="mt-1">
-            <button onClick={() => toggleMenu("athletes")} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${openMenu === "athletes" || isActive("/dashboard/athletes") || isActive("/dashboard/sports-category")? "bg-indigo-100 text-indigo-700"  : "text-gray-700 hover:bg-indigo-50"}`} >
+            <button onClick={() => toggleMenu("athletes")} className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${openMenu === "athletes" || isActive("/dashboard/athletes") || isActive("/dashboard/sports-category") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`} >
 
               <span className="flex items-center gap-4"><FaClipboardList size={20} />Deportistas </span>
               {openMenu === "athletes" ? <MdExpandLess /> : <MdExpandMore />}
             </button>
 
             <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${openMenu === "athletes" ? "grid-rows-[1fr]" : "grid-rows-[0fr]" }`}>
+              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${openMenu === "athletes" ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
 
               <div className="overflow-hidden">
                 <div className="pl-12 pr-3 py-2 space-y-1">
-                  <Link to="/dashboard/athletes"onClick={() => setIsOpen(false)}className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/athletes")? "bg-indigo-100 text-indigo-700": "text-gray-700 hover:bg-indigo-50"}`} >Deportistas</Link>
+                  <Link to="/dashboard/athletes" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/athletes") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`} >Deportistas</Link>
 
 
-                  <Link to="/dashboard/sports-category"onClick={() => setIsOpen(false)}className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/sports-category")? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50" }`}> Categoría Deportiva</Link>
+                  <Link to="/dashboard/sports-category" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-lg text-sm transition ${isActive("/dashboard/sports-category") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}> Categoría Deportiva</Link>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Donaciones */}
-          <Link to="/dashboard/donations" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/donations")? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50" }`}> 
+          <Link to="/dashboard/donations" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/donations") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
             <FaHandHoldingHeart size={20} className="shrink-0" />
             <span>Donaciones</span>
           </Link>
 
           {/* Eventos */}
-          <Link to="/dashboard/events"onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${ isActive("/dashboard/events")? "bg-indigo-100 text-indigo-700": "text-gray-700 hover:bg-indigo-50"}`}>
+          <Link to="/dashboard/events" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/events") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
             <FaRegCalendarAlt size={20} className="shrink-0" />
             <span>Eventos</span>
           </Link>
 
           {/* Compras */}
-          <Link to="/dashboard/purchases" onClick={() => setIsOpen(false)}className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${ isActive("/dashboard/purchases")? "bg-indigo-100 text-indigo-700": "text-gray-700 hover:bg-indigo-50" }`}>
+          <Link to="/dashboard/purchases" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/purchases") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
             <FaShoppingCart size={20} className="shrink-0" />
             <span>Compras</span>
           </Link>
 
           {/* Ventas */}
-          <Link to="/dashboard/sales" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/sales")  ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
+          <Link to="/dashboard/sales" onClick={() => setIsOpen(false)} className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${isActive("/dashboard/sales") ? "bg-indigo-100 text-indigo-700" : "text-gray-700 hover:bg-indigo-50"}`}>
             <FaDollarSign size={20} className="shrink-0" />
             <span>Ventas</span>
           </Link>
@@ -170,12 +170,7 @@ function SideBar() {
         </nav>
 
       </aside>
-
-      {/* Contenido principal */}
-      <main className="flex-1 bg-gray-50 p-6 overflow-y-auto">
-        <Outlet />
-      </main>
-    </div>
+    </Fragment>
   );
 }
 
