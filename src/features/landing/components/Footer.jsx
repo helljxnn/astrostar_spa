@@ -7,12 +7,8 @@ export const Footer = () => {
   return (
     <div className="bg-white border-t-4 border-primary-blue">
       {/* Main Footer Content */}
-<<<<<<< HEAD
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-=======
       {/* ⚠️ Cambio aquí: Se eliminan las clases de ancho máximo ⚠️ */}
       <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
->>>>>>> 73ae107f40a21c17fb8a5dbe3df097009be08a5b
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-12 lg:gap-20">
           {/* Brand Section */}
           <div className="space-y-4 sm:space-y-6 text-center sm:text-left">
@@ -36,11 +32,6 @@ export const Footer = () => {
           {/* Contact Section with Map */}
           <div className="space-y-4 text-center sm:text-left">
             <h3 className="font-semibold text-gray-700 text-base sm:text-lg">Encuentranos en</h3>
-<<<<<<< HEAD
-
-            {/* Contact Information */}
-=======
->>>>>>> 73ae107f40a21c17fb8a5dbe3df097009be08a5b
             <div className="space-y-3">
               <div className="flex items-start gap-3 text-xs sm:text-sm text-gray-600 justify-center sm:justify-start">
                 <MapPin className="w-4 h-4 text-primary-blue mt-0.5 flex-shrink-0" />
