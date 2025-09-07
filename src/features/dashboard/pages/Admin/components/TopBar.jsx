@@ -1,20 +1,20 @@
-import React from 'react'
-import { FaUserTie } from 'react-icons/fa';
-import PerfilLog from './perfilLog';
+import React from "react";
+import { FaUserTie } from "react-icons/fa";
+import PerfilLog from "./perfilLog";
 
 export const TopBar = () => {
   return (
-      <div id="container-topBar" className="w-full h-full p-4 grid grid-cols-2 gap-4">
-        {/* Container TopBar */}
-        <div id="title-Rol" className="w-full h-full flex flex-row gap-2 items-center justify-start">
-          {/* Container title-Rol and Icon */}
-          <FaUserTie size={18} className="text-gray-500 shrink-0" />
-          <h4>Administrador</h4>
-        </div>
-        <div id="subMenu" className="w-full h-full flex flex-row gap-2 items-center justify-end">
-          {/* Container PerfilLog */}
-          <PerfilLog />
-        </div>
+    <header className="w-full h-16 px-6 flex items-center justify-between bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
+      {/* Rol */}
+      <div className="flex items-center gap-2">
+        <FaUserTie size={18} className="text-primary-purple" />
+        <h4 className="text-gray-700 font-medium">Administrador</h4>
       </div>
-  )
-}
+
+      {/* Submenu perfil */}
+      <div className="relative">
+        <PerfilLog />
+      </div>
+    </header>
+  );
+};

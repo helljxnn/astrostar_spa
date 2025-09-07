@@ -15,52 +15,31 @@ export const Navbar = () => {
 
   
   const loginClasses = ({ isActive }) =>
-<<<<<<< HEAD
-    `flex items-center text-xl transition-colors duration-200 tracking-wide ${
-=======
     `flex items-center text-lg transition-colors duration-200 tracking-wide ${
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
       isActive
         ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
         : "text-black hover:text-[#9BE9FF]" 
     }`;
 
   return (
-<<<<<<< HEAD
-    <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-montserrat">
-      <div className="flex items-center justify-between px-6 py-6">
-=======
     <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-questrial">
       <div className="flex items-center justify-between px-6 py-4">
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
         {/* Logos */}
         <NavLink to="/" className="flex items-center space-x-3">
           <img
             src="/assets/images/Logo1LFundacionMV.png"
             alt="Logo Fundación MV 1"
-<<<<<<< HEAD
-            className="h-auto max-h-14 cursor-pointer"
-=======
             className="h-auto max-h-10 cursor-pointer"
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
           />
           <img
             src="/assets/images/Logo2LFundacionMV.png"
             alt="Logo Fundación MV 2"
-<<<<<<< HEAD
-            className="h-auto max-h-16 cursor-pointer"
-=======
             className="h-auto max-h-14 cursor-pointer"
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
           />
         </NavLink>
 
         <div className="hidden md:flex flex-1 justify-center">
-<<<<<<< HEAD
-          <ul className="flex space-x-12 text-xl md:ml-0 lg:-ml-16 xl:-ml-32">
-=======
           <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
             <li>
               <NavLink
                 to="/about"
@@ -108,11 +87,7 @@ export const Navbar = () => {
             aria-label="Ir a la página de inicio de sesión"
           >
             Iniciar Sesión
-<<<<<<< HEAD
-            <FiLogIn className="ml-2 text-[#9BE9FF] text-2xl" />
-=======
             <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
           </NavLink>
         </div>
 
@@ -210,11 +185,7 @@ export const Navbar = () => {
                 aria-label="Ir a la página de inicio de sesión"
               >
                 Iniciar Sesión
-<<<<<<< HEAD
-                <FiLogIn className="ml-2 text-[#9BE9FF] text-2xl" />
-=======
                 <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
->>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
               </NavLink>
             </li>
           </ul>
