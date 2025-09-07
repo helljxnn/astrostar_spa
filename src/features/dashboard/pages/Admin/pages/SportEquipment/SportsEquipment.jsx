@@ -1,6 +1,7 @@
 import React from "react";
 import Table from "../../../../../../shared/components/Table/table";
 import sportsEquipmentData from "../../../../../../shared/models/SportsEquipment";
+import usersData from "../../../../../../shared/models/users";
 
 function SportsEquipment() {
   return (
@@ -30,6 +31,12 @@ function SportsEquipment() {
           tbody={{
             maxRows: 10,
             data: sportsEquipmentData,
+            dataPropertys:[
+              "NombreMaterial",
+              "CantidadComprado",
+              "CantidadDonado",
+              "Total"
+            ],
             state: true,
           }} 
         />

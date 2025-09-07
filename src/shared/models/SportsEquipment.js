@@ -4,28 +4,28 @@ const sportsEquipmentData = [
         CantidadComprado: 10,
         CantidadDonado: 5,
         Total: 15,
-        Estado: "Activo"
+        estado: "Activo"
     },
     {
         NombreMaterial: "Raqueta de tenis",
         CantidadComprado: 8,
         CantidadDonado: 2,
         Total: 10,
-        Estado: "Inactivo"
+        estado: "Inactivo"
     },
     {
         NombreMaterial: "Cuerda de saltar",
         CantidadComprado: 20,
         CantidadDonado: 10,
         Total: 30,
-        Estado: "Activo"
+        estado: "Activo"
     },
     {
         NombreMaterial: "Pesa rusa",
         CantidadComprado: 5,
         CantidadDonado: 0,
         Total: 5,
-        Estado: "Activo"
+        estado: "Activo"
     }
 ];
 

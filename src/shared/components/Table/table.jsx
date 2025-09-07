@@ -4,7 +4,6 @@ import Tbody from "./tbody";
 
 const Table = ({
     thead = {
-        cols: 0,
         width: "",
         height: "",
         titles: [],
@@ -15,7 +14,11 @@ const Table = ({
     tbody = {
         maxRows: 0,
         data,
-        state: false
+        dataPropertys: [],
+        state: false,
+        urlSeeMore,
+        urlEdit,
+        urlDelete,
     }
 }) => {
     return (
