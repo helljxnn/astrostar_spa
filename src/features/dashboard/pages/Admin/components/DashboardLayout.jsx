@@ -1,4 +1,5 @@
 // DashboardLayout.jsx
+<<<<<<< HEAD
 import React from 'react';
 import SideBar from "./SideBar";
 import { Outlet } from 'react-router-dom';
@@ -28,6 +29,12 @@ function DashboardLayout() {
       </div>
     </>
   );
+=======
+import SideBar from "./SideBar";
+
+function DashboardLayout() {
+  return <SideBar />;
+>>>>>>> 4cbd1a9142e14a672f15310c8802af1acf53352c
 }
 
 export default DashboardLayout;
