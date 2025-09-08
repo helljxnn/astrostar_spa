@@ -18,12 +18,13 @@ import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Servi
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes";
 import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard";
 import Donations from "../features/dashboard/pages/Admin/pages/Donations";
-import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees";
+import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule";
 import EventsAdmin from "../features/dashboard/pages/Admin/pages/Events";
-import Roles from "../features/dashboard/pages/Admin/pages/Roles";
+import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
+import { TemporaryWorkers } from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
 
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route path="roles" element={<Roles />} />
         <Route path="sales" element={<Sales />} />
         <Route path="sports-category" element={<SportsCategory />} />
+        <Route path="temporary-workers" element={<TemporaryWorkers />} />
         <Route path="sportsequipment" element={<SportsEquipment />} />
         <Route path="usersmanagement" element={<UsersManagement />} />
       </Route>
