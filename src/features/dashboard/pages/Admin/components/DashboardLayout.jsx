@@ -20,7 +20,7 @@ function DashboardLayout() {
             {/* Contenedor de la barra superior */}
             <TopBar />
           </div>
-          <div id="content" className="w-full p-4 overflow-y-auto">
+          <div id="content" className="w-full overflow-y-auto">
             {/* Contenedor del contendio */}
             <Outlet />
           </div>
