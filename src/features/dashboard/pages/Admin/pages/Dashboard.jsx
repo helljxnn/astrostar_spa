@@ -1,6 +1,3 @@
-
-
-
 function Dashboard () {
   return (
     <div className="flex">

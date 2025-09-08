@@ -24,7 +24,7 @@ function Login() {
       <div className='w-full h-auto grid grid-cols-2 gap-1 border-2 rounded-lg border-primary-purple/50 bg-opacity-0' id='subContainer'>
         <div className='w-auto h-auto p-4' id='formLogin'>
           {/* Formulario de login */}
-          <Form onLogin={handleLogin} />
+          <Form />
         </div>
         <div className='w-auto h-auto p-4' id='imageContainer'>
           {/* Aquí puedes agregar una imagen o ilustración */}
