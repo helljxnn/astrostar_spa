@@ -1,4 +1,4 @@
-import { combineDateAndTime, isSameDay, sortEventsByDateTime } from './dateHelpers';
+import { combineDateAndTime,} from './dateHelpers';
 
 // 📊 DATOS DE EVENTOS - Actualizado con formato de 12 horas
 export const eventsData = [
@@ -27,6 +27,9 @@ export const eventsData = [
     status: "programado",
     participants: 300,
     category: "Cultura",
+    details: "Un festival lleno de color y alegría para toda la familia. Disfruta de música en vivo, espectáculos de danza, puestos de comida artesanal y actividades para niños. Ven a celebrar la llegada de la primavera con la comunidad.",
+    telefono: "+57 310 123 4567",
+    patrocinadores: ["Empresa A", "Empresa B", "Empresa C"],
   },
   {
     id: 3,

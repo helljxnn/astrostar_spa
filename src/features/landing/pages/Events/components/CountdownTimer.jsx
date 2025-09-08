@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { convertTo24Hour } from "../../../../../shared/utils/helpers/eventsHelper";
 import {
