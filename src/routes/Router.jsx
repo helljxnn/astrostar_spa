@@ -26,7 +26,7 @@ import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
 import { TemporaryWorkers } from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
-import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
+import Users from "../features/dashboard/pages/Admin/pages/Users/Users";
 
 /* Dashboard - Sportsprofessional */
 import LayoutDashboard from "../features/dashboard/pages/Sportsprofessional/components/DashboardLayout.jsx";
@@ -76,7 +76,7 @@ function AppRoutes() {
         <Route path="sports-category" element={<SportsCategory />} />
         <Route path="temporary-workers" element={<TemporaryWorkers />} />
         <Route path="sportsequipment" element={<SportsEquipment />} />
-        <Route path="usersmanagement" element={<UsersManagement />} />
+        <Route path="users" element={<Users />} />
       </Route>
 
       {/* Rutas del Dashboard (Sportsprofessional) */}

@@ -102,60 +102,20 @@ function SideBar() {
             <span>Dashboard</span>
           </Link>
 
-          {/* Usuarios (submenu) */}
-          <div className="mt-1">
-            <button
-              onClick={() => toggleMenu("users")}
-              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${
-                openMenu === "users" ||
-                isActive("/dashboard/users-management") ||
-                isActive("/dashboard/access-management")
-                  ? "bg-indigo-100 text-indigo-700"
-                  : "text-gray-700 hover:bg-indigo-50"
-              }`}
-            >
-              <span className="flex items-center gap-4">
-                <FaUsers size={20} />
-                Usuarios
-              </span>{" "}
-              {openMenu === "users" ? <MdExpandLess /> : <MdExpandMore />}
-            </button>
+          {/* Usuarios (sin submenu) */}
 
-            {/* Contenido submenu */}
-            <div
-              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
-                openMenu === "users" ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-              }`}
-            >
-              <div className="overflow-hidden">
-                <div className="pl-12 pr-3 py-2 space-y-1">
-                  <Link
-                    to="/dashboard/UsersManagement"
-                    onClick={() => setIsOpen(false)}
-                    className={`block px-3 py-2 rounded-lg text-sm transition ${
-                      isActive("/dashboard/users-management")
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "text-gray-700 hover:bg-indigo-50"
-                    }`}
-                  >
-                    Gestión de usuarios{" "}
-                  </Link>
-
-                  <Link
-                    to="/dashboard/AccessManagement"
-                    onClick={() => setIsOpen(false)}
-                    className={`block px-3 py-2 rounded-lg text-sm transition ${
-                      isActive("/dashboard/access-management")
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "text-gray-700 hover:bg-indigo-50"
-                    }`}
-                  >
-                    Gestión de acceso
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Link
+            to="/dashboard/Users"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
+              isActive("/dashboard/Users")
+                ? "bg-indigo-100 text-indigo-700"
+                : "text-gray-700 hover:bg-indigo-50"
+            }`}
+          >
+            <FaUsers size={20} className="shrink-0" />
+            <span>Usuarios</span>
+          </Link>
 
           {/* Roles */}
           <Link
