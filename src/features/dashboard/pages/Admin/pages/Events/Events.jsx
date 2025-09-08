@@ -1,6 +1,4 @@
-
-
-function EventsAdmin () {
+function Events () {
   return (
         <div className="flex">
              
@@ -13,4 +11,4 @@ function EventsAdmin () {
       );
 }
 
-export default EventsAdmin;
+export default Events;

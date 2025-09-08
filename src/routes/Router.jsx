@@ -20,11 +20,11 @@ import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard";
 import Donations from "../features/dashboard/pages/Admin/pages/Donations";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule";
-import EventsAdmin from "../features/dashboard/pages/Admin/pages/Events";
+import Events from "../features/dashboard/pages/Admin/pages/Events/Events.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
-import { TemporaryWorkers } from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
+import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
 
