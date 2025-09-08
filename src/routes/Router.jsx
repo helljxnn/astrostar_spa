@@ -20,11 +20,11 @@ import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard";
 import Donations from "../features/dashboard/pages/Admin/pages/Donations";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule";
-import EventsAdmin from "../features/dashboard/pages/Admin/pages/Events";
+import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
-import { TemporaryWorkers } from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
+import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users";
 
@@ -70,7 +70,7 @@ function AppRoutes() {
         <Route path="donations" element={<Donations />} />
         <Route path="employees" element={<Employees />} />
         <Route path="employees-schedule" element={<EmployeesSchedule />} />
-        <Route path="events" element={<EventsAdmin />} />
+        <Route path="events" element={<EventsDashboard />} />
         <Route path="roles" element={<Roles />} />
         <Route path="sales" element={<Sales />} />
         <Route path="sports-category" element={<SportsCategory />} />

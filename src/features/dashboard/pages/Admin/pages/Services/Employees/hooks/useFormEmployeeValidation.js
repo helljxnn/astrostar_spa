@@ -40,6 +40,15 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
+  // 👇 Fuerza marcar todos como touched
+  const touchAllFields = () => {
+    const allTouched = {};
+    Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
+    });
+    setTouched(allTouched);
+  };
+
   return {
     values,
     errors,
@@ -48,6 +57,7 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    touchAllFields,
   };
 };
 
@@ -55,58 +65,40 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
 export const employeeValidationRules = {
   nombre: [
     (value) => (!value?.trim() ? "El nombre es obligatorio" : ""),
+    (value) => value?.length < 3 ? "El nombre debe tener al menos 3 caracteres" : "",
     (value) =>
-      value?.length < 3 ? "El nombre debe tener al menos 3 caracteres" : "",
-    (value) =>
-      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "")
-        ? "Solo se permiten letras"
-        : "",
+      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
   apellido: [
     (value) => (!value?.trim() ? "El apellido es obligatorio" : ""),
+    (value) => value?.length < 3 ? "El apellido debe tener al menos 3 caracteres" : "",
     (value) =>
-      value?.length < 3 ? "El apellido debe tener al menos 3 caracteres" : "",
-    (value) =>
-      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "")
-        ? "Solo se permiten letras"
-        : "",
+      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
   correo: [
     (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
     (value) =>
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "")
-        ? "Formato de correo inválido"
-        : "",
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
   ],
   telefono: [
     (value) => (!value?.trim() ? "El teléfono es obligatorio" : ""),
     (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
     (value) =>
-      value?.length < 7 || value?.length > 15
-        ? "El teléfono debe tener entre 7 y 15 dígitos"
-        : "",
+      value?.length < 7 || value?.length > 15 ? "El teléfono debe tener entre 7 y 15 dígitos" : "",
   ],
   edad: [
     (value) => (!value ? "La edad es obligatoria" : ""),
     (value) => !/^\d+$/.test(value || "") ? "La edad debe ser un número" : "",
-    (value) =>
-      parseInt(value) < 18 ? "Debe ser mayor de 18 años" : "",
-    (value) =>
-      parseInt(value) > 65 ? "La edad máxima permitida es 65 años" : "",
+    (value) => parseInt(value) < 18 ? "Debe ser mayor de 18 años" : "",
+    (value) => parseInt(value) > 65 ? "La edad máxima permitida es 65 años" : "",
   ],
   identificacion: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
     (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
   ],
-  tipoDocumento: [
-    (value) => (!value ? "Debe seleccionar el tipo de documento" : ""),
-  ],
-  tipoEmpleado: [
-    (value) => (!value ? "Debe seleccionar el tipo de empleado" : ""),
-  ],
+  tipoDocumento: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  tipoEmpleado: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
   rol: [(value) => (!value ? "Debe seleccionar un rol" : "")],
   estado: [(value) => (!value ? "Debe seleccionar un estado" : "")],
-  fechaAsignacion: [
-    (value) => (!value ? "Debe seleccionar una fecha de asignación" : ""),
-  ],
+  fechaAsignacion: [(value) => (!value ? "Debe seleccionar una fecha de asignación" : "")],
 };
