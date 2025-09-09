@@ -104,7 +104,7 @@ export const Events = () => {
         variant="background"
         title="Eventos"
         subtitle="Nuestros eventos son el corazón de la Fundación, donde celebramos la pasión por el fútbol femenino. Organizamos torneos emocionantes y encuentros inspiradores para nuestras jugadoras y la comunidad. ¡Consulta nuestro calendario y únete a la celebración del fútbol femenino!"
-        imageUrl="/assets/images/EventsHero.jpg"
+        imageUrl="/public/assets/images/EventsHeo.jpg"
       />
 
       <div className="max-w-7xl mx-auto px-8 py-24">
