@@ -10,13 +10,15 @@ import React from "react";
  * @param {function} props.onClose - Función que se ejecuta al hacer clic en el botón "Cancelar".
  * @param {function} props.onSubmit - Función que se ejecuta al enviar el formulario.
  * @param {string} props.submitText - El texto para el botón de envío (ej. "Crear", "Guardar Cambios").
- */
-const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar" }) => {
+ * @param {number} props.id - El id de un registro si para actualizar o no.  
+ * @param {formData} props.formData - datos del formulario para la funcion
+*/
+const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null, formData }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (onSubmit) {
-            onSubmit(e);
+            onSubmit(formData);
         }
     };
 
@@ -41,6 +43,10 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                         {/* Body: Contenido dinámico que se pasa como children */}
                         <div className="space-y-4 w-full">
                             {children}
+
+                            {id ? (
+                                <input type="hidden" name="id" value={id} />
+                            ): null}
                         </div>
 
                         {/* Footer: Botones de acción */}
