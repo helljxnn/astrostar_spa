@@ -56,21 +56,9 @@ export const Calendar = ({
 
     if (dayEvents.length > 0) {
       const targetEvent = sortedDayEvents[0];
-
       if (targetEvent?.id) {
         onEventSelect?.(targetEvent.id);
-
-        // 🔹 Scroll siempre al evento correcto
-        setTimeout(() => {
-          const element = document.getElementById(`event-${targetEvent.id}`);
-          if (element) {
-            element.scrollIntoView({
-              behavior: "smooth",
-              block: "center",
-              inline: "nearest",
-            });
-          }
-        }, 200);
+        // ❌ ELIMINADO: La lógica de setTimeout para el scroll
       }
     } else {
       onEventSelect?.(null);

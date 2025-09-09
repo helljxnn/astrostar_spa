@@ -1,36 +1,49 @@
 import React, { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useFormUserValidation, userValidationRules } from "../hooks/useFormUserValidation";
+import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts"; // Ruta corregida a 5 niveles
+import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import {
+  useFormUserValidation,
+  userValidationRules,
+} from "../hooks/useFormUserValidation";
 
-// Opciones para Tipo de Documento
-const tiposDocumento = [
-  { value: "CC", label: "Cédula de Ciudadanía" },
-  { value: "TI", label: "Tarjeta de Identidad" },
-  { value: "CE", label: "Cédula de Extranjería" },
-  { value: "PA", label: "Pasaporte" },
-  { value: "RC", label: "Registro Civil" },
+const documentTypes = [
+  { value: "CC", label: "Cédula de ciudadanía" },
+  { value: "TI", label: "Tarjeta de identidad" },
+  { value: "CE", label: "Cédula de extranjería" },
+  { value: "PAS", label: "Pasaporte" },
 ];
 
-// Opciones de estado
-const estados = [
+const states = [
   { value: "Activo", label: "Activo" },
   { value: "Inactivo", label: "Inactivo" },
 ];
 
-const UserModal = ({ isOpen, onClose, onSave, roles }) => {
+const UserModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  onUpdate, 
+  roles, 
+  userToEdit = null, // null = crear, objeto = editar
+  mode = userToEdit ? 'edit' : 'create' // 'create' | 'edit'
+}) => {
+  const isEditing = mode === 'edit' || userToEdit !== null;
+  
   const {
-    values: formData,
+    values,
     errors,
     touched,
     handleChange,
     handleBlur,
     validateAllFields,
     resetForm,
+    setTouched,
+    setValues,
   } = useFormUserValidation(
     {
       nombre: "",
+      apellido: "",
       tipoDocumento: "",
       identificacion: "",
       rol: "",
@@ -41,223 +54,243 @@ const UserModal = ({ isOpen, onClose, onSave, roles }) => {
     userValidationRules
   );
 
-  // Manejo del submit con validaciones
-  const handleSubmit = async () => {
-    console.log("Validando formulario...", formData);
-    const isValid = validateAllFields();
-    console.log("Resultado de validación:", isValid, "Errores:", errors);
-    if (isValid) {
-      try {
-        console.log("Guardando usuario...", formData);
-        await onSave(formData);
-        console.log("Mostrando alerta...");
-        await showSuccessAlert("Usuario creado exitosamente", "El nuevo usuario ha sido registrado en el sistema.");
-        console.log("Alerta cerrada, reseteando formulario...");
-        resetForm();
-        onClose();
-      } catch (error) {
-        console.error("Error en handleSubmit:", error);
-        showErrorAlert("Error al crear usuario", "Hubo un problema al guardar el usuario. Por favor, inténtalo de nuevo.");
-      }
-    } else {
-      console.log("Validación fallida, mostrando errores:", errors);
-      showErrorAlert("Errores de validación", "Por favor, corrige los campos destacados para continuar.");
-    }
-  };
-
+  // Cargar datos del usuario cuando se abra el modal en modo edición
   useEffect(() => {
-    if (isOpen) {
-      resetForm();
+    if (isOpen && isEditing && userToEdit) {
+      setValues({
+        nombre: userToEdit.nombre || "",
+        apellido: userToEdit.apellido || "",
+        tipoDocumento: userToEdit.tipoDocumento || "",
+        identificacion: userToEdit.identificacion || "",
+        rol: userToEdit.rol || "",
+        correo: userToEdit.correo || "",
+        telefono: userToEdit.telefono || "",
+        estado: userToEdit.estado || "",
+      });
     }
-  }, [isOpen]);
+  }, [isOpen, isEditing, userToEdit, setValues]);
+
+ const handleSubmit = async () => {
+  // 1. Marcar todos los campos como tocados
+  const allTouched = {};
+  Object.keys(userValidationRules).forEach((field) => {
+    allTouched[field] = true;
+  });
+  setTouched(allTouched);
+
+  // 2. Validar todos los campos
+  if (!validateAllFields()) {
+    // 🚨 Solo mostrar SweetAlert si estamos en edición
+    if (isEditing) {
+      showErrorAlert(
+        "Campos incompletos",
+        "Por favor completa todos los campos correctamente antes de continuar."
+      );
+    }
+    return; // detener ejecución
+  }
+
+  // 3. Confirmar en modo edición
+  if (isEditing) {
+    const confirmResult = await showConfirmAlert(
+      "¿Estás seguro?",
+      `¿Deseas actualizar la información del usuario ${userToEdit.nombre} ${userToEdit.apellido}?`,
+      {
+        confirmButtonText: "Sí, actualizar",
+        cancelButtonText: "Cancelar",
+      }
+    );
+
+    if (!confirmResult.isConfirmed) {
+      return;
+    }
+  }
+
+  try {
+    if (isEditing) {
+      const updatedUserData = { ...values, id: userToEdit.id };
+      await onUpdate(updatedUserData);
+      showSuccessAlert(
+        "Usuario actualizado",
+        `Los datos de ${values.nombre} ${values.apellido} han sido actualizados exitosamente.`
+      );
+    } else {
+      await onSave(values);
+      showSuccessAlert("Usuario creado", "El usuario ha sido creado exitosamente.");
+    }
+
+    resetForm();
+    onClose();
+  } catch (error) {
+    console.error(`Error al ${isEditing ? "actualizar" : "crear"} usuario:`, error);
+    showErrorAlert(
+      "Error",
+      error.message || `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el usuario`
+    );
+  }
+};
+
+
+  // Función para cerrar el modal y resetear el formulario
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   if (!isOpen) return null;
 
   return (
     <motion.div
-  className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  exit={{ opacity: 0 }}
-  onClick={onClose} // 🔵 Cierra si das click en el fondo
->
-  <motion.div
-    className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
-    initial={{ scale: 0.8, opacity: 0, y: 50 }}
-    animate={{ scale: 1, opacity: 1, y: 0 }}
-    exit={{ scale: 0.8, opacity: 0, y: 50 }}
-    transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-    onClick={(e) => e.stopPropagation()} // 🔵 Evita que el clic dentro cierre el modal
-  >
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative"
+        initial={{ scale: 0.8, opacity: 0, y: 50 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.8, opacity: 0, y: 50 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+      >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
           <button
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
-            onClick={onClose}
+            onClick={handleClose}
           >
             ✕
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            Crear Usuario
+            {isEditing ? "Editar Usuario" : "Crear Usuario"}
           </h2>
+          {isEditing && (
+            <p className="text-center text-gray-600 mt-2">
+              Modificando información de: <span className="font-semibold text-primary-purple">{userToEdit.nombre} {userToEdit.apellido}</span>
+            </p>
+          )}
         </div>
 
+        {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Campos del formulario */}
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               label="Nombre"
               name="nombre"
               type="text"
               placeholder="Nombre del usuario"
-              required
-              value={formData.nombre}
+              value={values.nombre}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.nombre}
               touched={touched.nombre}
-              onChange={(e) => {
-                console.log("onChange nombre:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur nombre:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.1}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
+
+            <FormField
+              label="Apellido"
+              name="apellido"
+              type="text"
+              placeholder="Apellido del usuario"
+              value={values.apellido}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.apellido}
+              touched={touched.apellido}
+              delay={0.15}
+              required
+            />
+
             <FormField
               label="Tipo de documento"
               name="tipoDocumento"
               type="select"
-              placeholder="Seleccionar tipo de documento"
-              required
-              options={tiposDocumento}
-              value={formData.tipoDocumento}
+              placeholder="Selecciona el tipo de documento"
+              options={documentTypes}
+              value={values.tipoDocumento}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.tipoDocumento}
               touched={touched.tipoDocumento}
-              onChange={(e) => {
-                console.log("onChange tipoDocumento:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur tipoDocumento:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.2}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
+
             <FormField
               label="Identificación"
               name="identificacion"
               type="text"
-              placeholder="Identificación del usuario"
-              required
-              value={formData.identificacion}
+              placeholder="Número de identificación"
+              value={values.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.identificacion}
               touched={touched.identificacion}
-              onChange={(e) => {
-                console.log("onChange identificacion:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur identificacion:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.3}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
+
             <FormField
               label="Rol"
               name="rol"
               type="select"
-              placeholder="Seleccionar rol"
-              required
-              options={roles.map((role) => ({ value: role.nombre, label: role.nombre }))}
-              value={formData.rol}
+              placeholder="Selecciona el rol"
+              options={roles?.map((r) => ({ value: r.nombre, label: r.nombre })) || []}
+              value={values.rol}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.rol}
               touched={touched.rol}
-              onChange={(e) => {
-                console.log("onChange rol:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur rol:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.4}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
+
             <FormField
               label="Correo"
               name="correo"
               type="email"
-              placeholder="Correo del usuario"
-              required
-              value={formData.correo}
+              placeholder="correo@ejemplo.com"
+              value={values.correo}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.correo}
               touched={touched.correo}
-              onChange={(e) => {
-                console.log("onChange correo:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur correo:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.5}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
-            />
-            <FormField
-              label="Número telefónico"
-              name="telefono"
-              type="tel"
-              placeholder="Número telefónico del usuario"
               required
-              value={formData.telefono}
+            />
+
+            <FormField
+              label="Número Telefónico"
+              name="telefono"
+              type="text"
+              placeholder="3001234567 o 2345678"
+              value={values.telefono}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.telefono}
               touched={touched.telefono}
-              onChange={(e) => {
-                console.log("onChange telefono:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur telefono:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.6}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
+
             <FormField
               label="Estado"
               name="estado"
               type="select"
-              placeholder="Seleccionar estado"
-              required
-              options={estados}
-              value={formData.estado}
+              placeholder="Selecciona el estado"
+              options={states}
+              value={values.estado}
+              onChange={handleChange}
+              onBlur={handleBlur}
               error={errors.estado}
               touched={touched.estado}
-              onChange={(e) => {
-                console.log("onChange estado:", e.target.value); // Depuración
-                handleChange(e);
-              }}
-              onBlur={(e) => {
-                console.log("onBlur estado:", e.target.name); // Depuración
-                handleBlur(e);
-              }}
               delay={0.7}
-              labelClassName="text-blue-300 font-medium"
-              inputClassName="border-purple-300 focus:border-primary-purple"
+              required
             />
           </div>
 
-          {/* Botones */}
+          {/* Footer */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -266,8 +299,8 @@ const UserModal = ({ isOpen, onClose, onSave, roles }) => {
           >
             <motion.button
               type="button"
-              onClick={onClose}
-              className="px-8 py-3 border-2 border-purple-300 text-purple-700 rounded-xl hover:bg-purple-50 transition-all duration-200 font-medium"
+              onClick={handleClose}
+              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -275,14 +308,17 @@ const UserModal = ({ isOpen, onClose, onSave, roles }) => {
             </motion.button>
             <motion.button
               onClick={handleSubmit}
-              className="px-8 py-3 bg-primary-purple text-white rounded-xl hover:bg-primary-purple/90 transition-all duration-200 font-medium shadow-lg"
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-              }}
+              className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg 
+           bg-gradient-to-r from-primary-purple to-primary-blue 
+           hover:from-primary-purple hover:to-primary-blue"
+whileHover={{
+  scale: 1.02,
+  boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
+}}
+
               whileTap={{ scale: 0.98 }}
             >
-              Crear
+              {isEditing ? "Actualizar Usuario" : "Crear Usuario"}
             </motion.button>
           </motion.div>
         </div>

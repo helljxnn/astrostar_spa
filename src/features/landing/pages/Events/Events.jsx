@@ -9,11 +9,6 @@ import { EventsSection } from "./components/EventSection.jsx";
 import { CountdownTimer } from "./components/CountDownTimer.jsx";
 import { useEvents } from "./hooks/useEvents.jsx";
 import {
-  showSuccessAlert,
-  showErrorAlert,
-  showConfirmAlert,
-} from "../../../../shared/utils/Alerts.js";
-import {
   isSameDay,
   sortEventsByDateTime,
 } from "../../../../shared/utils/helpers/dateHelpers.js";
@@ -185,37 +180,7 @@ export const Events = () => {
         </motion.div>
       </div>
 
-      {process.env.NODE_ENV === "development" && (
-        <section className="py-12">
-          <div className="flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={() =>
-                showSuccessAlert("Éxito", "La operación fue exitosa 🥳")
-              }
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-            >
-              Probar Éxito
-            </button>
-            <button
-              onClick={() => showErrorAlert("Error", "Algo salió mal 😢")}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-            >
-              Probar Error
-            </button>
-            <button
-              onClick={() =>
-                showConfirmAlert(
-                  "¿Estás seguro?",
-                  "Esta acción no se puede deshacer 🤔"
-                )
-              }
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              Probar Confirmación
-            </button>
-          </div>
-        </section>
-      )}
+      
       {/* Código del modal */}
       {isModalOpen && modalEvent && (
         <EventModal event={modalEvent} onClose={closeModal} />
