@@ -1,21 +1,48 @@
-import React, { createContext } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
-//*: Creamos el contexto
 const AuthContext = createContext();
 
-//*: Creamos el provider que sera el que contiene nuestras variables de estado y funciones
-function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const role = localStorage.getItem("userRole");
+    if (token) {
+      setIsAuthenticated(true);
+      setUserRole(role);
+    }
+  }, []);
 
-    //*: Retornamos el provider con las variables de estado y funciones donde el children
-    //*: sera el componenete de RoutesApp
-    return (
-        <AuthContext.Provider value={{}}>
-            {children}
-        </AuthContext.Provider>
+  const login = (userData) => {
+    // Lógica para el usuario quemado
+    if (userData.email === "admin@example.com" && userData.password === "admin123") {
+      const token = "fake-admin-token";
+      setIsAuthenticated(true);
+      setUserRole("admin");
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userRole", "admin");
+      return true;
+    }
+    // Si no coincide con las credenciales quemadas
+    return false;
+  };
 
-    )
-}
+  const logout = () => {
+    setIsAuthenticated(false);
+    setUserRole(null);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+  };
 
-export default AuthProvider;
-export { AuthContext };
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, userRole, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  return useContext(AuthContext);
+};

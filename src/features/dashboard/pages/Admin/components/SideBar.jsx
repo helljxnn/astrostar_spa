@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdDashboard,  MdExpandMore, MdExpandLess } from "react-icons/md";
+import { MdDashboard, MdExpandMore, MdExpandLess } from "react-icons/md";
 import {
   FaUsers,
   FaUserShield,
@@ -17,8 +17,8 @@ import {
 import { GiWeightLiftingUp } from "react-icons/gi";
 
 function SideBar() {
-  const [openMenu, setOpenMenu] = useState(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null); // "services" | "athletes" | null
+  const [isOpen, setIsOpen] = useState(false); // hamburguesa (móvil)
   const location = useLocation();
 
   const toggleMenu = (menu) => {
@@ -28,31 +28,12 @@ function SideBar() {
   const isActive = (path) =>
     location.pathname === path || location.pathname.startsWith(path + "/");
 
-  // Animaciones
-  const sidebarVariants = {
-    hidden: { x: "-100%" },
-    visible: {
-      x: 0,
-      transition: { type: "spring", stiffness: 80, damping: 20 },
-    },
-    exit: { x: "-100%", transition: { duration: 0.3 } },
-  };
-
-  const linkVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: (i) => ({
-      opacity: 1,
-      x: 0,
-      transition: { delay: i * 0.05 },
-    }),
-  };
-
   return (
-    <div className="flex h-screen bg-gray-100 font-questrial">
+    <div className="flex h-screen bg-gray-100">
       {/* Botón hamburguesa (móvil) */}
       <button
         aria-label="Abrir menú"
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-primary-purple text-white shadow-md active:scale-95"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-indigo-500 text-white shadow-md active:scale-95"
         onClick={() => setIsOpen(true)}
       >
         <FaBars size={18} />
@@ -60,12 +41,9 @@ function SideBar() {
 
       {/* Backdrop (móvil) */}
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 lg:hidden"
+        <div
+          className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 lg:hidden"
           onClick={() => setIsOpen(false)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
         />
       )}
 
@@ -96,6 +74,7 @@ function SideBar() {
                 </Link>
               </div>
             </div>
+
 
             {/* Navegación */}
             <motion.nav
@@ -158,66 +137,120 @@ function SideBar() {
                       {openMenu === item.submenu ? <MdExpandLess /> : <MdExpandMore />}
                     </button>
 
-                    <AnimatePresence>
-                      {openMenu === item.submenu && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="pl-12 pr-3 py-2 space-y-1"
-                        >
-                          {item.links.map((link, idx) => (
-                            <Link
-                              key={idx}
-                              to={link.to}
-                              onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition ${
-                                isActive(link.to)
-                                  ? "bg-primary-purple-light text-indigo-900"
-                                  : "text-gray-700 hover:bg-indigo-50"
-                              }`}
-                            >
-                              {link.label}
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  <motion.div key={i} custom={i} variants={linkVariants}>
-                    <Link
-                      to={item.to}
-                      onClick={() => setIsOpen(false)}
-                      className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
-                        isActive(item.to)
-                          ? "bg-gradient-to-r from-primary-purple-light to-primary-blue text-indigo-900 shadow-sm"
-                          : "text-gray-700 hover:bg-indigo-50"
-                      }`}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                  </motion.div>
-                )
-              )}
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                openMenu === "athletes" ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="pl-12 pr-3 py-2 space-y-1">
+                  <Link
+                    to="/dashboard/sports-category"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm transition ${
+                      isActive("/dashboard/sports-category")
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-indigo-50"
+                    }`}
+                  >
+                    {" "}
+                    Categoría Deportiva
+                  </Link>
+                  <Link
+                    to="/dashboard/athletes"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm transition ${
+                      isActive("/dashboard/athletes")
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-indigo-50"
+                    }`}
+                  >
+                    Deportistas
+                  </Link>
+                  <Link
+                    to="/dashboard/temporary-workers"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm transition ${
+                      isActive("/dashboard/temporary-workers")
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-indigo-50"
+                    }`}
+                  >
+                    {" "}
+                    Personas Temporales
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {/* Logout */}
-              <motion.div custom={99} variants={linkVariants}>
-                <Link
-                  to="/"
-                  onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition text-red-600 hover:bg-red-50"
-                >
-                  <FaSignOutAlt size={20} className="shrink-0" />
-                  <span>Cerrar Sesión</span>
-                </Link>
-              </motion.div>
-            </motion.nav>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+          {/* Donaciones */}
+          <Link
+            to="/dashboard/donations"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
+              isActive("/dashboard/donations")
+                ? "bg-indigo-100 text-indigo-700"
+                : "text-gray-700 hover:bg-indigo-50"
+            }`}
+          >
+            <FaHandHoldingHeart size={20} className="shrink-0" />
+            <span>Donaciones</span>
+          </Link>
+
+          {/* Eventos */}
+          <Link
+            to="/dashboard/events"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
+              isActive("/dashboard/events")
+                ? "bg-indigo-100 text-indigo-700"
+                : "text-gray-700 hover:bg-indigo-50"
+            }`}
+          >
+            <FaRegCalendarAlt size={20} className="shrink-0" />
+            <span>Eventos</span>
+          </Link>
+
+          {/* Compras */}
+          <Link
+            to="/dashboard/purchases"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
+              isActive("/dashboard/purchases")
+                ? "bg-indigo-100 text-indigo-700"
+                : "text-gray-700 hover:bg-indigo-50"
+            }`}
+          >
+            <FaShoppingCart size={20} className="shrink-0" />
+            <span>Compras</span>
+          </Link>
+
+          {/* Ventas */}
+          <Link
+            to="/dashboard/sales"
+            onClick={() => setIsOpen(false)}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
+              isActive("/dashboard/sales")
+                ? "bg-indigo-100 text-indigo-700"
+                : "text-gray-700 hover:bg-indigo-50"
+            }`}
+          >
+            <FaDollarSign size={20} className="shrink-0" />
+            <span>Ventas</span>
+          </Link>
+
+          {/* Logout */}
+          <Link
+            to="/"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition text-purple-600 hover:bg-red-50"
+          >
+            <FaSignOutAlt size={20} className="shrink-0" />
+            <span>Cerrar Sesión</span>
+          </Link>
+        </nav>
+      </aside>
     </div>
   );
 }

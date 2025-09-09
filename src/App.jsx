@@ -1,6 +1,6 @@
 import React from "react";
 import AppRoutes from "./routes/Router";
-import AuthProvider from "./shared/contexts/authContext";
+import { AuthProvider } from "./shared/contexts/authContext";
 import LoadingProvider from "./shared/contexts/loaderContext";
 
 
