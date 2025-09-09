@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { MdDashboard, MdSearch, MdExpandMore, MdExpandLess } from "react-icons/md";
+import { MdDashboard,  MdExpandMore, MdExpandLess } from "react-icons/md";
 import {
   FaUsers,
   FaUserShield,
@@ -94,18 +94,6 @@ function SideBar() {
                     className="h-50 w-50 md:h-28 md:w-30 object-contain hover:scale-105 transition-transform"
                   />
                 </Link>
-              </div>
-            </div>
-
-            {/* Buscador */}
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 focus-within:ring-2 focus-within:ring-primary-purple transition">
-                <MdSearch size={18} className="text-gray-500 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  className="bg-transparent outline-none text-sm w-full placeholder-gray-500"
-                />
               </div>
             </div>
 
