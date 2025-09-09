@@ -13,6 +13,8 @@ const rowVariants = {
 };
 
 const Tbody = ({ options }) => {
+  const { onEdit, onDelete } = options.tbody;
+
   return (
     <tbody id="tbody" className="divide-y divide-gray-200">
       {options.tbody.data && options.tbody.data.length > 0 ? (
@@ -35,24 +37,31 @@ const Tbody = ({ options }) => {
 
               {options.tbody.state && (
                 <td
-                  className={`px-6 py-4 font-medium ${
-                    estado === "Activo"
+                  className={`px-6 py-4 font-medium ${estado === "Activo"
                       ? "text-primary-blue"
                       : "text-primary-purple"
-                  }`}
+                    }`}
                 >
                   {estado}
                 </td>
               )}
 
               <td className="px-6 py-4 flex items-center justify-center gap-3">
-                <button className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors">
+                <button
+                  onClick={() => onEdit && onEdit(item)}
+                  className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors"
+                  aria-label={`Editar ${item.NombreMaterial}`}
+                >
                   <FaRegEdit />
                 </button>
-                <button className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
+                <button
+                  onClick={() => onDelete && onDelete(item)}
+                  className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                  aria-label={`Eliminar ${item.NombreMaterial}`}
+                >
                   <FaTrash />
                 </button>
-                <button className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors">
+                <button className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:bg-primary-purple hover:text-white transition-colors">
                   <FaEye />
                 </button>
               </td>

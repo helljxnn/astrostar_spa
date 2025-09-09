@@ -4,7 +4,7 @@ import { Hero } from './Hero';
 import { Footer } from "./Footer";
 import { ScrollTop } from "./ScrollTop";
 import { useLoading } from '../../../shared/contexts/loaderContext';
-import { Loader } from '../../../shared/components/loader';
+import Loader from '../../../shared/components/loader';
 
 function LayoutLanding() {
   const { loader } = useLoading();

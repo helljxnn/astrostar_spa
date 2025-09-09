@@ -1,13 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Table from "../../../../../../shared/components/Table/table";
 import sportsEquipmentData from "../../../../../../shared/models/SportsEquipment";
 import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
-import { IoSearch } from "react-icons/io5";
 import FormCreate from "./components/formCreate";
+import FormEdit from "./components/formEdit";
+import { showSuccessAlert } from "../../../../../../shared/utils/Alerts";
+import SearchInput from "../../../../../../shared/components/SearchInput";
 
 function SportsEquipment() {
+  // Estado para la lista de datos, para poder actualizarla en tiempo real
+  const [equipmentList, setEquipmentList] = useState(sportsEquipmentData);
+  // Estados para controlar la visibilidad de los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  // Estado para el término de búsqueda
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filtramos los datos basándonos en el término de búsqueda.
+  // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
+  const filteredEquipment = useMemo(() =>
+    equipmentList.filter(item =>
+      item.NombreMaterial.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [equipmentList, searchTerm]);
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true);
@@ -23,6 +39,46 @@ function SportsEquipment() {
     handleCloseCreateModal();
   };
 
+  // --- Lógica para Editar y Eliminar ---
+  // Estas funciones se pasarán como props a la tabla.
+  // La tabla las usará para los botones de acción de cada fila.
+
+  const handleEdit = (item) => {
+    setSelectedEquipment(item); // Guardamos el item completo
+    setIsEditModalOpen(true);   // Abrimos el modal de edición
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedEquipment(null); // Limpiamos el item seleccionado al cerrar
+  };
+
+  const handleUpdate = (updatedData) => {
+    // Lógica para actualizar el item en nuestra lista de estado
+    const updatedList = equipmentList.map(item => {
+      // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
+      if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
+        return {
+          ...item,
+          NombreMaterial: updatedData.nombre,
+          CantidadComprado: Number(updatedData.comprado),
+          CantidadDonado: Number(updatedData.donado),
+          Total: Number(updatedData.comprado) + Number(updatedData.donado),
+          estado: updatedData.estado,
+        };
+      }
+      return item;
+    });
+    setEquipmentList(updatedList);
+    handleCloseEditModal(); // Cerramos el modal
+    showSuccessAlert("¡Actualizado!", "El material deportivo se ha actualizado correctamente.");
+  };
+
+  const handleDelete = (item) => {
+    console.log("Intentando eliminar:", item);
+    // Aquí se podría implementar la lógica de eliminación, por ejemplo, con un modal de confirmación.
+  };
+
   return (
     <div id="contentSportsEquipment" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
       {/* Contenedor index */}
@@ -32,56 +88,61 @@ function SportsEquipment() {
       </div>
       <div id="body" className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4">
         {/* Cuerpo */}
-        <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between">
+        <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between items-center">
+          {/* Componente de Búsqueda reutilizable */}
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por nombre..."
+          />
           {/* Botones */}
-          <div id="buttons" className="w-full h-auto flex flex-row items-center gap-4">
+          <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
             <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold">
               Crear <SiGoogleforms size={20} />
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-          </div>
-          <div id="Search" className="w-full h-auto flex flex-row justify-end gap-4">
-            {/* Buscador */}
-            <div id="containerSearch" className="px-3 py-2 rounded-lg flex flex-row gap-2 align-center items-center bg-gray-200">
-              <IoSearch size={20} color="gray" />
-              <input type="text" placeholder="Buscar" className="bg-transparent outline-none border-none" />
-            </div>
           </div>
         </div>
         {/* Tabla */}
         <Table
+          rowsPerPage={4}
+          paginationFrom={4}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
           thead={{
             titles: [
               "Nombre",
               "Comprado",
               "Donado",
-              "Total"
+              "Total",
             ],
             state: true,
           }}
-
           tbody={{
-            maxRows: 10,
-            data: sportsEquipmentData,
+            data: filteredEquipment,
             dataPropertys: [
               "NombreMaterial",
               "CantidadComprado",
               "CantidadDonado",
-              "Total"
+              "Total",
             ],
             state: true,
           }}
         />
-        {/* Modal para Crear Material */}
-        {/* El modal ahora se renderiza siempre y controla su visibilidad internamente para permitir animaciones de entrada y salida */}
-        <FormCreate
-          isOpen={isCreateModalOpen}
-          onClose={handleCloseCreateModal}
-          onSubmit={handleCreateSubmit}
-        />
       </div>
-
-
+      {/* Modal para Crear Material */}
+      <FormCreate
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        onSubmit={handleCreateSubmit}
+      />
+      {/* Modal para Editar Material. Se renderiza aquí y se controla con estado. */}
+      <FormEdit
+        isOpen={isEditModalOpen}
+        onClose={handleCloseEditModal}
+        onSave={handleUpdate}
+        equipmentData={selectedEquipment}
+      />
     </div>
   );
 }
