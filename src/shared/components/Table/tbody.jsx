@@ -61,7 +61,7 @@ const Tbody = ({ options }) => {
                 >
                   <FaTrash />
                 </button>
-                <button className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:bg-primary-purple hover:text-white transition-colors">
+                <button className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors">
                   <FaEye />
                 </button>
               </td>
