@@ -8,7 +8,7 @@ import {
   showErrorAlert,
 } from "../../../../../../shared/utils/alerts";
 import Table from "../../../../../../shared/components/Table/table";
-import usersData from "./UserData.jsx"; // 👈 corregido: nombre y extensión
+import usersData from "./UserData.jsx"; // 
 import rolesData from "../../../../../../shared/models/RolesData.js";
 
 const Users = () => {
@@ -153,7 +153,6 @@ const handleDelete = async (userId) => {
           dataPropertys: ["nombre", "correo", "identificacion", "rol"],
           state: true,
 
-          // 👇 En lugar de actions[], usamos los callbacks que entiende tu Table fijo
           onEdit: (row) => handleEdit(row),
           onDelete: (row) => handleDelete(row.id),
           onView: (row) => console.log("Ver usuario:", row),

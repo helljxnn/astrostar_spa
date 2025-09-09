@@ -311,19 +311,60 @@ function SideBar() {
             <span>Eventos</span>
           </Link>
 
-          {/* Compras */}
-          <Link
-            to="/dashboard/purchases"
-            onClick={() => setIsOpen(false)}
-            className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition ${
-              isActive("/dashboard/purchases")
-                ? "bg-indigo-100 text-indigo-700"
-                : "text-gray-700 hover:bg-indigo-50"
-            }`}
-          >
-            <FaShoppingCart size={20} className="shrink-0" />
-            <span>Compras</span>
-          </Link>
+          {/* Compras (submenu) */}
+          <div className="mt-1">
+            <button
+              onClick={() => toggleMenu("purchases")}
+              className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-[15px] transition ${
+                openMenu === "purchases" ||
+                isActive("/dashboard/purchases") ||
+                isActive("/dashboard/providers")
+                  ? "bg-indigo-100 text-indigo-700"
+                  : "text-gray-700 hover:bg-indigo-50"
+              }`}
+            >
+              <span className="flex items-center gap-4">
+                <FaShoppingCart size={20} />
+                Compras
+              </span>
+              {openMenu === "purchases" ? <MdExpandLess /> : <MdExpandMore />}
+            </button>
+
+            {/* contenido submenu */}
+            <div
+              className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                openMenu === "purchases" ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="pl-12 pr-3 py-2 space-y-1">
+                  <Link
+                    to="/dashboard/purchases"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm transition ${
+                      isActive("/dashboard/purchases")
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-indigo-50"
+                    }`}
+                  >
+                    Compras
+                  </Link>
+
+                  <Link
+                    to="/dashboard/providers"
+                    onClick={() => setIsOpen(false)}
+                    className={`block px-3 py-2 rounded-lg text-sm transition ${
+                      isActive("/dashboard/providers")
+                        ? "bg-indigo-100 text-indigo-700"
+                        : "text-gray-700 hover:bg-indigo-50"
+                    }`}
+                  >
+                    Proveedores
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Ventas */}
           <Link

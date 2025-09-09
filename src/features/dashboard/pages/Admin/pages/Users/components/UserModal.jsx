@@ -1,7 +1,11 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
-import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showConfirmAlert,
+} from "../../../../../../../shared/utils/alerts";
 import {
   useFormUserValidation,
   userValidationRules,
@@ -19,17 +23,17 @@ const states = [
   { value: "Inactivo", label: "Inactivo" },
 ];
 
-const UserModal = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  onUpdate, 
-  roles, 
+const UserModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  onUpdate,
+  roles,
   userToEdit = null, // null = crear, objeto = editar
-  mode = userToEdit ? 'edit' : 'create' // 'create' | 'edit'
+  mode = userToEdit ? "edit" : "create", // 'create' | 'edit'
 }) => {
-  const isEditing = mode === 'edit' || userToEdit !== null;
-  
+  const isEditing = mode === "edit" || userToEdit !== null;
+
   const {
     values,
     errors,
@@ -70,66 +74,72 @@ const UserModal = ({
     }
   }, [isOpen, isEditing, userToEdit, setValues]);
 
- const handleSubmit = async () => {
-  // 1. Marcar todos los campos como tocados
-  const allTouched = {};
-  Object.keys(userValidationRules).forEach((field) => {
-    allTouched[field] = true;
-  });
-  setTouched(allTouched);
+  const handleSubmit = async () => {
+    // 1. Marcar todos los campos como tocados
+    const allTouched = {};
+    Object.keys(userValidationRules).forEach((field) => {
+      allTouched[field] = true;
+    });
+    setTouched(allTouched);
 
-  // 2. Validar todos los campos
-  if (!validateAllFields()) {
-    // 🚨 Solo mostrar SweetAlert si estamos en edición
-    if (isEditing) {
-      showErrorAlert(
-        "Campos incompletos",
-        "Por favor completa todos los campos correctamente antes de continuar."
-      );
-    }
-    return; // detener ejecución
-  }
-
-  // 3. Confirmar en modo edición
-  if (isEditing) {
-    const confirmResult = await showConfirmAlert(
-      "¿Estás seguro?",
-      `¿Deseas actualizar la información del usuario ${userToEdit.nombre} ${userToEdit.apellido}?`,
-      {
-        confirmButtonText: "Sí, actualizar",
-        cancelButtonText: "Cancelar",
+    // 2. Validar todos los campos
+    if (!validateAllFields()) {
+      // 🚨 Solo mostrar SweetAlert si estamos en edición
+      if (isEditing) {
+        showErrorAlert(
+          "Campos incompletos",
+          "Por favor completa todos los campos correctamente antes de continuar."
+        );
       }
-    );
-
-    if (!confirmResult.isConfirmed) {
-      return;
+      return; // detener ejecución
     }
-  }
 
-  try {
+    // 3. Confirmar en modo edición
     if (isEditing) {
-      const updatedUserData = { ...values, id: userToEdit.id };
-      await onUpdate(updatedUserData);
-      showSuccessAlert(
-        "Usuario actualizado",
-        `Los datos de ${values.nombre} ${values.apellido} han sido actualizados exitosamente.`
+      const confirmResult = await showConfirmAlert(
+        "¿Estás seguro?",
+        `¿Deseas actualizar la información del usuario ${userToEdit.nombre} ${userToEdit.apellido}?`,
+        {
+          confirmButtonText: "Sí, actualizar",
+          cancelButtonText: "Cancelar",
+        }
       );
-    } else {
-      await onSave(values);
-      showSuccessAlert("Usuario creado", "El usuario ha sido creado exitosamente.");
+
+      if (!confirmResult.isConfirmed) {
+        return;
+      }
     }
 
-    resetForm();
-    onClose();
-  } catch (error) {
-    console.error(`Error al ${isEditing ? "actualizar" : "crear"} usuario:`, error);
-    showErrorAlert(
-      "Error",
-      error.message || `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el usuario`
-    );
-  }
-};
+    try {
+      if (isEditing) {
+        const updatedUserData = { ...values, id: userToEdit.id };
+        await onUpdate(updatedUserData);
+        showSuccessAlert(
+          "Usuario actualizado",
+          `Los datos de ${values.nombre} ${values.apellido} han sido actualizados exitosamente.`
+        );
+      } else {
+        await onSave(values);
+        showSuccessAlert(
+          "Usuario creado",
+          "El usuario ha sido creado exitosamente."
+        );
+      }
 
+      resetForm();
+      onClose();
+    } catch (error) {
+      console.error(
+        `Error al ${isEditing ? "actualizar" : "crear"} usuario:`,
+        error
+      );
+      showErrorAlert(
+        "Error",
+        error.message ||
+          `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el usuario`
+      );
+    }
+  };
 
   // Función para cerrar el modal y resetear el formulario
   const handleClose = () => {
@@ -166,7 +176,10 @@ const UserModal = ({
           </h2>
           {isEditing && (
             <p className="text-center text-gray-600 mt-2">
-              Modificando información de: <span className="font-semibold text-primary-purple">{userToEdit.nombre} {userToEdit.apellido}</span>
+              Modificando información de:{" "}
+              <span className="font-semibold text-primary-purple">
+                {userToEdit.nombre} {userToEdit.apellido}
+              </span>
             </p>
           )}
         </div>
@@ -236,7 +249,9 @@ const UserModal = ({
               name="rol"
               type="select"
               placeholder="Selecciona el rol"
-              options={roles?.map((r) => ({ value: r.nombre, label: r.nombre })) || []}
+              options={
+                roles?.map((r) => ({ value: r.nombre, label: r.nombre })) || []
+              }
               value={values.rol}
               onChange={handleChange}
               onBlur={handleBlur}
@@ -311,11 +326,10 @@ const UserModal = ({
               className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg 
            bg-gradient-to-r from-primary-purple to-primary-blue 
            hover:from-primary-purple hover:to-primary-blue"
-whileHover={{
-  scale: 1.02,
-  boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-}}
-
+              whileHover={{
+                scale: 1.02,
+                boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
+              }}
               whileTap={{ scale: 0.98 }}
             >
               {isEditing ? "Actualizar Usuario" : "Crear Usuario"}

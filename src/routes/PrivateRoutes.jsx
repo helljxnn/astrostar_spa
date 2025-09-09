@@ -6,7 +6,6 @@ import PrivateRoute from "./PrivateRoute.jsx"; // Asegúrate de crear este archi
 
 /* Dashboard - Admin */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
-import AccessManagement from "../features/dashboard/pages/Admin/pages/Users/AccessManagement.jsx";
 import AppointmentManagement from "../features/dashboard/pages/Admin/pageS/Services/AppointmentManagement.jsx";
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
 import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard.jsx";
@@ -19,8 +18,9 @@ import Sales from "../features/dashboard/pages/Admin/pages/Sales.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages//SportEquipment/SportsEquipment.jsx";
-import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
+import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import { Purchases } from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
+import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
 
 const PrivateRoutes = () => {
   return (
@@ -30,7 +30,6 @@ const PrivateRoutes = () => {
         {/* Rutas del Dashboard (Admin) */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="accessmanagement" element={<AccessManagement />} />
           <Route path="appointment-management" element={<AppointmentManagement />} />
           <Route path="athletes" element={<Athletes />} />
           <Route path="donations" element={<Donations />} />
@@ -40,10 +39,11 @@ const PrivateRoutes = () => {
           <Route path="roles" element={<Roles />} />
           <Route path="sales" element={<Sales />} />
           <Route path="purchases" element={<Purchases />} />
+          <Route path="providers" element={<Providers />} />
           <Route path="sports-category" element={<SportsCategory />} />
           <Route path="temporary-workers" element={<TemporaryWorkers />} />
           <Route path="sportsequipment" element={<SportsEquipment />} />
-          <Route path="usersmanagement" element={<UsersManagement />} />
+          <Route path="users" element={<Users />} />
         </Route>
       </Route>
     </Routes>

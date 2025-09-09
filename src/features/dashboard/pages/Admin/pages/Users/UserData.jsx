@@ -1,7 +1,7 @@
 // src/features/dashboard/pages/Admin/pages/Users/UsersData.js
 const usersData = [
   {
-    id: 1, // ✅ Añadido un ID único
+    id: 1, // un ID único
     nombre: "Anderson",
     apellido: "Murillo",
     tipoDocumento: "CC",
@@ -12,7 +12,7 @@ const usersData = [
     estado: "Activo",
   },
   {
-    id: 2, // ✅ Añadido un ID único
+    id: 2, // un ID único
     nombre: "Sara",
     apellido: "Montoya",
     tipoDocumento: "TI",
