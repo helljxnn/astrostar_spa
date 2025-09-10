@@ -1,14 +1,26 @@
 import React from "react";
 import { FaUserTie } from "react-icons/fa";
 import PerfilLog from "./perfilLog";
+import { useAuth } from "../../../../../shared/contexts/authContext.jsx";
 
 export const TopBar = () => {
+  const { userRole } = useAuth();
+  
+  // Función para formatear el rol para mostrar
+  const formatRole = (role) => {
+    if (!role) return "";
+    
+    // Convertir formato snake_case a Título Capitalizado
+    const words = role.split('_');
+    return words.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+  
   return (
     <header className="w-full h-16 px-6 flex items-center justify-between bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-40">
       {/* Rol */}
       <div className="flex items-center gap-2">
         <FaUserTie size={18} className="text-primary-purple" />
-        <h4 className="text-gray-700 font-medium">Administrador</h4>
+        <h4 className="text-gray-700 font-medium">{formatRole(userRole)}</h4>
       </div>
 
       {/* Submenu perfil */}

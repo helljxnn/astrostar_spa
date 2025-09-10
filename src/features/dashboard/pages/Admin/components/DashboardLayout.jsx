@@ -1,5 +1,5 @@
 import React from 'react';
-import SideBar from "./SideBar";
+import DynamicSideBar from "../../../components/DynamicSideBar";
 import { Outlet } from 'react-router-dom';
 import { TopBar } from './TopBar';
 
@@ -8,7 +8,7 @@ function DashboardLayout() {
     <div id="dashboard-layout" className="w-full h-screen grid grid-cols-[auto_1fr] gap-0">
       {/* Columna sidebar */}
       <div id="col-sidebar" className="h-full">
-        <SideBar />
+        <DynamicSideBar />
       </div>
 
       {/* Columna principal */}

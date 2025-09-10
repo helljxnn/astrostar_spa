@@ -73,7 +73,7 @@ export const Events = () => {
         y la comunidad. Estos espacios buscan desarrollar su talento, fomentar
          la unión y promover los valores del deporte. ¡Consulta nuestro calendario
           y únete a la celebración del fútbol femenino!"
-        imageUrl="/assets/images/EventsHero.jpg" // ✅ corregido
+        imageUrl="/assets/images/EventsHero.jpg" 
       />
 
       <div className="max-w-7xl mx-auto px-8 py-24">
