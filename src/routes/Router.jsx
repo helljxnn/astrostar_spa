@@ -4,7 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import LayoutLanding from "../features/landing/components/LayoutLanding";
 import About from "../features/landing/pages/About/About";
 import Categories from "../features/landing/pages/Categories";
-import {Events} from"../features/landing/pages/Events/Events.jsx";""
+import { Events } from "../features/landing/pages/Events/Events.jsx"; ""
 import Home from "../features/landing/pages/Home";
 import Login from "../features/auth/pages/Login";
 import Services from "../features/landing/pages/Services/Services";
@@ -26,6 +26,7 @@ import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
+import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/purchases.jsx";
 
 /* Dashboard - Sportsprofessional */
 import LayoutDashboard from "../features/dashboard/pages/Sportsprofessional/components/DashboardLayout.jsx";
@@ -45,6 +46,7 @@ import Sportsprofessional from "../features/dashboard/pages/Sportsprofessional/p
 import DashboardAthletes from "../features/dashboard/pages/athletes/components/DashboardAthletes.jsx";
 import AppointmentManagementathletes from "../features/dashboard/pages/athletes/pages/AppointmentManagement.jsx";
 import HomeAthletes from "../features/dashboard/pages/athletes/pages/homeathletes.jsx";
+
 
 
 function AppRoutes() {
@@ -75,6 +77,7 @@ function AppRoutes() {
         <Route path="sports-category" element={<SportsCategory />} />
         <Route path="sportsequipment" element={<SportsEquipment />} />
         <Route path="usersmanagement" element={<UsersManagement />} />
+        <Route path="purchases" element={<Purchases />} />
       </Route>
 
       {/* Rutas del Dashboard (Sportsprofessional) */}
