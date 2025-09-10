@@ -37,8 +37,8 @@ const Tbody = ({ options }) => {
                 <td
                   className={`px-6 py-4 font-medium ${
                     estado === "Activo"
-                      ? "text-primary-blue"
-                      : "text-primary-purple"
+                      ? "text-primary-purple"
+                      : "text-primary-blue"
                   }`}
                 >
                   {estado}

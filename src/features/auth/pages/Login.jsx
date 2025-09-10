@@ -4,20 +4,8 @@ import Form from "../components/form";
 function Login() {
   const navigate = useNavigate();
 
-  const handleLogin = (userData) => {
-    console.log('Datos del login:', userData);
-    
-    // Aquí puedes agregar validaciones básicas si quieres
-    // Por ejemplo, verificar que los campos no estén vacíos
-    if (userData.email && userData.password) {
-      // Simular login exitoso y redirigir al home
-      console.log('Login exitoso, redirigiendo...');
-      navigate('/'); // Redirige al home
-    } else {
-      console.log('Por favor completa todos los campos');
-      // Aquí podrías mostrar un mensaje de error si quisieras
-    }
-  };
+  // Este método ya no se utiliza porque el Form maneja directamente el login
+  // a través del contexto de autenticación
 
   return (
     <div className='w-4/5 h-auto m-auto grid grid-cols-1 gap-0 p-8 justify-items-center bg-gradient-to-r from-primary-purple to-primary-blue rounded-lg border-none' id='mainContainer'>
