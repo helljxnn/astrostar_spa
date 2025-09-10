@@ -2,12 +2,12 @@ import { Routes, Route } from "react-router-dom";
 
 /* Landing Pages*/
 import LayoutLanding from "../features/landing/components/LayoutLanding";
-import About from "../features/landing/pages/About";
+import About from "../features/landing/pages/About/About";
 import Categories from "../features/landing/pages/Categories";
-import Events from "../features/landing/pages/Events";
+import {Events} from"../features/landing/pages/Events/Events.jsx";""
 import Home from "../features/landing/pages/Home";
 import Login from "../features/auth/pages/Login";
-import Services from "../features/landing/pages/Services";
+import Services from "../features/landing/pages/Services/Services";
 
 /* Dashboard - Admin */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
@@ -24,7 +24,7 @@ import EventsAdmin from "../features/dashboard/pages/Admin/pages/Events";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory";
-import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportsEquipment";
+import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement";
 
 /* Dashboard - Sportsprofessional */

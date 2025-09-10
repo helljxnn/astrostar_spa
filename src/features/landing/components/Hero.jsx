@@ -1,47 +1,27 @@
-import React from "react";
-
 export const Hero = ({ title, imageUrl, subtitle }) => {
+  if (!title && !subtitle) return null; // evita renderizar vacío
+
   return (
     <section
-      className="relative w-screen min-h-screen overflow-hidden"
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex justify-center items-center px-6 mb-0 -mt-6"
       style={{
-        margin: 0,
-        padding: 0,
         marginLeft: "calc(-50vw + 50%)",
         marginRight: "calc(-50vw + 50%)",
         width: "100vw",
-        maxWidth: "none",
+        backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
       }}
     >
-      <img
-        src={imageUrl}
-        alt="Hero Background"
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          width: "100vw",
-          height: "100vh",
-          objectFit: "cover",
-          objectPosition: "center",
-        }}
-      />
-
-      <div
-        className="relative flex justify-center items-end text-center pb-16 min-h-screen z-10"
-        style={{ paddingLeft: "24px", paddingRight: "24px" }}
-      >
-        <div
-          className="bg-white p-12 rounded-2xl shadow-lg"
-          style={{ width: "100%", maxWidth: "1280px" }}
-        >
+      <div className="bg-white p-12 rounded-2xl shadow-lg w-full max-w-7xl text-center mt-80">
+        {title && (
           <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] mb-6 font-questrial">
             {title}
           </h1>
-          {subtitle && (
-            <p className="text-xl text-gray-700 font-questrial mb-4">
-              {subtitle}
-            </p>
-          )}
-        </div>
+        )}
+        {subtitle && (
+          <p className="text-xl text-gray-700 font-montserrat mb-4">
+            {subtitle}
+          </p>
+        )}
       </div>
     </section>
   );
