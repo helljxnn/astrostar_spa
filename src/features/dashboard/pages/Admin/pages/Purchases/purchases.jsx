@@ -7,7 +7,7 @@ import FormEdit from "./components/formEdit";
 import { showSuccessAlert } from "../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
-// Datos de ejemplo para compras. En una aplicación real, esto vendría de una API.
+// Datos de ejemplo para compras.En una aplicación real, esto vendría de una API.
 const purchasesData = [
     {
         id: 1,
