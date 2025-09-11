@@ -12,8 +12,9 @@ import Employees from "../features/dashboard/pages/Admin/pages/Services/Employee
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";
 import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
-import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
-import AccessManagement from "../features/dashboard/pages/Admin/pages/Users/AccessManagement.jsx";
+// import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
+// import AccessManagement from "../features/dashboard/pages/Admin/pages/Users/AccessManagement.jsx";
+import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
@@ -81,18 +82,18 @@ const PrivateRoutes = () => {
         } />
         
         {/* Gestión de usuarios - Solo para admin */}
-        <Route path="UsersManagement" element={
+        <Route path="users" element={
           <PrivateRoute allowedRoles={["admin"]}>
-            <UsersManagement />
+            <Users/>
           </PrivateRoute>
         } />
         
         {/* Gestión de acceso - Solo para admin */}
-        <Route path="AccessManagement" element={
+        {/* <Route path="AccessManagement" element={
           <PrivateRoute allowedRoles={["admin"]}>
             <AccessManagement />
           </PrivateRoute>
-        } />
+        } /> */}
         
         {/* Trabajadores temporales - Solo para admin */}
         <Route path="temporary-workers" element={

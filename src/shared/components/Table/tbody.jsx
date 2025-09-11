@@ -46,16 +46,26 @@ const Tbody = ({ options }) => {
               )}
 
               <td className="px-6 py-4 flex items-center justify-center gap-3">
-                <button className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors">
-                  <FaRegEdit />
-                </button>
-                <button className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors">
-                  <FaTrash />
-                </button>
-                <button className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors">
-                  <FaEye />
-                </button>
-              </td>
+  <button
+    onClick={() => options.tbody.onEdit && options.tbody.onEdit(item)}
+    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors"
+  >
+    <FaRegEdit />
+  </button>
+  <button
+    onClick={() => options.tbody.onDelete && options.tbody.onDelete(item)}
+    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+  >
+    <FaTrash />
+  </button>
+  <button
+    onClick={() => options.tbody.onView && options.tbody.onView(item)}
+    className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors"
+  >
+    <FaEye />
+  </button>
+</td>
+
             </motion.tr>
           );
         })

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
-import { showSuccessAlert } from "../../../../../../../shared/utils/Alerts";
+import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
+
 
 // Datos del formulario
 const modules = [
