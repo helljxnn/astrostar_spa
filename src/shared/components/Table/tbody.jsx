@@ -13,6 +13,8 @@ const rowVariants = {
 };
 
 const Tbody = ({ options }) => {
+  const { onEdit, onDelete } = options.tbody;
+
   return (
     <tbody id="tbody" className="divide-y divide-gray-200">
       {options.tbody.data && options.tbody.data.length > 0 ? (
