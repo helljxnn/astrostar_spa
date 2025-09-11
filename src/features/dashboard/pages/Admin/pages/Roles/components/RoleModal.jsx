@@ -22,9 +22,9 @@ const modules = [
 ];
 
 const actions = [
-  { name: "Crear", color: "bg-green-500", hoverColor: "hover:bg-green-600" },
-  { name: "Editar", color: "bg-blue-500", hoverColor: "hover:bg-blue-600" },
-  { name: "Eliminar", color: "bg-red-500", hoverColor: "hover:bg-red-600" },
+  { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Editar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Eliminar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
 ];
 

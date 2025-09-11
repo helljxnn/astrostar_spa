@@ -15,7 +15,7 @@ module.exports = {
         'primary-yellow': '#EDEB85'
       },
       fontFamily: {
-        montserrat: ['Montserrat', 'sans-serif'], 
+        montserrat: ["Montserrat", "sans-serif"],
       },
     },
   },

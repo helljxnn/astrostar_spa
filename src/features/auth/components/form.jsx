@@ -14,9 +14,12 @@ const Form = () => {
     e.preventDefault();
     setLoginError(false); // Limpiar el error anterior
 
+    // Mostrar información de depuración
+    console.log('Intentando login con:', { email, password });
+    
     const success = login({ email, password });
     if (success) {
-      console.log('Login exitoso, redirigiendo...');
+      console.log('Login exitoso, redirigiendo al dashboard...');
       navigate("/dashboard");
     } else {
       setLoginError(true);

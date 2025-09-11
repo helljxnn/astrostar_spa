@@ -149,6 +149,7 @@ const Athletes = () => {
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Deportistas</h1>
         </div>
+        
         <button
           onClick={handleCreate}
           className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"

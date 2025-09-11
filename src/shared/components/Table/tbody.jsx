@@ -13,6 +13,8 @@ const rowVariants = {
 };
 
 const Tbody = ({ options }) => {
+  const { onEdit, onDelete } = options.tbody;
+
   return (
     <tbody id="tbody" className="divide-y divide-gray-200">
       {options.tbody.data && options.tbody.data.length > 0 ? (
@@ -37,8 +39,8 @@ const Tbody = ({ options }) => {
                 <td
                   className={`px-6 py-4 font-medium ${
                     estado === "Activo"
-                      ? "text-primary-blue"
-                      : "text-primary-purple"
+                      ? "text-primary-purple"
+                      : "text-primary-blue"
                   }`}
                 >
                   {estado}
