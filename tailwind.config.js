@@ -1,3 +1,4 @@
+/** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     './src/**/*.{js,jsx,ts,tsx}',
@@ -12,10 +13,9 @@ module.exports = {
         'primary-red': '#FC6D6D',
         'primary-pink': '#FF95D1',
         'primary-yellow': '#EDEB85'
-
       },
       fontFamily: {
-        questrial: ['Questrial', 'sans-serif'],
+        montserrat: ['Montserrat', 'sans-serif'], 
       },
     },
   },
