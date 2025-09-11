@@ -12,8 +12,6 @@ import Employees from "../features/dashboard/pages/Admin/pages/Services/Employee
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";
 import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
-// import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
-// import AccessManagement from "../features/dashboard/pages/Admin/pages/Users/AccessManagement.jsx";
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";

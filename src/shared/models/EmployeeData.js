@@ -27,6 +27,48 @@ const employeesData = [
     rol: "Profesional deportivo",
     estado: "Retirado",
   },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
+    {
+    nombre: "Héctor Vanegas",
+    identificacion: "CC.1098653986",
+    tipoEmpleado: "Entrenador",
+    rol: "Profesional deportivo",
+    estado: "Retirado",
+  },
 ];
 
 export default employeesData;

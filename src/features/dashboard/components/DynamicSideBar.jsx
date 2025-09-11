@@ -56,6 +56,7 @@ function DynamicSideBar() {
     employeesSchedule: false,
     sportsCategory: false,
     appointmentManagement: false,
+    temporaryWorkers: false,
   };
 
   switch (userRole) {
@@ -73,6 +74,7 @@ function DynamicSideBar() {
       visibleModules.employeesSchedule = true;
       visibleModules.sportsCategory = true;
       visibleModules.appointmentManagement = true;
+      visibleModules.temporaryWorkers = true;
       break;
 
     case "profesional_deportivo":
@@ -134,7 +136,7 @@ function DynamicSideBar() {
     <div className="flex h-screen bg-gray-100">
       <motion.button
         aria-label="Abrir menú"
-        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-indigo-500 text-white shadow-md"
+        className="lg:hidden fixed top-4 left-4 z-50 p-3 rounded-xl bg-primary-blue text-white shadow-md"
         onClick={() => setIsOpen(true)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -161,7 +163,9 @@ function DynamicSideBar() {
       <motion.aside
         variants={sidebarVariants}
         animate={{
-          ...(isExpanded ? sidebarVariants.expanded : sidebarVariants.collapsed),
+          ...(isExpanded
+            ? sidebarVariants.expanded
+            : sidebarVariants.collapsed),
           x: 0,
         }}
         className={`fixed lg:static top-0 left-0 h-full bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out ${
@@ -198,14 +202,18 @@ function DynamicSideBar() {
 
           <motion.button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-indigo-500 text-white rounded-full p-1 shadow-md hover:bg-indigo-600 transition-colors z-50"
+            className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-primary-purple text-white rounded-full p-1 shadow-md hover:bg-primary-blue transition-colors z-50"
             aria-label={isExpanded ? "Contraer menú" : "Expandir menú"}
-            whileHover={{ scale: 1.1, backgroundColor: "#4338ca" }}
+            whileHover={{ scale: 1.1, backgroundColor: "#b595ff" }}
             whileTap={{ scale: 0.95 }}
             animate={{ rotate: isExpanded ? 0 : 180 }}
             transition={{ duration: 0.3 }}
           >
-            {isExpanded ? <MdChevronLeft size={20} /> : <MdChevronRight size={20} />}
+            {isExpanded ? (
+              <MdChevronLeft size={20} />
+            ) : (
+              <MdChevronRight size={20} />
+            )}
           </motion.button>
         </div>
 
@@ -221,10 +229,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -248,7 +258,7 @@ function DynamicSideBar() {
                 </Link>
               </motion.div>
             )}
-            
+
             {visibleModules.users && (
               <motion.div
                 variants={menuItemVariants}
@@ -259,10 +269,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/users"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/users")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -286,7 +298,7 @@ function DynamicSideBar() {
                 </Link>
               </motion.div>
             )}
-            
+
             {/* Roles - Solo para admin */}
             {visibleModules.roles && (
               <motion.div
@@ -298,10 +310,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/roles"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/roles")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -337,10 +351,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/sportsequipment"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/sportsequipment")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -377,10 +393,12 @@ function DynamicSideBar() {
                   <Link
                     to="/dashboard/appointment-management"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                    className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                      !isExpanded ? "justify-center" : ""
+                    } ${
                       isActive("/dashboard/appointment-management")
-                        ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                        : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                        ? "bg-indigo-100 text-primary-purple shadow-sm"
+                        : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                     }`}
                   >
                     <motion.div
@@ -417,13 +435,15 @@ function DynamicSideBar() {
                   onClick={() => toggleMenu("services")}
                   className={`flex items-center justify-between ${
                     isExpanded ? "w-full" : ""
-                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     openMenu === "services" ||
                     isActive("/dashboard/employees") ||
                     isActive("/dashboard/employees-schedule") ||
                     isActive("/dashboard/appointment-management")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -482,8 +502,8 @@ function DynamicSideBar() {
                                 onClick={() => setIsOpen(false)}
                                 className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   isActive("/dashboard/employees")
-                                    ? "bg-indigo-100 text-indigo-700"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                               >
                                 Empleados
@@ -504,8 +524,8 @@ function DynamicSideBar() {
                                 onClick={() => setIsOpen(false)}
                                 className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   isActive("/dashboard/employees-schedule")
-                                    ? "bg-indigo-100 text-indigo-700"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                               >
                                 Horario Empleados
@@ -524,8 +544,8 @@ function DynamicSideBar() {
                                 onClick={() => setIsOpen(false)}
                                 className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   isActive("/dashboard/appointment-management")
-                                    ? "bg-indigo-100 text-indigo-700"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                               >
                                 Gestión de citas
@@ -552,12 +572,15 @@ function DynamicSideBar() {
                   onClick={() => toggleMenu("athletes")}
                   className={`flex items-center justify-between ${
                     isExpanded ? "w-full" : ""
-                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     openMenu === "athletes" ||
                     isActive("/dashboard/athletes") ||
-                    isActive("/dashboard/sports-category")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                    isActive("/dashboard/sports-category") ||
+                    isActive("/dashboard/temporary-workers")
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -593,6 +616,7 @@ function DynamicSideBar() {
                     )}
                   </AnimatePresence>
                 </motion.button>
+
                 {isExpanded && (
                   <AnimatePresence>
                     {openMenu === "athletes" && (
@@ -604,39 +628,63 @@ function DynamicSideBar() {
                         className="overflow-hidden"
                       >
                         <div className="pl-12 pr-3 py-2 space-y-1">
-                          <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                          >
-                            <Link
-                              to="/dashboard/athletes"
-                              onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                isActive("/dashboard/athletes")
-                                  ? "bg-indigo-100 text-indigo-700"
-                                  : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
-                              }`}
-                            >
-                              Gestión de deportistas
-                            </Link>
-                          </motion.div>
+                          {/* Categoría deportiva primero */}
                           {visibleModules.sportsCategory && (
                             <motion.div
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.15 }}
+                              transition={{ delay: 0.1 }}
                             >
                               <Link
                                 to="/dashboard/sports-category"
                                 onClick={() => setIsOpen(false)}
                                 className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
                                   isActive("/dashboard/sports-category")
-                                    ? "bg-indigo-100 text-indigo-700"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                               >
                                 Categoría deportiva
+                              </Link>
+                            </motion.div>
+                          )}
+
+                          {/* Gestión de deportistas */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                          >
+                            <Link
+                              to="/dashboard/athletes"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/athletes")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Gestión de deportistas
+                            </Link>
+                          </motion.div>
+
+                          {/* Personas Temporales */}
+                          {visibleModules.temporaryWorkers && (
+                            <motion.div
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: 0.2 }}
+                            >
+                              <Link
+                                to="/dashboard/temporary-workers"
+                                onClick={() => setIsOpen(false)}
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/temporary-workers")
+                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                                }`}
+                              >
+                                Personas temporales
                               </Link>
                             </motion.div>
                           )}
@@ -658,10 +706,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/donations"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/donations")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -696,10 +746,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/events"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/events")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -734,10 +786,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/purchases"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/purchases")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
@@ -771,10 +825,12 @@ function DynamicSideBar() {
                 <Link
                   to="/dashboard/sales"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""} ${
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
                     isActive("/dashboard/sales")
-                      ? "bg-indigo-100 text-indigo-700 shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-indigo-600"
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
                 >
                   <motion.div
