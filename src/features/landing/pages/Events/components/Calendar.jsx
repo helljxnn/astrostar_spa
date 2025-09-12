@@ -1,22 +1,9 @@
-"use client";
-
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   isSameDay,
   combineDateAndTime,
   sortEventsByDateTime,
 } from "../../../../../shared/utils/helpers/dateHelpers";
-
-// Función para convertir de 24h a 12h con AM/PM (solo para compatibilidad, no se usa aquí)
-const convertTo12Hour = (time24) => {
-  if (!time24) return "Sin hora";
-  const [hours, minutes] = time24.split(":");
-  let hour = parseInt(hours, 10);
-  if (isNaN(hour)) return "Hora inválida";
-  const period = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12 || 12; // Convierte 0 a 12 y ajusta 13-23
-  return `${hour}:${minutes} ${period}`;
-};
 
 export const Calendar = ({
   events,
@@ -27,8 +14,7 @@ export const Calendar = ({
 }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Iniciales personalizadas
-  const getEventTypeInitial = (eventType) => {
+  const getEventTypeInitial = useCallback((eventType) => {
     const initials = {
       torneo: "T",
       festival: "F",
@@ -36,22 +22,12 @@ export const Calendar = ({
       taller: "TLL",
     };
     return initials[eventType] || "E";
-  };
+  }, []);
 
   const today = new Date();
   const monthNames = [
-    "Enero",
-    "Febrero",
-    "Marzo",
-    "Abril",
-    "Mayo",
-    "Junio",
-    "Julio",
-    "Agosto",
-    "Septiembre",
-    "Octubre",
-    "Noviembre",
-    "Diciembre",
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
   ];
 
   const daysInMonth = new Date(
@@ -67,64 +43,65 @@ export const Calendar = ({
 
   const nextEventDate = useMemo(() => {
     if (!nextEvent) return null;
-    return combineDateAndTime(nextEvent.date, nextEvent.time);
+    try {
+      return combineDateAndTime(nextEvent.date, nextEvent.time);
+    } catch {
+      return null;
+    }
   }, [nextEvent]);
+
+  // 🔹 Click en día
+  const handleDayClick = useCallback((date, dayEvents, sortedDayEvents) => {
+    onDateSelect(date);
+
+    if (dayEvents.length > 0) {
+      const targetEvent = sortedDayEvents[0];
+      if (targetEvent?.id) {
+        onEventSelect?.(targetEvent.id);
+        // ❌ ELIMINADO: La lógica de setTimeout para el scroll
+      }
+    } else {
+      onEventSelect?.(null);
+    }
+  }, [onDateSelect, onEventSelect]);
 
   const days = [];
 
-  // Espacios vacíos al inicio
   for (let i = 0; i < firstDay; i++) {
     days.push(<div key={`empty-${i}`} className="h-16"></div>);
   }
 
-  // Días del mes
+  // días del mes
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth(),
-      day
-    );
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
 
-    // Eventos de ese día (comparación segura sin problemas de zona horaria)
-    const dayEvents = events ? events.filter((ev) =>
-      isSameDay(combineDateAndTime(ev.date, "00:00"), date)
-    ) : [];
+    const dayEvents = events ? events.filter((ev) => {
+      try {
+        const eventDate = combineDateAndTime(ev.date, "00:00");
+        return isSameDay(eventDate, date);
+      } catch {
+        return false;
+      }
+    }) : [];
 
     const hasEvent = dayEvents.length > 0;
     const isSelected = selectedDate && isSameDay(selectedDate, date);
     const isToday = isSameDay(today, date);
     const isNextEventDay = nextEventDate && isSameDay(nextEventDate, date);
+    const isPastEventDay = hasEvent && dayEvents.every((ev) => {
+      try {
+        return combineDateAndTime(ev.date, ev.time) < today;
+      } catch {
+        return false;
+      }
+    });
 
-    // ¿Todos los eventos de ese día ya pasaron (por hora)?
-    const isPastEventDay =
-      hasEvent &&
-      dayEvents.every((ev) => combineDateAndTime(ev.date, ev.time) < today);
-
-    // Ordena eventos del día por hora para elegir el primero
     const sortedDayEvents = sortEventsByDateTime(dayEvents);
 
     days.push(
       <button
         key={day}
-        onClick={() => {
-          onDateSelect(date); // Siempre se actualiza la fecha seleccionada
-
-          if (hasEvent) {
-            const targetEvent = sortedDayEvents[0]; // el más cercano/temprano del día
-            if (targetEvent?.id) {
-              onEventSelect?.(targetEvent.id);
-              setTimeout(() => {
-                const el = document.getElementById(`event-${targetEvent.id}`);
-                el?.scrollIntoView({ behavior: "smooth", block: "center" });
-              }, 100);
-            } else {
-              console.log("targetEvent no tiene id:", targetEvent);
-            }
-          } else {
-            // Si no hay eventos, deselecciona cualquier evento anterior.
-            onEventSelect?.(null);
-          }
-        }}
+        onClick={() => handleDayClick(date, dayEvents, sortedDayEvents)}
         className={`relative h-16 w-16 rounded-2xl font-montserrat font-bold text-lg transition-all duration-300 transform hover:scale-110
           ${
             isSelected
@@ -142,49 +119,35 @@ export const Calendar = ({
       >
         <span className="relative z-10">{day}</span>
 
-        {/* Indicador de evento sin hora */}
-        {hasEvent && (
+        {hasEvent && sortedDayEvents.length > 0 && (
           <div className="absolute top-1 right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow">
             <span className="text-xs font-bold text-[#B595FF]">
               {getEventTypeInitial(sortedDayEvents[0].type)}
             </span>
           </div>
         )}
+
+        {isNextEventDay && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#9BE9FF] rounded-full animate-pulse"></div>
+        )}
       </button>
     );
   }
 
   const nextMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
   };
 
   const prevMonth = () => {
-    setCurrentMonth(
-      new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1)
-    );
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
   };
 
   return (
     <div className="bg-white rounded-3xl p-8 shadow-xl h-fit">
       <div className="flex items-center justify-between mb-12">
-        <button
-          onClick={prevMonth}
-          className="p-4 hover:bg-gradient-to-r hover:from-[#B595FF] hover:to-[#9BE9FF] hover:text-white transition-all duration-300 rounded-2xl group"
-        >
-          <svg
-            className="w-8 h-8 text-gray-600 group-hover:text-white transition-colors"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M15 19l-7-7 7-7"
-            />
+        <button onClick={prevMonth} className="p-4 hover:bg-gradient-to-r hover:from-[#B595FF] hover:to-[#9BE9FF] hover:text-white transition-all duration-300 rounded-2xl group">
+          <svg className="w-8 h-8 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
 
@@ -192,22 +155,9 @@ export const Calendar = ({
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h3>
 
-        <button
-          onClick={nextMonth}
-          className="p-4 hover:bg-gradient-to-r hover:from-[#B595FF] hover:to-[#9BE9FF] hover:text-white transition-all duration-300 rounded-2xl group"
-        >
-          <svg
-            className="w-8 h-8 text-gray-600 group-hover:text-white transition-colors"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M9 5l7 7-7 7"
-            />
+        <button onClick={nextMonth} className="p-4 hover:bg-gradient-to-r hover:from-[#B595FF] hover:to-[#9BE9FF] hover:text-white transition-all duration-300 rounded-2xl group">
+          <svg className="w-8 h-8 text-gray-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       </div>
@@ -215,9 +165,7 @@ export const Calendar = ({
       <div className="grid grid-cols-7 gap-4 mb-8">
         {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
           <div key={day} className="h-12 flex items-center justify-center">
-            <span className="text-lg font-montserrat font-bold text-gray-600">
-              {day}
-            </span>
+            <span className="text-lg font-montserrat font-bold text-gray-600">{day}</span>
           </div>
         ))}
       </div>

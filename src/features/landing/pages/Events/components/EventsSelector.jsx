@@ -1,19 +1,34 @@
-"use client"
+import { motion } from "framer-motion";
 
-export const EventSelector = ({ eventTypes, selectedType, onTypeSelect }) => {
+export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEvent }) => {
+  const handleTypeSelect = (typeId) => {
+    console.log("🔍 EventSelector: Seleccionando tipo", typeId);
+    onTypeSelect(typeId);
+  };
+
   return (
-    <div className="mb-20">
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      viewport={{ once: false, margin: "-300px 0px" }}
+    >
       <div className="text-center mb-12">
         <h2 className="text-5xl font-montserrat font-bold bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] bg-clip-text text-transparent mb-4">
           Tipos de Eventos
         </h2>
+        {process.env.NODE_ENV === 'development' && nextEvent && (
+          <p className="text-sm text-gray-500">
+            Próximo evento: {nextEvent.title} - {nextEvent.date}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap justify-center gap-6">
         {eventTypes.map((type) => (
           <button
             key={type.id}
-            onClick={() => onTypeSelect(type.id)}
+            onClick={() => handleTypeSelect(type.id)}
             className={`group relative px-10 py-6 rounded-3xl font-montserrat font-bold text-lg transition-all duration-500 transform hover:scale-110 ${
               selectedType === type.id
                 ? "bg-gradient-to-r from-[#b595ff] to-[#9be9ff] text-white shadow-2xl scale-110"
@@ -41,6 +56,6 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect }) => {
           </button>
         ))}
       </div>
-    </div>
-  )
-}
+    </motion.div>
+  );
+};

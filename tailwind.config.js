@@ -15,7 +15,7 @@ module.exports = {
 
       },
       fontFamily: {
-        questrial: ['Questrial', 'sans-serif'],
+        montserrat: ["Montserrat", "sans-serif"],
       },
     },
   },

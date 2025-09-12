@@ -19,6 +19,41 @@ const rolesData = [
     descripcion: "...",
     estado: "Inactivo",
   },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
+    {
+    nombre: "Jugadora",
+    descripcion: "...",
+    estado: "Inactivo",
+  },
 ];
 
 export default rolesData;

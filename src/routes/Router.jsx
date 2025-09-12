@@ -10,7 +10,6 @@ import Login from "../features/auth/pages/Login.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx"; 
 
-
 function AppRoutes() {
   return (
     <Routes>
