@@ -17,7 +17,7 @@ import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/T
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations";
-import { Purchases } from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
+import Purchases  from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
 
