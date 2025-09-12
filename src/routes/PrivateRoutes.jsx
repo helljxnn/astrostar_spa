@@ -20,7 +20,7 @@ import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/Spo
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages//SportEquipment/SportsEquipment.jsx";
 import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
-import { Purchases } from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
+import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
 
 const PrivateRoutes = () => {
   return (
