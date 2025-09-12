@@ -8,9 +8,7 @@ const Table = ({
   thead,
   tbody,
   rowsPerPage = 10,
-  paginationFrom = 10,
-  onEdit,
-  onDelete,
+  paginationFrom = 10
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -44,9 +42,7 @@ const Table = ({
   // Pasamos las funciones de acción al componente Tbody a través de sus props
   const tbodyProps = {
     ...tbody,
-    data: paginatedData,
-    onEdit,
-    onDelete,
+    data: paginatedData
   };
 
   return (
