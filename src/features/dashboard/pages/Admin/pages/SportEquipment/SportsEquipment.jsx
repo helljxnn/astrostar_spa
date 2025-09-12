@@ -5,6 +5,7 @@ import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
+import ViewDetails from "../../../../../../shared/components/ViewDetails";
 import { showSuccessAlert } from "../../../../../../shared/utils/Alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
@@ -14,6 +15,7 @@ function SportsEquipment() {
   // Estados para controlar la visibilidad de los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,6 +81,25 @@ function SportsEquipment() {
     // Aquí se podría implementar la lógica de eliminación, por ejemplo, con un modal de confirmación.
   };
 
+  const handleView = (item) => {
+    setSelectedEquipment(item);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedEquipment(null);
+  };
+
+  // Configuración para el modal de detalles reutilizable
+  const equipmentDetailConfig = [
+    { label: "Nombre del Material", key: "NombreMaterial" },
+    { label: "Cantidad Comprada", key: "CantidadComprado" },
+    { label: "Cantidad Donada", key: "CantidadDonado" },
+    { label: "Total en Inventario", key: "Total" },
+    { label: "Estado", key: "estado" },
+  ];
+
   return (
     <div id="contentSportsEquipment" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
       {/* Contenedor index */}
@@ -107,8 +128,6 @@ function SportsEquipment() {
         <Table
           rowsPerPage={4}
           paginationFrom={4}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
           thead={{
             titles: [
               "Nombre",
@@ -127,6 +146,9 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onView: handleView,
           }}
         />
       </div>
@@ -142,6 +164,14 @@ function SportsEquipment() {
         onClose={handleCloseEditModal}
         onSave={handleUpdate}
         equipmentData={selectedEquipment}
+      />
+      {/* Modal reutilizable para Ver Detalles */}
+      <ViewDetails
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        data={selectedEquipment}
+        detailConfig={equipmentDetailConfig}
+        title="Detalles del Material Deportivo"
       />
     </div>
   );
