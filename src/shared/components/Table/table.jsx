@@ -17,11 +17,14 @@ const Table = ({
   const allData = tbody.data || [];
   const totalRows = allData.length;
 
-  // Si no hay datos, no hacemos nada más.
+  // Si no hay datos
   if (totalRows === 0) {
     return (
       <div className="overflow-x-auto shadow-lg rounded-2xl bg-white border border-gray-200">
-        <table id="table" className="w-full border-collapse text-sm font-questrial">
+        <table
+          id="table"
+          className="w-full min-w-[600px] border-collapse text-sm font-questrial"
+        >
           <Thead options={{ thead }} />
           <Tbody options={{ tbody }} />
         </table>
@@ -41,7 +44,6 @@ const Table = ({
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedData = allData.slice(startIndex, startIndex + rowsPerPage);
 
-  // Pasamos las funciones de acción al componente Tbody a través de sus props
   const tbodyProps = {
     ...tbody,
     data: paginatedData,
@@ -51,21 +53,29 @@ const Table = ({
 
   return (
     <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table id="table" className="w-full border-collapse text-sm font-questrial">
+      {/* Wrapper responsive con scroll horizontal */}
+      <div className="overflow-x-auto w-full">
+        <table
+          id="table"
+          className="w-full min-w-[600px] border-collapse text-sm font-questrial"
+        >
           <Thead options={{ thead }} />
           <Tbody options={{ tbody: tbodyProps }} />
         </table>
       </div>
+
+      {/* Paginación abajo */}
       {showPagination && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          totalRows={totalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
+        <div className="w-full border-t border-gray-100 bg-gray-50">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalRows={totalRows}
+            rowsPerPage={rowsPerPage}
+            startIndex={startIndex}
+          />
+        </div>
       )}
     </div>
   );
