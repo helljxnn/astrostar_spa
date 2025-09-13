@@ -1,4 +1,3 @@
-// src/features/services/components/ServiceCard.jsx
 import React from "react";
 
 export const ServiceCard = ({ title, description, image }) => {
