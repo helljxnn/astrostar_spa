@@ -5,7 +5,7 @@ import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
-import { showSuccessAlert } from "../../../../../../shared/utils/Alerts";
+import { showSuccessAlert } from '../../../../../../../shared/utils/alerts';
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
 function SportsEquipment() {
@@ -79,6 +79,12 @@ function SportsEquipment() {
     // Aquí se podría implementar la lógica de eliminación, por ejemplo, con un modal de confirmación.
   };
 
+  const handleView = (item) => {
+    console.log("Viendo detalles del equipo:", item);
+    // Aquí podrías implementar la lógica para mostrar un modal de solo lectura
+    // con toda la información del 'item'.
+  };
+
   return (
     <div id="contentSportsEquipment" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
       {/* Contenedor index */}
@@ -107,8 +113,6 @@ function SportsEquipment() {
         <Table
           rowsPerPage={4}
           paginationFrom={4}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
           thead={{
             titles: [
               "Nombre",
@@ -117,6 +121,7 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
+            actions: true,
           }}
           tbody={{
             data: filteredEquipment,
@@ -127,6 +132,9 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onView: handleView,
           }}
         />
       </div>
