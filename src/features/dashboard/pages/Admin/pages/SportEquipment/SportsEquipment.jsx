@@ -6,7 +6,11 @@ import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
 import ViewDetails from "../../../../../../shared/components/ViewDetails";
-import { showSuccessAlert } from "../../../../../../shared/utils/Alerts";
+import {
+  showSuccessAlert,
+  showConfirmAlert,
+  showErrorAlert,
+} from "../../../../../../shared/utils/Alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
 function SportsEquipment() {
@@ -35,10 +39,20 @@ function SportsEquipment() {
     setIsCreateModalOpen(false);
   };
 
-  const handleCreateSubmit = (e) => {
-    // Aquí iría la lógica para enviar los datos del formulario al backend
-    console.log("Formulario enviado!");
+  const handleCreate = (newData) => {
+    // En una app real, aquí también validarías que el nombre no exista ya.
+    const newEquipment = {
+      NombreMaterial: newData.nombre,
+      CantidadComprado: Number(newData.cantidadReal), // La cantidad inicial se asigna a 'comprado'
+      CantidadDonado: 0, // No hay donaciones al crear un item nuevo
+      Total: Number(newData.cantidadReal),
+      estado: newData.estado,
+    };
+
+    // Añadimos el nuevo equipo al principio de la lista
+    setEquipmentList(prevList => [newEquipment, ...prevList]);
     handleCloseCreateModal();
+    showSuccessAlert("¡Creado!", "El nuevo material deportivo se ha registrado correctamente.");
   };
 
   // --- Lógica para Editar y Eliminar ---
@@ -60,12 +74,18 @@ function SportsEquipment() {
     const updatedList = equipmentList.map(item => {
       // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
       if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
+        const newTotal = Number(updatedData.cantidadReal);
+        const difference = newTotal - item.Total;
+        // Ajustamos la cantidad comprada con la diferencia, preservando las donaciones.
+        // Nos aseguramos de que la cantidad comprada no sea negativa.
+        const newCantidadComprado = Math.max(0, item.CantidadComprado + difference);
+
         return {
           ...item,
           NombreMaterial: updatedData.nombre,
-          CantidadComprado: Number(updatedData.comprado),
-          CantidadDonado: Number(updatedData.donado),
-          Total: Number(updatedData.comprado) + Number(updatedData.donado),
+          CantidadComprado: newCantidadComprado,
+          // CantidadDonado no se modifica desde este formulario
+          Total: newTotal,
           estado: updatedData.estado,
         };
       }
@@ -76,9 +96,33 @@ function SportsEquipment() {
     showSuccessAlert("¡Actualizado!", "El material deportivo se ha actualizado correctamente.");
   };
 
-  const handleDelete = (item) => {
-    console.log("Intentando eliminar:", item);
-    // Aquí se podría implementar la lógica de eliminación, por ejemplo, con un modal de confirmación.
+  const handleDelete = async (itemToDelete) => {
+    const result = await showConfirmAlert(
+      "¿Estás seguro de eliminar?",
+      `El material "${itemToDelete.NombreMaterial}" se eliminará permanentemente.`,
+      {
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+      }
+    );
+
+    if (result.isConfirmed) {
+      try {
+        // Filtramos la lista para excluir el item a eliminar.
+        // En una app real, aquí harías una llamada a la API para eliminar el registro.
+        const updatedList = equipmentList.filter(
+          (item) => item.NombreMaterial !== itemToDelete.NombreMaterial // Usamos NombreMaterial como ID único
+        );
+        setEquipmentList(updatedList);
+        showSuccessAlert(
+          "¡Eliminado!",
+          `El material "${itemToDelete.NombreMaterial}" ha sido eliminado con éxito.`
+        );
+      } catch (error) {
+        console.error("Error al eliminar el material:", error);
+        showErrorAlert("Error", "Ocurrió un error al eliminar el material.");
+      }
+    }
   };
 
   const handleView = (item) => {
@@ -156,7 +200,7 @@ function SportsEquipment() {
       <FormCreate
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        onSubmit={handleCreateSubmit}
+        onSave={handleCreate}
       />
       {/* Modal para Editar Material. Se renderiza aquí y se controla con estado. */}
       <FormEdit

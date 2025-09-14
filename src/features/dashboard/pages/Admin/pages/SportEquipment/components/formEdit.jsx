@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Form from "../../../../../../../shared/components/form";
-import HandleOnChange from "../../../../../../../shared/hooks/handleChange";
-
+import { FormField } from "../../../../../../../shared/components/FormField";
+import { useFormValidation, equipmentValidationRules } from "../hooks/useEquipmentValidation";
+import { showErrorAlert } from "../../../../../../../shared/utils/Alerts";
 /**
  * Modal con el formulario para editar un material deportivo existente.
  *
@@ -12,51 +13,70 @@ import HandleOnChange from "../../../../../../../shared/hooks/handleChange";
  * @param {function} props.onSave - Función que se ejecuta al guardar los cambios. Recibe los datos actualizados.
  */
 const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
-    const [formData, setFormData] = useState({
+    const {
+        values,
+        errors,
+        touched,
+        setValues,
+        handleChange,
+        handleBlur,
+        validateAllFields,
+        resetForm
+    } = useFormValidation({
         nombre: "",
-        comprado: "",
-        donado: "",
-        estado: ""
-    });
+        cantidadReal: "",
+        estado: "",
+    }, equipmentValidationRules);
 
     // Cuando el modal se abre o los datos del equipo cambian, llenamos el formulario.
     useEffect(() => {
-        if (equipmentData) {
-            setFormData({
+        if (isOpen && equipmentData) {
+            setValues({
                 nombre: equipmentData.NombreMaterial || "",
-                comprado: equipmentData.CantidadComprado || 0,
-                donado: equipmentData.CantidadDonado || 0,
-                estado: equipmentData.estado || ""
+                cantidadReal: equipmentData.Total || 0,
+                estado: equipmentData.estado || "",
             });
+        } else if (!isOpen) {
+            resetForm();
         }
-    }, [equipmentData]);
+    }, [isOpen, equipmentData, setValues, resetForm]);
 
-    const SaveData = (e) => {
-        HandleOnChange(formData, e, setFormData);
-    };
-
-    const handleFormSubmit = (dataFromForm) => {
-        if (onSave) {
-            onSave(dataFromForm);
+    const handleFormSubmit = () => {
+        if (validateAllFields()) {
+            if (onSave) {
+                onSave(values);
+            }
+        } else {
+            showErrorAlert("Error de validación", "Por favor, corrige los campos marcados en rojo.");
         }
     };
 
     return (
         <Form
             isOpen={isOpen}
-            title="Editar Material"
+            title="Editar Material Deportivo"
             submitText="Guardar Cambios"
             onClose={onClose}
             onSubmit={handleFormSubmit}
-            formData={formData}
         >
-            {/* Estos son los 'children' del formulario */}
-            <div className="flex flex-col gap-4">
-                <div><label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">Nombre</label><input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={SaveData} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: Balón de fútbol" /></div>
-                <div><label htmlFor="comprado" className="block text-sm font-medium text-gray-700 mb-1">Cantidad Comprada</label><input type="number" id="comprado" name="comprado" value={formData.comprado} onChange={SaveData} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="0" /></div>
-                <div><label htmlFor="donado" className="block text-sm font-medium text-gray-700 mb-1">Cantidad Donada</label><input type="number" id="donado" name="donado" value={formData.donado} onChange={SaveData} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="0" /></div>
-                <div><label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">Estado</label><select id="estado" name="estado" value={formData.estado} onChange={SaveData} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple"><option value="" disabled>Seleccionar estado</option><option value="Activo">Activo</option><option value="Inactivo">Inactivo</option></select></div>
-            </div>
+            <FormField label="Nombre del Material" name="nombre" type="text" placeholder="Ej: Balón de fútbol" value={values.nombre} onChange={handleChange} onBlur={handleBlur} error={errors.nombre} touched={touched.nombre} required />
+            <FormField label="Cantidad Actual" name="cantidadReal" type="number" placeholder="0" value={values.cantidadReal} onChange={handleChange} onBlur={handleBlur} error={errors.cantidadReal} touched={touched.cantidadReal} required min="0" />
+            <FormField
+                label="Estado"
+                name="estado"
+                type="select"
+                placeholder="Seleccionar estado"
+                value={values.estado}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.estado}
+                touched={touched.estado}
+                options={[
+                    { value: "Activo", label: "Activo" },
+                    { value: "Inactivo", label: "Inactivo" },
+                ]}
+                required
+            />
         </Form>
     );
 };

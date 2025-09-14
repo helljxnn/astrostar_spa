@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { NavLink } from "react-router-dom"; 
+import { NavLink } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 
 export const Navbar = () => {
@@ -30,28 +30,25 @@ export const Navbar = () => {
   }, [lastScrollY]);
 
   const linkClasses = ({ isActive }) =>
-    `transition-colors duration-200 tracking-wide ${
-      isActive
-        ? "text-[#B595FF] hover:text-[#B595FF]"
-        : "text-black hover:text-[#B595FF]"
+    `transition-colors duration-200 tracking-wide ${isActive
+      ? "text-[#B595FF] hover:text-[#B595FF]"
+      : "text-black hover:text-[#B595FF]"
     }`;
 
   const loginClasses = ({ isActive }) =>
-    `flex items-center text-lg transition-colors duration-200 tracking-wide ${
-      isActive
-        ? "text-[#9BE9FF] hover:text-[#9BE9FF]"
-        : "text-black hover:text-[#9BE9FF]"
+    `flex items-center text-lg transition-colors duration-200 tracking-wide ${isActive
+      ? "text-[#9BE9FF] hover:text-[#9BE9FF]"
+      : "text-black hover:text-[#9BE9FF]"
     }`;
 
   return (
     <>
       {/* Espaciador para que el navbar fixed no tape el contenido */}
       <div className="h-[88px]"></div>
-      
+
       <nav
-        className={`fixed top-0 w-full z-50 bg-white shadow-md font-questrial transition-transform duration-300 ease-in-out ${
-          isVisible ? "translate-y-0" : "-translate-y-full"
-        }`}
+        className={`fixed top-0 w-full z-50 bg-white shadow-md font-questrial transition-transform duration-300 ease-in-out ${isVisible ? "translate-y-0" : "-translate-y-full"
+          }`}
       >
         <div className="flex items-center justify-between px-6 py-4">
           {/* Logos */}

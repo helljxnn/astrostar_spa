@@ -3,7 +3,7 @@ import { useAuth } from "../shared/contexts/authContext.jsx";
 
 const PrivateRoute = ({ allowedRoles, children }) => {
   const { isAuthenticated, userRole } = useAuth();
-  
+
   console.log("PrivateRoute - isAuthenticated:", isAuthenticated);
   console.log("PrivateRoute - userRole:", userRole);
   console.log("PrivateRoute - allowedRoles:", allowedRoles);
