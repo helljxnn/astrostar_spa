@@ -1,5 +1,5 @@
 import React from "react";
-import Table from "../../../../../../shared/components/Table/table";
+import Table from "../../../../../../../shared/components/Table/table";
 
 function Donations() {
   // Datos de ejemplo para donaciones

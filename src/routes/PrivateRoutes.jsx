@@ -16,7 +16,8 @@ import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
-import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations";
+import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
+import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/DonorsSponsors.jsx";
 import { Purchases } from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
@@ -121,6 +122,15 @@ const PrivateRoutes = () => {
             element={
               <PrivateRoute allowedRoles={["admin"]}>
                 <Donations />
+              </PrivateRoute>
+            }
+          />
+          {/* Donantes y Patrocinadores - Solo para admin */}
+          <Route
+            path="donors-sponsors"
+            element={
+              <PrivateRoute allowedRoles={["admin"]}>
+                <DonorsSponsors />
               </PrivateRoute>
             }
           />

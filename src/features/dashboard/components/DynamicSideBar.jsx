@@ -698,41 +698,109 @@ function DynamicSideBar() {
 
             {visibleModules.donations && (
               <motion.div
+                className="mt-1 relative mb-1"
                 variants={menuItemVariants}
                 initial="initial"
                 animate="animate"
-                className="mb-1"
               >
-                <Link
-                  to="/dashboard/donations"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                <motion.button
+                  onClick={() => toggleMenu("donations")}
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
                     !isExpanded ? "justify-center" : ""
                   } ${
-                    isActive("/dashboard/donations")
+                    openMenu === "donations" ||
+                    isActive("/dashboard/donations") ||
+                    isActive("/dashboard/donors-sponsors")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: -5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaHandHoldingHeart size={20} className="shrink-0" />
-                  </motion.div>
+                  <span className="flex items-center gap-4">
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: -5 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <FaHandHoldingHeart size={20} className="shrink-0" />
+                    </motion.div>
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          Donaciones
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </span>
                   <AnimatePresence>
                     {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
+                      <motion.div
+                        animate={{ rotate: openMenu === "donations" ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        Donaciones
-                      </motion.span>
+                        <MdExpandMore size={20} className="shrink-0" />
+                      </motion.div>
                     )}
                   </AnimatePresence>
-                </Link>
+                </motion.button>
+
+                {isExpanded && (
+                  <AnimatePresence>
+                    {openMenu === "donations" && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pl-12 pr-3 py-2 space-y-1">
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <Link
+                              to="/dashboard/donors-sponsors"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/donors-sponsors")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Donantes-Patrocinadores
+                            </Link>
+                          </motion.div>
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                          >
+                            <Link
+                              to="/dashboard/donations"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/donations")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Donaciones
+                            </Link>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
               </motion.div>
             )}
 
