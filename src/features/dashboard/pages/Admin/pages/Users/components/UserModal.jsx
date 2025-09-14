@@ -5,7 +5,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/Alerts";
 import {
   useFormUserValidation,
   userValidationRules,
@@ -29,10 +29,10 @@ const UserModal = ({
   onSave,
   onUpdate,
   roles,
-  userToEdit = null, // null = crear, objeto = editar
-  mode = userToEdit ? "edit" : "create", // 'create' | 'edit'
+  userToEdit = null,
+  mode = "create",
 }) => {
-  const isEditing = mode === "edit" || userToEdit !== null;
+  const isEditing = mode === "edit" && userToEdit !== null;
 
   const {
     values,
@@ -60,21 +60,29 @@ const UserModal = ({
 
   // Cargar datos del usuario cuando se abra el modal en modo edición
   useEffect(() => {
-    if (isOpen && isEditing && userToEdit) {
-      setValues({
-        nombre: userToEdit.nombre || "",
-        apellido: userToEdit.apellido || "",
-        tipoDocumento: userToEdit.tipoDocumento || "",
-        identificacion: userToEdit.identificacion || "",
-        rol: userToEdit.rol || "",
-        correo: userToEdit.correo || "",
-        telefono: userToEdit.telefono || "",
-        estado: userToEdit.estado || "",
-      });
+    if (isOpen) {
+      if (isEditing && userToEdit) {
+        console.log("Cargando datos para edición:", userToEdit); // Debug
+        setValues({
+          nombre: userToEdit.nombre || "",
+          apellido: userToEdit.apellido || "",
+          tipoDocumento: userToEdit.tipoDocumento || "",
+          identificacion: userToEdit.identificacion || "",
+          rol: userToEdit.rol || "",
+          correo: userToEdit.correo || "",
+          telefono: userToEdit.telefono || "",
+          estado: userToEdit.estado || "",
+        });
+      } else {
+        // Resetear formulario para modo crear
+        resetForm();
+      }
     }
-  }, [isOpen, isEditing, userToEdit, setValues]);
+  }, [isOpen, isEditing, userToEdit, setValues, resetForm]);
 
   const handleSubmit = async () => {
+    console.log("Enviando formulario:", { isEditing, values }); // Debug
+
     // 1. Marcar todos los campos como tocados
     const allTouched = {};
     Object.keys(userValidationRules).forEach((field) => {
@@ -84,21 +92,18 @@ const UserModal = ({
 
     // 2. Validar todos los campos
     if (!validateAllFields()) {
-      // 🚨 Solo mostrar SweetAlert si estamos en edición
-      if (isEditing) {
-        showErrorAlert(
-          "Campos incompletos",
-          "Por favor completa todos los campos correctamente antes de continuar."
-        );
-      }
-      return; // detener ejecución
+      showErrorAlert(
+        "Campos incompletos",
+        "Por favor completa todos los campos correctamente antes de continuar."
+      );
+      return;
     }
 
     // 3. Confirmar en modo edición
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
-        `¿Deseas actualizar la información del usuario ${userToEdit.nombre} ${userToEdit.apellido}?`,
+        `¿Deseas actualizar la información del usuario ${values.nombre} ${values.apellido}?`,
         {
           confirmButtonText: "Sí, actualizar",
           cancelButtonText: "Cancelar",
@@ -112,14 +117,26 @@ const UserModal = ({
 
     try {
       if (isEditing) {
-        const updatedUserData = { ...values, id: userToEdit.id };
+        if (!userToEdit || !userToEdit.id) {
+          throw new Error("No se encontró el ID del usuario a actualizar");
+        }
+        
+        const updatedUserData = { 
+          ...values, 
+          id: userToEdit.id 
+        };
+        
+        console.log("Actualizando usuario con datos:", updatedUserData); // Debug
         await onUpdate(updatedUserData);
+        
         showSuccessAlert(
           "Usuario actualizado",
           `Los datos de ${values.nombre} ${values.apellido} han sido actualizados exitosamente.`
         );
       } else {
+        console.log("Creando nuevo usuario con datos:", values); // Debug
         await onSave(values);
+        
         showSuccessAlert(
           "Usuario creado",
           "El usuario ha sido creado exitosamente."
@@ -174,7 +191,7 @@ const UserModal = ({
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {isEditing ? "Editar Usuario" : "Crear Usuario"}
           </h2>
-          {isEditing && (
+          {isEditing && userToEdit && (
             <p className="text-center text-gray-600 mt-2">
               Modificando información de:{" "}
               <span className="font-semibold text-primary-purple">
@@ -187,6 +204,35 @@ const UserModal = ({
         {/* Body */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              label="Tipo de documento"
+              name="tipoDocumento"
+              type="select"
+              placeholder="Selecciona el tipo de documento"
+              options={documentTypes}
+              value={values.tipoDocumento}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.tipoDocumento}
+              touched={touched.tipoDocumento}
+              delay={0.1}
+              required
+            />
+
+            <FormField
+              label="Identificación"
+              name="identificacion"
+              type="text"
+              placeholder="Número de identificación"
+              value={values.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.identificacion}
+              touched={touched.identificacion}
+              delay={0.15}
+              required
+            />
+            
             <FormField
               label="Nombre"
               name="nombre"
@@ -212,35 +258,6 @@ const UserModal = ({
               error={errors.apellido}
               touched={touched.apellido}
               delay={0.15}
-              required
-            />
-
-            <FormField
-              label="Tipo de documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Selecciona el tipo de documento"
-              options={documentTypes}
-              value={values.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              delay={0.2}
-              required
-            />
-
-            <FormField
-              label="Identificación"
-              name="identificacion"
-              type="text"
-              placeholder="Número de identificación"
-              value={values.identificacion}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.identificacion}
-              touched={touched.identificacion}
-              delay={0.3}
               required
             />
 

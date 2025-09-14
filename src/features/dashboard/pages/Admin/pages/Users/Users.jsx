@@ -6,9 +6,9 @@ import {
   showConfirmAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../shared/utils/alerts";
+} from "../../../../../../shared/utils/Alerts";
 import Table from "../../../../../../shared/components/Table/table";
-import usersData from "./UserData.jsx"; // 
+import usersData from "./UserData.jsx";
 import rolesData from "../../../../../../shared/models/RolesData.js";
 
 const Users = () => {
@@ -16,11 +16,6 @@ const Users = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [userToEdit, setUserToEdit] = useState(null);
-
-  useEffect(() => {
-    console.log("Estado de isModalOpen:", isModalOpen);
-    console.log("Usuario a editar:", userToEdit);
-  }, [isModalOpen, userToEdit]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -77,6 +72,7 @@ const Users = () => {
   };
 
   const handleEdit = (user) => {
+    console.log("Editando usuario:", user); // Debug
     setModalMode("edit");
     setUserToEdit(user);
     setIsModalOpen(true);
@@ -88,52 +84,61 @@ const Users = () => {
     setModalMode("create");
   };
 
-const handleDelete = async (userId) => {
-  const userToDelete = data.find((user) => user.id === userId);
-  if (!userToDelete) {
-    return showErrorAlert("Error", "Usuario no encontrado");
-  }
+  const handleDelete = async (user) => {
+    console.log("Eliminando usuario:", user); // Debug
+    
+    if (!user || !user.id) {
+      console.error("Usuario no válido:", user);
+      return showErrorAlert("Error", "Usuario no encontrado o no válido");
+    }
 
-  // 🔔 Usamos la alerta de error como confirmación visual
-  const confirmResult = await showErrorAlert(
-    "¿Estás seguro de eliminar este usuario?",
-    `Esta acción no se puede deshacer. Se eliminará a ${userToDelete.nombre} ${userToDelete.apellido}.`
-  );
-
-  if (!confirmResult.isConfirmed) {
-    return; // Usuario canceló
-  }
-
-  try {
-    // Simulación de espera (API o lógica real aquí)
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Actualizamos el estado eliminando al usuario
-    setData((prevData) => prevData.filter((user) => user.id !== userId));
-
-    // ✅ Mostrar éxito
-    showSuccessAlert(
-      "Usuario eliminado",
-      `${userToDelete.nombre} ${userToDelete.apellido} fue eliminado correctamente.`
+    const confirmResult = await showConfirmAlert(
+      "¿Estás seguro?",
+      `Se eliminará a ${user.nombre} ${user.apellido}. Esta acción no se puede deshacer.`,
+      {
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+      }
     );
-  } catch (error) {
-    // ❌ Mostrar error real
-    showErrorAlert(
-      "Error al eliminar",
-      error.message || "No se pudo eliminar el usuario, intenta de nuevo."
-    );
-  }
-};
 
+    if (!confirmResult.isConfirmed) return;
 
+    try {
+      // Simular llamada API
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (Math.random() < 0.05) {
+            reject(new Error("Error de conexión simulado"));
+          } else {
+            resolve();
+          }
+        }, 500);
+      });
 
+      setData((prevData) => prevData.filter((u) => u.id !== user.id));
+
+      showSuccessAlert(
+        "Usuario eliminado",
+        `${user.nombre} ${user.apellido} fue eliminado correctamente.`
+      );
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error);
+      showErrorAlert(
+        "Error al eliminar",
+        error.message || "No se pudo eliminar el usuario, intenta de nuevo."
+      );
+    }
+  };
+
+  const handleView = (user) => {
+    console.log("Ver usuario:", user);
+    // Aquí puedes implementar la lógica para ver detalles del usuario
+  };
 
   return (
     <div className="p-6 font-questrial">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
-        </div>
+        <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
         <button
           onClick={handleCreate}
           className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
@@ -152,11 +157,9 @@ const handleDelete = async (userId) => {
           data,
           dataPropertys: ["nombre", "correo", "identificacion", "rol"],
           state: true,
-
-          onEdit: (row) => handleEdit(row),
-          onDelete: (row) => handleDelete(row.id),
-          onView: (row) => console.log("Ver usuario:", row),
-
+          onEdit: handleEdit,
+          onDelete: handleDelete,
+          onView: handleView,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
             Inactivo: "bg-red-100 text-red-800",
