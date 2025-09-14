@@ -1,51 +1,24 @@
-    export const EmployeesTable = ({ employees }) => {
-    return (
-        <div className="mt-8 bg-white shadow-lg rounded-2xl p-6">
-        <h3 className="text-xl font-bold text-[#9BE9FF] mb-4">Lista de Empleados</h3>
-        <table className="w-full border-collapse">
-            <thead>
-            <tr className="bg-[#f3e8ff] text-[#6b21a8]">
-                <th className="p-2 text-left">Nombre</th>
-                <th className="p-2 text-left">Identificación</th>
-                <th className="p-2 text-left">Tipo de empleado</th>
-                <th className="p-2 text-left">Rol</th>
-                <th className="p-2 text-left">Estado</th>
-            </tr>
-            </thead>
-            <tbody>
-            {employees.length === 0 ? (
-                <tr>
-                <td colSpan="5" className="p-3 text-center text-gray-500">
-                    No hay empleados registrados
-                </td>
-                </tr>
-            ) : (
-                employees.map((emp, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="p-2">{emp.nombre}</td>
-                    <td className="p-2">{emp.identificacion}</td>
-                    <td className="p-2">{emp.tipoEmpleado}</td>
-                    <td className="p-2">{emp.rol}</td>
-                    <td
-                    className={`p-2 font-medium ${
-                        emp.estado === "Activo"
-                        ? "text-blue-500"
-                        : emp.estado === "Incapacitado"
-                        ? "text-red-500"
-                        : emp.estado === "Vacaciones"
-                        ? "text-purple-500"
-                        : emp.estado === "Retirado"
-                        ? "text-gray-500"
-                        : "text-black"
-                    }`}
-                    >
-                    {emp.estado}
-                    </td>
-                </tr>
-                ))
-            )}
-            </tbody>
-        </table>
-        </div>
-    );
-    };
+import React from "react";
+import Table from "../../../../../../shared/components/Table/table";
+
+export const RolesTable = ({ roles, onEdit, onDelete, onView }) => {
+  return (
+    <div className="mt-8 bg-white shadow-lg rounded-2xl p-6">
+      <h3 className="text-xl font-bold text-[#9BE9FF] mb-4">Lista de Roles</h3>
+      <Table
+        thead={{
+          titles: ["Nombre", "Descripción"],
+          state: true, // 👈 activa la columna Estado
+        }}
+        tbody={{
+          data: roles,
+          dataPropertys: ["nombre", "descripcion"],
+          state: true, // 👈 indica que los roles tienen estado
+        }}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onView={onView}
+      />
+    </div>
+  );
+};

@@ -10,6 +10,7 @@ const Table = ({
   paginationFrom = 10,
   onEdit,
   onDelete,
+  onView, // agregado para vista detallada
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -42,6 +43,7 @@ const Table = ({
     data: paginatedData,
     onEdit,
     onDelete,
+    onView, // agregado para vista detallada
   };
 
   return (
