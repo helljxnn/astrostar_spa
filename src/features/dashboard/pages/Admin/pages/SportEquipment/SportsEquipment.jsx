@@ -5,7 +5,7 @@ import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
-import { showSuccessAlert } from '../../../../../../../shared/utils/alerts';
+import { showSuccessAlert } from '../../../../../../shared/utils/Alerts';
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
 function SportsEquipment() {

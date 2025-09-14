@@ -1,3 +1,4 @@
+// useFormEventValidation.js
 import { useState } from "react";
 
 export const useFormEventValidation = () => {
@@ -41,10 +42,7 @@ export const useFormEventValidation = () => {
         break;
 
       case "imagen":
-        if (!value?.trim()) error = "La URL de la imagen es obligatoria.";
-        else if (!/^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)$/i.test(value)) {
-          error = "Ingrese una URL válida (jpg, png, gif, webp).";
-        }
+        if (!value) error = "Debe subir una imagen.";
         break;
 
       case "detalles":
@@ -53,7 +51,9 @@ export const useFormEventValidation = () => {
         break;
 
       case "patrocinador":
-        if (!value?.trim()) error = "Seleccione un patrocinador.";
+        if (!Array.isArray(value) || value.length === 0) {
+          error = "Seleccione al menos un patrocinador.";
+        }
         break;
 
       case "categoria":
@@ -85,25 +85,20 @@ export const useFormEventValidation = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (name, value, formData) => {
-    const error = validateField(name, value, formData);
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
-
   const handleBlur = (name, value, formData) => {
     setTouched((prev) => ({ ...prev, [name]: true }));
     const error = validateField(name, value, formData);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // 👇 Fuerza mostrar errores en todos los campos
   const touchAllFields = (formData) => {
     const allTouched = {};
     Object.keys(formData).forEach((name) => {
       allTouched[name] = true;
     });
+    allTouched.tipoEvento = true;
     setTouched(allTouched);
   };
 
-  return { errors, touched, validate, handleChange, handleBlur, touchAllFields };
+  return { errors, touched, validate, handleBlur, touchAllFields };
 };

@@ -1,7 +1,3 @@
-
-// import { useState } from "react";
-// import { EventModal } from "./components/EventModal"; 
-
 import { useState } from "react";
 import Table from "../../../../../../shared/components/Table/table";
 import { EventModal } from "./components/EventModal";

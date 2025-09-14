@@ -82,36 +82,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
         {/* Body */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              label="Tipo de Persona"
-              name="tipoPersona"
-              type="select"
-              required
-              options={[
-                { value: "Jugadora", label: "Jugadora" },
-                { value: "Entrenador", label: "Entrenador" },
-                { value: "Participante", label: "Participante" },
-              ]}
-              value={formData.tipoPersona}
-              error={errors.tipoPersona}
-              touched={touched.tipoPersona}
-              onChange={handleChange}
-              onBlur={handleBlur}
-            />
-
-            <FormField
-              label="Nombre"
-              name="nombre"
-              type="text"
-              placeholder="Nombre completo"
-              required
-              value={formData.nombre}
-              error={errors.nombre}
-              touched={touched.nombre}
-              onChange={handleChange}
-              onBlur={handleBlur}
-            />
-
+            {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
               name="tipoDocumento"
@@ -134,11 +105,12 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
+            {/* Identificación */}
             <FormField
-              label="Identificación"
+              label="Número de Documento"
               name="identificacion"
               type="text"
-              placeholder="Número de identificación"
+              placeholder="Número de documento"
               required
               value={formData.identificacion}
               error={errors.identificacion}
@@ -147,6 +119,39 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
+            {/* Tipo Persona */}
+            <FormField
+              label="Tipo de Persona"
+              name="tipoPersona"
+              type="select"
+              required
+              options={[
+                { value: "Jugadora", label: "Jugadora" },
+                { value: "Entrenador", label: "Entrenador" },
+                { value: "Participante", label: "Participante" },
+              ]}
+              value={formData.tipoPersona}
+              error={errors.tipoPersona}
+              touched={touched.tipoPersona}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+
+            {/* Nombre */}
+            <FormField
+              label="Nombre"
+              name="nombre"
+              type="text"
+              placeholder="Nombre completo"
+              required
+              value={formData.nombre}
+              error={errors.nombre}
+              touched={touched.nombre}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+
+            {/* Teléfono */}
             <FormField
               label="Número Telefónico"
               name="telefono"
@@ -160,6 +165,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
+            {/* Fecha Nacimiento */}
             <FormField
               label="Fecha de Nacimiento"
               name="fechaNacimiento"
@@ -172,6 +178,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
+            {/* Edad */}
             <FormField
               label="Edad"
               name="edad"
@@ -185,6 +192,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
+            {/* Categoría (solo jugadora) */}
             {formData.tipoPersona === "Jugadora" && (
               <FormField
                 label="Categoría"
@@ -204,6 +212,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               />
             )}
 
+            {/* Estado */}
             <FormField
               label="Estado Registro"
               name="estado"

@@ -19,14 +19,14 @@ export const FormField = ({
 }) => {
   const hasError = touched && error;
 
-  // 🔥 Universal handler: soporta ambas firmas
+  
   const handleChange = (e) => {
     const val = e.target.value;
     if (typeof onChange === "function") {
       if (onChange.length === 2) {
-        onChange(name, val); // (name, value)
+        onChange(name, val); 
       } else {
-        onChange(e); // (event)
+        onChange(e); 
       }
     }
   };
@@ -34,9 +34,9 @@ export const FormField = ({
   const handleBlur = () => {
     if (typeof onBlur === "function") {
       if (onBlur.length === 1) {
-        onBlur(name); // (name)
+        onBlur(name); 
       } else {
-        onBlur(); // ()
+        onBlur(); 
       }
     }
   };

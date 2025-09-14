@@ -93,36 +93,6 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
         {/* Body */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nombre */}
-            <FormField
-              label="Nombre"
-              name="nombre"
-              type="text"
-              placeholder="Nombre del empleado"
-              required
-              value={formData.nombre}
-              error={errors.nombre}
-              touched={touched.nombre}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.1}
-            />
-
-            {/* Apellido */}
-            <FormField
-              label="Apellido"
-              name="apellido"
-              type="text"
-              placeholder="Apellido del empleado"
-              required
-              value={formData.apellido}
-              error={errors.apellido}
-              touched={touched.apellido}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.2}
-            />
-
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
@@ -145,19 +115,49 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               touched={touched.tipoDocumento}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.3}
+              delay={0.1}
             />
 
             {/* Identificación */}
             <FormField
-              label="Identificación"
+              label="Número de Documento"
               name="identificacion"
               type="text"
-              placeholder="Identificación del empleado"
+              placeholder="Número de documento del empleado"
               required
               value={formData.identificacion}
               error={errors.identificacion}
               touched={touched.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.2}
+            />
+
+            {/* Nombre */}
+            <FormField
+              label="Nombre"
+              name="nombre"
+              type="text"
+              placeholder="Nombre del empleado"
+              required
+              value={formData.nombre}
+              error={errors.nombre}
+              touched={touched.nombre}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.3}
+            />
+
+            {/* Apellido */}
+            <FormField
+              label="Apellido"
+              name="apellido"
+              type="text"
+              placeholder="Apellido del empleado"
+              required
+              value={formData.apellido}
+              error={errors.apellido}
+              touched={touched.apellido}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.4}
