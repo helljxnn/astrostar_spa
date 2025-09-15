@@ -187,8 +187,8 @@ function SportsEquipment() {
           />
           {/* Botones */}
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors">
               Crear <SiGoogleforms size={20} />
             </button>
           </div>

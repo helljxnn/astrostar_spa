@@ -70,31 +70,49 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                     {/* Contenedor del Formulario con animación */}
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                     >
-                        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full z-10">✕</button>
-                        <form onSubmit={handleSubmit} className="p-8 flex flex-col gap-6">
+                        <form onSubmit={handleSubmit}>
                             {/* Header */}
-                            <motion.div variants={itemVariants} className="border-b border-gray-200 pb-4 w-full">
-                                <h2 className="text-2xl font-questrial text-primary-purple">{title}</h2>
-                            </motion.div>
-
-                            {/* Body: Contenido dinámico que se pasa como children */}
-                            <div className="space-y-4 w-full">
-                                {Children.map(children, (child) => (
-                                    <motion.div variants={itemVariants}>{child}</motion.div>
-                                ))}
-
-                                {id ? (
-                                    <input type="hidden" name="id" value={id} />
-                                ) : null}
+                            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+                                <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
+                                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                                    {title}
+                                </h2>
                             </div>
 
-                            {/* Footer: Botones de acción */}
-                            <motion.div variants={itemVariants} className="flex justify-end gap-4 pt-4 border-t border-gray-200 w-full">
-                                <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 transition-colors">Cancelar</button>
-                                <button type="submit" className="px-6 py-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white font-bold hover:opacity-90 transition-opacity">{submitText}</button>
-                            </motion.div>
+                            {/* Body & Footer Wrapper */}
+                            <div className="p-6 space-y-6">
+                                {/* Body: Contenido dinámico */}
+                                <div className="space-y-6">
+                                    {Children.map(children, (child) => (
+                                        <motion.div variants={itemVariants}>{child}</motion.div>
+                                    ))}
+                                </div>
+
+                                {id && <input type="hidden" name="id" value={id} />}
+
+                                {/* Footer: Botones de acción */}
+                                <motion.div variants={itemVariants} className="flex justify-between pt-6 border-t border-gray-200 w-full">
+                                    <motion.button
+                                        type="button"
+                                        onClick={onClose}
+                                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        Cancelar
+                                    </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple hover:to-primary-blue"
+                                        whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)" }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        {submitText}
+                                    </motion.button>
+                                </motion.div>
+                            </div>
                         </form>
                     </motion.div>
                 </motion.div>

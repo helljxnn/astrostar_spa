@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
  * @param {boolean} props.isOpen - Controla si el modal está visible.
  * @param {function} props.onClose - Función para cerrar el modal.
  * @param {object} props.data - El objeto de datos a mostrar.
- * @param {Array<{label: string, key: string}>} props.detailConfig - Configuración para mapear claves de datos a etiquetas.
+ * @param {Array<{label: string, key: string, format?: function}>} props.detailConfig - Configuración para mapear claves de datos a etiquetas, con un formateador opcional.
  * @param {string} props.title - Título del modal.
  */
 const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
@@ -72,7 +72,9 @@ const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
                             {detailConfig.map((item) => (
                                 <motion.div key={item.key} variants={itemVariants} className="grid grid-cols-2 gap-4 items-center border-b border-gray-100 pb-2">
                                     <p className="font-semibold text-gray-700">{item.label}:</p>
-                                    <p className="text-gray-600 text-right">{data[item.key]}</p>
+                                    <p className="text-gray-600 text-right">
+                                        {item.format ? item.format(data[item.key]) : data[item.key]}
+                                    </p>
                                 </motion.div>
                             ))}
                         </div>
