@@ -113,5 +113,6 @@ export const Navbar = () => {
         )}
       </AnimatePresence>
     </nav>
+    </>
   );
 };

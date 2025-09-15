@@ -88,42 +88,42 @@ const Users = () => {
     setModalMode("create");
   };
 
-const handleDelete = async (userId) => {
-  const userToDelete = data.find((user) => user.id === userId);
-  if (!userToDelete) {
-    return showErrorAlert("Error", "Usuario no encontrado");
-  }
+  const handleDelete = async (userId) => {
+    const userToDelete = data.find((user) => user.id === userId);
+    if (!userToDelete) {
+      return showErrorAlert("Error", "Usuario no encontrado");
+    }
 
-  // 🔔 Usamos la alerta de error como confirmación visual
-  const confirmResult = await showErrorAlert(
-    "¿Estás seguro de eliminar este usuario?",
-    `Esta acción no se puede deshacer. Se eliminará a ${userToDelete.nombre} ${userToDelete.apellido}.`
-  );
-
-  if (!confirmResult.isConfirmed) {
-    return; // Usuario canceló
-  }
-
-  try {
-    // Simulación de espera (API o lógica real aquí)
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Actualizamos el estado eliminando al usuario
-    setData((prevData) => prevData.filter((user) => user.id !== userId));
-
-    // ✅ Mostrar éxito
-    showSuccessAlert(
-      "Usuario eliminado",
-      `${userToDelete.nombre} ${userToDelete.apellido} fue eliminado correctamente.`
+    // 🔔 Usamos la alerta de error como confirmación visual
+    const confirmResult = await showErrorAlert(
+      "¿Estás seguro de eliminar este usuario?",
+      `Esta acción no se puede deshacer. Se eliminará a ${userToDelete.nombre} ${userToDelete.apellido}.`
     );
-  } catch (error) {
-    // ❌ Mostrar error real
-    showErrorAlert(
-      "Error al eliminar",
-      error.message || "No se pudo eliminar el usuario, intenta de nuevo."
-    );
-  }
-};
+
+    if (!confirmResult.isConfirmed) {
+      return; // Usuario canceló
+    }
+
+    try {
+      // Simulación de espera (API o lógica real aquí)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Actualizamos el estado eliminando al usuario
+      setData((prevData) => prevData.filter((user) => user.id !== userId));
+
+      // ✅ Mostrar éxito
+      showSuccessAlert(
+        "Usuario eliminado",
+        `${userToDelete.nombre} ${userToDelete.apellido} fue eliminado correctamente.`
+      );
+    } catch (error) {
+      // ❌ Mostrar error real
+      showErrorAlert(
+        "Error al eliminar",
+        error.message || "No se pudo eliminar el usuario, intenta de nuevo."
+      );
+    }
+  };
 
 
 

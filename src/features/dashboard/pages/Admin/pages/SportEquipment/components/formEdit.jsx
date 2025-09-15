@@ -14,7 +14,7 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
         if (isOpen && equipmentData) {
             setValues({
                 nombre: equipmentData.NombreMaterial || "",
-                cantidadReal: equipmentData.Total || 0,
+                cantidadReal: equipmentData.CantidadInicial || 0,
                 estado: equipmentData.estado || "",
             });
         } else if (!isOpen) {
@@ -37,7 +37,7 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
     return (
         <Form isOpen={isOpen} title="Editar Material Deportivo" submitText="Guardar Cambios" onClose={onClose} onSubmit={handleFormSubmit} >
             <FormField label="Nombre del Material" name="nombre" type="text" placeholder="Ej: Balón de fútbol" value={values.nombre} onChange={handleChange} />
-            <FormField label="Cantidad Total" name="cantidadReal" type="number" placeholder="Ej: 10" value={values.cantidadReal} onChange={handleChange} />
+            <FormField label="Cantidad Inicial" name="cantidadReal" type="number" placeholder="Ej: 10" value={values.cantidadReal} onChange={handleChange} />
             <FormField label="Estado" name="estado" type="select" value={values.estado} onChange={handleChange} options={[{ value: "Disponible", label: "Disponible" }, { value: "Agotado", label: "Agotado" }, { value: "En Mantenimiento", label: "En Mantenimiento" }]} />
         </Form>
     );

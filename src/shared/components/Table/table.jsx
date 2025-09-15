@@ -7,10 +7,7 @@ const Table = ({
   thead,
   tbody,
   rowsPerPage = 10,
-  paginationFrom = 10,
-  onEdit,
-  onDelete,
-  onView, // agregado para vista detallada
+  paginationFrom = 10
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -41,19 +38,16 @@ const Table = ({
   const tbodyProps = {
     ...tbody,
     data: paginatedData,
-    onEdit,
-    onDelete,
-    onView, // agregado para vista detallada
   };
 
   return (
     <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
-      
+
       <div className="overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-<table
-  id="table"
-  className="w-full border-collapse text-sm font-monserrat"
->
+        <table
+          id="table"
+          className="w-full border-collapse text-sm font-monserrat"
+        >
           <Thead options={{ thead }} />
           <Tbody options={{ tbody: tbodyProps }} />
         </table>

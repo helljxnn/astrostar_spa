@@ -1,6 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Table from "../../../../../../shared/components/Table/table";
-import sportsEquipmentData from "../../../../../../shared/models/SportsEquipment";
 import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
@@ -10,12 +9,28 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../shared/utils/Alerts";
+} from "../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
+// Clave para guardar los datos en localStorage
+const LOCAL_STORAGE_KEY = 'sportsEquipmentData';
+
 function SportsEquipment() {
-  // Estado para la lista de datos, para poder actualizarla en tiempo real
-  const [equipmentList, setEquipmentList] = useState(sportsEquipmentData);
+  // Estado para la lista de datos, inicializado desde localStorage
+  const [equipmentList, setEquipmentList] = useState(() => {
+    try {
+      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      // Si existe 'storedData' (incluso si es '[]'), lo usamos.
+      if (storedData) {
+        return JSON.parse(storedData);
+      }
+    } catch (error) {
+      console.error("Error al leer desde localStorage:", error);
+    }
+    // Si no hay datos en localStorage, empezamos con una lista vacía.
+    return [];
+  });
+
   // Estados para controlar la visibilidad de los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -23,6 +38,15 @@ function SportsEquipment() {
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
+
+  // useEffect para guardar los cambios en localStorage cada vez que la lista se modifica
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(equipmentList));
+    } catch (error) {
+      console.error("Error al guardar en localStorage:", error);
+    }
+  }, [equipmentList]);
 
   // Filtramos los datos basándonos en el término de búsqueda.
   // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
@@ -42,8 +66,10 @@ function SportsEquipment() {
   const handleCreate = (newData) => {
     // En una app real, aquí también validarías que el nombre no exista ya.
     const newEquipment = {
+      id: Date.now(), // Asignamos un ID único
       NombreMaterial: newData.nombre,
-      CantidadComprado: Number(newData.cantidadReal), // La cantidad inicial se asigna a 'comprado'
+      CantidadInicial: Number(newData.cantidadReal),
+      CantidadComprado: 0, // La cantidad inicial se asigna a 'comprado'
       CantidadDonado: 0, // No hay donaciones al crear un item nuevo
       Total: Number(newData.cantidadReal),
       estado: newData.estado,
@@ -72,19 +98,18 @@ function SportsEquipment() {
   const handleUpdate = (updatedData) => {
     // Lógica para actualizar el item en nuestra lista de estado
     const updatedList = equipmentList.map(item => {
-      // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
-      if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
-        const newTotal = Number(updatedData.cantidadReal);
-        const difference = newTotal - item.Total;
-        // Ajustamos la cantidad comprada con la diferencia, preservando las donaciones.
-        // Nos aseguramos de que la cantidad comprada no sea negativa.
-        const newCantidadComprado = Math.max(0, item.CantidadComprado + difference);
+      // Usamos el ID para identificar el item a actualizar
+      if (item.id === selectedEquipment.id) {
+        const newCantidadInicial = Number(updatedData.cantidadReal);
+
+        // Recalculamos el total basado en la nueva cantidad inicial,
+        // manteniendo las cantidades compradas y donadas existentes.
+        const newTotal = newCantidadInicial + item.CantidadComprado + item.CantidadDonado;
 
         return {
           ...item,
           NombreMaterial: updatedData.nombre,
-          CantidadComprado: newCantidadComprado,
-          // CantidadDonado no se modifica desde este formulario
+          CantidadInicial: newCantidadInicial,
           Total: newTotal,
           estado: updatedData.estado,
         };
@@ -109,9 +134,8 @@ function SportsEquipment() {
     if (result.isConfirmed) {
       try {
         // Filtramos la lista para excluir el item a eliminar.
-        // En una app real, aquí harías una llamada a la API para eliminar el registro.
         const updatedList = equipmentList.filter(
-          (item) => item.NombreMaterial !== itemToDelete.NombreMaterial // Usamos NombreMaterial como ID único
+          (item) => item.id !== itemToDelete.id // Usamos el ID para eliminar
         );
         setEquipmentList(updatedList);
         showSuccessAlert(
@@ -138,6 +162,7 @@ function SportsEquipment() {
   // Configuración para el modal de detalles reutilizable
   const equipmentDetailConfig = [
     { label: "Nombre del Material", key: "NombreMaterial" },
+    { label: "Cantidad Inicial", key: "CantidadInicial" },
     { label: "Cantidad Comprada", key: "CantidadComprado" },
     { label: "Cantidad Donada", key: "CantidadDonado" },
     { label: "Total en Inventario", key: "Total" },
@@ -175,6 +200,7 @@ function SportsEquipment() {
           thead={{
             titles: [
               "Nombre",
+              "Cantidad inicial",
               "Comprado",
               "Donado",
               "Total",
@@ -186,14 +212,12 @@ function SportsEquipment() {
             data: filteredEquipment,
             dataPropertys: [
               "NombreMaterial",
+              "CantidadInicial",
               "CantidadComprado",
               "CantidadDonado",
               "Total",
             ],
             state: true,
-            onEdit: handleEdit,
-            onDelete: handleDelete,
-            onView: handleView,
             onEdit: handleEdit,
             onDelete: handleDelete,
             onView: handleView,
