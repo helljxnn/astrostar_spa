@@ -10,6 +10,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 const TemporaryWorkers = () => {
   const [data, setData] = useState(temporaryWorkersData);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingWorker, setEditingWorker] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -25,7 +26,7 @@ const TemporaryWorkers = () => {
     [data, searchTerm]
   );
 
-  // Calcular datos de paginación
+  // Paginación
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -34,37 +35,58 @@ const TemporaryWorkers = () => {
     startIndex + rowsPerPage
   );
 
-  const handleSave = (newWorker) => {
-    setData([...data, newWorker]);
+  // Guardar nuevo o editado
+  const handleSave = (workerData, workerToEdit) => {
+    if (workerToEdit) {
+      // Editar
+      setData((prev) =>
+        prev.map((item) =>
+          item.identificacion === workerToEdit.identificacion
+            ? { ...workerData }
+            : item
+        )
+      );
+      setEditingWorker(null);
+    } else {
+      // Crear
+      setData([...data, workerData]);
+    }
+    setIsModalOpen(false);
+  };
+
+  // Abrir modal en modo edición
+  const handleEdit = (worker) => {
+    setEditingWorker(worker);
+    setIsModalOpen(true);
   };
 
   return (
     <div className="p-6 font-questrial">
-      {/* Header con buscador y botones */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
           Personas Temporales
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          {/* Buscador */}
           <SearchInput
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1); // Reiniciar paginación en búsqueda
+              setCurrentPage(1);
             }}
             placeholder="Buscar persona..."
           />
-
-          {/* Botones */}
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors">
               <IoMdDownload size={22} className="text-primary-purple" />
               Generar reporte
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEditingWorker(null);
+                setIsModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
               <FaPlus /> Crear
@@ -98,9 +120,10 @@ const TemporaryWorkers = () => {
           ],
           state: true,
         }}
+        onEdit={handleEdit} 
       />
 
-      {/* Paginador */}
+      {/* Paginación */}
       {totalRows > rowsPerPage && (
         <Pagination
           currentPage={currentPage}
@@ -115,8 +138,12 @@ const TemporaryWorkers = () => {
       {/* Modal */}
       <TemporaryWorkerModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingWorker(null);
+        }}
         onSave={handleSave}
+        worker={editingWorker}
       />
     </div>
   );

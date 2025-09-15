@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { useFormEventValidation } from "../hooks/useFormEventValidation";
-import { showSuccessAlert } from "../../../../../../../shared/utils/Alerts";
+import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
 import { SponsorsSelector } from "./SponsorsSelector";
 
-export const EventModal = ({ onClose, onSave }) => {
+export const EventModal = ({ onClose, onSave, event }) => {
   const [tipoEvento, setTipoEvento] = useState("");
   const [form, setForm] = useState({
     nombre: "",
@@ -30,6 +30,27 @@ export const EventModal = ({ onClose, onSave }) => {
     touchAllFields,
   } = useFormEventValidation();
 
+  // 🔹 Prellenar formulario si hay evento (modo editar)
+  useEffect(() => {
+    if (event) {
+      setTipoEvento(event.tipo || "");
+      setForm({
+        nombre: event.nombre || "",
+        descripcion: event.descripcion || "",
+        fechaInicio: event.fechaInicio || "",
+        fechaFin: event.fechaFin || "",
+        ubicacion: event.ubicacion || "",
+        telefono: event.telefono || "",
+        imagen: event.imagen || null,
+        cronograma: event.cronograma || null,
+        patrocinador: event.patrocinador || [],
+        categoria: event.categoria || "",
+        estado: event.estado || "",
+        publicar: event.publicar || false,
+      });
+    }
+  }, [event]);
+
   const handleChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -47,8 +68,10 @@ export const EventModal = ({ onClose, onSave }) => {
   const handleSubmit = () => {
     touchAllFields(form);
     if (validate({ ...form, tipoEvento })) {
-      onSave({ ...form, tipo: tipoEvento });
-      showSuccessAlert("Evento creado exitosamente");
+      onSave({ ...form, tipo: tipoEvento, id: event?.id || Date.now() });
+      showSuccessAlert(
+        event ? "Evento actualizado exitosamente" : "Evento creado exitosamente"
+      );
       onClose();
     }
   };
@@ -64,7 +87,9 @@ export const EventModal = ({ onClose, onSave }) => {
       >
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-[#9BE9FF]">Crear Evento</h2>
+          <h2 className="text-3xl font-bold text-[#9BE9FF]">
+            {event ? "Editar Evento" : "Crear Evento"}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
@@ -303,7 +328,7 @@ export const EventModal = ({ onClose, onSave }) => {
               onClick={handleSubmit}
               className="px-5 py-2 rounded-lg bg-[#9BE9FF] text-gray-900 font-semibold hover:bg-[#80dfff] transition"
             >
-              Guardar
+              {event ? "Actualizar" : "Guardar"}
             </button>
           </div>
         )}

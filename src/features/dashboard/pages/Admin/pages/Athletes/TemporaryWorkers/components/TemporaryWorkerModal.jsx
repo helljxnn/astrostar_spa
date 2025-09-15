@@ -1,10 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
-import { useFormTempWorkerValidation, tempWorkerValidationRules } from "../hooks/useFormTempWorkerValidation";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
+import {
+  useFormTempWorkerValidation,
+  tempWorkerValidationRules,
+} from "../hooks/useFormTempWorkerValidation";
+import {
+  showSuccessAlert,
+  showConfirmAlert,
+} from "../../../../../../../../shared/utils/alerts";
 
-const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
+const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker }) => {
   const {
     values: formData,
     errors,
@@ -28,8 +34,42 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
     tempWorkerValidationRules
   );
 
+  // Prellenar si es edición
+  useEffect(() => {
+    if (worker) setFormData(worker);
+    else
+      setFormData({
+        tipoPersona: "",
+        nombre: "",
+        tipoDocumento: "",
+        identificacion: "",
+        telefono: "",
+        fechaNacimiento: "",
+        edad: "",
+        categoria: "",
+        estado: "",
+      });
+  }, [worker, setFormData, isOpen]);
+
   const handleSubmit = () => {
-    if (validateAllFields()) {
+    if (!validateAllFields()) return;
+
+    if (worker) {
+      // 🔹 Solo editar muestra confirmación
+      showConfirmAlert("¿Deseas actualizar este registro?", "", {
+        confirmButtonText: "Sí, actualizar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          onSave(formData);
+          showSuccessAlert(
+            "Registro Actualizado",
+            "La persona temporal ha sido actualizada exitosamente."
+          );
+          onClose();
+        }
+      });
+    } else {
+      // 🔹 Crear no muestra confirmación
       onSave(formData);
       showSuccessAlert(
         "Registro Creado",
@@ -75,7 +115,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
             ✕
           </button>
           <h2 className="text-3xl font-bold text-center text-primary-purple">
-            Crear Persona Temporal
+            {worker ? "Editar Persona Temporal" : "Crear Persona Temporal"}
           </h2>
         </div>
 
@@ -89,14 +129,35 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               type="select"
               required
               options={[
-                { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
-                { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
-                { value: "Permiso Especial de Permanencia", label: "Permiso Especial de Permanencia" },
-                { value: "Tarjeta de Extranjería", label: "Tarjeta de Extranjería" },
-                { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
-                { value: "Número de Identificación Tributaria", label: "Número de Identificación Tributaria" },
+                {
+                  value: "Tarjeta de Identidad",
+                  label: "Tarjeta de Identidad",
+                },
+                {
+                  value: "Cédula de Ciudadanía",
+                  label: "Cédula de Ciudadanía",
+                },
+                {
+                  value: "Permiso Especial de Permanencia",
+                  label: "Permiso Especial de Permanencia",
+                },
+                {
+                  value: "Tarjeta de Extranjería",
+                  label: "Tarjeta de Extranjería",
+                },
+                {
+                  value: "Cédula de Extranjería",
+                  label: "Cédula de Extranjería",
+                },
+                {
+                  value: "Número de Identificación Tributaria",
+                  label: "Número de Identificación Tributaria",
+                },
                 { value: "Pasaporte", label: "Pasaporte" },
-                { value: "Documento de Identificación Extranjero", label: "Documento de Identificación Extranjero" },
+                {
+                  value: "Documento de Identificación Extranjero",
+                  label: "Documento de Identificación Extranjero",
+                },
               ]}
               value={formData.tipoDocumento}
               error={errors.tipoDocumento}
@@ -192,7 +253,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
               onBlur={handleBlur}
             />
 
-            {/* Categoría (solo jugadora) */}
+            {/* Categoría */}
             {formData.tipoPersona === "Jugadora" && (
               <FormField
                 label="Categoría"
@@ -244,7 +305,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave }) => {
             onClick={handleSubmit}
             className="px-8 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl font-medium shadow-lg"
           >
-            Crear
+            {worker ? "Actualizar" : "Crear"}
           </motion.button>
         </div>
       </motion.div>

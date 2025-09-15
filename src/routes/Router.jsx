@@ -19,13 +19,14 @@ function AppRoutes() {
         <Route path="/about" element={<About />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
-        <Route path="/login" element={<Login />} />
         <Route path="/services" element={<Services />} />
       </Route>
 
+      {/* Login sin Layout (independiente, sin navbar/topbar) */}
+      <Route path="/login" element={<Login />} />
+
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />
-
     </Routes>
   );
 }
