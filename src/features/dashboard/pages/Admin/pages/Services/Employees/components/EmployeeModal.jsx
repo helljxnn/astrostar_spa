@@ -1,13 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
   useFormEmployeeValidation,
   employeeValidationRules,
 } from "../hooks/useFormEmployeeValidation";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
+import { showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
 
-const EmployeeModal = ({ isOpen, onClose, onSave }) => {
+const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
   const {
     values: formData,
     errors,
@@ -33,17 +33,11 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
     employeeValidationRules
   );
 
-  const handleSubmit = () => {
-    const isValid = validateAllFields();
-    if (isValid) {
-      onSave(formData);
-
-      showSuccessAlert(
-        "Empleado Creado",
-        "El empleado ha sido registrado exitosamente."
-      );
-
-      // Reset
+  // Cargar datos si es edición
+  useEffect(() => {
+    if (employee) {
+      setFormData(employee);
+    } else {
       setFormData({
         nombre: "",
         apellido: "",
@@ -57,6 +51,21 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
         estado: "",
         fechaAsignacion: "",
       });
+    }
+  }, [employee, setFormData]);
+
+  const handleSubmit = () => {
+    const isValid = validateAllFields();
+    if (isValid) {
+      onSave(formData);
+
+      showSuccessAlert(
+        employee ? "Empleado Editado" : "Empleado Creado",
+        employee
+          ? "El empleado ha sido actualizado exitosamente."
+          : "El empleado ha sido registrado exitosamente."
+      );
+
       onClose();
     }
   };
@@ -86,13 +95,62 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
             ✕
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            Crear Empleado
+            {employee ? "Editar Empleado" : "Crear Empleado"}
           </h2>
         </div>
 
         {/* Body */}
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Tipo Documento */}
+            <FormField
+              label="Tipo de Documento"
+              name="tipoDocumento"
+              type="select"
+              placeholder="Seleccionar tipo de documento"
+              required
+              options={[
+                { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
+                { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
+                {
+                  value: "Permiso Especial de Permanencia",
+                  label: "Permiso Especial de Permanencia",
+                },
+                { value: "Tarjeta de Extranjería", label: "Tarjeta de Extranjería" },
+                { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
+                {
+                  value: "Número de Identificación Tributaria",
+                  label: "Número de Identificación Tributaria",
+                },
+                { value: "Pasaporte", label: "Pasaporte" },
+                {
+                  value: "Documento de Identificación Extranjero",
+                  label: "Documento de Identificación Extranjero",
+                },
+              ]}
+              value={formData.tipoDocumento}
+              error={errors.tipoDocumento}
+              touched={touched.tipoDocumento}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.1}
+            />
+
+            {/* Identificación */}
+            <FormField
+              label="Número de Documento"
+              name="identificacion"
+              type="text"
+              placeholder="Número de documento del empleado"
+              required
+              value={formData.identificacion}
+              error={errors.identificacion}
+              touched={touched.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.2}
+            />
+
             {/* Nombre */}
             <FormField
               label="Nombre"
@@ -105,7 +163,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               touched={touched.nombre}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.1}
+              delay={0.3}
             />
 
             {/* Apellido */}
@@ -118,46 +176,6 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               value={formData.apellido}
               error={errors.apellido}
               touched={touched.apellido}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.2}
-            />
-
-            {/* Tipo Documento */}
-            <FormField
-              label="Tipo de Documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Seleccionar tipo de documento"
-              required
-              options={[
-                { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
-                { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
-                { value: "Permiso Especial de Permanencia", label: "Permiso Especial de Permanencia" },
-                { value: "Tarjeta de Extranjería", label: "Tarjeta de Extranjería" },
-                { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
-                { value: "Número de Identificación Tributaria", label: "Número de Identificación Tributaria" },
-                { value: "Pasaporte", label: "Pasaporte" },
-                { value: "Documento de Identificación Extranjero", label: "Documento de Identificación Extranjero" },
-              ]}
-              value={formData.tipoDocumento}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.3}
-            />
-
-            {/* Identificación */}
-            <FormField
-              label="Identificación"
-              name="identificacion"
-              type="text"
-              placeholder="Identificación del empleado"
-              required
-              value={formData.identificacion}
-              error={errors.identificacion}
-              touched={touched.identificacion}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.4}
@@ -312,7 +330,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
             }}
             whileTap={{ scale: 0.98 }}
           >
-            Crear Empleado
+            {employee ? "Guardar Cambios" : "Crear Empleado"}
           </motion.button>
         </motion.div>
       </motion.div>

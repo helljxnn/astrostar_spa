@@ -23,9 +23,11 @@ function AppRoutes() {
       </Route>
       <Route path="/login" element={<Login />} />
 
+      {/* Login sin Layout (independiente, sin navbar/topbar) */}
+      <Route path="/login" element={<Login />} />
+
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />
-
     </Routes>
   );
 }

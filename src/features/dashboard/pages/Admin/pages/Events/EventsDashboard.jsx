@@ -1,30 +1,9 @@
-
-// import { useState } from "react";
-// import { EventModal } from "./components/EventModal"; 
-
 import { useState } from "react";
-import Table from "../../../../../../shared/components/Table/table";
 import { EventModal } from "./components/EventModal";
 import { FaPlus } from "react-icons/fa";
-
-// Datos de ejemplo (puedes moverlos a models si quieres)
-const initialEvents = [
-  {
-    nombre: "Festival de Verano",
-    descripcion: "Un evento cultural con artistas locales",
-    fechaInicio: "2025-08-01",
-    fechaFin: "2025-08-05",
-    ubicacion: "Parque Central",
-    estado: "Programado",
-    tipo: "Festival",
-    patrocinador: "Adidas",
-    categoria: "Todas",
-    publicar: true,
-  },
-];
+import EventsCalendar from "./components/EventsCalendar";
 
 const Event = () => {
-  const [data, setData] = useState(initialEvents);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSave = (newEvent) => {
@@ -44,48 +23,15 @@ const Event = () => {
         </button>
       </div>
 
-      {/* Tabla de eventos */}
-      <Table
-        thead={{
-          titles: [
-            "Nombre",
-            "Descripción",
-            "Fecha inicio",
-            "Fecha fin",
-            "Ubicación",
-            "Tipo",
-            "Estado",
-            "Patrocinador",
-            "Categoría",
-            "Publicado",
-          ],
-          state: true,
-        }}
-        tbody={{
-          data,
-          dataPropertys: [
-            "nombre",
-            "descripcion",
-            "fechaInicio",
-            "fechaFin",
-            "ubicacion",
-            "tipo",
-            "estado",
-            "patrocinador",
-            "categoria",
-            "publicar",
-          ],
-          state: true,
-        }}
-      />
-
       {/* Modal para crear evento */}
       {isModalOpen && (
-        <EventModal
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
+        <EventModal onClose={() => setIsModalOpen(false)} onSave={handleSave} />
       )}
+
+      {/* Aquí se renderiza el calendario */}
+      <div className="mt-6">
+        <EventsCalendar />
+      </div>
     </div>
   );
 };

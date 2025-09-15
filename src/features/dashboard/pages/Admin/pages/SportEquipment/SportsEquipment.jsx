@@ -180,6 +180,7 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
+            actions: true,
           }}
           tbody={{
             data: filteredEquipment,
@@ -190,6 +191,9 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onView: handleView,
             onEdit: handleEdit,
             onDelete: handleDelete,
             onView: handleView,

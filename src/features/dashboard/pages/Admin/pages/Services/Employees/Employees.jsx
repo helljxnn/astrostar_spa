@@ -10,6 +10,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 const Employees = () => {
   const [data, setData] = useState(employeesData);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState(null); //  para saber si edita
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -32,8 +33,31 @@ const Employees = () => {
     startIndex + rowsPerPage
   );
 
-  const handleSave = (newEmployee) => {
-    setData([...data, newEmployee]);
+  // Guardar empleado (crear o editar)
+  const handleSave = (employee) => {
+    if (editingEmployee) {
+      // Editar
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === editingEmployee.id ? { ...employee, id: editingEmployee.id } : item
+        )
+      );
+    } else {
+      // Crear
+      setData((prev) => [
+        ...prev,
+        { ...employee, id: prev.length + 1 }, //  asignar ID simple
+      ]);
+    }
+
+    setEditingEmployee(null);
+    setIsModalOpen(false);
+  };
+
+  // Editar empleado
+  const handleEdit = (employee) => {
+    setEditingEmployee(employee);
+    setIsModalOpen(true);
   };
 
   return (
@@ -60,7 +84,10 @@ const Employees = () => {
               Generar reporte
             </button>
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setEditingEmployee(null); // limpiar si es crear
+                setIsModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
               <FaPlus /> Crear
@@ -80,6 +107,7 @@ const Employees = () => {
           dataPropertys: ["nombre", "identificacion", "tipoEmpleado", "rol", "estado"],
           state: true,
         }}
+        onEdit={handleEdit} // habilitar editar
       />
 
       {/* Paginador */}
@@ -97,8 +125,12 @@ const Employees = () => {
       {/* Modal */}
       <EmployeeModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingEmployee(null);
+        }}
         onSave={handleSave}
+        employee={editingEmployee} 
       />
     </div>
   );

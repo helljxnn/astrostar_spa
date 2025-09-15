@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Form from "../../../../../../../shared/components/form";
-import HandleOnChange from "../../../../../../../shared/hooks/handleChange";
+import Form from "../../../../../../../../shared/components/form";
+import HandleOnChange from "../../../../../../../../shared/hooks/handleChange";
 
 /**
  * Modal con el formulario para editar una compra existente.

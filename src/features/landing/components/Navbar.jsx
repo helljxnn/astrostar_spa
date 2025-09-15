@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,23 +11,16 @@ export const Navbar = () => {
   useEffect(() => {
     const controlNavbar = () => {
       const currentScrollY = window.scrollY;
-
       if (currentScrollY < lastScrollY) {
-        // Scroll hacia arriba → mostrar navbar
         setIsVisible(true);
       } else if (currentScrollY > lastScrollY && currentScrollY > 80) {
-        // Scroll hacia abajo (después de 80px) → ocultar navbar
         setIsVisible(false);
       }
-
       setLastScrollY(currentScrollY);
     };
 
     window.addEventListener("scroll", controlNavbar);
-
-    return () => {
-      window.removeEventListener("scroll", controlNavbar);
-    };
+    return () => window.removeEventListener("scroll", controlNavbar);
   }, [lastScrollY]);
 
   const linkClasses = ({ isActive }) =>
@@ -65,36 +59,45 @@ export const Navbar = () => {
             />
           </NavLink>
 
-          <div className="hidden md:flex flex-1 justify-center">
-            <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
-              <li><NavLink to="/about" className={linkClasses}>Acerca de</NavLink></li>
-              <li><NavLink to="/events" className={linkClasses}>Eventos</NavLink></li>
-              <li><NavLink to="/categories" className={linkClasses}>Categorías</NavLink></li>
-              <li><NavLink to="/services" className={linkClasses}>Servicios</NavLink></li>
-            </ul>
-          </div>
-
-          {/* Botón login (escritorio) */}
-          <div className="hidden md:flex md:ml-12">
-            <NavLink to="/login" className={loginClasses}>
-              Iniciar Sesión
-              <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
-            </NavLink>
-          </div>
-
-          {/* Botón menú móvil */}
-          <button
-            className="md:hidden"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Alternar menú de navegación"
-          >
-            {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
-          </button>
+        {/* Links escritorio */}
+        <div className="hidden md:flex flex-1 justify-end lg:justify-center">
+          <ul className="flex space-x-6 lg:space-x-12 text-base lg:text-lg">
+            <li><NavLink to="/about" className={linkClasses}>Acerca de</NavLink></li>
+            <li><NavLink to="/events" className={linkClasses}>Eventos</NavLink></li>
+            <li><NavLink to="/categories" className={linkClasses}>Categorías</NavLink></li>
+            <li><NavLink to="/services" className={linkClasses}>Servicios</NavLink></li>
+          </ul>
         </div>
 
+        {/* Login escritorio */}
+        <div className="hidden md:flex md:ml-6 lg:ml-12">
+          <NavLink to="/login" className={loginClasses}>
+            Iniciar Sesión
+            <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+          </NavLink>
+        </div>
+
+        {/* Botón menú móvil */}
+        <button
+          className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Alternar menú de navegación"
+        >
+          {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {/* Menú móvil */}
+      <AnimatePresence>
         {isOpen && (
-          <div className="md:hidden bg-white border-t border-gray-200">
-            <ul className="flex flex-col space-y-4 px-6 py-4 text-lg">
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="md:hidden bg-white border-t border-gray-200"
+          >
+            <ul className="flex flex-col space-y-4 px-6 py-4 text-base sm:text-lg">
               <li><NavLink to="/about" className={linkClasses} onClick={() => setIsOpen(false)}>Acerca de</NavLink></li>
               <li><NavLink to="/events" className={linkClasses} onClick={() => setIsOpen(false)}>Eventos</NavLink></li>
               <li><NavLink to="/categories" className={linkClasses} onClick={() => setIsOpen(false)}>Categorías</NavLink></li>
@@ -106,9 +109,9 @@ export const Navbar = () => {
                 </NavLink>
               </li>
             </ul>
-          </div>
+          </motion.div>
         )}
-      </nav>
-    </>
+      </AnimatePresence>
+    </nav>
   );
 };

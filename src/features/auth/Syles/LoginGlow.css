@@ -1,0 +1,46 @@
+.glow-container {
+  --login-box-color: #ffffff0d;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.glow-container::before {
+  content: "";
+  position: absolute;
+  inset: -50px;
+  background: conic-gradient(
+    from 90deg,
+    #6D2EFF,
+    #5CDCFF,
+    #6D2EFF,
+    #5CDCFF
+  );
+  animation: spin 6s linear infinite;
+  opacity: 0; 
+  transform: scale(0.9);
+  transition: opacity 0.8s ease, filter 0.8s ease, transform 0.8s ease;
+}
+
+.glow-container:hover::before {
+  opacity: 0.4; 
+  filter: blur(35px) brightness(1.1); 
+  transform: scale(1);
+}
+
+.login-box {
+  position: relative;
+  z-index: 1;
+  background: var(--login-box-color);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(15px);
+  border-radius: 20px;
+  padding: 2rem;
+  width: 350px;
+  box-shadow:
+    inset 0 40px 60px -8px rgba(255, 255, 255, 0.12),
+    inset 4px 0 12px -6px rgba(255, 255, 255, 0.12),
+    inset 0 0 12px -4px rgba(255, 255, 255, 0.12),
+    0 4px 16px rgba(0, 0, 0, 0.4);
+}
