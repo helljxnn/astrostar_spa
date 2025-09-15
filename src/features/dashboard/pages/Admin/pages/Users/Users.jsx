@@ -243,13 +243,13 @@ const Users = () => {
           )}
         </h1>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           {/* Buscador */}
-          <div className="w-full sm:w-80">
+          <div className="sm:w-64">
             <SearchInput
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Buscar por nombre, correo, ID, rol..."
+              placeholder="Buscar usuario"
               className="w-full"
             />
           </div>

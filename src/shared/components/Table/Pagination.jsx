@@ -16,7 +16,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerP
 
   // ✅ Evitar NaN
   const safeTotalRows = totalRows || 0;
-  const safeRowsPerPage = rowsPerPage || 1;
+  const safeRowsPerPage = rowsPerPage || 5;
   const safeStartIndex = startIndex >= 0 ? startIndex : 0;
 
   const startItem = safeTotalRows === 0 ? 0 : safeStartIndex + 1;

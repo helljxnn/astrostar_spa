@@ -1,23 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-const documentTypesLabels = {
-  CC: "Cédula de ciudadanía",
-  TI: "Tarjeta de identidad",
-  CE: "Cédula de extranjería",
-  PAS: "Pasaporte",
-};
-
-const UserViewModal = ({ isOpen, onClose, user }) => {
-  if (!isOpen || !user) return null;
+const ProviderViewModal = ({ isOpen, onClose, provider }) => {
+  if (!isOpen || !provider) return null;
 
   const formatPhoneDisplay = (phone) => {
     if (!phone) return "No especificado";
     return phone;
-  };
-
-  const getDocumentTypeLabel = (type) => {
-    return documentTypesLabels[type] || type;
   };
 
   return (
@@ -43,12 +32,12 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
             ✕
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            Detalles del Usuario
+            Detalles del Proveedor
           </h2>
           <p className="text-center text-gray-600 mt-2">
             Información completa de:{" "}
             <span className="font-semibold text-primary-purple">
-              {user.nombre} {user.apellido}
+              {provider.razonSocial}
             </span>
           </p>
         </div>
@@ -56,7 +45,7 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
         {/* Body */}
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Información Personal */}
+            {/* Información Empresarial */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -64,33 +53,29 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               className="space-y-4"
             >
               <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
-                Información Personal
+                Información Empresarial
               </h3>
 
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Nombre completo
+                    Razón Social
                   </label>
                   <p className="text-gray-900 font-medium">
-                    {user.nombre} {user.apellido}
+                    {provider.razonSocial}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-600">
-                    Tipo de documento
-                  </label>
-                  <p className="text-gray-900">
-                    {getDocumentTypeLabel(user.tipoDocumento)}
-                  </p>
+                  <label className="text-sm font-medium text-gray-600">NIT</label>
+                  <p className="text-gray-900 font-mono">{provider.nit}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Identificación
+                    Tipo de Proveedor
                   </label>
-                  <p className="text-gray-900 font-mono">{user.identificacion}</p>
+                  <p className="text-gray-900">{provider.tipoProveedor}</p>
                 </div>
               </div>
             </motion.div>
@@ -109,43 +94,25 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               <div className="space-y-3">
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Correo electrónico
+                    Contacto Principal
                   </label>
-                  <p className="text-gray-900">{user.correo}</p>
+                  <p className="text-gray-900">{provider.contactoPrincipal}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium text-gray-600">
                     Teléfono
                   </label>
-                  <p className="text-gray-900">{formatPhoneDisplay(user.telefono)}</p>
+                  <p className="text-gray-900">
+                    {formatPhoneDisplay(provider.telefono)}
+                  </p>
                 </div>
-              </div>
-            </motion.div>
 
-            {/* Información del Sistema */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-4 md:col-span-2"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
-                Información del Sistema
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-600">
-                    Rol asignado
+                    Correo electrónico
                   </label>
-                  <p
-                    className={
-                      user.rol === "Administrador"
-                    }
-                  >
-                    {user.rol}
-                  </p>
+                  <p className="text-gray-900">{provider.correo}</p>
                 </div>
 
                 <div>
@@ -154,12 +121,12 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
                   </label>
                   <p
                     className={
-                      user.estado === "Activo"
+                      provider.estado === "Activo"
                         ? "text-primary-purple font-semibold"
                         : "text-primary-blue font-semibold"
                     }
                   >
-                    {user.estado}
+                    {provider.estado}
                   </p>
                 </div>
               </div>
@@ -189,4 +156,4 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
   );
 };
 
-export default UserViewModal;
+export default ProviderViewModal;
