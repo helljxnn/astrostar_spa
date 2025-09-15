@@ -5,7 +5,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../shared/utils/alerts";
 import {
   useFormUserValidation,
   userValidationRules,
@@ -29,10 +29,10 @@ const UserModal = ({
   onSave,
   onUpdate,
   roles,
-  userToEdit = null,
-  mode = "create",
+  userToEdit = null, // null = crear, objeto = editar
+  mode = userToEdit ? "edit" : "create", // 'create' | 'edit'
 }) => {
-  const isEditing = mode === "edit" && userToEdit !== null;
+  const isEditing = mode === "edit" || userToEdit !== null;
 
   const {
     values,
@@ -60,29 +60,21 @@ const UserModal = ({
 
   // Cargar datos del usuario cuando se abra el modal en modo edición
   useEffect(() => {
-    if (isOpen) {
-      if (isEditing && userToEdit) {
-        console.log("Cargando datos para edición:", userToEdit); // Debug
-        setValues({
-          nombre: userToEdit.nombre || "",
-          apellido: userToEdit.apellido || "",
-          tipoDocumento: userToEdit.tipoDocumento || "",
-          identificacion: userToEdit.identificacion || "",
-          rol: userToEdit.rol || "",
-          correo: userToEdit.correo || "",
-          telefono: userToEdit.telefono || "",
-          estado: userToEdit.estado || "",
-        });
-      } else {
-        // Resetear formulario para modo crear
-        resetForm();
-      }
+    if (isOpen && isEditing && userToEdit) {
+      setValues({
+        nombre: userToEdit.nombre || "",
+        apellido: userToEdit.apellido || "",
+        tipoDocumento: userToEdit.tipoDocumento || "",
+        identificacion: userToEdit.identificacion || "",
+        rol: userToEdit.rol || "",
+        correo: userToEdit.correo || "",
+        telefono: userToEdit.telefono || "",
+        estado: userToEdit.estado || "",
+      });
     }
-  }, [isOpen, isEditing, userToEdit, setValues, resetForm]);
+  }, [isOpen, isEditing, userToEdit, setValues]);
 
   const handleSubmit = async () => {
-    console.log("Enviando formulario:", { isEditing, values }); // Debug
-
     // 1. Marcar todos los campos como tocados
     const allTouched = {};
     Object.keys(userValidationRules).forEach((field) => {
@@ -92,18 +84,15 @@ const UserModal = ({
 
     // 2. Validar todos los campos
     if (!validateAllFields()) {
-      showErrorAlert(
-        "Campos incompletos",
-        "Por favor completa todos los campos correctamente antes de continuar."
-      );
-      return;
+      // Aquí es donde se encontraba la alerta. La hemos eliminado.
+      return; // detener ejecución si hay errores
     }
 
     // 3. Confirmar en modo edición
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
-        `¿Deseas actualizar la información del usuario ${values.nombre} ${values.apellido}?`,
+        `¿Deseas actualizar la información del usuario ${userToEdit.nombre} ${userToEdit.apellido}?`,
         {
           confirmButtonText: "Sí, actualizar",
           cancelButtonText: "Cancelar",
@@ -117,26 +106,14 @@ const UserModal = ({
 
     try {
       if (isEditing) {
-        if (!userToEdit || !userToEdit.id) {
-          throw new Error("No se encontró el ID del usuario a actualizar");
-        }
-        
-        const updatedUserData = { 
-          ...values, 
-          id: userToEdit.id 
-        };
-        
-        console.log("Actualizando usuario con datos:", updatedUserData); // Debug
+        const updatedUserData = { ...values, id: userToEdit.id };
         await onUpdate(updatedUserData);
-        
         showSuccessAlert(
           "Usuario actualizado",
           `Los datos de ${values.nombre} ${values.apellido} han sido actualizados exitosamente.`
         );
       } else {
-        console.log("Creando nuevo usuario con datos:", values); // Debug
         await onSave(values);
-        
         showSuccessAlert(
           "Usuario creado",
           "El usuario ha sido creado exitosamente."
@@ -157,7 +134,6 @@ const UserModal = ({
       );
     }
   };
-
   // Función para cerrar el modal y resetear el formulario
   const handleClose = () => {
     resetForm();
@@ -191,7 +167,7 @@ const UserModal = ({
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {isEditing ? "Editar Usuario" : "Crear Usuario"}
           </h2>
-          {isEditing && userToEdit && (
+          {isEditing && (
             <p className="text-center text-gray-600 mt-2">
               Modificando información de:{" "}
               <span className="font-semibold text-primary-purple">
@@ -232,7 +208,6 @@ const UserModal = ({
               delay={0.15}
               required
             />
-            
             <FormField
               label="Nombre"
               name="nombre"
