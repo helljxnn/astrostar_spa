@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import Table from "../../../../../../../shared/components/Table/table";
 import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
-import FormCreate from "./formCreate";
-import FormEdit from "./formEdit";
+import FormCreate from "./components/formCreate";
+import FormEdit from "./components/formEdit";
 import { showSuccessAlert } from '../../../../../../../shared/utils/alerts';
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 
