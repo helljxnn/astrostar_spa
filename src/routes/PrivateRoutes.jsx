@@ -7,7 +7,7 @@ import DashboardLayout from "../features/dashboard/pages/Admin/components/Dashbo
 /* Páginas */
 import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard.jsx";
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
-import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
+import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";

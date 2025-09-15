@@ -1,5 +1,75 @@
 import { useState } from "react";
 
+// Funciones auxiliares de validación
+const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
+const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
+const isValidEmail = (email) => /^[a-zA-Z0-9]([a-zA-Z0-9._-])*[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(email);
+const cleanPhone = (phone) => phone.replace(/[\s\-\(\)]/g, '');
+const isOnlyNumbers = (value) => /^\d+$/.test(value);
+
+// Validación teléfono colombiano
+const validatePhone = (value) => {
+  if (!value?.trim()) return "El número telefónico es obligatorio";
+  const phone = cleanPhone(value);
+  
+  if (phone.startsWith('+57') || phone.startsWith('57')) {
+    const local = phone.replace(/^(\+57|57)/, '');
+    if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) return "";
+    return "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
+  }
+
+  if (!/^\d+$/.test(phone)) return "El teléfono solo puede contener números";
+  if ((phone.length === 10 && /^3/.test(phone)) || (phone.length === 7 && /^[2-8]/.test(phone))) return "";
+  if (phone.length < 7) return "El número debe tener al menos 7 dígitos";
+  if (phone.length > 10) return "Número demasiado largo. Máximo 10 dígitos para celular";
+  if (phone.length === 10 && !/^3/.test(phone)) return "Los números celulares deben iniciar con 3";
+  if (phone.length === 7 && !/^[2-8]/.test(phone)) return "Los números fijos deben iniciar con 2-8";
+  if ([8,9].includes(phone.length)) return "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular)";
+  return "Formato de teléfono inválido";
+};
+
+// Validación de documento de identidad
+const validateDocument = (value, tipoDocumento) => {
+  if (!value?.trim()) return "El número de documento es obligatorio";
+  
+  const doc = value.trim().replace(/[\s.-]/g, '');
+  
+  switch (tipoDocumento) {
+    case 'cedula':
+      if (!/^\d{6,10}$/.test(doc)) return "La cédula debe tener entre 6 y 10 dígitos";
+      break;
+    case 'tarjeta_identidad':
+      if (!/^\d{10,11}$/.test(doc)) return "La tarjeta de identidad debe tener 10 u 11 dígitos";
+      break;
+    case 'cedula_extranjeria':
+      if (!/^\d{6,12}$/.test(doc)) return "La cédula de extranjería debe tener entre 6 y 12 dígitos";
+      break;
+    case 'pasaporte':
+      if (!/^[A-Z0-9]{6,9}$/.test(doc.toUpperCase())) return "El pasaporte debe tener entre 6 y 9 caracteres alfanuméricos";
+      break;
+    default:
+      if (!/^[A-Z0-9]{6,12}$/i.test(doc)) return "Formato de documento inválido";
+  }
+  
+  return "";
+};
+
+// Validación de edad vs fecha de nacimiento
+const validateAgeAndBirthDate = (edad, fechaNacimiento) => {
+  if (!edad || !fechaNacimiento) return "";
+  
+  const birthDate = new Date(fechaNacimiento);
+  const today = new Date();
+  const calculatedAge = Math.floor((today - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+  
+  if (Math.abs(calculatedAge - parseInt(edad)) > 1) {
+    return "La edad no coincide con la fecha de nacimiento";
+  }
+  
+  return "";
+};
+
+// Hook optimizado para atletas
 export const useFormAthleteValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
@@ -8,7 +78,6 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
   const validateField = (name, value) => {
     const rules = validationRules[name];
     if (!rules) return '';
-
     for (const rule of rules) {
       const error = rule(value, values);
       if (error) return error;
@@ -27,18 +96,9 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
   };
 
   const handleChange = (nameOrEvent, value) => {
-    let name, val;
-    
-    // Detectar si es un evento o parámetros directos
-    if (typeof nameOrEvent === 'string') {
-      // Llamada directa: onChange(name, value)
-      name = nameOrEvent;
-      val = value;
-    } else {
-      // Evento: onChange(event)
-      name = nameOrEvent.target.name;
-      val = nameOrEvent.target.value;
-    }
+    const { name, val } = typeof nameOrEvent === 'string'
+      ? { name: nameOrEvent, val: value }
+      : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
 
     setValues(prev => ({ ...prev, [name]: val }));
 
@@ -49,19 +109,10 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
   };
 
   const handleBlur = (nameOrEvent) => {
-    let name;
-    
-    // Detectar si es un evento o nombre directo
-    if (typeof nameOrEvent === 'string') {
-      // Llamada directa: onBlur(name)
-      name = nameOrEvent;
-    } else if (nameOrEvent && nameOrEvent.target) {
-      // Evento: onBlur(event)
-      name = nameOrEvent.target.name;
-    } else {
-      // Llamada sin parámetros: onBlur()
-      return;
-    }
+    const name = typeof nameOrEvent === 'string'
+      ? nameOrEvent
+      : nameOrEvent?.target?.name;
+    if (!name) return;
 
     setTouched(prev => ({ ...prev, [name]: true }));
     const error = validateField(name, values[name]);
@@ -74,236 +125,77 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
     setTouched({});
   };
 
-  return {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    validateAllFields,
-    setValues,
-    setErrors,
-    setTouched,
-    resetForm
+  return { 
+    values, 
+    errors, 
+    touched, 
+    handleChange, 
+    handleBlur, 
+    validateAllFields, 
+    setValues, 
+    setErrors, 
+    setTouched, 
+    resetForm 
   };
 };
 
+// Reglas de validación específicas para atletas
 export const athleteValidationRules = {
   nombres: [
-    (value) => (!value?.trim() ? "Los nombres son obligatorios" : ""),
-    (value) => value?.trim().length < 2 ? "Los nombres deben tener al menos 2 caracteres" : "",
-    (value) => value?.trim().length > 50 ? "Los nombres no pueden exceder 50 caracteres" : "",
-    (value) => !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value?.trim() || "") ? "Los nombres solo pueden contener letras y espacios" : "",
-    (value) => {
-      const trimmed = value?.trim() || "";
-      return /\s{2,}/.test(trimmed) ? "No se permiten espacios dobles" : "";
-    }
+    (v) => !v?.trim() ? "El nombre es obligatorio" : "",
+    (v) => v?.trim().length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
+    (v) => v?.trim().length > 80 ? "El nombre no puede exceder 80 caracteres" : "",
+    (v) => !isOnlyLetters(v?.trim()) ? "El nombre solo puede contener letras y espacios" : "",
+    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
-
-  apellidos: [
-    (value) => (!value?.trim() ? "Los apellidos son obligatorios" : ""),
-    (value) => value?.trim().length < 2 ? "Los apellidos deben tener al menos 2 caracteres" : "",
-    (value) => value?.trim().length > 50 ? "Los apellidos no pueden exceder 50 caracteres" : "",
-    (value) => !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value?.trim() || "") ? "Los apellidos solo pueden contener letras y espacios" : "",
-    (value) => {
-      const trimmed = value?.trim() || "";
-      return /\s{2,}/.test(trimmed) ? "No se permiten espacios dobles" : "";
-    }
-  ],
-
   tipoDocumento: [
-    (value) => (!value ? "Debe seleccionar un tipo de documento" : "")
+    (v) => !v ? "Debe seleccionar un tipo de documento" : ""
   ],
-
   numeroDocumento: [
-    (value) => (!value?.trim() ? "El número de documento es obligatorio" : ""),
-    (value, allValues) => {
-      const cleaned = value?.trim() || "";
-      const tipoDoc = allValues.tipoDocumento;
-      
-      if (tipoDoc === "cedula") {
-        return !/^\d{7,10}$/.test(cleaned) ? "La cédula debe tener entre 7 y 10 dígitos" : "";
-      }
-      if (tipoDoc === "tarjeta_identidad") {
-        return !/^\d{10,11}$/.test(cleaned) ? "La tarjeta de identidad debe tener entre 10 y 11 dígitos" : "";
-      }
-      if (tipoDoc === "cedula_extranjeria") {
-        return !/^\d{6,12}$/.test(cleaned) ? "La cédula de extranjería debe tener entre 6 y 12 dígitos" : "";
-      }
-      if (tipoDoc === "pasaporte") {
-        return !/^[A-Z0-9]{6,12}$/.test(cleaned.toUpperCase()) ? "El pasaporte debe tener entre 6 y 12 caracteres alfanuméricos" : "";
-      }
-      return "";
-    }
+    (v, values) => validateDocument(v, values?.tipoDocumento)
   ],
-
-  fechaNacimiento: [
-    (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
-    (value) => {
-      if (!value) return "";
-      const today = new Date();
-      const birthDate = new Date(value);
-      const age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      if (age < 12) return "El deportista debe tener al menos 12 años";
-      if (age > 65) return "La edad máxima permitida es 65 años";
-      return "";
-    }
-  ],
-
-  genero: [
-    (value) => (!value ? "Debe seleccionar el género" : "")
-  ],
-
-  telefono: [
-    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
-    (value) => {
-      let phone = value?.trim() || "";
-      // Limpiar el número removiendo espacios, guiones y paréntesis
-      const cleanPhone = phone.replace(/[\s\-\(\)]/g, '');
-      
-      // Si ya tiene +57 o 57 al inicio, validar como está
-      if (cleanPhone.startsWith('+57') || cleanPhone.startsWith('57')) {
-        const localNumber = cleanPhone.replace(/^(\+57|57)/, '');
-        // Validar número local después del código de país
-        if (localNumber.length === 10 && /^3/.test(localNumber)) {
-          return ""; // Celular válido
-        }
-        if (localNumber.length === 7 && /^[2-8]/.test(localNumber)) {
-          return ""; // Fijo válido
-        }
-        return "Número inválido. Celular: 3XXXXXXXXX (10 dígitos), Fijo: 2XXXXXXX-8XXXXXXX (7 dígitos)";
-      }
-
-      // Si no tiene código de país, asumir que es número local colombiano
-      if (!/^\d+$/.test(cleanPhone)) {
-        return "El teléfono solo puede contener números";
-      }
-
-      // Validar número local (se asume +57 automáticamente)
-      if (cleanPhone.length === 10 && /^3/.test(cleanPhone)) {
-        return ""; // Celular colombiano válido
-      }
-      if (cleanPhone.length === 7 && /^[2-8]/.test(cleanPhone)) {
-        return ""; // Teléfono fijo colombiano válido
-      }
-
-      // Mensajes de error específicos
-      if (cleanPhone.length < 7) {
-        return "El número debe tener al menos 7 dígitos";
-      }
-      if (cleanPhone.length > 10) {
-        return "Número demasiado largo. Máximo 10 dígitos para celular";
-      }
-      if (cleanPhone.length === 10 && !/^3/.test(cleanPhone)) {
-        return "Los números celulares deben iniciar con 3";
-      }
-      if (cleanPhone.length === 7 && !/^[2-8]/.test(cleanPhone)) {
-        return "Los números fijos deben iniciar con 2, 3, 4, 5, 6, 7 u 8";
-      }
-      if (cleanPhone.length === 8 || cleanPhone.length === 9) {
-        return "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular)";
-      }
-
-      return "Formato de teléfono inválido";
-    }
-  ],
-
   correo: [
-    (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
-    (value) => {
-      const email = value?.trim() || "";
-      const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-])*[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/;
-      return !emailRegex.test(email) ? "El correo electrónico no es válido" : "";
+    (v) => !v?.trim() ? "El correo es obligatorio" : "",
+    (v) => !isValidEmail(v?.trim() || "") ? "El correo electrónico no es válido" : "",
+    (v) => (v?.trim() || "").length > 100 ? "El correo no puede exceder 100 caracteres" : ""
+  ],
+  telefono: [validatePhone],
+  edad: [
+    (v) => !v || isNaN(parseInt(v)) ? "La edad es obligatoria" : "",
+    (v) => {
+      const edad = parseInt(v);
+      if (isNaN(edad)) return "";
+      if (edad < 12) return "La edad mínima es 12 años";
+      if (edad > 65) return "La edad máxima es 65 años";
+      return "";
     },
-    (value) => {
-      const email = value?.trim() || "";
-      return email.length > 100 ? "El correo no puede exceder 100 caracteres" : "";
-    }
+    (v, values) => validateAgeAndBirthDate(v, values?.fechaNacimiento)
   ],
-
-  direccion: [
-    (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
-    (value) => value?.trim().length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
-    (value) => value?.trim().length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
-    (value) => {
-      const trimmed = value?.trim() || "";
-      return /\s{2,}/.test(trimmed) ? "No se permiten espacios dobles" : "";
-    }
+  fechaNacimiento: [
+    (v) => !v ? "La fecha de nacimiento es obligatoria" : "",
+    (v) => {
+      if (!v) return "";
+      const birthDate = new Date(v);
+      const today = new Date();
+      const minDate = new Date();
+      minDate.setFullYear(today.getFullYear() - 65);
+      const maxDate = new Date();
+      maxDate.setFullYear(today.getFullYear() - 12);
+      
+      if (birthDate < minDate) return "La fecha de nacimiento no puede ser anterior a 65 años";
+      if (birthDate > maxDate) return "La fecha de nacimiento debe corresponder a una persona mayor de 12 años";
+      if (birthDate > today) return "La fecha de nacimiento no puede ser futura";
+      return "";
+    },
+    (v, values) => validateAgeAndBirthDate(values?.edad, v)
   ],
-
-  ciudad: [
-    (value) => (!value?.trim() ? "La ciudad es obligatoria" : ""),
-    (value) => value?.trim().length < 2 ? "La ciudad debe tener al menos 2 caracteres" : "",
-    (value) => value?.trim().length > 50 ? "La ciudad no puede exceder 50 caracteres" : "",
-    (value) => !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value?.trim() || "") ? "La ciudad solo puede contener letras y espacios" : "",
-    (value) => {
-      const trimmed = value?.trim() || "";
-      return /\s{2,}/.test(trimmed) ? "No se permiten espacios dobles" : "";
-    }
-  ],
-
-  deportePrincipal: [
-    (value) => (!value ? "Debe seleccionar el deporte principal" : "")
-  ],
-
   categoria: [
-    (value) => (!value ? "Debe seleccionar una categoría" : "")
+    (v) => !v ? "Debe seleccionar una categoría" : ""
   ],
-
-  posicion: [
-    (value) => (!value?.trim() ? "La posición es obligatoria" : ""),
-    (value) => value?.trim().length < 2 ? "La posición debe tener al menos 2 caracteres" : "",
-    (value) => value?.trim().length > 50 ? "La posición no puede exceder 50 caracteres" : ""
-  ],
-
-  equipoClub: [
-    (value) => (!value?.trim() ? "El equipo/club es obligatorio" : ""),
-    (value) => value?.trim().length < 2 ? "El equipo/club debe tener al menos 2 caracteres" : "",
-    (value) => value?.trim().length > 100 ? "El equipo/club no puede exceder 100 caracteres" : ""
-  ],
-
-  peso: [
-    (value) => (!value || isNaN(parseFloat(value)) ? "El peso es obligatorio y debe ser un número" : ""),
-    (value) => {
-      const peso = parseFloat(value);
-      if (isNaN(peso)) return "";
-      if (peso < 30) return "El peso mínimo es 30 kg";
-      if (peso > 200) return "El peso máximo es 200 kg";
-      return "";
-    }
-  ],
-
-  estatura: [
-    (value) => (!value || isNaN(parseFloat(value)) ? "La estatura es obligatoria y debe ser un número" : ""),
-    (value) => {
-      const estatura = parseFloat(value);
-      if (isNaN(estatura)) return "";
-      if (estatura < 1.20) return "La estatura mínima es 1.20 m";
-      if (estatura > 2.50) return "La estatura máxima es 2.50 m";
-      return "";
-    }
-  ],
-
-  contactoEmergencia: [
-    (value) => (!value?.trim() ? "El contacto de emergencia es obligatorio" : ""),
-    (value) => value?.trim().length < 5 ? "El contacto debe tener al menos 5 caracteres" : "",
-    (value) => value?.trim().length > 100 ? "El contacto no puede exceder 100 caracteres" : ""
-  ],
-
-  observaciones: [
-    (value) => {
-      if (!value?.trim()) return ""; 
-      return value.trim().length > 500 ? "Las observaciones no pueden exceder 500 caracteres" : "";
-    }
-  ],
-
   estado: [
-    (value) => (!value ? "Debe seleccionar un estado" : "")
+    (v) => !v ? "Debe seleccionar un estado" : ""
+  ],
+  deportes: [
+    (v) => !v ? "Debe seleccionar al menos un deporte" : ""
   ]
 };
