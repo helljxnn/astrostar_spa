@@ -1,168 +1,225 @@
-// src/features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx
-import React, { useState } from "react";
+// src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
+import React, { useState, useMemo } from "react";
 import { FaPlus } from "react-icons/fa";
+import ProviderModal from "./components/ProviderModal.jsx";
+import ProviderViewModal from "./components/ProviderViewModal.jsx";
+import Table from "../../../../../../../shared/components/Table/table.jsx";
+import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
+import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
+import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
+import providersData from "./ProvidersData.jsx";
 import {
   showSuccessAlert,
   showErrorAlert,
-  showConfirmAlert,
-} from "../../../../../../../shared/utils/alerts";
-import Table from "../../../../../../../shared/components/Table/table";
-import providersData from "./ProvidersData";
-import ProviderModal from "./components/ProviderModal";
+  showDeleteAlert,
+} from "../../../../../../../shared/utils/alerts.js";
 
 const Providers = () => {
   const [data, setData] = useState(providersData);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [providerToEdit, setProviderToEdit] = useState(null);
+  const [providerToView, setProviderToView] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57")) return phone;
-    if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
-    return phone;
-  };
+  const rowsPerPage = 5;
 
-  const handleSave = async (newProvider) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() < 0.1) {
-          return reject(new Error("Error de servidor simulado"));
-        }
-
-        const providerWithFormattedPhone = {
-          ...newProvider,
-          id: Date.now(),
-          telefono: formatPhoneNumber(newProvider.telefono),
-        };
-
-        setData((prevData) => [...prevData, providerWithFormattedPhone]);
-        resolve();
-      }, 500);
-    });
-  };
-
-  const handleUpdate = async (updatedProvider) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() < 0.05) {
-          return reject(new Error("Error de conexión simulado"));
-        }
-
-        const providerWithFormattedPhone = {
-          ...updatedProvider,
-          telefono: formatPhoneNumber(updatedProvider.telefono),
-        };
-
-        setData((prevData) =>
-          prevData.map((provider) =>
-            provider.id === providerWithFormattedPhone.id
-              ? providerWithFormattedPhone
-              : provider
-          )
-        );
-        resolve();
-      }, 800);
-    });
-  };
-
-  const handleDelete = async (providerId) => {
-    const providerToDelete = data.find((provider) => provider.id === providerId);
-    if (!providerToDelete) {
-      return showErrorAlert("Error", "Proveedor no encontrado");
-    }
-
-    // Usar alerta de error como confirmación
-    const confirmResult = await showErrorAlert(
-      "¿Estás seguro de eliminar este proveedor?",
-      `Esta acción no se puede deshacer. Se eliminará a ${providerToDelete.razonSocial || providerToDelete.nombre}.`
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+    return data.filter(
+      (provider) =>
+        provider.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.nit.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        provider.contactoPrincipal
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
     );
+  }, [data, searchTerm]);
 
-    if (!confirmResult.isConfirmed) {
-      return;
-    }
+  const totalRows = filteredData.length;
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedData = filteredData.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
 
-    try {
-      // Simulación de espera
-      await new Promise((resolve) => setTimeout(resolve, 500));
+  const handlePageChange = (page) => setCurrentPage(page);
 
-      setData((prevData) =>
-        prevData.filter((provider) => provider.id !== providerId)
-      );
-
-      showSuccessAlert(
-        "Proveedor eliminado",
-        `${providerToDelete.razonSocial || providerToDelete.nombre} fue eliminado correctamente.`
-      );
-    } catch (error) {
-      showErrorAlert(
-        "Error al eliminar",
-        error.message || "No se pudo eliminar el proveedor, intenta de nuevo."
-      );
-    }
+  const handleSave = (newProvider) => {
+    const newEntry = { ...newProvider, id: Date.now() };
+    setData([...data, newEntry]);
+    showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
+    setIsModalOpen(false);
   };
 
-  const handleCreate = () => {
-    setModalMode("create");
-    setProviderToEdit(null);
-    setIsModalOpen(true);
+  const handleUpdate = (updatedProvider) => {
+    setData(
+      data.map((p) => (p.id === updatedProvider.id ? updatedProvider : p))
+    );
+    showSuccessAlert(
+      "Proveedor actualizado",
+      "El proveedor se actualizó correctamente."
+    );
+    setIsModalOpen(false);
   };
 
   const handleEdit = (provider) => {
-    setModalMode("edit");
+    if (!provider || provider.target) return;
     setProviderToEdit(provider);
+    setModalMode("edit");
     setIsModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setProviderToEdit(null);
-    setModalMode("create");
+  const handleView = (provider) => {
+    if (!provider || provider.target) return;
+    setProviderToView(provider);
+    setIsViewModalOpen(true);
+  };
+
+  const handleDelete = async (provider) => {
+    if (!provider || !provider.id)
+      return showErrorAlert("Error", "Proveedor no válido");
+
+    const confirmResult = await showDeleteAlert(
+      "¿Estás seguro?",
+      `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+    );
+
+    if (!confirmResult.isConfirmed) return;
+
+    setData(data.filter((p) => p.id !== provider.id));
+    showSuccessAlert(
+      "Proveedor eliminado",
+      `${provider.razonSocial} fue eliminado correctamente.`
+    );
   };
 
   return (
-    <div className="p-6 font-questrial">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
+    <div className="p-6 font-questrial w-full max-w-full">
+      {/* Header con buscador y botones */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Buscar proveedor..."
+            />
+          </div>
+
+          {/* Botones */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <ReportButton
+              data={filteredData}
+              fileName="Proveedores"
+              columns={[
+                { key: "razonSocial", label: "Razón Social" },
+                { key: "nit", label: "NIT" },
+                { key: "tipoEntidad", label: "Tipo de Entidad" },
+                { key: "tipoProveedor", label: "Tipo Proveedor" },
+                { key: "contactoPrincipal", label: "Contacto Principal" },
+                { key: "correo", label: "Correo" },
+                { key: "telefono", label: "Teléfono" },
+                { key: "estado", label: "Estado" },
+              ]}
+            />
+
+            <button
+              onClick={() => {
+                setModalMode("create");
+                setProviderToEdit(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+            >
+              <FaPlus /> Crear Proveedor
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-        >
-          <FaPlus />
-          Crear Proveedor
-        </button>
       </div>
 
-      <Table
-        thead={{
-          titles: ["Razón Social", "NIT", "Correo", "Teléfono"],
-          state: true,
-          actions: true,
-        }}
-        tbody={{
-          data,
-          dataPropertys: ["razonSocial", "nit", "correo", "telefono"],
-          state: true,
-          onEdit: (row) => handleEdit(row),
-          onDelete: (row) => handleDelete(row.id),
-          onView: (row) => console.log("Ver proveedor:", row),
-          stateMap: {
-            Activo: "bg-green-100 text-green-800",
-            Inactivo: "bg-red-100 text-red-800",
-          },
-        }}
-      />
+      {/* Tabla */}
+      {totalRows > 0 ? (
+        <>
+          {/* Contenedor de tabla con scroll horizontal limpio */}
+          <div className="w-full overflow-x-auto bg-white rounded-lg">
+            <div className="min-w-full">
+              <Table
+                thead={{
+                  titles: [
+                    "Razón Social",
+                    "NIT",
+                    "Entidad",
+                    "Tipo Proveedor",
+                    "Contacto",
+                  ],
+                  state: true,
+                  actions: true,
+                }}
+                tbody={{
+                  data: paginatedData,
+                  dataPropertys: [
+                    "razonSocial",
+                    "nit",
+                    "tipoEntidad",
+                    "tipoProveedor",
+                    "contactoPrincipal",
+                  ],
+                  state: true,
+                  stateMap: {
+                    Activo: "bg-green-100 text-green-800",
+                    Inactivo: "bg-red-100 text-red-800",
+                  },
+                }}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleView}
+              />
+            </div>
+          </div>
 
+          {/* Paginador sin margen superior y sin bordes/sombras */}
+          <div className="w-full border-none shadow-none">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalRows={totalRows}
+              rowsPerPage={rowsPerPage}
+              startIndex={startIndex}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          No hay proveedores registrados todavía.
+        </div>
+      )}
+
+      {/* Modal Crear/Editar */}
       <ProviderModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         onUpdate={handleUpdate}
         providerToEdit={providerToEdit}
         mode={modalMode}
+      />
+
+      {/* Modal Ver */}
+      <ProviderViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        provider={providerToView}
       />
     </div>
   );

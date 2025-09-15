@@ -84,14 +84,8 @@ const UserModal = ({
 
     // 2. Validar todos los campos
     if (!validateAllFields()) {
-      // 🚨 Solo mostrar SweetAlert si estamos en edición
-      if (isEditing) {
-        showErrorAlert(
-          "Campos incompletos",
-          "Por favor completa todos los campos correctamente antes de continuar."
-        );
-      }
-      return; // detener ejecución
+      // Aquí es donde se encontraba la alerta. La hemos eliminado.
+      return; // detener ejecución si hay errores
     }
 
     // 3. Confirmar en modo edición
@@ -140,7 +134,6 @@ const UserModal = ({
       );
     }
   };
-
   // Función para cerrar el modal y resetear el formulario
   const handleClose = () => {
     resetForm();
@@ -188,6 +181,34 @@ const UserModal = ({
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
+              label="Tipo de documento"
+              name="tipoDocumento"
+              type="select"
+              placeholder="Selecciona el tipo de documento"
+              options={documentTypes}
+              value={values.tipoDocumento}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.tipoDocumento}
+              touched={touched.tipoDocumento}
+              delay={0.1}
+              required
+            />
+
+            <FormField
+              label="Identificación"
+              name="identificacion"
+              type="text"
+              placeholder="Número de identificación"
+              value={values.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.identificacion}
+              touched={touched.identificacion}
+              delay={0.15}
+              required
+            />
+            <FormField
               label="Nombre"
               name="nombre"
               type="text"
@@ -212,35 +233,6 @@ const UserModal = ({
               error={errors.apellido}
               touched={touched.apellido}
               delay={0.15}
-              required
-            />
-
-            <FormField
-              label="Tipo de documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Selecciona el tipo de documento"
-              options={documentTypes}
-              value={values.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              delay={0.2}
-              required
-            />
-
-            <FormField
-              label="Identificación"
-              name="identificacion"
-              type="text"
-              placeholder="Número de identificación"
-              value={values.identificacion}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.identificacion}
-              touched={touched.identificacion}
-              delay={0.3}
               required
             />
 

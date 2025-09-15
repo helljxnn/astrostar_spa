@@ -8,7 +8,7 @@ import {
 } from "../../../../../../shared/utils/alerts";
 import Table from "../../../../../../shared/components/Table/table";
 import athletesData from "./AthleteData";
-import AthleteModal from "./components/AthleteModal";
+import AthleteModal from "./AthletesSection/components/AthleteModal";
 
 const Athletes = () => {
   const [data, setData] = useState(athletesData);
@@ -19,7 +19,8 @@ const Athletes = () => {
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57")) return phone;
+    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
+      return phone;
     if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
     return phone;
   };
@@ -29,8 +30,11 @@ const Athletes = () => {
     const birth = new Date(birthDate);
     let age = today.getFullYear() - birth.getFullYear();
     const monthDiff = today.getMonth() - birth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
       age--;
     }
     return age;
@@ -136,7 +140,7 @@ const Athletes = () => {
   };
 
   // Formatear datos para mostrar en la tabla
-  const formattedData = data.map(athlete => ({
+  const formattedData = data.map((athlete) => ({
     ...athlete,
     nombreCompleto: `${athlete.nombres} ${athlete.apellidos}`,
     edad: calculateAge(athlete.fechaNacimiento),
@@ -149,7 +153,7 @@ const Athletes = () => {
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Deportistas</h1>
         </div>
-        
+
         <button
           onClick={handleCreate}
           className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
@@ -159,17 +163,27 @@ const Athletes = () => {
         </button>
       </div>
 
-
-
       <Table
         thead={{
-          titles: ["Nombre Completo", "Deporte - Categoría", "Edad", "Correo", "Teléfono"],
+          titles: [
+            "Nombre Completo",
+            "Deporte - Categoría",
+            "Edad",
+            "Correo",
+            "Teléfono",
+          ],
           state: true,
           actions: true,
         }}
         tbody={{
           data: formattedData,
-          dataPropertys: ["nombreCompleto", "deporteCategoria", "edad", "correo", "telefono"],
+          dataPropertys: [
+            "nombreCompleto",
+            "deporteCategoria",
+            "edad",
+            "correo",
+            "telefono",
+          ],
           state: true,
           onEdit: (row) => handleEdit(row),
           onDelete: (row) => handleDelete(row.id),
