@@ -5,6 +5,7 @@ import { FormField } from "../../../../../../../../shared/components/FormField";
 const FormEdit = ({ isOpen, onClose, donorData, onSave }) => {
     const initialValues = {
         nombre: "",
+        personaContacto: "",
         tipo: "",
         tipoPersona: "",
         identificacion: "",
@@ -19,6 +20,7 @@ const FormEdit = ({ isOpen, onClose, donorData, onSave }) => {
         if (isOpen && donorData) {
             setValues({
                 nombre: donorData.nombre || "",
+                personaContacto: donorData.personaContacto || "",
                 tipo: donorData.tipo || "",
                 tipoPersona: donorData.tipoPersona || "",
                 identificacion: donorData.identificacion || "",
@@ -46,12 +48,15 @@ const FormEdit = ({ isOpen, onClose, donorData, onSave }) => {
 
     return (
         <Form isOpen={isOpen} title="Editar Donante o Patrocinador" submitText="Guardar Cambios" onClose={onClose} onSubmit={handleFormSubmit} >
-            <FormField label="Nombre / Razón Social" name="nombre" type="text" placeholder="Ej: Empresa Solidaria S.A.S." value={values.nombre} onChange={handleChange} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField label="Identificación (C.C. o NIT)" name="identificacion" type="text" placeholder="Ej: 900.123.456-7" value={values.identificacion} onChange={handleChange} />
+                <FormField label="Nombre / Razón Social" name="nombre" type="text" placeholder="Ej: Empresa Solidaria S.A.S." value={values.nombre} onChange={handleChange} />
+            </div>
+            <FormField label="Persona de Contacto" name="personaContacto" type="text" placeholder="Ej: Ana García" value={values.personaContacto} onChange={handleChange} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Tipo" name="tipo" type="select" value={values.tipo} onChange={handleChange} options={[{ value: "Donante", label: "Donante" }, { value: "Patrocinador", label: "Patrocinador" }]} />
                 <FormField label="Tipo de Persona" name="tipoPersona" type="select" value={values.tipoPersona} onChange={handleChange} options={[{ value: "Natural", label: "Natural" }, { value: "Jurídica", label: "Jurídica" }]} />
             </div>
-            <FormField label="Identificación (C.C. o NIT)" name="identificacion" type="text" placeholder="Ej: 900.123.456-7" value={values.identificacion} onChange={handleChange} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField label="Teléfono de Contacto" name="telefono" type="tel" placeholder="Ej: 3101234567" value={values.telefono} onChange={handleChange} />
                 <FormField label="Correo Electrónico" name="correo" type="email" placeholder="Ej: contacto@empresa.com" value={values.correo} onChange={handleChange} />

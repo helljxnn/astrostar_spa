@@ -1,41 +1,51 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
-import donorsSponsorsData from "../../../../../../../shared/models/DonorsSponsorsData";
 import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
 import ViewDetails from "../../../../../../../shared/components/ViewDetails";
-import {
-    showSuccessAlert,
-    showConfirmAlert,
-    showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+import { showSuccessAlert, showConfirmAlert } from "../../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 
+const LOCAL_STORAGE_KEY = 'donorsSponsorsData';
+
 function DonorsSponsors() {
-    const [donorsList, setDonorsList] = useState(donorsSponsorsData);
+    const [donorsList, setDonorsList] = useState(() => {
+        try {
+            const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+            return storedData ? JSON.parse(storedData) : [];
+        } catch (error) {
+            console.error("Error al leer desde localStorage:", error);
+            return [];
+        }
+    });
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedDonor, setSelectedDonor] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
 
+    useEffect(() => {
+        try {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(donorsList));
+        } catch (error) {
+            console.error("Error al guardar en localStorage:", error);
+        }
+    }, [donorsList]);
+
     const filteredDonors = useMemo(() =>
         donorsList.filter(item =>
-            item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.identificacion.includes(searchTerm)
+            (item.nombre && item.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.identificacion && item.identificacion.toLowerCase().includes(searchTerm.toLowerCase()))
         ), [donorsList, searchTerm]);
 
     const handleOpenCreateModal = () => setIsCreateModalOpen(true);
     const handleCloseCreateModal = () => setIsCreateModalOpen(false);
 
     const handleCreate = (newData) => {
-        const newDonor = {
-            id: donorsList.length > 0 ? Math.max(...donorsList.map(d => d.id)) + 1 : 1,
-            ...newData,
-        };
-
+        const newDonor = { id: Date.now(), ...newData };
         setDonorsList(prevList => [newDonor, ...prevList]);
         handleCloseCreateModal();
         showSuccessAlert("¡Creado!", "El nuevo donante/patrocinador se ha registrado correctamente.");
@@ -52,16 +62,11 @@ function DonorsSponsors() {
     };
 
     const handleUpdate = (updatedData) => {
-        const updatedList = donorsList.map(item => {
-            if (item.id === selectedDonor.id) {
-                return {
-                    ...item,
-                    ...updatedData,
-                };
-            }
-            return item;
-        });
-        setDonorsList(updatedList);
+        setDonorsList(prevList =>
+            prevList.map(item =>
+                item.id === selectedDonor.id ? { ...item, ...updatedData } : item
+            )
+        );
         handleCloseEditModal();
         showSuccessAlert("¡Actualizado!", "Los datos se han actualizado correctamente.");
     };
@@ -70,26 +75,12 @@ function DonorsSponsors() {
         const result = await showConfirmAlert(
             "¿Estás seguro de eliminar?",
             `"${itemToDelete.nombre}" se eliminará permanentemente.`,
-            {
-                confirmButtonText: "Sí, eliminar",
-                cancelButtonText: "Cancelar",
-            }
+            { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
         );
 
         if (result.isConfirmed) {
-            try {
-                const updatedList = donorsList.filter(
-                    (item) => item.id !== itemToDelete.id
-                );
-                setDonorsList(updatedList);
-                showSuccessAlert(
-                    "¡Eliminado!",
-                    `"${itemToDelete.nombre}" ha sido eliminado con éxito.`
-                );
-            } catch (error) {
-                console.error("Error al eliminar:", error);
-                showErrorAlert("Error", "Ocurrió un error al eliminar el registro.");
-            }
+            setDonorsList(prevList => prevList.filter(item => item.id !== itemToDelete.id));
+            showSuccessAlert("¡Eliminado!", `"${itemToDelete.nombre}" ha sido eliminado.`);
         }
     };
 
@@ -104,10 +95,11 @@ function DonorsSponsors() {
     };
 
     const donorDetailConfig = [
+        { label: "Identificación (NIT/Cédula)", key: "identificacion" },
         { label: "Nombre / Razón Social", key: "nombre" },
+        { label: "Persona de Contacto", key: "personaContacto" },
         { label: "Tipo", key: "tipo" },
         { label: "Tipo de Persona", key: "tipoPersona" },
-        { label: "Identificación", key: "identificacion" },
         { label: "Teléfono", key: "telefono" },
         { label: "Correo Electrónico", key: "correo" },
         { label: "Dirección", key: "direccion" },
@@ -127,19 +119,23 @@ function DonorsSponsors() {
                         placeholder="Buscar por nombre o identificación..."
                     />
                     <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-                        <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold">
+                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+                        <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors">
                             Crear <SiGoogleforms size={20} />
                         </button>
                     </div>
                 </div>
                 <Table
-                    rowsPerPage={4}
-                    paginationFrom={4}
-                    thead={{ titles: ["Nombre", "Tipo", "Identificación"], state: true }}
+                    rowsPerPage={5}
+                    paginationFrom={5}
+                    thead={{
+                        titles: ["Identificación", "Nombre", "Tipo", "Teléfono"],
+                        state: true,
+                        actions: true,
+                    }}
                     tbody={{
                         data: filteredDonors,
-                        dataPropertys: ["nombre", "tipo", "identificacion"],
+                        dataPropertys: ["identificacion", "nombre", "tipo", "telefono"],
                         state: true,
                         onEdit: handleEdit,
                         onDelete: handleDelete,
@@ -147,9 +143,24 @@ function DonorsSponsors() {
                     }}
                 />
             </div>
-            <FormCreate isOpen={isCreateModalOpen} onClose={handleCloseCreateModal} onSave={handleCreate} />
-            <FormEdit isOpen={isEditModalOpen} onClose={handleCloseEditModal} onSave={handleUpdate} donorData={selectedDonor} />
-            <ViewDetails isOpen={isViewModalOpen} onClose={handleCloseViewModal} data={selectedDonor} detailConfig={donorDetailConfig} title="Detalles del Donante/Patrocinador" />
+            <FormCreate
+                isOpen={isCreateModalOpen}
+                onClose={handleCloseCreateModal}
+                onSave={handleCreate}
+            />
+            <FormEdit
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                onSave={handleUpdate}
+                donorData={selectedDonor}
+            />
+            <ViewDetails
+                isOpen={isViewModalOpen}
+                onClose={handleCloseViewModal}
+                data={selectedDonor}
+                detailConfig={donorDetailConfig}
+                title="Detalles del Donante/Patrocinador"
+            />
         </div>
     );
 }

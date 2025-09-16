@@ -2,86 +2,76 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * Modal genérico para mostrar detalles de un item en modo solo lectura.
+ * Modal genérico y mejorado para mostrar detalles de un registro.
  *
  * @param {object} props - Propiedades del componente.
  * @param {boolean} props.isOpen - Controla si el modal está visible.
  * @param {function} props.onClose - Función para cerrar el modal.
- * @param {object} props.data - El objeto de datos a mostrar.
- * @param {Array<{label: string, key: string, format?: function}>} props.detailConfig - Configuración para mapear claves de datos a etiquetas, con un formateador opcional.
+ * @param {object} props.data - El objeto con los datos a mostrar.
+ * @param {Array<{label: string, key: string, format?: function}>} props.detailConfig - Configuración para mostrar los datos.
  * @param {string} props.title - Título del modal.
  */
 const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
+    if (!data) return null;
 
     const backdropVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
-        exit: { opacity: 0 },
     };
 
     const modalVariants = {
         hidden: { scale: 0.9, opacity: 0, y: 50 },
-        visible: {
-            scale: 1,
-            opacity: 1,
-            y: 0,
-            transition: {
-                type: "spring",
-                damping: 25,
-                stiffness: 300,
-                when: "beforeChildren", // Asegura que el modal aparezca antes que los hijos
-                staggerChildren: 0.07, // Anima los hijos con un pequeño retraso
-            },
-        },
+        visible: { scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
         exit: { scale: 0.9, opacity: 0, y: 30, transition: { duration: 0.2 } },
-    };
-
-    const itemVariants = {
-        hidden: { opacity: 0, y: 20 },
-        visible: { opacity: 1, y: 0 },
     };
 
     return (
         <AnimatePresence>
-            {isOpen && data && (
+            {isOpen && (
                 <motion.div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     initial="hidden"
                     animate="visible"
                     exit="exit"
                 >
-                    {/* Backdrop */}
                     <motion.div
                         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         variants={backdropVariants}
                         onClick={onClose}
                     />
-
-                    {/* Contenedor del Modal */}
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg flex flex-col gap-6"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
                     >
-                        <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full z-10">✕</button>
-
-                        <motion.div variants={itemVariants} className="border-b border-gray-200 pb-4 w-full">
-                            <h2 className="text-2xl font-questrial text-primary-purple">{title}</h2>
-                        </motion.div>
-
-                        <div className="space-y-3">
-                            {detailConfig.map((item) => (
-                                <motion.div key={item.key} variants={itemVariants} className="grid grid-cols-2 gap-4 items-center border-b border-gray-100 pb-2">
-                                    <p className="font-semibold text-gray-700">{item.label}:</p>
-                                    <p className="text-gray-600 text-right">
-                                        {item.format ? item.format(data[item.key]) : data[item.key]}
-                                    </p>
-                                </motion.div>
-                            ))}
+                        {/* Header */}
+                        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+                            <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
+                            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
                         </div>
 
-                        <motion.div variants={itemVariants} className="flex justify-end pt-4 w-full">
-                            <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg bg-primary-blue text-white font-bold hover:opacity-90 transition-opacity">Cerrar</button>
-                        </motion.div>
+                        {/* Body */}
+                        <div className="p-6 overflow-y-auto flex-grow">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                                {detailConfig.map(({ label, key, format }) => {
+                                    const value = data[key];
+                                    const formattedValue = format ? format(value) : value;
+
+                                    return (
+                                        <div key={key} className="py-2">
+                                            <p className="text-sm font-semibold text-gray-500 mb-1">{label}</p>
+                                            <p className="text-base text-gray-800 break-words">
+                                                {formattedValue !== null && formattedValue !== undefined && formattedValue !== '' ? formattedValue : 'N/A'}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-end">
+                            <button type="button" onClick={onClose} className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium">Cerrar</button>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}
