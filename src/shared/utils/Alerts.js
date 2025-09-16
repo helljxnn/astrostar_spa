@@ -91,3 +91,34 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
     background: "linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%)",
   });
 };
+
+// Alerta de eliminación (agregar al archivo alerts.js)
+export const showDeleteAlert = (title, text = "", options = {}) => {
+  const defaultOptions = {
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+    ...options,
+  };
+
+  return Swal.fire({
+    ...alerts,
+    icon: "warning",
+    title: `<span style="color:#dc2626;">${title}</span>`,
+    text,
+    showCancelButton: true,
+    confirmButtonText: defaultOptions.confirmButtonText,
+    cancelButtonText: defaultOptions.cancelButtonText,
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    showCloseButton: true,
+    customClass: {
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-white border border-gray-200`, // Fondo blanco limpio
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-[#dc2626] hover:bg-[#b91c1c] text-white`, // Botón rojo plano
+      cancelButton: `${alerts.customClass.cancelButton} text-gray-600 border border-gray-300 hover:bg-gray-100`,
+      icon: "text-[#dc2626]", 
+    },
+    background: "#ffffff", // Fondo blanco
+  });
+};

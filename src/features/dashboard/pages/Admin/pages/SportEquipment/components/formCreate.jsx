@@ -1,32 +1,45 @@
 import React, { useState, useEffect } from "react";
 import Form from "../../../../../../../shared/components/form";
-import { FormField } from "../../../../../../../shared/components/FormField";
+import { showErrorAlert, showSuccessAlert } from "../../../../../../../shared/utils/Alerts";
+import HandleOnChange from "../../../../../../../shared/hooks/handleChange";
 
-const FormCreate = ({ isOpen, onClose, onSave }) => {
-    const initialValues = {
+/**
+ * Modal con el formulario para crear un nuevo material deportivo.
+ *
+ * @param {object} props - Propiedades del componente.
+ * @param {boolean} props.isOpen - Controla si el modal está visible.
+ * @param {function} props.onClose - Función para cerrar el modal.
+ */
+const FormCreate = ({ isOpen, onClose }) => {
+    const [formData, setFormData] = useState({
         nombre: "",
-        cantidadReal: "",
-        estado: "Disponible", // Valor por defecto
-    };
-    const [values, setValues] = useState(initialValues);
+        cantidad: "",
+        descripcion: "",
+        estado: ""
+    });
+    const SaveData = (e) => {
+        HandleOnChange(formData, e, setFormData);
+    }
+    const HandleForm = (newFormData) => {
+        try {
+            const data = localStorage.getItem("formData");
+            let items = data ? JSON.parse(data) : [];
 
-    useEffect(() => {
-        if (!isOpen) {
-            setValues(initialValues);
+            if (!Array.isArray(items)) {
+                items = [];
+            }
+
+            items.push(newFormData);
+            localStorage.setItem("formData", JSON.stringify(items));
+
+            onClose();
+            setFormData({ nombre: "", cantidad: "", descripcion: "", estado: "" });
+            showSuccessAlert("Registrado exitosamente", "Material deportivo guardado exitosamente");
+        } catch (error) {
+            console.error("Error saving to localStorage:", error);
+            showErrorAlert("No se guardaron los datos", "Error al intentar guardar los datos.");
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setValues(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleFormSubmit = () => {
-        if (onSave) {
-            onSave(values);
-        }
-    };
+    }
 
     return (
         <Form isOpen={isOpen} title="Crear Nuevo Material Deportivo" submitText="Crear" onClose={onClose} onSubmit={handleFormSubmit} >

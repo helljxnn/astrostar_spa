@@ -50,10 +50,13 @@ function SportsEquipment() {
 
   // Filtramos los datos basándonos en el término de búsqueda.
   // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
-  const filteredEquipment = useMemo(() =>
-    equipmentList.filter(item =>
-      item.NombreMaterial.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [equipmentList, searchTerm]);
+  const filteredEquipment = useMemo(
+    () =>
+      equipmentList.filter((item) =>
+        item.NombreMaterial.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [equipmentList, searchTerm]
+  );
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true);
@@ -87,7 +90,7 @@ function SportsEquipment() {
 
   const handleEdit = (item) => {
     setSelectedEquipment(item); // Guardamos el item completo
-    setIsEditModalOpen(true);   // Abrimos el modal de edición
+    setIsEditModalOpen(true); // Abrimos el modal de edición
   };
 
   const handleCloseEditModal = () => {
@@ -98,14 +101,8 @@ function SportsEquipment() {
   const handleUpdate = (updatedData) => {
     // Lógica para actualizar el item en nuestra lista de estado
     const updatedList = equipmentList.map(item => {
-      // Usamos el ID para identificar el item a actualizar
-      if (item.id === selectedEquipment.id) {
-        const newCantidadInicial = Number(updatedData.cantidadReal);
-
-        // Recalculamos el total basado en la nueva cantidad inicial,
-        // manteniendo las cantidades compradas y donadas existentes.
-        const newTotal = newCantidadInicial + item.CantidadComprado + item.CantidadDonado;
-
+      // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
+      if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
         return {
           ...item,
           NombreMaterial: updatedData.nombre,
@@ -118,7 +115,10 @@ function SportsEquipment() {
     });
     setEquipmentList(updatedList);
     handleCloseEditModal(); // Cerramos el modal
-    showSuccessAlert("¡Actualizado!", "El material deportivo se ha actualizado correctamente.");
+    showSuccessAlert(
+      "¡Actualizado!",
+      "El material deportivo se ha actualizado correctamente."
+    );
   };
 
   const handleDelete = async (itemToDelete) => {
@@ -170,15 +170,24 @@ function SportsEquipment() {
   ];
 
   return (
-    <div id="contentSportsEquipment" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
+    <div
+      id="contentSportsEquipment"
+      className="w-full h-auto grid grid-rows-[auto_1fr] relative"
+    >
       {/* Contenedor index */}
       <div id="header" className="w-full h-auto p-8">
         {/* Cabecera */}
         <h1 className="text-5xl">Material deportivo</h1>
       </div>
-      <div id="body" className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4">
+      <div
+        id="body"
+        className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4"
+      >
         {/* Cuerpo */}
-        <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between items-center">
+        <div
+          id="actionButtons"
+          className="w-full h-auto p-2 flex flex-row justify-between items-center"
+        >
           {/* Componente de Búsqueda reutilizable */}
           <SearchInput
             value={searchTerm}
@@ -187,8 +196,8 @@ function SportsEquipment() {
           />
           {/* Botones */}
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold">
               Crear <SiGoogleforms size={20} />
             </button>
           </div>
@@ -200,7 +209,6 @@ function SportsEquipment() {
           thead={{
             titles: [
               "Nombre",
-              "Cantidad inicial",
               "Comprado",
               "Donado",
               "Total",

@@ -5,7 +5,7 @@ import { useFormEventValidation } from "../hooks/useFormEventValidation";
 import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
 import { SponsorsSelector } from "./SponsorsSelector";
 
-export const EventModal = ({ onClose, onSave, event }) => {
+export const EventModal = ({ onClose, onSave, event, isNew }) => {
   const [tipoEvento, setTipoEvento] = useState("");
   const [form, setForm] = useState({
     nombre: "",
@@ -15,24 +15,19 @@ export const EventModal = ({ onClose, onSave, event }) => {
     ubicacion: "",
     telefono: "",
     imagen: null,
-    cronograma: null, // cambiamos detalles por cronograma
+    cronograma: null,
     patrocinador: [],
     categoria: "",
     estado: "",
     publicar: false,
   });
 
-  const {
-    errors,
-    touched,
-    validate,
-    handleBlur,
-    touchAllFields,
-  } = useFormEventValidation();
+  const { errors, touched, validate, handleBlur, touchAllFields } =
+    useFormEventValidation();
 
-  // 🔹 Prellenar formulario si hay evento (modo editar)
+  // 🔹 Prellenar solo si estamos editando
   useEffect(() => {
-    if (event) {
+    if (!isNew && event) {
       setTipoEvento(event.tipo || "");
       setForm({
         nombre: event.nombre || "",
@@ -49,7 +44,7 @@ export const EventModal = ({ onClose, onSave, event }) => {
         publicar: event.publicar || false,
       });
     }
-  }, [event]);
+  }, [event, isNew]);
 
   const handleChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -70,7 +65,7 @@ export const EventModal = ({ onClose, onSave, event }) => {
     if (validate({ ...form, tipoEvento })) {
       onSave({ ...form, tipo: tipoEvento, id: event?.id || Date.now() });
       showSuccessAlert(
-        event ? "Evento actualizado exitosamente" : "Evento creado exitosamente"
+        isNew ? "Evento creado exitosamente" : "Evento actualizado exitosamente"
       );
       onClose();
     }
@@ -88,7 +83,7 @@ export const EventModal = ({ onClose, onSave, event }) => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-[#9BE9FF]">
-            {event ? "Editar Evento" : "Crear Evento"}
+            {isNew ? "Crear Evento" : "Editar Evento"}
           </h2>
           <button
             onClick={onClose}
@@ -254,6 +249,7 @@ export const EventModal = ({ onClose, onSave, event }) => {
               )}
             </div>
 
+            {/* Selector de patrocinadores */}
             <SponsorsSelector
               value={form.patrocinador}
               onChange={(val) => handleChange("patrocinador", val)}
@@ -328,7 +324,7 @@ export const EventModal = ({ onClose, onSave, event }) => {
               onClick={handleSubmit}
               className="px-5 py-2 rounded-lg bg-[#9BE9FF] text-gray-900 font-semibold hover:bg-[#80dfff] transition"
             >
-              {event ? "Actualizar" : "Guardar"}
+              {isNew ? "Guardar" : "Actualizar"}
             </button>
           </div>
         )}
