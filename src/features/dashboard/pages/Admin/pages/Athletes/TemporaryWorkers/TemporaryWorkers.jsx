@@ -7,11 +7,13 @@ import { IoMdDownload } from "react-icons/io";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts";
 
 const TemporaryWorkers = () => {
   const [data, setData] = useState(temporaryWorkersData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
+  const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -67,7 +69,39 @@ const TemporaryWorkers = () => {
   // Abrir modal en modo edición
   const handleEdit = (worker) => {
     setEditingWorker(worker);
+    setModalMode("edit");
     setIsModalOpen(true);
+  };
+
+  // Ver persona temporal
+  const handleView = (worker) => {
+    setEditingWorker(worker);
+    setModalMode("view");
+    setIsModalOpen(true);
+  };
+
+  // Eliminar persona temporal
+  const handleDelete = async (worker) => {
+    try {
+      const result = await showDeleteAlert(
+        "¿Eliminar persona temporal?",
+        `Se eliminará permanentemente a: ${worker.nombre}`
+      );
+
+      if (result.isConfirmed) {
+        setData((prev) => prev.filter((item) => item.identificacion !== worker.identificacion));
+        showSuccessAlert(
+          "Persona eliminada",
+          `${worker.nombre} ha sido eliminado correctamente.`
+        );
+      }
+    } catch (error) {
+      console.error("Error al eliminar persona temporal:", error);
+      showErrorAlert(
+        "Error al eliminar",
+        "No se pudo eliminar la persona temporal. Intenta de nuevo."
+      );
+    }
   };
 
   return (
@@ -96,6 +130,7 @@ const TemporaryWorkers = () => {
             <button
               onClick={() => {
                 setEditingWorker(null);
+                setModalMode("create");
                 setIsModalOpen(true);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
@@ -132,6 +167,8 @@ const TemporaryWorkers = () => {
           state: true,
         }}
         onEdit={handleEdit}
+        onDelete={handleDelete}
+        onView={handleView}
       />
 
       {/* Paginación */}
@@ -152,9 +189,11 @@ const TemporaryWorkers = () => {
         onClose={() => {
           setIsModalOpen(false);
           setEditingWorker(null);
+          setModalMode("create");
         }}
         onSave={handleSave}
         worker={editingWorker}
+        mode={modalMode}
       />
     </div>
   );
