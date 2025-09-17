@@ -77,7 +77,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         </div>
 
         {/* Botón cerrar */}
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-center mt-6">
           <button
             onClick={onClose}
             className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"

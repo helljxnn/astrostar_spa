@@ -55,7 +55,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker }) => {
     if (!validateAllFields()) return;
 
     if (worker) {
-      // 🔹 Solo editar muestra confirmación
+      //  Solo editar muestra confirmación
       showConfirmAlert("¿Deseas actualizar este registro?", "", {
         confirmButtonText: "Sí, actualizar",
       }).then((result) => {

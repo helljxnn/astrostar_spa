@@ -5,6 +5,7 @@ import { useFormEventValidation } from "../hooks/useFormEventValidation";
 import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
 import { SponsorsSelector } from "./SponsorsSelector";
 
+
 export const EventModal = ({ onClose, onSave, event, isNew }) => {
   const [tipoEvento, setTipoEvento] = useState("");
   const [form, setForm] = useState({
@@ -25,7 +26,7 @@ export const EventModal = ({ onClose, onSave, event, isNew }) => {
   const { errors, touched, validate, handleBlur, touchAllFields } =
     useFormEventValidation();
 
-  // 🔹 Prellenar solo si estamos editando
+  // Prellenar solo si estamos editando
   useEffect(() => {
     if (!isNew && event) {
       setTipoEvento(event.tipo || "");
