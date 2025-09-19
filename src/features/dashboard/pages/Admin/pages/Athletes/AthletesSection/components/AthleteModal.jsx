@@ -80,30 +80,59 @@ export const AthleteModal = ({ isOpen, onClose, onSave, athleteToEdit, mode }) =
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!formData.nombres || !formData.apellidos) {
-      showErrorAlert("Por favor completa los campos requeridos (nombres y apellidos).");
-      return;
-    }
+  // Lista de campos obligatorios
+  const requiredFields = [
+    "nombres",
+    "apellidos",
+    "tipoDocumento",
+    "identificacion",
+    "correo",
+    "telefono",
+    "fechaNacimiento",
+    "deportePrincipal",
+    "categoria",
+  ];
 
+  // Verificar si falta algún campo
+  const emptyFields = requiredFields.filter((field) => !formData[field]?.trim());
+
+  if (emptyFields.length > 0) {
+    showErrorAlert(
+      "Campos incompletos",
+      "Por favor completa todos los campos obligatorios antes de continuar."
+    );
+    return;
+  }
+
+  if (isEditing) {
+    const confirm = await showConfirmAlert(
+      "¿Seguro que deseas actualizar este deportista?"
+    );
+    if (!confirm.isConfirmed) return;
+  }
+
+  try {
     if (isEditing) {
-      const confirm = await showConfirmAlert("¿Seguro que deseas actualizar este deportista?");
-      if (!confirm.isConfirmed) return;
+      await onSave(formData, "edit"); // actualización
+    } else {
+      await onSave(formData, "create"); // creación
     }
 
-    try {
-      await onSave(formData, mode);
-      showSuccessAlert(
-        isEditing ? "Deportista actualizado correctamente" : "Deportista registrado correctamente"
-      );
-      onClose();
-    } catch (error) {
-      console.error("Error al guardar deportista:", error);
-      showErrorAlert("Ocurrió un error al guardar el deportista.");
-    }
-  };
+    showSuccessAlert(
+      isEditing
+        ? "Deportista actualizado correctamente"
+        : "Deportista registrado correctamente"
+    );
+
+    onClose();
+  } catch (error) {
+    console.error("Error al guardar deportista:", error);
+    showErrorAlert("Ocurrió un error al guardar el deportista.");
+  }
+};
 
   const handleClose = () => {
     setFormData({
@@ -164,43 +193,147 @@ export const AthleteModal = ({ isOpen, onClose, onSave, athleteToEdit, mode }) =
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Campos comunes */}
-            <FormField label="Nombres" name="nombres" type="text" placeholder="Nombres del deportista"
-              value={formData.nombres} onChange={handleChange} delay={0.1} required />
-            <FormField label="Apellidos" name="apellidos" type="text" placeholder="Apellidos del deportista"
-              value={formData.apellidos} onChange={handleChange} delay={0.15} required />
-            <FormField label="Tipo de Documento" name="tipoDocumento" type="select" placeholder="Selecciona el tipo de documento"
-              options={documentTypes} value={formData.tipoDocumento} onChange={handleChange} delay={0.2} required />
-            <FormField label="Identificación" name="identificacion" type="text" placeholder="Número de identificación"
-              value={formData.identificacion} onChange={handleChange} delay={0.25} required />
-            <FormField label="Correo Electrónico" name="correo" type="email" placeholder="correo@ejemplo.com"
-              value={formData.correo} onChange={handleChange} delay={0.3} required />
-            <FormField label="Teléfono" name="telefono" type="text" placeholder="3001234567"
-              value={formData.telefono} onChange={handleChange} delay={0.35} required />
-            <FormField label="Fecha de Nacimiento" name="fechaNacimiento" type="date" placeholder="Selecciona la fecha"
-              value={formData.fechaNacimiento} onChange={handleChange} delay={0.4} required />
-            <FormField label="Deporte Principal" name="deportePrincipal" type="text" placeholder="Ej. Fútbol, Natación"
-              value={formData.deportePrincipal} onChange={handleChange} delay={0.45} required />
-            <FormField label="Categoría" name="categoria" type="text" placeholder="Ej. Juvenil, Profesional"
-              value={formData.categoria} onChange={handleChange} delay={0.5} required />
-            <FormField label="Estado" name="estado" type="select" placeholder="Selecciona el estado"
-              options={states} value={formData.estado} onChange={handleChange} delay={0.55} required />
+  {/* Tipo y número de documento */}
+  <FormField
+    label="Tipo de Documento"
+    name="tipoDocumento"
+    type="select"
+    placeholder="Selecciona el tipo de documento"
+    options={documentTypes}
+    value={formData.tipoDocumento}
+    onChange={handleChange}
+    delay={0.1}
+    required
+  />
+  <FormField
+    label="Identificación"
+    name="identificacion"
+    type="text"
+    placeholder="Número de identificación"
+    value={formData.identificacion}
+    onChange={handleChange}
+    delay={0.15}
+    required
+  />
 
-            {/* Solo en edición */}
-            {isEditing && (
-              <>
-                <FormField label="Estado Inscripción" name="estadoInscripcion" type="text"
-                  placeholder="Ej. Vigente, No vigente" value={formData.estadoInscripcion}
-                  onChange={handleChange} delay={0.6} />
-                <FormField label="Concepto" name="concepto" type="text"
-                  placeholder="Detalle del concepto" value={formData.concepto}
-                  onChange={handleChange} delay={0.65} />
-                <FormField label="Fecha Concepto" name="fechaConcepto" type="date"
-                  placeholder="Selecciona la fecha" value={formData.fechaConcepto}
-                  onChange={handleChange} delay={0.7} />
-              </>
-            )}
-          </div>
+  {/* Nombres y apellidos */}
+  <FormField
+    label="Nombres"
+    name="nombres"
+    type="text"
+    placeholder="Nombres del deportista"
+    value={formData.nombres}
+    onChange={handleChange}
+    delay={0.2}
+    required
+  />
+  <FormField
+    label="Apellidos"
+    name="apellidos"
+    type="text"
+    placeholder="Apellidos del deportista"
+    value={formData.apellidos}
+    onChange={handleChange}
+    delay={0.25}
+    required
+  />
+
+  {/* Resto de campos */}
+  <FormField
+    label="Correo Electrónico"
+    name="correo"
+    type="email"
+    placeholder="correo@ejemplo.com"
+    value={formData.correo}
+    onChange={handleChange}
+    delay={0.3}
+    required
+  />
+  <FormField
+    label="Teléfono"
+    name="telefono"
+    type="text"
+    placeholder="3001234567"
+    value={formData.telefono}
+    onChange={handleChange}
+    delay={0.35}
+    required
+  />
+  <FormField
+    label="Fecha de Nacimiento"
+    name="fechaNacimiento"
+    type="date"
+    placeholder="Selecciona la fecha"
+    value={formData.fechaNacimiento}
+    onChange={handleChange}
+    delay={0.4}
+    required
+  />
+  <FormField
+    label="Deporte Principal"
+    name="deportePrincipal"
+    type="text"
+    placeholder="Ej. Fútbol, Natación"
+    value={formData.deportePrincipal}
+    onChange={handleChange}
+    delay={0.45}
+    required
+  />
+  <FormField
+    label="Categoría"
+    name="categoria"
+    type="text"
+    placeholder="Ej. Juvenil, Profesional"
+    value={formData.categoria}
+    onChange={handleChange}
+    delay={0.5}
+    required
+  />
+  <FormField
+    label="Estado"
+    name="estado"
+    type="select"
+    placeholder="Selecciona el estado"
+    options={states}
+    value={formData.estado}
+    onChange={handleChange}
+    delay={0.55}
+    required
+  />
+
+  {/* Solo en edición */}
+  {isEditing && (
+    <>
+      <FormField
+        label="Estado Inscripción"
+        name="estadoInscripcion"
+        type="text"
+        placeholder="Ej. Vigente, No vigente"
+        value={formData.estadoInscripcion}
+        onChange={handleChange}
+        delay={0.6}
+      />
+      <FormField
+        label="Concepto"
+        name="concepto"
+        type="text"
+        placeholder="Detalle del concepto"
+        value={formData.concepto}
+        onChange={handleChange}
+        delay={0.65}
+      />
+      <FormField
+        label="Fecha Concepto"
+        name="fechaConcepto"
+        type="date"
+        placeholder="Selecciona la fecha"
+        value={formData.fechaConcepto}
+        onChange={handleChange}
+        delay={0.7}
+      />
+    </>
+  )}
+</div>
 
           {/* Footer */}
           <motion.div
