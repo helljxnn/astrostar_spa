@@ -8,8 +8,8 @@ import ViewDetails from "../../../../../../shared/components/ViewDetails";
 import {
   showSuccessAlert,
   showConfirmAlert,
-  showErrorAlert,
-} from "../../../../../../shared/utils/alerts";
+  showErrorAlert
+} from "../../../../../../shared/utils/Alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
 // Clave para guardar los datos en localStorage
@@ -71,10 +71,10 @@ function SportsEquipment() {
     const newEquipment = {
       id: Date.now(), // Asignamos un ID único
       NombreMaterial: newData.nombre,
-      CantidadInicial: Number(newData.cantidadReal),
-      CantidadComprado: 0, // La cantidad inicial se asigna a 'comprado'
-      CantidadDonado: 0, // No hay donaciones al crear un item nuevo
-      Total: Number(newData.cantidadReal),
+      CantidadInicial: 0, // Se establece en 0 por reglas de negocio.
+      CantidadComprado: 0,
+      CantidadDonado: 0,
+      Total: 0, // El total inicial es 0, se actualizará con compras/donaciones.
       estado: newData.estado,
     };
 
@@ -101,13 +101,11 @@ function SportsEquipment() {
   const handleUpdate = (updatedData) => {
     // Lógica para actualizar el item en nuestra lista de estado
     const updatedList = equipmentList.map(item => {
-      // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
-      if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
+      // Usamos el ID para garantizar que actualizamos el item correcto.
+      if (item.id === selectedEquipment.id) {
         return {
-          ...item,
+          ...item, // Mantenemos las cantidades y otros datos intactos
           NombreMaterial: updatedData.nombre,
-          CantidadInicial: newCantidadInicial,
-          Total: newTotal,
           estado: updatedData.estado,
         };
       }
@@ -220,7 +218,6 @@ function SportsEquipment() {
             data: filteredEquipment,
             dataPropertys: [
               "NombreMaterial",
-              "CantidadInicial",
               "CantidadComprado",
               "CantidadDonado",
               "Total",

@@ -21,14 +21,13 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = () => {
+    const handleFormSubmit = () => {
         // Aquí podrías agregar validaciones más robustas
         if (!formData.identificacion || !formData.nombre || !formData.correo) {
             alert("Por favor, completa los campos obligatorios: Identificación, Nombre y Correo.");
             return;
         }
         onSave(formData);
-        setFormData(getInitialState()); // Limpiar el formulario
     };
 
     // Limpiar el formulario cuando se cierra el modal
@@ -41,7 +40,7 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
         <Form
             isOpen={isOpen}
             onClose={handleClose}
-            onSubmit={handleSubmit}
+            onSubmit={handleFormSubmit}
             title="Crear Donante / Patrocinador"
             submitText="Crear"
         >
