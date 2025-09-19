@@ -1,5 +1,5 @@
-// src/shared/utils/Excel.js
-import * as ExcelJS from 'exceljs';
+
+import  ExcelJS from 'exceljs';
 
 /**
  * Función auxiliar para acceder a propiedades anidadas usando notación de puntos

@@ -1,87 +1,94 @@
-import { useState } from "react";
-import Table from "../../../../../../shared/components/Table/table";
+import { useState, useMemo } from "react";
 import { EventModal } from "./components/EventModal";
 import { FaPlus } from "react-icons/fa";
-
-// Datos de ejemplo (puedes moverlos a models si quieres)
-const initialEvents = [
-  {
-    nombre: "Festival de Verano",
-    descripcion: "Un evento cultural con artistas locales",
-    fechaInicio: "2025-08-01",
-    fechaFin: "2025-08-05",
-    ubicacion: "Parque Central",
-    estado: "Programado",
-    tipo: "Festival",
-    patrocinador: "Adidas",
-    categoria: "Todas",
-    publicar: true,
-  },
-];
+import EventsCalendar from "./components/EventsCalendar";
+import ReportButton from "../../../../../../shared/components/ReportButton"; 
+import SearchInput from "../../../../../../shared/components/SearchInput";
 
 const Event = () => {
-  const [data, setData] = useState(initialEvents);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [data, setData] = useState([]); // lista de eventos
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleSave = (newEvent) => {
-    setData([...data, newEvent]);
+    setData((prev) => [...prev, newEvent]);
   };
 
+  // Filtrado general por búsqueda (como en empleados)
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+
+    return data.filter((item) =>
+      Object.values(item).some((value) =>
+        String(value).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [data, searchTerm]);
+
+  // Columnas para el reporte 
+  const reportColumns = [
+    { key: "tipo", label: "Tipo de Evento" },
+    { key: "nombre", label: "Nombre" },
+    { key: "descripcion", label: "Descripción" },
+    { key: "fechaInicio", label: "Fecha Inicio" },
+    { key: "fechaFin", label: "Fecha Fin" },
+    { key: "ubicacion", label: "Ubicación" },
+    { key: "telefono", label: "Teléfono" },
+    { key: "imagen", label: "Imagen" },
+    { key: "cronograma", label: "Cronograma" },
+    { key: "patrocinador", label: "Patrocinadores" },
+    { key: "categoria", label: "Categoría" },
+    { key: "estado", label: "Estado" },
+    { key: "publicar", label: "Publicado" },
+  ];
+
   return (
-    <div className="p-6 font-questrial">
-      {/* Header con botón Crear */}
-      <div className="flex justify-between items-center mb-6">
+    <div className="font-monserrat">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Eventos</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-        >
-          <FaPlus /> Crear
-        </button>
+
+        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          {/* Buscador */}
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar evento..."
+          />
+
+          {/* Botones */}
+          <div className="flex items-center gap-3">
+            {/* Botón de reporte */}
+            <ReportButton
+              data={filteredData}
+              fileName="Reporte_Eventos"
+              columns={reportColumns}
+            />
+
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition"
+            >
+              <FaPlus /> Crear
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Tabla de eventos */}
-      <Table
-        thead={{
-          titles: [
-            "Nombre",
-            "Descripción",
-            "Fecha inicio",
-            "Fecha fin",
-            "Ubicación",
-            "Tipo",
-            "Estado",
-            "Patrocinador",
-            "Categoría",
-            "Publicado",
-          ],
-          state: true,
-        }}
-        tbody={{
-          data,
-          dataPropertys: [
-            "nombre",
-            "descripcion",
-            "fechaInicio",
-            "fechaFin",
-            "ubicacion",
-            "tipo",
-            "estado",
-            "patrocinador",
-            "categoria",
-            "publicar",
-          ],
-          state: true,
-        }}
-      />
-
-      {/* Modal para crear evento */}
+      {/* Modal */}
       {isModalOpen && (
         <EventModal
           onClose={() => setIsModalOpen(false)}
           onSave={handleSave}
+          isNew={true}
+          event={null}
         />
       )}
+
+      {/* Calendario */}
+      <div className="mt-2">
+        <EventsCalendar events={filteredData} />
+      </div>
     </div>
   );
 };
