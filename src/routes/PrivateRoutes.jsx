@@ -6,7 +6,6 @@ import DashboardLayout from "../features/dashboard/pages/Admin/components/Dashbo
 
 /* Páginas */
 import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard.jsx";
-import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
@@ -22,6 +21,7 @@ import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/Purchas
 import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
 import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
+import Appointments from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 
 const PrivateRoutes = () => {
   return (
@@ -42,7 +42,7 @@ const PrivateRoutes = () => {
         {/* Gestión de citas - Accesible para todos los roles */}
         <Route path="appointment-management" element={
           <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
-            <AppointmentManagement />
+            <Appointments />
           </PrivateRoute>
         } />
 
