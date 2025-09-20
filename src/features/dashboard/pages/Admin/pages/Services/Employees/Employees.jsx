@@ -6,7 +6,11 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import {
+  showDeleteAlert,
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../shared/utils/Alerts";
 
 const Employees = () => {
   const [data, setData] = useState(employeesData);
@@ -192,7 +196,7 @@ const Employees = () => {
         />
       )}
 
-      {/* Modal */}
+      {/* Modal de Empleados */}
       <EmployeeModal
         isOpen={isModalOpen}
         onClose={() => {
