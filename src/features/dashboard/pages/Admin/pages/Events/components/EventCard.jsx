@@ -1,9 +1,8 @@
-import React from "react";
 import { format } from "date-fns";
 import es from "date-fns/locale/es";
 import { FaCog, FaUserPlus } from "react-icons/fa";
 
-const NotionEventComponent = ({ event, onActionClick }) => {
+const EventCard = ({ event, onActionClick }) => {
   const getColorClasses = (color) => {
     switch (color) {
       case "bg-primary-purple":
@@ -67,4 +66,4 @@ const NotionEventComponent = ({ event, onActionClick }) => {
   );
 };
 
-export default NotionEventComponent;
+export default EventCard;

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import es from "date-fns/locale/es";
 import { FaTimes } from "react-icons/fa";
-import NotionEventComponent from "./NotionEventComponent";
+import EventCard from "./EventCard";
 
 const DayEventsModal = ({ isOpen, onClose, date, events, onActionClick }) => {
   if (!isOpen || !date || !events.length) return null;
@@ -40,7 +40,7 @@ const DayEventsModal = ({ isOpen, onClose, date, events, onActionClick }) => {
           <div className="p-4 max-h-[60vh] overflow-y-auto">
             <div className="space-y-2">
               {events.map((event) => (
-                <NotionEventComponent
+                <EventCard
                   key={event.id}
                   event={event}
                   onActionClick={onActionClick}

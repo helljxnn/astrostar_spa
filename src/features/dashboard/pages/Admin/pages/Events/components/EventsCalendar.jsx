@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
-import { format, parse, startOfWeek, getDay, isSameDay } from "date-fns";
+import { format, parse, startOfWeek, getDay } from "date-fns";
 import es from "date-fns/locale/es";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaLanguage } from "react-icons/fa";
+import { FaLanguage, FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustom.css";
 import { EventModal } from "../components/EventModal";
@@ -13,7 +13,7 @@ import EventInscriptionModal from "./EventInscriptionModal";
 import EventRegistrationFormModal from "./EventRegistrationFormModal";
 import EnglishRegistrationModal from "./EnglishRegistrationModal";
 import EnglishRegistrationFormModal from "./EnglishRegistrationFormModal";
-import NotionEventComponent from "./NotionEventComponent";
+
 import DayEventsModal from "./DayEventsModal";
 import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts";
 
@@ -36,108 +36,48 @@ const messages = {
   noEventsInRange: "No hay eventos en este rango.",
 };
 
-// Eventos de prueba con fechas actuales
-const today = new Date();
-const currentYear = today.getFullYear();
-const currentMonth = today.getMonth();
-
-const sampleEvents = [
-  {
-    id: 1,
-    title: "Festival 2025",
-    tipo: "Festival",
-    descripcion: "Festival deportivo anual con múltiples disciplinas",
-    ubicacion: "Estadio Municipal",
-    telefono: "3001234567",
-    categoria: "Todas",
-    estado: "Programado",
-    publicar: true,
-    patrocinador: ["Natipan", "Adidas"],
-    imagen: null,
-    cronograma: null,
-    start: new Date(currentYear, currentMonth, today.getDate(), 10, 0),
-    end: new Date(currentYear, currentMonth, today.getDate(), 12, 0),
-    color: "bg-primary-purple",
-  },
-  {
-    id: 2,
-    title: "Clausura",
-    tipo: "Clausura",
-    descripcion: "Ceremonia de clausura del año deportivo",
-    ubicacion: "Coliseo Central",
-    telefono: "3007654321",
-    categoria: "Juvenil",
-    estado: "Programado",
-    publicar: false,
-    patrocinador: ["Ponymalta"],
-    imagen: null,
-    cronograma: null,
-    start: new Date(currentYear, currentMonth, today.getDate() + 1, 14, 0),
-    end: new Date(currentYear, currentMonth, today.getDate() + 1, 16, 0),
-    color: "bg-primary-blue",
-  },
-  {
-    id: 3,
-    title: "Taller Técnico",
-    tipo: "Taller",
-    descripcion: "Taller de técnicas deportivas avanzadas",
-    ubicacion: "Aula Magna",
-    telefono: "3009876543",
-    categoria: "Pre Juvenil",
-    estado: "Ejecutado",
-    publicar: true,
-    patrocinador: ["NovaSport", "Adidas", "Natipan"],
-    imagen: null,
-    cronograma: null,
-    start: new Date(currentYear, currentMonth, today.getDate() + 2, 9, 0),
-    end: new Date(currentYear, currentMonth, today.getDate() + 2, 11, 0),
-    color: "bg-green-500",
-  },
-  {
-    id: 4,
-    title: "Torneo Sub 17",
-    tipo: "Torneo",
-    descripcion: "Torneo intercolegiado categoría Sub 17",
-    ubicacion: "Complejo Deportivo Norte",
-    telefono: "3005432109",
-    categoria: "Juvenil",
-    estado: "En pausa",
-    publicar: true,
-    patrocinador: [],
-    imagen: null,
-    cronograma: null,
-    start: new Date(currentYear, currentMonth, today.getDate() + 5, 8, 0),
-    end: new Date(currentYear, currentMonth, today.getDate() + 5, 18, 0),
-    color: "bg-orange-500",
-  },
-  {
-    id: 5,
-    title: "Entrenamiento",
-    tipo: "Taller",
-    descripcion: "Sesión de entrenamiento grupal",
-    ubicacion: "Cancha Principal",
-    telefono: "3001234567",
-    categoria: "Todas",
-    estado: "Programado",
-    publicar: true,
-    patrocinador: [],
-    imagen: null,
-    cronograma: null,
-    start: new Date(currentYear, currentMonth, today.getDate(), 16, 0),
-    end: new Date(currentYear, currentMonth, today.getDate(), 18, 0),
-    color: "bg-primary-blue",
-  },
-];
-
-export default function EventsCalendar() {
+export default function EventsCalendar({ events: propEvents = [] }) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date()); // Fecha actual
-  const [events, setEvents] = useState(sampleEvents);
+  const [events, setEvents] = useState(propEvents);
+  
+  // Sincronizar eventos cuando cambien las props
+  useEffect(() => {
+    setEvents(propEvents);
+  }, [propEvents]);
+  
+  // Funciones para la navegación del calendario
+  const handlePrevious = () => {
+    const newDate = new Date(date);
+    if (view === 'month') {
+      newDate.setMonth(date.getMonth() - 1);
+    } else if (view === 'week') {
+      newDate.setDate(date.getDate() - 7);
+    } else if (view === 'day') {
+      newDate.setDate(date.getDate() - 1);
+    }
+    setDate(newDate);
+  };
 
-  // Debug: verificar que los eventos se carguen
-  console.log("Eventos cargados:", events);
-  console.log("Fecha actual del calendario:", date);
-  console.log("Vista actual:", view);
+  const handleNext = () => {
+    const newDate = new Date(date);
+    if (view === 'month') {
+      newDate.setMonth(date.getMonth() + 1);
+    } else if (view === 'week') {
+      newDate.setDate(date.getDate() + 7);
+    } else if (view === 'day') {
+      newDate.setDate(date.getDate() + 1);
+    }
+    setDate(newDate);
+  };
+
+  const handleToday = () => {
+    setDate(new Date());
+  };
+
+  const handleViewChange = (newView) => {
+    setView(newView);
+  };
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -187,84 +127,70 @@ export default function EventsCalendar() {
     }
   };
 
-  // Componente de evento que funciona con react-big-calendar
-  const EventComponent = ({ event }) => {
-    console.log("=== EVENTO RENDERIZADO ===");
-    console.log("Título:", event.title);
-    console.log("Fecha:", event.start);
-    console.log("Vista:", view);
-    console.log("========================");
-    
+  // Componente de evento con botones mejorados
+  const CustomEvent = ({ event }) => {
     const handleActionClick = (e, actionType) => {
       e.stopPropagation();
-      e.preventDefault();
       handleEventActionClick(e, actionType, event);
     };
 
-    // Retornar solo el contenido, sin wrapper adicional
+    const isMonthView = view === 'month';
+
     return (
-      <>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <div style={{ flex: 1, minWidth: 0, marginRight: '4px' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '11px', lineHeight: '1.2', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {format(event.start, "HH:mm")} {event.title}
+      <div className="event-content" style={{ 
+        fontSize: isMonthView ? '10px' : '11px',
+        lineHeight: '1.2',
+        padding: '2px'
+      }}>
+        <div className="event-info">
+          <div className="event-title">
+            {format(event.start, "HH:mm")} {event.title}
+          </div>
+          {event.ubicacion && !isMonthView && (
+            <div className="event-location" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+              <FaMapMarkerAlt size={8} /> {event.ubicacion}
             </div>
-            {event.ubicacion && (
-              <div style={{ fontSize: '10px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                📍 {event.ubicacion}
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-            <button
-              onClick={(e) => handleActionClick(e, "crud")}
-              style={{
-                background: 'white',
-                border: '1px solid #ccc',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                minWidth: '16px',
-                minHeight: '16px'
-              }}
-              title="Gestionar evento"
-            >
-              ⚙️
-            </button>
-            <button
-              onClick={(e) => handleActionClick(e, "registration")}
-              style={{
-                background: 'white',
-                border: '1px solid #ccc',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                minWidth: '16px',
-                minHeight: '16px'
-              }}
-              title="Inscripciones"
-            >
-              👥
-            </button>
-          </div>
+          )}
         </div>
-      </>
+        
+        {/* Botones de acción con iconos de react-icons */}
+        <div className="event-actions">
+          <button
+            onClick={(e) => handleActionClick(e, "crud")}
+            className={`event-btn event-btn--manage ${isMonthView ? 'event-btn--month' : 'event-btn--week-day'}`}
+            title="Gestionar evento"
+          >
+            <FaCog size={isMonthView ? 8 : 10} />
+          </button>
+          <button
+            onClick={(e) => handleActionClick(e, "registration")}
+            className={`event-btn event-btn--registration ${isMonthView ? 'event-btn--month' : 'event-btn--week-day'}`}
+            title="Inscripciones"
+          >
+            <FaUsers size={isMonthView ? 8 : 10} />
+          </button>
+        </div>
+      </div>
     );
   };
 
   // Crear (click en slot vacío)
   const handleSlotSelect = ({ start, end }) => {
-    // Usar toISOString().split('T')[0] para evitar problemas de zona horaria
+    // Formatear fechas y horas
     const startDate = new Date(start);
     const endDate = new Date(end);
+    
+    const formatTime = (date) => {
+      return date.toTimeString().slice(0, 5); // HH:MM
+    };
     
     setSelectedEvent({
       nombre: "",
       descripcion: "",
       fechaInicio: startDate.toISOString().split('T')[0],
       fechaFin: endDate.toISOString().split('T')[0],
+      horaInicio: formatTime(startDate),
+      horaFin: formatTime(endDate),
     });
     setIsNew(true);
     setModalMode("create");
@@ -280,53 +206,67 @@ export default function EventsCalendar() {
 
   // Guardar
   const handleSaveEvent = (newEventData) => {
-    // Crear fechas correctamente para evitar problemas de zona horaria
-    const createDateFromString = (dateString) => {
-      const [year, month, day] = dateString.split('-').map(Number);
-      return new Date(year, month - 1, day, 12, 0, 0); // Mediodía para evitar problemas de zona horaria
-    };
-
-    if (isNew) {
-      const newEvent = {
-        id: Date.now(),
-        title: newEventData.nombre,
-        tipo: newEventData.tipo,
-        descripcion: newEventData.descripcion,
-        ubicacion: newEventData.ubicacion,
-        telefono: newEventData.telefono,
-        categoria: newEventData.categoria,
-        estado: newEventData.estado,
-        publicar: newEventData.publicar,
-        patrocinador: newEventData.patrocinador,
-        imagen: newEventData.imagen,
-        cronograma: newEventData.cronograma,
-        start: createDateFromString(newEventData.fechaInicio),
-        end: createDateFromString(newEventData.fechaFin),
-        color: "bg-primary-purple",
+    try {
+      // Crear fechas correctamente incluyendo las horas
+      const createDateFromString = (dateString, timeString) => {
+        try {
+          const [year, month, day] = dateString.split('-').map(Number);
+          const [hours, minutes] = timeString ? timeString.split(':').map(Number) : [12, 0];
+          return new Date(year, month - 1, day, hours, minutes, 0);
+        } catch (error) {
+          console.error("Error al crear fecha:", error);
+          return new Date(); // Fecha por defecto en caso de error
+        }
       };
-      setEvents((prev) => [...prev, newEvent]);
-    } else {
-      setEvents((prev) =>
-        prev.map((e) =>
-          e.id === newEventData.id
-            ? {
-                ...e,
-                title: newEventData.nombre,
-                tipo: newEventData.tipo,
-                descripcion: newEventData.descripcion,
-                ubicacion: newEventData.ubicacion,
-                telefono: newEventData.telefono,
-                categoria: newEventData.categoria,
-                estado: newEventData.estado,
-                publicar: newEventData.publicar,
-                patrocinador: newEventData.patrocinador,
-                imagen: newEventData.imagen,
-                cronograma: newEventData.cronograma,
-                start: createDateFromString(newEventData.fechaInicio),
-                end: createDateFromString(newEventData.fechaFin),
-              }
-            : e
-        )
+
+      if (isNew) {
+        const newEvent = {
+          id: Date.now(),
+          title: newEventData.nombre || "Evento sin título",
+          tipo: newEventData.tipo || "",
+          descripcion: newEventData.descripcion || "",
+          ubicacion: newEventData.ubicacion || "",
+          telefono: newEventData.telefono || "",
+          categoria: newEventData.categoria || "",
+          estado: newEventData.estado || "",
+          publicar: newEventData.publicar || false,
+          patrocinador: newEventData.patrocinador || [],
+          imagen: newEventData.imagen || null,
+          cronograma: newEventData.cronograma || null,
+          start: createDateFromString(newEventData.fechaInicio, newEventData.horaInicio),
+          end: createDateFromString(newEventData.fechaFin, newEventData.horaFin),
+          color: "bg-primary-purple",
+        };
+        setEvents((prev) => [...prev, newEvent]);
+      } else {
+        setEvents((prev) =>
+          prev.map((e) =>
+            e.id === newEventData.id
+              ? {
+                  ...e,
+                  title: newEventData.nombre || e.title,
+                  tipo: newEventData.tipo || e.tipo,
+                  descripcion: newEventData.descripcion || e.descripcion,
+                  ubicacion: newEventData.ubicacion || e.ubicacion,
+                  telefono: newEventData.telefono || e.telefono,
+                  categoria: newEventData.categoria || e.categoria,
+                  estado: newEventData.estado || e.estado,
+                  publicar: newEventData.publicar !== undefined ? newEventData.publicar : e.publicar,
+                  patrocinador: newEventData.patrocinador || e.patrocinador,
+                  imagen: newEventData.imagen || e.imagen,
+                  cronograma: newEventData.cronograma || e.cronograma,
+                  start: createDateFromString(newEventData.fechaInicio, newEventData.horaInicio),
+                  end: createDateFromString(newEventData.fechaFin, newEventData.horaFin),
+                }
+              : e
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error al guardar evento:", error);
+      showErrorAlert(
+        "Error al guardar",
+        "No se pudo guardar el evento. Intenta de nuevo."
       );
     }
   };
@@ -338,10 +278,15 @@ export default function EventsCalendar() {
     // Cerrar el modal de acciones primero
     closeAllModals();
     
+    // Función para formatear tiempo
+    const formatTime = (date) => {
+      return date.toTimeString().slice(0, 5); // HH:MM
+    };
+    
     switch (action) {
       case "edit":
         setTimeout(() => {
-          // Formatear fechas correctamente para evitar desfase de zona horaria
+          // Formatear fechas y horas correctamente
           const startDate = new Date(event.start);
           const endDate = new Date(event.end);
           
@@ -351,6 +296,8 @@ export default function EventsCalendar() {
             descripcion: event.descripcion || "",
             fechaInicio: startDate.toISOString().split('T')[0],
             fechaFin: endDate.toISOString().split('T')[0],
+            horaInicio: formatTime(startDate),
+            horaFin: formatTime(endDate),
             ubicacion: event.ubicacion || "",
             telefono: event.telefono || "",
             categoria: event.categoria || "",
@@ -392,7 +339,7 @@ export default function EventsCalendar() {
         
       case "view":
         setTimeout(() => {
-          // Formatear fechas correctamente para evitar desfase de zona horaria
+          // Formatear fechas y horas correctamente
           const startDate = new Date(event.start);
           const endDate = new Date(event.end);
           
@@ -402,6 +349,8 @@ export default function EventsCalendar() {
             descripcion: event.descripcion || "",
             fechaInicio: startDate.toISOString().split('T')[0],
             fechaFin: endDate.toISOString().split('T')[0],
+            horaInicio: formatTime(startDate),
+            horaFin: formatTime(endDate),
             ubicacion: event.ubicacion || "",
             telefono: event.telefono || "",
             categoria: event.categoria || "",
@@ -522,7 +471,7 @@ export default function EventsCalendar() {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6">
+    <div className="calendar-container">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -15 }}
@@ -534,6 +483,36 @@ export default function EventsCalendar() {
           {format(date, "MMMM yyyy", { locale: es })}
         </h2>
         <div className="flex items-center gap-3">
+          {/* Botones de navegación */}
+          <div className="flex items-center mr-4">
+            <motion.button
+              onClick={handleToday}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-l-xl text-sm font-medium shadow-sm"
+            >
+              {messages.today}
+            </motion.button>
+            <motion.button
+              onClick={handlePrevious}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium shadow-sm"
+            >
+              &lt; {messages.previous}
+            </motion.button>
+            <motion.button
+              onClick={handleNext}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-r-xl text-sm font-medium shadow-sm"
+            >
+              {messages.next} &gt;
+            </motion.button>
+          </div>
+          
+
+          
           {/* Botón Inglés */}
           <motion.button
             onClick={handleEnglishClick}
@@ -586,37 +565,19 @@ export default function EventsCalendar() {
               onView={setView}
               date={date}
               onNavigate={setDate}
-              components={{ 
-                event: EventComponent
+              components={{
+                event: CustomEvent
               }}
-              views={["month", "week", "day"]}
+              eventPropGetter={(event) => ({
+                'data-tipo': event.tipo
+              })}
+              
+              // views={["month", "week", "day"]} // Quitamos para usar solo los personalizados
               messages={messages}
-              popup={false}
+              popup={true}
               style={{ height: "60vh" }}
               onSelectSlot={handleSlotSelect}
               onSelectEvent={handleEventSelect}
-              eventPropGetter={(event) => {
-                console.log("eventPropGetter llamado para:", event.title);
-                const getEventClass = (tipo) => {
-                  switch (tipo?.toLowerCase()) {
-                    case 'festival':
-                      return 'event-festival';
-                    case 'torneo':
-                      return 'event-torneo';
-                    case 'taller':
-                      return 'event-taller';
-                    case 'clausura':
-                      return 'event-clausura';
-                    default:
-                      return '';
-                  }
-                };
-                
-                return {
-                  className: getEventClass(event.tipo),
-                  style: {}
-                };
-              }}
             />
           </div>
         </motion.div>

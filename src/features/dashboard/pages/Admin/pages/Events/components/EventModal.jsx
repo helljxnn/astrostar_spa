@@ -22,6 +22,8 @@ export const EventModal = ({
     descripcion: "",
     fechaInicio: "",
     fechaFin: "",
+    horaInicio: "",
+    horaFin: "",
     ubicacion: "",
     telefono: "",
     imagen: null,
@@ -44,6 +46,8 @@ export const EventModal = ({
         descripcion: event.descripcion || "",
         fechaInicio: event.fechaInicio || "",
         fechaFin: event.fechaFin || "",
+        horaInicio: event.horaInicio || "",
+        horaFin: event.horaFin || "",
         ubicacion: event.ubicacion || "",
         telefono: event.telefono || "",
         imagen: event.imagen || null,
@@ -206,6 +210,32 @@ export const EventModal = ({
                 onBlur={() => handleBlur("fechaFin", form.fechaFin, form)}
                 error={errors.fechaFin}
                 touched={touched.fechaFin}
+                required={mode !== "view"}
+                disabled={mode === "view"}
+              />
+
+              <FormField
+                label="Hora inicio"
+                name="horaInicio"
+                type="time"
+                value={form.horaInicio}
+                onChange={handleChange}
+                onBlur={() => handleBlur("horaInicio", form.horaInicio, form)}
+                error={errors.horaInicio}
+                touched={touched.horaInicio}
+                required={mode !== "view"}
+                disabled={mode === "view"}
+              />
+
+              <FormField
+                label="Hora finalización"
+                name="horaFin"
+                type="time"
+                value={form.horaFin}
+                onChange={handleChange}
+                onBlur={() => handleBlur("horaFin", form.horaFin, form)}
+                error={errors.horaFin}
+                touched={touched.horaFin}
                 required={mode !== "view"}
                 disabled={mode === "view"}
               />
