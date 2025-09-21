@@ -7,7 +7,7 @@ const providersData = [
     tipoProveedor: "Distribuidor",
     contactoPrincipal: "Juan Pérez",
     correo: "contacto@proveedorabc.com",
-    telefono: "+57 3001234567",
+    telefono: "3001234567",
     direccion: "Calle 10 # 25-30",
     ciudad: "Bogotá",
     descripcion: "Proveedor mayorista de repuestos automotrices.",

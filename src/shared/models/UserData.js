@@ -8,7 +8,7 @@ const usersData = [
     identificacion: "123456789",
     rol: "Administrador",
     correo: "anderson@example.com",
-    telefono: "+57 300 123 4567",
+    telefono: "300 123 4567",
     estado: "Activo",
   },
   {
@@ -19,7 +19,7 @@ const usersData = [
     identificacion: "987654321",
     rol: "Usuario",
     correo: "sara@example.com",
-    telefono: "+57 310 987 6543",
+    telefono: "310 987 6543",
     estado: "Inactivo",
   },
 ];

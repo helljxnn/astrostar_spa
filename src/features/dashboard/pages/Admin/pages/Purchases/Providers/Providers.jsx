@@ -1,5 +1,5 @@
 // src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
 import ProviderViewModal from "./components/ProviderViewModal.jsx";
@@ -7,15 +7,23 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import providersData from "./ProvidersData.jsx";
+import providersData from "../../../../../../../shared/models/ProvidersData.jsx";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 
+// 🔑 Clave única para LocalStorage
+const LOCAL_STORAGE_KEY = "providers";
+
 const Providers = () => {
-  const [data, setData] = useState(providersData);
+  // 🟢 Estado inicial cargado desde LocalStorage o desde providersData
+  const [data, setData] = useState(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : providersData;
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -23,9 +31,20 @@ const Providers = () => {
   const [providerToView, setProviderToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
   const rowsPerPage = 5;
 
+  // 🟢 Guardar en LocalStorage cada vez que cambien los datos
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+  }, [data]);
+
+  // 📞 Formatear teléfono sin +57
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return phone;
+    return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
+  };
+
+  // 🔎 Filtrado
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(
@@ -48,17 +67,25 @@ const Providers = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
+  // ➕ Crear proveedor
   const handleSave = (newProvider) => {
-    const newEntry = { ...newProvider, id: Date.now() };
+    const newEntry = {
+      ...newProvider,
+      id: Date.now(),
+      telefono: formatPhoneNumber(newProvider.telefono),
+    };
     setData([...data, newEntry]);
     showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
     setIsModalOpen(false);
   };
 
+  // ✏️ Editar proveedor
   const handleUpdate = (updatedProvider) => {
-    setData(
-      data.map((p) => (p.id === updatedProvider.id ? updatedProvider : p))
-    );
+    const updatedEntry = {
+      ...updatedProvider,
+      telefono: formatPhoneNumber(updatedProvider.telefono),
+    };
+    setData(data.map((p) => (p.id === updatedEntry.id ? updatedEntry : p)));
     showSuccessAlert(
       "Proveedor actualizado",
       "El proveedor se actualizó correctamente."
@@ -66,6 +93,7 @@ const Providers = () => {
     setIsModalOpen(false);
   };
 
+  // ✏️ Abrir modal de edición
   const handleEdit = (provider) => {
     if (!provider || provider.target) return;
     setProviderToEdit(provider);
@@ -73,12 +101,14 @@ const Providers = () => {
     setIsModalOpen(true);
   };
 
+  // 👁️ Ver proveedor
   const handleView = (provider) => {
     if (!provider || provider.target) return;
     setProviderToView(provider);
     setIsViewModalOpen(true);
   };
 
+  // 🗑️ Eliminar proveedor
   const handleDelete = async (provider) => {
     if (!provider || !provider.id)
       return showErrorAlert("Error", "Proveedor no válido");
@@ -122,14 +152,14 @@ const Providers = () => {
               data={filteredData}
               fileName="Proveedores"
               columns={[
-                { key: "razonSocial", label: "Razón Social" },
-                { key: "nit", label: "NIT" },
-                { key: "tipoEntidad", label: "Tipo de Entidad" },
-                { key: "tipoProveedor", label: "Tipo Proveedor" },
-                { key: "contactoPrincipal", label: "Contacto Principal" },
-                { key: "correo", label: "Correo" },
-                { key: "telefono", label: "Teléfono" },
-                { key: "estado", label: "Estado" },
+                { header: "Razón Social", accessor: "razonSocial" },
+                { header: "NIT", accessor: "nit" },
+                { header: "Tipo de Entidad", accessor: "tipoEntidad" },
+                { header: "Tipo Proveedor", accessor: "tipoProveedor" },
+                { header: "Contacto Principal", accessor: "contactoPrincipal" },
+                { header: "Correo", accessor: "correo" },
+                { header: "Teléfono", accessor: "telefono" },
+                { header: "Estado", accessor: "estado" },
               ]}
             />
 
@@ -150,7 +180,6 @@ const Providers = () => {
       {/* Tabla */}
       {totalRows > 0 ? (
         <>
-          {/* Contenedor de tabla con scroll horizontal limpio */}
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
               <Table
@@ -187,7 +216,6 @@ const Providers = () => {
             </div>
           </div>
 
-          {/* Paginador sin margen superior y sin bordes/sombras */}
           <div className="w-full border-none shadow-none">
             <Pagination
               currentPage={currentPage}
