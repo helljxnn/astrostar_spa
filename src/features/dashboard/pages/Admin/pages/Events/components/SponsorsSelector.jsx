@@ -59,7 +59,7 @@ export const SponsorsSelector = ({ value = [], onChange, error, touched, disable
 
   return (
     <div className="flex flex-col relative" ref={containerRef}>
-      <label className="mb-1 font-semibold text-gray-700 text-lg">
+      <label className="mb-0 font-semibold text-gray-700 text-lg">
         Patrocinadores
       </label>
 

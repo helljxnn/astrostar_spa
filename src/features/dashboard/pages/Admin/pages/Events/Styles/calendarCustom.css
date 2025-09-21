@@ -118,28 +118,32 @@
 }
 
 /* Colores por tipo de evento */
-.rbc-event[data-tipo="Festival"] {
-  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
-  border-left-color: #a855f7 !important;
-  color: #7c3aed !important;
+.rbc-event[data-tipo="Festival"],
+.event-Festival {
+  background: linear-gradient(135deg, #9BFFB6 0%, #7AEEA0 100%) !important;
+  border-left-color: #4CD97A !important;
+  color: #0B7A3E !important;
 }
 
-.rbc-event[data-tipo="Torneo"] {
-  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
-  border-left-color: #f97316 !important;
-  color: #ea580c !important;
+.rbc-event[data-tipo="Torneo"],
+.event-Torneo {
+  background: linear-gradient(135deg, #9BE9FF 0%, #7AD5EA 100%) !important;
+  border-left-color: #4CB5D9 !important;
+  color: #0B5E7A !important;
 }
 
-.rbc-event[data-tipo="Taller"] {
-  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;
-  border-left-color: #22c55e !important;
-  color: #16a34a !important;
+.rbc-event[data-tipo="Taller"],
+.event-Taller {
+  background: linear-gradient(135deg, #FF95E5 0%, #EA7AD0 100%) !important;
+  border-left-color: #D94CB5 !important;
+  color: #7A0B5E !important;
 }
 
-.rbc-event[data-tipo="Clausura"] {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
-  border-left-color: #3b82f6 !important;
-  color: #2563eb !important;
+.rbc-event[data-tipo="Clausura"],
+.event-Clausura {
+  background: linear-gradient(135deg, #B595FF 0%, #A07AEA 100%) !important;
+  border-left-color: #7A4CD9 !important;
+  color: #3E0B7A !important;
 }
 /* ===============================
    ESTILOS PARA BOTONES DE EVENTOS

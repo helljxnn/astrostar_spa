@@ -3,13 +3,10 @@ export const sampleEvents = [
   {
     id: "1",
     tipo: "Torneo",
-    title: "Torneo Sub 17", // Título para react-big-calendar
     nombre: "Torneo Sub 17",
     descripcion: "Torneo nacional de fútbol con categoría sub - 17",
     fechaInicio: "2025-09-22",
     fechaFin: "2025-09-24",
-    horaInicio: "09:00",
-    horaFin: "18:00",
     ubicacion: "Centro Acuático Olímpico",
     telefono: "555-123-4567",
     imagen: "natacion.jpg",
@@ -17,20 +14,15 @@ export const sampleEvents = [
     patrocinador: ["Natipan", "Gatorade"],
     categoria: "Deportivo",
     estado: "Activo",
-    publicar: true,
-    start: new Date(2025, 8, 22, 9, 0), // Año, mes (0-11), día, hora, minutos
-    end: new Date(2025, 8, 24, 18, 0)
+    publicar: true
   },
   {
     id: "2",
     tipo: "Festival",
-    title: "Festival 2025 FMV",
     nombre: "Festival 2025 FMV",
     descripcion: "Festival 2025 FMV",
     fechaInicio: "2025-09-15",
     fechaFin: "2025-09-15",
-    horaInicio: "09:00",
-    horaFin: "18:00",
     ubicacion: "Auditorio Central",
     telefono: "555-987-6543",
     imagen: "nutricion.jpg",
@@ -38,20 +30,15 @@ export const sampleEvents = [
     patrocinador: ["NutriSport", "Herbalife"],
     categoria: "Educativo",
     estado: "Activo",
-    publicar: true,
-    start: new Date(2025, 8, 15, 9, 0),
-    end: new Date(2025, 8, 15, 18, 0)
+    publicar: true
   },
   {
     id: "3",
     tipo: "Clausura",
-    title: "Clausura 2025",
     nombre: "Clausura 2025",
     descripcion: "Presentación de los mejores gimnastas del país en una exhibición de alto nivel.",
     fechaInicio: "2025-09-30",
     fechaFin: "2025-09-30",
-    horaInicio: "20:30",
-    horaFin: "22:30",
     ubicacion: "Coliseo Municipal",
     telefono: "555-456-7890",
     imagen: "gimnasia.jpg",
@@ -59,20 +46,15 @@ export const sampleEvents = [
     patrocinador: ["Nike", "Red Bull"],
     categoria: "Deportivo",
     estado: "Programado",
-    publicar: true,
-    start: new Date(2025, 8, 30, 20, 30),
-    end: new Date(2025, 8, 30, 22, 30)
+    publicar: true
   },
   {
     id: "4",
     tipo: "Festival",
-    title: "Festival 2022",
     nombre: "Festival 2022",
     descripcion: "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
     fechaInicio: "2025-10-10",
     fechaFin: "2025-10-12",
-    horaInicio: "09:00",
-    horaFin: "17:00",
     ubicacion: "Centro Deportivo Elite",
     telefono: "555-789-0123",
     imagen: "funcional.jpg",
@@ -80,20 +62,15 @@ export const sampleEvents = [
     patrocinador: ["Adidas", "Under Armour"],
     categoria: "Educativo",
     estado: "Programado",
-    publicar: true,
-    start: new Date(2025, 9, 10, 9, 0),
-    end: new Date(2025, 9, 12, 17, 0)
+    publicar: true
   },
-  {
+    {
     id: "5",
     tipo: "Taller",
-    title: "Taller Homecenter",
     nombre: "Taller Homecenter",
     descripcion: "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
     fechaInicio: "2025-10-10",
     fechaFin: "2025-10-12",
-    horaInicio: "10:00",
-    horaFin: "16:00",
     ubicacion: "Centro Deportivo Elite",
     telefono: "555-789-0123",
     imagen: "funcional.jpg",
@@ -101,8 +78,6 @@ export const sampleEvents = [
     patrocinador: ["Homecenter"],
     categoria: "Educativo",
     estado: "Programado",
-    publicar: true,
-    start: new Date(2025, 9, 10, 10, 0),
-    end: new Date(2025, 9, 12, 16, 0)
+    publicar: true
   }
 ];

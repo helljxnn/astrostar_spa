@@ -9,7 +9,14 @@ import { sampleEvents } from "./components/sampleEvents";
 
 const Event = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [data, setData] = useState(sampleEvents); // Usando los datos de ejemplo
+  const [data, setData] = useState(
+    sampleEvents.map(event => ({
+      ...event,
+      start: new Date(event.fechaInicio),
+      end: new Date(event.fechaFin),
+      title: event.nombre
+    }))
+  ); // Usando los datos de ejemplo con formato para el calendario
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
 

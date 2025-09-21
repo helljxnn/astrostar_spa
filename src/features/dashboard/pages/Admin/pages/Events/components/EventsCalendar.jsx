@@ -34,6 +34,7 @@ const messages = {
   previous: "Atrás",
   next: "Siguiente",
   noEventsInRange: "No hay eventos en este rango.",
+  showMore: (total) => `${total} eventos más`,
 };
 
 export default function EventsCalendar({ events: propEvents = [] }) {
@@ -483,8 +484,18 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           {format(date, "MMMM yyyy", { locale: es })}
         </h2>
         <div className="flex items-center gap-3">
+          {/* Botón Inglés - Movido a la izquierda del selector */}
+          <motion.button
+            onClick={handleEnglishClick}
+            whileHover={{ scale: 1.1 }}
+            className="mr-3 bg-primary-green px-3 py-1 rounded-lg flex items-center justify-center gap-2"
+          >
+            <FaLanguage className="text-xl text-black" />
+            <span className="text-black font-medium">Inglés</span>
+          </motion.button>
+          
           {/* Botones de navegación */}
-          <div className="flex items-center mr-4">
+          <div className="flex items-center">
             <motion.button
               onClick={handleToday}
               whileHover={{ scale: 1.05 }}
@@ -510,19 +521,6 @@ export default function EventsCalendar({ events: propEvents = [] }) {
               {messages.next} &gt;
             </motion.button>
           </div>
-          
-
-          
-          {/* Botón Inglés */}
-          <motion.button
-            onClick={handleEnglishClick}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-5 py-2 bg-primary-green text-black rounded-xl text-sm font-semibold shadow hover:opacity-90 transition-all"
-          >
-            <FaLanguage className="w-4 h-4" />
-            Inglés
-          </motion.button>
           
           {/* Botones de vista */}
           {["month", "week", "day"].map((viewType) => (
@@ -569,6 +567,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
                 event: CustomEvent
               }}
               eventPropGetter={(event) => ({
+                className: `event-${event.tipo}`,
                 'data-tipo': event.tipo
               })}
               

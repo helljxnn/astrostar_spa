@@ -67,7 +67,7 @@ const EventRegistrationModal = ({ isOpen, onClose, onAction, position, eventType
       >
         <div className="p-2">
           <div className="text-xs font-medium text-gray-500 px-3 py-2 border-b border-gray-100">
-            Select Op Evento
+            Inscribir a evento
           </div>
           <div className="py-1">
             {actions.map((action) => (
