@@ -3,18 +3,21 @@ import { EventModal } from "./components/EventModal";
 import { FaPlus } from "react-icons/fa";
 import EventsCalendar from "./components/EventsCalendar";
 import ReportButton from "../../../../../../shared/components/ReportButton"; 
-import SearchInput from "../../../../../../shared/components/SearchInput";
+import EventSearchBar from "./components/EventSearchBar";
+import EventSearchList from "./components/EventSearchList";
+import { sampleEvents } from "./components/sampleEvents";
 
 const Event = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [data, setData] = useState([]); // lista de eventos
+  const [data, setData] = useState(sampleEvents); // Usando los datos de ejemplo
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   const handleSave = (newEvent) => {
     setData((prev) => [...prev, newEvent]);
   };
 
-  // Filtrado general por búsqueda (como en empleados)
+  // Filtrado general por búsqueda
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
@@ -24,6 +27,24 @@ const Event = () => {
       )
     );
   }, [data, searchTerm]);
+
+  // Manejar la búsqueda
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+    setIsSearchActive(!!term);
+  };
+
+  // Manejar edición de evento
+  const handleEdit = (event) => {
+    // Aquí iría la lógica para editar un evento
+    console.log("Editar evento:", event);
+  };
+
+  // Manejar eliminación de evento
+  const handleDelete = (event) => {
+    // Aquí iría la lógica para eliminar un evento
+    console.log("Eliminar evento:", event);
+  };
 
   // Columnas para el reporte 
   const reportColumns = [
@@ -49,12 +70,8 @@ const Event = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Eventos</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          {/* Buscador */}
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar evento..."
-          />
+          {/* Buscador personalizado */}
+          <EventSearchBar onSearch={handleSearch} />
 
           {/* Botones */}
           <div className="flex items-center gap-3">
@@ -85,9 +102,17 @@ const Event = () => {
         />
       )}
 
-      {/* Calendario */}
+      {/* Contenido condicional: Calendario o Lista de búsqueda */}
       <div className="mt-2">
-        <EventsCalendar events={filteredData} />
+        {isSearchActive ? (
+          <EventSearchList 
+            events={filteredData} 
+            onEdit={handleEdit} 
+            onDelete={handleDelete} 
+          />
+        ) : (
+          <EventsCalendar events={filteredData} />
+        )}
       </div>
     </div>
   );

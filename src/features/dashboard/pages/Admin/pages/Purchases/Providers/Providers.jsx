@@ -67,7 +67,7 @@ const Providers = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  // ➕ Crear proveedor
+  //  Crear proveedor
   const handleSave = (newProvider) => {
     const newEntry = {
       ...newProvider,
@@ -79,7 +79,7 @@ const Providers = () => {
     setIsModalOpen(false);
   };
 
-  // ✏️ Editar proveedor
+  //  Editar proveedor
   const handleUpdate = (updatedProvider) => {
     const updatedEntry = {
       ...updatedProvider,
@@ -93,7 +93,7 @@ const Providers = () => {
     setIsModalOpen(false);
   };
 
-  // ✏️ Abrir modal de edición
+  //  Abrir modal de edición
   const handleEdit = (provider) => {
     if (!provider || provider.target) return;
     setProviderToEdit(provider);
@@ -101,14 +101,14 @@ const Providers = () => {
     setIsModalOpen(true);
   };
 
-  // 👁️ Ver proveedor
+  // Ver proveedor
   const handleView = (provider) => {
     if (!provider || provider.target) return;
     setProviderToView(provider);
     setIsViewModalOpen(true);
   };
 
-  // 🗑️ Eliminar proveedor
+  //  Eliminar proveedor
   const handleDelete = async (provider) => {
     if (!provider || !provider.id)
       return showErrorAlert("Error", "Proveedor no válido");

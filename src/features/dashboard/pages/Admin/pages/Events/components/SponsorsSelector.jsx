@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaTimes } from "react-icons/fa";
 
-export const SponsorsSelector = ({ value = [], onChange, error, touched }) => {
+export const SponsorsSelector = ({ value = [], onChange, error, touched, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
 
   const sponsors = ["Natipan", "Ponymalta", "NovaSport", "Adidas"];
 
@@ -15,8 +16,49 @@ export const SponsorsSelector = ({ value = [], onChange, error, touched }) => {
     }
   };
 
+  // Cerrar dropdown al hacer click afuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Renderizado para modo "view"
+  if (disabled) {
+    return (
+      <div className="flex flex-col">
+        <label className="mb-2 font-medium text-gray-700">
+          Patrocinadores
+        </label>
+        <div className="p-3 bg-gray-100 rounded-lg">
+          {value.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {value.map((sponsor) => (
+                <span
+                  key={sponsor}
+                  className="px-3 py-1 bg-primary-purple/20 text-primary-purple text-sm font-medium rounded-full"
+                >
+                  {sponsor}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="text-gray-500">No hay patrocinadores</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col relative">
+    <div className="flex flex-col relative" ref={containerRef}>
       <label className="mb-1 font-semibold text-gray-700 text-lg">
         Patrocinadores
       </label>
@@ -24,9 +66,7 @@ export const SponsorsSelector = ({ value = [], onChange, error, touched }) => {
       {/* Caja principal */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="border border-gray-300 rounded-xl p-3 bg-white shadow-md cursor-pointer 
-                   flex justify-between items-center flex-wrap gap-2 
-                   focus-within:ring-2 focus-within:ring-[#9BE9FF] focus-within:border-[#9BE9FF]"
+        className="border border-gray-300 rounded-xl p-3 shadow-md flex justify-between items-center flex-wrap gap-2 bg-white cursor-pointer focus-within:ring-2 focus-within:ring-primary-purple focus-within:border-primary-purple"
       >
         <div className="flex flex-wrap gap-2">
           {value.length > 0 ? (

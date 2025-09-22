@@ -1,13 +1,16 @@
-// src/features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx
 import React, { useState, useMemo } from "react";
-import { FaPlus } from "react-icons/fa";
+import { FaUserShield, FaUsers, FaPlus } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
+import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
+import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
+import GuardiansListModal from "./components/GuardiansListModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import athletesData from "./AthleteData.jsx";
+import guardiansData from "../AthletesSection/GuardiansData.js";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -15,30 +18,57 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 
 const Athletes = () => {
+  // -----------------------------
+  // Estados de atletas
+  // -----------------------------
   const [data, setData] = useState(athletesData || []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [athleteToEdit, setAthleteToEdit] = useState(null);
   const [athleteToView, setAthleteToView] = useState(null);
+
+  // -----------------------------
+  // Estados de acudientes
+  // -----------------------------
+  const [guardians, setGuardians] = useState(guardiansData || []);
+  const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
+  const [isGuardianViewOpen, setIsGuardianViewOpen] = useState(false);
+  const [isGuardiansListOpen, setIsGuardiansListOpen] = useState(false);
+  const [guardianToEdit, setGuardianToEdit] = useState(null);
+  const [guardianToView, setGuardianToView] = useState(null);
+  const [guardianModalMode, setGuardianModalMode] = useState("create");
+
+  // -----------------------------
+  // Estados comunes
+  // -----------------------------
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   const rowsPerPage = 5;
 
+  // -----------------------------
+  // Filtrado de atletas
+  // -----------------------------
   const filteredData = useMemo(() => {
     if (!searchTerm.trim()) return data;
-    return data.filter((athlete) =>
-      [
+    return data.filter((athlete) => {
+      const guardian = guardians.find((g) => g.id === athlete.acudiente);
+      return [
         athlete.nombres,
         athlete.apellidos,
         athlete.numeroDocumento,
         athlete.correo,
+        athlete.categoria,
+        guardian?.nombreCompleto,
+        athlete.estadoInscripcion, // 👈 agregamos para búsqueda
       ]
         .filter(Boolean)
-        .some((field) => field.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [data, searchTerm]);
+        .some((field) =>
+          field.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    });
+  }, [data, searchTerm, guardians]);
 
   const totalRows = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
@@ -50,26 +80,42 @@ const Athletes = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  const handleSave = (newAthlete) => {
-    const formatted = {
-      ...newAthlete,
-      id: Date.now(),
-    };
-    setData([formatted, ...data]);
-    showSuccessAlert(
-      "Deportista creado",
-      "El deportista se creó correctamente."
-    );
-    setIsModalOpen(false);
+  // -----------------------------
+  // CRUD Atletas
+  // -----------------------------
+  const handleSave = async (newAthlete) => {
+    try {
+      const formatted = {
+        ...newAthlete,
+        id: Date.now(),
+        estadoInscripcion: "", // 👈 nueva propiedad
+      };
+      setData([formatted, ...data]);
+      showSuccessAlert(
+        "Deportista creado",
+        "El deportista se creó correctamente."
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error al crear deportista:", error);
+      showErrorAlert("Error", "Ocurrió un error al crear el deportista");
+    }
   };
 
-  const handleUpdate = (updatedAthlete) => {
-    setData(data.map((a) => (a.id === updatedAthlete.id ? updatedAthlete : a)));
-    showSuccessAlert(
-      "Deportista actualizado",
-      "El deportista se actualizó correctamente."
-    );
-    setIsModalOpen(false);
+  const handleUpdate = async (updatedAthlete) => {
+    try {
+      setData(
+        data.map((a) => (a.id === updatedAthlete.id ? updatedAthlete : a))
+      );
+      showSuccessAlert(
+        "Deportista actualizado",
+        "El deportista se actualizó correctamente."
+      );
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error al actualizar deportista:", error);
+      showErrorAlert("Error", "Ocurrió un error al actualizar el deportista");
+    }
   };
 
   const handleEdit = (athlete) => {
@@ -104,9 +150,102 @@ const Athletes = () => {
     );
   };
 
+  // -----------------------------
+  // CRUD Acudientes
+  // -----------------------------
+  const handleSaveGuardian = async (newGuardian) => {
+    try {
+      const formatted = { ...newGuardian, id: Date.now() };
+      setGuardians([formatted, ...guardians]);
+      showSuccessAlert("Acudiente creado", "El acudiente se creó correctamente.");
+      setIsGuardianModalOpen(false);
+      return formatted;
+    } catch (error) {
+      console.error("Error al crear acudiente:", error);
+      showErrorAlert("Error", "Ocurrió un error al crear el acudiente");
+    }
+  };
+
+  const handleUpdateGuardian = async (updatedGuardian) => {
+    try {
+      setGuardians(
+        guardians.map((g) =>
+          g.id === updatedGuardian.id ? updatedGuardian : g
+        )
+      );
+      showSuccessAlert(
+        "Acudiente actualizado",
+        "El acudiente se actualizó correctamente."
+      );
+      setIsGuardianModalOpen(false);
+    } catch (error) {
+      console.error("Error al actualizar acudiente:", error);
+      showErrorAlert("Error", "Ocurrió un error al actualizar el acudiente");
+    }
+  };
+
+  const handleEditGuardian = (guardian) => {
+    if (!guardian || guardian.target) return;
+    setGuardianToEdit(guardian);
+    setGuardianModalMode("edit");
+    setIsGuardianModalOpen(true);
+  };
+
+  const handleViewGuardian = (guardian) => {
+    if (!guardian || guardian.target) return;
+    setGuardianToView(guardian);
+    setIsGuardianViewOpen(true);
+  };
+
+  const handleDeleteGuardian = async (guardian) => {
+    if (!guardian || !guardian.id)
+      return showErrorAlert("Error", "Acudiente no válido");
+
+    const associatedAthletes = data.filter((a) => a.acudiente === guardian.id);
+    if (associatedAthletes.length > 0) {
+      return showErrorAlert(
+        "No se puede eliminar",
+        `Este acudiente tiene ${associatedAthletes.length} deportista(s) asociado(s). Primero debes reasignar o eliminar los deportistas.`
+      );
+    }
+
+    const confirmResult = await showDeleteAlert(
+      "¿Estás seguro?",
+      `Se eliminará al acudiente ${guardian.nombreCompleto}.`,
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+    );
+
+    if (!confirmResult.isConfirmed) return;
+
+    setGuardians(guardians.filter((g) => g.id !== guardian.id));
+    showSuccessAlert(
+      "Acudiente eliminado",
+      `${guardian.nombreCompleto} fue eliminado correctamente.`
+    );
+  };
+
+  // -----------------------------
+  // Funciones para el AthleteModal
+  // -----------------------------
+  const handleCreateGuardianFromAthlete = () => {
+    setGuardianToEdit(null);
+    setGuardianModalMode("create");
+    setIsGuardianModalOpen(true);
+  };
+
+  const handleViewGuardianFromAthlete = (guardian) => {
+    if (guardian) {
+      setGuardianToView(guardian);
+      setIsGuardianViewOpen(true);
+    }
+  };
+
+  // -----------------------------
+  // Render
+  // -----------------------------
   return (
     <div className="p-6 font-questrial w-full max-w-full">
-      {/* Header con buscador y botones */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Deportistas</h1>
 
@@ -122,10 +261,15 @@ const Athletes = () => {
             />
           </div>
 
-          {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
-              data={filteredData}
+              data={filteredData.map((athlete) => ({
+                ...athlete,
+                acudienteNombre:
+                  guardians.find((g) => g.id === athlete.acudiente)
+                    ?.nombreCompleto || "Sin acudiente",
+                estadoInscripcion: athlete.estadoInscripcion || "",
+              }))}
               fileName="Deportistas"
               columns={[
                 { header: "Nombres", accessor: "nombres" },
@@ -133,11 +277,22 @@ const Athletes = () => {
                 { header: "Documento", accessor: "numeroDocumento" },
                 { header: "Correo", accessor: "correo" },
                 { header: "Teléfono", accessor: "telefono" },
-                { header: "Deporte", accessor: "deportePrincipal" },
                 { header: "Categoría", accessor: "categoria" },
                 { header: "Estado", accessor: "estado" },
+                {
+                  header: "Estado de inscripción",
+                  accessor: "estadoInscripcion",
+                },
+                { header: "Acudiente", accessor: "acudienteNombre" },
               ]}
             />
+
+            <button
+              onClick={() => setIsGuardiansListOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+            >
+              <FaUsers /> Ver Acudientes
+            </button>
 
             <button
               onClick={() => {
@@ -147,7 +302,7 @@ const Athletes = () => {
               }}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
             >
-              <FaPlus /> Crear Deportista
+              <FaPlus /> Nuevo Deportista
             </button>
           </div>
         </div>
@@ -162,10 +317,11 @@ const Athletes = () => {
                 thead={{
                   titles: [
                     "Nombre Completo",
-                    "Deporte",
                     "Categoría",
                     "Correo",
                     "Teléfono",
+                    "Acudiente",
+                    "Estado de inscripción", // 👈 reemplazo de deporte
                   ],
                   state: true,
                   actions: true,
@@ -174,13 +330,18 @@ const Athletes = () => {
                   data: paginatedData.map((a) => ({
                     ...a,
                     nombreCompleto: `${a.nombres} ${a.apellidos}`,
+                    acudienteNombre:
+                      guardians.find((g) => g.id === a.acudiente)
+                        ?.nombreCompleto || "Sin acudiente",
+                    estadoInscripcion: a.estadoInscripcion || "",
                   })),
                   dataPropertys: [
                     "nombreCompleto",
-                    "deportePrincipal",
                     "categoria",
                     "correo",
                     "telefono",
+                    "acudienteNombre",
+                    "estadoInscripcion", // 👈 en lugar de deportePrincipal
                   ],
                   state: true,
                   stateMap: {
@@ -214,21 +375,59 @@ const Athletes = () => {
         </div>
       )}
 
-      {/* Modal Crear/Editar */}
+      {/* Modales */}
       <AthleteModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         onUpdate={handleUpdate}
         athleteToEdit={athleteToEdit}
+        guardians={guardians}
         mode={modalMode}
+        onCreateGuardian={handleCreateGuardianFromAthlete}
+        onViewGuardian={handleViewGuardianFromAthlete}
       />
 
-      {/* Modal Ver */}
       <AthleteViewModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         athlete={athleteToView}
+        guardian={
+          athleteToView
+            ? guardians.find((g) => g.id === athleteToView.acudiente)
+            : null
+        }
+      />
+
+      <GuardiansListModal
+        isOpen={isGuardiansListOpen}
+        onClose={() => setIsGuardiansListOpen(false)}
+        guardians={guardians}
+        athletes={data}
+        onCreateGuardian={() => {
+          setGuardianToEdit(null);
+          setGuardianModalMode("create");
+          setIsGuardianModalOpen(true);
+        }}
+        onEditGuardian={handleEditGuardian}
+        onViewGuardian={handleViewGuardian}
+        onDeleteGuardian={handleDeleteGuardian}
+      />
+
+      <GuardianModal
+        isOpen={isGuardianModalOpen}
+        onClose={() => setIsGuardianModalOpen(false)}
+        onSave={handleSaveGuardian}
+        onUpdate={handleUpdateGuardian}
+        guardianToEdit={guardianToEdit}
+        mode={guardianModalMode}
+      />
+
+      <GuardianViewModal
+        isOpen={isGuardianViewOpen}
+        onClose={() => setIsGuardianViewOpen(false)}
+        guardian={guardianToView}
+        athletes={data.filter((a) => a.acudiente === guardianToView?.id)}
       />
     </div>
   );
