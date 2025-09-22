@@ -5,7 +5,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
 /* Páginas */
-import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard.jsx";
+import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
