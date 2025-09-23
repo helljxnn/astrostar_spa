@@ -21,28 +21,15 @@ moment.locale("es");
 const localizer = momentLocalizer(moment);
 
 // Datos de ejemplo para las citas. En una app real, esto vendría de una API.
-const sampleEvents = [
+const sampleAppointments = [
     {
         id: 1,
-        title: "Reunión de equipo",
-        start: new Date(new Date().setDate(new Date().getDate() - 2)), // Hace 2 días
-        end: new Date(new Date().setDate(new Date().getDate() - 2)),
-        allDay: true,
-        type: 'reunion',
-    },
-    {
-        id: 2,
-        title: "Entrenamiento",
-        start: new Date(), // Hoy
-        end: new Date(new Date().setHours(new Date().getHours() + 2)), // Dura 2 horas
-        type: 'entrenamiento',
-    },
-    {
-        id: 3,
         title: "Cita con Psicología - Deportista X",
         start: new Date(new Date().setDate(new Date().getDate() + 1)), // Mañana
         end: new Date(new Date().setDate(new Date().getDate() + 1)),
-        type: 'cita',
+        specialty: "psicologia",
+        specialist: "Dra. Ana Pérez",
+        description: "Revisión de avance con el deportista X.",
     },
 ];
 
@@ -71,10 +58,11 @@ const specialistOptions = {
 };
 
 function Appointments() {
-    const [events, setEvents] = useState(sampleEvents);
+    const [appointments, setAppointments] = useState(sampleAppointments);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [view, setView] = useState("month"); // Estado para controlar la vista actual del calendario
 
     const {
         values,
@@ -92,30 +80,16 @@ function Appointments() {
         time: "",
     }, appointmentValidationRules);
 
-    // Función para dar estilo a los eventos del calendario según su tipo
-    const eventPropGetter = (event) => {
-        let style = {
+    // Función para dar estilo a las citas del calendario
+    const appointmentPropGetter = () => {
+        const style = {
+            backgroundColor: '#6D28D9', // Un morado oscuro para las citas
             borderRadius: "5px",
             color: "white",
             border: "0px",
             display: "block",
             opacity: 0.85
         };
-        // Usamos los colores de tu configuración de Tailwind
-        switch (event.type) {
-            case 'reunion':
-                style.backgroundColor = '#8B5CF6'; // primary-purple
-                break;
-            case 'entrenamiento':
-                style.backgroundColor = '#3B82F6'; // primary-blue
-                break;
-            case 'cita':
-                style.backgroundColor = '#6D28D9'; // Un morado más oscuro para diferenciar
-                break;
-            default:
-                style.backgroundColor = '#64748B'; // slate-500
-                break;
-        }
         return { style };
     };
 
@@ -131,27 +105,24 @@ function Appointments() {
         agenda: 'Agenda',
         date: 'Fecha',
         time: 'Hora',
-        event: 'Evento',
-        noEventsInRange: 'No hay eventos en este rango.',
+        event: 'Cita',
+        noEventsInRange: 'No hay citas en este rango.',
         showMore: total => `+ Ver más (${total})`
     };
 
-    const handleSelectEvent = (event) => {
-        // Solo mostramos el modal de detalles para eventos de tipo 'cita'
-        // que son los que creamos con el formulario y contienen los detalles.
-        if (event.type === 'cita' && event.specialty) {
-            setSelectedEvent(event);
+    const handleSelectAppointment = (appointment) => {
+        // Solo mostramos el modal de detalles para citas que tienen detalles.
+        if (appointment.specialty) {
+            setSelectedAppointment(appointment);
             setIsViewModalOpen(true);
         }
-        // Aquí se podría agregar lógica para otros tipos de eventos si se desea.
-        // Por ejemplo, abrir un modal diferente para 'reunion' o 'entrenamiento'.
     };
 
     const handleCloseViewModal = () => {
         setIsViewModalOpen(false);
         // Pequeña demora para que la animación de salida se complete antes de limpiar los datos
         setTimeout(() => {
-            setSelectedEvent(null);
+            setSelectedAppointment(null);
         }, 300);
     };
 
@@ -175,19 +146,18 @@ function Appointments() {
         // Suponemos que la cita dura 1 hora
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
 
-        const newEvent = {
+        const newAppointment = {
             id: Date.now(),
             title: `Cita: ${values.specialist}`,
             start: startDateTime,
             end: endDateTime,
             allDay: false,
-            type: 'cita', // Se podría mapear desde la especialidad si se desea
             description: values.description,
             specialty: values.specialty,
             specialist: values.specialist,
         };
 
-        setEvents(prevEvents => [...prevEvents, newEvent]);
+        setAppointments(prevAppointments => [...prevAppointments, newAppointment]);
         showSuccessAlert("¡Cita Creada!", "La nueva cita ha sido agendada correctamente.");
         handleCloseCreateModal();
     };
@@ -244,9 +214,32 @@ function Appointments() {
                         Visualiza, crea y gestiona las citas
                     </p>
                 </div>
-                <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold shadow-lg hover:bg-primary-purple transition-colors">
-                    Crear Cita <SiGoogleforms size={20} />
-                </button>
+                <div className="flex items-center gap-4">
+                    {/* Grupo de botones para las vistas del calendario */}
+                    <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
+                        <button
+                            onClick={() => setView('month')}
+                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'month' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                        >
+                            Mes
+                        </button>
+                        <button
+                            onClick={() => setView('week')}
+                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'week' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                        >
+                            Semana
+                        </button>
+                        <button
+                            onClick={() => setView('day')}
+                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'day' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                        >
+                            Día
+                        </button>
+                    </div>
+                    <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold shadow-lg hover:bg-primary-purple transition-colors">
+                        Crear Cita <SiGoogleforms size={20} />
+                    </button>
+                </div>
             </div>
 
             {/* Cuerpo con el Calendario */}
@@ -254,14 +247,16 @@ function Appointments() {
                 <div className="h-[75vh]"> {/* Contenedor con altura definida */}
                     <Calendar
                         localizer={localizer}
-                        events={events}
+                        events={appointments}
                         startAccessor="start"
                         endAccessor="end"
                         style={{ height: '100%' }}
-                        eventPropGetter={eventPropGetter}
+                        eventPropGetter={appointmentPropGetter}
                         messages={messages}
                         views={['month', 'week', 'day', 'agenda']}
-                        onSelectEvent={handleSelectEvent}
+                        onSelectEvent={handleSelectAppointment}
+                        view={view}
+                        onView={setView}
                     />
                 </div>
             </div>
@@ -334,7 +329,7 @@ function Appointments() {
 
             {/* Modal para Ver Detalles de la Cita */}
             <AnimatePresence>
-                {isViewModalOpen && selectedEvent && (
+                {isViewModalOpen && selectedAppointment && (
                     <motion.div
                         className="fixed inset-0 z-50 flex items-center justify-center p-4"
                         initial="hidden"
@@ -360,11 +355,11 @@ function Appointments() {
 
                             {/* Body */}
                             <div className="p-8 space-y-5">
-                                <DetailItem label="Especialidad" value={getSpecialtyLabel(selectedEvent.specialty)} />
-                                <DetailItem label="Especialista" value={selectedEvent.specialist} />
-                                <DetailItem label="Fecha" value={moment(selectedEvent.start).format('dddd, D [de] MMMM [de] YYYY')} />
-                                <DetailItem label="Hora" value={moment(selectedEvent.start).format('h:mm a')} />
-                                <DetailItem label="Descripción / Motivo" value={selectedEvent.description} />
+                                <DetailItem label="Especialidad" value={getSpecialtyLabel(selectedAppointment.specialty)} />
+                                <DetailItem label="Especialista" value={selectedAppointment.specialist} />
+                                <DetailItem label="Fecha" value={moment(selectedAppointment.start).format('dddd, D [de] MMMM [de] YYYY')} />
+                                <DetailItem label="Hora" value={moment(selectedAppointment.start).format('h:mm a')} />
+                                <DetailItem label="Descripción / Motivo" value={selectedAppointment.description} />
                             </div>
 
                             {/* Footer */}
