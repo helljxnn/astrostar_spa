@@ -239,7 +239,7 @@ const Purchases = () => {
                   <th scope="col" className="px-6 py-4 text-left font-semibold text-white">Fecha Compra</th>
                   <th scope="col" className="px-6 py-4 text-left font-semibold text-white">Fecha Registro</th>
                   <th scope="col" className="px-6 py-4 text-left font-semibold text-white">Estado</th>
-                  <th scope="col" className="px-6 py-4 text-left font-semibold text-white text-center">Acciones</th>
+                  <th scope="col" className="px-6 py-4 font-semibold text-white text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -265,11 +265,6 @@ const Purchases = () => {
                             <button onClick={() => handleChangeState(purchase, 'Cancelado')} title="Anular Compra" className="p-2 text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors">
                               <FaTimesCircle />
                             </button>
-                          )}
-                          {purchase.estado === 'Cancelado' && (
-                            <span className="px-3 py-1 text-xs font-medium text-gray-500">
-                              Acción no disponible
-                            </span>
                           )}
                         </div>
                       </td>
