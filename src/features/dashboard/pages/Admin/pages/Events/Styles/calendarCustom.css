@@ -1,18 +1,11 @@
-/* calendarCustom.css */
-/* Import base css de react-big-calendar (necesario para layout base) */
-/* @import "~react-big-calendar/lib/css/react-big-calendar.css"; */
+/* calendarCustom.css - Minimalista y compatible */
 
-/* Fuente base */
-.rbc-calendar {
-  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-
-/* Esconder toolbar nativo (vamos a usar header personalizado) */
+/* Esconder toolbar nativo */
 .rbc-toolbar {
   display: none !important;
 }
 
-/* Celdas y headers */
+/* Headers del calendario */
 .rbc-header {
   background: #f9fafb;
   color: #374151;
@@ -22,77 +15,261 @@
 }
 
 /* ===============================
-   ESTILOS PERSONALIZADOS EVENTOS
+   ESTILOS BÁSICOS PARA EVENTOS - PASO A PASO
    =============================== */
 
-/* Cada evento será un "chip" más visible */
+/* Paso 1: Estilos básicos y compatibles para eventos */
 .rbc-event {
-  background: transparent !important; /* mantenemos base transparente */
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
   border: none !important;
-  padding: 0 !important;
+  border-left: 4px solid #3b82f6 !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  margin: 2px 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #1e40af !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease !important;
 }
 
-.rbc-event-content {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.3;
-  padding: 4px 8px;
-  border-radius: 8px;
-  color: #1e293b; /* slate-800 */
-  background: linear-gradient(135deg, #b595ff 0%, #9be9ff 100%);
-  box-shadow: 0 2px 4px rgba(15,23,42,0.12);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+.rbc-event:hover {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Hover effect para dar feedback */
-.rbc-event-content:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(15,23,42,0.18);
-}
-
-/* Si quieres que los eventos largos se corten bonito */
-.rbc-event-label {
-  display: none; /* ocultamos la hora en vista mensual */
-}
-
-.rbc-show-more {
-  color: #6366f1 !important; /* indigo-500 */
-  font-weight: 600;
-  font-size: 0.8rem;
-}
-
-
-/* Estilo para día actual */
+/* Día actual */
 .rbc-today {
-  background: rgba(208,191,255,0.12) !important;
+  background: rgba(149, 255, 167, 0.08) !important;
+  border: 1px solid rgba(149, 255, 167, 0.2) !important;
 }
 
-/* Celdas fuera de rango (mes anterior/siguiente) */
+/* Celdas fuera de rango */
 .rbc-off-range-bg {
   background: #fafafa !important;
 }
 
-/* Remove default colors in month cells to allow tailwind bg */
-.rbc-month-row .rbc-day-bg {
-  background: transparent;
+.rbc-off-range .rbc-date-cell > a {
+  color: #9ca3af !important;
 }
 
-/* Popup default style tweak */
+/* Botón "Ver más" personalizado */
+.rbc-show-more {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 4px !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  padding: 2px 6px !important;
+  margin-top: 2px !important;
+  transition: all 0.2s ease !important;
+}
+
+.rbc-show-more:hover {
+  background: #e2e8f0 !important;
+  color: #475569 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Popup de eventos */
 .rbc-overlay {
-  box-shadow: 0 10px 30px rgba(2,6,23,0.15);
-  border-radius: 12px;
+  background: white !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  padding: 8px !important;
 }
 
-/* Ajustes responsivos */
+.rbc-overlay .rbc-overlay-header {
+  background: #f9fafb !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  border-radius: 8px 8px 0 0 !important;
+  padding: 8px 12px !important;
+  font-weight: 600 !important;
+  color: #374151 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .rbc-date-cell {
+    min-height: 100px !important;
+    padding: 4px !important;
+  }
+
+  .rbc-event {
+    font-size: 10px !important;
+    padding: 3px 6px !important;
+  }
+}
+
 @media (max-width: 640px) {
-  .rbc-time-header {
-    font-size: 12px;
+  .rbc-date-cell {
+    min-height: 80px !important;
+    padding: 2px !important;
   }
-  .rbc-month-row .rbc-header {
-    padding: 6px 4px;
+
+  .rbc-event {
+    font-size: 9px !important;
+    padding: 2px 4px !important;
   }
+}
+
+/* Colores por tipo de evento */
+.rbc-event[data-tipo="Festival"],
+.event-Festival {
+  background: linear-gradient(135deg, #9BFFB6 0%, #7AEEA0 100%) !important;
+  border-left-color: #4CD97A !important;
+  color: #0B7A3E !important;
+}
+
+.rbc-event[data-tipo="Torneo"],
+.event-Torneo {
+  background: linear-gradient(135deg, #9BE9FF 0%, #7AD5EA 100%) !important;
+  border-left-color: #4CB5D9 !important;
+  color: #0B5E7A !important;
+}
+
+.rbc-event[data-tipo="Taller"],
+.event-Taller {
+  background: linear-gradient(135deg, #FF95E5 0%, #EA7AD0 100%) !important;
+  border-left-color: #D94CB5 !important;
+  color: #7A0B5E !important;
+}
+
+.rbc-event[data-tipo="Clausura"],
+.event-Clausura {
+  background: linear-gradient(135deg, #B595FF 0%, #A07AEA 100%) !important;
+  border-left-color: #7A4CD9 !important;
+  color: #3E0B7A !important;
+}
+/* ===============================
+   ESTILOS PARA BOTONES DE EVENTOS
+   =============================== */
+
+/* Contenedor de botones */
+.event-actions {
+  display: flex;
+  gap: 3px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Botones base */
+.event-btn {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  color: #6b7280 !important;
+}
+
+/* Botones en vista de mes */
+.event-btn--month {
+  width: 18px !important;
+  height: 16px !important;
+  padding: 1px !important;
+  font-size: 9px !important;
+}
+
+/* Botones en vista de semana/día */
+.event-btn--week-day {
+  width: 20px !important;
+  height: 18px !important;
+  padding: 2px !important;
+  font-size: 10px !important;
+}
+
+/* Hover effects */
+.event-btn:hover {
+  background: rgba(255, 255, 255, 1) !important;
+  border-color: rgba(0, 0, 0, 0.2) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Botón de gestión (FaCog) */
+.event-btn--manage {
+  border-color: #6b7280 !important;
+  color: #6b7280 !important;
+}
+
+.event-btn--manage:hover {
+  background: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+  color: #4b5563 !important;
+}
+
+/* Botón de inscripción (FaUsers) */
+.event-btn--registration {
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+.event-btn--registration:hover {
+  background: #eff6ff !important;
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+}
+
+/* Efectos de click */
+.event-btn:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 768px) {
+  .event-btn--month {
+    width: 16px !important;
+    height: 14px !important;
+    font-size: 8px !important;
+  }
+
+  .event-btn--week-day {
+    width: 18px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+  }
+
+  .event-actions {
+    gap: 2px;
+  }
+}
+
+/* Asegurar que los botones no interfieran con el evento */
+.event-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 4px;
+}
+
+.event-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.event-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-location {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

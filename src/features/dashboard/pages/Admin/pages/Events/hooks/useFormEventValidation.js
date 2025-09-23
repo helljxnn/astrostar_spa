@@ -30,6 +30,17 @@ export const useFormEventValidation = () => {
         }
         break;
 
+      case "horaInicio":
+        if (!value) error = "La hora de inicio es obligatoria.";
+        break;
+
+      case "horaFin":
+        if (!value) error = "La hora de finalización es obligatoria.";
+        else if (formData.horaInicio && formData.fechaInicio === formData.fechaFin && value <= formData.horaInicio) {
+          error = "La hora de finalización debe ser posterior a la de inicio.";
+        }
+        break;
+
       case "ubicacion":
         if (!value?.trim()) error = "La ubicación es obligatoria.";
         break;

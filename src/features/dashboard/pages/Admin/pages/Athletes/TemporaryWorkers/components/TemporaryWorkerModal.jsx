@@ -95,28 +95,28 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 z-10">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={onClose}
           >
             ✕
           </button>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {mode === "view" ? "Ver Persona Temporal" : mode === "edit" ? "Editar Persona Temporal" : "Crear Persona Temporal"}
           </h2>
         </div>
 
         {/* Body */}
-        <div className="p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
@@ -297,45 +297,34 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
         </div>
 
         {/* Footer */}
-        {mode === "view" ? (
-          /* Botón cerrar */
-          <div className="flex justify-center py-3 px-4">
-            <button
-              onClick={onClose}
-              className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"
-            >
-              Cerrar
-            </button>
-          </div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex justify-between px-4 py-3 border-t border-gray-200"
-          >
-            <motion.button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Cancelar
-            </motion.button>
-            <motion.button
-              onClick={handleSubmit}
-              className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:from-primary-purple hover:to-primary-blue transition-all duration-200 font-medium shadow-lg"
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {mode === "edit" ? "Guardar Cambios" : "Crear Persona Temporal"}
-            </motion.button>
-          </motion.div>
-        )}
+        <div className="flex-shrink-0 border-t border-gray-200 p-3">
+          {mode === "view" ? (
+            <div className="flex justify-center">
+              <button
+                onClick={onClose}
+                className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+              >
+                {mode === "edit" ? "Guardar Cambios" : "Crear Persona Temporal"}
+              </button>
+            </div>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );
