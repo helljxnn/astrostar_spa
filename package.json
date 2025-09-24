@@ -13,6 +13,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
+    "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.12",
     "html2canvas": "^1.4.1",
@@ -29,8 +30,7 @@
     "styled-components": "^6.1.19",
     "sweetalert2": "^11.22.5",
     "tailwindcss-text-fill-stroke": "^2.0.0-beta.3",
-    "vite": "^5.4.10",
-    "xlsx": "^0.18.5"
+    "vite": "^5.4.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",

@@ -7,7 +7,11 @@ import { IoMdDownload } from "react-icons/io";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts";
+import {
+  showDeleteAlert,
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../shared/utils/alerts";
 
 const TemporaryWorkers = () => {
   const [data, setData] = useState(temporaryWorkersData);
@@ -23,12 +27,23 @@ const TemporaryWorkers = () => {
     if (!searchTerm) return data;
 
     return data.filter((item) =>
-      Object.values(item).some(
-        (value) => String(value).toLowerCase() === searchTerm.toLowerCase()
-      )
+      Object.entries(item).some(([key, value]) => {
+        const stringValue = String(value).trim();
+
+        // Si es el campo Estado, comparar exacto y sensible a mayúsculas
+        if (key.toLowerCase() === "estado") {
+          return (
+            (stringValue === "Activo" && searchTerm === "Activo") ||
+            (stringValue === "Inactivo" && searchTerm === "Inactivo")
+          );
+        }
+
+        // Para los demás campos, búsqueda parcial insensible a mayúsculas
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [data, searchTerm]);
-
+  
   // Paginación
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -89,7 +104,9 @@ const TemporaryWorkers = () => {
       );
 
       if (result.isConfirmed) {
-        setData((prev) => prev.filter((item) => item.identificacion !== worker.identificacion));
+        setData((prev) =>
+          prev.filter((item) => item.identificacion !== worker.identificacion)
+        );
         showSuccessAlert(
           "Persona eliminada",
           `${worker.nombre} ha sido eliminado correctamente.`

@@ -3,7 +3,7 @@ import { IoMdDownload } from "react-icons/io";
 import { FiChevronDown, FiFileText } from "react-icons/fi";
 import { FaFilePdf, FaFileExcel } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -192,7 +192,7 @@ const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns
     }
   };
 
-  const generateExcel = () => {
+  const generateExcel = async () => {
     setOpen(false);
     
     try {
@@ -276,41 +276,62 @@ const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns
         return obj;
       });
 
-      // Crear worksheet
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-      
-      // Aplicar estilos a las columnas (ancho automático)
-      const colWidths = reportColumns.map(col => ({
-        wch: Math.max(col.label.length, 15) // Mínimo 15 caracteres de ancho
-      }));
-      worksheet['!cols'] = colWidths;
-      
-      // Crear workbook
-      const workbook = XLSX.utils.book_new();
+      // Crear workbook con exceljs
+      const workbook = new ExcelJS.Workbook();
       
       // Agregar metadatos
-      workbook.Props = {
-        Title: `Reporte de Eventos - ${selectedDate.toLocaleString('es', { month: 'long' })} ${selectedYear}`,
-        Subject: "Reporte de Eventos",
-        Author: "AstroStar",
-        CreatedDate: new Date()
+      workbook.creator = "AstroStar";
+      workbook.lastModifiedBy = "AstroStar";
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      workbook.properties.date1904 = true;
+      workbook.title = `Reporte de Eventos - ${selectedDate.toLocaleString('es', { month: 'long' })} ${selectedYear}`;
+      workbook.subject = "Reporte de Eventos";
+      
+      // Crear worksheet
+      const worksheet = workbook.addWorksheet('Eventos');
+      
+      // Agregar encabezados
+      const headers = reportColumns.map(col => col.label);
+      worksheet.addRow(headers);
+      
+      // Dar formato a la fila de encabezados
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: '000000' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'E0E0E0' }
       };
       
-      // Agregar hoja al workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Eventos");
-
-      // Generar archivo
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
+      // Agregar datos
+      worksheetData.forEach(data => {
+        const rowValues = reportColumns.map(col => data[col.label]);
+        worksheet.addRow(rowValues);
       });
       
-      const blob = new Blob([excelBuffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      // Ajustar ancho de columnas
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = headers[index].length;
+        worksheet.getColumn(index + 1).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (rowNumber > 1) {
+            const columnLength = cell.value ? cell.value.toString().length : 10;
+            if (columnLength > maxLength) {
+              maxLength = columnLength;
+            }
+          }
+        });
+        worksheet.getColumn(index + 1).width = Math.max(maxLength + 2, 15);
       });
+      
+      // Generar archivo
+      const buffer = await workbook.xlsx.writeBuffer();
       
       const monthName = selectedDate.toLocaleString('es', { month: 'long' });
       const fileName_with_date = `${fileName}_${monthName}_${selectedYear}.xlsx`;
+      const blob = new Blob([buffer], { 
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      });
       saveAs(blob, fileName_with_date);
     } catch (error) {
       console.error("Error al generar Excel:", error);

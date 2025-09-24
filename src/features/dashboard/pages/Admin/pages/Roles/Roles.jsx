@@ -26,18 +26,27 @@ const Roles = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-
   // Filtrar por búsqueda general en cualquier campo del objeto
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
     return data.filter((item) =>
-      Object.values(item).some(
-        (value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      Object.entries(item).some(([key, value]) => {
+        const stringValue = String(value).trim();
+
+        // Si es el campo Estado, comparar exacto y sensible a mayúsculas
+        if (key.toLowerCase() === "estado") {
+          return (
+            (stringValue === "Activo" && searchTerm === "Activo") ||
+            (stringValue === "Inactivo" && searchTerm === "Inactivo")
+          );
+        }
+
+        // Para los demás campos, búsqueda parcial insensible a mayúsculas
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [data, searchTerm]);
-
 
   // Paginación
   const totalRows = filteredData.length;

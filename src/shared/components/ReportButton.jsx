@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { IoMdDownload } from "react-icons/io";
 import { FiChevronDown } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 // IMPORTACIÓN CORRECTA
@@ -145,7 +145,7 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
     }
   };
 
-  const generateExcel = () => {
+  const generateExcel = async () => {
     setOpen(false);
     
     try {
@@ -155,91 +155,89 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
 
       console.log("Generando Excel con mejor formato...");
 
-      // Preparar datos para Excel
-      const worksheetData = data.map((row) => {
-        const obj = {};
-        columns.forEach((col) => {
+      // Crear workbook con exceljs
+      const workbook = new ExcelJS.Workbook();
+      
+      // Agregar metadatos
+      workbook.creator = "AstroStar";
+      workbook.lastModifiedBy = "AstroStar";
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      workbook.properties.date1904 = true;
+      workbook.title = fileName;
+      workbook.subject = "Reporte de datos";
+      
+      // Crear worksheet para los datos
+      const worksheet = workbook.addWorksheet('Datos');
+      
+      // Agregar encabezados
+      const headers = columns.map(col => col.label);
+      worksheet.addRow(headers);
+      
+      // Dar formato a la fila de encabezados
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: '000000' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'CCCCCC' }
+      };
+      headerRow.alignment = { horizontal: 'center' };
+      
+      // Agregar datos
+      data.forEach(row => {
+        const rowValues = columns.map(col => {
           let value = row[col.key];
           
           // Formatear mejor los datos para Excel
           if (value === null || value === undefined) {
-            obj[col.label] = "";
+            return "";
           } else if (typeof value === 'object') {
             if (value instanceof Date) {
-              obj[col.label] = value.toLocaleDateString('es-ES');
+              return value.toLocaleDateString('es-ES');
             } else {
-              obj[col.label] = JSON.stringify(value);
+              return JSON.stringify(value);
             }
           } else {
-            obj[col.label] = value;
+            return value;
           }
         });
-        return obj;
+        worksheet.addRow(rowValues);
       });
-
-      // Crear worksheet
-      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
       
-      // Mejorar el formato del worksheet
-      const range = XLSX.utils.decode_range(worksheet['!ref']);
-      
-      // Configurar anchos de columnas automáticamente
-      const columnWidths = columns.map((col, index) => {
-        // Calcular el ancho basado en el contenido
-        let maxLength = col.label.length;
-        
-        data.forEach(row => {
-          const value = String(row[col.key] || '');
-          if (value.length > maxLength) {
-            maxLength = Math.min(value.length, 50); // Máximo 50 caracteres
+      // Ajustar ancho de columnas
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = headers[index].length;
+        worksheet.getColumn(index + 1).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (rowNumber > 1) {
+            const columnLength = cell.value ? cell.value.toString().length : 10;
+            if (columnLength > maxLength) {
+              maxLength = Math.min(columnLength, 50); // Máximo 50 caracteres
+            }
           }
         });
-        
-        return { wch: Math.max(maxLength + 2, 10) }; // Mínimo 10, +2 para padding
+        worksheet.getColumn(index + 1).width = Math.max(maxLength + 2, 10);
       });
       
-      worksheet['!cols'] = columnWidths;
-
-      // Formatear encabezados en negrita (esto requiere el formato de celdas)
-      for (let i = 0; i <= columns.length - 1; i++) {
-        const cellRef = XLSX.utils.encode_cell({ r: 0, c: i });
-        if (worksheet[cellRef]) {
-          worksheet[cellRef].s = {
-            font: { bold: true },
-            fill: { fgColor: { rgb: "CCCCCC" } },
-            alignment: { horizontal: "center" }
-          };
-        }
-      }
-
-      // Crear workbook
-      const workbook = XLSX.utils.book_new();
+      // Crear hoja de información
+      const infoSheet = workbook.addWorksheet('Información');
       
-      // Agregar información adicional en una segunda hoja
-      const infoSheet = XLSX.utils.json_to_sheet([
-        { "Campo": "Archivo", "Valor": fileName },
-        { "Campo": "Fecha de generación", "Valor": new Date().toLocaleString('es-ES') },
-        { "Campo": "Total de registros", "Valor": data.length },
-        { "Campo": "Columnas incluidas", "Valor": columns.length }
-      ]);
+      // Agregar datos de información
+      infoSheet.addRow(['Campo', 'Valor']);
+      infoSheet.addRow(['Archivo', fileName]);
+      infoSheet.addRow(['Fecha de generación', new Date().toLocaleString('es-ES')]);
+      infoSheet.addRow(['Total de registros', data.length]);
+      infoSheet.addRow(['Columnas incluidas', columns.length]);
       
-      // Configurar anchos para la hoja de información
-      infoSheet['!cols'] = [
-        { wch: 20 }, // Campo
-        { wch: 30 }  // Valor
-      ];
-
-      // Agregar hojas al workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Datos");
-      XLSX.utils.book_append_sheet(workbook, infoSheet, "Información");
-
+      // Dar formato a la hoja de información
+      infoSheet.getRow(1).font = { bold: true };
+      infoSheet.getColumn(1).width = 20;
+      infoSheet.getColumn(2).width = 30;
+      
       // Generar archivo
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
-      });
+      const buffer = await workbook.xlsx.writeBuffer();
       
-      const blob = new Blob([excelBuffer], { 
+      const blob = new Blob([buffer], { 
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
       });
       
