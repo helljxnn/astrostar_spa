@@ -10,6 +10,20 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 
 const PURCHASES_STORAGE_KEY = 'purchasesData';
 const EQUIPMENT_STORAGE_KEY = 'sportsEquipmentData';
+const PROVIDERS_STORAGE_KEY = 'providersData'; // Clave específica para proveedores
+
+// Datos de ejemplo que se usarán si el localStorage de proveedores está vacío
+const sampleProviders = [
+  { id: 1, razonSocial: 'Insumos Deportivos S.A.', nit: '900.111.222-3', estado: 'Activo' },
+  { id: 2, razonSocial: 'Dotaciones Atléticas Ltda.', nit: '800.333.444-5', estado: 'Activo' },
+  { id: 3, razonSocial: 'Equipamiento Total', nit: '901.555.666-7', estado: 'Inactivo' },
+];
+
+const sampleEquipment = [
+  { id: 1, NombreMaterial: 'Balón de Fútbol', CantidadComprado: 10, CantidadDonado: 5, Total: 15, estado: 'Activo' },
+  { id: 2, NombreMaterial: 'Conos de Entrenamiento', CantidadComprado: 50, CantidadDonado: 20, Total: 70, estado: 'Activo' },
+  { id: 3, NombreMaterial: 'Red de Voleibol', CantidadComprado: 2, CantidadDonado: 1, Total: 3, estado: 'Activo' },
+];
 
 const Purchases = () => {
   const [purchasesList, setPurchasesList] = useState(() => {
@@ -25,10 +39,24 @@ const Purchases = () => {
   const [equipmentList, setEquipmentList] = useState(() => {
     try {
       const storedData = localStorage.getItem(EQUIPMENT_STORAGE_KEY);
-      return storedData ? JSON.parse(storedData) : [];
+      const parsedData = storedData ? JSON.parse(storedData) : [];
+      // Si no hay datos en localStorage, usar los de ejemplo
+      return parsedData.length > 0 ? parsedData : sampleEquipment;
     } catch (error) {
       console.error("Error al leer material deportivo de localStorage:", error);
-      return [];
+      return sampleEquipment; // Usar datos de ejemplo en caso de error
+    }
+  });
+
+  const [providersList, setProvidersList] = useState(() => {
+    try {
+      const storedData = localStorage.getItem(PROVIDERS_STORAGE_KEY);
+      const parsedData = storedData ? JSON.parse(storedData) : [];
+      // Si no hay datos en localStorage, usar los de ejemplo
+      return parsedData.length > 0 ? parsedData : sampleProviders;
+    } catch (error) {
+      console.error("Error al leer proveedores de localStorage:", error);
+      return sampleProviders; // Usar datos de ejemplo en caso de error
     }
   });
 
@@ -347,6 +375,7 @@ const Purchases = () => {
         onClose={handleCloseCreateModal}
         onSubmit={handleCreateSubmit}
         equipmentList={equipmentList}
+        providerList={providersList}
       />
       {/* Modal personalizado para ver detalles de la factura */}
       <ViewInvoiceDetails
