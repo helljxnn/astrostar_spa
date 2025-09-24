@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
-import { showSuccessAlert } from "../../../../../../../shared/utils/Alerts";
+import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
+import {showConfirmAlert } from "../../../../../../../shared/utils/alerts";
 
-// Datos del formulario
 const modules = [
   { name: "Usuarios", icon: "👤" },
   { name: "Roles", icon: "🛡️" },
@@ -27,7 +27,7 @@ const actions = [
   { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
 ];
 
-const RoleModal = ({ isOpen, onClose, onSave }) => {
+const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Hook de validación
   const {
     values: formData,
@@ -50,7 +50,20 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
   const [expandedModules, setExpandedModules] = useState({});
   const [permissionError, setPermissionError] = useState("");
 
-  // Validación de permisos en tiempo real
+  // Si recibimos roleData (editar), precargamos los datos
+  useEffect(() => {
+    if (roleData) {
+      setFormData({
+        id: roleData.id,
+        nombre: roleData.nombre || "",
+        descripcion: roleData.descripcion || "",
+        estado: roleData.estado || "",
+        permisos: roleData.permisos || {},
+      });
+    }
+  }, [roleData, setFormData]);
+
+  // Validación de permisos
   useEffect(() => {
     const totalPermissions = Object.values(formData.permisos).reduce(
       (total, modulePerms) =>
@@ -65,7 +78,7 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
     }
   }, [formData.permisos, touched]);
 
-  // Funciones de manejo de permisos
+  // Manejo de permisos
   const handlePermissionChange = (modulo, action) => {
     setFormData((prev) => {
       const current = prev.permisos[modulo] || {};
@@ -95,10 +108,7 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
       permisos: {
         ...prev.permisos,
         [moduleName]: actions.reduce(
-          (acc, action) => ({
-            ...acc,
-            [action.name]: true,
-          }),
+          (acc, action) => ({ ...acc, [action.name]: true }),
           {}
         ),
       },
@@ -108,10 +118,7 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
   const clearAllPermissions = (moduleName) => {
     setFormData((prev) => ({
       ...prev,
-      permisos: {
-        ...prev.permisos,
-        [moduleName]: {},
-      },
+      permisos: { ...prev.permisos, [moduleName]: {} },
     }));
   };
 
@@ -120,8 +127,8 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
     return Object.values(modulePermissions).filter(Boolean).length;
   };
 
-  // Manejo del submit con validaciones
-  const handleSubmit = () => {
+  // Submit
+  const handleSubmit = async () => {
     const isValid = validateAllFields();
     const hasPermissions = Object.values(formData.permisos).some(
       (modulePerms) => Object.values(modulePerms).some(Boolean)
@@ -132,17 +139,44 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
       return;
     }
 
-    if (isValid && hasPermissions) {
-      onSave(formData);
+    if (!isValid || !hasPermissions) return;
 
-      //Llamamos la alerta de éxito
-      showSuccessAlert("Rol Creado", "El rol ha sido creado exitosamente.");
+    const roleToSave = {
+      ...formData,
+      modulos: modules.map((mod) => ({
+        nombre: mod.name,
+        permisos: actions
+          .filter((action) => formData.permisos[mod.name]?.[action.name])
+          .map((action) => action.name),
+      })),
+    };
 
-      // Reset form
-      setFormData({ nombre: "", descripcion: "", estado: "", permisos: {} });
-      setPermissionError("");
-      onClose();
+    // alerta de confirmación si se está editando
+    if (roleData) {
+      const result = await showConfirmAlert(
+        "¿Estás seguro de actualizar este rol?",
+        "Los cambios se guardarán y no se podrán deshacer fácilmente."
+      );
+
+      if (!result.isConfirmed) return; 
     }
+
+    // Guardar rol
+    onSave(roleToSave);
+
+    showSuccessAlert(
+      roleData ? "Rol Actualizado" : "Rol Creado",
+      roleData
+        ? "El rol ha sido actualizado exitosamente."
+        : "El rol ha sido creado exitosamente."
+    );
+
+    if (!roleData) {
+      setFormData({ nombre: "", descripcion: "", estado: "", permisos: {} });
+    }
+
+    setPermissionError("");
+    onClose();
   };
 
   const totalPermissions = Object.values(formData.permisos).reduce(
@@ -176,12 +210,13 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
             ✕
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            Crear Rol
+            {roleData ? "Editar Rol" : "Crear Rol"}
           </h2>
         </div>
 
+        {/* Contenido del formulario */}
         <div className="p-6 space-y-6">
-          {/* Campos básicos con FormField */}
+          {/* Campos básicos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               label="Nombre"
@@ -229,7 +264,7 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
             delay={0.3}
           />
 
-          {/* Sección de Permisos */}
+          {/* Permisos */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -239,14 +274,14 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
                 <span className="text-purple-600">🛡️</span>
-                Permisos del Rol
-                <span className="text-red-500">*</span>
+                Permisos del Rol <span className="text-red-500">*</span>
               </h3>
               <div className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
                 {totalPermissions} permisos seleccionados
               </div>
             </div>
 
+            {/* Módulos con permisos */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {modules.map((module, index) => {
@@ -261,7 +296,6 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                       transition={{ delay: 0.05 * index }}
                       className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200"
                     >
-                      {/* Header del módulo */}
                       <div
                         className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
                         onClick={() => toggleModuleExpansion(module.name)}
@@ -290,7 +324,6 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                         </div>
                       </div>
 
-                      {/* Contenido expandible */}
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div
@@ -301,7 +334,6 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                             className="overflow-hidden"
                           >
                             <div className="p-4 border-t border-gray-100">
-                              {/* Botones de selección rápida */}
                               <div className="flex gap-2 mb-3">
                                 <button
                                   type="button"
@@ -323,7 +355,6 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                                 </button>
                               </div>
 
-                              {/* Grid de permisos */}
                               <div className="grid grid-cols-2 gap-2">
                                 {actions.map((action) => {
                                   const isChecked =
@@ -334,14 +365,12 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                                   return (
                                     <motion.label
                                       key={action.name}
-                                      className={`
-                                        flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200
+                                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200
                                         ${
                                           isChecked
                                             ? `${action.color} text-white shadow-sm`
                                             : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                                        }
-                                      `}
+                                        }`}
                                       whileHover={{ scale: 1.02 }}
                                       whileTap={{ scale: 0.98 }}
                                     >
@@ -357,27 +386,21 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
                                         className="sr-only"
                                       />
                                       <div
-                                        className={`
-                                        w-4 h-4 rounded border-2 flex items-center justify-center
+                                        className={`w-4 h-4 rounded border-2 flex items-center justify-center
                                         ${
                                           isChecked
                                             ? "bg-white border-white"
                                             : "border-gray-300 bg-white"
-                                        }
-                                      `}
+                                        }`}
                                       >
                                         {isChecked && (
                                           <motion.div
                                             initial={{ scale: 0 }}
                                             animate={{ scale: 1 }}
-                                            className={`text-xs ${
-                                              isChecked
-                                                ? action.color.replace(
-                                                    "bg-",
-                                                    "text-"
-                                                  )
-                                                : ""
-                                            }`}
+                                            className={`text-xs ${action.color.replace(
+                                              "bg-",
+                                              "text-"
+                                            )}`}
                                           >
                                             ✓
                                           </motion.div>
@@ -442,7 +465,7 @@ const RoleModal = ({ isOpen, onClose, onSave }) => {
               }}
               whileTap={{ scale: 0.98 }}
             >
-              Crear Rol
+              {roleData ? "Actualizar Rol" : "Crear Rol"}
             </motion.button>
           </motion.div>
         </div>

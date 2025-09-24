@@ -1,28 +1,49 @@
-import React from "react";
-import { FaRegUserCircle } from 'react-icons/fa';
+import React, { useState, useRef, useEffect } from "react";
 import { FaAngleDown } from 'react-icons/fa';
+import { AnimatePresence } from "framer-motion";
 import SubMenu from "./subMenu";
 
 const PerfilLog = () => {
-    const [isOpen, setIsOpen] = React.useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
     const toggleMenu = () => setIsOpen(!isOpen);
+
+    // Cierra el menú si se hace clic fuera de él
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [menuRef]);
+
     return (
-        <div id="container-PerfilLog" className="relative w-auto h-auto flex flex-row gap-2 justify-center items-center p-1 bg-primary-purple-light shadow-md text-white rounded-lg">
-            <div id="photo">
-                <FaRegUserCircle size={32} className="text-white shrink-0" />
-            </div>
-            <div id="name-user">
-                <h4>Estrella</h4>
-            </div>
-            <div className="flex items-center gap-2">
-                <div className="w-px h-6 bg-white/40 rounded-full" aria-hidden="true"></div>
-                <button onClick={toggleMenu} id="indicator" aria-label="Desplegar menú de usuario" className="p-1 rounded-full hover:bg-primary-purple-light transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white/50">
-                    <FaAngleDown size={18} className="text-white shrink-0" />
-                </button>
-            </div>
-            <div id="subMenu" className={`absolute top-full right-0 mt-2 z-10 origin-top-right transition-all duration-200 ease-out ${isOpen ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}>
-                <SubMenu />
-            </div>
+        <div ref={menuRef} className="relative">
+            <button
+                onClick={toggleMenu}
+                aria-label="Abrir menú de usuario"
+                className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-purple/50"
+            >
+                {/* Avatar con inicial */}
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-purple to-primary-blue flex items-center justify-center text-white font-bold text-sm">
+                    E
+                </div>
+                {/* Flecha desplegable */}
+                <FaAngleDown
+                    size={16}
+                    className={`text-gray-500 shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+                />
+            </button>
+
+            {/* Submenú con animación */}
+            <AnimatePresence>
+                {isOpen && <SubMenu />}
+            </AnimatePresence>
         </div>
     );
 }

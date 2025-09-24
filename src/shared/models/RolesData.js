@@ -1,24 +1,117 @@
 const rolesData = [
   {
-    nombre: "Profesional de salud",
-    descripcion: "...",
+    id: 1,
+    nombre: "Administrador",
+    descripcion: "Acceso completo al sistema",
     estado: "Activo",
+    modulos: [
+      {
+        nombre: "Usuarios",
+        permisos: ["Crear", "Editar", "Eliminar", "Ver"],
+      },
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Ver", "Editar"],
+      },
+    ],
   },
   {
-    nombre: "Usuario",
-    descripcion: "...",
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
     estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
   },
-  {
-    nombre: "Profesional deportivo",
-    descripcion: "...",
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
     estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
   },
-  {
-    nombre: "Jugadora",
-    descripcion: "...",
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
     estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
   },
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
+    estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
+  },
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
+    estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
+  },
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
+    estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
+  },
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
+    estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
+  },
+    {
+    id: 2,
+    nombre: "Editor",
+    descripcion: "Puede editar contenido",
+    estado: "Inactivo",
+    modulos: [
+      {
+        nombre: "Eventos",
+        permisos: ["Crear", "Editar", "Ver"], 
+      },
+    ],
+  },
+  
 ];
 
 export default rolesData;

@@ -1,13 +1,23 @@
-import React from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
   useFormEmployeeValidation,
   employeeValidationRules,
 } from "../hooks/useFormEmployeeValidation";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
+import {
+  showSuccessAlert,
+  showConfirmAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts";
 
-const EmployeeModal = ({ isOpen, onClose, onSave }) => {
+const EmployeeModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  employee,
+  mode = "create",
+}) => {
   const {
     values: formData,
     errors,
@@ -33,17 +43,14 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
     employeeValidationRules
   );
 
-  const handleSubmit = () => {
-    const isValid = validateAllFields();
-    if (isValid) {
-      onSave(formData);
-
-      showSuccessAlert(
-        "Empleado Creado",
-        "El empleado ha sido registrado exitosamente."
-      );
-
-      // Reset
+  // Cargar datos si es edición o limpiar si es creación
+  useEffect(() => {
+    if (employee && mode === "edit") {
+      setFormData(employee);
+    } else {
+      // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
       setFormData({
         nombre: "",
         apellido: "",
@@ -55,9 +62,58 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
         tipoEmpleado: "",
         rol: "",
         estado: "",
-        fechaAsignacion: "",
+        fechaAsignacion: today,
       });
+    }
+  }, [employee, setFormData, mode, isOpen]);
+
+  const handleSubmit = async () => {
+    try {
+      const isValid = validateAllFields();
+      if (!isValid) return;
+
+      // Confirmación solo al editar
+      if (mode === "edit") {
+        const result = await showConfirmAlert(
+          "¿Estás seguro de actualizar este empleado?",
+          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+        );
+        if (!result.isConfirmed) return;
+      }
+
+      onSave(formData);
+
+      showSuccessAlert(
+        mode === "edit" ? "Empleado Editado" : "Empleado Creado",
+        mode === "edit"
+          ? "El empleado ha sido actualizado exitosamente."
+          : "El empleado ha sido registrado exitosamente."
+      );
+
+      // Limpiar formulario antes de cerrar
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
+      setFormData({
+        nombre: "",
+        apellido: "",
+        correo: "",
+        telefono: "",
+        edad: "",
+        identificacion: "",
+        tipoDocumento: "",
+        tipoEmpleado: "",
+        rol: "",
+        estado: "",
+        fechaAsignacion: today,
+      });
+
       onClose();
+    } catch (error) {
+      console.error("Error al guardar empleado:", error);
+      showErrorAlert(
+        "Error al guardar",
+        "No se pudo guardar el empleado. Intenta de nuevo."
+      );
     }
   };
 
@@ -71,41 +127,109 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={onClose}
           >
             ✕
           </button>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            Crear Empleado
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+            {mode === "view"
+              ? "Ver Empleado"
+              : mode === "edit"
+              ? "Editar Empleado"
+              : "Crear Empleado"}
           </h2>
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Tipo Documento */}
+            <FormField
+              label="Tipo de Documento"
+              name="tipoDocumento"
+              type="select"
+              placeholder="Seleccionar tipo de documento"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              options={[
+                {
+                  value: "Tarjeta de Identidad",
+                  label: "Tarjeta de Identidad",
+                },
+                {
+                  value: "Cédula de Ciudadanía",
+                  label: "Cédula de Ciudadanía",
+                },
+                {
+                  value: "Permiso Especial de Permanencia",
+                  label: "Permiso Especial de Permanencia",
+                },
+                {
+                  value: "Tarjeta de Extranjería",
+                  label: "Tarjeta de Extranjería",
+                },
+                {
+                  value: "Cédula de Extranjería",
+                  label: "Cédula de Extranjería",
+                },
+                {
+                  value: "Número de Identificación Tributaria",
+                  label: "Número de Identificación Tributaria",
+                },
+                { value: "Pasaporte", label: "Pasaporte" },
+                {
+                  value: "Documento de Identificación Extranjero",
+                  label: "Documento de Identificación Extranjero",
+                },
+              ]}
+              value={formData.tipoDocumento}
+              error={errors.tipoDocumento}
+              touched={touched.tipoDocumento}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.1}
+            />
+
+            {/* Identificación */}
+            <FormField
+              label="Número de Documento"
+              name="identificacion"
+              type="text"
+              placeholder="Número de documento del empleado"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              value={formData.identificacion}
+              error={errors.identificacion}
+              touched={touched.identificacion}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.2}
+            />
+
             {/* Nombre */}
             <FormField
               label="Nombre"
               name="nombre"
               type="text"
               placeholder="Nombre del empleado"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               value={formData.nombre}
               error={errors.nombre}
               touched={touched.nombre}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.1}
+              delay={0.3}
             />
 
             {/* Apellido */}
@@ -114,50 +238,11 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="apellido"
               type="text"
               placeholder="Apellido del empleado"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               value={formData.apellido}
               error={errors.apellido}
               touched={touched.apellido}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.2}
-            />
-
-            {/* Tipo Documento */}
-            <FormField
-              label="Tipo de Documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Seleccionar tipo de documento"
-              required
-              options={[
-                { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
-                { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
-                { value: "Permiso Especial de Permanencia", label: "Permiso Especial de Permanencia" },
-                { value: "Tarjeta de Extranjería", label: "Tarjeta de Extranjería" },
-                { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
-                { value: "Número de Identificación Tributaria", label: "Número de Identificación Tributaria" },
-                { value: "Pasaporte", label: "Pasaporte" },
-                { value: "Documento de Identificación Extranjero", label: "Documento de Identificación Extranjero" },
-              ]}
-              value={formData.tipoDocumento}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.3}
-            />
-
-            {/* Identificación */}
-            <FormField
-              label="Identificación"
-              name="identificacion"
-              type="text"
-              placeholder="Identificación del empleado"
-              required
-              value={formData.identificacion}
-              error={errors.identificacion}
-              touched={touched.identificacion}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.4}
@@ -169,7 +254,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="correo"
               type="email"
               placeholder="correo@ejemplo.com"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               value={formData.correo}
               error={errors.correo}
               touched={touched.correo}
@@ -184,7 +270,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="telefono"
               type="text"
               placeholder="Número de teléfono"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               value={formData.telefono}
               error={errors.telefono}
               touched={touched.telefono}
@@ -199,7 +286,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="edad"
               type="number"
               placeholder="Edad del empleado"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               value={formData.edad}
               error={errors.edad}
               touched={touched.edad}
@@ -214,10 +302,17 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="rol"
               type="select"
               placeholder="Seleccione el rol"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               options={[
-                { value: "Profesional Deportivo", label: "Profesional Deportivo" },
-                { value: "Profesional en Salud", label: "Profesional en Salud" },
+                {
+                  value: "Profesional Deportivo",
+                  label: "Profesional Deportivo",
+                },
+                {
+                  value: "Profesional en Salud",
+                  label: "Profesional en Salud",
+                },
               ]}
               value={formData.rol}
               error={errors.rol}
@@ -233,7 +328,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="tipoEmpleado"
               type="select"
               placeholder="Seleccionar tipo empleado"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               options={[
                 { value: "Entrenador", label: "Entrenador" },
                 { value: "Fisioterapeuta", label: "Fisioterapeuta" },
@@ -255,7 +351,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               name="estado"
               type="select"
               placeholder="Seleccionar estado"
-              required
+              required={mode !== "view"}
+              disabled={mode === "view"}
               options={[
                 { value: "Activo", label: "Activo" },
                 { value: "Incapacitado", label: "Incapacitado" },
@@ -271,12 +368,13 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
               delay={1}
             />
 
-            {/* Fecha asignación */}
+            {/* Fecha asignación - automática y no modificable */}
             <FormField
               label="Fecha Asignación Estado"
               name="fechaAsignacion"
               type="date"
-              required
+              required={mode !== "view"}
+              disabled={true} // Siempre deshabilitado para que no se pueda modificar
               value={formData.fechaAsignacion}
               error={errors.fechaAsignacion}
               touched={touched.fechaAsignacion}
@@ -288,33 +386,34 @@ const EmployeeModal = ({ isOpen, onClose, onSave }) => {
         </div>
 
         {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="flex justify-between px-6 py-6 border-t border-gray-200"
-        >
-          <motion.button
-            type="button"
-            onClick={onClose}
-            className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Cancelar
-          </motion.button>
-          <motion.button
-            onClick={handleSubmit}
-            className="px-8 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl hover:from-primary-purple hover:to-primary-blue transition-all duration-200 font-medium shadow-lg"
-            whileHover={{
-              scale: 1.02,
-              boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-            }}
-            whileTap={{ scale: 0.98 }}
-          >
-            Crear Empleado
-          </motion.button>
-        </motion.div>
+        <div className="flex-shrink-0 border-t border-gray-200 p-3">
+          {mode === "view" ? (
+            <div className="flex justify-center">
+              <button
+                onClick={onClose}
+                className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-between">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSubmit}
+                className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+              >
+                {mode === "edit" ? "Guardar Cambios" : "Crear Empleado"}
+              </button>
+            </div>
+          )}
+        </div>
       </motion.div>
     </motion.div>
   );

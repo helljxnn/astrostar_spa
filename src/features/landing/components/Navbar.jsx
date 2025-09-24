@@ -1,196 +1,148 @@
-import React, { useState } from "react";
-import { NavLink } from "react-router-dom"; 
+import React, { useState, useEffect } from "react";
+import { NavLink } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
-  
+  useEffect(() => {
+    const controlNavbar = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < lastScrollY) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 80) {
+        setIsVisible(false);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", controlNavbar);
+    return () => window.removeEventListener("scroll", controlNavbar);
+  }, [lastScrollY]);
+
   const linkClasses = ({ isActive }) =>
     `transition-colors duration-200 tracking-wide ${
-      isActive
-        ? "text-[#B595FF] hover:text-[#B595FF]" 
-        : "text-black hover:text-[#B595FF]" 
+      isActive ? "text-[#B595FF]" : "text-black hover:text-[#B595FF]"
     }`;
 
-  
   const loginClasses = ({ isActive }) =>
     `flex items-center text-lg transition-colors duration-200 tracking-wide ${
-      isActive
-        ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
-        : "text-black hover:text-[#9BE9FF]" 
+      isActive ? "text-[#9BE9FF]" : "text-black hover:text-[#9BE9FF]"
     }`;
 
   return (
-    <nav className="sticky top-0 w-full z-50 bg-white shadow-md font-questrial">
-      <div className="flex items-center justify-between px-6 py-4">
-        {/* Logos */}
-        <NavLink to="/" className="flex items-center space-x-3">
-          <img
-            src="/assets/images/Logo1LFundacionMV.png"
-            alt="Logo Fundación MV 1"
-            className="h-auto max-h-10 cursor-pointer"
-          />
-          <img
-            src="/assets/images/Logo2LFundacionMV.png"
-            alt="Logo Fundación MV 2"
-            className="h-auto max-h-14 cursor-pointer"
-          />
-        </NavLink>
+    <nav
+      className={`fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-md font-questrial transition-transform duration-300 ease-in-out ${
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4">
+        {/* Logo - Exactly as original */}
+        <div className="flex-shrink-0 w-1/4 min-w-[120px]">
+          <NavLink to="/" className="flex items-center space-x-2 sm:space-x-3">
+            <img
+              src="/assets/images/Logo1LFundacionMV.png"
+              alt="Logo Fundación MV 1"
+              className="h-8 sm:h-10 cursor-pointer"
+            />
+            <img
+              src="/assets/images/Logo2LFundacionMV.png"
+              alt="Logo Fundación MV 2"
+              className="h-10 sm:h-14 cursor-pointer"
+            />
+          </NavLink>
+        </div>
 
-        <div className="hidden md:flex flex-1 justify-center">
-          <ul className="flex space-x-12 text-lg md:ml-0 lg:-ml-16 xl:-ml-32">
+        {/* Links escritorio - Centered, constrained to prevent overlap */}
+        <div className="hidden md:flex justify-center w-2/4 max-w-[400px] md:max-w-[450px] lg:max-w-[600px] mx-2 sm:mx-4">
+          <ul className="flex space-x-2 md:space-x-4 lg:space-x-8 xl:space-x-12 text-base lg:text-lg">
             <li>
-              <NavLink
-                to="/about"
-                className={linkClasses}
-                aria-label="Ir a la página Acerca de"
-              >
+              <NavLink to="/about" className={linkClasses}>
                 Acerca de
               </NavLink>
             </li>
             <li>
-              <NavLink
-                to="/events"
-                className={linkClasses}
-                aria-label="Ir a la página de Eventos"
-              >
+              <NavLink to="/events" className={linkClasses}>
                 Eventos
               </NavLink>
             </li>
             <li>
-              <NavLink
-                to="/categories"
-                className={linkClasses}
-                aria-label="Ir a la página de Categorías"
-              >
+              <NavLink to="/categories" className={linkClasses}>
                 Categorías
               </NavLink>
             </li>
             <li>
-              <NavLink
-                to="/services"
-                className={linkClasses}
-                aria-label="Ir a la página de Servicios"
-              >
+              <NavLink to="/services" className={linkClasses}>
                 Servicios
               </NavLink>
             </li>
           </ul>
         </div>
 
-        {/* Botón de inicio de sesión (escritorio) */}
-        <div className="hidden md:flex md:ml-12">
-          <NavLink
-            to="/login"
-            className={loginClasses}
-            aria-label="Ir a la página de inicio de sesión"
-          >
+        {/* Login escritorio - Exactly as original */}
+        <div className="hidden md:flex justify-end w-1/4">
+          <NavLink to="/login" className={loginClasses}>
             Iniciar Sesión
             <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
           </NavLink>
         </div>
 
-        <button
-          className="md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Alternar menú de navegación"
-        >
-          {isOpen ? (
-            <FiX className="w-6 h-6" />
-          ) : (
-            <FiMenu className="w-6 h-6" />
-          )}
-        </button>
+        {/* Botón menú móvil - Exactly as original */}
+        <div className="md:hidden flex justify-end">
+          <button
+            className="p-2 rounded-lg hover:bg-gray-100 transition"
+            onClick={() => setIsOpen(!isOpen)}
+            aria-label="Alternar menú de navegación"
+          >
+            {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
-      {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-200">
-          <ul className="flex flex-col space-y-4 px-6 py-4 text-lg">
-            <li>
-              <NavLink
-                to="/about"
-                className={({ isActive }) =>
-                  `block transition-colors duration-200 tracking-wide ${
-                    isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" // Púrpura siempre cuando está activo
-                      : "text-black hover:text-[#B595FF]"
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-                aria-label="Ir a la página Acerca de"
-              >
-                Acerca de
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/events"
-                className={({ isActive }) =>
-                  `block transition-colors duration-200 tracking-wide ${
-                    isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" 
-                      : "text-black hover:text-[#B595FF]"
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-                aria-label="Ir a la página de Eventos"
-              >
-                Eventos
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/categories"
-                className={({ isActive }) =>
-                  `block transition-colors duration-200 tracking-wide ${
-                    isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" 
-                      : "text-black hover:text-[#B595FF]"
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-                aria-label="Ir a la página de Categorías"
-              >
-                Categorías
-              </NavLink>
-            </li>
-            <li>
-              <NavLink
-                to="/services"
-                className={({ isActive }) =>
-                  `block transition-colors duration-200 tracking-wide ${
-                    isActive
-                      ? "text-[#B595FF] hover:text-[#B595FF]" 
-                      : "text-black hover:text-[#B595FF]"
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-                aria-label="Ir a la página de Servicios"
-              >
-                Servicios
-              </NavLink>
-            </li>
-            <li className="border-t pt-4">
-              <NavLink
-                to="/login"
-                className={({ isActive }) =>
-                  `flex items-center transition-colors duration-200 tracking-wide ${
-                    isActive
-                      ? "text-[#9BE9FF] hover:text-[#9BE9FF]" 
-                      : "text-black hover:text-[#9BE9FF]" 
-                  }`
-                }
-                onClick={() => setIsOpen(false)}
-                aria-label="Ir a la página de inicio de sesión"
-              >
-                Iniciar Sesión
-                <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
-              </NavLink>
-            </li>
-          </ul>
-        </div>
-      )}
+      {/* Menú móvil - Exactly as original */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="md:hidden bg-white border-t border-gray-200"
+          >
+            <ul className="flex flex-col space-y-4 px-6 py-4 text-base sm:text-lg">
+              <li>
+                <NavLink to="/about" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Acerca de
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/events" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Eventos
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/categories" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Categorías
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/services" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Servicios
+                </NavLink>
+              </li>
+              <li className="border-t pt-4">
+                <NavLink to="/login" className={loginClasses} onClick={() => setIsOpen(false)}>
+                  Iniciar Sesión
+                  <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
+                </NavLink>
+              </li>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 };

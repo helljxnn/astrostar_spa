@@ -5,22 +5,22 @@ import PrivateRoute from "./PrivateRoute.jsx";
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
 /* Páginas */
-import Dashboard from "../features/dashboard/pages/Admin/pages/Dashboard.jsx";
+import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";
 import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
-import UsersManagement from "../features/dashboard/pages/Admin/pages/Users/UsersManagement.jsx";
-import AccessManagement from "../features/dashboard/pages/Admin/pages/Users/AccessManagement.jsx";
+import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations";
-import { Purchases } from "../features/dashboard/pages/Admin/pages/Purchases/Purchases.jsx";
+import Purchases  from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
 import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
+import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
 
 const PrivateRoutes = () => {
   return (
@@ -35,62 +35,62 @@ const PrivateRoutes = () => {
             <Dashboard />
           </PrivateRoute>
         } />
-        
+
         {/* Rutas con permisos específicos */}
-        
+
         {/* Gestión de citas - Accesible para todos los roles */}
         <Route path="appointment-management" element={
           <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
             <AppointmentManagement />
           </PrivateRoute>
         } />
-        
+
         {/* Deportistas - Accesible para admin, profesional_deportivo y profesional_salud */}
         <Route path="athletes" element={
           <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
             <Athletes />
           </PrivateRoute>
         } />
-        
+
         {/* Empleados - Solo para admin */}
         <Route path="employees" element={
           <PrivateRoute allowedRoles={["admin"]}>
             <Employees />
           </PrivateRoute>
         } />
-        
+
         {/* Eventos - Solo para admin */}
         <Route path="events" element={
           <PrivateRoute allowedRoles={["admin"]}>
             <EventsDashboard />
           </PrivateRoute>
         } />
-        
+
+        {/* Providers - Solo para admin */}
+        <Route path="providers" element={
+          <PrivateRoute allowedRoles={["admin"]}>
+            <Providers />
+          </PrivateRoute>
+        } />
+
         {/* Horario de empleados - Para admin, profesional_deportivo y profesional_salud */}
         <Route path="employees-schedule" element={
           <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
             <EmployeesSchedule />
           </PrivateRoute>
         } />
-        
+
         {/* Categoría deportiva - Para admin, profesional_deportivo y profesional_salud */}
         <Route path="sports-category" element={
           <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
             <SportsCategory />
           </PrivateRoute>
         } />
-        
+
         {/* Gestión de usuarios - Solo para admin */}
-        <Route path="UsersManagement" element={
+        <Route path="users" element={
           <PrivateRoute allowedRoles={["admin"]}>
-            <UsersManagement />
-          </PrivateRoute>
-        } />
-        
-        {/* Gestión de acceso - Solo para admin */}
-        <Route path="AccessManagement" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <AccessManagement />
+            <Users />
           </PrivateRoute>
         } />
         
@@ -100,47 +100,47 @@ const PrivateRoutes = () => {
             <TemporaryWorkers />
           </PrivateRoute>
         } />
-        
+
         {/* Roles - Solo para admin */}
         <Route path="roles" element={
           <PrivateRoute allowedRoles={["admin"]}>
             <Roles />
           </PrivateRoute>
         } />
-        
+
         {/* Material Deportivo - Solo para admin */}
         <Route
-            path="sportsequipment"
-            element={
-              <PrivateRoute allowedRoles={["admin"]}>
-                <SportsEquipment />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="donations"
-            element={
-              <PrivateRoute allowedRoles={["admin"]}>
-                <Donations />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="purchases"
-            element={
-              <PrivateRoute allowedRoles={["admin"]}>
-                <Purchases />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="sales"
-            element={
-              <PrivateRoute allowedRoles={["admin"]}>
-                <Sales />
-              </PrivateRoute>
-            }
-          />
+          path="sportsequipment"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <SportsEquipment />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="donations"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Donations />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="purchases"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Purchases />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="sales"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Sales />
+            </PrivateRoute>
+          }
+        />
       </Route>
     </Routes>
   );

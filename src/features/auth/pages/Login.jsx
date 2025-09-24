@@ -1,23 +1,30 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import Form from "../components/form";
+import bgImage from "../../../../public/assets/images/loginB.jpg";
 
 function Login() {
-  const navigate = useNavigate();
-
-  // Este método ya no se utiliza porque el Form maneja directamente el login
-  // a través del contexto de autenticación
-
   return (
-    <div className='w-4/5 h-auto m-auto grid grid-cols-1 gap-0 p-8 justify-items-center bg-gradient-to-r from-primary-purple to-primary-blue rounded-lg border-none' id='mainContainer'>
-      <div className='w-full h-auto grid grid-cols-2 gap-1 border-2 rounded-lg border-primary-purple/50 bg-opacity-0' id='subContainer'>
-        <div className='w-auto h-auto p-4' id='formLogin'>
-          {/* Formulario de login */}
-          <Form />
-        </div>
-        <div className='w-auto h-auto p-4' id='imageContainer'>
-          {/* Aquí puedes agregar una imagen o ilustración */}
-          <img className='w-full h-full' src="public\assets\images\Convocatoria.png" alt="Convocatoria" />
-        </div>
+    <div className="relative w-screen h-screen flex items-center justify-center">
+      {/* Fondo con imagen + blur */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      />
+      <div className="absolute inset-0 backdrop-blur-xs bg-black/20" />
+
+      {/* Botón regresar */}
+      <Link
+        to="/"
+        className="absolute top-6 left-6 px-4 py-2 rounded-xl bg-primary-purple/70 
+                   text-black font-semibold shadow-md 
+                   hover:bg-primary-blue/70 hover:scale-105 transition"
+      >
+        ← Regresar
+      </Link>
+
+      {/* Contenedor del formulario */}
+      <div>
+        <Form />
       </div>
     </div>
   );
