@@ -1,10 +1,15 @@
-import React, { useState, useMemo } from "react";
-import { FaUserShield, FaUsers, FaPlus } from "react-icons/fa";
+"use client";
+
+import { useState, useMemo } from "react";
+import { FaUsers, FaPlus, FaClipboardList, FaHistory } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
 import GuardiansListModal from "./components/GuardiansListModal.jsx";
+
+import AthleteRenewModal from "./components/AthleteRenewModal.jsx";
+import InscriptionHistoryModal from "../AthletesSection/components/AthleteInscriptionHistoryModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
@@ -39,6 +44,17 @@ const Athletes = () => {
   const [guardianToView, setGuardianToView] = useState(null);
   const [guardianModalMode, setGuardianModalMode] = useState("create");
 
+// -----------------------------
+// Estados de inscripciones
+// -----------------------------
+const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] = useState(false);
+const [athleteForInscription, setAthleteForInscription] = useState(null);
+  // -----------------------------
+  // Estado para renovar inscripción
+  // -----------------------------
+  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
+  const [athleteForRenew, setAthleteForRenew] = useState(null);
+
   // -----------------------------
   // Estados comunes
   // -----------------------------
@@ -61,7 +77,7 @@ const Athletes = () => {
         athlete.correo,
         athlete.categoria,
         guardian?.nombreCompleto,
-        athlete.estadoInscripcion, // 👈 agregamos para búsqueda
+        athlete.estadoInscripcion,
       ]
         .filter(Boolean)
         .some((field) =>
@@ -84,23 +100,45 @@ const Athletes = () => {
   // CRUD Atletas
   // -----------------------------
   const handleSave = async (newAthlete) => {
-    try {
-      const formatted = {
-        ...newAthlete,
-        id: Date.now(),
-        estadoInscripcion: "", // 👈 nueva propiedad
-      };
-      setData([formatted, ...data]);
-      showSuccessAlert(
-        "Deportista creado",
-        "El deportista se creó correctamente."
+  try {
+    const currentYear = new Date().getFullYear();
+
+    // Validar inscripción inicial obligatoria
+    if (!newAthlete.estadoInscripcion || !newAthlete.conceptoInscripcion) {
+      return showErrorAlert(
+        "Campos requeridos",
+        "Debes completar los datos de inscripción inicial."
       );
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Error al crear deportista:", error);
-      showErrorAlert("Error", "Ocurrió un error al crear el deportista");
     }
-  };
+
+    const inscription = {
+      id: Date.now(),
+      fechaInscripcion: new Date().toISOString().split("T")[0],
+      estadoInscripcion: newAthlete.estadoInscripcion,
+      concepto: newAthlete.conceptoInscripcion,
+      categoria: newAthlete.categoria,
+    };
+
+    const formatted = {
+      ...newAthlete,
+      id: Date.now(),
+      inscripciones: [inscription],
+      estadoInscripcion: inscription.estadoInscripcion, // CAMBIAR: era inscription.estado
+      lastInscription: inscription,
+    };
+
+    setData([formatted, ...data]);
+
+    showSuccessAlert(
+      "Deportista inscrito",
+      "El deportista fue creado con inscripción inicial."
+    );
+    setIsModalOpen(false);
+  } catch (error) {
+    console.error("Error al crear deportista:", error);
+    showErrorAlert("Error", "Ocurrió un error al crear el deportista");
+  }
+};
 
   const handleUpdate = async (updatedAthlete) => {
     try {
@@ -157,7 +195,10 @@ const Athletes = () => {
     try {
       const formatted = { ...newGuardian, id: Date.now() };
       setGuardians([formatted, ...guardians]);
-      showSuccessAlert("Acudiente creado", "El acudiente se creó correctamente.");
+      showSuccessAlert(
+        "Acudiente creado",
+        "El acudiente se creó correctamente."
+      );
       setIsGuardianModalOpen(false);
       return formatted;
     } catch (error) {
@@ -225,20 +266,77 @@ const Athletes = () => {
   };
 
   // -----------------------------
-  // Funciones para el AthleteModal
+  // Inscripciones
   // -----------------------------
-  const handleCreateGuardianFromAthlete = () => {
-    setGuardianToEdit(null);
-    setGuardianModalMode("create");
-    setIsGuardianModalOpen(true);
+  const handleInscriptions = (athlete) => {
+  if (!athlete || athlete.target) return;
+
+  const lastInscription = athlete.inscripciones?.[0];
+  if (lastInscription) {
+    const lastDate = new Date(lastInscription.fechaInscripcion);
+    const renewalDate = new Date(lastDate);
+    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+
+    if (new Date() < renewalDate) {
+      return showErrorAlert(
+        "Renovación no disponible",
+        `La próxima renovación está disponible a partir del ${renewalDate.toLocaleDateString()}`
+      );
+    }
+  }
+
+  // CAMBIAR ESTAS LÍNEAS:
+  setAthleteForInscription(athlete);
+  setIsInscriptionHistoryModalOpen(true); // Esta línea era la que causaba error
+};
+
+  const canInscribeAthlete = (athlete) => {
+    if (!athlete || !athlete.inscripciones) return true;
+
+    const currentYear = new Date().getFullYear();
+    return !(athlete.inscripciones || []).some(
+      (ins) => new Date(ins.fechaInscripcion).getFullYear() === currentYear
+    );
   };
 
-  const handleViewGuardianFromAthlete = (guardian) => {
-    if (guardian) {
-      setGuardianToView(guardian);
-      setIsGuardianViewOpen(true);
-    }
+  const handleViewInscriptionHistory = (athlete) => {
+    if (!athlete || athlete.target) return;
+    setAthleteForInscription(athlete);
+    setIsInscriptionHistoryModalOpen(true);
   };
+// -----------------------------
+// Renovación de inscripción
+// -----------------------------
+const handleOpenRenew = (athlete) => {
+  if (!athlete || athlete.target) return;
+  setAthleteForRenew(athlete);
+  setIsRenewModalOpen(true);
+};
+
+const handleRenewInscription = (athleteId) => {
+  setData((prev) =>
+    prev.map((athlete) => {
+      if (athlete.id === athleteId) {
+        const today = new Date();
+        const newInscription = {
+          id: Date.now(),
+          estadoInscripcion: "Vigente", // CAMBIAR: era "estado"
+          concepto: `Renovación ${today.getFullYear()}`,
+          fechaConcepto: today.toISOString().split("T")[0],
+          fechaInscripcion: today.toISOString().split("T")[0],
+        };
+
+        return {
+          ...athlete,
+          estadoInscripcion: "Vigente",
+          inscripciones: [newInscription, ...(athlete.inscripciones || [])],
+          lastInscription: newInscription,
+        };
+      }
+      return athlete;
+    })
+  );
+};
 
   // -----------------------------
   // Render
@@ -311,54 +409,92 @@ const Athletes = () => {
       {/* Tabla */}
       {totalRows > 0 ? (
         <>
-          <div className="w-full overflow-x-auto bg-white rounded-lg">
-            <div className="min-w-full">
-              <Table
-                thead={{
-                  titles: [
-                    "Nombre Completo",
-                    "Categoría",
-                    "Correo",
-                    "Teléfono",
-                    "Acudiente",
-                    "Estado de inscripción", // 👈 reemplazo de deporte
-                  ],
-                  state: true,
-                  actions: true,
-                }}
-                tbody={{
-                  data: paginatedData.map((a) => ({
-                    ...a,
-                    nombreCompleto: `${a.nombres} ${a.apellidos}`,
-                    acudienteNombre:
-                      guardians.find((g) => g.id === a.acudiente)
-                        ?.nombreCompleto || "Sin acudiente",
-                    estadoInscripcion: a.estadoInscripcion || "",
-                  })),
-                  dataPropertys: [
-                    "nombreCompleto",
-                    "categoria",
-                    "correo",
-                    "telefono",
-                    "acudienteNombre",
-                    "estadoInscripcion", // 👈 en lugar de deportePrincipal
-                  ],
-                  state: true,
-                  stateMap: {
-                    Activo: "bg-green-100 text-green-800",
-                    Inactivo: "bg-red-100 text-red-800",
-                    Lesionado: "bg-yellow-100 text-yellow-800",
-                    Suspendido: "bg-orange-100 text-orange-800",
-                  },
-                }}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleView}
-              />
-            </div>
-          </div>
+          <div className="w-full bg-white rounded-lg">
+            <Table
+              thead={{
+                titles: [
+                  "Nombre Completo",
+                  "Categoría",
+                  "Teléfono",
+                  "Acudiente",
+                  "Estado Inscripción",
+                ],
+                state: true,
+                actions: true,
+              }}
+              tbody={{
+                data: paginatedData.map((a) => ({
+                  ...a,
+                  nombreCompleto: `${a.nombres} ${a.apellidos}`,
+                  acudienteNombre:
+                    guardians.find((g) => g.id === a.acudiente)
+                      ?.nombreCompleto || "Sin acudiente",
+                  estadoInscripcion: a.estadoInscripcion || "",
+                })),
+                dataPropertys: [
+                  "nombreCompleto",
+                  "categoria",
+                  "telefono",
+                  "acudienteNombre",
+                  "estadoInscripcion",
+                ],
+                state: true,
+                stateMap: {
+                  Activo: "bg-green-100 text-green-800",
+                  Inactivo: "bg-red-100 text-red-800",
+                  Lesionado: "bg-yellow-100 text-yellow-800",
+                  Suspendido: "bg-orange-100 text-orange-800",
+                },
+              }}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onView={handleView}
+              customActions={(athlete) => {
+                const canInscribe = canInscribeAthlete(athlete);
+                const currentYear = new Date().getFullYear();
 
-          <div className="w-full border-none shadow-none">
+                return (
+                  <div className="flex gap-1">
+                    <div className="relative group">
+                      <button
+  onClick={() => handleOpenRenew(athlete)}
+  disabled={!canInscribe}
+  className={`p-2 rounded transition-colors ${
+    !canInscribe
+      ? "opacity-50 cursor-not-allowed bg-gray-100"
+      : "text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50"
+  }`}
+  title={
+    !canInscribe
+      ? `Ya inscrito en ${currentYear}`
+      : `Renovar inscripción`
+  }
+>
+  <FaClipboardList className="w-4 h-4" />
+</button>
+
+
+                      {!canInscribe && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                          Ya tiene inscripción {currentYear}
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleViewInscriptionHistory(athlete)}
+                      className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+                      title="Historial de Inscripciones"
+                    >
+                      <FaHistory className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              }}
+            />
+          </div>
+          <div className="mt-4">
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -384,8 +520,17 @@ const Athletes = () => {
         athleteToEdit={athleteToEdit}
         guardians={guardians}
         mode={modalMode}
-        onCreateGuardian={handleCreateGuardianFromAthlete}
-        onViewGuardian={handleViewGuardianFromAthlete}
+        onCreateGuardian={() => {
+          setGuardianToEdit(null);
+          setGuardianModalMode("create");
+          setIsGuardianModalOpen(true);
+        }}
+        onViewGuardian={(guardian) => {
+          if (guardian) {
+            setGuardianToView(guardian);
+            setIsGuardianViewOpen(true);
+          }
+        }}
       />
 
       <AthleteViewModal
@@ -428,6 +573,33 @@ const Athletes = () => {
         onClose={() => setIsGuardianViewOpen(false)}
         guardian={guardianToView}
         athletes={data.filter((a) => a.acudiente === guardianToView?.id)}
+      />
+
+      {/* Modales de inscripciones */}
+
+    
+<AthleteRenewModal
+  isOpen={isRenewModalOpen}
+  onClose={() => setIsRenewModalOpen(false)}
+  athlete={athleteForRenew}
+  onRenew={(renewedAthlete) => {
+    handleRenewInscription(renewedAthlete.id);
+    setIsRenewModalOpen(false);
+  }}
+/>
+
+      <InscriptionHistoryModal
+        isOpen={isInscriptionHistoryModalOpen}
+        onClose={() => setIsInscriptionHistoryModalOpen(false)}
+        athlete={athleteForInscription}
+        guardians={guardians}
+        onUpdateInscription={(athleteId, updatedArray) => {
+          setData((prev) =>
+            prev.map((a) =>
+              a.id === athleteId ? { ...a, inscripciones: updatedArray } : a
+            )
+          );
+        }}
       />
     </div>
   );

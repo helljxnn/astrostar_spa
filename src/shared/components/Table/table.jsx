@@ -11,6 +11,7 @@ const Table = ({
   onEdit,
   onDelete,
   onView, // agregado para vista detallada
+  customActions, // agregado para botones personalizados como inscripciones
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -44,6 +45,7 @@ const Table = ({
     onEdit,
     onDelete,
     onView, // agregado para vista detallada
+    customActions, // agregado para botones personalizados
   };
 
   return (

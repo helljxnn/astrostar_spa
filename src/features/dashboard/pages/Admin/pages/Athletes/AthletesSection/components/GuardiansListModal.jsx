@@ -138,7 +138,7 @@ const GuardiansListModal = ({
           {/* Tabla */}
           {totalRows > 0 ? (
             <>
-              <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+             <div className="w-full overflow-x-auto bg-white rounded-lg">
                 <div className="w-full">
                   <Table
                     className="w-full table-auto"

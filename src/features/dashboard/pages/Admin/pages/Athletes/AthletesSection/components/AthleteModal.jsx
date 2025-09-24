@@ -1,3 +1,4 @@
+// src/features/dashboard/pages/Admin/pages/Athletes/components/AthleteModal.jsx
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes } from "react-icons/fa";
@@ -20,17 +21,52 @@ const documentTypes = [
 ];
 
 const categories = [
-  { value: "infantil", label: "Infantil" },
-  { value: "juvenil", label: "Juvenil" },
-  { value: "sub_21", label: "Sub-21" },
-  { value: "adulto", label: "Adulto" },
-  { value: "veterano", label: "Veterano" },
+  { value: "Infantil", label: "Infantil (5-12 años)" },
+  { value: "Sub 15", label: "Sub 15 (13-15 años)" },
+  { value: "Juvenil", label: "Juvenil (16-18 años)" },
 ];
 
 const states = [
   { value: "Activo", label: "Activo" },
   { value: "Inactivo", label: "Inactivo" },
 ];
+
+const inscriptionStates = [
+  { value: "Vigente", label: "Vigente" },
+  { value: "Vencida", label: "Vencida" },
+  { value: "Cancelada", label: "Cancelada" },
+];
+
+// Rango de edades para asignación automática
+const AGE_CATEGORY_RANGES = [
+  { value: "Infantil", min: 5, max: 12 },
+  { value: "Sub 15", min: 13, max: 15 },
+  { value: "Juvenil", min: 16, max: 18 },
+];
+
+// Helpers
+const calculateAge = (birthDate) => {
+  if (!birthDate) return null;
+  const today = new Date();
+  const b = new Date(birthDate);
+  let age = today.getFullYear() - b.getFullYear();
+  const m = today.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+const getCategoryByAge = (age) => {
+  if (age === null || age === undefined) return "";
+  const found = AGE_CATEGORY_RANGES.find((r) => age >= r.min && age <= r.max);
+  return found ? found.value : "";
+};
+const validateAge = (age) => {
+  return age >= 5 && age <= 18;
+};
+
+const todayISO = () => new Date().toISOString().split("T")[0];
 
 const AthleteModal = ({
   isOpen,
@@ -67,14 +103,20 @@ const AthleteModal = ({
       telefono: "",
       fechaNacimiento: "",
       categoria: "",
-      estado: "Activo",
+      estado: "",
       acudiente: "",
+      // Campos de inscripción para crear deportista
+      estadoInscripcion: "",
+      conceptoInscripcion: "",
+      fechaConcepto: todayISO(),
+      fechaInscripcion: todayISO(),
     },
     athleteValidationRules
   );
 
   useEffect(() => {
     if (isOpen && isEditing && athleteToEdit) {
+      // Para edición, NO incluir datos de inscripción
       setValues({
         nombres: athleteToEdit.nombres || "",
         apellidos: athleteToEdit.apellidos || "",
@@ -84,17 +126,55 @@ const AthleteModal = ({
         telefono: athleteToEdit.telefono || "",
         fechaNacimiento: athleteToEdit.fechaNacimiento || "",
         categoria: athleteToEdit.categoria || "",
-        estado: athleteToEdit.estado || "Activo",
+        estado: athleteToEdit.estado || "",
         acudiente: athleteToEdit.acudiente?.toString() || "",
+      });
+    } else if (isOpen && !isEditing) {
+      // Para crear, incluir campos de inscripción inicial
+      setValues({
+        nombres: "",
+        apellidos: "",
+        tipoDocumento: "",
+        numeroDocumento: "",
+        correo: "",
+        telefono: "",
+        fechaNacimiento: "",
+        categoria: "",
+        estado: "",
+        acudiente: "",
+        estadoInscripcion: "",
+        conceptoInscripcion: "",
+        fechaConcepto: todayISO(),
+        fechaInscripcion: todayISO(),
       });
     }
   }, [isOpen, isEditing, athleteToEdit, setValues]);
 
+  // Actualizar categoría automáticamente al cambiar fecha de nacimiento
+  useEffect(() => {
+  if (values && values.fechaNacimiento) {
+    const age = calculateAge(values.fechaNacimiento);
+    
+    // Validar que la edad esté en el rango permitido
+    if (age !== null && !validateAge(age)) {
+      showErrorAlert(
+        "Edad fuera de rango",
+        `La edad calculada (${age} años) está fuera del rango permitido para la fundación (5-18 años).`
+      );
+      return;
+    }
+    
+    const autoCategory = getCategoryByAge(age);
+    if (autoCategory && autoCategory !== values.categoria) {
+      setValues((prev) => ({ ...prev, categoria: autoCategory }));
+    }
+  }
+}, [values?.fechaNacimiento]);
+
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
-      return phone;
+    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57")) return phone;
     if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
     return phone;
   };
@@ -122,6 +202,34 @@ const AthleteModal = ({
       return;
     }
 
+    // Validación acudiente obligatorio
+    if (!values.acudiente || values.acudiente === "") {
+      showErrorAlert("Campo requerido", "Debes seleccionar un acudiente para el deportista.");
+      return;
+    }
+     // Validación de edad:
+  if (values.fechaNacimiento) {
+    const age = calculateAge(values.fechaNacimiento);
+    if (age !== null && !validateAge(age)) {
+      showErrorAlert(
+        "Edad no válida",
+        `El deportista debe tener entre 5 y 18 años para inscribirse en la fundación. Edad actual: ${age} años.`
+      );
+      return;
+    }
+  }
+
+    // Validación inscripción SOLO al crear
+    if (!isEditing) {
+      if (!values.conceptoInscripcion?.trim()) {
+        showErrorAlert(
+          "Campo requerido",
+          "Debes completar el concepto de inscripción inicial."
+        );
+        return;
+      }
+    }
+
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -138,8 +246,15 @@ const AthleteModal = ({
 
     try {
       const athleteData = {
-        ...values,
+        nombres: values.nombres,
+        apellidos: values.apellidos,
+        tipoDocumento: values.tipoDocumento,
+        numeroDocumento: values.numeroDocumento,
+        correo: values.correo,
         telefono: formatPhoneNumber(values.telefono),
+        fechaNacimiento: values.fechaNacimiento,
+        categoria: values.categoria,
+        estado: values.estado,
         acudiente: parseInt(values.acudiente) || null,
       };
 
@@ -151,26 +266,29 @@ const AthleteModal = ({
           `Los datos de ${values.nombres} ${values.apellidos} han sido actualizados exitosamente.`
         );
       } else {
-        await onSave(athleteData);
-        showSuccessAlert(
-          "Deportista creado",
-          "El deportista ha sido creado exitosamente."
-        );
+        // Para crear deportista con inscripción inicial
+        const newAthlete = {
+          ...athleteData,
+          // Los campos de inscripción se pasarán separadamente
+          inscriptionData: {
+            estado: values.estadoInscripcion,
+            concepto: values.conceptoInscripcion,
+            fechaConcepto: values.fechaConcepto,
+            fechaInscripcion: values.fechaInscripcion,
+          }
+        };
+
+        await onSave(newAthlete);
+        showSuccessAlert("Deportista creado", "El deportista ha sido creado exitosamente.");
       }
 
       resetForm();
       onClose();
     } catch (error) {
-      console.error(
-        `Error al ${isEditing ? "actualizar" : "crear"} deportista:`,
-        error
-      );
+      console.error(`Error al ${isEditing ? "actualizar" : "crear"} deportista:`, error);
       showErrorAlert(
         "Error",
-        error.message ||
-          `Ocurrió un error al ${
-            isEditing ? "actualizar" : "crear"
-          } el deportista`
+        error.message || `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el deportista`
       );
     }
   };
@@ -212,7 +330,7 @@ const AthleteModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -241,128 +359,198 @@ const AthleteModal = ({
 
         {/* Body */}
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              label="Nombres"
-              name="nombres"
-              type="text"
-              placeholder="Nombres del deportista"
-              value={values.nombres}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.nombres}
-              touched={touched.nombres}
-              delay={0.1}
-              required
-            />
-            <FormField
-              label="Apellidos"
-              name="apellidos"
-              type="text"
-              placeholder="Apellidos del deportista"
-              value={values.apellidos}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.apellidos}
-              touched={touched.apellidos}
-              delay={0.15}
-              required
-            />
-            <FormField
-              label="Tipo de Documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Selecciona el tipo de documento"
-              options={documentTypes}
-              value={values.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              delay={0.2}
-              required
-            />
-            <FormField
-              label="Número de Documento"
-              name="numeroDocumento"
-              type="text"
-              placeholder="Número de identificación"
-              value={values.numeroDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.numeroDocumento}
-              touched={touched.numeroDocumento}
-              delay={0.25}
-              required
-            />
-            <FormField
-              label="Correo Electrónico"
-              name="correo"
-              type="email"
-              placeholder="correo@ejemplo.com"
-              value={values.correo}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.correo}
-              touched={touched.correo}
-              delay={0.3}
-              required
-            />
-            <FormField
-              label="Número Telefónico"
-              name="telefono"
-              type="text"
-              placeholder="3001234567 o 6012345678"
-              value={values.telefono}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.telefono}
-              touched={touched.telefono}
-              delay={0.35}
-              required
-            />
-            <FormField
-              label="Fecha de Nacimiento"
-              name="fechaNacimiento"
-              type="date"
-              placeholder="Selecciona la fecha"
-              value={values.fechaNacimiento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.fechaNacimiento}
-              touched={touched.fechaNacimiento}
-              delay={0.4}
-              required
-            />
-            <FormField
-              label="Categoría"
-              name="categoria"
-              type="select"
-              placeholder="Selecciona la categoría"
-              options={categories}
-              value={values.categoria}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.categoria}
-              touched={touched.categoria}
-              delay={0.5}
-              required
-            />
-            <FormField
-              label="Estado"
-              name="estado"
-              type="select"
-              placeholder="Selecciona el estado"
-              options={states}
-              value={values.estado}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.estado}
-              touched={touched.estado}
-              delay={0.55}
-              required
-            />
+          {/* Información Personal */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+              Información Personal
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                label="Nombres"
+                name="nombres"
+                type="text"
+                placeholder="Nombres del deportista"
+                value={values.nombres}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.nombres}
+                touched={touched.nombres}
+                delay={0.1}
+                required
+              />
+              <FormField
+                label="Apellidos"
+                name="apellidos"
+                type="text"
+                placeholder="Apellidos del deportista"
+                value={values.apellidos}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.apellidos}
+                touched={touched.apellidos}
+                delay={0.15}
+                required
+              />
+              <FormField
+                label="Tipo de Documento"
+                name="tipoDocumento"
+                type="select"
+                placeholder="Selecciona el tipo de documento"
+                options={documentTypes}
+                value={values.tipoDocumento}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.tipoDocumento}
+                touched={touched.tipoDocumento}
+                delay={0.2}
+                required
+              />
+              <FormField
+                label="Número de Documento"
+                name="numeroDocumento"
+                type="text"
+                placeholder="Número de identificación"
+                value={values.numeroDocumento}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.numeroDocumento}
+                touched={touched.numeroDocumento}
+                delay={0.25}
+                required
+              />
+              <FormField
+                label="Correo Electrónico"
+                name="correo"
+                type="email"
+                placeholder="correo@ejemplo.com"
+                value={values.correo}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.correo}
+                touched={touched.correo}
+                delay={0.3}
+                required
+              />
+              <FormField
+                label="Número Telefónico"
+                name="telefono"
+                type="text"
+                placeholder="3001234567 o 6012345678"
+                value={values.telefono}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.telefono}
+                touched={touched.telefono}
+                delay={0.35}
+                required
+              />
+              <FormField
+                label="Fecha de Nacimiento"
+                name="fechaNacimiento"
+                type="date"
+                placeholder="Selecciona la fecha"
+                value={values.fechaNacimiento}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.fechaNacimiento}
+                touched={touched.fechaNacimiento}
+                delay={0.4}
+                required
+              />
+              <FormField
+                label="Categoría"
+                name="categoria"
+                type="select"
+                placeholder="Selecciona la categoría"
+                options={categories}
+                value={values.categoria}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.categoria}
+                touched={touched.categoria}
+                delay={0.5}
+                required
+              />
+              <FormField
+                label="Estado"
+                name="estado"
+                type="select"
+                placeholder="Selecciona el estado"
+                options={states}
+                value={values.estado}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.estado}
+                touched={touched.estado}
+                delay={0.55}
+                required
+              />
+            </div>
           </div>
+
+{/* Información de Inscripción - Mostrar en ambos modos */}
+<div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-blue-200 pb-2">
+    Inscripción
+  </h3>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <FormField
+      label="Estado de Inscripción"
+      name="estadoInscripcion"
+      type="select"
+      placeholder="Selecciona el estado"
+      options={inscriptionStates}
+      value={values.estadoInscripcion}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      error={errors.estadoInscripcion}
+      touched={touched.estadoInscripcion}
+      delay={0.6}
+      helperText="Por defecto es 'Vigente'"
+      // 🔓 editable en crear y editar
+    />
+
+    <FormField
+      label="Concepto de Inscripción"
+      name="conceptoInscripcion"
+      type="text"
+      placeholder={`Ej. Inscripción inicial ${new Date().getFullYear()}`}
+      value={values.conceptoInscripcion}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      error={errors.conceptoInscripcion}
+      touched={touched.conceptoInscripcion}
+      delay={0.65}
+      required
+      // 🔓 editable en crear y editar
+    />
+
+    <FormField
+      label="Fecha de Inscripción"
+      name="fechaInscripcion"
+      type="date"
+      value={values.fechaInscripcion}
+      disabled   // ❌ nunca editable
+      delay={0.7}
+      helperText="Fecha actual automática (no modificable)"
+    />
+
+    <FormField
+      label="Fecha Concepto"
+      name="fechaConcepto"
+      type="date"
+      value={values.fechaConcepto}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      error={errors.fechaConcepto}
+      touched={touched.fechaConcepto}
+      delay={0.75}
+      // 🔓 editable en crear y editar
+    />
+  </div>
+</div>
+
+
 
           {/* Sección de Acudiente */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -412,10 +600,7 @@ const AthleteModal = ({
                       onChange={(e) => setGuardianSearchTerm(e.target.value)}
                       className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200"
                     />
-                    <FaSearch
-                      className="absolute right-3 top-4 text-gray-400"
-                      size={14}
-                    />
+                    <FaSearch className="absolute right-3 top-4 text-gray-400" size={14} />
                   </div>
                   {guardianSearchTerm && (
                     <motion.div
@@ -428,27 +613,19 @@ const AthleteModal = ({
                           <motion.button
                             key={guardian.id}
                             type="button"
-                            onClick={() =>
-                              handleSelectGuardianFromSearch(guardian)
-                            }
+                            onClick={() => handleSelectGuardianFromSearch(guardian)}
                             className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors duration-150"
                             whileHover={{ backgroundColor: "#faf5ff" }}
                           >
-                            <div className="font-medium text-gray-800">
-                              {guardian.nombreCompleto}
-                            </div>
+                            <div className="font-medium text-gray-800">{guardian.nombreCompleto}</div>
                             <div className="text-sm text-gray-600">
-                              {guardian.tipoDocumento}:{" "}
-                              {guardian.identificacion}
+                              {guardian.tipoDocumento}: {guardian.identificacion}
                             </div>
                           </motion.button>
                         ))
                       ) : (
                         <div className="px-4 py-6 text-gray-500 text-center">
-                          <FaUserShield
-                            size={24}
-                            className="mx-auto mb-2 text-gray-300"
-                          />
+                          <FaUserShield size={24} className="mx-auto mb-2 text-gray-300" />
                           <p>No se encontraron acudientes</p>
                         </div>
                       )}
@@ -473,7 +650,7 @@ const AthleteModal = ({
               onBlur={handleBlur}
               error={errors.acudiente}
               touched={touched.acudiente}
-              delay={0.6}
+              delay={0.75}
               required
             />
 
@@ -489,13 +666,10 @@ const AthleteModal = ({
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 text-sm flex-1">
                       <div>
-                        <strong>Nombre:</strong>{" "}
-                        {selectedGuardian.nombreCompleto}
+                        <strong>Nombre:</strong> {selectedGuardian.nombreCompleto}
                       </div>
                       <div>
-                        <strong>Documento:</strong>{" "}
-                        {selectedGuardian.tipoDocumento} -{" "}
-                        {selectedGuardian.identificacion}
+                        <strong>Documento:</strong> {selectedGuardian.tipoDocumento} - {selectedGuardian.identificacion}
                       </div>
                       <div>
                         <strong>Teléfono:</strong> {selectedGuardian.telefono}
@@ -521,14 +695,13 @@ const AthleteModal = ({
           </div>
 
           {/* Footer */}
-
-          {/* Footer - Reemplazar la sección del footer existente */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.8 }}
             className="flex justify-between pt-6 border-t border-gray-200"
           >
+          
             <motion.button
               type="button"
               onClick={handleClose}

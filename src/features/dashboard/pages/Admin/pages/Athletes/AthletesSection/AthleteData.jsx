@@ -1,71 +1,107 @@
-// src/features/dashboard/pages/Admin/pages/Athletes/AthletesData.js
+// src/features/dashboard/pages/Admin/pages/Athletes/AthleteData.js
 
 const athletesData = [
   {
     id: 1,
-    nombres: "Carlos Andrés",
-    apellidos: "Rodríguez Martínez",
-    tipoDocumento: "cedula",
-    numeroDocumento: "1234567890",
-    fechaNacimiento: "1995-03-15",
+    nombres: "Santiago",
+    apellidos: "Morales Rivera",
+    tipoDocumento: "tarjeta_identidad",
+    numeroDocumento: "1098765432",
+    fechaNacimiento: "2010-03-15", // 13-14 años
     genero: "masculino",
     telefono: "+57 3001234567",
-    correo: "carlos.rodriguez@email.com",
+    correo: "santiago.morales@email.com",
     direccion: "Calle 45 #12-34, Barrio Los Pinos",
-    ciudad: "Bogotá",
+    ciudad: "Medellín",
     deportePrincipal: "futbol",
-    categoria: "profesional",
+    categoria: "Sub 15", // Calculado por edad
     posicion: "Delantero",
-    equipoClub: "Millonarios FC",
-    peso: 75.5,
-    estatura: 1.78,
-    contactoEmergencia: "María Rodríguez - 3009876543",
-    observaciones: "Jugador destacado con experiencia internacional. Lesión en rodilla derecha en 2023, completamente recuperado.",
-    estado: "Activo"
+    equipoClub: "Academia Deportiva Los Pinos",
+    peso: 55.5,
+    estatura: 1.65,
+    contactoEmergencia: "María Rivera - 3009876543",
+    observaciones: "Jugador destacado en la categoría Sub 15. Excelente técnica y velocidad.",
+    estado: "Activo",
+    acudiente: 1, // ID del acudiente
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 101,
+        fechaInscripcion: "2024-01-15",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-01-15",
+        categoria: "Sub 15"
+      }
+    ]
   },
   {
     id: 2,
-    nombres: "Ana María",
-    apellidos: "González Herrera",
-    tipoDocumento: "cedula",
+    nombres: "Valentina",
+    apellidos: "López González",
+    tipoDocumento: "tarjeta_identidad",
     numeroDocumento: "1087654321",
-    fechaNacimiento: "1998-07-22",
+    fechaNacimiento: "2008-07-22", // 15-16 años
     genero: "femenino",
     telefono: "+57 3109876543",
-    correo: "ana.gonzalez@email.com",
-    direccion: "Carrera 15 #67-89, Conjunto Residencial El Dorado",
+    correo: "valentina.lopez@email.com",
+    direccion: "Carrera 15 #67-89, Conjunto El Dorado",
     ciudad: "Medellín",
     deportePrincipal: "natacion",
-    categoria: "elite",
+    categoria: "Sub 15",
     posicion: "Estilo Libre",
-    equipoClub: "Club Nauticus",
-    peso: 62.0,
-    estatura: 1.65,
-    contactoEmergencia: "Pedro González - 3187654321",
-    observaciones: "Medallista nacional en estilo libre 100m y 200m. Clasificada para competencias internacionales 2024.",
-    estado: "Activo"
+    equipoClub: "Club Acuático Medellín",
+    peso: 52.0,
+    estatura: 1.62,
+    contactoEmergencia: "Pedro López - 3187654321",
+    observaciones: "Promesa de la natación. Medallista departamental en estilo libre.",
+    estado: "Activo",
+    acudiente: 2,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 102,
+        fechaInscripcion: "2024-02-01",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-02-01",
+        categoria: "Sub 15"
+      }
+    ]
   },
   {
     id: 3,
-    nombres: "Miguel",
-    apellidos: "Torres Silva",
+    nombres: "Mateo",
+    apellidos: "Herrera Silva",
     tipoDocumento: "cedula",
-    numeroDocumento: "1098765432",
-    fechaNacimiento: "2000-11-08",
+    numeroDocumento: "1098765433",
+    fechaNacimiento: "2007-11-08", // 16-17 años
     genero: "masculino",
     telefono: "+57 3156789012",
-    correo: "miguel.torres@email.com",
+    correo: "mateo.herrera@email.com",
     direccion: "Avenida 80 #23-45, Apartamento 501",
-    ciudad: "Cali",
+    ciudad: "Medellín",
     deportePrincipal: "atletismo",
-    categoria: "juvenil",
+    categoria: "Juvenil",
     posicion: "Velocista 100m",
-    equipoClub: "Club Atlético Cali",
-    peso: 68.3,
+    equipoClub: "Club Atlético Antioquia",
+    peso: 63.3,
     estatura: 1.73,
-    contactoEmergencia: "Carmen Torres - 3002468135",
-    observaciones: "Promesa del atletismo nacional. Récord departamental en 100 metros planos categoría juvenil.",
-    estado: "Activo"
+    contactoEmergencia: "Carmen Silva - 3002468135",
+    observaciones: "Récord departamental juvenil en 100 metros planos. Gran potencial.",
+    estado: "Activo",
+    acudiente: 3,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 103,
+        fechaInscripcion: "2024-01-20",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-01-20",
+        categoria: "Juvenil"
+      }
+    ]
   },
   {
     id: 4,
@@ -73,109 +109,169 @@ const athletesData = [
     apellidos: "Moreno Castro",
     tipoDocumento: "cedula",
     numeroDocumento: "1076543210",
-    fechaNacimiento: "1996-05-30",
+    fechaNacimiento: "2006-05-30", // 17-18 años
     genero: "femenino",
     telefono: "+57 3187654321",
     correo: "isabella.moreno@email.com",
     direccion: "Calle 100 #15-20, Zona Norte",
-    ciudad: "Barranquilla",
+    ciudad: "Medellín",
     deportePrincipal: "voleibol",
-    categoria: "profesional",
+    categoria: "Juvenil",
     posicion: "Atacante",
-    equipoClub: "Voleibol Barranquilla",
-    peso: 68.7,
-    estatura: 1.82,
+    equipoClub: "Voleibol Antioquia",
+    peso: 58.7,
+    estatura: 1.75,
     contactoEmergencia: "Luis Moreno - 3009876543",
-    observaciones: "Capitana del equipo nacional juvenil. Participación en Sudamericano 2023 con excelentes resultados.",
-    estado: "Inactivo"
+    observaciones: "Capitana del equipo juvenil. Excelente técnica de ataque.",
+    estado: "Activo",
+    acudiente: 4,
+    estadoInscripcion: "Vencida",
+    inscripciones: [
+      {
+        id: 104,
+        fechaInscripcion: "2023-01-15",
+        estadoInscripcion: "Vencida",
+        concepto: "Inscripción 2023",
+        fechaConcepto: "2023-01-15",
+        categoria: "Juvenil"
+      }
+    ]
   },
   {
     id: 5,
-    nombres: "Andrés Felipe",
-    apellidos: "Vargas López",
-    tipoDocumento: "cedula",
-    numeroDocumento: "1054321098",
-    fechaNacimiento: "1993-12-10",
-    genero: "masculino",
-    telefono: "+57 3129876543",
-    correo: "andres.vargas@email.com",
-    direccion: "Carrera 7 #45-67, Centro Histórico",
-    ciudad: "Bogotá",
-    deportePrincipal: "tenis",
-    categoria: "profesional",
-    posicion: "Individual",
-    equipoClub: "Club El Nogal",
-    peso: 73.2,
-    estatura: 1.80,
-    contactoEmergencia: "Sandra López - 3156789012",
-    observaciones: "Rankeado en top 500 ATP. Múltiples títulos nacionales y participación en torneos internacionales.",
-    estado: "Activo"
-  },
-  {
-    id: 6,
     nombres: "Sofía",
     apellidos: "Ramírez Pineda",
-    tipoDocumento: "cedula",
+    tipoDocumento: "tarjeta_identidad",
     numeroDocumento: "1043210987",
-    fechaNacimiento: "2001-02-18",
+    fechaNacimiento: "2012-02-18", // 11-12 años
     genero: "femenino",
     telefono: "+57 3098765432",
     correo: "sofia.ramirez@email.com",
     direccion: "Calle 85 #12-30, Barrio La Castellana",
     ciudad: "Medellín",
     deportePrincipal: "gimnasia",
-    categoria: "juvenil",
+    categoria: "Infantil",
     posicion: "Artística",
-    equipoClub: "Gimnasio Integral",
-    peso: 52.5,
-    estatura: 1.58,
+    equipoClub: "Gimnasio Integral Medellín",
+    peso: 35.5,
+    estatura: 1.48,
     contactoEmergencia: "Patricia Pineda - 3187654321",
-    observaciones: "Medallista de oro en campeonato nacional juvenil. Preparación para competencias internacionales.",
-    estado: "Activo"
+    observaciones: "Talento excepcional en gimnasia artística. Medallista regional.",
+    estado: "Activo",
+    acudiente: 5,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 105,
+        fechaInscripcion: "2024-03-01",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-03-01",
+        categoria: "Infantil"
+      }
+    ]
+  },
+  {
+    id: 6,
+    nombres: "Alejandro",
+    apellidos: "Vargas Ruiz",
+    tipoDocumento: "cedula",
+    numeroDocumento: "1054321098",
+    fechaNacimiento: "2006-12-10", // 17-18 años
+    genero: "masculino",
+    telefono: "+57 3129876543",
+    correo: "alejandro.vargas@email.com",
+    direccion: "Carrera 7 #45-67, Centro",
+    ciudad: "Medellín",
+    deportePrincipal: "tenis",
+    categoria: "Juvenil",
+    posicion: "Individual",
+    equipoClub: "Club de Tenis El Poblado",
+    peso: 68.2,
+    estatura: 1.76,
+    contactoEmergencia: "Sandra Ruiz - 3156789012",
+    observaciones: "Ranking nacional juvenil. Múltiples títulos departamentales.",
+    estado: "Activo",
+    acudiente: 6,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 106,
+        fechaInscripcion: "2024-01-10",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-01-10",
+        categoria: "Juvenil"
+      }
+    ]
   },
   {
     id: 7,
-    nombres: "Juan David",
-    apellidos: "Hernández Restrepo",
-    tipoDocumento: "cedula",
+    nombres: "Camila",
+    apellidos: "Torres Mendoza",
+    tipoDocumento: "tarjeta_identidad",
     numeroDocumento: "1032109876",
-    fechaNacimiento: "1997-09-25",
-    genero: "masculino",
+    fechaNacimiento: "2009-09-25", // 14-15 años
+    genero: "femenino",
     telefono: "+57 3165432109",
-    correo: "juan.hernandez@email.com",
+    correo: "camila.torres@email.com",
     direccion: "Avenida Las Palmas #67-89, El Poblado",
     ciudad: "Medellín",
     deportePrincipal: "ciclismo",
-    categoria: "profesional",
+    categoria: "Sub 15",
     posicion: "Ruta",
-    equipoClub: "Team Colombia Cycling",
-    peso: 65.8,
-    estatura: 1.75,
-    contactoEmergencia: "Gloria Restrepo - 3129876543",
-    observaciones: "Especialista en alta montaña. Participación en Tour Colombia y competencias internacionales.",
-    estado: "Activo"
+    equipoClub: "Cycling Team Antioquia",
+    peso: 48.8,
+    estatura: 1.58,
+    contactoEmergencia: "Gloria Mendoza - 3129876543",
+    observaciones: "Especialista en ruta. Participación en campeonatos departamentales.",
+    estado: "Activo",
+    acudiente: 7,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 107,
+        fechaInscripcion: "2024-02-15",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-02-15",
+        categoria: "Sub 15"
+      }
+    ]
   },
   {
     id: 8,
-    nombres: "Valentina",
+    nombres: "Diego",
     apellidos: "Ospina Cortés",
-    tipoDocumento: "cedula",
+    tipoDocumento: "tarjeta_identidad",
     numeroDocumento: "1021098765",
-    fechaNacimiento: "1999-04-12",
-    genero: "femenino",
+    fechaNacimiento: "2011-04-12", // 12-13 años
+    genero: "masculino",
     telefono: "+57 3054321098",
-    correo: "valentina.ospina@email.com",
+    correo: "diego.ospina@email.com",
     direccion: "Calle 95 #20-15, Zona Rosa",
-    ciudad: "Bogotá",
+    ciudad: "Medellín",
     deportePrincipal: "taekwondo",
-    categoria: "elite",
+    categoria: "Infantil",
     posicion: "Peso Mosca",
     equipoClub: "Academia Taekwondo Elite",
-    peso: 49.2,
-    estatura: 1.63,
+    peso: 42.2,
+    estatura: 1.52,
     contactoEmergencia: "Ricardo Ospina - 3098765432",
-    observaciones: "Cinturón negro 3er Dan. Medallista panamericana y clasificada para competencias mundiales.",
-    estado: "Activo"
+    observaciones: "Cinturón amarillo avanzado. Gran disciplina y técnica.",
+    estado: "Activo",
+    acudiente: 8,
+    estadoInscripcion: "Vigente",
+    inscripciones: [
+      {
+        id: 108,
+        fechaInscripcion: "2024-01-05",
+        estadoInscripcion: "Vigente",
+        concepto: "Inscripción 2024",
+        fechaConcepto: "2024-01-05",
+        categoria: "Infantil"
+      }
+    ]
   }
 ];
 

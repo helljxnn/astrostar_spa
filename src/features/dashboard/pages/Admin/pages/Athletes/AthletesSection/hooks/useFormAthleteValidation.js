@@ -185,5 +185,23 @@ export const athleteValidationRules = {
   ],
   estado: [
     (v) => !v ? "Debe seleccionar un estado" : ""
-  ]
+  ],
+  acudiente: [
+  (v) => !v ? "Debes seleccionar un acudiente" : ""
+],
+estadoInscripcion: [
+    (v) => !v ? "Debes seleccionar un estado de inscripción" : ""
+  ],
+  conceptoInscripcion: [
+    (v) => !v?.trim() ? "El concepto de inscripción es obligatorio" : "",
+    (v) => v?.trim().length < 3 ? "El concepto debe tener al menos 3 caracteres" : "",
+    (v) => v?.trim().length > 100 ? "El concepto no puede exceder 100 caracteres" : "",
+    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+  ],
+  fechaInscripcion: [
+    (v) => !v ? "La fecha de inscripción es obligatoria" : ""
+  ],
+  fechaConcepto: [
+    (v) => !v ? "La fecha de concepto es obligatoria" : ""
+  ],
 };
