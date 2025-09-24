@@ -22,7 +22,10 @@ import {
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
-function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }) {
+function DynamicSideBar({
+  isOpen: externalIsOpen,
+  setIsOpen: setExternalIsOpen,
+}) {
   const [openMenu, setOpenMenu] = useState(null);
   // Usar el estado externo si está disponible, o el interno si no lo está
   const [internalIsOpen, setInternalIsOpen] = useState(false);
@@ -30,18 +33,18 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
   const setIsOpen = setExternalIsOpen || setInternalIsOpen;
   const [isExpanded, setIsExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
-  
+
   // Detectar si es dispositivo móvil
   useEffect(() => {
     const checkIfMobile = () => {
       setIsMobile(window.innerWidth < 1024); // lg breakpoint en Tailwind
     };
-    
+
     checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-    
+    window.addEventListener("resize", checkIfMobile);
+
     return () => {
-      window.removeEventListener('resize', checkIfMobile);
+      window.removeEventListener("resize", checkIfMobile);
     };
   }, []);
   const location = useLocation();
@@ -58,7 +61,7 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
     if (!isExpanded) {
       setOpenMenu(null);
     }
-    
+
     // Siempre mantener expandido en móvil
     if (isMobile) {
       setIsExpanded(true);
@@ -230,11 +233,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                 <Link
                   to="/dashboard"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard")
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    isActive("/dashboard")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -268,11 +273,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                 <Link
                   to="/dashboard/users"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/users")
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    isActive("/dashboard/users")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -307,11 +314,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                 <Link
                   to="/dashboard/roles"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/roles")
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    isActive("/dashboard/roles")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -346,11 +355,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                 <Link
                   to="/dashboard/sportsequipment"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/sportsequipment")
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    isActive("/dashboard/sportsequipment")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 10 }}
@@ -386,11 +397,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                   <Link
                     to="/dashboard/appointment-management"
                     onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                      } ${isActive("/dashboard/appointment-management")
+                    className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                      !isExpanded ? "justify-center" : ""
+                    } ${
+                      isActive("/dashboard/appointment-management")
                         ? "bg-indigo-100 text-primary-purple shadow-sm"
                         : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                      }`}
+                    }`}
                   >
                     <motion.div
                       whileHover={{ scale: 1.1, rotate: 5 }}
@@ -424,15 +437,18 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
               >
                 <motion.button
                   onClick={() => toggleMenu("services")}
-                  className={`flex items-center justify-between ${isExpanded ? "w-full" : ""
-                    } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${openMenu === "services" ||
-                      isActive("/dashboard/employees") ||
-                      isActive("/dashboard/employees-schedule") ||
-                      isActive("/dashboard/appointment-management")
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    openMenu === "services" ||
+                    isActive("/dashboard/employees") ||
+                    isActive("/dashboard/employees-schedule") ||
+                    isActive("/dashboard/appointment-management")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -488,10 +504,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                               <Link
                                 to="/dashboard/employees"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/employees")
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/employees")
                                     ? "bg-indigo-100 text-primary-purple shadow-sm"
                                     : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                                }`}
                               >
                                 Empleados
                               </Link>
@@ -509,10 +526,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                               <Link
                                 to="/dashboard/employees-schedule"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/employees-schedule")
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/employees-schedule")
                                     ? "bg-indigo-100 text-primary-purple shadow-sm"
                                     : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                                }`}
                               >
                                 Horario Empleados
                               </Link>
@@ -528,10 +546,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                               <Link
                                 to="/dashboard/appointment-management"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/appointment-management")
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/appointment-management")
                                     ? "bg-indigo-100 text-primary-purple shadow-sm"
                                     : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                                }`}
                               >
                                 Gestión de citas
                               </Link>
@@ -555,15 +574,18 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
               >
                 <motion.button
                   onClick={() => toggleMenu("athletes")}
-                  className={`flex items-center justify-between ${isExpanded ? "w-full" : ""
-                    } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${openMenu === "athletes" ||
-                      isActive("/dashboard/athletes") ||
-                      isActive("/dashboard/sports-category") ||
-                      isActive("/dashboard/temporary-workers")
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    openMenu === "athletes" ||
+                    isActive("/dashboard/athletes") ||
+                    isActive("/dashboard/sports-category") ||
+                    isActive("/dashboard/temporary-workers")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -620,10 +642,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                               <Link
                                 to="/dashboard/sports-category"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/sports-category")
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/sports-category")
                                     ? "bg-indigo-100 text-primary-purple shadow-sm"
                                     : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                                }`}
                               >
                                 Categoría deportiva
                               </Link>
@@ -639,10 +662,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                             <Link
                               to="/dashboard/athletes"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/athletes")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/athletes")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                }`}
+                              }`}
                             >
                               Gestión de deportistas
                             </Link>
@@ -658,10 +682,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                               <Link
                                 to="/dashboard/temporary-workers"
                                 onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/temporary-workers")
+                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                  isActive("/dashboard/temporary-workers")
                                     ? "bg-indigo-100 text-primary-purple shadow-sm"
                                     : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                                }`}
                               >
                                 Personas temporales
                               </Link>
@@ -785,39 +810,112 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
 
             {visibleModules.events && (
               <motion.div
+                className="mt-1 relative mb-1"
                 variants={menuItemVariants}
                 initial="initial"
                 animate="animate"
-                className="mb-1"
               >
-                <Link
-                  to="/dashboard/events"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/events")
+                <motion.button
+                  onClick={() => toggleMenu("events")}
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    openMenu === "events" ||
+                    isActive("/dashboard/events") ||
+                    isActive("/dashboard/temporary-teams")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaRegCalendarAlt size={20} className="shrink-0" />
-                  </motion.div>
+                  <span className="flex items-center gap-4">
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <FaRegCalendarAlt size={20} className="shrink-0" />
+                    </motion.div>
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          Eventos
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </span>
                   <AnimatePresence>
                     {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
+                      <motion.div
+                        animate={{ rotate: openMenu === "events" ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        Eventos
-                      </motion.span>
+                        <MdExpandMore size={20} className="shrink-0" />
+                      </motion.div>
                     )}
                   </AnimatePresence>
-                </Link>
+                </motion.button>
+
+                {isExpanded && (
+                  <AnimatePresence>
+                    {openMenu === "events" && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="pl-12 pr-3 py-2 space-y-1">
+                          {/* Eventos */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                          >
+                            <Link
+                              to="/dashboard/events"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/events")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Gestión de Eventos
+                            </Link>
+                          </motion.div>
+
+                          {/* Equipos Temporales */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.15 }}
+                          >
+                            <Link
+                              to="/dashboard/temporary-teams"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/temporary-teams")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Equipos Temporales
+                            </Link>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                )}
               </motion.div>
             )}
 
@@ -832,14 +930,17 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
               >
                 <motion.button
                   onClick={() => toggleMenu("purchases")}
-                  className={`flex items-center justify-between ${isExpanded ? "w-full" : ""
-                    } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${openMenu === "purchases" ||
-                      isActive("/dashboard/providers") ||
-                      isActive("/dashboard/purchases")
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    openMenu === "purchases" ||
+                    isActive("/dashboard/providers") ||
+                    isActive("/dashboard/purchases")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -894,10 +995,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                             <Link
                               to="/dashboard/providers"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/providers")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/providers")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                }`}
+                              }`}
                             >
                               Proveedores
                             </Link>
@@ -911,10 +1013,11 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                             <Link
                               to="/dashboard/purchases"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/purchases")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/purchases")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                }`}
+                              }`}
                             >
                               Compras
                             </Link>
@@ -927,7 +1030,6 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
               </motion.div>
             )}
 
-
             {visibleModules.sales && (
               <motion.div
                 variants={menuItemVariants}
@@ -937,11 +1039,13 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                 <Link
                   to="/dashboard/sales"
                   onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/sales")
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    isActive("/dashboard/sales")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                 >
                   <motion.div
                     whileHover={{ scale: 1.1, rotate: 5 }}
@@ -971,8 +1075,9 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
         <div className="border-t border-gray-200 px-4 py-4 mt-auto">
           <motion.button
             onClick={logout}
-            className={`flex items-center gap-4 px-4 py-3 rounded-xl w-full text-left text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-              } text-red-600 hover:bg-red-50 hover:text-red-700`}
+            className={`flex items-center gap-4 px-4 py-3 rounded-xl w-full text-left text-[15px] transition-all duration-200 ${
+              !isExpanded ? "justify-center" : ""
+            } text-red-600 hover:bg-red-50 hover:text-red-700`}
             whileHover={{ scale: 1.02, backgroundColor: "#fee2e2" }}
             whileTap={{ scale: 0.98 }}
           >

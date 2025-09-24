@@ -7,7 +7,11 @@ const Table = ({
   thead,
   tbody,
   rowsPerPage = 10,
-  paginationFrom = 10
+  paginationFrom = 10,
+  onEdit,
+  onDelete,
+  onView, // agregado para vista detallada
+  customActions, // agregado para botones personalizados como inscripciones
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -38,6 +42,10 @@ const Table = ({
   const tbodyProps = {
     ...tbody,
     data: paginatedData,
+    onEdit,
+    onDelete,
+    onView, // agregado para vista detallada
+    customActions, // agregado para botones personalizados
   };
 
   return (

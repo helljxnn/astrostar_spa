@@ -11,6 +11,7 @@ import Employees from "../features/dashboard/pages/Admin/pages/Services/Employee
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory.jsx";
 import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
+import TemporaryTeams from "../features/dashboard/pages/Admin/pages/TemporaryTeams/TemporaryTeams.jsx";
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
@@ -31,11 +32,22 @@ const PrivateRoutes = () => {
       {/* Un solo /dashboard con layout */}
       <Route path="/dashboard" element={<DashboardLayout />}>
         {/* Ruta index compartida para todos los roles */}
-        <Route index element={
-          <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
-            <Dashboard />
-          </PrivateRoute>
-        } />
+        <Route
+          index
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+                "deportista",
+                "acudiente",
+              ]}
+            >
+              <Dashboard />
+            </PrivateRoute>
+          }
+        />
 
         {/* Rutas con permisos específicos */}
 
@@ -47,67 +59,121 @@ const PrivateRoutes = () => {
         } />
 
         {/* Deportistas - Accesible para admin, profesional_deportivo y profesional_salud */}
-        <Route path="athletes" element={
-          <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
-            <Athletes />
-          </PrivateRoute>
-        } />
+        <Route
+          path="athletes"
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
+              <Athletes />
+            </PrivateRoute>
+          }
+        />
 
         {/* Empleados - Solo para admin */}
-        <Route path="employees" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <Employees />
-          </PrivateRoute>
-        } />
+        <Route
+          path="employees"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Employees />
+            </PrivateRoute>
+          }
+        />
 
         {/* Eventos - Solo para admin */}
-        <Route path="events" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <EventsDashboard />
-          </PrivateRoute>
-        } />
+        <Route
+          path="events"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <EventsDashboard />
+            </PrivateRoute>
+          }
+        />
+        {/* Equipos Temporales - */}
+        <Route
+          path="temporary-teams"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <TemporaryTeams />
+            </PrivateRoute>
+          }
+        />
 
         {/* Providers - Solo para admin */}
-        <Route path="providers" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <Providers />
-          </PrivateRoute>
-        } />
+        <Route
+          path="providers"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Providers />
+            </PrivateRoute>
+          }
+        />
 
         {/* Horario de empleados - Para admin, profesional_deportivo y profesional_salud */}
-        <Route path="employees-schedule" element={
-          <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
-            <EmployeesSchedule />
-          </PrivateRoute>
-        } />
+        <Route
+          path="employees-schedule"
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
+              <EmployeesSchedule />
+            </PrivateRoute>
+          }
+        />
 
         {/* Categoría deportiva - Para admin, profesional_deportivo y profesional_salud */}
-        <Route path="sports-category" element={
-          <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
-            <SportsCategory />
-          </PrivateRoute>
-        } />
+        <Route
+          path="sports-category"
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
+              <SportsCategory />
+            </PrivateRoute>
+          }
+        />
 
         {/* Gestión de usuarios - Solo para admin */}
-        <Route path="users" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <Users />
-          </PrivateRoute>
-        } />
-        
+        <Route
+          path="users"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Users />
+            </PrivateRoute>
+          }
+        />
+
         {/* Trabajadores temporales - Solo para admin */}
-        <Route path="temporary-workers" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <TemporaryWorkers />
-          </PrivateRoute>
-        } />
+        <Route
+          path="temporary-workers"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <TemporaryWorkers />
+            </PrivateRoute>
+          }
+        />
 
         {/* Roles - Solo para admin */}
-        <Route path="roles" element={
-          <PrivateRoute allowedRoles={["admin"]}>
-            <Roles />
-          </PrivateRoute>
-        } />
+        <Route
+          path="roles"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Roles />
+            </PrivateRoute>
+          }
+        />
 
         {/* Material Deportivo - Solo para admin */}
         <Route

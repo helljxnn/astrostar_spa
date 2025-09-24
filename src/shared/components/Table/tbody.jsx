@@ -13,7 +13,7 @@ const rowVariants = {
 };
 
 const Tbody = ({ options }) => {
-  const { onEdit, onDelete } = options.tbody;
+  const { onEdit, onDelete, customActions } = options.tbody;
 
   return (
     <tbody id="tbody" className="divide-y divide-gray-200">
@@ -66,6 +66,7 @@ const Tbody = ({ options }) => {
   >
     <FaEye />
   </button>
+  {options.tbody.customActions && options.tbody.customActions(item)}
 </td>
 
             </motion.tr>
