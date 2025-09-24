@@ -10,7 +10,6 @@ const Table = ({
   paginationFrom = 10,
   onEdit,
   onDelete,
-  onView, // agregado para vista detallada
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -43,7 +42,6 @@ const Table = ({
     data: paginatedData,
     onEdit,
     onDelete,
-    onView, // agregado para vista detallada
   };
 
   return (
@@ -104,14 +102,6 @@ const Table = ({
               >
                 Eliminar
               </button>
-              {tbodyProps.onView && (
-                <button
-                  onClick={() => tbodyProps.onView(item)}
-                  className="px-3 py-1 rounded-lg bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors text-xs"
-                >
-                  Ver
-                </button>
-              )}
             </div>
           </div>
         ))}
