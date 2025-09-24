@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaPlus, FaTimes, FaUsers, FaUser, FaTrash } from "react-icons/fa";
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
 // Datos quemados para equipos
 const mockTeams = [

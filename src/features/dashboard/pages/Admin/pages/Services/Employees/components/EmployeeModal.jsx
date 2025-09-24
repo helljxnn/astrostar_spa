@@ -9,7 +9,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../../shared/utils/alerts";
 
 const EmployeeModal = ({
   isOpen,
@@ -43,11 +43,14 @@ const EmployeeModal = ({
     employeeValidationRules
   );
 
-  // Cargar datos si es edición
+  // Cargar datos si es edición o limpiar si es creación
   useEffect(() => {
-    if (employee) {
+    if (employee && mode === "edit") {
       setFormData(employee);
     } else {
+      // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
       setFormData({
         nombre: "",
         apellido: "",
@@ -59,10 +62,10 @@ const EmployeeModal = ({
         tipoEmpleado: "",
         rol: "",
         estado: "",
-        fechaAsignacion: "",
+        fechaAsignacion: today,
       });
     }
-  }, [employee, setFormData]);
+  }, [employee, setFormData, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
@@ -86,6 +89,23 @@ const EmployeeModal = ({
           ? "El empleado ha sido actualizado exitosamente."
           : "El empleado ha sido registrado exitosamente."
       );
+
+      // Limpiar formulario antes de cerrar
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
+      setFormData({
+        nombre: "",
+        apellido: "",
+        correo: "",
+        telefono: "",
+        edad: "",
+        identificacion: "",
+        tipoDocumento: "",
+        tipoEmpleado: "",
+        rol: "",
+        estado: "",
+        fechaAsignacion: today,
+      });
 
       onClose();
     } catch (error) {
@@ -348,13 +368,13 @@ const EmployeeModal = ({
               delay={1}
             />
 
-            {/* Fecha asignación */}
+            {/* Fecha asignación - automática y no modificable */}
             <FormField
               label="Fecha Asignación Estado"
               name="fechaAsignacion"
               type="date"
               required={mode !== "view"}
-              disabled={mode === "view"}
+              disabled={true} // Siempre deshabilitado para que no se pueda modificar
               value={formData.fechaAsignacion}
               error={errors.fechaAsignacion}
               touched={touched.fechaAsignacion}

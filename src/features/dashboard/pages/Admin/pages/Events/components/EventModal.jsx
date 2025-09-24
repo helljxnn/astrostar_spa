@@ -6,8 +6,9 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../shared/utils/alerts";
 import { SponsorsSelector } from "./SponsorsSelector";
+import ButtonUpload from "./ButtonUpload";
 
 export const EventModal = ({
   onClose,
@@ -37,7 +38,6 @@ export const EventModal = ({
   const { errors, touched, validate, handleBlur, touchAllFields } =
     useFormEventValidation();
 
-  // Prellenar solo si estamos editando
   useEffect(() => {
     if (!isNew && event) {
       setTipoEvento(event.tipo || "");
@@ -64,22 +64,19 @@ export const EventModal = ({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    handleChange("imagen", file);
-  };
-
-  const handleCronogramaChange = (e) => {
-    const file = e.target.files[0];
-    handleChange("cronograma", file);
-  };
-
   const handleSubmit = async () => {
     try {
-      touchAllFields(form);
-      if (!validate({ ...form, tipoEvento })) return;
+      touchAllFields({ ...form, tipoEvento });
+      const isValid = validate({ ...form, tipoEvento });
+      
+      if (!isValid) {
+        showErrorAlert(
+          "Formulario incompleto",
+          "Por favor completa todos los campos requeridos correctamente."
+        );
+        return;
+      }
 
-      // Confirmación solo al editar
       if (!isNew) {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar este evento?",
@@ -88,12 +85,16 @@ export const EventModal = ({
         if (!result.isConfirmed) return;
       }
 
-      onSave({ ...form, tipo: tipoEvento, id: event?.id || Date.now() });
+      const eventData = { 
+        ...form, 
+        tipo: tipoEvento, 
+        id: event?.id || Date.now() 
+      };
+      
+      await onSave(eventData);
 
       showSuccessAlert(
-        isNew
-          ? "Evento creado exitosamente"
-          : "Evento actualizado exitosamente",
+        isNew ? "Evento creado exitosamente" : "Evento actualizado exitosamente",
         isNew
           ? "El evento ha sido registrado correctamente."
           : "El evento ha sido actualizado correctamente."
@@ -136,38 +137,41 @@ export const EventModal = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* Tipo de evento */}
-          <FormField
-            label="Tipo de evento"
-            name="tipoEvento"
-            type="select"
-            value={tipoEvento}
-            onChange={(name, value) => setTipoEvento(value)}
-            onBlur={() => handleBlur("tipoEvento", tipoEvento, form)}
-            error={errors.tipoEvento}
-            touched={touched.tipoEvento}
-            placeholder="Seleccione el tipo de evento"
-            options={[
-              { value: "Festival", label: "Festival" },
-              { value: "Torneo", label: "Torneo" },
-              { value: "Clausura", label: "Clausura" },
-              { value: "Taller", label: "Taller" },
-            ]}
-            required={mode !== "view"}
-            disabled={mode === "view"}
-          />
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* El resto de campos aparece cuando hay tipoEvento */}
+          <>
+            {/* Fila 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Tipo de evento ahora en la primera fila y más pequeño */}
+              <div className="md:col-span-1">
+                <FormField
+                  label="Tipo"
+                  name="tipoEvento"
+                  type="select"
+                  value={tipoEvento}
+                  onChange={(name, value) => setTipoEvento(value)}
+                  onBlur={() => handleBlur("tipoEvento", tipoEvento, form)}
+                  error={errors.tipoEvento}
+                  touched={touched.tipoEvento}
+                  placeholder="Seleccione tipo"
+                  options={[
+                    { value: "Festival", label: "Festival" },
+                    { value: "Torneo", label: "Torneo" },
+                    { value: "Clausura", label: "Clausura" },
+                    { value: "Taller", label: "Taller" },
+                  ]}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+              </div>
 
-          {/* Formulario dinámico */}
-          {tipoEvento && (
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <FormField
                 label="Nombre"
                 name="nombre"
                 value={form.nombre}
                 onChange={handleChange}
                 onBlur={() => handleBlur("nombre", form.nombre, form)}
-                placeholder={`Nombre del ${tipoEvento.toLowerCase()}`}
+                placeholder={`Nombre del ${tipoEvento ? tipoEvento.toLowerCase() : 'evento'}`}
                 error={errors.nombre}
                 touched={touched.nombre}
                 required={mode !== "view"}
@@ -181,200 +185,9 @@ export const EventModal = ({
                 value={form.descripcion}
                 onChange={handleChange}
                 onBlur={() => handleBlur("descripcion", form.descripcion, form)}
-                placeholder={`Descripción del ${tipoEvento.toLowerCase()}`}
+                placeholder="Breve descripción"
                 error={errors.descripcion}
                 touched={touched.descripcion}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Fecha inicio"
-                name="fechaInicio"
-                type="date"
-                value={form.fechaInicio}
-                onChange={handleChange}
-                onBlur={() => handleBlur("fechaInicio", form.fechaInicio, form)}
-                error={errors.fechaInicio}
-                touched={touched.fechaInicio}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Fecha finalización"
-                name="fechaFin"
-                type="date"
-                value={form.fechaFin}
-                onChange={handleChange}
-                onBlur={() => handleBlur("fechaFin", form.fechaFin, form)}
-                error={errors.fechaFin}
-                touched={touched.fechaFin}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Hora inicio"
-                name="horaInicio"
-                type="time"
-                value={form.horaInicio}
-                onChange={handleChange}
-                onBlur={() => handleBlur("horaInicio", form.horaInicio, form)}
-                error={errors.horaInicio}
-                touched={touched.horaInicio}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Hora finalización"
-                name="horaFin"
-                type="time"
-                value={form.horaFin}
-                onChange={handleChange}
-                onBlur={() => handleBlur("horaFin", form.horaFin, form)}
-                error={errors.horaFin}
-                touched={touched.horaFin}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Ubicación"
-                name="ubicacion"
-                value={form.ubicacion}
-                onChange={handleChange}
-                onBlur={() => handleBlur("ubicacion", form.ubicacion, form)}
-                placeholder="Ubicación del evento"
-                error={errors.ubicacion}
-                touched={touched.ubicacion}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Teléfono"
-                name="telefono"
-                value={form.telefono}
-                onChange={handleChange}
-                onBlur={() => handleBlur("telefono", form.telefono, form)}
-                placeholder="Teléfono de contacto"
-                error={errors.telefono}
-                touched={touched.telefono}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              {/* Subir imagen */}
-              <div className="flex flex-col">
-                <label className="mb-2 font-medium text-gray-700">
-                  Imagen{" "}
-                  {mode !== "view" && <span className="text-red-500">*</span>}
-                </label>
-                {mode === "view" ? (
-                  <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
-                    {form.imagen
-                      ? form.imagen.name || "Imagen cargada"
-                      : "No hay imagen"}
-                  </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    onBlur={() => handleBlur("imagen", form.imagen, form)}
-                    className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
-                             file:rounded-full file:border-0 
-                             file:text-sm file:font-semibold
-                             file:bg-gradient-to-r file:from-primary-purple file:to-primary-blue file:text-white 
-                             hover:file:opacity-90 transition"
-                  />
-                )}
-                {errors.imagen && touched.imagen && mode !== "view" && (
-                  <span className="text-xs text-red-500 mt-1">
-                    {errors.imagen}
-                  </span>
-                )}
-                {form.imagen && mode !== "view" && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-2 text-sm text-green-600"
-                  >
-                    {form.imagen.name}
-                  </motion.span>
-                )}
-              </div>
-
-              {/* Subir cronograma */}
-              <div className="flex flex-col">
-                <label className="mb-2 font-medium text-gray-700">
-                  Cronograma del evento{" "}
-                  {mode !== "view" && <span className="text-red-500">*</span>}
-                </label>
-                {mode === "view" ? (
-                  <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
-                    {form.cronograma
-                      ? form.cronograma.name || "Cronograma cargado"
-                      : "No hay cronograma"}
-                  </div>
-                ) : (
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx"
-                    onChange={handleCronogramaChange}
-                    onBlur={() =>
-                      handleBlur("cronograma", form.cronograma, form)
-                    }
-                    className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
-                             file:rounded-full file:border-0 
-                             file:text-sm file:font-semibold
-                             file:bg-gradient-to-r file:from-primary-purple file:to-primary-blue file:text-white 
-                             hover:file:opacity-90 transition"
-                  />
-                )}
-                {errors.cronograma && touched.cronograma && mode !== "view" && (
-                  <span className="text-xs text-red-500 mt-1">
-                    {errors.cronograma}
-                  </span>
-                )}
-                {form.cronograma && mode !== "view" && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-2 text-sm text-green-600"
-                  >
-                    {form.cronograma.name}
-                  </motion.span>
-                )}
-              </div>
-
-              {/* Selector de patrocinadores */}
-              <SponsorsSelector
-                value={form.patrocinador}
-                onChange={(val) => handleChange("patrocinador", val)}
-                error={errors.patrocinador}
-                touched={touched.patrocinador}
-                disabled={mode === "view"}
-              />
-
-              <FormField
-                label="Categoría"
-                name="categoria"
-                type="select"
-                value={form.categoria}
-                onChange={handleChange}
-                onBlur={() => handleBlur("categoria", form.categoria, form)}
-                placeholder="Seleccione categoría"
-                options={[
-                  { value: "Infantil", label: "Infantil" },
-                  { value: "Pre Juvenil", label: "Pre Juvenil" },
-                  { value: "Juvenil", label: "Juvenil" },
-                  { value: "Todas", label: "Todas" },
-                ]}
-                error={errors.categoria}
-                touched={touched.categoria}
                 required={mode !== "view"}
                 disabled={mode === "view"}
               />
@@ -398,23 +211,159 @@ export const EventModal = ({
                 required={mode !== "view"}
                 disabled={mode === "view"}
               />
-
-              {/* Publicar */}
-              <div className="flex items-center gap-2 col-span-1 md:col-span-2 lg:col-span-4">
-                <input
-                  type="checkbox"
-                  name="publicar"
-                  checked={form.publicar}
-                  onChange={(e) => handleChange("publicar", e.target.checked)}
-                  disabled={mode === "view"}
-                  className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded disabled:opacity-50"
-                />
-                <label className="text-sm font-medium text-gray-700">
-                  Publicar evento
-                </label>
-              </div>
             </div>
-          )}
+
+            {/* Fila 2 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <FormField
+                  label="Fecha inicio"
+                  name="fechaInicio"
+                  type="date"
+                  value={form.fechaInicio}
+                  onChange={handleChange}
+                  onBlur={() =>
+                    handleBlur("fechaInicio", form.fechaInicio, form)
+                  }
+                  error={errors.fechaInicio}
+                  touched={touched.fechaInicio}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <FormField
+                  label="Fecha fin"
+                  name="fechaFin"
+                  type="date"
+                  value={form.fechaFin}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("fechaFin", form.fechaFin, form)}
+                  error={errors.fechaFin}
+                  touched={touched.fechaFin}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <FormField
+                  label="Hora inicio"
+                  name="horaInicio"
+                  type="time"
+                  value={form.horaInicio}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("horaInicio", form.horaInicio, form)}
+                  error={errors.horaInicio}
+                  touched={touched.horaInicio}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <FormField
+                  label="Hora fin"
+                  name="horaFin"
+                  type="time"
+                  value={form.horaFin}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("horaFin", form.horaFin, form)}
+                  error={errors.horaFin}
+                  touched={touched.horaFin}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+              </div>
+
+              {/* Fila 3 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <FormField
+                  label="Ubicación"
+                  name="ubicacion"
+                  value={form.ubicacion}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("ubicacion", form.ubicacion, form)}
+                  placeholder="Ubicación del evento"
+                  error={errors.ubicacion}
+                  touched={touched.ubicacion}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <FormField
+                  label="Teléfono"
+                  name="telefono"
+                  value={form.telefono}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("telefono", form.telefono, form)}
+                  placeholder="Teléfono de contacto"
+                  error={errors.telefono}
+                  touched={touched.telefono}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <FormField
+                  label="Categoría"
+                  name="categoria"
+                  type="select"
+                  value={form.categoria}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur("categoria", form.categoria, form)}
+                  options={[
+                    { value: "Infantil", label: "Infantil" },
+                    { value: "Pre Juvenil", label: "Pre Juvenil" },
+                    { value: "Juvenil", label: "Juvenil" },
+                    { value: "Todas", label: "Todas" },
+                  ]}
+                  error={errors.categoria}
+                  touched={touched.categoria}
+                  required={mode !== "view"}
+                  disabled={mode === "view"}
+                />
+
+                <SponsorsSelector
+                  value={form.patrocinador}
+                  onChange={(val) => handleChange("patrocinador", val)}
+                  error={errors.patrocinador}
+                  touched={touched.patrocinador}
+                  disabled={mode === "view"}
+                />
+              </div>
+
+              {/* Fila 4 */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">
+                    Subir Imagen
+                  </label>
+                  <ButtonUpload
+                    file={form.imagen}
+                    onChange={(file) => handleChange("imagen", file)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 font-medium text-gray-700">
+                    Subir Cronograma
+                  </label>
+                  <ButtonUpload
+                    file={form.cronograma}
+                    onChange={(file) => handleChange("cronograma", file)}
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    id="publicar-evento"
+                    name="publicar"
+                    checked={form.publicar}
+                    onChange={(e) => handleChange("publicar", e.target.checked)}
+                    disabled={mode === "view"}
+                    className="w-4 h-4 text-purple-600 focus:ring-purple-500 focus:ring-1 border-purple-300 rounded cursor-pointer"
+                  />
+                  <label htmlFor="publicar-evento" className="text-xs font-medium text-purple-700 cursor-pointer select-none">
+                    Publicar evento
+                  </label>
+                </div>
+              </div>
+            </> 
         </div>
 
         {/* Footer */}
@@ -424,7 +373,7 @@ export const EventModal = ({
               {mode === "view" ? (
                 <button
                   onClick={onClose}
-                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold hover:opacity-90 transition"
+                  className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition"
                 >
                   Cerrar
                 </button>
@@ -438,9 +387,10 @@ export const EventModal = ({
                   </button>
                   <button
                     onClick={handleSubmit}
-                    className="w-full sm:w-auto px-5 py-2 rounded-lg bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold hover:opacity-90 transition"
+                    type="button"
+                    className="w-full sm:w-auto px-5 py-2 rounded-lg bg-primary-purple text-white font-semibold hover:bg-primary-blue transition"
                   >
-                    {isNew ? "Guardar" : "Actualizar"}
+                    {isNew ? "Crear" : "Actualizar"}
                   </button>
                 </>
               )}

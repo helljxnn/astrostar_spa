@@ -26,16 +26,18 @@ const Roles = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
+
   // Filtrar por búsqueda general en cualquier campo del objeto
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
     return data.filter((item) =>
       Object.values(item).some(
-        (value) => String(value).toLowerCase() === searchTerm.toLowerCase()
+        (value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [data, searchTerm]);
+
 
   // Paginación
   const totalRows = filteredData.length;

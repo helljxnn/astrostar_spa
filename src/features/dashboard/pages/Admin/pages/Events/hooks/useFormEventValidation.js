@@ -53,7 +53,7 @@ export const useFormEventValidation = () => {
         break;
 
       case "imagen":
-        if (!value) error = "Debe subir una imagen.";
+        // Haciendo la imagen opcional
         break;
 
       case "detalles":
@@ -62,9 +62,7 @@ export const useFormEventValidation = () => {
         break;
 
       case "patrocinador":
-        if (!Array.isArray(value) || value.length === 0) {
-          error = "Seleccione al menos un patrocinador.";
-        }
+        // Haciendo los patrocinadores opcionales
         break;
 
       case "categoria":
