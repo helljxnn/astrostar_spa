@@ -4,6 +4,7 @@ import RoleModal from "./components/RoleModal";
 import rolesData from "../../../../../../shared/models/RolesData";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../shared/components/Table/Pagination";
 import {
   showConfirmAlert,
   showSuccessAlert,
@@ -144,6 +145,20 @@ const Roles = () => {
           onView={handleView}
         />
       </div>
+
+      {/* Paginación */}
+      {totalRows > rowsPerPage && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalRows={totalRows}
+            rowsPerPage={rowsPerPage}
+            startIndex={startIndex}
+          />
+        </div>
+      )}
 
       {/* Modal Crear/Editar */}
       {isModalOpen && (

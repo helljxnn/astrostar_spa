@@ -11,7 +11,7 @@ import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/Alerts";
 
 const TemporaryWorkers = () => {
   const [data, setData] = useState(temporaryWorkersData);

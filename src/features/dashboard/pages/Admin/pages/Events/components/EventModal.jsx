@@ -335,6 +335,7 @@ export const EventModal = ({
                   <ButtonUpload
                     file={form.imagen}
                     onChange={(file) => handleChange("imagen", file)}
+                    disabled={mode === "view"}
                   />
                 </div>
 
@@ -345,6 +346,7 @@ export const EventModal = ({
                   <ButtonUpload
                     file={form.cronograma}
                     onChange={(file) => handleChange("cronograma", file)}
+                    disabled={mode === "view"}
                   />
                 </div>
 
