@@ -17,7 +17,7 @@ const Tbody = ({ options }) => {
   const {
     data = [],
     dataPropertys = [],
-    state = false, // ⚡ controla si pintamos Estado
+    state = false, // ⚡ activa colores para Estado
     onEdit,
     onDelete,
     onView,
@@ -46,11 +46,10 @@ const Tbody = ({ options }) => {
         const estadoOriginal = item.Estado || item.estado || "";
         const estado = estadoOriginal.toLowerCase();
 
-        /* Estilo según estado */
-        let estadoClass = "bg-gray-200 text-gray-800";
-        if (estado === "activo") estadoClass = "bg-green-100 text-green-600";
-        else if (estado === "inactivo") estadoClass = "bg-red-100 text-red-600";
-        else if (estado === "pendiente") estadoClass = "bg-yellow-100 text-yellow-600";
+        /* Colores unificados (igual que en mobile) */
+        let estadoClass = "text-gray-500";
+        if (estado === "activo") estadoClass = "text-primary-purple";
+        else if (estado === "inactivo") estadoClass = "text-primary-blue";
 
         return (
           <motion.tr
@@ -70,9 +69,7 @@ const Tbody = ({ options }) => {
                     key={i}
                     className="px-6 py-4 whitespace-nowrap font-medium"
                   >
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoClass}`}
-                    >
+                    <span className={`font-semibold ${estadoClass}`}>
                       {estadoOriginal}
                     </span>
                   </td>
@@ -86,16 +83,15 @@ const Tbody = ({ options }) => {
               );
             })}
 
-            {/* 🔹 Estado extra (si no está incluido en dataPropertys) */}
-            {state && !dataPropertys.map(p => p.toLowerCase()).includes("estado") && (
-              <td className="px-6 py-4 whitespace-nowrap font-medium">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoClass}`}
-                >
-                  {estadoOriginal}
-                </span>
-              </td>
-            )}
+            {/* 🔹 Estado extra (si no está en dataPropertys) */}
+            {state &&
+              !dataPropertys.map((p) => p.toLowerCase()).includes("estado") && (
+                <td className="px-6 py-4 whitespace-nowrap font-medium">
+                  <span className={`font-semibold ${estadoClass}`}>
+                    {estadoOriginal}
+                  </span>
+                </td>
+              )}
 
             {/* 🔹 Acciones dinámicas */}
             {hasActions && (

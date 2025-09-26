@@ -18,6 +18,24 @@ const SportsCategoryData = [
     EdadMaxima: 15,
     Estado: "Activo",
   },
+  {
+    Nombre: "Pre-Infantil",
+    EdadMinima: 3,
+    EdadMaxima: 6,
+    Estado: "Activo",
+  },
+  {
+    Nombre: "Pre-Juvenil",
+    EdadMinima: 12,
+    EdadMaxima: 14,
+    Estado: "Activo",
+  },
+  {
+    Nombre: "Sub 21",
+    EdadMinima: 19,
+    EdadMaxima: 21,
+    Estado: "Activo",
+  },
 ];
 
 export default SportsCategoryData;

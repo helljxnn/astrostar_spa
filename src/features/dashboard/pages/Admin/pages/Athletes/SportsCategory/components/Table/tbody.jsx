@@ -1,7 +1,3 @@
-
-// ================================
-// 3. Tbody.jsx (SIN CAMBIOS - YA ESTABA CORRECTO)
-// ================================
 import React from "react";
 import { motion } from "framer-motion";
 import { FaEye, FaRegEdit, FaTrash, FaList } from "react-icons/fa";
@@ -45,18 +41,15 @@ const Tbody = ({
       {data.map((item, index) => {
         // Estado seguro en string
         const estadoOriginal = item.Estado ?? item.estado ?? "";
-        const estado = String(estadoOriginal).toLowerCase();
+        const estado = String(estadoOriginal).trim().toLowerCase();
 
-        /* 🎨 Colores de estado */
-        let estadoClass =
-          "px-3 py-1 rounded-full text-sm font-medium border w-fit";
-        if (estado === "activo") {
-          estadoClass += " text-green-700 bg-green-100 border-green-300";
-        } else if (estado === "inactivo") {
-          estadoClass += " text-red-700 bg-red-100 border-red-300";
-        } else {
-          estadoClass += " text-gray-600 bg-gray-100 border-gray-300";
-        }
+        // 🎨 Colores personalizados
+        let estadoColorClass =
+          estado === "activo"
+            ? "text-primary-purple"
+            : estado === "inactivo"
+            ? "text-primary-blue"
+            : "text-gray-400";
 
         return (
           <motion.tr
@@ -82,7 +75,7 @@ const Tbody = ({
             {/* 🔹 Estado */}
             {state && (
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={estadoClass}>{estadoOriginal}</span>
+                <span className={estadoColorClass}>{estadoOriginal}</span>
               </td>
             )}
 
