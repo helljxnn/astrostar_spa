@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { IoMdDownload } from "react-icons/io";
 import { FiChevronDown } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
+
+// IMPORTACIÓN CORRECTA
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { showErrorAlert } from "../../shared/utils/alerts";
@@ -125,9 +129,111 @@ const getNestedValue = (obj, path) => {
   }, obj);
 };
 
-  const generateExcel = () => {
+  const generateExcel = async () => {
     setOpen(false);
-    exportToExcel(data, columns, fileName);
+    
+    try {
+      if (!data || data.length === 0) {
+        return showErrorAlert("Error", "No hay datos para generar el reporte");
+      }
+
+      console.log("Generando Excel con mejor formato...");
+
+      // Crear workbook con exceljs
+      const workbook = new ExcelJS.Workbook();
+      
+      // Agregar metadatos
+      workbook.creator = "AstroStar";
+      workbook.lastModifiedBy = "AstroStar";
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      workbook.properties.date1904 = true;
+      workbook.title = fileName;
+      workbook.subject = "Reporte de datos";
+      
+      // Crear worksheet para los datos
+      const worksheet = workbook.addWorksheet('Datos');
+      
+      // Agregar encabezados
+      const headers = columns.map(col => col.label);
+      worksheet.addRow(headers);
+      
+      // Dar formato a la fila de encabezados
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: '000000' } };
+      headerRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'CCCCCC' }
+      };
+      headerRow.alignment = { horizontal: 'center' };
+      
+      // Agregar datos
+      data.forEach(row => {
+        const rowValues = columns.map(col => {
+          let value = row[col.key];
+          
+          // Formatear mejor los datos para Excel
+          if (value === null || value === undefined) {
+            return "";
+          } else if (typeof value === 'object') {
+            if (value instanceof Date) {
+              return value.toLocaleDateString('es-ES');
+            } else {
+              return JSON.stringify(value);
+            }
+          } else {
+            return value;
+          }
+        });
+        worksheet.addRow(rowValues);
+      });
+      
+      // Ajustar ancho de columnas
+      worksheet.columns.forEach((column, index) => {
+        let maxLength = headers[index].length;
+        worksheet.getColumn(index + 1).eachCell({ includeEmpty: true }, (cell, rowNumber) => {
+          if (rowNumber > 1) {
+            const columnLength = cell.value ? cell.value.toString().length : 10;
+            if (columnLength > maxLength) {
+              maxLength = Math.min(columnLength, 50); // Máximo 50 caracteres
+            }
+          }
+        });
+        worksheet.getColumn(index + 1).width = Math.max(maxLength + 2, 10);
+      });
+      
+      // Crear hoja de información
+      const infoSheet = workbook.addWorksheet('Información');
+      
+      // Agregar datos de información
+      infoSheet.addRow(['Campo', 'Valor']);
+      infoSheet.addRow(['Archivo', fileName]);
+      infoSheet.addRow(['Fecha de generación', new Date().toLocaleString('es-ES')]);
+      infoSheet.addRow(['Total de registros', data.length]);
+      infoSheet.addRow(['Columnas incluidas', columns.length]);
+      
+      // Dar formato a la hoja de información
+      infoSheet.getRow(1).font = { bold: true };
+      infoSheet.getColumn(1).width = 20;
+      infoSheet.getColumn(2).width = 30;
+      
+      // Generar archivo
+      const buffer = await workbook.xlsx.writeBuffer();
+      
+      const blob = new Blob([buffer], { 
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      });
+      
+      const fileName_with_date = `${fileName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      saveAs(blob, fileName_with_date);
+      
+      console.log("✅ Excel generado exitosamente con mejor formato");
+      
+    } catch (error) {
+      console.error("❌ Error al generar Excel:", error);
+      showErrorAlert("Error", `Error al generar Excel: ${error.message}`);
+    }
   };
 
   return (

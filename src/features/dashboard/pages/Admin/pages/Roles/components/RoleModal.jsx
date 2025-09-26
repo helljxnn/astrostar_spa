@@ -5,7 +5,7 @@ import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
 import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
-import {showConfirmAlert} from "../../../../../../../shared/utils/alerts";
+import {showConfirmAlert } from "../../../../../../../shared/utils/alerts";
 
 const modules = [
   { name: "Usuarios", icon: "👤" },

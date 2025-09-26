@@ -28,7 +28,7 @@ const rolesData = [
     ],
   },
     {
-    id: 2,
+    id: 3,
     nombre: "Editor",
     descripcion: "Puede editar contenido",
     estado: "Inactivo",
@@ -40,7 +40,7 @@ const rolesData = [
     ],
   },
     {
-    id: 2,
+    id: 4,
     nombre: "Editor",
     descripcion: "Puede editar contenido",
     estado: "Inactivo",
@@ -52,7 +52,7 @@ const rolesData = [
     ],
   },
     {
-    id: 2,
+    id: 5,
     nombre: "Editor",
     descripcion: "Puede editar contenido",
     estado: "Inactivo",
@@ -64,7 +64,7 @@ const rolesData = [
     ],
   },
     {
-    id: 2,
+    id: 6,
     nombre: "Editor",
     descripcion: "Puede editar contenido",
     estado: "Inactivo",
@@ -75,43 +75,6 @@ const rolesData = [
       },
     ],
   },
-    {
-    id: 2,
-    nombre: "Editor",
-    descripcion: "Puede editar contenido",
-    estado: "Inactivo",
-    modulos: [
-      {
-        nombre: "Eventos",
-        permisos: ["Crear", "Editar", "Ver"], 
-      },
-    ],
-  },
-    {
-    id: 2,
-    nombre: "Editor",
-    descripcion: "Puede editar contenido",
-    estado: "Inactivo",
-    modulos: [
-      {
-        nombre: "Eventos",
-        permisos: ["Crear", "Editar", "Ver"], 
-      },
-    ],
-  },
-    {
-    id: 2,
-    nombre: "Editor",
-    descripcion: "Puede editar contenido",
-    estado: "Inactivo",
-    modulos: [
-      {
-        nombre: "Eventos",
-        permisos: ["Crear", "Editar", "Ver"], 
-      },
-    ],
-  },
-  
 ];
 
 export default rolesData;
