@@ -10,7 +10,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
-        className="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6"
+        className="bg-white rounded-xl shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6"
       >
         {/* Encabezado */}
         <h2 className="text-2xl font-bold mb-4 text-gray-800">
@@ -41,19 +41,19 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         </div>
 
         {/* Lista de permisos por módulo */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
             <FaLock className="text-primary-purple" /> Permisos por módulo
           </h3>
 
           {roleData?.modulos && roleData.modulos.length > 0 ? (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {roleData.modulos
                 .filter((mod) => mod.permisos && mod.permisos.length > 0)
                 .map((modulo, idx) => (
                   <div
                     key={idx}
-                    className="border rounded-lg p-4 shadow-sm bg-gray-50"
+                    className="border rounded-lg p-3 shadow-sm bg-gray-50"
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <FaFolderOpen className="text-primary-blue" />
@@ -61,7 +61,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
                         {modulo.nombre}
                       </span>
                     </div>
-                    <ul className="list-disc list-inside text-gray-600">
+                    <ul className="list-disc list-inside text-gray-600 text-sm space-y-1">
                       {modulo.permisos.map((permiso, pIdx) => (
                         <li key={pIdx}>{permiso}</li>
                       ))}
