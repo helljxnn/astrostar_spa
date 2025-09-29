@@ -40,7 +40,15 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+
+        if (name === 'telefono') {
+            // Permite solo números y un string vacío
+            if (/^[0-9]*$/.test(value)) {
+                setFormData(prev => ({ ...prev, [name]: value }));
+            }
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
         // Limpiar el error inmediatamente al empezar a escribir
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: undefined }));

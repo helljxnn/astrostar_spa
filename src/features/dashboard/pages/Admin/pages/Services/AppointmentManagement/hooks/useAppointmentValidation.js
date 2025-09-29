@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 // Un hook de validación simple para el formulario de citas
 export const useAppointmentValidation = (initialValues, validationRules) => {
@@ -6,52 +6,80 @@ export const useAppointmentValidation = (initialValues, validationRules) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  const validateField = (name, value) => {
-    const rules = validationRules[name];
-    if (!rules) return "";
+  const validateField = useCallback(
+    (name, value, currentValues) => {
+      const rules = validationRules[name];
+      if (!rules) return "";
 
-    for (const rule of rules) {
-      const error = rule(value, values);
-      if (error) return error;
-    }
-    return "";
-  };
+      for (const rule of rules) {
+        const error = rule(value, currentValues);
+        if (error) return error;
+      }
+      return "";
+    },
+    [validationRules]
+  );
 
-  const validateAllFields = () => {
+  const validateAllFields = useCallback(() => {
     const newErrors = {};
     const allTouched = {};
+    let isValid = true;
     Object.keys(validationRules).forEach((name) => {
       allTouched[name] = true;
-      const error = validateField(name, values[name]);
-      if (error) newErrors[name] = error;
+      const error = validateField(name, values[name], values);
+      if (error) {
+        newErrors[name] = error;
+        isValid = false;
+      }
     });
     setErrors(newErrors);
     setTouched(allTouched);
-    return Object.keys(newErrors).length === 0;
-  };
+    return isValid;
+  }, [values, validationRules, validateField]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
+  const handleChange = useCallback(
+    (e) => {
+      // Si 'e' es un evento de React, tendrá un 'target'.
+      // Si no, podría ser un valor directo de un componente personalizado.
+      if (e && e.target) {
+        const { name, value } = e.target;
+        const newValues = { ...values, [name]: value };
+        setValues(newValues);
 
-    if (touched[name]) {
-      const error = validateField(name, value);
-      setErrors((prev) => ({ ...prev, [name]: error }));
-    }
-  };
+        if (touched[name]) {
+          const error = validateField(name, value, newValues);
+          setErrors((prev) => ({ ...prev, [name]: error }));
+        }
+      } else {
+        // Si no es un evento, no podemos determinar 'name' y 'value'.
+        // En este caso, es mejor usar setFieldValue directamente.
+        // Dejamos este bloque para evitar errores, pero la lógica se moverá.
+      }
+    },
+    [touched, values, validateField]
+  );
 
-  const handleBlur = (e) => {
-    const { name, value } = e.target;
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    const error = validateField(name, value);
-    setErrors((prev) => ({ ...prev, [name]: error }));
-  };
+  const handleBlur = useCallback(
+    (e) => {
+      if (e && e.target) {
+        const { name, value } = e.target;
+        setTouched((prev) => ({ ...prev, [name]: true }));
+        const error = validateField(name, value, values);
+        setErrors((prev) => ({ ...prev, [name]: error }));
+      }
+    },
+    [values, validateField]
+  );
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setValues(initialValues);
     setErrors({});
     setTouched({});
-  };
+  }, [initialValues]);
+
+  const setFieldValue = useCallback((name, value) => {
+    setValues((prev) => ({ ...prev, [name]: value }));
+  }, []);
 
   return {
     values,
@@ -62,8 +90,13 @@ export const useAppointmentValidation = (initialValues, validationRules) => {
     validateAllFields,
     resetForm,
     setValues,
+    setFieldValue,
   };
 };
+
+// Para evitar recalcular la fecha de hoy en cada render/validación.
+const today = new Date();
+today.setHours(0, 0, 0, 0); // Establece la hora a medianoche para comparar solo la fecha.
 
 // Reglas de validación para el formulario de citas
 export const appointmentValidationRules = {
@@ -79,9 +112,7 @@ export const appointmentValidationRules = {
   date: [
     (value) => (!value ? "La fecha es obligatoria" : ""),
     (value) =>
-      new Date(value) < new Date().setHours(0, 0, 0, 0)
-        ? "La fecha no puede ser en el pasado"
-        : "",
+      new Date(value) < today ? "La fecha no puede ser en el pasado" : "",
   ],
   time: [(value) => (!value ? "La hora es obligatoria" : "")],
 };

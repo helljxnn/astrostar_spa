@@ -1,19 +1,13 @@
-import React, { useState, useMemo } from "react";
+import "react-big-calendar/lib/css/react-big-calendar.css"; // Asegura que los estilos del calendario se carguen
+import React, { useState, } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import "react-big-calendar/lib/css/react-big-calendar.css";
 import "moment/locale/es"; // Importar localización en español para moment
-import { motion, AnimatePresence } from "framer-motion";
 import { SiGoogleforms } from "react-icons/si";
-
-import Form from "../../../../../../../shared/components/form";
-import { FormField } from "../../../../../../../shared/components/FormField";
-import {
-    useAppointmentValidation,
-    appointmentValidationRules,
-} from "./hooks/useAppointmentValidation";
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
-
+import { showSuccessAlert, } from "../../../../../../../shared/utils/alerts";
+import Swal from 'sweetalert2';
+import AppointmentForm from "./components/AppointmentForm";
+import AppointmentDetails from "./components/AppointmentDetails";
 // Configurar moment para que use español globalmente en este componente
 moment.locale("es");
 
@@ -57,6 +51,12 @@ const specialistOptions = {
     ],
 };
 
+// Datos de ejemplo para los deportistas (en una app real, esto vendría de una API)
+const sampleAthletes = [
+    { id: 101, nombres: "Juan", apellidos: "Pérez" },
+    { id: 102, nombres: "María", apellidos: "Gómez" },
+    { id: 103, nombres: "Carlos", apellidos: "Rodríguez" },
+];
 function Appointments() {
     const [appointments, setAppointments] = useState(sampleAppointments);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,32 +64,26 @@ function Appointments() {
     const [selectedAppointment, setSelectedAppointment] = useState(null);
     const [view, setView] = useState("month"); // Estado para controlar la vista actual del calendario
 
-    const {
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        validateAllFields,
-        resetForm,
-    } = useAppointmentValidation({
-        specialty: "",
-        specialist: "",
-        description: "",
-        date: "",
-        time: "",
-    }, appointmentValidationRules);
 
     // Función para dar estilo a las citas del calendario
-    const appointmentPropGetter = () => {
-        const style = {
-            backgroundColor: '#6D28D9', // Un morado oscuro para las citas
+    const appointmentPropGetter = (event) => {
+        let style = {
+            backgroundColor: '#6D28D9',
             borderRadius: "5px",
             color: "white",
             border: "0px",
             display: "block",
             opacity: 0.85
         };
+        if (event.status === 'cancelled') {
+            style = {
+                ...style,
+                backgroundColor: '#a3a3a3',
+                color: '#e5e5e5',
+                opacity: 0.5,
+                textDecoration: 'line-through',
+            };
+        }
         return { style };
     };
 
@@ -132,69 +126,40 @@ function Appointments() {
 
     const handleCloseCreateModal = () => {
         setIsCreateModalOpen(false);
-        resetForm();
     };
 
-    const handleCreateSubmit = () => {
-        if (!validateAllFields()) {
-            showErrorAlert("Error de validación", "Por favor, complete todos los campos requeridos correctamente.");
-            return;
-        }
-
+    const handleCreateSubmit = (formValues) => {
         // Combinar fecha y hora para crear objetos Date
-        const startDateTime = new Date(`${values.date}T${values.time}`);
+        const startDateTime = new Date(`${formValues.date}T${formValues.time}`);
+        const selectedAthlete = sampleAthletes.find(a => a.id === parseInt(formValues.athlete));
+        const athleteName = selectedAthlete ? `${selectedAthlete.nombres} ${selectedAthlete.apellidos}` : 'Deportista Desconocido';
+
         // Suponemos que la cita dura 1 hora
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
 
         const newAppointment = {
             id: Date.now(),
-            title: `Cita: ${values.specialist}`,
+            title: `Cita: ${athleteName} - ${formValues.specialist}`,
             start: startDateTime,
             end: endDateTime,
             allDay: false,
-            description: values.description,
-            specialty: values.specialty,
-            specialist: values.specialist,
+            description: formValues.description,
+            specialty: formValues.specialty,
+            specialist: formValues.specialist,
+            athlete: formValues.athlete,
+            status: 'active', // Por defecto activa
+            cancelReason: '',
         };
 
         setAppointments(prevAppointments => [...prevAppointments, newAppointment]);
         showSuccessAlert("¡Cita Creada!", "La nueva cita ha sido agendada correctamente.");
-        handleCloseCreateModal();
+        // El modal se cierra desde el propio AppointmentForm
     };
-
-    // Filtra los especialistas disponibles según la especialidad seleccionada
-    const availableSpecialists = useMemo(() => {
-        if (values.specialty && specialistOptions[values.specialty]) {
-            return specialistOptions[values.specialty];
-        }
-        return [];
-    }, [values.specialty]);
 
     // Obtiene la etiqueta de la especialidad a partir de su valor
     const getSpecialtyLabel = (value) => {
         const option = specialtyOptions.find(opt => opt.value === value);
         return option ? option.label : 'No especificada';
-    };
-
-    // Variantes para la animación del modal (similar al componente Form)
-    const backdropVariants = {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1 },
-    };
-
-    const modalVariants = {
-        hidden: { scale: 0.95, opacity: 0, y: 50 },
-        visible: {
-            scale: 1,
-            opacity: 1,
-            y: 0,
-            transition: {
-                type: "spring",
-                damping: 25,
-                stiffness: 300,
-            },
-        },
-        exit: { scale: 0.9, opacity: 0, y: 30, transition: { duration: 0.2 } },
     };
 
     // Componente para mostrar un detalle en el modal de visualización
@@ -236,7 +201,7 @@ function Appointments() {
                             Día
                         </button>
                     </div>
-                    <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold shadow-lg hover:bg-primary-purple transition-colors">
+                    <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
                         Crear Cita <SiGoogleforms size={20} />
                     </button>
                 </div>
@@ -244,7 +209,7 @@ function Appointments() {
 
             {/* Cuerpo con el Calendario */}
             <div id="body" className="w-full h-full p-4 bg-white rounded-2xl shadow-lg">
-                <div className="h-[75vh]"> {/* Contenedor con altura definida */}
+                <div className="h-[50vh]"> {/* Altura flexible para que ocupe el espacio disponible */}
                     <Calendar
                         localizer={localizer}
                         events={appointments}
@@ -257,123 +222,56 @@ function Appointments() {
                         onSelectEvent={handleSelectAppointment}
                         view={view}
                         onView={setView}
+                        toolbar={true}
                     />
                 </div>
             </div>
 
             {/* Modal para Crear Cita */}
-            <Form
+            <AppointmentForm
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateModal}
-                onSubmit={handleCreateSubmit}
-                title="Crear Nueva Cita"
-                submitText="Agendar Cita"
-            >
-                <FormField
-                    label="Tipo de Especialidad"
-                    name="specialty"
-                    type="select"
-                    options={specialtyOptions}
-                    value={values.specialty}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.specialty && errors.specialty}
-                    required
-                />
-                <FormField
-                    label="Especialista"
-                    name="specialist"
-                    type="select"
-                    options={availableSpecialists}
-                    value={values.specialist}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.specialist && errors.specialist}
-                    required
-                    disabled={!values.specialty}
-                    placeholder={!values.specialty ? "Seleccione una especialidad primero" : "Seleccione un especialista"}
-                />
-                <FormField
-                    label="Descripción / Motivo"
-                    name="description"
-                    type="textarea"
-                    value={values.description}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={touched.description && errors.description}
-                    required
-                />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                        label="Fecha"
-                        name="date"
-                        type="date"
-                        value={values.date}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.date && errors.date}
-                        required
-                    />
-                    <FormField
-                        label="Hora"
-                        name="time"
-                        type="time"
-                        value={values.time}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        error={touched.time && errors.time}
-                        required
-                    />
-                </div>
-            </Form>
-
-            {/* Modal para Ver Detalles de la Cita */}
-            <AnimatePresence>
-                {isViewModalOpen && selectedAppointment && (
-                    <motion.div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                    >
-                        <motion.div
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            variants={backdropVariants}
-                            onClick={handleCloseViewModal}
-                        />
-                        <motion.div
-                            variants={modalVariants}
-                            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-                        >
-                            {/* Header */}
-                            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
-                                <button type="button" onClick={handleCloseViewModal} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
-                                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-                                    Detalles de la Cita
-                                </h2>
-                            </div>
-
-                            {/* Body */}
-                            <div className="p-8 space-y-5">
-                                <DetailItem label="Especialidad" value={getSpecialtyLabel(selectedAppointment.specialty)} />
-                                <DetailItem label="Especialista" value={selectedAppointment.specialist} />
-                                <DetailItem label="Fecha" value={moment(selectedAppointment.start).format('dddd, D [de] MMMM [de] YYYY')} />
-                                <DetailItem label="Hora" value={moment(selectedAppointment.start).format('h:mm a')} />
-                                <DetailItem label="Descripción / Motivo" value={selectedAppointment.description} />
-                            </div>
-
-                            {/* Footer */}
-                            <div className="flex justify-end p-6 border-t border-gray-200">
-                                <button onClick={handleCloseViewModal} className="px-8 py-3 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium">
-                                    Cerrar
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                onSave={handleCreateSubmit}
+                athleteList={sampleAthletes} // Pasar la lista de deportistas
+            />
+            <AppointmentDetails
+                isOpen={isViewModalOpen}
+                onClose={handleCloseViewModal}
+                appointmentData={selectedAppointment}
+                athleteList={sampleAthletes}
+                onCancelAppointment={async (appointment) => {
+                    // Solo pedir motivo de cancelación
+                    const { value: reason } = await Swal.fire({
+                        title: 'Motivo de cancelación',
+                        input: 'textarea',
+                        inputLabel: 'Por favor, indique el motivo de la cancelación',
+                        inputPlaceholder: 'Escribe el motivo aquí...',
+                        inputAttributes: {
+                            'aria-label': 'Motivo de cancelación'
+                        },
+                        showCancelButton: true,
+                        confirmButtonText: 'Cancelar cita',
+                        cancelButtonText: 'Volver',
+                        customClass: {
+                            confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2',
+                            cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg',
+                        },
+                        buttonsStyling: false,
+                        inputValidator: (value) => {
+                            if (!value) {
+                                return 'Debes ingresar un motivo';
+                            }
+                        }
+                    });
+                    if (reason) {
+                        setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'cancelled', cancelReason: reason } : a));
+                    }
+                }}
+            />
         </div>
     );
 }
+
+
 
 export default Appointments;

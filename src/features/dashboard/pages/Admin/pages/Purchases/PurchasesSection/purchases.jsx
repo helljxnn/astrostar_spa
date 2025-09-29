@@ -65,7 +65,7 @@ const Purchases = () => {
   const [selectedInvoiceDetails, setSelectedInvoiceDetails] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5; // Número de filas por página
+  const rowsPerPage = 3; // Número de filas por página
 
   useEffect(() => {
     try {
@@ -83,12 +83,18 @@ const Purchases = () => {
     }
   }, [equipmentList]);
 
-  const filteredPurchases = useMemo(() =>
-    purchasesList.filter(item =>
-      (item.proveedor && item.proveedor.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.concepto && item.concepto.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.numeroFactura && item.numeroFactura.toLowerCase().includes(searchTerm.toLowerCase()))
-    ), [purchasesList, searchTerm]);
+  const filteredPurchases = useMemo(() => {
+    if (!searchTerm) return purchasesList;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return purchasesList.filter(item =>
+      (item.numeroFactura?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.proveedor?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.monto?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.fecha?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.fechaRegistro?.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (item.estado?.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  }, [purchasesList, searchTerm]);
 
   // Lógica de paginación
   const totalRows = filteredPurchases.length;
@@ -239,17 +245,17 @@ const Purchases = () => {
         {/* Cabecera */}
         <h1 className="text-5xl">Compras</h1>
       </div>
-      <div id="body" className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4">
+      <div id="body" className="w-full h-auto flex flex-col gap-2 p-4">
         {/* Cuerpo */}
         <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between items-center">
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por proveedor, concepto o N° factura..."
+            placeholder="Buscar por N° factura, proveedor, monto, fecha, estado..."
           />
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors">
+            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>
           </div>

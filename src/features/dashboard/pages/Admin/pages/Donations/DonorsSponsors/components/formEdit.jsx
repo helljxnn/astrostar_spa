@@ -72,7 +72,14 @@ const FormEdit = ({ isOpen, onClose, donorData, onSave }) => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setValues(prev => ({ ...prev, [name]: value })); // Actualizar el valor del campo
+        if (name === 'telefono') {
+            // Permite solo números y un string vacío
+            if (/^[0-9]*$/.test(value)) {
+                setValues(prev => ({ ...prev, [name]: value }));
+            }
+        } else {
+            setValues(prev => ({ ...prev, [name]: value }));
+        }
         // Limpiar el error inmediatamente al empezar a escribir
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: undefined }));

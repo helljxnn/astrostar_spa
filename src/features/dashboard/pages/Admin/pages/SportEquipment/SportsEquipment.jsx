@@ -9,7 +9,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert
-} from "../../../../../../shared/utils/Alerts";
+} from "../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 
 // Clave para guardar los datos en localStorage
@@ -195,7 +195,7 @@ function SportsEquipment() {
           {/* Botones */}
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
             <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold">
+            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>
           </div>
@@ -212,7 +212,6 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
-            actions: true,
           }}
           tbody={{
             data: filteredEquipment,
@@ -223,10 +222,10 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
-            onEdit: handleEdit,
-            onDelete: handleDelete,
-            onView: handleView,
           }}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onView={handleView}
         />
       </div>
       {/* Modal para Crear Material */}

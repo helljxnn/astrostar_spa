@@ -41,17 +41,17 @@ const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
                     />
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
                     >
                         {/* Header */}
                         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
                             <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
-                            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">{title}</h2>
                         </div>
 
                         {/* Body */}
-                        <div className="p-6 overflow-y-auto flex-grow">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+                        <div className="p-8 space-y-5 flex-grow">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5 ">
                                 {detailConfig.map(({ label, key, format }) => {
                                     const value = data[key];
                                     const formattedValue = format ? format(value) : value;
@@ -70,7 +70,7 @@ const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
 
                         {/* Footer */}
                         <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-end">
-                            <button type="button" onClick={onClose} className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium">Cerrar</button>
+                            <button type="button" onClick={onClose} className="px-8 py-3 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 transition-all duration-200 font-medium">Cerrar</button>
                         </div>
                     </motion.div>
                 </motion.div>

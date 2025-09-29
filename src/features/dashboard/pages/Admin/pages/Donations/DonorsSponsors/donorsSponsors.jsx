@@ -35,11 +35,18 @@ function DonorsSponsors() {
         }
     }, [donorsList]);
 
-    const filteredDonors = useMemo(() =>
-        donorsList.filter(item =>
-            (item.nombre && item.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (item.identificacion && item.identificacion.toLowerCase().includes(searchTerm.toLowerCase()))
-        ), [donorsList, searchTerm]);
+    const filteredDonors = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+        if (!term) return donorsList;
+
+        return donorsList.filter(item =>
+            (item.nombre && item.nombre.toLowerCase().includes(term)) ||
+            (item.identificacion && item.identificacion.toLowerCase().includes(term)) ||
+            (item.tipo && item.tipo.toLowerCase().includes(term)) ||
+            (item.telefono && String(item.telefono).toLowerCase().includes(term)) ||
+            (item.estado && item.estado.toLowerCase().includes(term))
+        );
+    }, [donorsList, searchTerm]);
 
     const handleOpenCreateModal = () => setIsCreateModalOpen(true);
     const handleCloseCreateModal = () => setIsCreateModalOpen(false);
@@ -120,7 +127,7 @@ function DonorsSponsors() {
                     />
                     <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
                         <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
-                        <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors">
+                        <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowraps">
                             Crear <SiGoogleforms size={20} />
                         </button>
                     </div>
@@ -137,10 +144,10 @@ function DonorsSponsors() {
                         data: filteredDonors,
                         dataPropertys: ["identificacion", "nombre", "tipo", "telefono"],
                         state: true,
-                        onEdit: handleEdit,
-                        onDelete: handleDelete,
-                        onView: handleView,
                     }}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onView={handleView}
                 />
             </div>
             <FormCreate
