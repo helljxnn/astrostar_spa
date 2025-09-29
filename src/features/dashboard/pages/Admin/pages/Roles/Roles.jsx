@@ -4,6 +4,7 @@ import RoleModal from "./components/RoleModal";
 import rolesData from "../../../../../../shared/models/RolesData";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../shared/components/Table/Pagination";
 import {
   showConfirmAlert,
   showSuccessAlert,
@@ -31,9 +32,20 @@ const Roles = () => {
     if (!searchTerm) return data;
 
     return data.filter((item) =>
-      Object.values(item).some(
-        (value) => String(value).toLowerCase() === searchTerm.toLowerCase()
-      )
+      Object.entries(item).some(([key, value]) => {
+        const stringValue = String(value).trim();
+
+        // Si es el campo Estado, comparar exacto y sensible a mayúsculas
+        if (key.toLowerCase() === "estado") {
+          return (
+            (stringValue === "Activo" && searchTerm === "Activo") ||
+            (stringValue === "Inactivo" && searchTerm === "Inactivo")
+          );
+        }
+
+        // Para los demás campos, búsqueda parcial insensible a mayúsculas
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [data, searchTerm]);
 
@@ -133,6 +145,20 @@ const Roles = () => {
           onView={handleView}
         />
       </div>
+
+      {/* Paginación */}
+      {totalRows > rowsPerPage && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalRows={totalRows}
+            rowsPerPage={rowsPerPage}
+            startIndex={startIndex}
+          />
+        </div>
+      )}
 
       {/* Modal Crear/Editar */}
       {isModalOpen && (

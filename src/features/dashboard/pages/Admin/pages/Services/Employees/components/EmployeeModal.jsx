@@ -9,7 +9,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../../shared/utils/alerts";
 
 const EmployeeModal = ({
   isOpen,
@@ -32,6 +32,7 @@ const EmployeeModal = ({
       apellido: "",
       correo: "",
       telefono: "",
+      fechaNacimiento: "",
       edad: "",
       identificacion: "",
       tipoDocumento: "",
@@ -43,26 +44,30 @@ const EmployeeModal = ({
     employeeValidationRules
   );
 
-  // Cargar datos si es edición
+  // Cargar datos si es edición o limpiar si es creación
   useEffect(() => {
-    if (employee) {
+    if (employee && mode === "edit") {
       setFormData(employee);
     } else {
+      // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
       setFormData({
         nombre: "",
         apellido: "",
         correo: "",
         telefono: "",
+        fechaNacimiento: "",
         edad: "",
         identificacion: "",
         tipoDocumento: "",
         tipoEmpleado: "",
         rol: "",
         estado: "",
-        fechaAsignacion: "",
+        fechaAsignacion: today,
       });
     }
-  }, [employee, setFormData]);
+  }, [employee, setFormData, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
@@ -86,6 +91,24 @@ const EmployeeModal = ({
           ? "El empleado ha sido actualizado exitosamente."
           : "El empleado ha sido registrado exitosamente."
       );
+
+      // Limpiar formulario antes de cerrar
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
+      setFormData({
+        nombre: "",
+        apellido: "",
+        correo: "",
+        telefono: "",
+        fechaNacimiento: "",
+        edad: "",
+        identificacion: "",
+        tipoDocumento: "",
+        tipoEmpleado: "",
+        rol: "",
+        estado: "",
+        fechaAsignacion: today,
+      });
 
       onClose();
     } catch (error) {
@@ -142,10 +165,6 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
-                {
-                  value: "Tarjeta de Identidad",
-                  label: "Tarjeta de Identidad",
-                },
                 {
                   value: "Cédula de Ciudadanía",
                   label: "Cédula de Ciudadanía",
@@ -260,6 +279,45 @@ const EmployeeModal = ({
               delay={0.6}
             />
 
+            {/* Fecha de Nacimiento */}
+            <FormField
+              label="Fecha de Nacimiento"
+              name="fechaNacimiento"
+              type="date"
+              placeholder="Fecha de nacimiento"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              value={formData.fechaNacimiento}
+              error={errors.fechaNacimiento}
+              touched={touched.fechaNacimiento}
+              onChange={(name, value) => {
+                // Actualizar directamente el campo fechaNacimiento
+                setFormData(prev => ({
+                  ...prev,
+                  fechaNacimiento: value
+                }));
+                
+                // Calcular edad automáticamente
+                if (value) {
+                  const birthDate = new Date(value);
+                  const today = new Date();
+                  let age = today.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                  }
+                  // Actualizar el campo de edad
+                  setFormData(prev => ({
+                    ...prev,
+                    fechaNacimiento: value,
+                    edad: age.toString()
+                  }));
+                }
+              }}
+              onBlur={handleBlur}
+              delay={0.65}
+            />
+
             {/* Edad */}
             <FormField
               label="Edad"
@@ -267,7 +325,7 @@ const EmployeeModal = ({
               type="number"
               placeholder="Edad del empleado"
               required={mode !== "view"}
-              disabled={mode === "view"}
+              disabled={true} // Siempre deshabilitado porque se calcula automáticamente
               value={formData.edad}
               error={errors.edad}
               touched={touched.edad}
@@ -348,13 +406,13 @@ const EmployeeModal = ({
               delay={1}
             />
 
-            {/* Fecha asignación */}
+            {/* Fecha asignación - automática y no modificable */}
             <FormField
               label="Fecha Asignación Estado"
               name="fechaAsignacion"
               type="date"
               required={mode !== "view"}
-              disabled={mode === "view"}
+              disabled={true} // Siempre deshabilitado para que no se pueda modificar
               value={formData.fechaAsignacion}
               error={errors.fechaAsignacion}
               touched={touched.fechaAsignacion}

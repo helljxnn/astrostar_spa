@@ -10,7 +10,7 @@ import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../shared/utils/alerts";
 
 const Employees = () => {
   const [data, setData] = useState(employeesData);
@@ -27,7 +27,7 @@ const Employees = () => {
 
     return data.filter((item) =>
       Object.values(item).some(
-        (value) => String(value).toLowerCase() === searchTerm.toLowerCase()
+        (value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [data, searchTerm]);

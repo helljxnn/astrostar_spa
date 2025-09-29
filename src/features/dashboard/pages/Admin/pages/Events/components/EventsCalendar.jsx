@@ -15,7 +15,7 @@ import EnglishRegistrationModal from "./EnglishRegistrationModal";
 import EnglishRegistrationFormModal from "./EnglishRegistrationFormModal";
 
 import DayEventsModal from "./DayEventsModal";
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/Alerts";
+import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -104,14 +104,26 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     const modalWidth = 220;
     const modalHeight = 150;
     
+    // Determinar si estamos en la penúltima fila del calendario
+    const calendarRect = document.querySelector('.rbc-month-view').getBoundingClientRect();
+    const rowHeight = calendarRect.height / 6; // Aproximadamente 6 filas en vista mensual
+    const isInPenultimateRow = rect.top > (calendarRect.top + rowHeight * 4) && rect.top < (calendarRect.top + rowHeight * 5);
+    
+    // Posición predeterminada (abajo del botón)
     let top = rect.bottom + 5;
     let left = rect.left;
+    
+    // Si estamos en la penúltima fila, mostrar el modal arriba
+    if (isInPenultimateRow) {
+      top = rect.top - modalHeight - 5;
+    }
     
     // Ajustar posición para evitar que se corte
     if (left + modalWidth > viewportWidth) {
       left = rect.right - modalWidth;
     }
     
+    // Asegurarse de que el modal no se salga de la pantalla
     if (top + modalHeight > viewportHeight) {
       top = rect.top - modalHeight - 5;
     }
@@ -136,6 +148,36 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     };
 
     const isMonthView = view === 'month';
+    
+    // Obtener la inicial del estado
+    const getEstadoInicial = () => {
+      if (!event.estado) return "?";
+      
+      const estados = {
+        "programado": "P",
+        "en-curso": "C",
+        "finalizado": "F",
+        "cancelado": "X",
+        "en-pausa": "E"
+      };
+      
+      // Asegurarse de que el estado existe en el objeto estados
+      return estados[event.estado.toLowerCase()] || event.estado.charAt(0).toUpperCase();
+    };
+    
+    // Obtener color según estado
+    const getEstadoColor = () => {
+      if (!event.estado) return '#8b5cf6';
+      
+      const colores = {
+        "programado": '#3b82f6',
+        "en-curso": '#10b981',
+        "finalizado": '#9ca3af',
+        "cancelado": '#ef4444',
+        "en-pausa": '#f59e0b'
+      };
+      return colores[event.estado.toLowerCase()] || '#8b5cf6';
+    };
 
     return (
       <div className="event-content" style={{ 
@@ -144,8 +186,24 @@ export default function EventsCalendar({ events: propEvents = [] }) {
         padding: '2px'
       }}>
         <div className="event-info">
-          <div className="event-title">
-            {format(event.start, "HH:mm")} {event.title}
+          <div className="event-title pl-1">
+            <span style={{ 
+              display: 'inline-block',
+              width: '16px',
+              height: '16px',
+              lineHeight: '16px',
+              textAlign: 'center',
+              borderRadius: '50%',
+              backgroundColor: getEstadoColor(),
+              color: 'white',
+              fontSize: '9px',
+              fontWeight: 'bold',
+              marginRight: '4px',
+              verticalAlign: 'middle'
+            }}>
+              {getEstadoInicial()}
+            </span>
+            {event.title}
           </div>
           {event.ubicacion && !isMonthView && (
             <div className="event-location" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
