@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { FaAngleDown } from 'react-icons/fa';
 import { AnimatePresence } from "framer-motion";
 import SubMenu from "./subMenu";
+import { useAuth } from "../../../../../shared/contexts/authContext";
 
-const PerfilLog = () => {
+const PerfilLog = ({ onOpenProfileModals }) => {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef(null);
+    const { user } = useAuth();
 
     const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -29,10 +31,14 @@ const PerfilLog = () => {
                 aria-label="Abrir menú de usuario"
                 className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-purple/50"
             >
-                {/* Avatar con inicial */}
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-purple to-primary-blue flex items-center justify-center text-white font-bold text-sm">
-                    E
-                </div>
+                {/* Avatar con imagen o inicial */}
+                {user?.avatar ? (
+                    <img src={user.avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
+                ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-purple to-primary-blue flex items-center justify-center text-white font-bold text-sm">
+                        {user?.nombre ? user.nombre.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                )}
                 {/* Flecha desplegable */}
                 <FaAngleDown
                     size={16}
@@ -42,7 +48,7 @@ const PerfilLog = () => {
 
             {/* Submenú con animación */}
             <AnimatePresence>
-                {isOpen && <SubMenu />}
+                {isOpen && <SubMenu onOpenProfileModals={onOpenProfileModals} />}
             </AnimatePresence>
         </div>
     );

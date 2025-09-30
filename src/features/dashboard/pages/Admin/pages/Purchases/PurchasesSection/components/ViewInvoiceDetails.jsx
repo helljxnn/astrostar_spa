@@ -1,12 +1,20 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaInfoCircle } from 'react-icons/fa';
 
 const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
     if (!invoiceData) return null;
 
+    const isCancelled = invoiceData.estado === 'Cancelado';
+
     const backdropVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
+    };
+
+    const statusStyles = {
+        'Cancelado': 'bg-red-100 text-red-800',
+        'default': 'bg-gray-100 text-gray-800',
     };
 
     const modalVariants = {
@@ -44,7 +52,7 @@ const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
 
                         {/* Body */}
                         <div className="p-6 overflow-y-auto flex-grow">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 text-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 text-sm">
                                 <div className="bg-gray-50 p-3 rounded-lg">
                                     <p className="font-semibold text-gray-600">Fecha de Compra</p>
                                     <p className="text-gray-800">{invoiceData.fechaCompra}</p>
@@ -53,7 +61,25 @@ const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
                                     <p className="font-semibold text-gray-600">Fecha de Registro</p>
                                     <p className="text-gray-800">{invoiceData.fechaRegistro}</p>
                                 </div>
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <p className="font-semibold text-gray-600">Estado de la Compra</p>
+                                    <span className={`px-2.5 py-1 font-semibold leading-tight rounded-full text-xs ${statusStyles[invoiceData.estado] || statusStyles.default}`}>
+                                        {invoiceData.estado}
+                                    </span>
+                                </div>
                             </div>
+
+                            {isCancelled && invoiceData.cancelReason && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <FaInfoCircle className="text-xl text-red-500 flex-shrink-0 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-semibold text-red-800">Motivo de Anulación</h4>
+                                            <p className="text-sm text-red-700 mt-1">{invoiceData.cancelReason}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             <h3 className="text-lg font-semibold text-gray-800 mb-4">Productos Incluidos</h3>
                             <div className="overflow-x-auto border rounded-lg">

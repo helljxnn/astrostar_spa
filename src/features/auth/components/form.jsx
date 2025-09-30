@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
-import logo from "../../../../public/assets/images/astrostar.png"; 
-import "../Syles/LoginGlow.css"; 
+import logo from "../../../../public/assets/images/astrostar.png";
+import "../Syles/LoginGlow.css";
 
 const Form = () => {
   const navigate = useNavigate();
@@ -80,9 +80,9 @@ const Form = () => {
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>
               ¿Olvidaste tu contraseña?{" "}
-              <span className="text-black cursor-pointer hover:underline">
+              <Link to="/forgot-password" className="text-black cursor-pointer hover:underline font-semibold">
                 Restaúrala aquí
-              </span>
+              </Link>
             </p>
             {/* <p className="mt-2">
               ¿No tienes cuenta?{" "}

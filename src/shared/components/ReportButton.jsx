@@ -27,111 +27,111 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-const generatePDF = () => {
-  setOpen(false);
-  
-  if (!data || data.length === 0) {
-    showErrorAlert("Error", "No hay datos para generar el PDF");
-    return;
-  }
+  const generatePDF = () => {
+    setOpen(false);
 
-  if (data.length > 500) {
-    const confirm = window.confirm(
-      `⚠️ Tienes ${data.length} registros. \n¿Deseas continuar con la exportación?`
-    );
-    if (!confirm) return;
-  }
+    if (!data || data.length === 0) {
+      showErrorAlert("Error", "No hay datos para generar el PDF");
+      return;
+    }
 
-  try {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const rowsPerPage = 40;
-    const totalPages = Math.ceil(data.length / rowsPerPage);
-    const generationDate = new Date().toLocaleDateString();
-
-    // Función para generar el encabezado de cada página
-    const addHeader = (pageNumber) => {
-      doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
-      doc.text(fileName, 15, 15);
-      
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
-      doc.text(`Generado: ${generationDate}`, 15, 22);
-      doc.text(`Página ${pageNumber} de ${totalPages}`, 15, 29);
-      doc.text(`Total de registros: ${data.length}`, 15, 36);
-    };
-
-    const generatePage = (pageNumber) => {
-      doc.setPage(pageNumber);
-      addHeader(pageNumber); // Agregar encabezado a cada página
-
-      const startIndex = (pageNumber - 1) * rowsPerPage;
-      const endIndex = Math.min(startIndex + rowsPerPage, data.length);
-      const pageData = data.slice(startIndex, endIndex);
-
-      const tableColumn = columns.map(col => col.header);
-      const tableRows = pageData.map(item => 
-        columns.map(col => {
-          const value = col.accessor.includes('.') 
-            ? getNestedValue(item, col.accessor)
-            : item[col.accessor];
-          return value ? value.toString().substring(0, 30) : '';
-        })
+    if (data.length > 500) {
+      const confirm = window.confirm(
+        `⚠️ Tienes ${data.length} registros. \n¿Deseas continuar con la exportación?`
       );
+      if (!confirm) return;
+    }
 
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 40, // Más espacio para el encabezado extendido
-        styles: { 
-          fontSize: 8, 
-          cellPadding: 3,
-          lineColor: [200, 200, 200],
-          lineWidth: 0.3
-        },
-        headStyles: { 
-          fillColor: [79, 70, 229], 
-          textColor: 255,
-          fontStyle: 'bold',
-          fontSize: 9
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245]
+    try {
+      const doc = new jsPDF({ orientation: 'landscape' });
+      const rowsPerPage = 40;
+      const totalPages = Math.ceil(data.length / rowsPerPage);
+      const generationDate = new Date().toLocaleDateString();
+
+      // Función para generar el encabezado de cada página
+      const addHeader = (pageNumber) => {
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(fileName, 15, 15);
+
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Generado: ${generationDate}`, 15, 22);
+        doc.text(`Página ${pageNumber} de ${totalPages}`, 15, 29);
+        doc.text(`Total de registros: ${data.length}`, 15, 36);
+      };
+
+      const generatePage = (pageNumber) => {
+        doc.setPage(pageNumber);
+        addHeader(pageNumber); // Agregar encabezado a cada página
+
+        const startIndex = (pageNumber - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+        const pageData = data.slice(startIndex, endIndex);
+
+        const tableColumn = columns.map(col => col.header);
+        const tableRows = pageData.map(item =>
+          columns.map(col => {
+            const value = col.accessor.includes('.')
+              ? getNestedValue(item, col.accessor)
+              : item[col.accessor];
+            return value ? value.toString().substring(0, 30) : '';
+          })
+        );
+
+        autoTable(doc, {
+          head: [tableColumn],
+          body: tableRows,
+          startY: 40, // Más espacio para el encabezado extendido
+          styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.3
+          },
+          headStyles: {
+            fillColor: [79, 70, 229],
+            textColor: 255,
+            fontStyle: 'bold',
+            fontSize: 9
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          }
+        });
+      };
+
+      generatePage(1);
+
+      if (totalPages > 1) {
+        for (let i = 2; i <= totalPages; i++) {
+          doc.addPage();
+          generatePage(i);
         }
-      });
-    };
-
-    generatePage(1);
-
-    if (totalPages > 1) {
-      for (let i = 2; i <= totalPages; i++) {
-        doc.addPage();
-        generatePage(i);
       }
-    }
 
-    setTimeout(() => {
-      doc.save(`${fileName}_${generationDate.replace(/\//g, '-')}.pdf`);
-    }, 500);
+      setTimeout(() => {
+        doc.save(`${fileName}_${generationDate.replace(/\//g, '-')}.pdf`);
+      }, 500);
 
-  } catch (error) {
-    console.error("Error:", error);
-    showErrorAlert("Error", "No se pudo generar el PDF");
-  }
-};
-// Añade esta función auxiliar al inicio del componente ReportButton
-const getNestedValue = (obj, path) => {
-  return path.split('.').reduce((acc, part) => {
-    if (acc && typeof acc === 'object') {
-      return acc[part];
+    } catch (error) {
+      console.error("Error:", error);
+      showErrorAlert("Error", "No se pudo generar el PDF");
     }
-    return undefined;
-  }, obj);
-};
+  };
+  // Añade esta función auxiliar al inicio del componente ReportButton
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, part) => {
+      if (acc && typeof acc === 'object') {
+        return acc[part];
+      }
+      return undefined;
+    }, obj);
+  };
 
   const generateExcel = async () => {
     setOpen(false);
-    
+
     try {
       if (!data || data.length === 0) {
         return showErrorAlert("Error", "No hay datos para generar el reporte");
@@ -141,7 +141,7 @@ const getNestedValue = (obj, path) => {
 
       // Crear workbook con exceljs
       const workbook = new ExcelJS.Workbook();
-      
+
       // Agregar metadatos
       workbook.creator = "AstroStar";
       workbook.lastModifiedBy = "AstroStar";
@@ -150,14 +150,14 @@ const getNestedValue = (obj, path) => {
       workbook.properties.date1904 = true;
       workbook.title = fileName;
       workbook.subject = "Reporte de datos";
-      
+
       // Crear worksheet para los datos
       const worksheet = workbook.addWorksheet('Datos');
-      
+
       // Agregar encabezados
-      const headers = columns.map(col => col.label);
+      const headers = columns.map(col => col.header);
       worksheet.addRow(headers);
-      
+
       // Dar formato a la fila de encabezados
       const headerRow = worksheet.getRow(1);
       headerRow.font = { bold: true, color: { argb: '000000' } };
@@ -167,12 +167,12 @@ const getNestedValue = (obj, path) => {
         fgColor: { argb: 'CCCCCC' }
       };
       headerRow.alignment = { horizontal: 'center' };
-      
+
       // Agregar datos
       data.forEach(row => {
         const rowValues = columns.map(col => {
-          let value = row[col.key];
-          
+          let value = row[col.accessor];
+
           // Formatear mejor los datos para Excel
           if (value === null || value === undefined) {
             return "";
@@ -188,7 +188,7 @@ const getNestedValue = (obj, path) => {
         });
         worksheet.addRow(rowValues);
       });
-      
+
       // Ajustar ancho de columnas
       worksheet.columns.forEach((column, index) => {
         let maxLength = headers[index].length;
@@ -202,34 +202,34 @@ const getNestedValue = (obj, path) => {
         });
         worksheet.getColumn(index + 1).width = Math.max(maxLength + 2, 10);
       });
-      
+
       // Crear hoja de información
       const infoSheet = workbook.addWorksheet('Información');
-      
+
       // Agregar datos de información
       infoSheet.addRow(['Campo', 'Valor']);
       infoSheet.addRow(['Archivo', fileName]);
       infoSheet.addRow(['Fecha de generación', new Date().toLocaleString('es-ES')]);
       infoSheet.addRow(['Total de registros', data.length]);
       infoSheet.addRow(['Columnas incluidas', columns.length]);
-      
+
       // Dar formato a la hoja de información
       infoSheet.getRow(1).font = { bold: true };
       infoSheet.getColumn(1).width = 20;
       infoSheet.getColumn(2).width = 30;
-      
+
       // Generar archivo
       const buffer = await workbook.xlsx.writeBuffer();
-      
-      const blob = new Blob([buffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       });
-      
+
       const fileName_with_date = `${fileName}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       saveAs(blob, fileName_with_date);
-      
+
       console.log("✅ Excel generado exitosamente con mejor formato");
-      
+
     } catch (error) {
       console.error("❌ Error al generar Excel:", error);
       showErrorAlert("Error", `Error al generar Excel: ${error.message}`);

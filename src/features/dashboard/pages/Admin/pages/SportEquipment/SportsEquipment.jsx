@@ -5,6 +5,7 @@ import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
 import ViewDetails from "../../../../../../shared/components/ViewDetails";
+import ReportButton from "../../../../../../shared/components/ReportButton";
 import {
   showSuccessAlert,
   showConfirmAlert,
@@ -50,13 +51,12 @@ function SportsEquipment() {
 
   // Filtramos los datos basándonos en el término de búsqueda.
   // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
-  const filteredEquipment = useMemo(
-    () =>
-      equipmentList.filter((item) =>
-        item.NombreMaterial.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [equipmentList, searchTerm]
-  );
+  const filteredEquipment = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    if (!term) return equipmentList;
+    // Busca en todos los valores de cada objeto
+    return equipmentList.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term)));
+  }, [equipmentList, searchTerm]);
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true);
@@ -167,6 +167,17 @@ function SportsEquipment() {
     { label: "Estado", key: "estado" },
   ];
 
+  // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
+  const reportData = useMemo(() => {
+    return filteredEquipment.map(item => ({
+      NombreMaterial: item.NombreMaterial || '',
+      CantidadComprado: item.CantidadComprado || 0,
+      CantidadDonado: item.CantidadDonado || 0,
+      Total: item.Total || 0,
+      estado: item.estado || '',
+    }));
+  }, [filteredEquipment]);
+
   return (
     <div
       id="contentSportsEquipment"
@@ -190,11 +201,21 @@ function SportsEquipment() {
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre..."
+            placeholder="Buscar por cualquier dato..."
           />
           {/* Botones */}
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+            <ReportButton
+              data={reportData}
+              fileName="Material_Deportivo"
+              columns={[
+                { header: "Nombre", accessor: "NombreMaterial" },
+                { header: "Comprado", accessor: "CantidadComprado" },
+                { header: "Donado", accessor: "CantidadDonado" },
+                { header: "Total", accessor: "Total" },
+                { header: "Estado", accessor: "estado" },
+              ]}
+            />
             <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>

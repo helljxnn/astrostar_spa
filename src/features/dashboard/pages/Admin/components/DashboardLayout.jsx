@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
-import DynamicSideBar from "../../../components/DynamicSideBar"; 
-import { TopBar } from "../components/TopBar"; 
+import DynamicSideBar from "../../../components/DynamicSideBar";
+import { TopBar } from "../components/TopBar";
+import Portal from "../../../../../shared/components/Portal";
+import ViewProfileModal from "../../../../auth/pages/ViewProfileModal";
+import EditProfileModal from "../../../../auth/pages/EditProfileModal";
+import { useAuth } from "../../../../../shared/contexts/authContext";
 
 function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(true); 
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isViewModalOpen, setViewModalOpen] = useState(false);
+  const [isEditModalOpen, setEditModalOpen] = useState(false);
+  const { user, updateUser } = useAuth();
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -34,6 +41,15 @@ function DashboardLayout() {
     setIsExpanded(!isExpanded);
   };
 
+  const handleUpdateProfile = (updatedData) => {
+    // Aquí llamarías a la función para actualizar el usuario en el backend y luego en el contexto.
+    console.log("Updating profile with:", updatedData);
+    if (updateUser) {
+      updateUser(updatedData);
+    }
+    setEditModalOpen(false);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Overlay con blur para móvil */}
@@ -44,33 +60,21 @@ function DashboardLayout() {
         />
       )}
 
-      {/* Sidebar */}
-      <DynamicSideBar
-        isOpen={sidebarOpen}
-        setIsOpen={setSidebarOpen}
-        isExpanded={isExpanded}
-        setIsExpanded={toggleSidebarExpansion}
-      />
+      <DynamicSideBar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      {/* Contenedor principal con flex-grow para ocupar el espacio restante */}
+      {/* Contenido Principal */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-          isMobile
-            ? "ml-0"
-            : isExpanded
-            ? "ml-[0rem]" // Ajustado, ya que, configurando mobile dejaba espacio en el web
-            : "ml-[4.5rem]" 
-        }`}
+        // En desktop, el sidebar es 'static' y ocupa su propio espacio, por lo que no se necesita margen.
+        // En móvil, el sidebar es un overlay, por lo que el margen es 0.
+        className="flex-1 flex flex-col"
       >
-        {/* Barra superior */}
-        <div className="w-full bg-white shadow-md sticky top-0 z-20">
-          <TopBar toggleSidebar={toggleSidebarExpansion} />
-        </div>
-
-        {/* Contenido dinámico */}
-        <div className="flex-1 w-full overflow-y-auto px-0 sm:px-4 lg:px-6 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
+        <TopBar
+          toggleSidebar={toggleSidebarExpansion}
+          onOpenProfileModals={{ setView: setViewModalOpen, setEdit: setEditModalOpen }}
+        />
+        <main className="flex-1 w-full overflow-y-auto px-0 sm:px-4 lg:px-6 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
           <Outlet />
-        </div>
+        </main>
       </div>
 
       {/* Botón para mostrar/ocultar sidebar en móvil */}
@@ -81,6 +85,12 @@ function DashboardLayout() {
       >
         <FaBars size={20} />
       </button>
+
+      {/* Portal para los modales */}
+      <Portal>
+        <ViewProfileModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} user={user} />
+        <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} user={user} onSave={handleUpdateProfile} />
+      </Portal>
     </div>
   );
 }

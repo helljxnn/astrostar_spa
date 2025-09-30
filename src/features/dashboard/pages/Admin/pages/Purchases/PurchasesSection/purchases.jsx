@@ -4,7 +4,9 @@ import { IoMdDownload } from "react-icons/io";
 import { FaEye, FaCheckCircle, FaTimesCircle, FaUndo } from 'react-icons/fa';
 import FormCreate from "./components/formCreate";
 import ViewInvoiceDetails from "./components/ViewInvoiceDetails"; // Importar el nuevo modal
+import Swal from 'sweetalert2';
 import { showSuccessAlert, showConfirmAlert, showErrorAlert } from '../../../../../../../shared/utils/alerts';
+import ReportButton from '../../../../../../../shared/components/ReportButton';
 import Pagination from '../../../../../../../shared/components/Table/Pagination';
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 
@@ -133,6 +135,7 @@ const Purchases = () => {
         materialId: producto.id,
         cantidad: producto.cantidad,
         precioUnitario: producto.precioUnitario,
+        cancelReason: '', // Añadir campo para motivo de cancelación
       };
     });
 
@@ -152,23 +155,57 @@ const Purchases = () => {
       return;
     }
 
-    let confirmTitle = `¿Cambiar estado a "${newState}"?`;
-    let confirmText = `La compra de "${purchaseToUpdate.concepto}" cambiará su estado.`;
-    let confirmButtonText = "Sí, cambiar";
-
     if (newState === 'Cancelado') {
-      confirmTitle = '¿Anular Compra?';
-      confirmText = `La compra de "${purchaseToUpdate.concepto}" se marcará como cancelada. Esta acción no se puede deshacer.`;
-      confirmButtonText = "Sí, anular";
-    }
+      // Usar Swal para pedir motivo de cancelación, como en Gestión de Citas
+      const { value: reason } = await Swal.fire({
+        title: 'Anular Compra',
+        input: 'textarea',
+        inputLabel: 'Por favor, indique el motivo de la anulación',
+        inputPlaceholder: 'Escribe el motivo aquí...',
+        inputAttributes: {
+          'aria-label': 'Motivo de anulación'
+        },
+        showCancelButton: true,
+        confirmButtonText: 'Sí, anular',
+        cancelButtonText: 'Volver',
+        customClass: {
+          confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2 hover:opacity-90',
+          cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg hover:opacity-90',
+        },
+        buttonsStyling: false,
+        inputValidator: (value) => {
+          if (!value) {
+            return 'Debes ingresar un motivo para anular la compra.';
+          }
+        }
+      });
 
-    const result = await showConfirmAlert(
-      confirmTitle,
-      confirmText,
-      { confirmButtonText, cancelButtonText: "Cancelar" }
-    );
+      if (reason) {
+        // Si se anula una compra que ya estaba 'Recibido', hay que revertir el stock.
+        if (originalState === 'Recibido') {
+          setEquipmentList(prevEquipment =>
+            prevEquipment.map(eq =>
+              eq.id === purchaseToUpdate.materialId
+                ? { ...eq, CantidadComprado: Math.max(0, (eq.CantidadComprado || 0) - purchaseToUpdate.cantidad), Total: Math.max(0, (eq.Total || 0) - purchaseToUpdate.cantidad) }
+                : eq
+            )
+          );
+        }
+        setPurchasesList(prev =>
+          prev.map(p => (p.id === purchaseToUpdate.id ? { ...p, estado: newState, cancelReason: reason } : p))
+        );
+        showSuccessAlert("¡Compra Anulada!", `La compra ha sido marcada como cancelada.`);
+      }
+    } else {
+      // Lógica para otros cambios de estado (si los hubiera en el futuro)
+      const result = await showConfirmAlert(
+        `¿Cambiar estado a "${newState}"?`,
+        `La compra de "${purchaseToUpdate.concepto}" cambiará su estado.`,
+        { confirmButtonText: "Sí, cambiar", cancelButtonText: "Cancelar" }
+      );
 
-    if (result.isConfirmed) {
+      if (!result.isConfirmed) return;
+
       // De no-recibido a recibido -> Aumentar stock
       if (originalState !== 'Recibido' && newState === 'Recibido') {
         setEquipmentList(prevEquipment =>
@@ -179,21 +216,10 @@ const Purchases = () => {
           )
         );
       }
-      // De recibido a no-recibido (Pendiente o Cancelado) -> Disminuir stock
-      else if (originalState === 'Recibido' && newState !== 'Recibido') {
-        setEquipmentList(prevEquipment =>
-          prevEquipment.map(eq =>
-            eq.id === purchaseToUpdate.materialId
-              ? { ...eq, CantidadComprado: Math.max(0, (eq.CantidadComprado || 0) - purchaseToUpdate.cantidad), Total: Math.max(0, (eq.Total || 0) - purchaseToUpdate.cantidad) }
-              : eq
-          )
-        );
-      }
 
       setPurchasesList(prev =>
         prev.map(p => (p.id === purchaseToUpdate.id ? { ...p, estado: newState } : p))
       );
-
       showSuccessAlert("¡Estado Actualizado!", `La compra ahora está en estado "${newState}".`);
     }
   }, [equipmentList]);
@@ -217,8 +243,10 @@ const Purchases = () => {
       proveedor: purchaseItem.proveedor,
       fechaCompra: purchaseItem.fecha,
       fechaRegistro: purchaseItem.fechaRegistro,
+      estado: purchaseItem.estado, // Pasar el estado de la compra
       productos: invoiceItems,
       total: invoiceTotal,
+      cancelReason: invoiceItems.find(p => p.cancelReason)?.cancelReason || null, // Pasar el motivo de cancelación
     };
 
     // 4. Guardar los datos y abrir el modal
@@ -238,6 +266,20 @@ const Purchases = () => {
     'Cancelado': 'bg-red-100 text-red-800',
   };
 
+  // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
+  const reportData = useMemo(() => {
+    return filteredPurchases.map(item => ({
+      numeroFactura: item.numeroFactura || '',
+      proveedor: item.proveedor || '',
+      concepto: item.concepto || '',
+      monto: item.monto || '$0',
+      fecha: item.fecha || '',
+      fechaRegistro: item.fechaRegistro || '',
+      estado: item.estado || '',
+    }));
+  }, [filteredPurchases]);
+
+
   return (
     <div id="contentPurchases" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
       {/* Contenedor index */}
@@ -254,7 +296,19 @@ const Purchases = () => {
             placeholder="Buscar por N° factura, proveedor, monto, fecha, estado..."
           />
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+            <ReportButton
+              data={reportData}
+              fileName="Reporte_Compras"
+              columns={[
+                { header: "N° Factura", accessor: "numeroFactura" },
+                { header: "Proveedor", accessor: "proveedor" },
+                { header: "Concepto", accessor: "concepto" },
+                { header: "Monto", accessor: "monto" },
+                { header: "Fecha Compra", accessor: "fecha" },
+                { header: "Fecha Registro", accessor: "fechaRegistro" },
+                { header: "Estado", accessor: "estado" },
+              ]}
+            />
             <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>
@@ -296,8 +350,8 @@ const Purchases = () => {
                             <FaEye />
                           </button>
                           {purchase.estado !== 'Cancelado' && (
-                            <button onClick={() => handleChangeState(purchase, 'Cancelado')} title="Anular Compra" className="p-2 text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors">
-                              <FaTimesCircle />
+                            <button onClick={() => handleChangeState(purchase, 'Cancelado')} title="Anular Compra" className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors">
+                              Anular Compra
                             </button>
                           )}
                         </div>
@@ -340,8 +394,8 @@ const Purchases = () => {
                         <FaEye />
                       </button>
                       {purchase.estado !== 'Cancelado' && (
-                        <button onClick={() => handleChangeState(purchase, 'Cancelado')} title="Anular Compra" className="p-2 text-red-600 bg-red-100 rounded-full hover:bg-red-200 transition-colors">
-                          <FaTimesCircle />
+                        <button onClick={() => handleChangeState(purchase, 'Cancelado')} title="Anular Compra" className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors">
+                          Anular Compra
                         </button>
                       )}
                       {purchase.estado === 'Cancelado' && (

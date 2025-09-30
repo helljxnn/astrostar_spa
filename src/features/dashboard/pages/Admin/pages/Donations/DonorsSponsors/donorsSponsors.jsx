@@ -4,6 +4,7 @@ import { SiGoogleforms } from "react-icons/si";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
 import ViewDetails from "../../../../../../../shared/components/ViewDetails";
 import { showSuccessAlert, showConfirmAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
@@ -39,12 +40,9 @@ function DonorsSponsors() {
         const term = searchTerm.toLowerCase();
         if (!term) return donorsList;
 
+        // Busca en todos los valores de cada objeto
         return donorsList.filter(item =>
-            (item.nombre && item.nombre.toLowerCase().includes(term)) ||
-            (item.identificacion && item.identificacion.toLowerCase().includes(term)) ||
-            (item.tipo && item.tipo.toLowerCase().includes(term)) ||
-            (item.telefono && String(item.telefono).toLowerCase().includes(term)) ||
-            (item.estado && item.estado.toLowerCase().includes(term))
+            Object.values(item).some(value => String(value).toLowerCase().includes(term))
         );
     }, [donorsList, searchTerm]);
 
@@ -113,6 +111,20 @@ function DonorsSponsors() {
         { label: "Estado", key: "estado" },
     ];
 
+    // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
+    const reportData = useMemo(() => {
+        return filteredDonors.map(donor => ({
+            identificacion: donor.identificacion || '',
+            nombre: donor.nombre || '',
+            tipo: donor.tipo || '',
+            tipoPersona: donor.tipoPersona || '',
+            telefono: donor.telefono || '',
+            correo: donor.correo || '',
+            direccion: donor.direccion || '',
+            estado: donor.estado || '',
+        }));
+    }, [filteredDonors]);
+
     return (
         <div id="contentDonorsSponsors" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
             <div id="header" className="w-full h-auto p-8">
@@ -123,10 +135,23 @@ function DonorsSponsors() {
                     <SearchInput
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por nombre o identificación..."
+                        placeholder="Buscar por cualquier dato..."
                     />
                     <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-                        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"><IoMdDownload size={25} color="#b595ff" /> Generar reporte</button>
+                        <ReportButton
+                            data={reportData}
+                            fileName="Donantes_y_Patrocinadores"
+                            columns={[
+                                { header: "Identificación", accessor: "identificacion" },
+                                { header: "Nombre / Razón Social", accessor: "nombre" },
+                                { header: "Tipo", accessor: "tipo" },
+                                { header: "Tipo Persona", accessor: "tipoPersona" },
+                                { header: "Teléfono", accessor: "telefono" },
+                                { header: "Correo", accessor: "correo" },
+                                { header: "Dirección", accessor: "direccion" },
+                                { header: "Estado", accessor: "estado" },
+                            ]}
+                        />
                         <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowraps">
                             Crear <SiGoogleforms size={20} />
                         </button>

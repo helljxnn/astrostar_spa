@@ -2,9 +2,9 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDonations } from "./hooks/useDonations";
 
-import Table from "../../../../../../shared/components/Table/table";
-import SearchInput from "../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../shared/components/Table/Pagination";
+import Table from "../../../../../../../shared/components/Table/table";
+import SearchInput from "../../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../../shared/components/Table/Pagination";
 
 import { FaPlus } from "react-icons/fa";
 import { IoMdDownload } from "react-icons/io";

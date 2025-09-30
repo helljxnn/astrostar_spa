@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { InitialDonations } from "../../../../../../../shared/models/initialDonationsData";
+import { InitialDonations } from "../../../../../../../../shared/models/initialDonationsData";
 
 // Hook personalizado para manejar donaciones
 export const useDonations = () => {

@@ -4,8 +4,8 @@ import PerfilLog from "./perfilLog";
 import { useAuth } from "../../../../../shared/contexts/authContext.jsx";
 import { motion } from "framer-motion";
 
-export const TopBar = () => {
-  const { userRole } = useAuth();
+export const TopBar = ({ onOpenProfileModals }) => {
+  const { user } = useAuth();
 
   // Función para formatear el rol para mostrar
   const formatRole = (role) => {
@@ -44,7 +44,7 @@ export const TopBar = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {formatRole(userRole)}
+          {user?.nombre ? `${user.nombre} ${user.apellido}` : formatRole(user?.rol)}
         </motion.h4>
       </motion.div>
 
@@ -55,7 +55,7 @@ export const TopBar = () => {
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 0.3, duration: 0.5 }}
       >
-        <PerfilLog />
+        <PerfilLog onOpenProfileModals={onOpenProfileModals} />
       </motion.div>
     </header>
   );
