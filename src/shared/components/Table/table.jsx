@@ -7,10 +7,10 @@ const Table = ({
   thead,
   tbody,
   rowsPerPage = 10,
-  paginationFrom = 10,
   onEdit,
   onDelete,
-  onView, // agregado para vista detallada
+  onView, // para vista detallada
+  customActions, // para botones personalizados
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -27,7 +27,7 @@ const Table = ({
   }
 
   const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const showPagination = totalRows > paginationFrom && totalPages > 1;
+  const showPagination = totalPages > 1; // Mostrar paginación si hay más de una página
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -43,23 +43,24 @@ const Table = ({
     data: paginatedData,
     onEdit,
     onDelete,
-    onView, // agregado para vista detallada
+    onView,
+    customActions,
   };
 
   return (
     <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
-      
+      {/* Tabla desktop */}
       <div className="overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-<table
-  id="table"
-  className="w-full border-collapse text-sm font-monserrat"
->
+        <table
+          id="table"
+          className="w-full border-collapse text-sm font-monserrat"
+        >
           <Thead options={{ thead }} />
           <Tbody options={{ tbody: tbodyProps }} />
         </table>
       </div>
 
-      {/*Vista en tarjetas para móviles */}
+      {/* Tarjetas móvil */}
       <div className="block sm:hidden p-3 space-y-4">
         {tbodyProps.data.map((item, index) => (
           <div
@@ -82,7 +83,9 @@ const Table = ({
                   className={
                     item.estado === "Activo"
                       ? "text-primary-purple"
-                      : "text-primary-blue"
+                      : item.estado === "Inactivo"
+                      ? "text-primary-blue"
+                      : "text-gray-400"
                   }
                 >
                   {item.estado}
@@ -112,12 +115,23 @@ const Table = ({
                   Ver
                 </button>
               )}
+              {/* Botones personalizados */}
+              {customActions &&
+                customActions.map((action, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => action.onClick(item)}
+                    className={action.className}
+                  >
+                    {action.label}
+                  </button>
+                ))}
             </div>
           </div>
         ))}
       </div>
 
-      {/*  Paginación abajo */}
+      {/* Paginación */}
       {showPagination && (
         <div className="w-full border-t border-gray-100 bg-gray-50">
           <Pagination

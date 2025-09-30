@@ -1,5 +1,4 @@
-// ReportButton.jsx - Con mejor diseño y distribución
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { IoMdDownload } from "react-icons/io";
 import { FiChevronDown } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,142 +7,127 @@ import { saveAs } from "file-saver";
 
 // IMPORTACIÓN CORRECTA
 import { jsPDF } from "jspdf";
-import autoTable from 'jspdf-autotable';
-
+import autoTable from "jspdf-autotable";
 import { showErrorAlert } from "../../shared/utils/alerts";
+import { exportToExcel } from "../../shared/utils/Excel";
 
 const ReportButton = ({ data, fileName = "Reporte", columns }) => {
   const [open, setOpen] = useState(false);
-
-  if (!columns || columns.length === 0) {
-    console.error("ReportButton: Debes definir las columnas del reporte");
-    return null;
-  }
+  const dropdownRef = useRef(null);
 
   const toggleDropdown = () => setOpen((prev) => !prev);
 
-  const generatePDF = () => {
-    setOpen(false);
-    
-    try {
-      if (!data || data.length === 0) {
-        return showErrorAlert("Error", "No hay datos para generar el PDF");
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
       }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-      console.log("Generando PDF con mejor diseño...");
-      
-      // Usar formato A4 landscape para más espacio horizontal
-      const doc = new jsPDF('landscape', 'mm', 'a4'); // landscape = horizontal
-      
-      // Configurar márgenes y dimensiones
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 15;
+const generatePDF = () => {
+  setOpen(false);
+  
+  if (!data || data.length === 0) {
+    showErrorAlert("Error", "No hay datos para generar el PDF");
+    return;
+  }
 
-      // Preparar encabezados
-      const tableHeaders = columns.map((col) => col.label);
-      
-      // Preparar datos con mejor formateo
-      const tableRows = data.map((row) => {
-        return columns.map((col) => {
-          let value = row[col.key];
-          
-          if (value === null || value === undefined) {
-            return "";
-          }
-          
-          if (typeof value === 'object') {
-            if (value instanceof Date) {
-              return value.toLocaleDateString('es-ES');
-            }
-            return JSON.stringify(value);
-          }
-          
-          // Truncar texto muy largo para mejor presentación
-          const stringValue = String(value);
-          return stringValue.length > 30 ? stringValue.substring(0, 27) + '...' : stringValue;
-        });
-      });
+  if (data.length > 500) {
+    const confirm = window.confirm(
+      `⚠️ Tienes ${data.length} registros. \n¿Deseas continuar con la exportación?`
+    );
+    if (!confirm) return;
+  }
 
-      // Título principal con mejor formato
-      doc.setFontSize(20);
-      doc.setFont('helvetica', 'bold');
-      doc.text(fileName, margin, 25);
+  try {
+    const doc = new jsPDF({ orientation: 'landscape' });
+    const rowsPerPage = 40;
+    const totalPages = Math.ceil(data.length / rowsPerPage);
+    const generationDate = new Date().toLocaleDateString();
+
+    // Función para generar el encabezado de cada página
+    const addHeader = (pageNumber) => {
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.text(fileName, 15, 15);
       
-      // Fecha y hora de generación
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      const currentDate = new Date().toLocaleString('es-ES');
-      doc.text(`Generado el: ${currentDate}`, margin, 35);
-      
-      // Línea separadora
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, 40, pageWidth - margin, 40);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Generado: ${generationDate}`, 15, 22);
+      doc.text(`Página ${pageNumber} de ${totalPages}`, 15, 29);
+      doc.text(`Total de registros: ${data.length}`, 15, 36);
+    };
 
-      // Configurar la tabla con mejor diseño
+    const generatePage = (pageNumber) => {
+      doc.setPage(pageNumber);
+      addHeader(pageNumber); // Agregar encabezado a cada página
+
+      const startIndex = (pageNumber - 1) * rowsPerPage;
+      const endIndex = Math.min(startIndex + rowsPerPage, data.length);
+      const pageData = data.slice(startIndex, endIndex);
+
+      const tableColumn = columns.map(col => col.header);
+      const tableRows = pageData.map(item => 
+        columns.map(col => {
+          const value = col.accessor.includes('.') 
+            ? getNestedValue(item, col.accessor)
+            : item[col.accessor];
+          return value ? value.toString().substring(0, 30) : '';
+        })
+      );
+
       autoTable(doc, {
-        head: [tableHeaders],
+        head: [tableColumn],
         body: tableRows,
-        startY: 45,
-        margin: { left: margin, right: margin },
+        startY: 40, // Más espacio para el encabezado extendido
         styles: { 
-          fontSize: 8,
-          cellPadding: 4,
-          overflow: 'linebreak',
-          halign: 'left',
-          valign: 'middle'
+          fontSize: 8, 
+          cellPadding: 3,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3
         },
         headStyles: { 
-          fillColor: [52, 73, 94], // Azul oscuro más profesional
+          fillColor: [79, 70, 229], 
           textColor: 255,
           fontStyle: 'bold',
-          fontSize: 9,
-          halign: 'center'
+          fontSize: 9
         },
         alternateRowStyles: {
-          fillColor: [248, 249, 250] // Gris muy claro
-        },
-        columnStyles: {
-          // Ajustar anchos de columnas dinámicamente
-          ...columns.reduce((styles, col, index) => {
-            // Dar más espacio a campos que suelen ser más largos
-            if (col.key.includes('razonSocial') || col.key.includes('nombre')) {
-              styles[index] = { cellWidth: 'auto', minCellWidth: 35 };
-            } else if (col.key.includes('correo') || col.key.includes('email')) {
-              styles[index] = { cellWidth: 'auto', minCellWidth: 30 };
-            } else if (col.key.includes('telefono') || col.key.includes('nit')) {
-              styles[index] = { cellWidth: 'auto', minCellWidth: 20 };
-            } else {
-              styles[index] = { cellWidth: 'auto' };
-            }
-            return styles;
-          }, {})
-        },
-        didDrawPage: (data) => {
-          // Pie de página con número de página
-          const pageNumber = data.pageNumber;
-          const totalPages = doc.internal.getNumberOfPages();
-          doc.setFontSize(8);
-          doc.setFont('helvetica', 'italic');
-          doc.text(
-            `Página ${pageNumber} de ${totalPages}`, 
-            pageWidth - margin, 
-            pageHeight - 10,
-            { align: 'right' }
-          );
+          fillColor: [245, 245, 245]
         }
       });
+    };
 
-      const fileName_with_date = `${fileName}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      doc.save(fileName_with_date);
-      
-      console.log("✅ PDF generado exitosamente con mejor diseño");
-      
-    } catch (error) {
-      console.error("❌ Error al generar PDF:", error);
-      showErrorAlert("Error", `Error al generar PDF: ${error.message}`);
+    generatePage(1);
+
+    if (totalPages > 1) {
+      for (let i = 2; i <= totalPages; i++) {
+        doc.addPage();
+        generatePage(i);
+      }
     }
-  };
+
+    setTimeout(() => {
+      doc.save(`${fileName}_${generationDate.replace(/\//g, '-')}.pdf`);
+    }, 500);
+
+  } catch (error) {
+    console.error("Error:", error);
+    showErrorAlert("Error", "No se pudo generar el PDF");
+  }
+};
+// Añade esta función auxiliar al inicio del componente ReportButton
+const getNestedValue = (obj, path) => {
+  return path.split('.').reduce((acc, part) => {
+    if (acc && typeof acc === 'object') {
+      return acc[part];
+    }
+    return undefined;
+  }, obj);
+};
 
   const generateExcel = async () => {
     setOpen(false);
@@ -253,7 +237,7 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
   };
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" ref={dropdownRef}>
       <motion.button
         onClick={toggleDropdown}
         className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-200 transition-colors"
@@ -262,10 +246,7 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
       >
         <IoMdDownload size={22} className="text-primary-purple" />
         Generar reporte
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
-        >
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <FiChevronDown size={18} />
         </motion.span>
       </motion.button>
