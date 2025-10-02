@@ -12,6 +12,11 @@ const Form = () => {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
 
+  const isValidEmail = (email) => {
+    // Basic email format validation
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
   const handleLogin = (e) => {
     e.preventDefault();
     setLoginError(false);
@@ -56,6 +61,9 @@ const Form = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {!isValidEmail(email) && email && (
+              <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
+            )}
             <input
               className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
               type="password"

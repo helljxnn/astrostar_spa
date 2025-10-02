@@ -1,5 +1,6 @@
 import "react-big-calendar/lib/css/react-big-calendar.css"; // Asegura que los estilos del calendario se carguen
-import React, { useState, } from "react";
+import "./styles/AppointmentCalendar.css"; // Importar estilos personalizados para el hover
+import React, { useState, useMemo, useCallback } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/es"; // Importar localización en español para moment
@@ -7,6 +8,7 @@ import { SiGoogleforms } from "react-icons/si";
 import { showSuccessAlert, } from "../../../../../../../shared/utils/alerts";
 import Swal from 'sweetalert2';
 import AppointmentForm from "./components/AppointmentForm";
+import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
 // Configurar moment para que use español globalmente en este componente
 moment.locale("es");
@@ -57,34 +59,47 @@ const sampleAthletes = [
     { id: 102, nombres: "María", apellidos: "Gómez" },
     { id: 103, nombres: "Carlos", apellidos: "Rodríguez" },
 ];
+
+// Opciones para el filtro de especialistas, aplanando la estructura.
+const allSpecialistOptions = Object.values(specialistOptions).flat();
+
+// Paleta de colores para cada especialidad
+const specialtyColors = {
+    psicologia: '#EAB308',   // Amarillo
+    fisioterapia: '#22C55E', // Verde
+    nutricion: '#3B82F6',    // Azul
+    medicina: '#EF4444',     // Rojo
+};
+
 function Appointments() {
     const [appointments, setAppointments] = useState(sampleAppointments);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
+    const [initialSlot, setInitialSlot] = useState(null); // Para guardar la fecha del slot seleccionado
     const [view, setView] = useState("month"); // Estado para controlar la vista actual del calendario
+    const [date, setDate] = useState(new Date()); // Estado para la fecha actual del calendario
+    const [searchTerm, setSearchTerm] = useState(""); // Estado para el término de búsqueda
 
 
     // Función para dar estilo a las citas del calendario
     const appointmentPropGetter = (event) => {
-        let style = {
-            backgroundColor: '#6D28D9',
+        // Asignamos una clase basada en la especialidad para un control de estilo más robusto desde CSS.
+        const specialtyClassName = `event-specialty-${event.specialty || 'default'}`;
+        let className = `rbc-event-custom ${specialtyClassName}`;
+
+        const style = {
             borderRadius: "5px",
             color: "white",
             border: "0px",
             display: "block",
             opacity: 0.85
         };
+
         if (event.status === 'cancelled') {
-            style = {
-                ...style,
-                backgroundColor: '#a3a3a3',
-                color: '#e5e5e5',
-                opacity: 0.5,
-                textDecoration: 'line-through',
-            };
+            className += ' event-cancelled';
         }
-        return { style };
+        return { className, style };
     };
 
     // Mensajes en español para el calendario
@@ -104,6 +119,38 @@ function Appointments() {
         showMore: total => `+ Ver más (${total})`
     };
 
+    // Funciones para la navegación del calendario
+    const handleNavigate = (action) => {
+        if (action === 'TODAY') setDate(new Date());
+        else setDate(moment(date).add(action === 'PREV' ? -1 : 1, view).toDate());
+    };
+
+    // Obtiene la etiqueta de la especialidad a partir de su valor
+    const getSpecialtyLabel = (value) => {
+        const option = specialtyOptions.find(opt => opt.value === value);
+        return option ? option.label : 'No especificada';
+    };
+
+    const filteredAppointments = useMemo(() => {
+        const term = searchTerm.toLowerCase();
+        if (!term) return appointments;
+
+        return appointments.filter(appointment => {
+            const specialtyLabel = getSpecialtyLabel(appointment.specialty).toLowerCase();
+            const specialist = (appointment.specialist || '').toLowerCase();
+            const title = (appointment.title || '').toLowerCase();
+            const description = (appointment.description || '').toLowerCase();
+            const athlete = sampleAthletes.find(a => a.id === appointment.athlete);
+            const athleteName = athlete ? `${athlete.nombres} ${athlete.apellidos}`.toLowerCase() : '';
+
+            return specialtyLabel.includes(term) ||
+                specialist.includes(term) ||
+                title.includes(term) ||
+                description.includes(term) ||
+                athleteName.includes(term);
+        });
+    }, [appointments, searchTerm]);
+
     const handleSelectAppointment = (appointment) => {
         // Solo mostramos el modal de detalles para citas que tienen detalles.
         if (appointment.specialty) {
@@ -121,12 +168,21 @@ function Appointments() {
     };
 
     const handleOpenCreateModal = () => {
+        setInitialSlot(null); // Limpiamos cualquier fecha previa al abrir manualmente
         setIsCreateModalOpen(true);
     };
 
     const handleCloseCreateModal = () => {
         setIsCreateModalOpen(false);
+        setInitialSlot(null); // Limpiamos la fecha al cerrar
     };
+
+    const handleSelectSlot = useCallback((slotInfo) => {
+        // Guardamos la información del slot (que incluye la fecha de inicio)
+        // y abrimos el modal de creación.
+        setInitialSlot(slotInfo);
+        setIsCreateModalOpen(true);
+    }, []);
 
     const handleCreateSubmit = (formValues) => {
         // Combinar fecha y hora para crear objetos Date
@@ -156,19 +212,6 @@ function Appointments() {
         // El modal se cierra desde el propio AppointmentForm
     };
 
-    // Obtiene la etiqueta de la especialidad a partir de su valor
-    const getSpecialtyLabel = (value) => {
-        const option = specialtyOptions.find(opt => opt.value === value);
-        return option ? option.label : 'No especificada';
-    };
-
-    // Componente para mostrar un detalle en el modal de visualización
-    const DetailItem = ({ label, value }) => (
-        <div>
-            <p className="text-sm font-medium text-gray-500">{label}</p>
-            <p className="text-lg text-gray-800 break-words">{value || 'No especificado'}</p>
-        </div>
-    );
     return (
         <div className="w-full h-auto grid grid-rows-[auto_1fr] relative p-4">
             {/* Cabecera */}
@@ -180,6 +223,33 @@ function Appointments() {
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
+                    {/* Controles de Navegación del Calendario */}
+                    <div className="hidden sm:flex items-center justify-center bg-gray-100 rounded-lg p-1 border border-gray-200">
+                        <button
+                            onClick={() => handleNavigate('PREV')}
+                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            &lt;
+                        </button>
+
+                        <button
+                            onClick={() => handleNavigate('TODAY')}
+                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            Hoy
+                        </button>
+                        {/* Texto del Mes y Año */}
+                        <span className="px-4 py-2 text-base font-semibold text-gray-700 w-40 text-center">
+                            {moment(date).format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase())}
+                        </span>
+                        <button
+                            onClick={() => handleNavigate('NEXT')}
+                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            &gt;
+                        </button>
+                    </div>
+
                     {/* Grupo de botones para las vistas del calendario */}
                     <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
                         <button
@@ -209,20 +279,33 @@ function Appointments() {
 
             {/* Cuerpo con el Calendario */}
             <div id="body" className="w-full h-full p-4 bg-white rounded-2xl shadow-lg">
+                {/* Buscador reubicado */}
+                <div className="w-full flex justify-end mb-4">
+                    <SearchInput
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar..."
+                    />
+                </div>
                 <div className="h-[50vh]"> {/* Altura flexible para que ocupe el espacio disponible */}
                     <Calendar
                         localizer={localizer}
-                        events={appointments}
+                        events={filteredAppointments}
                         startAccessor="start"
                         endAccessor="end"
                         style={{ height: '100%' }}
                         eventPropGetter={appointmentPropGetter}
                         messages={messages}
                         views={['month', 'week', 'day', 'agenda']}
+                        date={date} // Controla la fecha mostrada
+                        onNavigate={setDate} // Actualiza la fecha al navegar internamente
                         onSelectEvent={handleSelectAppointment}
                         view={view}
+                        selectable={true} // Hacemos el calendario seleccionable
+                        onDrillDown={() => { }} // Evita el comportamiento por defecto de navegar al día
+                        onSelectSlot={handleSelectSlot} // Manejador para cuando se selecciona un slot
                         onView={setView}
-                        toolbar={true}
+                        toolbar={false} // Desactivamos la barra de herramientas interna
                     />
                 </div>
             </div>
@@ -232,6 +315,7 @@ function Appointments() {
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateModal}
                 onSave={handleCreateSubmit}
+                initialData={initialSlot} // Pasamos la fecha seleccionada al formulario
                 athleteList={sampleAthletes} // Pasar la lista de deportistas
             />
             <AppointmentDetails

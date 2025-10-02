@@ -11,6 +11,11 @@ const ForgotPassword = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+    const isValidEmail = (email) => {
+        // Basic email format validation
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!email) {
@@ -63,6 +68,9 @@ const ForgotPassword = () => {
                             placeholder="Tu correo electrónico"
                             required
                         />
+                        {!isValidEmail(email) && email && (
+                            <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
+                        )}
 
                         <button
                             type="submit"

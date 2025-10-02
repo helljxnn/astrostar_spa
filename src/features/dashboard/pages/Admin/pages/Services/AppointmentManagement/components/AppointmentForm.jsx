@@ -75,15 +75,18 @@ const AppointmentForm = ({ isOpen, onClose, onSave, initialData, athleteList = [
 
     // Cargar datos iniciales si se proporciona initialData (para edición)
     useEffect(() => {
-        if (initialData && isOpen) {
-            setValues({
-                specialty: initialData.specialty || "",
-                specialist: initialData.specialist || "",
-                description: initialData.description || "",
-                date: initialData.start ? initialData.start.toISOString().split('T')[0] : "",
-                time: initialData.start ? initialData.start.toTimeString().slice(0, 5) : "",
-                athlete: initialData.athlete || "", // Cargar deportista
-            });
+        if (isOpen) {
+            if (initialData) {
+                setValues(prev => ({
+                    ...prev, // Mantiene valores previos si los hay
+                    specialty: initialData.specialty || prev.specialty || "",
+                    specialist: initialData.specialist || prev.specialist || "",
+                    description: initialData.description || prev.description || "",
+                    date: initialData.start ? initialData.start.toISOString().split('T')[0] : (prev.date || ""),
+                    time: initialData.start ? initialData.start.toTimeString().slice(0, 5) : (prev.time || ""),
+                    athlete: initialData.athlete || prev.athlete || "",
+                }));
+            }
         } else if (!isOpen) { // Solo resetear si no está abierto
             resetForm(); // Limpiar el formulario al cerrar
         }
@@ -133,8 +136,8 @@ const AppointmentForm = ({ isOpen, onClose, onSave, initialData, athleteList = [
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleFormSubmit}
-            title={initialData ? "Editar Cita" : "Crear Nueva Cita"}
-            submitText={initialData ? "Guardar Cambios" : "Agendar Cita"}
+            title={initialData && initialData.id ? "Editar Cita" : "Crear Nueva Cita"}
+            submitText={initialData && initialData.id ? "Guardar Cambios" : "Agendar Cita"}
         >
             <FormField
                 label="Deportista"

@@ -4,6 +4,7 @@ import { FaTimes, FaCamera } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
 import { useFormUserValidation, userValidationRules } from "../../dashboard/pages/Admin/pages/Users/hooks/useFormUserValidation";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../shared/utils/alerts";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 const documentTypes = [
     { value: "CC", label: "Cédula de ciudadanía" },
@@ -37,6 +38,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
     );
 
     const [avatarPreview, setAvatarPreview] = useState(null);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -66,6 +68,10 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
         } else {
             setAvatarPreview(user.avatar || null);
         }
+    };
+
+    const handleOpenChangePasswordModal = () => {
+        setIsChangePasswordModalOpen(true);
     };
 
     const handleClose = () => {
@@ -236,6 +242,15 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                             required
                         />
                     </div>
+
+                    <div className="pt-4">
+                        <button
+                            onClick={handleOpenChangePasswordModal}
+                            className="w-full h-10 rounded-xl bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
+                        >
+                            Cambiar Contraseña</button>
+                    </div>
+
                 </div>
 
                 {/* Footer */}
@@ -258,6 +273,12 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                         Guardar Cambios
                     </motion.button>
                 </div>
+                <ChangePasswordModal
+                    isOpen={isChangePasswordModalOpen}
+                    onClose={() => setIsChangePasswordModalOpen(false)}
+                    email={values.correo} // Pasamos el correo del usuario al modal
+                />
+
             </motion.div>
         </motion.div>
     );
