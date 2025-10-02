@@ -1,10 +1,13 @@
+// ================================
+// PrivateRoutes.jsx
+// ================================
 import { Routes, Route } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute.jsx";
 
 /* Layout general */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
-/* Páginas */
+/* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
@@ -27,7 +30,7 @@ import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipm
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations.jsx";
-import DonationsFrom from "../features/dashboard/pages/Admin/pages/Donations/components/DonationsForm.jsx";
+import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/DonationsForm.jsx";
 
 /* --- Compras --- */
 import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
@@ -47,8 +50,7 @@ const PrivateRoutes = () => {
 
       {/* Todas las rutas bajo el layout /dashboard */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-
-        {/* Ruta principal /dashboard */}
+        {/* --- Principal --- */}
         <Route
           index
           element={
@@ -163,7 +165,7 @@ const PrivateRoutes = () => {
           path="donations/form"
           element={
             <PrivateRoute allowedRoles={["admin"]}>
-              <DonationsFrom />
+              <DonationsForm />
             </PrivateRoute>
           }
         />
@@ -195,7 +197,6 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
-
       </Route>
     </Routes>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Thead from "./Thead";
 import Tbody from "./Tbody";
 import Pagination from "../../../../../../../../../shared/components/Table/Pagination";
@@ -6,48 +6,28 @@ import Pagination from "../../../../../../../../../shared/components/Table/Pagin
 const Table = ({
   thead,
   tbody,
-  rowsPerPage = 6, // Siempre 6 registros por página
+  rowsPerPage = 5,
   onEdit,
   onDelete,
   onView,
   onList,
 }) => {
-  // Estado de la página
   const [currentPage, setCurrentPage] = useState(1);
 
+  /* ==================== Datos + Paginación ==================== */
   const allData = tbody.data || [];
   const totalRows = allData.length;
 
-  // Si los datos cambian y la página actual no existe, vuelve a la primera
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(totalRows / rowsPerPage)),
+    [totalRows, rowsPerPage]
+  );
+
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-    if (currentPage > totalPages) setCurrentPage(1);
-  }, [totalRows, rowsPerPage, currentPage]);
-
-  // Si no hay datos
-  if (totalRows === 0) {
-    return (
-      <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
-        <div className="p-8 text-center text-gray-400 italic">
-          No hay datos para mostrar.
-        </div>
-        {/* Paginador vacío */}
-        <div className="w-full border-t border-gray-100 bg-gray-50">
-          <Pagination
-            currentPage={1}
-            totalPages={1}
-            onPageChange={() => {}}
-            totalRows={0}
-            rowsPerPage={rowsPerPage}
-            startIndex={0}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Paginación
-  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -56,50 +36,65 @@ const Table = ({
   };
 
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = allData.slice(startIndex, startIndex + rowsPerPage);
+  const paginatedData = useMemo(
+    () => allData.slice(startIndex, startIndex + rowsPerPage),
+    [allData, startIndex, rowsPerPage]
+  );
 
-  // Render
+  const columnCount = thead?.titles?.length || 0;
+
+  /* ==================== Render ==================== */
   return (
     <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
-      {/* ==== Tabla (desktop) ==== */}
-      <div className="overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        <table className="w-full border-collapse text-sm font-monserrat">
-          {/*  THEAD */}
-          <Thead options={{ thead }} />
+      
+      {/* ====== Tabla Desktop ====== */}
+      {totalRows > 0 && (
+        <div className="overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <table
+            className="w-full border-collapse text-sm font-monserrat"
+            style={{
+              minWidth: columnCount > 5 ? `${columnCount * 150}px` : "100%",
+            }}
+          >
+            <Thead options={{ thead }} />
+            <Tbody
+              data={paginatedData}
+              dataPropertys={tbody.dataPropertys}
+              state={tbody.state}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onView={onView}
+              onList={onList}
+            />
+          </table>
+        </div>
+      )}
 
-          {/*  TBODY */}
-          <Tbody
-            data={paginatedData}
-            dataPropertys={tbody.dataPropertys}
-            state={tbody.state}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onView={onView}
-            onList={onList}
-          />
-        </table>
-      </div>
-
-      {/* ==== Tarjetas (móvil) ==== */}
+      {/* ====== Tarjetas Móvil ====== */}
       <div className="block sm:hidden p-3 space-y-4">
-        {paginatedData.map((item, index) => {
-          // Estado seguro (limpio)
-          const estadoOriginal = item.Estado ?? item.estado ?? "";
-          const estado = String(estadoOriginal).trim().toLowerCase();
+        {totalRows === 0 && (
+          <div className="p-6 text-center text-gray-400 italic">
+            No hay datos para mostrar.
+          </div>
+        )}
 
-          // Colores personalizados
-          let estadoColorClass =
-            estado === "activo"
+        {paginatedData.map((item, index) => {
+          const estadoOriginal = item.Estado ?? item.estado ?? "";
+          const estadoNormalizado = String(estadoOriginal).trim().toLowerCase();
+
+          const estadoColorClass =
+            estadoNormalizado === "activo"
               ? "text-primary-purple"
-              : estado === "inactivo"
+              : estadoNormalizado === "inactivo"
               ? "text-primary-blue"
               : "text-gray-400";
 
           return (
             <div
-              key={index}
+              key={item.id ?? index}
               className="border rounded-xl shadow-sm p-4 bg-gray-50 text-gray-700"
             >
+              {/* Datos de cada propiedad */}
               {tbody.dataPropertys.map((property, i) => (
                 <p key={i} className="text-sm mb-1">
                   <span className="font-semibold">{thead.titles[i]}:</span>{" "}
@@ -111,9 +106,7 @@ const Table = ({
               {tbody.state && (
                 <p className="mt-2 text-sm font-medium">
                   <span className="font-semibold">Estado: </span>
-                  <span className={estadoColorClass}>
-                    {estadoOriginal}
-                  </span>
+                  <span className={estadoColorClass}>{estadoOriginal}</span>
                 </p>
               )}
 
@@ -157,7 +150,7 @@ const Table = ({
         })}
       </div>
 
-      {/* ==== Paginación ==== */}
+      {/* ====== Paginador ====== */}
       <div className="w-full border-t border-gray-100 bg-gray-50">
         <Pagination
           currentPage={currentPage}
