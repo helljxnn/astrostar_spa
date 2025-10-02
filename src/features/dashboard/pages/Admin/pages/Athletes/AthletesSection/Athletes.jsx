@@ -13,8 +13,8 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination.
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 
-import athletesData from "./AthleteData.jsx";
-import guardiansData from "../AthletesSection/GuardiansData.js";
+import athletesData from "../../../../../../../shared/models/AthleteData.js";
+import guardiansData from "../../../../../../../shared/models/GuardiansData.js";
 
 import {
   showSuccessAlert,
