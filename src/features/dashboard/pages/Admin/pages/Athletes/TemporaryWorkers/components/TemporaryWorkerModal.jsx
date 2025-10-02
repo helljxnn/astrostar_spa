@@ -9,7 +9,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../../shared/utils/alerts";
 
 const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create" }) => {
   const {
@@ -24,6 +24,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
     {
       tipoPersona: "",
       nombre: "",
+      apellido: "",
       tipoDocumento: "",
       identificacion: "",
       telefono: "",
@@ -42,6 +43,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
       setFormData({
         tipoPersona: "",
         nombre: "",
+        apellido: "",
         tipoDocumento: "",
         identificacion: "",
         telefono: "",
@@ -51,6 +53,25 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
         estado: "",
       });
   }, [worker, setFormData, isOpen]);
+
+  // Calcular edad automáticamente cuando cambia la fecha de nacimiento
+  useEffect(() => {
+    if (formData.fechaNacimiento) {
+      const birthDate = new Date(formData.fechaNacimiento);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      setFormData(prevData => ({
+        ...prevData,
+        edad: age.toString()
+      }));
+    }
+  }, [formData.fechaNacimiento]);
 
   const handleSubmit = async () => {
     try {
@@ -201,12 +222,27 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
               label="Nombre"
               name="nombre"
               type="text"
-              placeholder="Nombre completo"
+              placeholder="Nombre"
               required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.nombre}
               error={errors.nombre}
               touched={touched.nombre}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
+
+            {/* Apellido */}
+            <FormField
+              label="Apellido"
+              name="apellido"
+              type="text"
+              placeholder="Apellido"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              value={formData.apellido}
+              error={errors.apellido}
+              touched={touched.apellido}
               onChange={handleChange}
               onBlur={handleBlur}
             />
@@ -247,7 +283,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
               type="number"
               placeholder="Edad"
               required={mode !== "view"}
-              disabled={mode === "view"}
+              disabled={true}
               value={formData.edad}
               error={errors.edad}
               touched={touched.edad}

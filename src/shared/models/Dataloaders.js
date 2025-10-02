@@ -262,7 +262,7 @@ export const loadTrainers = () => {
 
     console.log("=== INICIANDO CARGA DE ENTRENADORES ===");
 
-    // 1. DESDE EMPLEADOS (Entrenadores)
+    // 1. DESDE EMPLEADOS (Entrenadores) - FUNDACIÓN
     const employeesRaw = localStorage.getItem("employees");
     const employees = employeesRaw ? JSON.parse(employeesRaw) : employeesDataReal;
     
@@ -277,13 +277,14 @@ export const loadTrainers = () => {
         sourceLabel: "Empleado Fundación",
         identification: e.identificacion,
         badge: "Empleado",
-        badgeColor: "bg-blue-100 text-blue-800"
+        badgeColor: "bg-blue-100 text-blue-800",
+        type: "fundacion" // ← AGREGAR ESTA PROPIEDAD
       }));
 
     console.log("Entrenadores de empleados:", trainersFromEmployees);
     trainers.push(...trainersFromEmployees);
 
-    // 2. DESDE PERSONAS TEMPORALES (Entrenadores)
+    // 2. DESDE PERSONAS TEMPORALES (Entrenadores) - TEMPORALES
     const temporaryRaw = localStorage.getItem("temporaryPersons");
     const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
     
@@ -298,7 +299,8 @@ export const loadTrainers = () => {
         sourceLabel: "Persona Temporal",
         identification: t.identificacion,
         badge: "Temporal",
-        badgeColor: "bg-purple-100 text-purple-800"
+        badgeColor: "bg-purple-100 text-purple-800",
+        type: "temporal" // ← AGREGAR ESTA PROPIEDAD
       }));
 
     console.log("Entrenadores temporales:", trainersFromTemporary);
@@ -321,7 +323,7 @@ export const loadPlayers = () => {
   try {
     const players = [];
 
-    // 1. DESDE DEPORTISTAS (Athletes)
+    // 1. DESDE DEPORTISTAS (Athletes) - FUNDACIÓN
     const athletesRaw = localStorage.getItem("athletes");
     const athletes = athletesRaw ? JSON.parse(athletesRaw) : athletesDataReal;
     
@@ -336,12 +338,13 @@ export const loadPlayers = () => {
         categoria: a.categoria,
         badge: "Deportista",
         badgeColor: "bg-green-100 text-green-800",
-        additionalInfo: `${a.genero === "femenino" ? "Femenino" : "Masculino"} - ${a.ciudad}`
+        additionalInfo: `${a.genero === "femenino" ? "Femenino" : "Masculino"} - ${a.ciudad}`,
+        type: "fundacion" // ← AGREGAR ESTA PROPIEDAD
       }));
 
     players.push(...playersFromAthletes);
 
-    // 2. DESDE PERSONAS TEMPORALES (Jugadoras)
+    // 2. DESDE PERSONAS TEMPORALES (Jugadoras) - TEMPORALES
     const temporaryRaw = localStorage.getItem("temporaryPersons");
     const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
     
@@ -356,7 +359,8 @@ export const loadPlayers = () => {
         categoria: t.categoria,
         badge: "Temporal",
         badgeColor: "bg-purple-100 text-purple-800",
-        additionalInfo: `${t.edad} años`
+        additionalInfo: `${t.edad} años`,
+        type: "temporal" // ← AGREGAR ESTA PROPIEDAD
       }));
 
     players.push(...playersFromTemporary);
@@ -401,4 +405,12 @@ export const searchInData = (data, searchTerm) => {
     item.categoria?.toLowerCase().includes(query) ||
     item.additionalInfo?.toLowerCase().includes(query)
   );
+};
+
+/**
+ * Filtra datos por tipo específico
+ */
+export const filterByType = (data, type) => {
+  if (!type) return data;
+  return data.filter(item => item.type === type);
 };

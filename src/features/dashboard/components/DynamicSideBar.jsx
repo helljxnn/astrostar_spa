@@ -580,7 +580,7 @@ function DynamicSideBar({
                     !isExpanded ? "justify-center" : ""
                   } ${
                     openMenu === "athletes" ||
-                    isActive("/dashboard/athletes") ||
+                    isActive("/dashboard/athletes-section") ||
                     isActive("/dashboard/sports-category") ||
                     isActive("/dashboard/temporary-workers")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
@@ -660,10 +660,10 @@ function DynamicSideBar({
                             transition={{ delay: 0.15 }}
                           >
                             <Link
-                              to="/dashboard/athletes"
+                              to="/dashboard/athletes-section"
                               onClick={() => setIsOpen(false)}
                               className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                isActive("/dashboard/athletes")
+                                isActive("/dashboard/athletes-section")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                               }`}

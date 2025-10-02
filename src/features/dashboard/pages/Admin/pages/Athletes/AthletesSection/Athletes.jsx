@@ -503,29 +503,18 @@ const Athletes = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onView={handleView}
-              customActions={(athlete) => {
-                const canInscribe = canInscribeAthlete(athlete);
-
-                return (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleOpenInscriptionManagement(athlete)}
-                      className="p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors"
-                      title="Gestionar inscripciones"
-                    >
-                      <FaClipboardList className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={() => handleViewInscriptionHistory(athlete)}
-                      className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-                      title="Historial de Inscripciones"
-                    >
-                      <FaHistory className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              }}
+             customActions={[
+  {
+    onClick: (athlete) => handleOpenInscriptionManagement(athlete),
+    label: <FaClipboardList className="w-4 h-4" />,
+    className: "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors"
+  },
+  {
+    onClick: (athlete) => handleViewInscriptionHistory(athlete),
+    label: <FaHistory className="w-4 h-4" />,
+    className: "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
+  }
+]}
             />
           </div>
           <div className="mt-4">

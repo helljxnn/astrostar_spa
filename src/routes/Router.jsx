@@ -5,7 +5,7 @@ import LayoutLanding from "../features/landing/components/LayoutLanding.jsx";
 import About from "../features/landing/pages/About/About.jsx";
 import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
-import Home from "../features/landing/pages/Home.jsx";
+import Home from "../features/landing/pages/Home/Home.jsx";
 import Login from "../features/auth/pages/Login.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx"; 

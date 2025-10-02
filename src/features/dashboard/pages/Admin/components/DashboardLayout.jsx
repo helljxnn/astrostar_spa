@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
 import DynamicSideBar from "../../../components/DynamicSideBar"; 
-import { TopBar } from "./TopBar"; 
+import { TopBar } from "../components/TopBar"; 
 
 function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);

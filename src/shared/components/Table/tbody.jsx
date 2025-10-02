@@ -1,8 +1,9 @@
-// Tbody.jsx
+// src/pages/components/Table/Tbody.jsx
 import React from "react";
 import { motion } from "framer-motion";
-import { FaEye, FaRegEdit, FaTrash } from "react-icons/fa";
+import { FaEye, FaRegEdit, FaTrash, FaList } from "react-icons/fa";
 
+/* --- Animación de filas --- */
 const rowVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: (i) => ({
@@ -13,75 +14,149 @@ const rowVariants = {
 };
 
 const Tbody = ({ options }) => {
-  const { onEdit, onDelete, customActions } = options.tbody;
+  const {
+    data = [],
+    dataPropertys = [],
+    state = false, // ⚡ activa colores para Estado
+    onEdit,
+    onDelete,
+    onView,
+    onList,
+    customActions, // ✅ AGREGADO: acciones personalizadas
+  } = options.tbody || {};
 
-  return (
-    <tbody id="tbody" className="divide-y divide-gray-200">
-      {options.tbody.data && options.tbody.data.length > 0 ? (
-        options.tbody.data.map((item, index) => {
-          const { estado } = item;
-          return (
-            <motion.tr
-              key={index}
-              variants={rowVariants}
-              initial="hidden"
-              animate="visible"
-              custom={index}
-              className="hover:bg-primary-purple-light/30 transition-colors"
-            >
-              {options.tbody.dataPropertys.map((property, i) => (
-                <td key={i} className="px-6 py-4 whitespace-nowrap text-gray-700">
-                  {item[property]}
-                </td>
-              ))}
+  const hasActions = onEdit || onDelete || onView || onList || customActions; // ✅ MODIFICADO
 
-              {options.tbody.state && (
-                <td
-                  className={`px-6 py-4 font-medium ${
-                    estado === "Activo"
-                      ? "text-primary-purple"
-                      : "text-primary-blue"
-                  }`}
-                >
-                  {estado}
-                </td>
-              )}
-
-              <td className="px-6 py-4 flex items-center justify-center gap-3">
-  <button
-    onClick={() => options.tbody.onEdit && options.tbody.onEdit(item)}
-    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors"
-  >
-    <FaRegEdit />
-  </button>
-  <button
-    onClick={() => options.tbody.onDelete && options.tbody.onDelete(item)}
-    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-  >
-    <FaTrash />
-  </button>
-  <button
-    onClick={() => options.tbody.onView && options.tbody.onView(item)}
-    className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors"
-  >
-    <FaEye />
-  </button>
-  {options.tbody.customActions && options.tbody.customActions(item)}
-</td>
-
-            </motion.tr>
-          );
-        })
-      ) : (
+  /* --- Si no hay datos --- */
+  if (!data || data.length === 0) {
+    return (
+      <tbody>
         <tr>
-          <td
-            colSpan="100%"
-            className="p-6 text-center text-gray-400 italic"
-          >
+          <td colSpan="100%" className="p-6 text-center text-gray-400 italic">
             No hay datos para mostrar.
           </td>
         </tr>
-      )}
+      </tbody>
+    );
+  }
+
+  return (
+    <tbody id="tbody" className="divide-y divide-gray-200">
+      {data.map((item, index) => {
+        /* Normalizar estado */
+        const estadoOriginal = item.Estado || item.estado || "";
+        const estado = estadoOriginal.toLowerCase();
+
+        /* Colores unificados (igual que en mobile) */
+        let estadoClass = "text-gray-500";
+        if (estado === "activo") estadoClass = "text-primary-purple";
+        else if (estado === "inactivo") estadoClass = "text-primary-blue";
+
+        return (
+          <motion.tr
+            key={index}
+            variants={rowVariants}
+            initial="hidden"
+            animate="visible"
+            custom={index}
+            className="hover:bg-primary-purple-light/30 transition-colors"
+          >
+            {/* 🔹 Columnas dinámicas */}
+            {dataPropertys.map((property, i) => {
+              // 👀 Si la columna es Estado → render especial con color
+              if (state && property.toLowerCase() === "estado") {
+                return (
+                  <td
+                    key={i}
+                    className="px-6 py-4 whitespace-nowrap font-medium"
+                  >
+                    <span className={`font-semibold ${estadoClass}`}>
+                      {estadoOriginal}
+                    </span>
+                  </td>
+                );
+              }
+
+              return (
+                <td key={i} className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  {item[property] ?? "-"}
+                </td>
+              );
+            })}
+
+            {/* 🔹 Estado extra (si no está en dataPropertys) */}
+            {state &&
+              !dataPropertys.map((p) => p.toLowerCase()).includes("estado") && (
+                <td className="px-6 py-4 whitespace-nowrap font-medium">
+                  <span className={`font-semibold ${estadoClass}`}>
+                    {estadoOriginal}
+                  </span>
+                </td>
+              )}
+
+            {/* 🔹 Acciones dinámicas */}
+            {hasActions && (
+              <td className="px-6 py-4 flex items-center justify-center gap-3">
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(item)}
+                    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors"
+                    title="Editar"
+                  >
+                    <FaRegEdit />
+                  </button>
+                )}
+
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(item)}
+                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
+                    title="Eliminar"
+                  >
+                    <FaTrash />
+                  </button>
+                )}
+
+                {onView && (
+                  <button
+                    onClick={() => onView(item)}
+                    className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors"
+                    title="Ver Detalle"
+                  >
+                    <FaEye />
+                  </button>
+                )}
+
+                {onList && (
+                  <button
+                    onClick={() => onList(item)}
+                    className="p-2 rounded-full bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                    title="Ver Lista"
+                  >
+                    <FaList />
+                  </button>
+                )}
+
+                {/* ✅ NUEVO: Acciones personalizadas */}
+                {customActions && (
+                  typeof customActions === 'function'
+                    ? customActions(item)
+                    : customActions.map((action, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => action.onClick(item)}
+                          className={action.className}
+                          title={action.title}
+                        >
+                          {action.label}
+                        </button>
+                      ))
+                )}
+              </td>
+            )}
+          </motion.tr>
+        );
+      })}
     </tbody>
   );
 };
