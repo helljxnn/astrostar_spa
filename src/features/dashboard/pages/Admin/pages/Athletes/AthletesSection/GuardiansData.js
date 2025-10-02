@@ -21,6 +21,17 @@ const guardiansData = [
     fechaNacimiento: "1978-05-12",
     estado: "Activo",
   },
+  {
+    id: 103,
+    nombreCompleto: "Juan Carlos Ramirez",
+    tipoDocumento: "CC",
+    identificacion: "312313333",
+    correo: "jc.ramirez@mail.com",
+    telefono: "3123133333",
+    edad: 46,
+    fechaNacimiento: "1978-05-12",
+    estado: "Inactivo",
+  },
 ];
 
 export default guardiansData;

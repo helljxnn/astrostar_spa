@@ -19,21 +19,25 @@ const GuardiansListModal = ({
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 8;
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return guardians;
-    return guardians.filter((guardian) =>
-      [
-        guardian.nombreCompleto,
-        guardian.identificacion,
-        guardian.correo,
-        guardian.telefono,
-      ]
-        .filter(Boolean)
-        .some((field) =>
-          field.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
-  }, [guardians, searchTerm]);
+const filteredData = useMemo(() => {
+  if (!searchTerm) return guardians;
+
+  return guardians.filter((item) =>
+    Object.entries(item).some(([key, value]) => {
+      const stringValue = String(value || "").trim();
+
+      if (key.toLowerCase() === "estado") {
+        return (
+          (stringValue === "Activo" && searchTerm === "Activo") ||
+          (stringValue === "Inactivo" && searchTerm === "Inactivo")
+        );
+      }
+
+      return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+  );
+}, [guardians, searchTerm]);
+
 
   const totalRows = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
@@ -138,7 +142,7 @@ const GuardiansListModal = ({
           {/* Tabla */}
           {totalRows > 0 ? (
             <>
-             <div className="w-full overflow-x-auto bg-white rounded-lg">
+              <div className="w-full overflow-x-auto bg-white rounded-lg">
                 <div className="w-full">
                   <Table
                     className="w-full table-auto"
@@ -148,10 +152,10 @@ const GuardiansListModal = ({
                         "Identificación",
                         "Correo",
                         "Teléfono",
-                        "Deportistas", // sin "Estado" aquí
+                        "Deportistas",
                       ],
-                      state: true,   // deja que Table agregue 'Estado'
-                      actions: true, // deja que Table agregue 'Acciones'
+                      state: true,
+                      actions: true,
                     }}
                     tbody={{
                       data: paginatedData.map((guardian) => ({
@@ -159,19 +163,18 @@ const GuardiansListModal = ({
                         deportistasCount: athletes.filter(
                           (a) => a.acudiente === guardian.id
                         ).length,
-                        // asegúrate que guardian.estado exista en cada objeto
                       })),
                       dataPropertys: [
                         "nombreCompleto",
                         "identificacion",
                         "correo",
                         "telefono",
-                        "deportistasCount", // sin "estado" aquí
+                        "deportistasCount",
                       ],
                       state: true,
                       stateMap: {
-                        Activo: "bg-green-100 text-green-800",
-                        Inactivo: "bg-red-100 text-red-800",
+                        Activo: "",
+                        Inactivo: "",
                       },
                     }}
                     onEdit={handleEdit}

@@ -9,7 +9,7 @@ const isOnlyNumbers = (value) => /^\d+$/.test(value);
 
 // Validación teléfono colombiano
 const validatePhone = (value) => {
-  if (!value?.trim()) return "El número telefónico es obligatorio";
+  if (!value?.trim()) return ""; // No obligatorio para atletas
   const phone = cleanPhone(value);
   
   if (phone.startsWith('+57') || phone.startsWith('57')) {
@@ -54,44 +54,58 @@ const validateDocument = (value, tipoDocumento) => {
   return "";
 };
 
-// Hook optimizado para atletas
+// Validación de categoría (letras, números, espacios, guiones y paréntesis)
+const isValidCategory = (value) => /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-()]+$/.test(value);
+
+// Hook optimizado para atletas - CORREGIDO para validaciones en tiempo real
 export const useFormAthleteValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  const validateField = (name, value) => {
+  const validateField = (name, value, allValues = values) => {
     const rules = validationRules[name];
     if (!rules) return '';
-    for (const rule of rules) {
-      const error = rule(value, values);
-      if (error) return error;
+    
+    // Si rules es un array de funciones
+    if (Array.isArray(rules)) {
+      for (const rule of rules) {
+        const error = rule(value, allValues);
+        if (error) return error;
+      }
+      return '';
     }
+    
+    // Si rules es un objeto con required
+    if (rules.required && (!value || (typeof value === 'string' && !value.trim()))) {
+      return rules.message || `${name} es requerido`;
+    }
+    
     return '';
   };
 
   const validateAllFields = () => {
     const newErrors = {};
     Object.keys(validationRules).forEach(name => {
-      const error = validateField(name, values[name]);
+      const error = validateField(name, values[name], values);
       if (error) newErrors[name] = error;
     });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleChange = (nameOrEvent, value) => {
-    const { name, val } = typeof nameOrEvent === 'string'
-      ? { name: nameOrEvent, val: value }
-      : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
+const handleChange = (nameOrEvent, value) => {
+  const { name, val } = typeof nameOrEvent === 'string'
+    ? { name: nameOrEvent, val: value }
+    : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
 
-    setValues(prev => ({ ...prev, [name]: val }));
+  setValues(prev => ({ ...prev, [name]: val }));
 
-    if (touched[name]) {
-      const error = validateField(name, val);
-      setErrors(prev => ({ ...prev, [name]: error }));
-    }
-  };
+  if (touched[name]) {
+    const error = validateField(name, val);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  }
+};
 
   const handleBlur = (nameOrEvent) => {
     const name = typeof nameOrEvent === 'string'
@@ -100,7 +114,7 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
     if (!name) return;
 
     setTouched(prev => ({ ...prev, [name]: true }));
-    const error = validateField(name, values[name]);
+    const error = validateField(name, values[name], values);
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
@@ -124,7 +138,7 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
   };
 };
 
-// Reglas de validación específicas para atletas
+// Reglas de validación específicas para atletas - ACTUALIZADO
 export const athleteValidationRules = {
   nombres: [
     (v) => !v?.trim() ? "El nombre es obligatorio" : "",
@@ -147,60 +161,62 @@ export const athleteValidationRules = {
     (v, values) => validateDocument(v, values?.tipoDocumento)
   ],
   correo: [
-    (v) => !v?.trim() ? "El correo es obligatorio" : "",
-    (v) => !isValidEmail(v?.trim() || "") ? "El correo electrónico no es válido" : "",
-    (v) => (v?.trim() || "").length > 100 ? "El correo no puede exceder 100 caracteres" : ""
-  ],
-  telefono: [validatePhone],
+  (v) => !v?.trim() ? "El correo es obligatorio" : "",
+  (v) => !isValidEmail(v?.trim() || "") ? "El correo electrónico no es válido" : "",
+  (v) => (v?.trim() || "").length > 100 ? "El correo no puede exceder 100 caracteres" : ""
+],
+telefono: [
+  (v) => !v?.trim() ? "El número telefónico es obligatorio" : "",
+  (v) => {
+    if (!v?.trim()) return "";
+    const phone = v.replace(/[\s\-\(\)]/g, '');
+    if (phone.startsWith('+57') || phone.startsWith('57')) {
+      const local = phone.replace(/^(\+57|57)/, '');
+      if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) return "";
+      return "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
+    }
+    if (!/^\d+$/.test(phone)) return "El teléfono solo puede contener números";
+    if ((phone.length === 10 && /^3/.test(phone)) || (phone.length === 7 && /^[2-8]/.test(phone))) return "";
+    if (phone.length < 7) return "El número debe tener al menos 7 dígitos";
+    if (phone.length > 10) return "Número demasiado largo. Máximo 10 dígitos para celular";
+    return "Formato de teléfono inválido";
+  }
+],
   fechaNacimiento: [
     (v) => !v ? "La fecha de nacimiento es obligatoria" : "",
     (v) => {
       if (!v) return "";
       const birthDate = new Date(v);
       const today = new Date();
-      const minDate = new Date();
-      minDate.setFullYear(today.getFullYear() - 65);
-      const maxDate = new Date();
-      maxDate.setFullYear(today.getFullYear() - 5);
-      
-      if (birthDate < minDate) return "La fecha de nacimiento no puede ser anterior a 65 años";
-      if (birthDate > maxDate) return "La fecha de nacimiento debe corresponder a una persona mayor de 5 años";
       if (birthDate > today) return "La fecha de nacimiento no puede ser futura";
       return "";
     }
-  ],
-  deportePrincipal: [
-    (v) => !v?.trim() ? "El deporte principal es obligatorio" : "",
-    (v) => v?.trim().length < 2 ? "El deporte debe tener al menos 2 caracteres" : "",
-    (v) => v?.trim().length > 30 ? "El deporte no puede exceder 30 caracteres" : "",
-    (v) => !isOnlyLetters(v?.trim()) ? "El deporte solo puede contener letras y espacios" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
   categoria: [
     (v) => !v?.trim() ? "La categoría es obligatoria" : "",
     (v) => v?.trim().length < 2 ? "La categoría debe tener al menos 2 caracteres" : "",
     (v) => v?.trim().length > 30 ? "La categoría no puede exceder 30 caracteres" : "",
-    (v) => !isOnlyLetters(v?.trim()) ? "La categoría solo puede contener letras y espacios" : "",
+    (v) => !isValidCategory(v?.trim()) ? "La categoría solo puede contener letras, números, espacios, guiones y paréntesis" : "",
     (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
   estado: [
     (v) => !v ? "Debe seleccionar un estado" : ""
   ],
   acudiente: [
-  (v) => !v ? "Debes seleccionar un acudiente" : ""
-],
-estadoInscripcion: [
-    (v) => !v ? "Debes seleccionar un estado de inscripción" : ""
+    (v) => !v ? "Debes seleccionar un acudiente" : ""
   ],
   conceptoInscripcion: [
-    (v) => !v?.trim() ? "El concepto de inscripción es obligatorio" : "",
+    (v) => !v?.trim() ? "El concepto de estado es obligatorio" : "",
     (v) => v?.trim().length < 3 ? "El concepto debe tener al menos 3 caracteres" : "",
     (v) => v?.trim().length > 100 ? "El concepto no puede exceder 100 caracteres" : "",
     (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
-  fechaInscripcion: [
-    (v) => !v ? "La fecha de inscripción es obligatoria" : ""
-  ],
+fechaInscripcion: [
+  (v) => !v ? "La fecha de inscripción es obligatoria" : ""
+],
+estadoInscripcion: [
+  (v) => !v ? "Debes seleccionar un estado de inscripción" : ""
+],
   fechaConcepto: [
     (v) => !v ? "La fecha de concepto es obligatoria" : ""
   ],

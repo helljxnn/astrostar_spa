@@ -1,104 +1,224 @@
-import React, { useState, useMemo } from "react";
-import { FaPlus } from "react-icons/fa";
-import Table from "../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
-import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
-import guardiansData from "./GuardiansData.js";
+// src/features/dashboard/pages/Admin/pages/Guardians/Guardians.jsx
+"use client";
 
-const Guardians = ({ onSelectGuardian }) => {
-  const [data, setData] = useState(guardiansData || []);
+import React, { useState, useMemo } from "react";
+import { FaUsers, FaPlus } from "react-icons/fa";
+import guardiansData from "./GuardiansData"; // tus acudientes
+import SearchInput from "../../../../../../../shared/components/SearchInput";
+import Table from "../../../../../../../shared/components/Table/table";
+import Pagination from "../../../../../../../shared/components/Table/Pagination";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
+import {
+  showDeleteAlert,
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../shared/utils/alerts";
+import GuardianModal from "./components/GuardianModal";
+
+const Guardians = () => {
+  const [data, setData] = useState(guardiansData);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingGuardian, setEditingGuardian] = useState(null);
+  const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    return data.filter((g) =>
-      [g.nombreCompleto, g.identificacion, g.correo, g.telefono]
-        .filter(Boolean)
-        .some((f) => f.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [data, searchTerm]);
+  // 🔹 Usar `data` en lugar de `guardians`
+const filteredData = useMemo(() => {
+  if (!searchTerm) return data;
 
+  return data.filter((item) =>
+    Object.entries(item).some(([key, value]) => {
+      const stringValue = String(value || "").trim();
+
+      // 🔹 Si es el campo Estado, comparar exacto
+      if (key.toLowerCase() === "estado") {
+        return (
+          (stringValue === "Activo" && searchTerm === "Activo") ||
+          (stringValue === "Inactivo" && searchTerm === "Inactivo")
+        );
+      }
+      return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+    })
+  );
+}, [data, searchTerm]);
+
+
+  // Paginación
   const totalRows = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+  const paginatedData = filteredData.slice(
+    startIndex,
+    startIndex + rowsPerPage
+  );
 
-  const handleEdit = (g) => {
-    // lógica editar...
+  // Columnas para reporte
+  const reportColumns = [
+    { key: "tipoDocumento", label: "Tipo Documento" },
+    { key: "identificacion", label: "Número de Documento" },
+    { key: "nombreCompleto", label: "Nombre Completo" },
+    { key: "correo", label: "Correo" },
+    { key: "telefono", label: "Teléfono" },
+    { key: "edad", label: "Edad" },
+    { key: "estado", label: "Estado" },
+  ];
+
+  // Guardar acudiente (crear o editar)
+  const handleSave = (guardian) => {
+    if (editingGuardian) {
+      // Editar
+      setData((prev) =>
+        prev.map((item) =>
+          item.id === editingGuardian.id
+            ? { ...guardian, id: editingGuardian.id }
+            : item
+        )
+      );
+    } else {
+      // Crear
+      setData((prev) => [
+        ...prev,
+        { ...guardian, id: prev.length + 1 },
+      ]);
+    }
+
+    setEditingGuardian(null);
+    setIsModalOpen(false);
   };
-  const handleView = (g) => {
-    // lógica ver...
+
+  // Editar acudiente
+  const handleEdit = (guardian) => {
+    setEditingGuardian(guardian);
+    setModalMode("edit");
+    setIsModalOpen(true);
   };
-  const handleDelete = (g) => {
-    // lógica eliminar...
+
+  // Ver acudiente
+  const handleView = (guardian) => {
+    setEditingGuardian(guardian);
+    setModalMode("view");
+    setIsModalOpen(true);
+  };
+
+  // Eliminar acudiente
+  const handleDelete = async (guardian) => {
+    try {
+      const result = await showDeleteAlert(
+        "¿Eliminar acudiente?",
+        `Se eliminará permanentemente el acudiente: ${guardian.nombreCompleto}`
+      );
+
+      if (result.isConfirmed) {
+        setData((prev) => prev.filter((item) => item.id !== guardian.id));
+        showSuccessAlert(
+          "Acudiente eliminado",
+          `${guardian.nombreCompleto} ha sido eliminado correctamente.`
+        );
+      }
+    } catch (error) {
+      console.error("Error al eliminar acudiente:", error);
+      showErrorAlert(
+        "Error al eliminar",
+        "No se pudo eliminar el acudiente. Intenta de nuevo."
+      );
+    }
   };
 
   return (
-    <div className="p-6 w-full max-w-full font-questrial">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Acudientes</h1>
+    <div className="p-6 font-questrial">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+          <FaUsers /> Acudientes
+        </h1>
+
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <div className="w-full sm:w-64">
-            <SearchInput
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Buscar acudiente..."
+          {/* Buscador */}
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Buscar acudiente..."
+          />
+
+          {/* Botones */}
+          <div className="flex items-center gap-3">
+            <ReportButton
+              data={filteredData}
+              fileName="Reporte_Acudientes"
+              columns={reportColumns}
             />
-          </div>
-          <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition">
-              <FaPlus /> Crear Acudiente
+            <button
+              onClick={() => {
+                setEditingGuardian(null);
+                setModalMode("create");
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition-colors"
+            >
+              <FaPlus /> Crear
             </button>
           </div>
         </div>
       </div>
 
-      {totalRows > 0 ? (
-        <>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-            <Table
-              thead={{
-                titles: ["Nombre", "Identificación", "Correo", "Teléfono", "Deportistas"],
-                state: true,
-                actions: true,
-              }}
-              tbody={{
-                data: paginatedData.map((g) => ({ ...g })),
-                dataPropertys: ["nombreCompleto", "identificacion", "correo", "telefono", "deportistasCount"],
-                state: true,
-                stateMap: {
-                  Activo: "bg-green-100 text-green-800",
-                  Inactivo: "bg-red-100 text-red-800",
-                },
-              }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onSelect={onSelectGuardian}
-            />
-          </div>
+      {/* Tabla */}
+      <Table
+        thead={{
+          titles: [
+            "Nombre Completo",
+            "Identificación",
+            "Correo",
+            "Teléfono",
+            "Estado",
+          ],
+          state: true,
+        }}
+        tbody={{
+          data: paginatedData,
+          dataPropertys: [
+            "nombreCompleto",
+            "identificacion",
+            "correo",
+            "telefono",
+            "estado",
+          ],
+          state: true,
+        }}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onView={handleView}
+      />
 
-          <div className="mt-4">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalRows={totalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
-            />
-          </div>
-        </>
-      ) : (
-        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          No hay acudientes registrados todavía.
-        </div>
+      {/* Paginador */}
+      {totalRows > rowsPerPage && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalRows={totalRows}
+          rowsPerPage={rowsPerPage}
+          startIndex={startIndex}
+        />
       )}
+
+      {/* Modal de Acudientes */}
+      <GuardianModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingGuardian(null);
+          setModalMode("create");
+        }}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        guardian={editingGuardian}
+        mode={modalMode}
+      />
     </div>
   );
 };
