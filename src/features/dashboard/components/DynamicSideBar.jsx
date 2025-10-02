@@ -18,7 +18,6 @@ import {
   FaShoppingCart,
   FaDollarSign,
   FaSignOutAlt,
-  FaBars,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
@@ -75,7 +74,6 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
     donations: false,
     events: false,
     purchases: false,
-    sales: false,
     employeesSchedule: false,
     sportsCategory: false,
     appointmentManagement: false,
@@ -93,7 +91,6 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
       visibleModules.donations = true;
       visibleModules.events = true;
       visibleModules.purchases = true;
-      visibleModules.sales = true;
       visibleModules.employeesSchedule = true;
       visibleModules.sportsCategory = true;
       visibleModules.appointmentManagement = true;
@@ -854,44 +851,6 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
                     )}
                   </AnimatePresence>
                 )}
-              </motion.div>
-            )}
-
-
-            {visibleModules.sales && (
-              <motion.div
-                variants={menuItemVariants}
-                initial="initial"
-                animate="animate"
-              >
-                <Link
-                  to="/dashboard/sales"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/sales")
-                      ? "bg-indigo-100 text-primary-purple shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaDollarSign size={20} className="shrink-0" />
-                  </motion.div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        Ventas
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Link>
               </motion.div>
             )}
           </div>

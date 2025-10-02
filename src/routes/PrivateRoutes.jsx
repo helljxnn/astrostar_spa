@@ -33,9 +33,6 @@ import DonationsFrom from "../features/dashboard/pages/Admin/pages/Donations/com
 import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
 import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
 
-/* --- Ventas --- */
-import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales.jsx";
-
 /* --- Componentes generales --- */
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
 
@@ -185,17 +182,6 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* --- Módulo: Ventas --- */}
-        <Route
-          path="sales"
-          element={
-            <PrivateRoute allowedRoles={["admin"]}>
-              <Sales />
-            </PrivateRoute>
-          }
-        />
-
       </Route>
     </Routes>
   );
