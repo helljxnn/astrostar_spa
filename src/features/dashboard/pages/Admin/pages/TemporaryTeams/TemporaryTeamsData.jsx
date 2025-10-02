@@ -2,85 +2,96 @@
 const temporaryTeamsData = [
   {
     id: 1,
-    nombre: "Manuela Vanegas Sub - 17",
+    nombre: "Manuela Vanegas Sub-17",
     entrenador: "Carolina Bran",
-    telefono: "3995620100",
+    telefono: "+57 3001234567",
     jugadoras: [
-      { id: "a1", name: "Juana Pérez" },
-      { id: "a2", name: "María Gómez" },
-      { id: "a3", name: "Andrea Mazo" },
-      { id: "a4", name: "Luisa Fernández" },
+      { 
+        id: 2, 
+        name: "Valentina López González",
+        identification: "1087654321",
+        categoria: "Sub 15",
+        type: "fundacion"
+      },
+      { 
+        id: 6, 
+        name: "Camila Rodríguez Pérez",
+        identification: "1034567890",
+        categoria: "Sub 15",
+        type: "fundacion"
+      }
     ],
-    jugadorasIds: ["a1", "a2", "a3", "a4"],
-    cantidadJugadoras: 4,
+    jugadorasIds: [2, 6],
+    cantidadJugadoras: 2,
     estado: "Activo",
-    descripcion: "Equipo temporal Sub-17 para torneo local de Antioquia. Participación en campeonato regional.",
+    descripcion: "Equipo Sub-17 para competencias regionales. Enfocado en desarrollo técnico y táctico.",
+    entrenadorData: {
+      id: "e3",
+      name: "Carolina Bran",
+      identification: "CC.9876543210",
+      type: "fundacion"
+    },
+    teamType: "fundacion"
   },
   {
     id: 2,
-    nombre: "Manuela Vanegas Sub - 15",
+    nombre: "Promesas Sub-15",
     entrenador: "Héctor Vanegas",
-    telefono: "3114895020",
+    telefono: "+57 3109876543",
     jugadoras: [
-      { id: "a2", name: "María Gómez" },
-      { id: "a5", name: "Carolina Ruiz" },
-      { id: "a6", name: "Valentina Torres" },
+      { 
+        id: 1, 
+        name: "Santiago Morales Rivera",
+        identification: "1098765432",
+        categoria: "Sub 15",
+        type: "fundacion"
+      },
+      { 
+        id: 3, 
+        name: "Mateo Herrera Silva",
+        identification: "1098765433",
+        categoria: "Juvenil",
+        type: "fundacion"
+      }
     ],
-    jugadorasIds: ["a2", "a5", "a6"],
-    cantidadJugadoras: 3,
+    jugadorasIds: [1, 3],
+    cantidadJugadoras: 2,
     estado: "Activo",
-    descripcion: "Equipo Sub-15 en preparación para torneo interligas. Entrenamientos dos veces por semana.",
+    descripcion: "Equipo Sub-15 en formación. Participación en ligas locales y torneos amistosos.",
+    entrenadorData: {
+      id: "e4",
+      name: "Héctor Vanegas",
+      identification: "CC.1098653986",
+      type: "fundacion"
+    },
+    teamType: "fundacion"
   },
   {
     id: 3,
-    nombre: "Manuela Vanegas Sub - 13",
-    entrenador: "Luis Enrique",
-    telefono: "3005551234",
+    nombre: "Juvenil Elite Temporales",
+    entrenador: "Ana Restrepo",
+    telefono: "+57 3156789012",
     jugadoras: [
-      { id: "a7", name: "Sofía Martínez" },
-      { id: "a8", name: "Isabella García" },
-      { id: "a9", name: "Camila López" },
-      { id: "a10", name: "Laura Rodríguez" },
-      { id: "a11", name: "Ana Jiménez" },
+      { 
+        id: "t1", 
+        name: "Jennifer Lascarro",
+        identification: "TI.1246789334",
+        categoria: "Sub 17",
+        type: "temporal"
+      }
     ],
-    jugadorasIds: ["a7", "a8", "a9", "a10", "a11"],
-    cantidadJugadoras: 5,
+    jugadorasIds: ["t1"],
+    cantidadJugadoras: 1,
     estado: "Inactivo",
-    descripcion: "Equipo Sub-13 en receso temporal. Próxima convocatoria en dos meses.",
-  },
-  {
-    id: 4,
-    nombre: "Equipo Élite Femenino",
-    entrenador: "Carolina Bran",
-    telefono: "3167894561",
-    jugadoras: [
-      { id: "a1", name: "Juana Pérez" },
-      { id: "a3", name: "Andrea Mazo" },
-      { id: "a12", name: "Daniela Moreno" },
-      { id: "a13", name: "Paola Sánchez" },
-      { id: "a14", name: "Natalia Castro" },
-      { id: "a15", name: "Melissa Herrera" },
-    ],
-    jugadorasIds: ["a1", "a3", "a12", "a13", "a14", "a15"],
-    cantidadJugadoras: 6,
-    estado: "Activo",
-    descripcion: "Equipo de alto rendimiento con jugadoras seleccionadas para competencia nacional.",
-  },
-  {
-    id: 5,
-    nombre: "Promesas Sub - 11",
-    entrenador: "Héctor Vanegas",
-    telefono: "3208765432",
-    jugadoras: [
-      { id: "a16", name: "Emma Vargas" },
-      { id: "a17", name: "Lucía Ramírez" },
-      { id: "a18", name: "Sara Díaz" },
-    ],
-    jugadorasIds: ["a16", "a17", "a18"],
-    cantidadJugadoras: 3,
-    estado: "Activo",
-    descripcion: "Equipo de iniciación deportiva. Enfoque en formación y desarrollo de habilidades básicas.",
-  },
+    descripcion: "Equipo juvenil temporal en receso por temporada baja.",
+    entrenadorData: {
+      id: "t2",
+      name: "Ana Restrepo",
+      identification: "CC.1397543865",
+      type: "temporal"
+    },
+    teamType: "temporal"
+  }
 ];
 
 export default temporaryTeamsData;
