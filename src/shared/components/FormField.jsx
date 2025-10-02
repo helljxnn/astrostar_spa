@@ -2,31 +2,30 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const FormField = ({ 
-  label, 
-  name, 
-  type = "text", 
-  placeholder, 
+export const FormField = ({
+  label,
+  name,
+  type = "text",
+  placeholder,
   required = false,
-  options = [], 
-  value, 
-  error, 
+  options = [],
+  value,
+  error,
   touched,
-  onChange, 
+  onChange,
   onBlur,
   delay = 0,
-  ...props 
+  ...props
 }) => {
   const hasError = touched && error;
 
-  
   const handleChange = (e) => {
     const val = e.target.value;
     if (typeof onChange === "function") {
       if (onChange.length === 2) {
-        onChange(name, val); 
+        onChange(name, val);
       } else {
-        onChange(e); 
+        onChange(e);
       }
     }
   };
@@ -34,9 +33,9 @@ export const FormField = ({
   const handleBlur = () => {
     if (typeof onBlur === "function") {
       if (onBlur.length === 1) {
-        onBlur(name); 
+        onBlur(name);
       } else {
-        onBlur(); 
+        onBlur();
       }
     }
   };
@@ -52,8 +51,8 @@ export const FormField = ({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      
-      {type === 'select' ? (
+
+      {type === "select" ? (
         <select
           name={name}
           value={value}
@@ -61,21 +60,22 @@ export const FormField = ({
           onBlur={handleBlur}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
           `}
           {...props}
         >
           <option value="">{placeholder}</option>
-          {options.map(option => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </select>
-      ) : type === 'textarea' ? (
+      ) : type === "textarea" ? (
         <textarea
           name={name}
           value={value}
@@ -84,9 +84,10 @@ export const FormField = ({
           placeholder={placeholder}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent resize-none h-20
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
           `}
           {...props}
@@ -101,9 +102,10 @@ export const FormField = ({
           placeholder={placeholder}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
           `}
           {...props}

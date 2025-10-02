@@ -211,9 +211,10 @@ export default function EmployeesScheduleCalendar({
             transition={{ duration: 0.3 }}
             className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white"
           >
-            <Calendar
-              selectable
-              culture="es"
+            <div className="employees-schedule-calendar">
+              <Calendar
+                selectable
+                culture="es"
               localizer={localizer}
               events={schedules}
               startAccessor="start"
@@ -232,6 +233,7 @@ export default function EmployeesScheduleCalendar({
               }
               onSelectEvent={(event) => onOpenModalForEvent?.(event)}
             />
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>

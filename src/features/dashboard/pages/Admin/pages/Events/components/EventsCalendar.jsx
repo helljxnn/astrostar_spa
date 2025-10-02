@@ -5,7 +5,7 @@ import es from "date-fns/locale/es";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaLanguage, FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "../Styles/calendarCustom.css";
+import "../Styles/calendarCustomevents.css";
 import { EventModal } from "../components/EventModal";
 import EventActionModal from "./EventActionModal";
 import EventRegistrationModal from "./EventRegistrationModal";

@@ -153,11 +153,7 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Botón de apertura del menú - Eliminado para evitar duplicidad con el botón del DashboardLayout */}
-
-      {/* El overlay se maneja ahora desde el DashboardLayout */}
-
+    <>
       <motion.aside
         variants={sidebarVariants}
         animate={{
@@ -166,7 +162,7 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className={`fixed lg:static top-0 left-0 h-full bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out`}
+        className={`fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out`}
         initial={{ x: -288 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
@@ -886,7 +882,7 @@ function DynamicSideBar({ isOpen: externalIsOpen, setIsOpen: setExternalIsOpen }
           </motion.button>
         </div>
       </motion.aside>
-    </div>
+    </>
   );
 }
 

@@ -58,8 +58,8 @@ function DashboardLayout() {
           isMobile
             ? "ml-0"
             : isExpanded
-            ? "ml-[0rem]" // Ajustado, ya que, configurando mobile dejaba espacio en el web
-            : "ml-[4.5rem]" 
+            ? "ml-[18rem]" // Espacio para sidebar expandido
+            : "ml-[5rem]" // Espacio para sidebar colapsado
         }`}
       >
         {/* Barra superior */}
