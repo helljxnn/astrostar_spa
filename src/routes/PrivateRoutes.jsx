@@ -14,7 +14,7 @@ import Employees from "../features/dashboard/pages/Admin/pages/Services/Employee
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
 
 /* --- Deportistas --- */
-import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/Athletes.jsx";
+import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 
@@ -23,7 +23,8 @@ import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 
 /* --- Eventos --- */
-import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
+import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsSection/EventsDashboard.jsx";
+import TemporaryTeams from "../features/dashboard/pages/Admin/pages/Events/TemporaryTeams/TemporaryTeams.jsx";
 
 /* --- Material Deportivo --- */
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
@@ -51,7 +52,15 @@ const PrivateRoutes = () => {
         <Route
           index
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+                "deportista",
+                "acudiente",
+              ]}
+            >
               <Dashboard />
             </PrivateRoute>
           }
@@ -61,7 +70,15 @@ const PrivateRoutes = () => {
         <Route
           path="appointment-management"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+                "deportista",
+                "acudiente",
+              ]}
+            >
               <AppointmentManagement />
             </PrivateRoute>
           }
@@ -69,9 +86,15 @@ const PrivateRoutes = () => {
 
         {/* --- Módulo: Deportistas --- */}
         <Route
-          path="athletes"
+          path="athletes-section"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <Athletes />
             </PrivateRoute>
           }
@@ -79,7 +102,13 @@ const PrivateRoutes = () => {
         <Route
           path="sports-category"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <SportsCategory />
             </PrivateRoute>
           }
@@ -105,7 +134,13 @@ const PrivateRoutes = () => {
         <Route
           path="employees-schedule"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <EmployeesSchedule />
             </PrivateRoute>
           }
@@ -135,6 +170,14 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute allowedRoles={["admin"]}>
               <EventsDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="temporary-teams"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <TemporaryTeams />
             </PrivateRoute>
           }
         />

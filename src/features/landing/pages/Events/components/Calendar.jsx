@@ -36,6 +36,7 @@ export const Calendar = ({
   }, []);
 
   const today = new Date();
+
   const monthNames = [
     "Enero",
     "Febrero",
@@ -56,6 +57,7 @@ export const Calendar = ({
     currentMonth.getMonth() + 1,
     0
   ).getDate();
+
   const firstDay = new Date(
     currentMonth.getFullYear(),
     currentMonth.getMonth(),
@@ -65,7 +67,28 @@ export const Calendar = ({
   const nextEventDate = useMemo(() => {
     if (!nextEvent) return null;
     try {
-      return combineDateAndTime(nextEvent.date, nextEvent.time);
+      const convertTo24Hour = (time12) => {
+        if (!time12) return "00:00";
+        
+        if (!time12.includes('AM') && !time12.includes('PM')) {
+          return time12;
+        }
+        
+        const [time, period] = time12.split(' ');
+        const [hours, minutes] = time.split(':');
+        let hour = parseInt(hours, 10);
+        
+        if (period === 'PM' && hour !== 12) {
+          hour += 12;
+        } else if (period === 'AM' && hour === 12) {
+          hour = 0;
+        }
+        
+        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+      };
+      
+      const time24 = convertTo24Hour(nextEvent.time);
+      return combineDateAndTime(nextEvent.date, time24);
     } catch {
       return null;
     }
@@ -107,40 +130,69 @@ export const Calendar = ({
     const isToday = isSameDay(today, date);
     const isNextEventDay = nextEventDate && isSameDay(nextEventDate, date);
 
-    const isPastEventDay =
-      hasEvent &&
-      dayEvents.every((ev) => {
-        try {
-          const eventDate = combineDateAndTime(ev.date, ev.time);
-          return eventDate < today;
-        } catch {
-          return false;
-        }
-      });
+    // Helper function to convert 12-hour to 24-hour format
+    const convertTo24Hour = (time12) => {
+      if (!time12) return "00:00";
+      
+      // Si ya está en formato 24 horas, devolverlo tal como está
+      if (!time12.includes('AM') && !time12.includes('PM')) {
+        return time12;
+      }
+      
+      const [time, period] = time12.split(' ');
+      const [hours, minutes] = time.split(':');
+      let hour = parseInt(hours, 10);
+      
+      if (period === 'PM' && hour !== 12) {
+        hour += 12;
+      } else if (period === 'AM' && hour === 12) {
+        hour = 0;
+      }
+      
+      return `${hour.toString().padStart(2, '0')}:${minutes}`;
+    };
 
+    // ✅ FIX: Verificar si TODOS los eventos del día han pasado su hora
+    const isPastEventDay = hasEvent && dayEvents.every((ev) => {
+      try {
+        const time24 = convertTo24Hour(ev.time);
+        const eventDateTime = combineDateAndTime(ev.date, time24);
+        // Agregar 1 minuto para asegurar que el evento se marque como pasado después de su hora
+        const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
+        return eventDateTime && eventEndTime <= today;
+      } catch {
+        return false;
+      }
+    });
+
+    // ✅ FIX: Mejorar la lógica para categorizar eventos
     const eventsByStatus = {
       cancelado: dayEvents.filter((ev) => ev.status === "cancelado"),
       enPausa: dayEvents.filter((ev) => ev.status === "en-pausa"),
       finalizado: dayEvents.filter((ev) => {
+        // Solo incluir eventos que han pasado su hora Y no están cancelados/pausados
+        if (ev.status === "cancelado" || ev.status === "en-pausa") {
+          return false;
+        }
         try {
-          const eventDate = combineDateAndTime(ev.date, ev.time);
-          return (
-            eventDate < today &&
-            ev.status !== "cancelado" &&
-            ev.status !== "en-pausa"
-          );
+          const time24 = convertTo24Hour(ev.time);
+          const eventDateTime = combineDateAndTime(ev.date, time24);
+          // Agregar 1 minuto para asegurar que el evento se marque como finalizado después de su hora
+          const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
+          return eventDateTime && eventEndTime <= today;
         } catch {
           return false;
         }
       }),
       programado: dayEvents.filter((ev) => {
+        // Solo incluir eventos que no han pasado su hora Y no están cancelados/pausados
+        if (ev.status === "cancelado" || ev.status === "en-pausa") {
+          return false;
+        }
         try {
-          const eventDate = combineDateAndTime(ev.date, ev.time);
-          return (
-            eventDate >= today &&
-            ev.status !== "cancelado" &&
-            ev.status !== "en-pausa"
-          );
+          const time24 = convertTo24Hour(ev.time);
+          const eventDateTime = combineDateAndTime(ev.date, time24);
+          return eventDateTime && eventDateTime > today;
         } catch {
           return false;
         }
@@ -149,40 +201,46 @@ export const Calendar = ({
 
     const sortedDayEvents = sortEventsByDateTime(dayEvents);
 
+    // ✅ FIX: Mejorar la lógica de estilos de botones
     let dayButtonClass = "";
-
     if (isSelected) {
-      dayButtonClass =
-        "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
+      dayButtonClass = "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
     } else if (isNextEventDay) {
-      dayButtonClass =
-        "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
+      dayButtonClass = "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
     } else if (isPastEventDay) {
+      // ✅ FIX: Estilo gris para eventos pasados
       dayButtonClass = "bg-gray-300 text-gray-600 hover:bg-gray-400";
     } else if (hasEvent) {
-      dayButtonClass =
-        "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white hover:shadow-lg";
+      // Solo aplicar el gradiente si hay eventos activos/programados
+      const hasActiveEvents = eventsByStatus.programado.length > 0;
+      if (hasActiveEvents) {
+        dayButtonClass = "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white hover:shadow-lg";
+      } else {
+        // Si solo hay eventos cancelados/pausados, usar estilo neutral
+        dayButtonClass = "bg-gray-200 text-gray-600 hover:bg-gray-300";
+      }
     } else if (isToday) {
-      dayButtonClass =
-        "bg-white text-[#B595FF] border-2 border-[#B595FF] shadow-md hover:shadow-lg";
+      dayButtonClass = "bg-white text-[#B595FF] border-2 border-[#B595FF] shadow-md hover:shadow-lg";
     } else {
-      dayButtonClass =
-        "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
+      dayButtonClass = "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
     }
 
+    // ✅ FIX: Mejorar el tooltip para mostrar solo estados relevantes (sin contadores)
     const tooltipContent = hasEvent ? (
       <div className="text-xs sm:text-sm space-y-1">
         {Object.entries(eventsByStatus).map(
           ([status, events]) =>
             events.length > 0 && (
               <div key={status}>
-                {status === "enPausa"
-                  ? "En Pausa"
-                  : status === "programado"
-                  ? "Programado"
-                  : status === "finalizado"
-                  ? "Finalizado"
-                  : "Cancelado"}
+                <span>
+                  {status === "enPausa"
+                    ? "En Pausa"
+                    : status === "programado"
+                    ? "Programado"
+                    : status === "finalizado"
+                    ? "Finalizado"
+                    : "Cancelado"}
+                </span>
               </div>
             )
         )}
@@ -307,27 +365,43 @@ export const Calendar = ({
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
             <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">T</span>
+                <span className="text-[8px] sm:text-xs font-bold text-white">
+                  T
+                </span>
               </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">Torneo</span>
+              <span className="text-gray-700 font-medium text-xs sm:text-sm">
+                Torneo
+              </span>
             </div>
             <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">F</span>
+                <span className="text-[8px] sm:text-xs font-bold text-white">
+                  F
+                </span>
               </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">Festival</span>
+              <span className="text-gray-700 font-medium text-xs sm:text-sm">
+                Festival
+              </span>
             </div>
             <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">C</span>
+                <span className="text-[8px] sm:text-xs font-bold text-white">
+                  C
+                </span>
               </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">Clausura</span>
+              <span className="text-gray-700 font-medium text-xs sm:text-sm">
+                Clausura
+              </span>
             </div>
             <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[7px] sm:text-[8px] font-bold text-white">TLL</span>
+                <span className="text-[7px] sm:text-[8px] font-bold text-white">
+                  TLL
+                </span>
               </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">Taller</span>
+              <span className="text-gray-700 font-medium text-xs sm:text-sm">
+                Taller
+              </span>
             </div>
           </div>
         </div>

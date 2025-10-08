@@ -16,23 +16,21 @@ const Employees = () => {
   const [data, setData] = useState(employeesData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
-  const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
+  const [modalMode, setModalMode] = useState("create");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // Filtrar por búsqueda general en cualquier campo del objeto
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
     return data.filter((item) =>
-      Object.values(item).some(
-        (value) => String(value).toLowerCase().includes(searchTerm.toLowerCase())
+      Object.values(item).some((value) =>
+        String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
   }, [data, searchTerm]);
 
-  // Calcular datos de paginación
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -41,25 +39,23 @@ const Employees = () => {
     startIndex + rowsPerPage
   );
 
-  // Columnas para reporte
+  
   const reportColumns = [
-    { key: "tipoDocumento", label: "Tipo Documento" },
-    { key: "identificacion", label: "Número de Documento" },
-    { key: "nombre", label: "Nombre" },
-    { key: "apellido", label: "Apellido" },
-    { key: "correo", label: "Correo" },
-    { key: "telefono", label: "Teléfono" },
-    { key: "edad", label: "Edad" },
-    { key: "rol", label: "Rol" },
-    { key: "tipoEmpleado", label: "Tipo Empleado" },
-    { key: "estado", label: "Estado" },
-    { key: "fechaAsignacion", label: "Fecha Asignación" },
+    { header: "Tipo Documento", accessor: "tipoDocumento" },
+    { header: "Número de Documento", accessor: "identificacion" },
+    { header: "Nombre", accessor: "nombre" },
+    { header: "Apellido", accessor: "apellido" },
+    { header: "Correo", accessor: "correo" },
+    { header: "Teléfono", accessor: "telefono" },
+    { header: "Edad", accessor: "edad" },
+    { header: "Rol", accessor: "rol" },
+    { header: "Tipo Empleado", accessor: "tipoEmpleado" },
+    { header: "Estado", accessor: "estado" },
+    { header: "Fecha Asignación", accessor: "fechaAsignacion" },
   ];
 
-  // Guardar empleado (crear o editar)
   const handleSave = (employee) => {
     if (editingEmployee) {
-      // Editar
       setData((prev) =>
         prev.map((item) =>
           item.id === editingEmployee.id
@@ -68,10 +64,9 @@ const Employees = () => {
         )
       );
     } else {
-      // Crear
       setData((prev) => [
         ...prev,
-        { ...employee, id: prev.length + 1 }, //  asignar ID simple
+        { ...employee, id: prev.length + 1 },
       ]);
     }
 
@@ -79,21 +74,18 @@ const Employees = () => {
     setIsModalOpen(false);
   };
 
-  // Editar empleado
   const handleEdit = (employee) => {
     setEditingEmployee(employee);
     setModalMode("edit");
     setIsModalOpen(true);
   };
 
-  // Ver empleado
   const handleView = (employee) => {
     setEditingEmployee(employee);
     setModalMode("view");
     setIsModalOpen(true);
   };
 
-  // Eliminar empleado
   const handleDelete = async (employee) => {
     try {
       const result = await showDeleteAlert(
@@ -119,24 +111,20 @@ const Employees = () => {
 
   return (
     <div className="p-6 font-questrial">
-      {/* Header con buscador y botones */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Empleados</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          {/* Buscador */}
           <SearchInput
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Buscar rol..."
+            placeholder="Buscar empleado..."
           />
 
-          {/* Botones */}
           <div className="flex items-center gap-3">
-            {/* Reportes */}
             <ReportButton
               data={filteredData}
               fileName="Reporte_Empleados"
@@ -144,7 +132,7 @@ const Employees = () => {
             />
             <button
               onClick={() => {
-                setEditingEmployee(null); // limpiar si es crear
+                setEditingEmployee(null);
                 setModalMode("create");
                 setIsModalOpen(true);
               }}
@@ -156,27 +144,14 @@ const Employees = () => {
         </div>
       </div>
 
-      {/* Tabla */}
       <Table
         thead={{
-          titles: [
-            "Nombre",
-            "Identificación",
-            "Tipo de Empleado",
-            "Rol",
-            "Estado",
-          ],
+          titles: ["Nombre", "Identificación", "Tipo de Empleado", "Rol"],
           state: true,
         }}
         tbody={{
           data: paginatedData,
-          dataPropertys: [
-            "nombre",
-            "identificacion",
-            "tipoEmpleado",
-            "rol",
-            "estado",
-          ],
+          dataPropertys: ["nombre", "identificacion", "tipoEmpleado", "rol"],
           state: true,
         }}
         onEdit={handleEdit}
@@ -184,7 +159,6 @@ const Employees = () => {
         onView={handleView}
       />
 
-      {/* Paginador */}
       {totalRows > rowsPerPage && (
         <Pagination
           currentPage={currentPage}
@@ -196,7 +170,6 @@ const Employees = () => {
         />
       )}
 
-      {/* Modal de Empleados */}
       <EmployeeModal
         isOpen={isModalOpen}
         onClose={() => {

@@ -1,63 +1,57 @@
-// src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
+// TemporaryTeams.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
-import ProviderModal from "./components/ProviderModal.jsx";
-import ProviderViewModal from "./components/ProviderViewModal.jsx";
+import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
+import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import providersData from "../../../../../../../shared/models/ProvidersData.jsx";
+import temporaryTeamsData from "../TemporaryTeams/TemporaryTeamsData.jsx";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 
-// 🔑 Clave única para LocalStorage
-const LOCAL_STORAGE_KEY = "providers";
+// LocalStorage key
+const LOCAL_STORAGE_KEY = "temporaryTeams";
 
-const Providers = () => {
-  // 🟢 Estado inicial cargado desde LocalStorage o desde providersData
+const TemporaryTeams = () => {
+  // Cargar datos desde localStorage o data inicial
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : providersData;
+    return stored ? JSON.parse(stored) : temporaryTeamsData;
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
-  const [providerToEdit, setProviderToEdit] = useState(null);
-  const [providerToView, setProviderToView] = useState(null);
+  const [teamToEdit, setTeamToEdit] = useState(null);
+  const [teamToView, setTeamToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // 🟢 Guardar en LocalStorage cada vez que cambien los datos
+  // Guardar en localStorage cuando cambie
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
   }, [data]);
 
-  // 📞 Formatear teléfono sin +57
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
-  };
-
-  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
+  // Filtrado por nombre, entrenador, teléfono
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
-    return data.filter((provider) =>
-      Object.entries(provider).some(([key, value]) => {
+    return data.filter((item) =>
+      Object.entries(item).some(([key, value]) => {
         const stringValue = String(value).trim();
-        
-        // 🎯 Búsqueda EXACTA para el campo "estado"
+
+        // Búsqueda exacta para estado
         if (key.toLowerCase() === "estado") {
           return stringValue.toLowerCase() === searchTerm.toLowerCase();
         }
 
-        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        // Búsqueda parcial para otros campos
         return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
       })
     );
@@ -73,72 +67,75 @@ const Providers = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  //  Crear proveedor
-  const handleSave = (newProvider) => {
+  // form handlers
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return phone;
+    return phone.replace(/[\s\-\(\)\+57]/g, "");
+  };
+
+  const handleSave = (newTeam) => {
     const newEntry = {
-      ...newProvider,
+      ...newTeam,
       id: Date.now(),
-      telefono: formatPhoneNumber(newProvider.telefono),
+      telefono: formatPhoneNumber(newTeam.telefono),
+      cantidadJugadoras: (newTeam.jugadoras || []).length,
     };
     setData([...data, newEntry]);
-    showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
+    showSuccessAlert("Equipo creado", "El equipo se creó correctamente.");
     setIsModalOpen(false);
   };
 
-  //  Editar proveedor
-  const handleUpdate = (updatedProvider) => {
+  const handleUpdate = (updatedTeam) => {
     const updatedEntry = {
-      ...updatedProvider,
-      telefono: formatPhoneNumber(updatedProvider.telefono),
+      ...updatedTeam,
+      telefono: formatPhoneNumber(updatedTeam.telefono),
+      cantidadJugadoras: (updatedTeam.jugadoras || []).length,
     };
-    setData(data.map((p) => (p.id === updatedEntry.id ? updatedEntry : p)));
+    setData(data.map((d) => (d.id === updatedEntry.id ? updatedEntry : d)));
     showSuccessAlert(
-      "Proveedor actualizado",
-      "El proveedor se actualizó correctamente."
+      "Equipo actualizado",
+      "El equipo se actualizó correctamente."
     );
     setIsModalOpen(false);
   };
 
-  //  Abrir modal de edición
-  const handleEdit = (provider) => {
-    if (!provider || provider.target) return;
-    setProviderToEdit(provider);
+  const handleEdit = (team) => {
+    if (!team || team.target) return;
+    setTeamToEdit(team);
     setModalMode("edit");
     setIsModalOpen(true);
   };
 
-  // Ver proveedor
-  const handleView = (provider) => {
-    if (!provider || provider.target) return;
-    setProviderToView(provider);
+  const handleView = (team) => {
+    if (!team || team.target) return;
+    setTeamToView(team);
     setIsViewModalOpen(true);
   };
 
-  //  Eliminar proveedor
-  const handleDelete = async (provider) => {
-    if (!provider || !provider.id)
-      return showErrorAlert("Error", "Proveedor no válido");
+  const handleDelete = async (team) => {
+    if (!team || !team.id) return showErrorAlert("Error", "Equipo no válido");
 
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
-      `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
+      `Se eliminará el equipo ${team.nombre}. Esta acción no se puede deshacer.`,
       { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
     );
 
     if (!confirmResult.isConfirmed) return;
 
-    setData(data.filter((p) => p.id !== provider.id));
+    setData(data.filter((d) => d.id !== team.id));
     showSuccessAlert(
-      "Proveedor eliminado",
-      `${provider.razonSocial} fue eliminado correctamente.`
+      "Equipo eliminado",
+      `${team.nombre} fue eliminado correctamente.`
     );
   };
 
   return (
     <div className="p-6 font-questrial w-full max-w-full">
-      {/* Header con buscador y botones */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Equipos Temporales
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -148,23 +145,19 @@ const Providers = () => {
                 setSearchTerm(e.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Buscar proveedor..."
+              placeholder="Buscar equipo, entrenador o teléfono..."
             />
           </div>
 
-          {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
               data={filteredData}
-              fileName="Proveedores"
+              fileName="Equipos_Temporales"
               columns={[
-                { header: "Razón Social", accessor: "razonSocial" },
-                { header: "NIT", accessor: "nit" },
-                { header: "Tipo de Entidad", accessor: "tipoEntidad" },
-                { header: "Tipo Proveedor", accessor: "tipoProveedor" },
-                { header: "Contacto Principal", accessor: "contactoPrincipal" },
-                { header: "Correo", accessor: "correo" },
-                { header: "Teléfono", accessor: "telefono" },
+                { header: "Nombre", accessor: "nombre" },
+                { header: "Entrenador", accessor: "entrenador" },
+                { header: "Número de contacto", accessor: "telefono" },
+                { header: "Cantidad Jugadoras", accessor: "cantidadJugadoras" },
                 { header: "Estado", accessor: "estado" },
               ]}
             />
@@ -172,18 +165,17 @@ const Providers = () => {
             <button
               onClick={() => {
                 setModalMode("create");
-                setProviderToEdit(null);
+                setTeamToEdit(null);
                 setIsModalOpen(true);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
             >
-              <FaPlus /> Crear Proveedor
+              <FaPlus /> Crear Equipo
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tabla */}
       {totalRows > 0 ? (
         <>
           <div className="w-full overflow-x-auto bg-white rounded-lg">
@@ -191,11 +183,10 @@ const Providers = () => {
               <Table
                 thead={{
                   titles: [
-                    "Razón Social",
-                    "NIT",
-                    "Entidad",
-                    "Tipo Proveedor",
-                    "Contacto",
+                    "Nombre",
+                    "Entrenador",
+                    "Número de contacto",
+                    "Cantidad de Jugadoras",
                   ],
                   state: true,
                   actions: true,
@@ -203,11 +194,10 @@ const Providers = () => {
                 tbody={{
                   data: paginatedData,
                   dataPropertys: [
-                    "razonSocial",
-                    "nit",
-                    "tipoEntidad",
-                    "tipoProveedor",
-                    "contactoPrincipal",
+                    "nombre",
+                    "entrenador",
+                    "telefono",
+                    "cantidadJugadoras",
                   ],
                   state: true,
                   stateMap: {
@@ -235,28 +225,26 @@ const Providers = () => {
         </>
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          No hay proveedores registrados todavía.
+          No hay equipos temporales registrados todavía.
         </div>
       )}
 
-      {/* Modal Crear/Editar */}
-      <ProviderModal
+      <TemporaryTeamModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
         onUpdate={handleUpdate}
-        providerToEdit={providerToEdit}
+        teamToEdit={teamToEdit}
         mode={modalMode}
       />
 
-      {/* Modal Ver */}
-      <ProviderViewModal
+      <TemporaryTeamViewModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
-        provider={providerToView}
+        team={teamToView}
       />
     </div>
   );
 };
 
-export default Providers;
+export default TemporaryTeams;

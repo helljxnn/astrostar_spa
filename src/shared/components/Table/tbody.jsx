@@ -22,9 +22,10 @@ const Tbody = ({ options }) => {
     onDelete,
     onView,
     onList,
+    customActions, // ✅ AGREGADO: acciones personalizadas
   } = options.tbody || {};
 
-  const hasActions = onEdit || onDelete || onView || onList;
+  const hasActions = onEdit || onDelete || onView || onList || customActions; // ✅ MODIFICADO
 
   /* --- Si no hay datos --- */
   if (!data || data.length === 0) {
@@ -134,6 +135,22 @@ const Tbody = ({ options }) => {
                   >
                     <FaList />
                   </button>
+                )}
+
+                {/* ✅ NUEVO: Acciones personalizadas */}
+                {customActions && (
+                  typeof customActions === 'function'
+                    ? customActions(item)
+                    : customActions.map((action, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => action.onClick(item)}
+                          className={action.className}
+                          title={action.title}
+                        >
+                          {action.label}
+                        </button>
+                      ))
                 )}
               </td>
             )}

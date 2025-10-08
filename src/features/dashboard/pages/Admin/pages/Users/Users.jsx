@@ -12,71 +12,71 @@ import {
   showDeleteAlert,
 } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
-import usersData from "./UserData.jsx";
+import usersData from "../../../../../../shared/models/UserData.js";
 import rolesData from "../../../../../../shared/models/RolesData.js";
 
+// 🔑 Constante clave de LocalStorage
+const LOCAL_STORAGE_KEY = "users";
+
 const Users = () => {
-  const [data, setData] = useState(usersData);
+  // 🟢 Estado inicial cargado desde LocalStorage o desde usersData
+  const [data, setData] = useState(() => {
+    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : usersData;
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [userToEdit, setUserToEdit] = useState(null);
   const [userToView, setUserToView] = useState(null);
-  
-  // Estados para búsqueda y paginación
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10); // Puedes hacer esto configurable si quieres
+  const [rowsPerPage] = useState(10);
+
+  //Guardar en LocalStorage cada vez que cambien los datos
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+  }, [data]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
-      return phone;
-    if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
-    return phone;
+    return phone.replace(/[\s\-\(\)]/g, ""); // limpio pero sin +57
   };
 
-  // Filtrar datos basado en el término de búsqueda
+  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    
-    return data.filter((user) => {
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        user.nombre?.toLowerCase().includes(searchLower) ||
-        user.apellido?.toLowerCase().includes(searchLower) ||
-        user.correo?.toLowerCase().includes(searchLower) ||
-        user.identificacion?.toString().includes(searchLower) ||
-        user.rol?.toLowerCase().includes(searchLower) ||
-        user.estado?.toLowerCase().includes(searchLower) ||
-        `${user.nombre} ${user.apellido}`.toLowerCase().includes(searchLower)
-      );
-    });
+    if (!searchTerm) return data;
+
+    return data.filter((user) =>
+      Object.entries(user).some(([key, value]) => {
+        const stringValue = String(value).trim();
+        
+        // 🎯 Búsqueda EXACTA para el campo "estado"
+        if (key.toLowerCase() === "estado") {
+          return stringValue.toLowerCase() === searchTerm.toLowerCase();
+        }
+
+        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+    );
   }, [data, searchTerm]);
 
-  // Calcular datos de paginación
+  // Paginación
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
-  // Resetear página cuando cambie el filtro de búsqueda
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  useEffect(() => setCurrentPage(1), [searchTerm]);
 
-  // Manejar cambio de búsqueda
-  const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
-  };
+  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handlePageChange = (page) => setCurrentPage(page);
 
-  // Manejar cambio de página
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
+  // Crear usuario
   const handleSave = async (newUser) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -88,12 +88,14 @@ const Users = () => {
           id: Date.now(),
           telefono: formatPhoneNumber(newUser.telefono),
         };
+
         setData((prevData) => [...prevData, userWithFormattedPhone]);
         resolve();
       }, 500);
     });
   };
 
+  // Editar usuario
   const handleUpdate = async (updatedUser) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -104,6 +106,7 @@ const Users = () => {
           ...updatedUser,
           telefono: formatPhoneNumber(updatedUser.telefono),
         };
+
         setData((prevData) =>
           prevData.map((user) =>
             user.id === userWithFormattedPhone.id
@@ -116,59 +119,15 @@ const Users = () => {
     });
   };
 
-  const handleCreate = () => {
-    setModalMode("create");
-    setUserToEdit(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (user) => {
-    console.log("Editando usuario - función llamada:", user); // Debug
-    
-    // Verificar si el user es un evento o un objeto
-    let userData = user;
-    if (user && user.target) {
-      // Si es un evento, buscar los datos del usuario
-      console.warn("handleEdit recibió un evento en lugar de datos del usuario");
-      return;
-    }
-    
-    if (!userData) {
-      console.error("No se recibieron datos del usuario para editar");
-      return;
-    }
-    
-    console.log("Datos del usuario a editar:", userData);
-    setModalMode("edit");
-    setUserToEdit(userData);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setUserToEdit(null);
-    setModalMode("create");
-  };
-
+  // Eliminar usuario
   const handleDelete = async (user) => {
-    console.log("Eliminando usuario - función llamada:", user); // Debug
-    
-    // Verificar si el user es un evento o un objeto
-    let userData = user;
-    if (user && user.target) {
-      // Si es un evento, buscar los datos del usuario
-      console.warn("handleDelete recibió un evento en lugar de datos del usuario");
-      return;
-    }
-    
-    if (!userData || !userData.id) {
-      console.error("Usuario no válido para eliminar:", userData);
-      return showErrorAlert("Error", "Usuario no encontrado o no válido");
+    if (!user?.id) {
+      return showErrorAlert("Error", "Usuario no válido");
     }
 
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
-      `Se eliminará a ${userData.nombre} ${userData.apellido}. Esta acción no se puede deshacer.`,
+      `Se eliminará a ${user.nombre} ${user.apellido}. Esta acción no se puede deshacer.`,
       {
         confirmButtonText: "Sí, eliminar",
         cancelButtonText: "Cancelar",
@@ -178,51 +137,46 @@ const Users = () => {
     if (!confirmResult.isConfirmed) return;
 
     try {
-      // Simular llamada API
       await new Promise((resolve, reject) => {
         setTimeout(() => {
-          if (Math.random() < 0.05) {
-            reject(new Error("Error de conexión simulado"));
-          } else {
-            resolve();
-          }
+          if (Math.random() < 0.05) reject(new Error("Error simulado"));
+          else resolve();
         }, 500);
       });
 
-      setData((prevData) => prevData.filter((u) => u.id !== userData.id));
+      setData((prevData) => prevData.filter((u) => u.id !== user.id));
 
       showSuccessAlert(
         "Usuario eliminado",
-        `${userData.nombre} ${userData.apellido} fue eliminado correctamente.`
+        `${user.nombre} ${user.apellido} fue eliminado correctamente.`
       );
     } catch (error) {
-      console.error("Error al eliminar usuario:", error);
-      showErrorAlert(
-        "Error al eliminar",
-        error.message || "No se pudo eliminar el usuario, intenta de nuevo."
-      );
+      showErrorAlert("Error al eliminar", error.message);
     }
   };
 
+  // Ver usuario
   const handleView = (user) => {
-    console.log("Ver usuario - función llamada:", user); // Debug
-    
-    // Verificar si el user es un evento o un objeto
-    let userData = user;
-    if (user && user.target) {
-      // Si es un evento, buscar los datos del usuario
-      console.warn("handleView recibió un evento en lugar de datos del usuario");
-      return;
-    }
-    
-    if (!userData) {
-      console.error("No se recibieron datos del usuario para ver");
-      return;
-    }
-    
-    console.log("Ver detalles del usuario:", userData);
-    setUserToView(userData);
+    setUserToView(user);
     setIsViewModalOpen(true);
+  };
+
+  const handleCreate = () => {
+    setModalMode("create");
+    setUserToEdit(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (user) => {
+    setModalMode("edit");
+    setUserToEdit(user);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setUserToEdit(null);
+    setModalMode("create");
   };
 
   const handleCloseViewModal = () => {
@@ -242,19 +196,16 @@ const Users = () => {
             </span>
           )}
         </h1>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          {/* Buscador */}
           <div className="sm:w-64">
             <SearchInput
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Buscar usuario"
+              placeholder="Buscar usuario..."
               className="w-full"
             />
           </div>
-          
-          {/* Botón crear */}
           <button
             onClick={handleCreate}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
@@ -264,7 +215,6 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Mensaje cuando no hay resultados */}
       {totalRows === 0 && searchTerm && (
         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 mb-6">
           <p className="text-gray-600">
@@ -279,18 +229,23 @@ const Users = () => {
         </div>
       )}
 
-      {/* Tabla */}
       {totalRows > 0 && (
         <>
           <Table
             thead={{
-              titles: ["Nombre", "Correo", "Identificación", "Rol"],
+              titles: ["Nombre", "Correo", "Identificación", "Rol", "Teléfono"],
               state: true,
               actions: true,
             }}
             tbody={{
               data: paginatedData,
-              dataPropertys: ["nombre", "correo", "identificacion", "rol"],
+              dataPropertys: [
+                "nombre",
+                "correo",
+                "identificacion",
+                "rol",
+                "telefono",
+              ],
               state: true,
               stateMap: {
                 Activo: "bg-green-100 text-green-800",
@@ -302,7 +257,6 @@ const Users = () => {
             onView={handleView}
           />
 
-          {/* Paginador */}
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -314,7 +268,6 @@ const Users = () => {
         </>
       )}
 
-      {/* Modal de creación/edición */}
       <UserModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
@@ -325,7 +278,6 @@ const Users = () => {
         mode={modalMode}
       />
 
-      {/* Modal de visualización */}
       <UserViewModal
         isOpen={isViewModalOpen}
         onClose={handleCloseViewModal}
