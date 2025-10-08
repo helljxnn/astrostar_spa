@@ -1,5 +1,6 @@
 // src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
 import React, { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
 import ProviderViewModal from "./components/ProviderViewModal.jsx";
@@ -18,6 +19,9 @@ import {
 const LOCAL_STORAGE_KEY = "providers";
 
 const Providers = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // 🟢 Estado inicial cargado desde LocalStorage o desde providersData
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -37,6 +41,18 @@ const Providers = () => {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
   }, [data]);
+
+  // 🟢 Abrir modal de creación si se navega con el estado adecuado
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setModalMode("create");
+      setProviderToEdit(null);
+      setIsModalOpen(true);
+      // Limpiar el estado para que no se vuelva a abrir al recargar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
 
   // 📞 Formatear teléfono sin +57
   const formatPhoneNumber = (phone) => {

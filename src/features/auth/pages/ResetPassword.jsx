@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { FiLock } from 'react-icons/fi';
-import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css"; // Importar los estilos del glow
 
@@ -14,10 +14,17 @@ const ResetPassword = () => {
     const location = useLocation();
     const email = location.state?.email; // Recibe el email desde la página anterior
 
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+    });
+
     // Si no hay email, significa que el usuario no pasó por el flujo correcto.
     useEffect(() => {
         if (!email) {
-            showErrorAlert('Acceso denegado', 'Por favor, inicia el proceso de recuperación desde el principio.');
             navigate('/forgot-password');
         }
     }, [email, navigate]);
@@ -25,11 +32,11 @@ const ResetPassword = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (password.length < 6) {
-            showErrorAlert('Error', 'La contraseña debe tener al menos 6 caracteres.');
+            Toast.fire({ icon: 'error', title: 'La contraseña debe tener al menos 6 caracteres.' });
             return;
         }
         if (password !== confirmPassword) {
-            showErrorAlert('Error', 'Las contraseñas no coinciden.');
+            Toast.fire({ icon: 'error', title: 'Las contraseñas no coinciden.' });
             return;
         }
         setIsLoading(true);
@@ -40,9 +47,7 @@ const ResetPassword = () => {
         // Simulamos una respuesta exitosa después de 2 segundos.
         setTimeout(() => {
             setIsLoading(false);
-            showSuccessAlert('¡Éxito!', 'Tu contraseña ha sido restaurada. Ahora puedes iniciar sesión.').then(() => {
-                navigate('/login'); // Redirige al login
-            });
+            navigate('/login'); // Redirige al login
         }, 2000);
     };
 
@@ -72,7 +77,9 @@ const ResetPassword = () => {
                             className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                            }}
                             placeholder="Nueva contraseña"
                             required
                         />
@@ -80,7 +87,9 @@ const ResetPassword = () => {
                             className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
                             type="password"
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            onChange={(e) => {
+                                setConfirmPassword(e.target.value);
+                            }}
                             placeholder="Confirmar nueva contraseña"
                             required
                         />

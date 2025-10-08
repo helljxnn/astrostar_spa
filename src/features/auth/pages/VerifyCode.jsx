@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { FiKey, FiArrowLeft } from 'react-icons/fi';
-import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css"; // Importar los estilos del glow
 
@@ -13,10 +13,17 @@ const VerifyCode = () => {
     const location = useLocation();
     const email = location.state?.email; // Recibe el email desde la página anterior
 
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+    });
+
     // Si no hay email, redirige al inicio del proceso
     useEffect(() => {
         if (!email) {
-            showErrorAlert('Error', 'No se ha proporcionado un correo. Por favor, inicia el proceso de nuevo.');
             navigate('/forgot-password');
         }
     }, [email, navigate]);
@@ -24,23 +31,20 @@ const VerifyCode = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (code.length !== 6) {
-            showErrorAlert('Error', 'El código debe tener 6 dígitos.');
+            Toast.fire({ icon: 'error', title: 'El código debe tener 6 dígitos.' });
             return;
         }
         setIsLoading(true);
 
         // --- Lógica de Verificación ---
         // En una app real, aquí llamarías a tu API para verificar el código.
-        // Para simular, usaremos un código fijo "123456".
         setTimeout(() => {
             setIsLoading(false);
             if (code === '123456') {
-                showSuccessAlert('¡Código Correcto!', 'Ahora puedes crear tu nueva contraseña.').then(() => {
-                    // Pasa el email a la siguiente página para saber a qué usuario cambiar la contraseña
-                    navigate('/reset-password', { state: { email } });
-                });
+                // Pasa el email a la siguiente página para saber a qué usuario cambiar la contraseña
+                navigate('/reset-password', { state: { email } });
             } else {
-                showErrorAlert('Error', 'El código ingresado es incorrecto.');
+                Toast.fire({ icon: 'error', title: 'El código ingresado es incorrecto.' });
             }
         }, 1500);
     };
@@ -71,7 +75,9 @@ const VerifyCode = () => {
                             className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90 tracking-[0.5em] text-center"
                             type="text"
                             value={code}
-                            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} // Solo permite números
+                            onChange={(e) => {
+                                setCode(e.target.value.replace(/\D/g, '')); // Solo permite números
+                            }}
                             placeholder="Código de 6 dígitos"
                             maxLength="6"
                             required

@@ -100,6 +100,7 @@ today.setHours(0, 0, 0, 0); // Establece la hora a medianoche para comparar solo
 
 // Reglas de validación para el formulario de citas
 export const appointmentValidationRules = {
+  athlete: [(value) => (!value ? "Debe seleccionar un deportista" : "")],
   specialty: [(value) => (!value ? "Debe seleccionar una especialidad" : "")],
   specialist: [(value) => (!value ? "Debe seleccionar un especialista" : "")],
   description: [
@@ -109,10 +110,7 @@ export const appointmentValidationRules = {
         ? "La descripción debe tener al menos 10 caracteres"
         : "",
   ],
-  date: [
-    (value) => (!value ? "La fecha es obligatoria" : ""),
-    (value) =>
-      new Date(value) < today ? "La fecha no puede ser en el pasado" : "",
+  start: [
+    (value) => (!value ? "Debe seleccionar una fecha y hora para la cita" : ""),
   ],
-  time: [(value) => (!value ? "La hora es obligatoria" : "")],
 };

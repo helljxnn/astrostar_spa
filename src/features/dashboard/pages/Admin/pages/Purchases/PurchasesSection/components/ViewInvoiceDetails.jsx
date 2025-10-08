@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaInfoCircle } from 'react-icons/fa';
+import { FaInfoCircle, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
+    const [showImageModal, setShowImageModal] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
     if (!invoiceData) return null;
 
     const isCancelled = invoiceData.estado === 'Cancelado';
@@ -21,6 +24,20 @@ const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
         hidden: { scale: 0.9, opacity: 0, y: 50 },
         visible: { scale: 1, opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
         exit: { scale: 0.9, opacity: 0, y: 30, transition: { duration: 0.2 } },
+    };
+
+    const openImageModal = (index) => {
+        setCurrentImageIndex(index);
+        setShowImageModal(true);
+    };
+
+    const closeImageModal = () => {
+        setShowImageModal(false);
+    };
+
+    const navigateImages = (direction) => {
+        const newIndex = (currentImageIndex + direction + invoiceData.imagenes.length) % invoiceData.imagenes.length;
+        setCurrentImageIndex(newIndex);
     };
 
     return (
@@ -106,6 +123,22 @@ const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
                             </div>
                         </div>
 
+                        {invoiceData.imagenes && invoiceData.imagenes.length > 0 && (
+                            <div className="px-6 pb-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4">Imágenes Adjuntas</h3>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                                    {invoiceData.imagenes.map((image, index) => (
+                                        <div key={index} className="relative group cursor-pointer" onClick={() => openImageModal(index)}>
+                                            <img src={image.url} alt={`Factura ${index + 1}`} className="h-24 w-full object-cover rounded-md shadow-md transition-transform group-hover:scale-105" />
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-md">
+                                                <p className="text-white text-xs font-bold">Ver</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                         {/* Footer */}
                         <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-between items-center">
                             <div className="text-2xl font-bold text-gray-800">
@@ -115,6 +148,31 @@ const ViewInvoiceDetails = ({ isOpen, onClose, invoiceData }) => {
                         </div>
                     </motion.div>
                 </motion.div>
+            )}
+            {showImageModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80" onClick={closeImageModal}>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); navigateImages(-1); }}
+                        className="absolute left-4 text-white bg-black/30 p-3 rounded-full hover:bg-black/50 transition-colors"
+                    >
+                        <FaChevronLeft size={24} />
+                    </button>
+                    <motion.img
+                        key={currentImageIndex}
+                        src={invoiceData.imagenes[currentImageIndex].url}
+                        alt={`Imagen ${currentImageIndex + 1}`}
+                        className="max-h-[90vh] max-w-[90vw] object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                    />
+                    <button
+                        onClick={(e) => { e.stopPropagation(); navigateImages(1); }}
+                        className="absolute right-4 text-white bg-black/30 p-3 rounded-full hover:bg-black/50 transition-colors"
+                    >
+                        <FaChevronRight size={24} />
+                    </button>
+                </div>
             )}
         </AnimatePresence>
     );

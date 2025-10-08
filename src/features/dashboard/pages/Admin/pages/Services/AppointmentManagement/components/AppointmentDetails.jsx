@@ -4,6 +4,7 @@ import 'moment/locale/es';
 import { motion, AnimatePresence } from 'framer-motion';
 import { showConfirmAlert, showSuccessAlert } from '../../../../../../../../shared/utils/alerts';
 import Swal from 'sweetalert2';
+import { FaCheckCircle, FaTimes } from 'react-icons/fa';
 
 // Estas opciones deberían idealmente venir de una fuente compartida o una API.
 // Por ahora, las mantenemos aquí para que el componente sea autónomo.
@@ -34,7 +35,7 @@ const getAthleteName = (athleteId, athleteList) => {
  * @param {Array<object>} props.athleteList - Lista de atletas para resolver nombres.
  */
 
-const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = [], onCancelAppointment }) => {
+const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = [], onCancelAppointment, onMarkAsCompleted }) => {
     if (!appointmentData) return null;
 
     // Configuración de detalles
@@ -45,9 +46,19 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
         { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') },
         { label: "Hora", value: moment(appointmentData.start).format('h:mm a') },
         { label: "Descripción / Motivo", value: appointmentData.description },
-        { label: "Estado de la cita", value: appointmentData.status === 'cancelled' ? 'Cancelada' : 'Activa' },
-        { label: "Motivo de cancelación", value: appointmentData.status === 'cancelled' ? (appointmentData.cancelReason || 'No especificado') : '-' },
+        { label: "Estado de la cita", value: appointmentData.status === 'cancelled' ? 'Cancelada' : (appointmentData.status === 'completed' ? 'Completada' : 'Activa') }
     ];
+
+    // Añadir condicionalmente el motivo de cancelación o la conclusión
+    if (appointmentData.status === 'cancelled') {
+        details.push({
+            label: "Motivo de cancelación", value: appointmentData.cancelReason || 'No especificado'
+        });
+    } else if (appointmentData.status === 'completed') {
+        details.push({
+            label: "Conclusión de la cita", value: appointmentData.conclusion || 'No registrada'
+        });
+    }
 
     // Animaciones
     const backdropVariants = {
@@ -105,20 +116,28 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
                         </div>
 
                         {/* Footer */}
-                        <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex flex-col sm:flex-row justify-between gap-4">
-                            {appointmentData.status !== 'cancelled' && (
-                                <button
-                                    type="button"
-                                    onClick={handleCancelAppointment}
-                                    className="px-8 py-3 bg-primary-purple text-white rounded-xl hover:bg-primary-blue focus:outline-none focus:ring-2 focus:ring-primary-blue font-bold text-lg shadow-md transition-all duration-200"
-                                >
-                                    Cancelar cita
-                                </button>
+                        <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-between items-center gap-4">
+                            {appointmentData.status === 'active' && (
+                                <>
+                                    <button
+                                        onClick={handleCancelAppointment}
+                                        className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all duration-200 font-semibold"
+                                    >
+                                        <FaTimes /> Anular Cita
+                                    </button>
+                                    <button
+                                        onClick={() => onMarkAsCompleted(appointmentData)}
+                                        className="flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-all duration-200 font-semibold"
+                                    >
+                                        <FaCheckCircle /> Marcar como Completada
+                                    </button>
+                                </>
                             )}
+                            <div className="flex-grow" /> {/* Empuja el botón de cerrar a la derecha si los otros no están */}
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="px-8 py-3 bg-primary-purple text-white rounded-xl hover:bg-primary-blue focus:outline-none focus:ring-2 focus:ring-primary-purple font-bold text-lg shadow-md transition-all duration-200"
+                                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium"
                             >
                                 Cerrar
                             </button>

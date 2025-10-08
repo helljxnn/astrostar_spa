@@ -42,3 +42,10 @@
     opacity: 0.6;
     text-decoration: line-through;
 }
+
+/* Estilo para citas completadas */
+.rbc-event.event-completed {
+    background-color: #0ea5e9 !important; /* Azul cielo, con !important para asegurar que sobreescriba el color de especialidad */
+    opacity: 0.7;
+    border: 1px dashed #fff;
+}

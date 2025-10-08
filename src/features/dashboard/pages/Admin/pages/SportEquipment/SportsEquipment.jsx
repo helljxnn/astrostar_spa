@@ -1,22 +1,28 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Table from "../../../../../../shared/components/Table/table";
 import { SiGoogleforms } from "react-icons/si";
+import { FaMinusCircle } from "react-icons/fa";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
+import DarDeBajaModal from "./components/DarDeBajaModal"; // Importar el nuevo modal
 import ViewDetails from "../../../../../../shared/components/ViewDetails";
 import ReportButton from "../../../../../../shared/components/ReportButton";
+import SearchInput from "../../../../../../shared/components/SearchInput";
 import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert
 } from "../../../../../../shared/utils/alerts";
-import SearchInput from "../../../../../../shared/components/SearchInput";
 
 // Clave para guardar los datos en localStorage
 const LOCAL_STORAGE_KEY = 'sportsEquipmentData';
 
 function SportsEquipment() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   // Estado para la lista de datos, inicializado desde localStorage
   const [equipmentList, setEquipmentList] = useState(() => {
     try {
@@ -36,6 +42,7 @@ function SportsEquipment() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDarDeBajaModalOpen, setIsDarDeBajaModalOpen] = useState(false); // Estado para el nuevo modal
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +55,17 @@ function SportsEquipment() {
       console.error("Error al guardar en localStorage:", error);
     }
   }, [equipmentList]);
+
+  // useEffect para abrir el modal de creación si se navega con el estado adecuado
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setIsCreateModalOpen(true);
+      // Limpiar el estado de la ubicación para que no se vuelva a abrir al recargar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
+
 
   // Filtramos los datos basándonos en el término de búsqueda.
   // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
@@ -76,6 +94,7 @@ function SportsEquipment() {
       CantidadDonado: 0,
       Total: 0, // El total inicial es 0, se actualizará con compras/donaciones.
       estado: newData.estado,
+      bajaHistory: [], // Inicializar el historial de bajas
     };
 
     // Añadimos el nuevo equipo al principio de la lista
@@ -83,6 +102,35 @@ function SportsEquipment() {
     handleCloseCreateModal();
     showSuccessAlert("¡Creado!", "El nuevo material deportivo se ha registrado correctamente.");
   };
+
+  const handleDarDeBajaSubmit = (lossData) => {
+    const { equipmentId, quantity, reason, images } = lossData;
+
+    setEquipmentList(prevList =>
+      prevList.map(item => {
+        if (item.id === equipmentId) {
+          const newTotal = Math.max(0, item.Total - quantity);
+          const newHistoryEntry = {
+            date: new Date().toISOString(),
+            quantity: Number(quantity),
+            reason,
+            images,
+          };
+          // Asegurarse de que bajaHistory exista antes de añadir
+          const existingHistory = item.bajaHistory || [];
+          return {
+            ...item,
+            Total: newTotal,
+            bajaHistory: [...existingHistory, newHistoryEntry],
+          };
+        }
+        return item;
+      })
+    );
+
+    setIsDarDeBajaModalOpen(false);
+    showSuccessAlert("¡Baja Registrada!", `Se han dado de baja ${quantity} unidades de "${lossData.equipmentName}".`);
+  }
 
   // --- Lógica para Editar y Eliminar ---
   // Estas funciones se pasarán como props a la tabla.
@@ -165,6 +213,7 @@ function SportsEquipment() {
     { label: "Cantidad Donada", key: "CantidadDonado" },
     { label: "Total en Inventario", key: "Total" },
     { label: "Estado", key: "estado" },
+    { label: "Historial de Bajas", key: "bajaHistory", type: "history", historyKeys: { date: 'date', quantity: 'quantity', reason: 'reason', images: 'images' } },
   ];
 
   // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
@@ -186,7 +235,7 @@ function SportsEquipment() {
       {/* Contenedor index */}
       <div id="header" className="w-full h-auto p-8">
         {/* Cabecera */}
-        <h1 className="text-5xl">Material deportivo</h1>
+        <h1 className="text-4xl font-bold text-gray-800">Material deportivo</h1>
       </div>
       <div
         id="body"
@@ -197,13 +246,14 @@ function SportsEquipment() {
           id="actionButtons"
           className="w-full h-auto p-2 flex flex-row justify-between items-center"
         >
-          {/* Componente de Búsqueda reutilizable */}
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por cualquier dato..."
-          />
           {/* Botones */}
+          <div className="w-1/3">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar material..."
+            />
+          </div>
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
             <ReportButton
               data={reportData}
@@ -216,6 +266,9 @@ function SportsEquipment() {
                 { header: "Estado", accessor: "estado" },
               ]}
             />
+            <button onClick={() => setIsDarDeBajaModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
+              Dar de Baja <FaMinusCircle size={18} />
+            </button>
             <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>
@@ -261,6 +314,13 @@ function SportsEquipment() {
         onClose={handleCloseEditModal}
         onSave={handleUpdate}
         equipmentData={selectedEquipment}
+      />
+      {/* Modal para Dar de Baja */}
+      <DarDeBajaModal
+        isOpen={isDarDeBajaModalOpen}
+        onClose={() => setIsDarDeBajaModalOpen(false)}
+        onSave={handleDarDeBajaSubmit}
+        equipmentList={equipmentList}
       />
       {/* Modal reutilizable para Ver Detalles */}
       <ViewDetails

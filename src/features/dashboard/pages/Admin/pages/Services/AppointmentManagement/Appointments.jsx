@@ -26,6 +26,7 @@ const sampleAppointments = [
         specialty: "psicologia",
         specialist: "Dra. Ana Pérez",
         description: "Revisión de avance con el deportista X.",
+        status: 'active', // Estado inicial para que los botones se muestren
     },
 ];
 
@@ -84,20 +85,23 @@ function Appointments() {
 
     // Función para dar estilo a las citas del calendario
     const appointmentPropGetter = (event) => {
-        // Asignamos una clase basada en la especialidad para un control de estilo más robusto desde CSS.
-        const specialtyClassName = `event-specialty-${event.specialty || 'default'}`;
-        let className = `rbc-event-custom ${specialtyClassName}`;
+        // Obtiene el color de la especialidad o un color por defecto si no se encuentra.
+        const backgroundColor = specialtyColors[event.specialty] || '#6D28D9'; // Morado por defecto
+        let className = 'rbc-event-custom'; // Clase base para estilos comunes
 
         const style = {
+            backgroundColor,
             borderRadius: "5px",
             color: "white",
             border: "0px",
             display: "block",
-            opacity: 0.85
         };
 
         if (event.status === 'cancelled') {
             className += ' event-cancelled';
+        }
+        if (event.status === 'completed') {
+            className += ' event-completed';
         }
         return { className, style };
     };
@@ -200,7 +204,7 @@ function Appointments() {
             end: endDateTime,
             allDay: false,
             description: formValues.description,
-            specialty: formValues.specialty,
+            specialty: formValues.specialty, // Asegurarse de que el ID del deportista sea un número
             specialist: formValues.specialist,
             athlete: formValues.athlete,
             status: 'active', // Por defecto activa
@@ -212,12 +216,47 @@ function Appointments() {
         // El modal se cierra desde el propio AppointmentForm
     };
 
+    const handleMarkAsCompleted = async (appointmentToComplete) => {
+        const { value: conclusion } = await Swal.fire({
+            title: 'Conclusión de la Cita',
+            input: 'textarea',
+            inputLabel: 'Por favor, registre la conclusión o los resultados de la cita',
+            inputPlaceholder: 'Escribe la conclusión aquí...',
+            inputAttributes: {
+                'aria-label': 'Conclusión de la cita'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Guardar y Completar',
+            cancelButtonText: 'Volver',
+            customClass: {
+                confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2',
+                cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg',
+            },
+            buttonsStyling: false,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Debes ingresar una conclusión para completar la cita.';
+                }
+            }
+        });
+
+        if (conclusion) {
+            setAppointments(prev =>
+                prev.map(a =>
+                    a.id === appointmentToComplete.id ? { ...a, status: 'completed', conclusion: conclusion } : a
+                )
+            );
+            showSuccessAlert("¡Cita Completada!", "La cita ha sido marcada como completada y se ha guardado la conclusión.");
+            handleCloseViewModal(); // Cierra el modal de detalles después de la acción
+        }
+    };
+
     return (
         <div className="w-full h-auto grid grid-rows-[auto_1fr] relative p-4">
             {/* Cabecera */}
             <div id="header" className="w-full h-auto p-4 flex justify-between items-center">
                 <div>
-                    <h1 className="text-5xl font-bold text-gray-800">Gestión de Citas</h1>
+                    <h1 className="text-4xl font-bold text-gray-800">Gestión de Citas</h1>
                     <p className="text-gray-500 mt-2">
                         Visualiza, crea y gestiona las citas
                     </p>
@@ -323,6 +362,7 @@ function Appointments() {
                 onClose={handleCloseViewModal}
                 appointmentData={selectedAppointment}
                 athleteList={sampleAthletes}
+                onMarkAsCompleted={handleMarkAsCompleted}
                 onCancelAppointment={async (appointment) => {
                     // Solo pedir motivo de cancelación
                     const { value: reason } = await Swal.fire({

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import Swal from 'sweetalert2';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
-import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css"; // Importar los estilos del glow
 
@@ -10,6 +10,18 @@ const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        didOpen: (toast) => {
+            toast.addEventListener('mouseenter', Swal.stopTimer);
+            toast.addEventListener('mouseleave', Swal.resumeTimer);
+        }
+    });
 
     const isValidEmail = (email) => {
         // Basic email format validation
@@ -19,7 +31,11 @@ const ForgotPassword = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!email) {
-            showErrorAlert('Error', 'Por favor, ingresa tu correo electrónico.');
+            Toast.fire({ icon: 'error', title: 'Por favor, ingresa tu correo electrónico.' });
+            return;
+        }
+        if (!isValidEmail(email)) {
+            Toast.fire({ icon: 'error', title: 'Por favor, ingresa un correo electrónico válido.' });
             return;
         }
         setIsLoading(true);
@@ -32,7 +48,6 @@ const ForgotPassword = () => {
 
         setTimeout(() => {
             setIsLoading(false);
-            showSuccessAlert('¡Código Enviado!', 'Hemos enviado un código de 6 dígitos a tu correo electrónico.');
             // Redirige a la página de verificación, pasando el email en el estado.
             navigate('/verify-code', { state: { email } });
         }, 2000);
@@ -62,15 +77,14 @@ const ForgotPassword = () => {
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                         <input
                             className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
-                            type="email"
+                            type="text"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                            }}
                             placeholder="Tu correo electrónico"
                             required
                         />
-                        {!isValidEmail(email) && email && (
-                            <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
-                        )}
 
                         <button
                             type="submit"

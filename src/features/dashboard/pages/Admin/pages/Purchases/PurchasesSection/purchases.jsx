@@ -136,6 +136,8 @@ const Purchases = () => {
         cantidad: producto.cantidad,
         precioUnitario: producto.precioUnitario,
         cancelReason: '', // Añadir campo para motivo de cancelación
+        observaciones: invoiceData.observaciones, // Guardar las observaciones
+        imagenes: invoiceData.imagenes || [], // Guardar las imágenes
       };
     });
 
@@ -247,6 +249,8 @@ const Purchases = () => {
       productos: invoiceItems,
       total: invoiceTotal,
       cancelReason: invoiceItems.find(p => p.cancelReason)?.cancelReason || null, // Pasar el motivo de cancelación
+      observaciones: purchaseItem.observaciones || null, // Pasar las observaciones
+      imagenes: purchaseItem.imagenes || [], // Pasar las imágenes
     };
 
     // 4. Guardar los datos y abrir el modal
@@ -285,7 +289,7 @@ const Purchases = () => {
       {/* Contenedor index */}
       <div id="header" className="w-full h-auto p-8">
         {/* Cabecera */}
-        <h1 className="text-5xl">Compras</h1>
+        <h1 className="text-4xl font-bold text-gray-800">Compras</h1>
       </div>
       <div id="body" className="w-full h-auto flex flex-col gap-2 p-4">
         {/* Cuerpo */}
@@ -293,7 +297,7 @@ const Purchases = () => {
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por N° factura, proveedor, monto, fecha, estado..."
+            placeholder="Buscar"
           />
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
             <ReportButton

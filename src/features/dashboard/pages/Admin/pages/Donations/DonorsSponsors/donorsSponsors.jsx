@@ -128,7 +128,7 @@ function DonorsSponsors() {
     return (
         <div id="contentDonorsSponsors" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
             <div id="header" className="w-full h-auto p-8">
-                <h1 className="text-5xl">Donantes y Patrocinadores</h1>
+                <h1 className="text-4xl font-bold text-gray-800">Donantes y Patrocinadores</h1>
             </div>
             <div id="body" className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4">
                 <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between items-center">

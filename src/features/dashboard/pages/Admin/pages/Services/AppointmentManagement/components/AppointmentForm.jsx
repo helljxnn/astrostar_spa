@@ -5,6 +5,7 @@ import {
     useAppointmentValidation,
     appointmentValidationRules,
 } from "../hooks/useAppointmentValidation";
+import { DatePickerField } from "../../../../../../../../shared/components/DatePickerField";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 
 // Datos de ejemplo para los formularios (pueden venir de una API en un caso real)
@@ -35,10 +36,7 @@ const specialistData = {
 const initialAppointmentValues = {
     specialty: "",
     specialist: "",
-    description: "",
-    date: "",
-    time: "",
-    athlete: "",
+    start: null, // Unificamos fecha y hora en un solo campo 'start'
 };
 
 /**
@@ -73,50 +71,69 @@ const AppointmentForm = ({ isOpen, onClose, onSave, initialData, athleteList = [
         setValues(prev => ({ ...prev, [name]: value, specialist: '' }));
     };
 
+    // Obtiene el horario del especialista seleccionado
+    const getSpecialistSchedule = (specialty, specialist) => {
+        if (!specialty || !specialist) return null;
+        const specialistInfo = specialistData[specialty]?.find(s => s.value === specialist);
+        return specialistInfo ? specialistInfo.schedule : null;
+    };
+
+    const specialistSchedule = useMemo(() => getSpecialistSchedule(values.specialty, values.specialist), [values.specialty, values.specialist]);
+
     // Cargar datos iniciales si se proporciona initialData (para edición)
     useEffect(() => {
         if (isOpen) {
-            if (initialData) {
+            if (initialData) { // Si es un slot de calendario o una cita para editar
                 setValues(prev => ({
-                    ...prev, // Mantiene valores previos si los hay
-                    specialty: initialData.specialty || prev.specialty || "",
-                    specialist: initialData.specialist || prev.specialist || "",
+                    ...initialAppointmentValues, // Resetear primero
+                    // Si es una cita existente, precarga sus datos
+                    specialty: initialData.specialty || "",
+                    specialist: initialData.specialist || "",
                     description: initialData.description || prev.description || "",
-                    date: initialData.start ? initialData.start.toISOString().split('T')[0] : (prev.date || ""),
-                    time: initialData.start ? initialData.start.toTimeString().slice(0, 5) : (prev.time || ""),
-                    athlete: initialData.athlete || prev.athlete || "",
+                    athlete: initialData.athlete || "",
+                    // Si hay una fecha de inicio, la usamos, si no, es null
+                    start: initialData.start ? new Date(initialData.start) : null,
                 }));
+            } else {
+                resetForm();
             }
         } else if (!isOpen) { // Solo resetear si no está abierto
             resetForm(); // Limpiar el formulario al cerrar
         }
-    }, [isOpen, initialData, setValues, resetForm]);
+    }, [isOpen, initialData, resetForm, setValues]);
+
+    // Efecto para limpiar fecha/hora si el especialista cambia y la selección actual es inválida
+    useEffect(() => {
+        if (specialistSchedule && values.start) {
+            const selectedDay = values.start.getDay(); // getDay() es consistente
+            const selectedTime = values.start.toTimeString().slice(0, 5);
+
+            // Si el día o la hora no son válidos, resetea la fecha
+            if (!specialistSchedule.days.includes(selectedDay) || selectedTime < specialistSchedule.start || selectedTime >= specialistSchedule.end) {
+                setFieldValue('start', null);
+            }
+        }
+    }, [specialistSchedule, values.start, setFieldValue]);
 
     const handleFormSubmit = () => {
         if (validateAllFields()) {
-            // Validación de horario del especialista
-            const specialistInfo = specialistData[values.specialty]?.find(s => s.value === values.specialist);
-            if (specialistInfo && specialistInfo.schedule) {
-                const { days, start, end } = specialistInfo.schedule;
-                const appointmentDate = new Date(values.date);
-                const appointmentDay = appointmentDate.getUTCDay(); // Usamos getUTCDay para evitar problemas de zona horaria
-
-                if (!days.includes(appointmentDay)) {
-                    showErrorAlert("Horario no disponible", `El especialista no trabaja el día seleccionado. Días disponibles: ${days.map(d => ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][d]).join(', ')}.`);
-                    return;
-                }
-
-                if (values.time < start || values.time >= end) {
-                    showErrorAlert("Horario no disponible", `La hora seleccionada está fuera del horario laboral del especialista (${start} - ${end}).`);
-                    return;
-                }
-            } else {
-                showErrorAlert("Error", "No se pudo encontrar la información del horario para el especialista seleccionado.");
+            // La validación ahora está implícita en el DatePicker, pero una última comprobación no hace daño.
+            if (!values.start) {
+                // Si la validación pasa pero 'start' es nulo, es un caso especial.
+                // Esto puede ocurrir si el campo no se ha tocado pero es requerido.
+                // Forzamos la validación en este campo para mostrar el error.
+                handleBlur('start', null);
+                showErrorAlert("Error de validación", "Debe seleccionar una fecha y hora válidas.");
                 return;
             }
 
-
-            onSave(values);
+            const finalValues = {
+                ...values,
+                athlete: Number(values.athlete), // Asegurarse de que el ID del deportista sea un número
+                date: values.start.toISOString().split('T')[0],
+                time: values.start.toTimeString().slice(0, 5),
+            };
+            onSave(finalValues);
             onClose(); // Cerrar el modal después de guardar
         } else {
             showErrorAlert("Error de validación", "Por favor, complete todos los campos requeridos correctamente.");
@@ -130,6 +147,13 @@ const AppointmentForm = ({ isOpen, onClose, onSave, initialData, athleteList = [
         }
         return [];
     }, [values.specialty]);
+
+    // Función para filtrar las fechas en el calendario
+    const filterDate = (date) => {
+        if (!specialistSchedule) return true; // Si no hay horario, no deshabilitar
+        const dayOfWeek = date.getDay();
+        return specialistSchedule.days.includes(dayOfWeek);
+    };
 
     return (
         <Form
@@ -201,9 +225,18 @@ const AppointmentForm = ({ isOpen, onClose, onSave, initialData, athleteList = [
                     </div>
                 );
             })()}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField label="Fecha" name="date" type="date" value={values.date} onChange={handleChange} onBlur={handleBlur} error={touched.date && errors.date} required />
-                <FormField label="Hora" name="time" type="time" value={values.time} onChange={handleChange} onBlur={handleBlur} error={touched.time && errors.time} required />
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <DatePickerField
+                    label="Fecha y Hora de la Cita"
+                    selected={values.start}
+                    onChange={(date) => setFieldValue('start', date)}
+                    filterDate={filterDate}
+                    minTime={specialistSchedule?.start}
+                    maxTime={specialistSchedule?.end}
+                    disabled={!values.specialist}
+                    error={touched.start && errors.start}
+                    required
+                />
             </div>
         </Form>
     );
