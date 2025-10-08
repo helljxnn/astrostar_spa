@@ -151,7 +151,7 @@ const Table = ({
       </div>
 
       {/* ====== Paginador ====== */}
-      <div className="w-full border-t border-gray-100 bg-gray-50">
+      <div className="w-full border-t border-gray-200 bg-white p-4">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

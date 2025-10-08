@@ -6,7 +6,7 @@ import { FaTrash } from "react-icons/fa";
 import {
   useFormDonationsValidation,
   donationsValidationRules,
-} from "./hooks/useFormDonationsValidation";
+} from "./Donations/hooks/useFormDonationsValidation";
 
 /* ---------- Utils ---------- */
 import {

@@ -1,0 +1,51 @@
+/*
+ * Estilos de color para las citas basados en la especialidad.
+ * Usamos clases para una mayor especificidad y control.
+ */
+.rbc-event.event-specialty-psicologia {
+    background-color: #EAB308; /* Amarillo */
+}
+.rbc-event.event-specialty-fisioterapia {
+    background-color: #22C55E; /* Verde */
+}
+.rbc-event.event-specialty-nutricion {
+    background-color: #3B82F6; /* Azul */
+}
+.rbc-event.event-specialty-medicina {
+    background-color: #EF4444; /* Rojo */
+}
+.rbc-event.event-specialty-default {
+    background-color: #6D28D9; /* Morado por defecto */
+}
+
+/*
+ * Estilos personalizados para el calendario de citas.
+ */
+
+/* Estilo para el hover en los días del calendario en la vista de mes */
+.rbc-month-view .rbc-day-bg:hover {
+    background-color: #f0e6ff; /* Un morado muy claro y tenue, relacionado con el color primario */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* Estilo para el hover en los slots de tiempo en las vistas de semana y día */
+.rbc-time-slot:hover {
+    background-color: #f0e6ff;
+    cursor: pointer;
+}
+
+/* Estilo para citas canceladas */
+.rbc-event.event-cancelled {
+    background-color: #a3a3a3 !important; /* Gris, con !important para asegurar que sobreescriba el color de especialidad */
+    color: #e5e5e5 !important;
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+/* Estilo para citas completadas */
+.rbc-event.event-completed {
+    background-color: #0ea5e9 !important; /* Azul cielo, con !important para asegurar que sobreescriba el color de especialidad */
+    opacity: 0.7;
+    border: 1px dashed #fff;
+}

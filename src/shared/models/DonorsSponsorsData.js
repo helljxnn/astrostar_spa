@@ -1,0 +1,48 @@
+const donorsSponsorsData = [
+  {
+    id: 1,
+    nombre: "Empresa Solidaria S.A.S.",
+    tipo: "Patrocinador",
+    tipoPersona: "Jurídica",
+    identificacion: "900.123.456-7",
+    telefono: "3101234567",
+    correo: "contacto@solidaria.com",
+    direccion: "Calle 100 # 20-30, Bogotá",
+    estado: "Activo",
+  },
+  {
+    id: 2,
+    nombre: "Juanita Pérez",
+    tipo: "Donante",
+    tipoPersona: "Natural",
+    identificacion: "1.020.304.050",
+    telefono: "3209876543",
+    correo: "juanita.perez@email.com",
+    direccion: "Carrera 15 # 80-45, Apto 501, Bogotá",
+    estado: "Activo",
+  },
+  {
+    id: 3,
+    nombre: "Fundación Ayudar es Vivir",
+    tipo: "Donante",
+    tipoPersona: "Jurídica",
+    identificacion: "800.987.654-1",
+    telefono: "601-555-1234",
+    correo: "info@ayudarvivir.org",
+    direccion: "Avenida El Dorado # 68-70, Bogotá",
+    estado: "Inactivo",
+  },
+  {
+    id: 4,
+    nombre: "Carlos Rodríguez",
+    tipo: "Patrocinador",
+    tipoPersona: "Natural",
+    identificacion: "79.876.543",
+    telefono: "3151112233",
+    correo: "carlos.r@email.com",
+    direccion: "Transversal 5 # 45-67, Medellín",
+    estado: "Activo",
+  },
+];
+
+export default donorsSponsorsData;

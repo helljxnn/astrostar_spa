@@ -1,32 +1,80 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Table from "../../../../../../shared/components/Table/table";
-import sportsEquipmentData from "../../../../../../shared/models/SportsEquipment";
 import { SiGoogleforms } from "react-icons/si";
+import { FaMinusCircle } from "react-icons/fa";
 import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
-import { showSuccessAlert } from "../../../../../../shared/utils/alerts";
+import DarDeBajaModal from "./components/DarDeBajaModal"; // Importar el nuevo modal
+import ViewDetails from "../../../../../../shared/components/ViewDetails";
+import ReportButton from "../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../shared/components/SearchInput";
+import {
+  showSuccessAlert,
+  showConfirmAlert,
+  showErrorAlert
+} from "../../../../../../shared/utils/alerts";
+
+// Clave para guardar los datos en localStorage
+const LOCAL_STORAGE_KEY = 'sportsEquipmentData';
 
 function SportsEquipment() {
-  // Estado para la lista de datos, para poder actualizarla en tiempo real
-  const [equipmentList, setEquipmentList] = useState(sportsEquipmentData);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Estado para la lista de datos, inicializado desde localStorage
+  const [equipmentList, setEquipmentList] = useState(() => {
+    try {
+      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      // Si existe 'storedData' (incluso si es '[]'), lo usamos.
+      if (storedData) {
+        return JSON.parse(storedData);
+      }
+    } catch (error) {
+      console.error("Error al leer desde localStorage:", error);
+    }
+    // Si no hay datos en localStorage, empezamos con una lista vacía.
+    return [];
+  });
+
   // Estados para controlar la visibilidad de los modales
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDarDeBajaModalOpen, setIsDarDeBajaModalOpen] = useState(false); // Estado para el nuevo modal
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
 
+  // useEffect para guardar los cambios en localStorage cada vez que la lista se modifica
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(equipmentList));
+    } catch (error) {
+      console.error("Error al guardar en localStorage:", error);
+    }
+  }, [equipmentList]);
+
+  // useEffect para abrir el modal de creación si se navega con el estado adecuado
+  useEffect(() => {
+    if (location.state?.openCreateModal) {
+      setIsCreateModalOpen(true);
+      // Limpiar el estado de la ubicación para que no se vuelva a abrir al recargar
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
+
+
+
   // Filtramos los datos basándonos en el término de búsqueda.
   // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
-  const filteredEquipment = useMemo(
-    () =>
-      equipmentList.filter((item) =>
-        item.NombreMaterial.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [equipmentList, searchTerm]
-  );
+  const filteredEquipment = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    if (!term) return equipmentList;
+    // Busca en todos los valores de cada objeto
+    return equipmentList.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term)));
+  }, [equipmentList, searchTerm]);
 
   const handleOpenCreateModal = () => {
     setIsCreateModalOpen(true);
@@ -36,11 +84,53 @@ function SportsEquipment() {
     setIsCreateModalOpen(false);
   };
 
-  const handleCreateSubmit = (e) => {
-    // Aquí iría la lógica para enviar los datos del formulario al backend
-    console.log("Formulario enviado!");
+  const handleCreate = (newData) => {
+    // En una app real, aquí también validarías que el nombre no exista ya.
+    const newEquipment = {
+      id: Date.now(), // Asignamos un ID único
+      NombreMaterial: newData.nombre,
+      CantidadInicial: 0, // Se establece en 0 por reglas de negocio.
+      CantidadComprado: 0,
+      CantidadDonado: 0,
+      Total: 0, // El total inicial es 0, se actualizará con compras/donaciones.
+      estado: newData.estado,
+      bajaHistory: [], // Inicializar el historial de bajas
+    };
+
+    // Añadimos el nuevo equipo al principio de la lista
+    setEquipmentList(prevList => [newEquipment, ...prevList]);
     handleCloseCreateModal();
+    showSuccessAlert("¡Creado!", "El nuevo material deportivo se ha registrado correctamente.");
   };
+
+  const handleDarDeBajaSubmit = (lossData) => {
+    const { equipmentId, quantity, reason, images } = lossData;
+
+    setEquipmentList(prevList =>
+      prevList.map(item => {
+        if (item.id === equipmentId) {
+          const newTotal = Math.max(0, item.Total - quantity);
+          const newHistoryEntry = {
+            date: new Date().toISOString(),
+            quantity: Number(quantity),
+            reason,
+            images,
+          };
+          // Asegurarse de que bajaHistory exista antes de añadir
+          const existingHistory = item.bajaHistory || [];
+          return {
+            ...item,
+            Total: newTotal,
+            bajaHistory: [...existingHistory, newHistoryEntry],
+          };
+        }
+        return item;
+      })
+    );
+
+    setIsDarDeBajaModalOpen(false);
+    showSuccessAlert("¡Baja Registrada!", `Se han dado de baja ${quantity} unidades de "${lossData.equipmentName}".`);
+  }
 
   // --- Lógica para Editar y Eliminar ---
   // Estas funciones se pasarán como props a la tabla.
@@ -58,15 +148,12 @@ function SportsEquipment() {
 
   const handleUpdate = (updatedData) => {
     // Lógica para actualizar el item en nuestra lista de estado
-    const updatedList = equipmentList.map((item) => {
-      // Usamos 'NombreMaterial' como identificador único. En una app real, sería un ID.
-      if (item.NombreMaterial === selectedEquipment.NombreMaterial) {
+    const updatedList = equipmentList.map(item => {
+      // Usamos el ID para garantizar que actualizamos el item correcto.
+      if (item.id === selectedEquipment.id) {
         return {
-          ...item,
+          ...item, // Mantenemos las cantidades y otros datos intactos
           NombreMaterial: updatedData.nombre,
-          CantidadComprado: Number(updatedData.comprado),
-          CantidadDonado: Number(updatedData.donado),
-          Total: Number(updatedData.comprado) + Number(updatedData.donado),
           estado: updatedData.estado,
         };
       }
@@ -80,16 +167,65 @@ function SportsEquipment() {
     );
   };
 
-  const handleDelete = (item) => {
-    console.log("Intentando eliminar:", item);
-    // Aquí se podría implementar la lógica de eliminación, por ejemplo, con un modal de confirmación.
+  const handleDelete = async (itemToDelete) => {
+    const result = await showConfirmAlert(
+      "¿Estás seguro de eliminar?",
+      `El material "${itemToDelete.NombreMaterial}" se eliminará permanentemente.`,
+      {
+        confirmButtonText: "Sí, eliminar",
+        cancelButtonText: "Cancelar",
+      }
+    );
+
+    if (result.isConfirmed) {
+      try {
+        // Filtramos la lista para excluir el item a eliminar.
+        const updatedList = equipmentList.filter(
+          (item) => item.id !== itemToDelete.id // Usamos el ID para eliminar
+        );
+        setEquipmentList(updatedList);
+        showSuccessAlert(
+          "¡Eliminado!",
+          `El material "${itemToDelete.NombreMaterial}" ha sido eliminado con éxito.`
+        );
+      } catch (error) {
+        console.error("Error al eliminar el material:", error);
+        showErrorAlert("Error", "Ocurrió un error al eliminar el material.");
+      }
+    }
   };
 
   const handleView = (item) => {
-    console.log("Viendo detalles del equipo:", item);
-    // Aquí podrías implementar la lógica para mostrar un modal de solo lectura
-    // con toda la información del 'item'.
+    setSelectedEquipment(item);
+    setIsViewModalOpen(true);
   };
+
+  const handleCloseViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedEquipment(null);
+  };
+
+  // Configuración para el modal de detalles reutilizable
+  const equipmentDetailConfig = [
+    { label: "Nombre del Material", key: "NombreMaterial" },
+    { label: "Cantidad Inicial", key: "CantidadInicial" },
+    { label: "Cantidad Comprada", key: "CantidadComprado" },
+    { label: "Cantidad Donada", key: "CantidadDonado" },
+    { label: "Total en Inventario", key: "Total" },
+    { label: "Estado", key: "estado" },
+    { label: "Historial de Bajas", key: "bajaHistory", type: "history", historyKeys: { date: 'date', quantity: 'quantity', reason: 'reason', images: 'images' } },
+  ];
+
+  // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
+  const reportData = useMemo(() => {
+    return filteredEquipment.map(item => ({
+      NombreMaterial: item.NombreMaterial || '',
+      CantidadComprado: item.CantidadComprado || 0,
+      CantidadDonado: item.CantidadDonado || 0,
+      Total: item.Total || 0,
+      estado: item.estado || '',
+    }));
+  }, [filteredEquipment]);
 
   return (
     <div
@@ -99,7 +235,7 @@ function SportsEquipment() {
       {/* Contenedor index */}
       <div id="header" className="w-full h-auto p-8">
         {/* Cabecera */}
-        <h1 className="text-5xl">Material deportivo</h1>
+        <h1 className="text-4xl font-bold text-gray-800">Material deportivo</h1>
       </div>
       <div
         id="body"
@@ -110,24 +246,30 @@ function SportsEquipment() {
           id="actionButtons"
           className="w-full h-auto p-2 flex flex-row justify-between items-center"
         >
-          {/* Componente de Búsqueda reutilizable */}
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre..."
-          />
           {/* Botones */}
-          <div
-            id="buttons"
-            className="h-auto flex flex-row items-center justify-end gap-4"
-          >
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-300 transition-colors">
-              <IoMdDownload size={25} color="#b595ff" /> Generar reporte
+          <div className="w-1/3">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar material..."
+            />
+          </div>
+          <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
+            <ReportButton
+              data={reportData}
+              fileName="Material_Deportivo"
+              columns={[
+                { header: "Nombre", accessor: "NombreMaterial" },
+                { header: "Comprado", accessor: "CantidadComprado" },
+                { header: "Donado", accessor: "CantidadDonado" },
+                { header: "Total", accessor: "Total" },
+                { header: "Estado", accessor: "estado" },
+              ]}
+            />
+            <button onClick={() => setIsDarDeBajaModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
+              Dar de Baja <FaMinusCircle size={18} />
             </button>
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold"
-            >
+            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
               Crear <SiGoogleforms size={20} />
             </button>
           </div>
@@ -137,9 +279,13 @@ function SportsEquipment() {
           rowsPerPage={4}
           paginationFrom={4}
           thead={{
-            titles: ["Nombre", "Comprado", "Donado", "Total"],
+            titles: [
+              "Nombre",
+              "Comprado",
+              "Donado",
+              "Total",
+            ],
             state: true,
-            actions: true,
           }}
           tbody={{
             data: filteredEquipment,
@@ -150,17 +296,17 @@ function SportsEquipment() {
               "Total",
             ],
             state: true,
-            onEdit: handleEdit,
-            onDelete: handleDelete,
-            onView: handleView,
           }}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onView={handleView}
         />
       </div>
       {/* Modal para Crear Material */}
       <FormCreate
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
-        onSubmit={handleCreateSubmit}
+        onSave={handleCreate}
       />
       {/* Modal para Editar Material. Se renderiza aquí y se controla con estado. */}
       <FormEdit
@@ -168,6 +314,21 @@ function SportsEquipment() {
         onClose={handleCloseEditModal}
         onSave={handleUpdate}
         equipmentData={selectedEquipment}
+      />
+      {/* Modal para Dar de Baja */}
+      <DarDeBajaModal
+        isOpen={isDarDeBajaModalOpen}
+        onClose={() => setIsDarDeBajaModalOpen(false)}
+        onSave={handleDarDeBajaSubmit}
+        equipmentList={equipmentList}
+      />
+      {/* Modal reutilizable para Ver Detalles */}
+      <ViewDetails
+        isOpen={isViewModalOpen}
+        onClose={handleCloseViewModal}
+        data={selectedEquipment}
+        detailConfig={equipmentDetailConfig}
+        title="Detalles del Material Deportivo"
       />
     </div>
   );

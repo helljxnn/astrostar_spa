@@ -15,6 +15,7 @@ export const FormField = ({
   onChange,
   onBlur,
   delay = 0,
+  disabled = false,
   ...props
 }) => {
   const hasError = touched && error;
@@ -22,6 +23,7 @@ export const FormField = ({
   const handleChange = (e) => {
     const val = e.target.value;
     if (typeof onChange === "function") {
+      // Esta lógica soporta las dos firmas: onChange(e) y onChange(name, value).
       if (onChange.length === 2) {
         onChange(name, val);
       } else {
@@ -30,12 +32,13 @@ export const FormField = ({
     }
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e) => {
     if (typeof onBlur === "function") {
+      // Esta lógica soporta las dos firmas: onBlur(name) y onBlur(e).
       if (onBlur.length === 1) {
         onBlur(name);
       } else {
-        onBlur();
+        onBlur(e);
       }
     }
   };
@@ -58,6 +61,7 @@ export const FormField = ({
           value={value}
           onChange={handleChange}
           onBlur={handleBlur}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
             ${
@@ -65,6 +69,7 @@ export const FormField = ({
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         >
@@ -82,6 +87,7 @@ export const FormField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent resize-none h-20
             ${
@@ -89,6 +95,7 @@ export const FormField = ({
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
@@ -100,6 +107,7 @@ export const FormField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
             ${
@@ -107,13 +115,14 @@ export const FormField = ({
                 ? "border-red-300 focus:ring-red-500"
                 : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
       )}
 
       <AnimatePresence>
-        {hasError && (
+        {hasError && error && (
           <motion.div
             initial={{ opacity: 0, y: -10, height: 0 }}
             animate={{ opacity: 1, y: 0, height: "auto" }}

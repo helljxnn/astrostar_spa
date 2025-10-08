@@ -7,6 +7,7 @@ import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
 import Login from "../features/auth/pages/Login.jsx";
+import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx"; 
 
@@ -21,9 +22,9 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/services" element={<Services />} />
       </Route>
-
-      {/* Login sin Layout (independiente, sin navbar/topbar) */}
+      {/* Rutas de autenticación sin Layout */}
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />

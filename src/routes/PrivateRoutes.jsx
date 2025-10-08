@@ -9,7 +9,7 @@ import DashboardLayout from "../features/dashboard/pages/Admin/components/Dashbo
 
 /* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
-import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement.jsx";
+import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
 
@@ -30,7 +30,7 @@ import TemporaryTeams from "../features/dashboard/pages/Admin/pages/Events/Tempo
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
 
 /* --- Donaciones --- */
-import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations.jsx";
+import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
 import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/DonationsForm.jsx";
 
 /* --- Compras --- */
@@ -206,6 +206,14 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute allowedRoles={["admin"]}>
               <DonationsForm />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="donors-sponsors"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <Donations />
             </PrivateRoute>
           }
         />

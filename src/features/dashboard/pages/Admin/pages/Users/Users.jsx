@@ -146,14 +146,19 @@ const Users = () => {
 
       setData((prevData) => prevData.filter((u) => u.id !== user.id));
 
-      showSuccessAlert(
-        "Usuario eliminado",
-        `${user.nombre} ${user.apellido} fue eliminado correctamente.`
-      );
-    } catch (error) {
-      showErrorAlert("Error al eliminar", error.message);
-    }
-  };
+    // ✅ Mostrar éxito
+    showSuccessAlert(
+      "Usuario eliminado",
+      `${userToDelete.nombre} ${userToDelete.apellido} fue eliminado correctamente.`
+    );
+  } catch (error) {
+    // ❌ Mostrar error real
+    showErrorAlert(
+      "Error al eliminar",
+      error.message || "No se pudo eliminar el usuario, intenta de nuevo."
+    );
+  }
+};
 
   // Ver usuario
   const handleView = (user) => {

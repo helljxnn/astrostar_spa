@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import LinksOptions from "./linksOptions";
 
-const SubMenu = () => {
+const SubMenu = ({ onOpenProfileModals }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: -5 }}
@@ -13,18 +13,20 @@ const SubMenu = () => {
     >
       <ul className="flex flex-col">
         <li>
-          <LinksOptions
-            url="/"
-            option="Ver perfil"
-            className="block px-4 py-2 hover:bg-primary-purple/10 text-gray-700 transition"
-          />
+          <button
+            onClick={() => onOpenProfileModals.setView(true)}
+            className="block w-full text-left px-4 py-2 hover:bg-primary-purple/10 text-gray-700 transition"
+          >
+            Ver perfil
+          </button>
         </li>
         <li>
-          <LinksOptions
-            url="/"
-            option="Editar perfil"
-            className="block px-4 py-2 hover:bg-primary-blue/10 text-gray-700 transition"
-          />
+          <button
+            onClick={() => onOpenProfileModals.setEdit(true)}
+            className="block w-full text-left px-4 py-2 hover:bg-primary-blue/10 text-gray-700 transition"
+          >
+            Editar perfil
+          </button>
         </li>
       </ul>
     </motion.div>
