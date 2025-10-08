@@ -54,8 +54,8 @@ function Categories() {
 
         {/* Subtítulo más legible */}
         <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto mb-10">
-          Conoce cómo cada categoría responde a las necesidades de niñas y jóvenes, 
-          combinando deporte, disciplina y valores.
+          Conoce cómo cada categoría responde a las necesidades de niñas y
+          jóvenes, combinando deporte, disciplina y valores.
         </p>
 
         {/* Tarjetas */}

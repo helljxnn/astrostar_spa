@@ -1,8 +1,9 @@
+
 import React from "react";
 import { motion } from "framer-motion";
 import { FaEye, FaRegEdit, FaTrash, FaList } from "react-icons/fa";
 
-/* --- Animación de filas --- */
+/* === Animación de filas === */
 const rowVariants = {
   hidden: { opacity: 0, y: 10 },
   visible: (i) => ({
@@ -14,8 +15,8 @@ const rowVariants = {
 
 const Tbody = ({
   data = [],
-  dataPropertys = [],
-  state = false,
+  dataPropertys = [],     // Ej: ["Nombre","Descripcion","EdadMinima","EdadMaxima"]
+  state = false,          // Muestra columna Estado si es true
   onEdit,
   onDelete,
   onView,
@@ -23,7 +24,7 @@ const Tbody = ({
 }) => {
   const hasActions = onEdit || onDelete || onView || onList;
 
-  /* 🔹 Sin datos */
+  // Sin datos
   if (!data || data.length === 0) {
     return (
       <tbody>
@@ -39,12 +40,10 @@ const Tbody = ({
   return (
     <tbody id="tbody" className="divide-y divide-gray-200">
       {data.map((item, index) => {
-        // Estado seguro en string
         const estadoOriginal = item.Estado ?? item.estado ?? "";
         const estado = String(estadoOriginal).trim().toLowerCase();
 
-        // 🎨 Colores personalizados
-        let estadoColorClass =
+        const estadoColorClass =
           estado === "activo"
             ? "text-primary-purple"
             : estado === "inactivo"
@@ -62,7 +61,7 @@ const Tbody = ({
               index % 2 === 0 ? "bg-white" : "bg-purple-50"
             } hover:bg-purple-100 transition`}
           >
-            {/* 🔹 Columnas dinámicas */}
+            {/* Columnas dinámicas */}
             {dataPropertys.map((property, i) => (
               <td
                 key={i}
@@ -72,14 +71,14 @@ const Tbody = ({
               </td>
             ))}
 
-            {/* 🔹 Estado */}
+            {/* Estado */}
             {state && (
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={estadoColorClass}>{estadoOriginal}</span>
               </td>
             )}
 
-            {/* 🔹 Acciones */}
+            {/* Acciones */}
             {hasActions && (
               <td className="px-6 py-4 flex items-center justify-center gap-2">
                 {onView && (

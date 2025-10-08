@@ -1,33 +1,30 @@
-// ================================
-// SportsCategory.jsx
-// Organizado para reportes consistentes
-// ================================
-
 import React, { useState, useMemo } from "react";
 import { FaPlus } from "react-icons/fa";
 
+/* ---------- Componentes ---------- */
 import Table from "./components/table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-
 import SportsCategoryModal from "./components/SportsCategoryModal";
 import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
 
+/* ---------- Datos ---------- */
 import SportsCategoryData from "../../../../../../../shared/models/sportsCategoryData";
 import MockAthletesData from "../../../../../../../shared/models/AthletesListModalCategory";
 
-import { showSuccessAlert, showDeleteAlert } from "../../../../../../../shared/utils/alerts";
+/* ---------- Utilidades ---------- */
+import {
+  showSuccessAlert,
+  showDeleteAlert,
+} from "../../../../../../../shared/utils/alerts";
 
 const SportsCategory = () => {
-  // =====================
-  // Estados
-  // =====================
+  /* ==================== ESTADOS ==================== */
   const [data, setData] = useState(SportsCategoryData);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 8;
 
+  // Modales
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [isNew, setIsNew] = useState(true);
@@ -39,24 +36,17 @@ const SportsCategory = () => {
   const [categoryForAthletes, setCategoryForAthletes] = useState(null);
   const [athletesData] = useState(MockAthletesData);
 
-  // =====================
-  // Filtrado y paginación
-  // =====================
+  const rowsPerPage = 5;
+
+  /* ==================== FILTRADO ==================== */
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    return data.filter(item =>
+    return data.filter((item) =>
       item.Nombre.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [data, searchTerm]);
 
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
-
-  // =====================
-  // Funciones CRUD
-  // =====================
+  /* ==================== CRUD ==================== */
   const handleCreate = () => {
     setSelectedCategory(null);
     setIsNew(true);
@@ -77,11 +67,35 @@ const SportsCategory = () => {
     );
 
     if (result.isConfirmed) {
-      setData(prev => prev.filter(cat => cat.id !== item.id));
-      await showSuccessAlert("Categoría eliminada", `"${item.Nombre}" ha sido eliminada.`);
+      setData((prev) => prev.filter((cat) => cat.id !== item.id));
+      await showSuccessAlert(
+        "Categoría eliminada",
+        `"${item.Nombre}" ha sido eliminada.`
+      );
     }
   };
 
+  const handleSave = async (categoryData) => {
+    if (isNew) {
+      setData((prev) => [...prev, { ...categoryData, id: Date.now() }]);
+      await showSuccessAlert("Categoría creada", "Se ha registrado la categoría.");
+    } else {
+      setData((prev) =>
+        prev.map((cat) =>
+          cat.id === selectedCategory?.id
+            ? { ...categoryData, id: cat.id }
+            : cat
+        )
+      );
+      await showSuccessAlert(
+        "Categoría actualizada",
+        "Se ha actualizado la categoría."
+      );
+    }
+    setIsModalOpen(false);
+  };
+
+  /* ==================== VISTAS / LISTADOS ==================== */
   const handleView = (item) => {
     setCategoryToView(item);
     setIsDetailModalOpen(true);
@@ -92,55 +106,40 @@ const SportsCategory = () => {
     setIsAthletesModalOpen(true);
   };
 
-  const handleSave = async (categoryData) => {
-    if (isNew) {
-      setData(prev => [...prev, { ...categoryData, id: Date.now() }]);
-      await showSuccessAlert("Categoría creada", "Se ha registrado la categoría.");
-    } else {
-      setData(prev =>
-        prev.map(cat =>
-          cat.id === selectedCategory?.id ? { ...categoryData, id: cat.id } : cat
-        )
-      );
-      await showSuccessAlert("Categoría actualizada", "Se ha actualizado la categoría.");
-    }
-    setIsModalOpen(false);
-  };
-
   const getAthletesByCategory = (categoryName) =>
     athletesData.filter(
-      athlete =>
+      (athlete) =>
         athlete.categoria &&
         athlete.categoria.toLowerCase() === categoryName?.toLowerCase()
     );
 
-  // =====================
-  // Render
-  // =====================
+  /* ==================== RENDER ==================== */
   return (
     <div className="p-6 font-questrial w-full max-w-full">
-      {/* Header */}
+      {/* ---------- ENCABEZADO ---------- */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Categoría Deportiva</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Categoría Deportiva
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          {/* Buscador */}
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
-              onChange={e => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar categoría..."
             />
           </div>
 
+          {/* Botón de reporte y crear */}
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
               data={filteredData}
               fileName="CategoriasDeportivas"
               columns={[
                 { header: "Nombre", accessor: "Nombre" },
+                { header: "Descripción", accessor: "Descripcion" },
                 { header: "Edad Mínima", accessor: "EdadMinima" },
                 { header: "Edad Máxima", accessor: "EdadMaxima" },
                 { header: "Estado", accessor: "Estado" },
@@ -157,35 +156,40 @@ const SportsCategory = () => {
         </div>
       </div>
 
-      {/* Tabla */}
-      {totalRows > 0 ? (
-        <>
-          <div className="w-full overflow-x-auto bg-white rounded-lg">
-            <Table
-              thead={{
-                titles: ["Nombre", "Edad mínima", "Edad máxima", "Estado", "Acciones"],
-                state: true,
-              }}
-              tbody={{
-                data: paginatedData,
-                dataPropertys: ["Nombre", "EdadMinima", "EdadMaxima"],
-                state: true,
-              }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onList={handleList}
-              rowsPerPage={rowsPerPage}
-            />
-          </div>
-        </>
+      {/* ---------- TABLA ---------- */}
+      {filteredData.length > 0 ? (
+        <div className="w-full overflow-x-auto bg-white rounded-lg">
+          <Table
+            thead={{
+              titles: [
+                "Nombre",
+                "Descripción",
+                "Edad mínima",
+                "Edad máxima",
+                "Estado",
+                "Acciones",
+              ],
+              state: true,
+            }}
+            tbody={{
+              data: filteredData, // 🔹 Se pasa todo y Table se encarga de paginar
+              dataPropertys: ["Nombre", "Descripcion", "EdadMinima", "EdadMaxima"],
+              state: true,
+            }}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onView={handleView}
+            onList={handleList}
+            rowsPerPage={rowsPerPage}
+          />
+        </div>
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           No hay categorías registradas.
         </div>
       )}
 
-      {/* Modales */}
+      {/* ---------- MODALES ---------- */}
       {isModalOpen && (
         <SportsCategoryModal
           isOpen={isModalOpen}

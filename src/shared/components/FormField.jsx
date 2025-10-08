@@ -7,14 +7,24 @@ export const FormField = ({
   name,
   type = "text",
   placeholder,
+export const FormField = ({
+  label,
+  name,
+  type = "text",
+  placeholder,
   required = false,
+  options = [],
+  value,
+  error,
   options = [],
   value,
   error,
   touched,
   onChange,
+  onChange,
   onBlur,
   delay = 0,
+  ...props
   ...props
 }) => {
   // Soporte para estado 'touched' interno para formularios sin hook de validación.
@@ -38,7 +48,9 @@ export const FormField = ({
       // Esta lógica soporta las dos firmas: onChange(e) y onChange(name, value).
       if (onChange.length === 2) {
         onChange(name, val);
+        onChange(name, val);
       } else {
+        onChange(e);
         onChange(e);
       }
     }
@@ -53,6 +65,7 @@ export const FormField = ({
     if (typeof onBlur === "function") {
       // Esta lógica soporta las dos firmas: onBlur(name) y onBlur(e).
       if (onBlur.length === 1) {
+        onBlur(name);
         onBlur(name);
       } else {
         onBlur(e);
@@ -94,7 +107,7 @@ export const FormField = ({
             </option>
           ))}
         </select>
-      ) : type === 'textarea' ? (
+      ) : type === "textarea" ? (
         <textarea
           name={name}
           value={value}

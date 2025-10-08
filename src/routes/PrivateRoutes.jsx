@@ -1,10 +1,13 @@
+// ================================
+// PrivateRoutes.jsx
+// ================================
 import { Routes, Route } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute.jsx";
 
 /* Layout general */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
-/* Páginas */
+/* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 import Appointments from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
@@ -34,9 +37,6 @@ import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/Do
 import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
 import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
 
-/* --- Ventas --- */
-import Sales from "../features/dashboard/pages/Admin/pages/Sales/Sales.jsx";
-
 /* --- Componentes generales --- */
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
 
@@ -58,8 +58,7 @@ const PrivateRoutes = () => {
 
       {/* Todas las rutas bajo el layout /dashboard */}
       <Route path="/dashboard" element={<DashboardLayout />}>
-
-        {/* Ruta principal /dashboard */}
+        {/* --- Principal --- */}
         <Route
           index
           element={
@@ -204,17 +203,6 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
-
-        {/* --- Módulo: Ventas --- */}
-        <Route
-          path="sales"
-          element={
-            <PrivateRoute allowedRoles={["admin"]}>
-              <Sales />
-            </PrivateRoute>
-          }
-        />
-
       </Route>
     </Routes>
   );

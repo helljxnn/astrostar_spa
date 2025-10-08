@@ -64,15 +64,21 @@ function DashboardLayout() {
 
       {/* Contenido Principal */}
       <div
-        // En desktop, el sidebar es 'static' y ocupa su propio espacio, por lo que no se necesita margen.
-        // En móvil, el sidebar es un overlay, por lo que el margen es 0.
-        className="flex-1 flex flex-col"
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
+          isMobile
+            ? "ml-0"
+            : isExpanded
+            ? "ml-[18rem]" // Espacio para sidebar expandido
+            : "ml-[5rem]" // Espacio para sidebar colapsado
+        }`}
       >
-        <TopBar
-          toggleSidebar={toggleSidebarExpansion}
-          onOpenProfileModals={{ setView: setViewModalOpen, setEdit: setEditModalOpen }}
-        />
-        <main className="flex-1 w-full overflow-y-auto px-0 sm:px-4 lg:px-6 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
+        {/* Barra superior */}
+        <div className="w-full bg-white shadow-md sticky top-0 z-20">
+          <TopBar toggleSidebar={toggleSidebarExpansion} />
+        </div>
+
+        {/* Contenido dinámico */}
+        <div className="flex-1 w-full overflow-y-auto px-0 sm:px-4 lg:px-6 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
           <Outlet />
         </main>
       </div>

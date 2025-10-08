@@ -18,7 +18,6 @@ import {
   FaShoppingCart,
   FaDollarSign,
   FaSignOutAlt,
-  FaBars,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
@@ -78,7 +77,6 @@ function DynamicSideBar({
     donations: false,
     events: false,
     purchases: false,
-    sales: false,
     employeesSchedule: false,
     sportsCategory: false,
     appointmentManagement: false,
@@ -96,7 +94,6 @@ function DynamicSideBar({
       visibleModules.donations = true;
       visibleModules.events = true;
       visibleModules.purchases = true;
-      visibleModules.sales = true;
       visibleModules.employeesSchedule = true;
       visibleModules.sportsCategory = true;
       visibleModules.appointmentManagement = true;
@@ -160,10 +157,6 @@ function DynamicSideBar({
 
   return (
     <>
-      {/* Botón de apertura del menú - Eliminado para evitar duplicidad con el botón del DashboardLayout */}
-
-      {/* El overlay se maneja ahora desde el DashboardLayout */}
-
       <motion.aside
         variants={sidebarVariants}
         animate={{
@@ -172,7 +165,7 @@ function DynamicSideBar({
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className={`fixed lg:static top-0 left-0 h-full bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out`}
+        className={`fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out`}
         initial={{ x: -288 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
@@ -990,43 +983,6 @@ function DynamicSideBar({
                     )}
                   </AnimatePresence>
                 )}
-              </motion.div>
-            )}
-
-            {visibleModules.sales && (
-              <motion.div
-                variants={menuItemVariants}
-                initial="initial"
-                animate="animate"
-              >
-                <Link
-                  to="/dashboard/sales"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/sales")
-                      ? "bg-indigo-100 text-primary-purple shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaDollarSign size={20} className="shrink-0" />
-                  </motion.div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0, x: -10 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        Ventas
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Link>
               </motion.div>
             )}
           </div>
