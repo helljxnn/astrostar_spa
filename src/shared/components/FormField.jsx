@@ -7,24 +7,14 @@ export const FormField = ({
   name,
   type = "text",
   placeholder,
-export const FormField = ({
-  label,
-  name,
-  type = "text",
-  placeholder,
   required = false,
-  options = [],
-  value,
-  error,
   options = [],
   value,
   error,
   touched,
   onChange,
-  onChange,
   onBlur,
   delay = 0,
-  ...props
   ...props
 }) => {
   // Soporte para estado 'touched' interno para formularios sin hook de validación.

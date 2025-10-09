@@ -3,21 +3,21 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 
 /* ---------- Componentes ---------- */
-import Table from "../../../../../../shared/components/Table/table";
-import SearchInput from "../../../../../../shared/components/SearchInput";
-import ReportButton from "../../../../../../shared/components/ReportButton";
-import Pagination from "../../../../../../shared/components/Table/Pagination";
+import Table from "../../../../../../../shared/components/Table/table";
+import SearchInput from "../../../../../../../shared/components/SearchInput";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
+import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import DonationViewModal from "./components/DonationViewModal";
 
 /* ---------- Datos iniciales ---------- */
-import donationsData from "../../../../../../shared/models/DonationsData";
+import donationsData from "../../../../../../../shared/models/DonationsData";
 
 /* ---------- Utilidades ---------- */
 import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts";
 
 const Donations = () => {
   /* ------------------- Estados ------------------- */

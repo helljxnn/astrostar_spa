@@ -6,13 +6,13 @@ import { FaTrash } from "react-icons/fa";
 import {
   useFormDonationsValidation,
   donationsValidationRules,
-} from "./hooks/useFormDonationsValidation";
+} from '../hooks/useFormDonationsValidation';
 
 /* ---------- Utils ---------- */
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts";
 
 const DonationsForm = () => {
   const navigate = useNavigate();

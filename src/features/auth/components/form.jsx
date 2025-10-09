@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import Swal from 'sweetalert2';
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
 import logo from "../../../../public/assets/images/astrostar.png";
@@ -10,24 +11,34 @@ const Form = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const isValidEmail = (email) => {
-    // Basic email format validation
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+  const Toast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3000,
+    timerProgressBar: true,
+  });
 
   const handleLogin = (e) => {
     e.preventDefault();
-    setLoginError(false);
-
-    const success = login({ email, password });
-    if (success) {
-      navigate("/dashboard");
-    } else {
-      setLoginError(true);
+    if (!email || !password) {
+      Toast.fire({ icon: 'error', title: 'Por favor, ingresa tu correo y contraseña.' });
+      return;
     }
-  };
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      const success = login({ email, password });
+      if (success) {
+        Toast.fire({ icon: 'success', title: '¡Bienvenido de nuevo!' });
+        navigate('/dashboard');
+      } else {
+        Toast.fire({ icon: 'error', title: 'Correo o contraseña incorrectos.' });
+      }
+    }, 1500);
+  }
 
   return (
     <div className="w-full h-screen flex items-center justify-center relative">
@@ -61,9 +72,6 @@ const Form = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            {!isValidEmail(email) && email && (
-              <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
-            )}
             <input
               className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
               type="password"
@@ -71,16 +79,12 @@ const Form = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {loginError && (
-              <p className="text-red-500 text-sm text-center">
-                Correo o contraseña incorrectos.
-              </p>
-            )}
             <button
               type="submit"
-              className="w-full h-11 rounded-xl bg-gradient-to-r from-black to-primary-purple text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
+              disabled={isLoading}
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-black to-primary-purple text-white font-semibold shadow-md hover:scale-[1.02] transition-transform disabled:opacity-50"
             >
-              Entrar
+              {isLoading ? 'Ingresando...' : 'Entrar'}
             </button>
           </form>
 
