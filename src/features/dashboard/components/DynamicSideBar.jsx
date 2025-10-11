@@ -558,8 +558,7 @@ function DynamicSideBar({
                   } ${
                     openMenu === "athletes" ||
                     isActive("/dashboard/athletes") ||
-                    isActive("/dashboard/sports-category") ||
-                    isActive("/dashboard/temporary-workers")
+                    isActive("/dashboard/sports-category")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                   }`}
@@ -648,25 +647,7 @@ function DynamicSideBar({
                             </Link>
                           </motion.div>
 
-                          {/* Personas Temporales */}
-                          {visibleModules.temporaryWorkers && (
-                            <motion.div
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.2 }}
-                            >
-                              <Link
-                                to="/dashboard/temporary-workers"
-                                onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/temporary-workers")
-                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
-                              >
-                                Personas temporales
-                              </Link>
-                            </motion.div>
-                          )}
+
                         </div>
                       </motion.div>
                     )}
@@ -744,22 +725,6 @@ function DynamicSideBar({
                             transition={{ delay: 0.1 }}
                           >
                             <Link
-                              to="/dashboard/donors-sponsors"
-                              onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donors-sponsors")
-                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
-                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                }`}
-                            >
-                              Donantes-Patrocinadores
-                            </Link>
-                          </motion.div>
-                          <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.15 }}
-                          >
-                            <Link
                               to="/dashboard/donations"
                               onClick={() => setIsOpen(false)}
                               className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donations")
@@ -774,7 +739,7 @@ function DynamicSideBar({
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
+                            transition={{ delay: 0.15 }}
                           >
                             <Link
                               to="/dashboard/donors-sponsors"
@@ -808,6 +773,7 @@ function DynamicSideBar({
                     } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
                     } ${openMenu === "events" ||
                       isActive("/dashboard/events") ||
+                      isActive("/dashboard/temporary-workers") ||
                       isActive("/dashboard/temporary-teams")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
@@ -876,11 +842,29 @@ function DynamicSideBar({
                             </Link>
                           </motion.div>
 
-                          {/* Equipos Temporales */}
+                          {/* Personas Temporales */}
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.15 }}
+                          >
+                            <Link
+                              to="/dashboard/temporary-workers"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/temporary-workers")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                                }`}
+                            >
+                              Personas temporales
+                            </Link>
+                          </motion.div>
+
+                          {/* Equipos Temporales */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
                           >
                             <Link
                               to="/dashboard/temporary-teams"
@@ -890,7 +874,7 @@ function DynamicSideBar({
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Equipos Temporales
+                              Equipos temporales
                             </Link>
                           </motion.div>
                         </div>
