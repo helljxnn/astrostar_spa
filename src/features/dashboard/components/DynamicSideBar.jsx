@@ -254,44 +254,6 @@ function DynamicSideBar({
               </motion.div>
             )}
 
-            {visibleModules.users && (
-              <motion.div
-                variants={menuItemVariants}
-                initial="initial"
-                animate="animate"
-                className="mb-1"
-              >
-                <Link
-                  to="/dashboard/users"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/users")
-                      ? "bg-indigo-100 text-primary-purple shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaUsers size={20} className="shrink-0" />
-                  </motion.div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0, x: -10 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        Usuarios
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Link>
-              </motion.div>
-            )}
-
             {/* Roles - Solo para admin */}
             {visibleModules.roles && (
               <motion.div
@@ -324,6 +286,44 @@ function DynamicSideBar({
                         transition={{ duration: 0.2 }}
                       >
                         Roles
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              </motion.div>
+            )}
+
+            {visibleModules.users && (
+              <motion.div
+                variants={menuItemVariants}
+                initial="initial"
+                animate="animate"
+                className="mb-1"
+              >
+                <Link
+                  to="/dashboard/users"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
+                    } ${isActive("/dashboard/users")
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                    }`}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FaUsers size={20} className="shrink-0" />
+                  </motion.div>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0, x: -10 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        Usuarios
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -725,14 +725,14 @@ function DynamicSideBar({
                             transition={{ delay: 0.1 }}
                           >
                             <Link
-                              to="/dashboard/donations"
+                              to="/dashboard/donors-sponsors"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donations")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donors-sponsors")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Donaciones
+                              Donantes/Patrocinadores
                             </Link>
                           </motion.div>
 
@@ -742,14 +742,14 @@ function DynamicSideBar({
                             transition={{ delay: 0.15 }}
                           >
                             <Link
-                              to="/dashboard/donors-sponsors"
+                              to="/dashboard/donations"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donors-sponsors")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/donations")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Donantes/Patrocinadores
+                              Donaciones
                             </Link>
                           </motion.div>
                         </div>
@@ -874,7 +874,7 @@ function DynamicSideBar({
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Equipos temporales
+                              Equipos
                             </Link>
                           </motion.div>
                         </div>

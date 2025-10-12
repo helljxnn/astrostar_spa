@@ -9,14 +9,16 @@ import { sampleEvents } from "./components/sampleEvents";
 
 const Event = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [data, setData] = useState(
-    sampleEvents.map(event => ({
+  const [data, setData] = useState(() => {
+    const transformedEvents = sampleEvents.map(event => ({
       ...event,
       start: new Date(event.fechaInicio),
       end: new Date(event.fechaFin),
       title: event.nombre
-    }))
-  ); // Usando los datos de ejemplo con formato para el calendario
+    }));
+    console.log("EventsDashboard - Eventos transformados:", transformedEvents);
+    return transformedEvents;
+  }); // Usando los datos de ejemplo con formato para el calendario
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
 
@@ -26,13 +28,14 @@ const Event = () => {
 
   // Filtrado general por búsqueda
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-
-    return data.filter((item) =>
+    const result = !searchTerm ? data : data.filter((item) =>
       Object.values(item).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
+    console.log("EventsDashboard - Datos filtrados:", result);
+    console.log("EventsDashboard - SearchTerm:", searchTerm);
+    return result;
   }, [data, searchTerm]);
 
   // Manejar la búsqueda

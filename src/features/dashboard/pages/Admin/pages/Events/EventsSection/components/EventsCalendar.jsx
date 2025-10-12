@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import es from "date-fns/locale/es";
@@ -44,6 +44,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   
   // Sincronizar eventos cuando cambien las props
   useEffect(() => {
+    console.log("EventsCalendar - Eventos recibidos:", propEvents);
     setEvents(propEvents);
   }, [propEvents]);
   
@@ -76,9 +77,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     setDate(new Date());
   };
 
-  const handleViewChange = (newView) => {
-    setView(newView);
-  };
+
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -257,7 +256,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   };
 
   // Deshabilitar click directo en evento (solo usar botones)
-  const handleEventSelect = (event) => {
+  const handleEventSelect = () => {
     // No hacer nada al hacer click directo en el evento
     // Solo permitir acciones a través de los botones
     return;
@@ -607,7 +606,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -15 }}
           transition={{ duration: 0.3 }}
-          className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white"
+          className="events-calendar rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white"
         >
           <div onClick={closeAllModals}>
             <Calendar

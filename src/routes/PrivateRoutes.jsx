@@ -32,6 +32,7 @@ import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipm
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
 import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/DonationsForm.jsx";
+import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/donorsSponsors.jsx";
 
 /* --- Compras --- */
 import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
@@ -213,7 +214,7 @@ const PrivateRoutes = () => {
           path="donors-sponsors"
           element={
             <PrivateRoute allowedRoles={["admin"]}>
-              <Donations />
+              <DonorsSponsors />
             </PrivateRoute>
           }
         />

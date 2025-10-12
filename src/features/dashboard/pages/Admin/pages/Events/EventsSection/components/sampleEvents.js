@@ -1,12 +1,11 @@
-// Datos de ejemplo para eventos
 export const sampleEvents = [
   {
     id: "1",
     tipo: "Torneo",
     nombre: "Torneo Sub 17",
     descripcion: "Torneo nacional de fútbol con categoría sub - 17",
-    fechaInicio: "2025-09-22",
-    fechaFin: "2025-09-24",
+    fechaInicio: "2025-10-22",
+    fechaFin: "2025-10-24",
     ubicacion: "Centro Acuático Olímpico",
     telefono: "555-123-4567",
     imagen: "natacion.jpg",
@@ -14,15 +13,15 @@ export const sampleEvents = [
     patrocinador: ["Natipan", "Gatorade"],
     categoria: "Deportivo",
     estado: "Activo",
-    publicar: true
+    publicar: true,
   },
   {
     id: "2",
     tipo: "Festival",
     nombre: "Festival 2025 FMV",
     descripcion: "Festival 2025 FMV",
-    fechaInicio: "2025-09-15",
-    fechaFin: "2025-09-15",
+    fechaInicio: "2025-10-15",
+    fechaFin: "2025-10-15",
     ubicacion: "Auditorio Central",
     telefono: "555-987-6543",
     imagen: "nutricion.jpg",
@@ -30,15 +29,16 @@ export const sampleEvents = [
     patrocinador: ["NutriSport", "Herbalife"],
     categoria: "Educativo",
     estado: "Activo",
-    publicar: true
+    publicar: true,
   },
   {
     id: "3",
     tipo: "Clausura",
     nombre: "Clausura 2025",
-    descripcion: "Presentación de los mejores gimnastas del país en una exhibición de alto nivel.",
-    fechaInicio: "2025-09-30",
-    fechaFin: "2025-09-30",
+    descripcion:
+      "Presentación de los mejores gimnastas del país en una exhibición de alto nivel.",
+    fechaInicio: "2025-10-30",
+    fechaFin: "2025-10-30",
     ubicacion: "Coliseo Municipal",
     telefono: "555-456-7890",
     imagen: "gimnasia.jpg",
@@ -46,38 +46,40 @@ export const sampleEvents = [
     patrocinador: ["Nike", "Red Bull"],
     categoria: "Deportivo",
     estado: "Programado",
-    publicar: true
+    publicar: true,
   },
   {
     id: "4",
     tipo: "Festival",
-    nombre: "Festival 2022",
-    descripcion: "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
-    fechaInicio: "2025-10-10",
-    fechaFin: "2025-10-12",
+    nombre: "Festival Deportivo",
+    descripcion:
+      "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
+    fechaInicio: "2025-10-28",
+    fechaFin: "2025-10-29",
     ubicacion: "Centro Deportivo Elite",
     telefono: "555-789-0123",
     imagen: "funcional.jpg",
-    cronograma: "Día 1: Fundamentos, Día 2: Técnicas avanzadas, Día 3: Aplicación práctica",
+    cronograma: "Día 1: Fundamentos, Día 2: Técnicas avanzadas",
     patrocinador: ["Adidas", "Under Armour"],
     categoria: "Educativo",
     estado: "Programado",
-    publicar: true
+    publicar: true,
   },
-    {
+  {
     id: "5",
     tipo: "Taller",
     nombre: "Taller Homecenter",
-    descripcion: "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
-    fechaInicio: "2025-10-10",
-    fechaFin: "2025-10-12",
+    descripcion:
+      "Aprende técnicas avanzadas de entrenamiento funcional para mejorar tu rendimiento deportivo.",
+    fechaInicio: "2025-10-25",
+    fechaFin: "2025-10-26",
     ubicacion: "Centro Deportivo Elite",
     telefono: "555-789-0123",
     imagen: "funcional.jpg",
-    cronograma: "Día 1: Fundamentos, Día 2: Técnicas avanzadas, Día 3: Aplicación práctica",
+    cronograma: "Día 1: Fundamentos, Día 2: Técnicas avanzadas",
     patrocinador: ["Homecenter"],
     categoria: "Educativo",
     estado: "Programado",
-    publicar: true
-  }
+    publicar: true,
+  },
 ];

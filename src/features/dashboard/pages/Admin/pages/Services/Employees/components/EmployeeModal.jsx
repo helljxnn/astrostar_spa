@@ -44,9 +44,9 @@ const EmployeeModal = ({
     employeeValidationRules
   );
 
-  // Cargar datos si es edición o limpiar si es creación
+  // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
-    if (employee && mode === "edit") {
+    if (employee && (mode === "edit" || mode === "view")) {
       setFormData(employee);
     } else {
       // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)

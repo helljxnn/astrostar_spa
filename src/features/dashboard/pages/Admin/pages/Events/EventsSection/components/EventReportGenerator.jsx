@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { IoMdDownload } from "react-icons/io";
+import React, { useState } from 'react';
+
 import { FiChevronDown, FiFileText } from "react-icons/fi";
 import { FaFilePdf, FaFileExcel } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +7,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { showErrorAlert, showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 
 const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns }) => {
   const [open, setOpen] = useState(false);

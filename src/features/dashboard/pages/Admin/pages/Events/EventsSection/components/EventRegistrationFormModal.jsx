@@ -1,100 +1,15 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaFilter } from "react-icons/fa";
+import { FaArrowLeft, FaFilter, FaUsers, FaUserTie } from "react-icons/fa";
 import SearchInput from "../../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../../shared/components/Table/Pagination";
+import athletesData from "../../../../../../../../shared/models/AthleteData";
+import temporaryWorkersData from "../../../../../../../../shared/models/TemporaryWorkersData";
 import {
   showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
 
-// Datos quemados para jugadoras
-const mockPlayers = [
-  {
-    id: 1,
-    nombre: "Antonella Lascarro Sosa",
-    categoria: "Sub 15",
-    edad: 17,
-    acompanantes: 0,
-  },
-  {
-    id: 2,
-    nombre: "Jennifer Lascarro Sosa",
-    categoria: "Sub 13",
-    edad: 10,
-    acompanantes: 0,
-  },
-  {
-    id: 3,
-    nombre: "Juliana Ramirez Madrid",
-    categoria: "Sub 17",
-    edad: 16,
-    acompanantes: 0,
-  },
-  {
-    id: 4,
-    nombre: "Marta Henao Valencia",
-    categoria: "Sub 17",
-    edad: 18,
-    acompanantes: 0,
-  },
-  {
-    id: 5,
-    nombre: "Isabella Rojas Hernandez",
-    categoria: "Sub 13",
-    edad: 11,
-    acompanantes: 0,
-  },
-  {
-    id: 6,
-    nombre: "Juana Lopez Ramirez",
-    categoria: "Sub 15",
-    edad: 14,
-    acompanantes: 0,
-  },
-  {
-    id: 7,
-    nombre: "Sofia Martinez Perez",
-    categoria: "Sub 17",
-    edad: 17,
-    acompanantes: 0,
-  },
-  {
-    id: 8,
-    nombre: "Camila Rodriguez Torres",
-    categoria: "Sub 15",
-    edad: 15,
-    acompanantes: 0,
-  },
-  {
-    id: 9,
-    nombre: "Valentina Castro Morales",
-    categoria: "Sub 13",
-    edad: 12,
-    acompanantes: 0,
-  },
-  {
-    id: 10,
-    nombre: "Andrea Gonzalez Silva",
-    categoria: "Sub 17",
-    edad: 16,
-    acompanantes: 0,
-  },
-  {
-    id: 11,
-    nombre: "Daniela Vargas Lopez",
-    categoria: "Sub 15",
-    edad: 14,
-    acompanantes: 0,
-  },
-  {
-    id: 12,
-    nombre: "Natalia Herrera Cruz",
-    categoria: "Sub 13",
-    edad: 13,
-    acompanantes: 0,
-  },
-];
 
 // Datos quemados para equipos
 const mockTeams = [
@@ -102,42 +17,48 @@ const mockTeams = [
     id: 1,
     nombre: "Águilas Doradas",
     categoria: "Sub 15",
-    edad: "-",
+    entrenador: "Carlos Rodríguez",
+    cantidadDeportistas: 18,
     acompanantes: 0,
   },
   {
     id: 2,
     nombre: "Leones FC",
     categoria: "Sub 17",
-    edad: "-",
+    entrenador: "Ana María López",
+    cantidadDeportistas: 22,
     acompanantes: 0,
   },
   {
     id: 3,
     nombre: "Tigres Unidos",
     categoria: "Sub 13",
-    edad: "-",
+    entrenador: "Miguel Hernández",
+    cantidadDeportistas: 16,
     acompanantes: 0,
   },
   {
     id: 4,
     nombre: "Panteras Negras",
     categoria: "Sub 15",
-    edad: "-",
+    entrenador: "Laura Martínez",
+    cantidadDeportistas: 20,
     acompanantes: 0,
   },
   {
     id: 5,
     nombre: "Halcones Rojos",
     categoria: "Sub 17",
-    edad: "-",
+    entrenador: "Roberto Silva",
+    cantidadDeportistas: 19,
     acompanantes: 0,
   },
   {
     id: 6,
     nombre: "Lobos Grises",
     categoria: "Sub 13",
-    edad: "-",
+    entrenador: "Patricia González",
+    cantidadDeportistas: 15,
     acompanantes: 0,
   },
 ];
@@ -186,6 +107,8 @@ const EventRegistrationFormModal = ({
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedSection, setSelectedSection] = useState("deportistas"); // "deportistas" o "temporales"
+  const [selectedTemporalType, setSelectedTemporalType] = useState(""); // Para filtrar personas temporales
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
@@ -193,7 +116,47 @@ const EventRegistrationFormModal = ({
 
   const isPlayerType =
     participantType === "Deportistas" || participantType === "Jugadoras";
-  const mockData = isPlayerType ? mockPlayers : mockTeams;
+  const isTeamType = participantType === "Equipos";
+
+  // Preparar datos de deportistas
+  const formattedAthletes = athletesData.map((athlete) => ({
+    id: athlete.id,
+    nombre: `${athlete.nombres} ${athlete.apellidos}`,
+    categoria: athlete.categoria,
+    edad:
+      new Date().getFullYear() -
+      new Date(athlete.fechaNacimiento).getFullYear(),
+    tipo: "Deportista",
+    acompanantes: 0,
+  }));
+
+  // Preparar datos de personas temporales
+  const formattedTemporaryWorkers = temporaryWorkersData.map((worker) => ({
+    id: `temp_${worker.id}`,
+    nombre: worker.nombre,
+    categoria: worker.categoria,
+    edad: worker.edad,
+    tipo: worker.tipoPersona,
+    tipoPersona: worker.tipoPersona, // Mantener ambos para compatibilidad
+    acompanantes: 0,
+  }));
+
+  // Debug: verificar datos de personas temporales
+  console.log("Datos de personas temporales:", formattedTemporaryWorkers);
+
+  // Determinar qué datos usar según el tipo de participante y sección seleccionada
+  const getCurrentData = () => {
+    if (isTeamType) {
+      // Si es tipo Equipos, usar solo los datos de equipos
+      return mockTeams;
+    } else if (selectedSection === "deportistas") {
+      return formattedAthletes;
+    } else {
+      return formattedTemporaryWorkers;
+    }
+  };
+
+  const mockData = getCurrentData();
 
   // Filtrar datos
   const filteredData = useMemo(() => {
@@ -204,17 +167,29 @@ const EventRegistrationFormModal = ({
       filtered = filtered.filter(
         (item) =>
           item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.categoria.toLowerCase().includes(searchTerm.toLowerCase())
+          item.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.tipo.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Filtro por categoría
-    if (selectedCategory) {
+    // Filtro por categoría (para deportistas y equipos)
+    if (selectedCategory && (selectedSection === "deportistas" || isTeamType)) {
       filtered = filtered.filter((item) => item.categoria === selectedCategory);
     }
 
+    // Filtro por tipo de persona temporal
+    if (selectedTemporalType && selectedSection === "temporales") {
+      filtered = filtered.filter((item) => item.tipo === selectedTemporalType);
+    }
+
     return filtered;
-  }, [mockData, searchTerm, selectedCategory]);
+  }, [
+    mockData,
+    searchTerm,
+    selectedCategory,
+    selectedTemporalType,
+    selectedSection,
+  ]);
 
   // Paginación
   const totalRows = filteredData.length;
@@ -226,7 +201,14 @@ const EventRegistrationFormModal = ({
   );
 
   // Categorías únicas para el filtro
-  const categories = [...new Set(mockData.map((item) => item.categoria))];
+  const categories = isTeamType
+    ? [...new Set(mockTeams.map((item) => item.categoria))]
+    : [...new Set(formattedAthletes.map((item) => item.categoria))];
+
+  // Tipos de personas temporales
+  const temporalTypes = [
+    ...new Set(formattedTemporaryWorkers.map((item) => item.tipo)),
+  ];
 
   const handleItemToggle = (item) => {
     setSelectedItems((prev) => {
@@ -251,7 +233,7 @@ const EventRegistrationFormModal = ({
 
   const handleSave = async () => {
     try {
-      console.log("Inscribir participantes:", selectedItems);
+      console.log("Inscribir Equipos:", selectedItems);
       // Aquí iría la lógica para guardar las inscripciones
 
       // Simular éxito (puedes cambiar esto para simular error)
@@ -278,10 +260,13 @@ const EventRegistrationFormModal = ({
         }
 
         showSuccessAlert(
-          `${isPlayerType ? "Jugadoras" : "Equipos"} inscritos`,
-          `Se han inscrito ${selectedItems.length} ${
-            isPlayerType ? "jugadoras" : "equipos"
-          } exitosamente.`
+          `${
+            getSectionTitle().charAt(0).toUpperCase() +
+            getSectionTitle().slice(1)
+          } inscritos`,
+          `Se han inscrito ${
+            selectedItems.length
+          } ${getSectionTitle()} exitosamente.`
         );
         onClose();
       } else {
@@ -291,7 +276,7 @@ const EventRegistrationFormModal = ({
       console.error("Error al inscribir:", error);
       showErrorAlert(
         "Error al inscribir",
-        "No se pudieron inscribir los participantes. Intenta de nuevo."
+        "No se pudieron inscribir los Equipos. Intenta de nuevo."
       );
     }
   };
@@ -300,8 +285,15 @@ const EventRegistrationFormModal = ({
     if (eventType === "Festival" || eventType === "Torneo") {
       return "Inscribir Equipos";
     } else {
-      return "Inscribir Jugadoras";
+      return "Inscribir Deportistas";
     }
+  };
+
+  const getSectionTitle = () => {
+    if (isTeamType) return "equipos";
+    return selectedSection === "deportistas"
+      ? "deportistas"
+      : "personas temporales";
   };
 
   return (
@@ -323,13 +315,53 @@ const EventRegistrationFormModal = ({
               <FaArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-2xl font-bold text-center">
-                {getTitle()} a {eventType?.toLowerCase()}s
-              </h2>
+              <h2 className="text-2xl font-bold text-center">{getTitle()}</h2>
               <p className="text-blue-100 mt-1">Evento: {eventName}</p>
             </div>
           </div>
         </div>
+
+        {/* Section Tabs - Solo mostrar si no es tipo Equipos */}
+        {!isTeamType && (
+          <div className="border-b border-gray-200 bg-white">
+            <div className="flex">
+              <button
+                onClick={() => {
+                  setSelectedSection("deportistas");
+                  setCurrentPage(1);
+                  setSearchTerm("");
+                  setSelectedCategory("");
+                  setSelectedTemporalType("");
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  selectedSection === "deportistas"
+                    ? "border-primary-purple text-primary-purple bg-purple-50"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FaUsers className="w-4 h-4" />
+                Deportistas Fundación
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedSection("temporales");
+                  setCurrentPage(1);
+                  setSearchTerm("");
+                  setSelectedCategory("");
+                  setSelectedTemporalType("");
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                  selectedSection === "temporales"
+                    ? "border-primary-purple text-primary-purple bg-purple-50"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <FaUserTie className="w-4 h-4" />
+                Personas Temporales
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="p-6 border-b border-gray-200 bg-gray-50">
@@ -346,24 +378,59 @@ const EventRegistrationFormModal = ({
               />
             </div>
 
-            {/* Category Filter */}
-            <div className="flex items-center gap-2">
+            {/* Filters based on section */}
+            <div className="flex items-center gap-4">
               <FaFilter className="text-gray-500" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
-              >
-                <option value="">Todas las categorías</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+
+              {isTeamType ? (
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              ) : selectedSection === "deportistas" ? (
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                >
+                  <option value="">Todas las categorías</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  value={selectedTemporalType}
+                  onChange={(e) => {
+                    setSelectedTemporalType(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                >
+                  <option value="">Todos los tipos</option>
+                  {temporalTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
         </div>
@@ -395,9 +462,37 @@ const EventRegistrationFormModal = ({
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">
                       Nombre
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Categoría
-                    </th>
+                    {isTeamType ? (
+                      <>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Entrenador
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Cantidad Deportistas
+                        </th>
+                      </>
+                    ) : selectedSection === "deportistas" ? (
+                      <>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Categoría
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Edad
+                        </th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Tipo
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Categoría
+                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                          Edad
+                        </th>
+                      </>
+                    )}
                     <th className="text-left py-3 px-4 font-semibold text-gray-700">
                       Acompañantes
                     </th>
@@ -426,11 +521,60 @@ const EventRegistrationFormModal = ({
                         <td className="py-3 px-4 font-medium text-gray-900">
                           {item.nombre}
                         </td>
-                        <td className="py-3 px-4">
-                          <span className="bg-gray-100 px-2 py-1 rounded-full text-sm">
-                            {item.categoria}
-                          </span>
-                        </td>
+                        {isTeamType ? (
+                          <>
+                            <td className="py-3 px-4 text-gray-600">
+                              {item.entrenador}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-sm font-medium">
+                                {item.cantidadDeportistas}
+                              </span>
+                            </td>
+                          </>
+                        ) : selectedSection === "deportistas" ? (
+                          <>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
+                                {item.categoria}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-gray-600">
+                              {item.edad} años
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            {/* Columna Tipo */}
+                            <td className="py-3 px-4">
+                              <span
+                                className={`px-2 py-1 rounded-full text-sm w-fit ${
+                                  (item.tipoPersona || item.tipo) === "Deportista"
+                                    ? "bg-green-100 text-green-800"
+                                    : (item.tipoPersona || item.tipo) === "Entrenador"
+                                    ? "bg-purple-100 text-purple-800"
+                                    : "bg-orange-100 text-orange-800"
+                                }`}
+                              >
+                                {item.tipoPersona || item.tipo}
+                              </span>
+                            </td>
+                            {/* Columna Categoría */}
+                            <td className="py-3 px-4">
+                              {item.categoria && item.categoria !== "No aplica" ? (
+                                <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
+                                  {item.categoria}
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-sm">No aplica</span>
+                              )}
+                            </td>
+                            {/* Columna Edad */}
+                            <td className="py-3 px-4 text-gray-600">
+                              {item.edad} años
+                            </td>
+                          </>
+                        )}
                         <td className="py-3 px-4">
                           <input
                             type="number"
@@ -481,8 +625,7 @@ const EventRegistrationFormModal = ({
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-gray-600">
               <span>
-                {selectedItems.length} {isPlayerType ? "jugadoras" : "equipos"}{" "}
-                seleccionados
+                {selectedItems.length} {getSectionTitle()} seleccionados
               </span>
               {selectedItems.length > 0 && (
                 <span className="font-medium text-primary-purple">

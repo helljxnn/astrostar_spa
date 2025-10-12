@@ -107,15 +107,23 @@ const Tbody = ({ options }) => {
                   </button>
                 )}
 
-                {onDelete && (
-                  <button
-                    onClick={() => onDelete(item)}
-                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                    title="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-                )}
+                {onDelete && (() => {
+                  const isActive = item.estado && item.estado.toLowerCase() === "activo";
+                  return (
+                    <button
+                      onClick={() => !isActive && onDelete(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isActive 
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                          : "bg-red-100 text-red-500 hover:bg-red-500 hover:text-white"
+                      }`}
+                      title={isActive ? "No se puede eliminar empleado activo" : "Eliminar"}
+                      disabled={isActive}
+                    >
+                      <FaTrash />
+                    </button>
+                  );
+                })()}
 
                 {onView && (
                   <button

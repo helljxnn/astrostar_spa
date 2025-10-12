@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
   Chart as ChartJS,
   ArcElement,
@@ -98,46 +98,67 @@ const AthletesTrackingGraphic = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 w-full md:w-[500px] h-[350px]">
-      {/* Header con título y botón de reporte */}
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-bold text-gray-800">Seguimiento Deportistas</h3>
-        <ReportButton
-          data={reportData}
-          fileName="Seguimiento_Deportistas"
-          columns={reportColumns}
-        />
+    <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[400px]">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 order-2 sm:order-1">
+          Seguimiento Deportistas
+        </h3>
+        <div className="order-1 sm:order-2">
+          <ReportButton
+            data={reportData}
+            fileName="Seguimiento_Deportistas"
+            columns={reportColumns}
+          />
+        </div>
       </div>
 
-      {/* Gráfico centrado */}
-      <div className="h-[180px] flex justify-center items-center">
+      {/* Gráfico centrado responsive */}
+      <div className="h-[140px] sm:h-[180px] lg:h-[200px] flex justify-center items-center">
         <Doughnut data={data} options={options} />
       </div>
 
-      {/* Leyenda personalizada compacta */}
-      <div className="space-y-1 mt-3">
-        <div className="flex items-center justify-between text-sm">
+      {/* Leyenda personalizada responsive */}
+      <div className="space-y-1 sm:space-y-2 mt-2 sm:mt-3">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-400"></div>
             <span className="text-gray-700">Suspendidas</span>
           </div>
-          <span className="text-gray-800 font-semibold">{porcentajeSuspendidas}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.suspendidas}</span>
+            <span className="text-gray-800 font-semibold">({porcentajeSuspendidas}%)</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-cyan-300"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-300"></div>
             <span className="text-gray-700">Vigentes</span>
           </div>
-          <span className="text-gray-800 font-semibold">{porcentajeVigentes}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.vigentes}</span>
+            <span className="text-gray-800 font-semibold">({porcentajeVigentes}%)</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400"></div>
             <span className="text-gray-700">Vencidas</span>
           </div>
-          <span className="text-gray-800 font-semibold">{porcentajeVencidas}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.vencidas}</span>
+            <span className="text-gray-800 font-semibold">({porcentajeVencidas}%)</span>
+          </div>
+        </div>
+
+        {/* Total responsive */}
+        <div className="border-t pt-1 sm:pt-2 mt-2">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-semibold">
+            <span className="text-gray-800">Total</span>
+            <span className="text-gray-800">{total}</span>
+          </div>
         </div>
       </div>
     </div>

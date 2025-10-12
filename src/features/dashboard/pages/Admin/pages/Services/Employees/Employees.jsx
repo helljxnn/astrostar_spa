@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import EmployeeModal from "./components/EmployeeModal";
 import employeesData from "../../../../../../../shared/models/EmployeeData";
@@ -64,9 +64,11 @@ const Employees = () => {
         )
       );
     } else {
+      // Generar ID único basado en el máximo ID existente + 1
+      const maxId = data.length > 0 ? Math.max(...data.map(emp => emp.id || 0)) : 0;
       setData((prev) => [
         ...prev,
-        { ...employee, id: prev.length + 1 },
+        { ...employee, id: maxId + 1 },
       ]);
     }
 

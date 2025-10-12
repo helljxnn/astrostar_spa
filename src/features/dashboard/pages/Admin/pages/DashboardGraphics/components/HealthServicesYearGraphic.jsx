@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -92,17 +92,17 @@ const HealthServicesYearGraphic = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 w-full md:w-[500px] h-[350px] flex flex-col justify-between">
-      {/* Header con título, selector de año y botón */}
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="text-lg font-bold text-gray-800">
-          Servicios de salud anuales
+    <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[400px] flex flex-col">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 order-2 sm:order-1">
+          Servicios de Salud Anuales
         </h3>
 
-        <div className="flex items-center gap-2">
-          {/* Selector de año */}
+        <div className="flex items-center gap-2 order-1 sm:order-2">
+          {/* Selector de año responsive */}
           <select
-            className="border border-gray-300 text-gray-700 rounded-md px-2 py-1 text-sm focus:ring focus:ring-cyan-300"
+            className="border border-gray-300 text-gray-700 rounded-md px-2 py-1 text-xs sm:text-sm focus:ring focus:ring-cyan-300"
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
           >
@@ -122,39 +122,51 @@ const HealthServicesYearGraphic = () => {
         </div>
       </div>
 
-      {/* Gráfico centrado */}
-      <div className="h-[160px] flex justify-center items-center">
+      {/* Gráfico centrado responsive */}
+      <div className="h-[120px] sm:h-[160px] lg:h-[180px] flex justify-center items-center flex-shrink-0">
         <Doughnut data={data} options={options} />
       </div>
 
-      {/* Leyenda personalizada al estilo AthletesTrackingGraphic */}
-      <div className="space-y-1 mt-3 text-sm">
-        <div className="flex items-center justify-between">
+      {/* Leyenda personalizada responsive */}
+      <div className="space-y-1 sm:space-y-2 mt-2 sm:mt-3 flex-1">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-cyan-300"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-300"></div>
             <span className="text-gray-800">Nutrición</span>
           </div>
-          <span className="text-gray-800 font-semibold">{pctNutricion}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{dataYear.nutricion}</span>
+            <span className="text-gray-800 font-semibold">({pctNutricion}%)</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-purple-400"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-400"></div>
             <span className="text-gray-800">Fisioterapia</span>
           </div>
-          <span className="text-gray-800 font-semibold">{pctFisio}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{dataYear.fisioterapia}</span>
+            <span className="text-gray-800 font-semibold">({pctFisio}%)</span>
+          </div>
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-pink-400"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-pink-400"></div>
             <span className="text-gray-800">Psicología</span>
           </div>
-          <span className="text-gray-800 font-semibold">{pctPsico}%</span>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{dataYear.psicologia}</span>
+            <span className="text-gray-800 font-semibold">({pctPsico}%)</span>
+          </div>
         </div>
 
-        <div className="pt-2 border-t border-gray-200 mt-2 text-gray-800 font-semibold">
-          Total de servicios: {total}
+        <div className="pt-1 sm:pt-2 border-t border-gray-200 mt-2">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-semibold">
+            <span className="text-gray-800">Total de servicios</span>
+            <span className="text-gray-800">{total}</span>
+          </div>
         </div>
       </div>
     </div>

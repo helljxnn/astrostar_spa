@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -70,18 +70,15 @@ const HealthServicesGraphic = () => {
         position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 10,
           color: "#6B7280",
-          font: { size: 13 },
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
         },
       },
       title: {
-        display: true,
-        text: "Servicios de Salud",
-        align: "center",
-        color: "#1F2937",
-        font: { size: 18, weight: "bold" },
-        padding: { bottom: 20 },
+        display: false, // Removemos el título del gráfico ya que lo tenemos en el header
       },
       tooltip: {
         backgroundColor: "#111827",
@@ -94,11 +91,22 @@ const HealthServicesGraphic = () => {
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { stepSize: 5, color: "#6B7280" },
+        ticks: { 
+          stepSize: 5, 
+          color: "#6B7280",
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
+        },
         grid: { color: "rgba(0,0,0,0.05)" },
       },
       x: {
-        ticks: { color: "#6B7280" },
+        ticks: { 
+          color: "#6B7280",
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
+        },
         grid: { display: false },
       },
     },
@@ -109,18 +117,23 @@ const HealthServicesGraphic = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 w-full md:w-[500px] h-[350px]">
-      {/* Header con botón y título */}
-      <div className="flex justify-between items-center mb-3">
-        <ReportButton
-          data={servicesData}
-          fileName="Servicios_Salud"
-          columns={reportColumns}
-        />
+    <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[400px]">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 order-2 sm:order-1">
+          Servicios de Salud
+        </h3>
+        <div className="order-1 sm:order-2">
+          <ReportButton
+            data={servicesData}
+            fileName="Servicios_Salud"
+            columns={reportColumns}
+          />
+        </div>
       </div>
 
-      {/* Gráfico */}
-      <div className="h-[280px]">
+      {/* Gráfico responsive */}
+      <div className="h-[220px] sm:h-[260px] lg:h-[320px]">
         <Bar data={data} options={options} />
       </div>
     </div>

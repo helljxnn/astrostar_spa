@@ -1,6 +1,4 @@
-/* calendarCustom.css - Minimalista y compatible */
 
-/* Esconder toolbar nativo */
 .rbc-toolbar {
   display: none !important;
 }
