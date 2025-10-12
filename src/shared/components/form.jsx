@@ -1,4 +1,5 @@
-import React from "react";
+import React, { Children } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * Componente de formulario dinámico y reutilizable, ideal para modales.
@@ -10,58 +11,113 @@ import React from "react";
  * @param {function} props.onClose - Función que se ejecuta al hacer clic en el botón "Cancelar".
  * @param {function} props.onSubmit - Función que se ejecuta al enviar el formulario.
  * @param {string} props.submitText - El texto para el botón de envío (ej. "Crear", "Guardar Cambios").
- * @param {number} props.id - El id de un registro si para actualizar o no.  
- * @param {formData} props.formData - datos del formulario para la funcion
+ * @param {number} props.id - El id de un registro si para actualizar o no.
 */
-const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null, formData }) => {
+const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (onSubmit) {
-            onSubmit(formData);
+            // Ya no pasa datos, solo notifica el intento de envío.
+            // La validación y los datos se manejan en el componente padre.
+            onSubmit();
         }
     };
 
+    const backdropVariants = {
+        hidden: { opacity: 0 },
+        visible: { opacity: 1 },
+    };
+
+    const modalVariants = {
+        hidden: { scale: 0.95, opacity: 0, y: 50 },
+        visible: {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                damping: 25,
+                stiffness: 300,
+                when: "beforeChildren",
+                staggerChildren: 0.05, // Anima los hijos con un pequeño retraso
+            },
+        },
+        exit: { scale: 0.9, opacity: 0, y: 30, transition: { duration: 0.2 } },
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0, transition: { type: "spring", damping: 20, stiffness: 200 } },
+    };
+
     return (
-        <div
-            className={`fixed inset-0 z-50 transition-opacity duration-300 ease-in-out ${isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-                }`}
-        >
-            {/* Backdrop: Fondo oscuro. No tiene onClick para evitar que se cierre desde afuera. */}
-            <div className="absolute inset-0 bg-black bg-opacity-60">
-
-                {/* Contenedor del Formulario con animación */}
-                <div
-                    className={`w-full h-full flex items-center justify-center transform transition-all duration-300 ease-in-out ${isOpen ? "scale-100 opacity-100" : "scale-95 opacity-0"}`}
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
                 >
-                    <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-xl p-8 w-2/5  flex flex-col gap-6">
-                        {/* Header */}
-                        <div className="border-b border-gray-200 pb-4 w-full">
-                            <h2 className="text-2xl font-questrial text-primary-purple">{title}</h2>
-                        </div>
+                    {/* Backdrop: Fondo oscuro con blur y cierre al hacer clic */}
+                    <motion.div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        variants={backdropVariants}
+                        onClick={onClose}
+                    />
 
-                        {/* Body: Contenido dinámico que se pasa como children */}
-                        <div className="space-y-4 w-full">
-                            {children}
+                    {/* Contenedor del Formulario con animación */}
+                    <motion.div
+                        variants={modalVariants}
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                    >
+                        <form onSubmit={handleSubmit}>
+                            {/* Header */}
+                            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+                                <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
+                                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                                    {title}
+                                </h2>
+                            </div>
 
-                            {id ? (
-                                <input type="hidden" name="id" value={id} />
-                            ): null}
-                        </div>
+                            {/* Body & Footer Wrapper */}
+                            <div className="p-6 space-y-6">
+                                {/* Body: Contenido dinámico */}
+                                <div className="space-y-6">
+                                    {Children.map(children, (child) => (
+                                        <motion.div variants={itemVariants}>{child}</motion.div>
+                                    ))}
+                                </div>
 
-                        {/* Footer: Botones de acción */}
-                        <div className="flex justify-end gap-4 pt-4 border-t border-gray-200 w-full">
-                            <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg bg-gray-100 text-gray-800 font-semibold hover:bg-gray-200 transition-colors">
-                                Cancelar
-                            </button>
-                            <button type="submit" className="px-6 py-2 rounded-lg bg-gradient-to-r from-primary-blue to-primary-purple text-white font-bold hover:opacity-90 transition-opacity">
-                                {submitText}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                                {id && <input type="hidden" name="id" value={id} />}
+
+                                {/* Footer: Botones de acción */}
+                                <motion.div variants={itemVariants} className="flex justify-between pt-6 border-t border-gray-200 w-full">
+                                    <motion.button
+                                        type="button"
+                                        onClick={onClose}
+                                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        Cancelar
+                                    </motion.button>
+                                    <motion.button
+                                        type="submit"
+                                        className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple hover:to-primary-blue"
+                                        whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)" }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        {submitText}
+                                    </motion.button>
+                                </motion.div>
+                            </div>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     )
 }
 

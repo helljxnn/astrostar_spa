@@ -89,7 +89,7 @@ export const employeeValidationRules = {
   edad: [
     (value) => (!value ? "La edad es obligatoria" : ""),
     (value) => !/^\d+$/.test(value || "") ? "La edad debe ser un número" : "",
-    (value) => parseInt(value) < 18 ? "Debe ser mayor de 18 años" : "",
+    (value) => parseInt(value) < 18 ? "Debe ser mayor o igual a 18 años" : "",
     (value) => parseInt(value) > 65 ? "La edad máxima permitida es 65 años" : "",
   ],
   identificacion: [
@@ -100,5 +100,19 @@ export const employeeValidationRules = {
   tipoEmpleado: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
   rol: [(value) => (!value ? "Debe seleccionar un rol" : "")],
   estado: [(value) => (!value ? "Debe seleccionar un estado" : "")],
+  fechaNacimiento: [
+    (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
+    (value) => {
+      if (!value) return "";
+      const birthDate = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age < 18 ? "Debe ser mayor o igual a 18 años" : "";
+    },
+  ],
   fechaAsignacion: [(value) => (!value ? "Debe seleccionar una fecha de asignación" : "")],
 };

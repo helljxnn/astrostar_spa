@@ -4,8 +4,6 @@ import { useAuth } from "../shared/contexts/authContext.jsx";
 const PrivateRoute = ({ allowedRoles, children }) => {
   const { isAuthenticated, userRole } = useAuth();
   
-
-
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" />;

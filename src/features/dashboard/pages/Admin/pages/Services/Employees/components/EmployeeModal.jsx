@@ -32,6 +32,7 @@ const EmployeeModal = ({
       apellido: "",
       correo: "",
       telefono: "",
+      fechaNacimiento: "",
       edad: "",
       identificacion: "",
       tipoDocumento: "",
@@ -43,9 +44,9 @@ const EmployeeModal = ({
     employeeValidationRules
   );
 
-  // Cargar datos si es edición o limpiar si es creación
+  // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
-    if (employee && mode === "edit") {
+    if (employee && (mode === "edit" || mode === "view")) {
       setFormData(employee);
     } else {
       // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)
@@ -56,6 +57,7 @@ const EmployeeModal = ({
         apellido: "",
         correo: "",
         telefono: "",
+        fechaNacimiento: "",
         edad: "",
         identificacion: "",
         tipoDocumento: "",
@@ -98,6 +100,7 @@ const EmployeeModal = ({
         apellido: "",
         correo: "",
         telefono: "",
+        fechaNacimiento: "",
         edad: "",
         identificacion: "",
         tipoDocumento: "",
@@ -162,10 +165,6 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
-                {
-                  value: "Tarjeta de Identidad",
-                  label: "Tarjeta de Identidad",
-                },
                 {
                   value: "Cédula de Ciudadanía",
                   label: "Cédula de Ciudadanía",
@@ -280,6 +279,45 @@ const EmployeeModal = ({
               delay={0.6}
             />
 
+            {/* Fecha de Nacimiento */}
+            <FormField
+              label="Fecha de Nacimiento"
+              name="fechaNacimiento"
+              type="date"
+              placeholder="Fecha de nacimiento"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              value={formData.fechaNacimiento}
+              error={errors.fechaNacimiento}
+              touched={touched.fechaNacimiento}
+              onChange={(name, value) => {
+                // Actualizar directamente el campo fechaNacimiento
+                setFormData(prev => ({
+                  ...prev,
+                  fechaNacimiento: value
+                }));
+                
+                // Calcular edad automáticamente
+                if (value) {
+                  const birthDate = new Date(value);
+                  const today = new Date();
+                  let age = today.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                  }
+                  // Actualizar el campo de edad
+                  setFormData(prev => ({
+                    ...prev,
+                    fechaNacimiento: value,
+                    edad: age.toString()
+                  }));
+                }
+              }}
+              onBlur={handleBlur}
+              delay={0.65}
+            />
+
             {/* Edad */}
             <FormField
               label="Edad"
@@ -287,7 +325,7 @@ const EmployeeModal = ({
               type="number"
               placeholder="Edad del empleado"
               required={mode !== "view"}
-              disabled={mode === "view"}
+              disabled={true} // Siempre deshabilitado porque se calcula automáticamente
               value={formData.edad}
               error={errors.edad}
               touched={touched.edad}

@@ -1,0 +1,102 @@
+/* =====================================================
+   calendarCustomSchedule.css
+   Estilos personalizados para react-big-calendar
+   ===================================================== */
+
+/* Import base css de react-big-calendar (necesario para layout base) */
+/* @import "~react-big-calendar/lib/css/react-big-calendar.css"; */
+
+/* ----------------------------
+   Fuente base y estructura - Solo para calendario de empleados
+   ---------------------------- */
+.employees-schedule-calendar .rbc-calendar {
+  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+.employees-schedule-calendar .rbc-toolbar {
+  display: none !important; /* ocultamos toolbar nativo */
+}
+
+/* ----------------------------
+   Encabezados y celdas - Solo para calendario de empleados
+   ---------------------------- */
+.employees-schedule-calendar .rbc-header {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+  padding: 10px 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.employees-schedule-calendar .rbc-today {
+  background: rgba(208,191,255,0.12) !important;
+}
+
+.employees-schedule-calendar .rbc-off-range-bg {
+  background: #fafafa !important;
+}
+
+.employees-schedule-calendar .rbc-month-row .rbc-day-bg {
+  background: transparent; /* limpiamos fondo */
+}
+
+/* ----------------------------
+   Eventos personalizados - Solo para calendario de empleados
+   ---------------------------- */
+.employees-schedule-calendar .rbc-event {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.employees-schedule-calendar .rbc-event-content {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+  padding: 4px 8px;
+  border-radius: 8px;
+  color: #1e293b; /* slate-800 */
+  background: linear-gradient(135deg, #b595ff 0%, #9be9ff 100%);
+  box-shadow: 0 2px 4px rgba(15,23,42,0.12);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.employees-schedule-calendar .rbc-event-content:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(15,23,42,0.18);
+}
+
+.rbc-event-label {
+  display: none; /* ocultamos la hora en vista mensual */
+}
+
+/* ----------------------------
+   Otros estilos - Solo para calendario de empleados
+   ---------------------------- */
+.employees-schedule-calendar .rbc-show-more {
+  color: #6366f1 !important; /* indigo-500 */
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.employees-schedule-calendar .rbc-overlay {
+  box-shadow: 0 10px 30px rgba(2,6,23,0.15);
+  border-radius: 12px;
+}
+
+/* ----------------------------
+   Responsivo - Solo para calendario de empleados
+   ---------------------------- */
+@media (max-width: 640px) {
+  .employees-schedule-calendar .rbc-time-header {
+    font-size: 12px;
+  }
+
+  .employees-schedule-calendar .rbc-month-row .rbc-header {
+    padding: 6px 4px;
+  }
+}

@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
-import logo from "../../../../public/assets/images/astrostar.png"; 
-import "../Syles/LoginGlow.css"; 
+import logo from "../../../../public/assets/images/astrostar.png";
+import "../Syles/LoginGlow.css";
 
 const Form = () => {
   const navigate = useNavigate();
@@ -11,6 +11,11 @@ const Form = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState(false);
+
+  const isValidEmail = (email) => {
+    // Basic email format validation
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -56,6 +61,9 @@ const Form = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            {!isValidEmail(email) && email && (
+              <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
+            )}
             <input
               className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
               type="password"
@@ -80,9 +88,9 @@ const Form = () => {
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>
               ¿Olvidaste tu contraseña?{" "}
-              <span className="text-black cursor-pointer hover:underline">
+              <Link to="/forgot-password" className="text-black cursor-pointer hover:underline font-semibold">
                 Restaúrala aquí
-              </span>
+              </Link>
             </p>
             {/* <p className="mt-2">
               ¿No tienes cuenta?{" "}

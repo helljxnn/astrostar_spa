@@ -2,41 +2,43 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export const FormField = ({ 
-  label, 
-  name, 
-  type = "text", 
-  placeholder, 
+export const FormField = ({
+  label,
+  name,
+  type = "text",
+  placeholder,
   required = false,
-  options = [], 
-  value, 
-  error, 
+  options = [],
+  value,
+  error,
   touched,
-  onChange, 
+  onChange,
   onBlur,
   delay = 0,
-  ...props 
+  disabled = false,
+  ...props
 }) => {
   const hasError = touched && error;
 
-  
   const handleChange = (e) => {
     const val = e.target.value;
     if (typeof onChange === "function") {
+      // Esta lógica soporta las dos firmas: onChange(e) y onChange(name, value).
       if (onChange.length === 2) {
-        onChange(name, val); 
+        onChange(name, val);
       } else {
-        onChange(e); 
+        onChange(e);
       }
     }
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e) => {
     if (typeof onBlur === "function") {
+      // Esta lógica soporta las dos firmas: onBlur(name) y onBlur(e).
       if (onBlur.length === 1) {
-        onBlur(name); 
+        onBlur(name);
       } else {
-        onBlur(); 
+        onBlur(e);
       }
     }
   };
@@ -52,42 +54,48 @@ export const FormField = ({
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
-      
-      {type === 'select' ? (
+
+      {type === "select" ? (
         <select
           name={name}
           value={value}
           onChange={handleChange}
           onBlur={handleBlur}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         >
           <option value="">{placeholder}</option>
-          {options.map(option => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </select>
-      ) : type === 'textarea' ? (
+      ) : type === "textarea" ? (
         <textarea
           name={name}
           value={value}
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent resize-none h-20
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
@@ -99,19 +107,22 @@ export const FormField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError 
-              ? 'border-red-300 focus:ring-red-500' 
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
       )}
 
       <AnimatePresence>
-        {hasError && (
+        {hasError && error && (
           <motion.div
             initial={{ opacity: 0, y: -10, height: 0 }}
             animate={{ opacity: 1, y: 0, height: "auto" }}
