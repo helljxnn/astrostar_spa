@@ -206,7 +206,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
-                { value: "Jugadora", label: "Jugadora" },
+                { value: "Deportista", label: "Deportista" },
                 { value: "Entrenador", label: "Entrenador" },
                 { value: "Participante", label: "Participante" },
               ]}
@@ -292,7 +292,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
             />
 
             {/* Categoría */}
-            {(formData.tipoPersona === "Jugadora" || (mode === "view" && formData.categoria)) && (
+            {(formData.tipoPersona === "Deportista" || (mode === "view" && formData.categoria)) && (
               <FormField
                 label="Categoría"
                 name="categoria"
@@ -302,7 +302,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
                   { value: "Sub 15", label: "Sub 15" },
                   { value: "Sub 17", label: "Sub 17" },
                 ]}
-                required={mode !== "view" && formData.tipoPersona === "Jugadora"}
+                required={mode !== "view" && formData.tipoPersona === "Deportista"}
                 disabled={mode === "view"}
                 value={formData.categoria}
                 error={errors.categoria}
