@@ -27,14 +27,100 @@ const sampleEquipment = [
   { id: 3, NombreMaterial: 'Red de Voleibol', CantidadComprado: 2, CantidadDonado: 1, Total: 3, estado: 'Activo' },
 ];
 
+// Datos de ejemplo para compras
+const samplePurchases = [
+  {
+    id: 1,
+    numeroFactura: 'FAC-001',
+    proveedor: 'Insumos Deportivos S.A.',
+    monto: '150.000',
+    fecha: '2024-01-15',
+    fechaRegistro: '2024-01-16',
+    concepto: 'Balones de Fútbol',
+    estado: 'Recibido',
+    materialId: 1,
+    cantidad: 10,
+    precioUnitario: 15000,
+    cancelReason: '',
+    observaciones: 'Compra de balones para temporada',
+    imagenes: []
+  },
+  {
+    id: 2,
+    numeroFactura: 'FAC-002',
+    proveedor: 'Dotaciones Atléticas Ltda.',
+    monto: '75.000',
+    fecha: '2024-01-20',
+    fechaRegistro: '2024-01-21',
+    concepto: 'Conos de Entrenamiento',
+    estado: 'Pendiente',
+    materialId: 2,
+    cantidad: 50,
+    precioUnitario: 1500,
+    cancelReason: '',
+    observaciones: 'Conos para entrenamientos',
+    imagenes: []
+  },
+  {
+    id: 3,
+    numeroFactura: 'FAC-003',
+    proveedor: 'Equipamiento Total',
+    monto: '120.000',
+    fecha: '2024-01-25',
+    fechaRegistro: '2024-01-26',
+    concepto: 'Red de Voleibol',
+    estado: 'Registrado',
+    materialId: 3,
+    cantidad: 2,
+    precioUnitario: 60000,
+    cancelReason: '',
+    observaciones: 'Redes profesionales',
+    imagenes: []
+  },
+  {
+    id: 4,
+    numeroFactura: 'FAC-004',
+    proveedor: 'Insumos Deportivos S.A.',
+    monto: '200.000',
+    fecha: '2024-02-01',
+    fechaRegistro: '2024-02-02',
+    concepto: 'Uniformes Deportivos',
+    estado: 'Cancelado',
+    materialId: 4,
+    cantidad: 20,
+    precioUnitario: 10000,
+    cancelReason: 'Producto no cumplía especificaciones',
+    observaciones: 'Uniformes para equipo juvenil',
+    imagenes: []
+  },
+  {
+    id: 5,
+    numeroFactura: 'FAC-005',
+    proveedor: 'Dotaciones Atléticas Ltda.',
+    monto: '85.000',
+    fecha: '2024-02-10',
+    fechaRegistro: '2024-02-11',
+    concepto: 'Pesas y Mancuernas',
+    estado: 'Recibido',
+    materialId: 5,
+    cantidad: 15,
+    precioUnitario: 5667,
+    cancelReason: '',
+    observaciones: 'Equipamiento para gimnasio',
+    imagenes: []
+  }
+];
+
 const Purchases = () => {
   const [purchasesList, setPurchasesList] = useState(() => {
     try {
       const storedData = localStorage.getItem(PURCHASES_STORAGE_KEY);
-      return storedData ? JSON.parse(storedData) : [];
+      const parsedData = storedData ? JSON.parse(storedData) : [];
+      // Si no hay datos en localStorage, usar los de ejemplo
+      return parsedData.length > 0 ? parsedData : samplePurchases;
     } catch (error) {
       console.error("Error al leer compras de localStorage:", error);
-      return [];
+      return samplePurchases;
     }
   });
 
@@ -417,21 +503,21 @@ const Purchases = () => {
               </div>
             )}
           </div>
-
-          {/* Paginación */}
-          {showPagination && (
-            <div className="w-full border-t border-gray-200 bg-white p-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                totalRows={totalRows}
-                rowsPerPage={rowsPerPage}
-                startIndex={startIndex}
-              />
-            </div>
-          )}
         </div>
+
+        {/* Paginación - Estilo compartido como en proveedores */}
+        {showPagination && (
+          <div className="w-full border-none shadow-none">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              totalRows={totalRows}
+              rowsPerPage={rowsPerPage}
+              startIndex={startIndex}
+            />
+          </div>
+        )}
       </div>
       {/* Modal para Crear Compra */}
       <FormCreate

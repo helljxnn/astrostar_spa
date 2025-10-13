@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -61,21 +61,21 @@ const EventsGraphic = () => {
 
   const options = {
     responsive: true,
-    maintainAspectRatio: false, // permite ajustar el tamaño
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 10,
           color: "#6B7280",
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
         },
       },
       title: {
-        display: true,
-        text: "Eventos Realizados",
-        font: { size: 18, weight: "bold" },
-        color: "#1F2937",
+        display: false, // Removemos el título del gráfico ya que lo tenemos en el header
       },
       tooltip: {
         backgroundColor: "#111827",
@@ -88,10 +88,20 @@ const EventsGraphic = () => {
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { stepSize: 5 },
+        ticks: { 
+          stepSize: 5,
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
+        },
         grid: { drawBorder: false, color: "rgba(0,0,0,0.05)" },
       },
       x: {
+        ticks: {
+          font: {
+            size: window.innerWidth < 640 ? 10 : 12,
+          },
+        },
         grid: { drawBorder: false, display: false },
       },
     },
@@ -102,17 +112,23 @@ const EventsGraphic = () => {
   };
 
   return (
-    <div className="bg-white shadow-md rounded-xl p-4 w-full md:w-[500px] h-[350px]">
-      {/* Botón de Reporte */}
-      <div className="flex justify-between items-center mb-3">
-        <ReportButton
-          data={dashboardData}
-          fileName="Reporte_Eventos"
-          columns={reportColumns}
-        />
+    <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[400px]">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
+        <h3 className="text-base sm:text-lg font-bold text-gray-800 order-2 sm:order-1">
+          Eventos Realizados
+        </h3>
+        <div className="order-1 sm:order-2">
+          <ReportButton
+            data={dashboardData}
+            fileName="Reporte_Eventos"
+            columns={reportColumns}
+          />
+        </div>
       </div>
-      {/* Gráfico */}
-      <div className="h-[280px]">
+      
+      {/* Gráfico responsive */}
+      <div className="h-[220px] sm:h-[260px] lg:h-[320px]">
         <Bar data={data} options={options} />
       </div>
     </div>

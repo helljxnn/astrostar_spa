@@ -9,7 +9,7 @@ import DashboardLayout from "../features/dashboard/pages/Admin/components/Dashbo
 
 /* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
-import Appointments from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
+import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
 
@@ -23,14 +23,15 @@ import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
 
 /* --- Eventos --- */
-import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsDashboard.jsx";
+import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/EventsSection/EventsDashboard.jsx";
+import TemporaryTeams from "../features/dashboard/pages/Admin/pages/Events/TemporaryTeams/TemporaryTeams.jsx";
 
 /* --- Material Deportivo --- */
 import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
-import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/Donations/components/DonationsForm.jsx";
+import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/DonationsForm.jsx";
 import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/donorsSponsors.jsx";
 
 /* --- Compras --- */
@@ -40,21 +41,11 @@ import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Provide
 /* --- Componentes generales --- */
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
 
-/* --- Autenticación --- */
-import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
-import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
-import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
-
 const PrivateRoutes = () => {
   return (
     <Routes>
       {/* Ruta pública para acceso no autorizado */}
       <Route path="/unauthorized" element={<Unauthorized />} />
-
-      {/* Rutas públicas para recuperación de contraseña */}
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      <Route path="/verify-code" element={<VerifyCode />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Todas las rutas bajo el layout /dashboard */}
       <Route path="/dashboard" element={<DashboardLayout />}>
@@ -62,7 +53,15 @@ const PrivateRoutes = () => {
         <Route
           index
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+                "deportista",
+                "acudiente",
+              ]}
+            >
               <Dashboard />
             </PrivateRoute>
           }
@@ -72,17 +71,31 @@ const PrivateRoutes = () => {
         <Route
           path="appointment-management"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud", "deportista", "acudiente"]}>
-              <Appointments />
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+                "deportista",
+                "acudiente",
+              ]}
+            >
+              <AppointmentManagement />
             </PrivateRoute>
           }
         />
 
         {/* --- Módulo: Deportistas --- */}
         <Route
-          path="athletes"
+          path="athletes-section"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <Athletes />
             </PrivateRoute>
           }
@@ -90,7 +103,13 @@ const PrivateRoutes = () => {
         <Route
           path="sports-category"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <SportsCategory />
             </PrivateRoute>
           }
@@ -116,7 +135,13 @@ const PrivateRoutes = () => {
         <Route
           path="employees-schedule"
           element={
-            <PrivateRoute allowedRoles={["admin", "profesional_deportivo", "profesional_salud"]}>
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
               <EmployeesSchedule />
             </PrivateRoute>
           }
@@ -146,6 +171,14 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute allowedRoles={["admin"]}>
               <EventsDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="temporary-teams"
+          element={
+            <PrivateRoute allowedRoles={["admin"]}>
+              <TemporaryTeams />
             </PrivateRoute>
           }
         />

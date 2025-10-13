@@ -45,23 +45,22 @@ const Users = () => {
     return phone.replace(/[\s\-\(\)]/g, ""); // limpio pero sin +57
   };
 
-  // 🔎 Filtrado por búsqueda
+  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    const searchLower = searchTerm.toLowerCase();
+    if (!searchTerm) return data;
+
     return data.filter((user) =>
-      [
-        user.nombre,
-        user.apellido,
-        user.correo,
-        user.identificacion,
-        user.rol,
-        user.estado,
-        user.telefono,
-        `${user.nombre} ${user.apellido}`,
-      ]
-        .filter(Boolean)
-        .some((field) => field.toString().toLowerCase().includes(searchLower))
+      Object.entries(user).some(([key, value]) => {
+        const stringValue = String(value).trim();
+        
+        // 🎯 Búsqueda EXACTA para el campo "estado"
+        if (key.toLowerCase() === "estado") {
+          return stringValue.toLowerCase() === searchTerm.toLowerCase();
+        }
+
+        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [data, searchTerm]);
 
@@ -208,7 +207,7 @@ const Users = () => {
             <SearchInput
               value={searchTerm}
               onChange={handleSearchChange}
-              placeholder="Buscar usuario"
+              placeholder="Buscar usuario..."
               className="w-full"
             />
           </div>

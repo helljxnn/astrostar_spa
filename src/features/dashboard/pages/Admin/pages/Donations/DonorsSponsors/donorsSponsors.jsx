@@ -8,6 +8,7 @@ import ReportButton from "../../../../../../../shared/components/ReportButton";
 import ViewDetails from "../../../../../../../shared/components/ViewDetails";
 import { showSuccessAlert, showConfirmAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
+import donorsSponsorsData from "../../../../../../../shared/models/DonorsSponsorsData";
 
 const LOCAL_STORAGE_KEY = 'donorsSponsorsData';
 
@@ -15,10 +16,12 @@ function DonorsSponsors() {
     const [donorsList, setDonorsList] = useState(() => {
         try {
             const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-            return storedData ? JSON.parse(storedData) : [];
+            const parsedData = storedData ? JSON.parse(storedData) : [];
+            // Si no hay datos en localStorage, usar los datos de ejemplo
+            return parsedData.length > 0 ? parsedData : donorsSponsorsData;
         } catch (error) {
             console.error("Error al leer desde localStorage:", error);
-            return [];
+            return donorsSponsorsData; // Usar datos de ejemplo en caso de error
         }
     });
 

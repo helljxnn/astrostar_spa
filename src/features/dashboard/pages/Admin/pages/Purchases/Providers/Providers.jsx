@@ -60,16 +60,22 @@ const Providers = () => {
     return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
   };
 
-  // 🔎 Filtrado
+  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-    return data.filter(
-      (provider) =>
-        provider.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        provider.nit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        provider.contactoPrincipal
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase())
+
+    return data.filter((provider) =>
+      Object.entries(provider).some(([key, value]) => {
+        const stringValue = String(value).trim();
+        
+        // 🎯 Búsqueda EXACTA para el campo "estado"
+        if (key.toLowerCase() === "estado") {
+          return stringValue.toLowerCase() === searchTerm.toLowerCase();
+        }
+
+        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
     );
   }, [data, searchTerm]);
 

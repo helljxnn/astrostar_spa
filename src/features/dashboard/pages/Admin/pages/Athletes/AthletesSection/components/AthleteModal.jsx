@@ -1,4 +1,3 @@
-// src/features/dashboard/pages/Admin/pages/Athletes/components/AthleteModal.jsx
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes } from "react-icons/fa";
@@ -14,34 +13,21 @@ import {
 } from "../hooks/useFormAthleteValidation";
 
 const documentTypes = [
-  { value: "CC", label: "Cédula de Ciudadanía" },
-  { value: "TI", label: "Tarjeta de Identidad" },
-  { value: "CE", label: "Cédula de Extranjería" },
-  { value: "PA", label: "Pasaporte" },
+  { value: "cedula", label: "Cédula de Ciudadanía" },
+  { value: "tarjeta_identidad", label: "Tarjeta de Identidad" },
+  { value: "cedula_extranjeria", label: "Cédula de Extranjería" },
+  { value: "pasaporte", label: "Pasaporte" },
 ];
 
 const categories = [
-  { value: "Infantil", label: "Infantil (5-12 años)" },
-  { value: "Sub 15", label: "Sub 15 (13-15 años)" },
-  { value: "Juvenil", label: "Juvenil (16-18 años)" },
+  { value: "Infantil", label: "Infantil" },
+  { value: "Sub 15", label: "Sub-15" },
+  { value: "Juvenil", label: "Juvenil " },
 ];
 
 const states = [
   { value: "Activo", label: "Activo" },
   { value: "Inactivo", label: "Inactivo" },
-];
-
-const inscriptionStates = [
-  { value: "Vigente", label: "Vigente" },
-  { value: "Vencida", label: "Vencida" },
-  { value: "Cancelada", label: "Cancelada" },
-];
-
-// Rango de edades para asignación automática
-const AGE_CATEGORY_RANGES = [
-  { value: "Infantil", min: 5, max: 12 },
-  { value: "Sub 15", min: 13, max: 15 },
-  { value: "Juvenil", min: 16, max: 18 },
 ];
 
 // Helpers
@@ -56,17 +42,6 @@ const calculateAge = (birthDate) => {
   }
   return age;
 };
-
-const getCategoryByAge = (age) => {
-  if (age === null || age === undefined) return "";
-  const found = AGE_CATEGORY_RANGES.find((r) => age >= r.min && age <= r.max);
-  return found ? found.value : "";
-};
-const validateAge = (age) => {
-  return age >= 5 && age <= 18;
-};
-
-const todayISO = () => new Date().toISOString().split("T")[0];
 
 const AthleteModal = ({
   isOpen,
@@ -83,6 +58,7 @@ const AthleteModal = ({
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
 
+  // Formulario
   const {
     values,
     errors,
@@ -103,20 +79,14 @@ const AthleteModal = ({
       telefono: "",
       fechaNacimiento: "",
       categoria: "",
-      estado: "",
+      estado: "Activo",
       acudiente: "",
-      // Campos de inscripción para crear deportista
-      estadoInscripcion: "",
-      conceptoInscripcion: "",
-      fechaConcepto: todayISO(),
-      fechaInscripcion: todayISO(),
     },
     athleteValidationRules
   );
 
   useEffect(() => {
     if (isOpen && isEditing && athleteToEdit) {
-      // Para edición, NO incluir datos de inscripción
       setValues({
         nombres: athleteToEdit.nombres || "",
         apellidos: athleteToEdit.apellidos || "",
@@ -126,11 +96,10 @@ const AthleteModal = ({
         telefono: athleteToEdit.telefono || "",
         fechaNacimiento: athleteToEdit.fechaNacimiento || "",
         categoria: athleteToEdit.categoria || "",
-        estado: athleteToEdit.estado || "",
+        estado: athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
       });
     } else if (isOpen && !isEditing) {
-      // Para crear, incluir campos de inscripción inicial
       setValues({
         nombres: "",
         apellidos: "",
@@ -140,41 +109,46 @@ const AthleteModal = ({
         telefono: "",
         fechaNacimiento: "",
         categoria: "",
-        estado: "",
+        estado: "Activo",
         acudiente: "",
-        estadoInscripcion: "",
-        conceptoInscripcion: "",
-        fechaConcepto: todayISO(),
-        fechaInscripcion: todayISO(),
       });
     }
   }, [isOpen, isEditing, athleteToEdit, setValues]);
 
-  // Actualizar categoría automáticamente al cambiar fecha de nacimiento
+  // Calcular categoría automáticamente basada en fecha de nacimiento
   useEffect(() => {
-  if (values && values.fechaNacimiento) {
-    const age = calculateAge(values.fechaNacimiento);
-    
-    // Validar que la edad esté en el rango permitido
-    if (age !== null && !validateAge(age)) {
-      showErrorAlert(
-        "Edad fuera de rango",
-        `La edad calculada (${age} años) está fuera del rango permitido para la fundación (5-18 años).`
-      );
-      return;
+    if (values.fechaNacimiento && !isEditing) {
+      const age = calculateAge(values.fechaNacimiento);
+      let newCategory = "";
+
+      if (age >= 5 && age <= 12) {
+        newCategory = "Infantil";
+      } else if (age >= 13 && age <= 15) {
+        newCategory = "Sub 15";
+      } else if (age >= 16 && age <= 18) {
+        newCategory = "Juvenil";
+      }
+
+      if (newCategory && newCategory !== values.categoria) {
+        handleChange({ target: { name: "categoria", value: newCategory } });
+      }
     }
-    
-    const autoCategory = getCategoryByAge(age);
-    if (autoCategory && autoCategory !== values.categoria) {
-      setValues((prev) => ({ ...prev, categoria: autoCategory }));
+  }, [values.fechaNacimiento, handleChange, values.categoria, isEditing]);
+
+  // Sincronizar estado de inscripción cuando cambia el estado del deportista
+  useEffect(() => {
+    if (isEditing && athleteToEdit) {
+      if (values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo") {
+        console.log("⚠️ Deportista marcado como Inactivo - La inscripción se suspenderá automáticamente");
+      }
     }
-  }
-}, [values?.fechaNacimiento]);
+  }, [values.estado, isEditing, athleteToEdit]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57")) return phone;
+    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
+      return phone;
     if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
     return phone;
   };
@@ -188,108 +162,56 @@ const AthleteModal = ({
   );
 
   const selectedGuardian = guardians.find(
-    (g) => g.id === parseInt(values.acudiente)
+    (g) => g.id.toString() === values.acudiente.toString()
   );
 
-  const handleSubmit = async () => {
-    const allTouched = {};
-    Object.keys(athleteValidationRules).forEach((field) => {
-      allTouched[field] = true;
-    });
-    setTouched(allTouched);
+  const handleSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
-    if (!validateAllFields()) {
+    console.log("🚀 INICIANDO SUBMIT");
+    console.log("📦 Valores del formulario:", values);
+
+    if (!values.nombres || !values.apellidos || !values.acudiente) {
+      showErrorAlert("Error", "Faltan campos obligatorios");
+      console.log("❌ Validación falló");
       return;
-    }
-
-    // Validación acudiente obligatorio
-    if (!values.acudiente || values.acudiente === "") {
-      showErrorAlert("Campo requerido", "Debes seleccionar un acudiente para el deportista.");
-      return;
-    }
-     // Validación de edad:
-  if (values.fechaNacimiento) {
-    const age = calculateAge(values.fechaNacimiento);
-    if (age !== null && !validateAge(age)) {
-      showErrorAlert(
-        "Edad no válida",
-        `El deportista debe tener entre 5 y 18 años para inscribirse en la fundación. Edad actual: ${age} años.`
-      );
-      return;
-    }
-  }
-
-    // Validación inscripción SOLO al crear
-    if (!isEditing) {
-      if (!values.conceptoInscripcion?.trim()) {
-        showErrorAlert(
-          "Campo requerido",
-          "Debes completar el concepto de inscripción inicial."
-        );
-        return;
-      }
-    }
-
-    if (isEditing) {
-      const confirmResult = await showConfirmAlert(
-        "¿Estás seguro?",
-        `¿Deseas actualizar la información del deportista ${athleteToEdit.nombres} ${athleteToEdit.apellidos}?`,
-        {
-          confirmButtonText: "Sí, actualizar",
-          cancelButtonText: "Cancelar",
-        }
-      );
-      if (!confirmResult.isConfirmed) {
-        return;
-      }
     }
 
     try {
       const athleteData = {
-        nombres: values.nombres,
-        apellidos: values.apellidos,
+        nombres: values.nombres.trim(),
+        apellidos: values.apellidos.trim(),
         tipoDocumento: values.tipoDocumento,
-        numeroDocumento: values.numeroDocumento,
-        correo: values.correo,
-        telefono: formatPhoneNumber(values.telefono),
+        numeroDocumento: values.numeroDocumento.trim(),
+        correo: values.correo.trim(),
+        telefono: values.telefono,
         fechaNacimiento: values.fechaNacimiento,
         categoria: values.categoria,
         estado: values.estado,
-        acudiente: parseInt(values.acudiente) || null,
+        acudiente: values.acudiente,
       };
 
-      if (isEditing) {
-        const updatedAthleteData = { ...athleteData, id: athleteToEdit.id };
-        await onUpdate(updatedAthleteData);
-        showSuccessAlert(
-          "Deportista actualizado",
-          `Los datos de ${values.nombres} ${values.apellidos} han sido actualizados exitosamente.`
-        );
-      } else {
-        // Para crear deportista con inscripción inicial
-        const newAthlete = {
-          ...athleteData,
-          // Los campos de inscripción se pasarán separadamente
-          inscriptionData: {
-            estado: values.estadoInscripcion,
-            concepto: values.conceptoInscripcion,
-            fechaConcepto: values.fechaConcepto,
-            fechaInscripcion: values.fechaInscripcion,
-          }
-        };
+      console.log("📤 Enviando a onSave:", athleteData);
 
-        await onSave(newAthlete);
-        showSuccessAlert("Deportista creado", "El deportista ha sido creado exitosamente.");
+      if (isEditing) {
+        const updateData = { 
+          ...athleteData, 
+          id: athleteToEdit.id,
+          shouldUpdateInscription: values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo"
+        };
+        await onUpdate(updateData);
+      } else {
+        await onSave(athleteData);
       }
 
+      console.log("✅ Save/Update completado");
       resetForm();
       onClose();
     } catch (error) {
-      console.error(`Error al ${isEditing ? "actualizar" : "crear"} deportista:`, error);
-      showErrorAlert(
-        "Error",
-        error.message || `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el deportista`
-      );
+      console.error("❌ Error en submit:", error);
+      showErrorAlert("Error", error.message);
     }
   };
 
@@ -330,7 +252,7 @@ const AthleteModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -456,6 +378,11 @@ const AthleteModal = ({
                 touched={touched.fechaNacimiento}
                 delay={0.4}
                 required
+                helperText={
+                  values.fechaNacimiento
+                    ? `Edad: ${calculateAge(values.fechaNacimiento)} años`
+                    : ""
+                }
               />
               <FormField
                 label="Categoría"
@@ -470,9 +397,12 @@ const AthleteModal = ({
                 touched={touched.categoria}
                 delay={0.5}
                 required
+                helperText={
+                  !isEditing ? "Se calcula automáticamente según la edad" : ""
+                }
               />
               <FormField
-                label="Estado"
+                label="Estado del Deportista"
                 name="estado"
                 type="select"
                 placeholder="Selecciona el estado"
@@ -484,73 +414,14 @@ const AthleteModal = ({
                 touched={touched.estado}
                 delay={0.55}
                 required
+                helperText={
+                  values.estado === "Activo"
+                    ? "Participa normalmente en actividades"
+                    : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá automáticamente"
+                }
               />
             </div>
           </div>
-
-{/* Información de Inscripción - Mostrar en ambos modos */}
-<div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-blue-200 pb-2">
-    Inscripción
-  </h3>
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <FormField
-      label="Estado de Inscripción"
-      name="estadoInscripcion"
-      type="select"
-      placeholder="Selecciona el estado"
-      options={inscriptionStates}
-      value={values.estadoInscripcion}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      error={errors.estadoInscripcion}
-      touched={touched.estadoInscripcion}
-      delay={0.6}
-      helperText="Por defecto es 'Vigente'"
-      // 🔓 editable en crear y editar
-    />
-
-    <FormField
-      label="Concepto de Inscripción"
-      name="conceptoInscripcion"
-      type="text"
-      placeholder={`Ej. Inscripción inicial ${new Date().getFullYear()}`}
-      value={values.conceptoInscripcion}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      error={errors.conceptoInscripcion}
-      touched={touched.conceptoInscripcion}
-      delay={0.65}
-      required
-      // 🔓 editable en crear y editar
-    />
-
-    <FormField
-      label="Fecha de Inscripción"
-      name="fechaInscripcion"
-      type="date"
-      value={values.fechaInscripcion}
-      disabled   // ❌ nunca editable
-      delay={0.7}
-      helperText="Fecha actual automática (no modificable)"
-    />
-
-    <FormField
-      label="Fecha Concepto"
-      name="fechaConcepto"
-      type="date"
-      value={values.fechaConcepto}
-      onChange={handleChange}
-      onBlur={handleBlur}
-      error={errors.fechaConcepto}
-      touched={touched.fechaConcepto}
-      delay={0.75}
-      // 🔓 editable en crear y editar
-    />
-  </div>
-</div>
-
-
 
           {/* Sección de Acudiente */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -600,7 +471,10 @@ const AthleteModal = ({
                       onChange={(e) => setGuardianSearchTerm(e.target.value)}
                       className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200"
                     />
-                    <FaSearch className="absolute right-3 top-4 text-gray-400" size={14} />
+                    <FaSearch
+                      className="absolute right-3 top-4 text-gray-400"
+                      size={14}
+                    />
                   </div>
                   {guardianSearchTerm && (
                     <motion.div
@@ -613,19 +487,27 @@ const AthleteModal = ({
                           <motion.button
                             key={guardian.id}
                             type="button"
-                            onClick={() => handleSelectGuardianFromSearch(guardian)}
+                            onClick={() =>
+                              handleSelectGuardianFromSearch(guardian)
+                            }
                             className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors duration-150"
                             whileHover={{ backgroundColor: "#faf5ff" }}
                           >
-                            <div className="font-medium text-gray-800">{guardian.nombreCompleto}</div>
+                            <div className="font-medium text-gray-800">
+                              {guardian.nombreCompleto}
+                            </div>
                             <div className="text-sm text-gray-600">
-                              {guardian.tipoDocumento}: {guardian.identificacion}
+                              {guardian.tipoDocumento}:{" "}
+                              {guardian.identificacion}
                             </div>
                           </motion.button>
                         ))
                       ) : (
                         <div className="px-4 py-6 text-gray-500 text-center">
-                          <FaUserShield size={24} className="mx-auto mb-2 text-gray-300" />
+                          <FaUserShield
+                            size={24}
+                            className="mx-auto mb-2 text-gray-300"
+                          />
                           <p>No se encontraron acudientes</p>
                         </div>
                       )}
@@ -650,7 +532,7 @@ const AthleteModal = ({
               onBlur={handleBlur}
               error={errors.acudiente}
               touched={touched.acudiente}
-              delay={0.75}
+              delay={0.8}
               required
             />
 
@@ -666,10 +548,13 @@ const AthleteModal = ({
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 text-sm flex-1">
                       <div>
-                        <strong>Nombre:</strong> {selectedGuardian.nombreCompleto}
+                        <strong>Nombre:</strong>{" "}
+                        {selectedGuardian.nombreCompleto}
                       </div>
                       <div>
-                        <strong>Documento:</strong> {selectedGuardian.tipoDocumento} - {selectedGuardian.identificacion}
+                        <strong>Documento:</strong>{" "}
+                        {selectedGuardian.tipoDocumento} -{" "}
+                        {selectedGuardian.identificacion}
                       </div>
                       <div>
                         <strong>Teléfono:</strong> {selectedGuardian.telefono}
@@ -694,14 +579,76 @@ const AthleteModal = ({
             </AnimatePresence>
           </div>
 
+          {/* Nota informativa para crear deportista */}
+          {!isEditing && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-100 rounded-full p-2 mt-1">
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-blue-800 mb-1">
+                    Inscripción automática
+                  </h4>
+                  <p className="text-sm text-blue-700">
+                    Al crear este deportista, se generará automáticamente una
+                    inscripción inicial. Si seleccionas "Inactivo", la inscripción 
+                    se creará con estado "Suspendida". Si seleccionas "Activo", 
+                    se creará con estado "Vigente".
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Alerta cuando se cambia a Inactivo en edición */}
+          {isEditing && athleteToEdit && values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo" && (
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-orange-100 rounded-full p-2 mt-1">
+                  <svg
+                    className="w-4 h-4 text-orange-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium text-orange-800 mb-1">
+                    ⚠️ Cambio de estado a Inactivo
+                  </h4>
+                  <p className="text-sm text-orange-700">
+                    Al marcar este deportista como "Inactivo", su inscripción actual 
+                    (si está Vigente) se suspenderá automáticamente. Este cambio quedará 
+                    registrado en el historial de inscripciones.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Footer */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.9 }}
             className="flex justify-between pt-6 border-t border-gray-200"
           >
-          
             <motion.button
               type="button"
               onClick={handleClose}
@@ -712,7 +659,8 @@ const AthleteModal = ({
               Cancelar
             </motion.button>
             <motion.button
-              onClick={handleSubmit}
+              type="button"
+              onClick={(event) => handleSubmit(event)}
               className="px-8 py-3 text-white rounded-xl font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}

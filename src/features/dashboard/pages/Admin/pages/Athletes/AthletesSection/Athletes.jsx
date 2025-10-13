@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useMemo } from "react";
 import { FaUsers, FaPlus, FaClipboardList, FaHistory } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
@@ -7,15 +5,17 @@ import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
 import GuardiansListModal from "./components/GuardiansListModal.jsx";
-
-import AthleteRenewModal from "./components/AthleteRenewModal.jsx";
+import InscriptionManagementModal from "./components/InscriptionManagementModal.jsx";
 import InscriptionHistoryModal from "../AthletesSection/components/AthleteInscriptionHistoryModal.jsx";
+
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import athletesData from "./AthleteData.jsx";
-import guardiansData from "../AthletesSection/GuardiansData.js";
+
+import athletesData from "../../../../../../../shared/models/AthleteData.js";
+import guardiansData from "../../../../../../../shared/models/GuardiansData.js";
+
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -23,9 +23,7 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 
 const Athletes = () => {
-  // -----------------------------
   // Estados de atletas
-  // -----------------------------
   const [data, setData] = useState(athletesData || []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -33,9 +31,7 @@ const Athletes = () => {
   const [athleteToEdit, setAthleteToEdit] = useState(null);
   const [athleteToView, setAthleteToView] = useState(null);
 
-  // -----------------------------
   // Estados de acudientes
-  // -----------------------------
   const [guardians, setGuardians] = useState(guardiansData || []);
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
   const [isGuardianViewOpen, setIsGuardianViewOpen] = useState(false);
@@ -44,47 +40,37 @@ const Athletes = () => {
   const [guardianToView, setGuardianToView] = useState(null);
   const [guardianModalMode, setGuardianModalMode] = useState("create");
 
-// -----------------------------
-// Estados de inscripciones
-// -----------------------------
-const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] = useState(false);
-const [athleteForInscription, setAthleteForInscription] = useState(null);
-  // -----------------------------
-  // Estado para renovar inscripción
-  // -----------------------------
-  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
-  const [athleteForRenew, setAthleteForRenew] = useState(null);
+  // Estados de inscripciones
+  const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] =
+    useState(false);
+  const [athleteForInscription, setAthleteForInscription] = useState(null);
+  const [isInscriptionManagementOpen, setIsInscriptionManagementOpen] =
+    useState(false);
 
-  // -----------------------------
   // Estados comunes
-  // -----------------------------
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-
   const rowsPerPage = 5;
 
-  // -----------------------------
   // Filtrado de atletas
-  // -----------------------------
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    return data.filter((athlete) => {
-      const guardian = guardians.find((g) => g.id === athlete.acudiente);
-      return [
-        athlete.nombres,
-        athlete.apellidos,
-        athlete.numeroDocumento,
-        athlete.correo,
-        athlete.categoria,
-        guardian?.nombreCompleto,
-        athlete.estadoInscripcion,
-      ]
-        .filter(Boolean)
-        .some((field) =>
-          field.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    });
-  }, [data, searchTerm, guardians]);
+    if (!searchTerm) return data;
+
+    return data.filter((item) =>
+      Object.entries(item).some(([key, value]) => {
+        const stringValue = String(value).trim();
+        if (
+          key.toLowerCase() === "estado" ||
+          key.toLowerCase() === "estadoinscripcion"
+        ) {
+          return stringValue.toLowerCase() === searchTerm.toLowerCase();
+        }
+
+        //  Filtrado parcial para los demás campos
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+    );
+  }, [data, searchTerm]);
 
   const totalRows = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
@@ -96,59 +82,180 @@ const [athleteForInscription, setAthleteForInscription] = useState(null);
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  // -----------------------------
-  // CRUD Atletas
-  // -----------------------------
   const handleSave = async (newAthlete) => {
-  try {
-    const currentYear = new Date().getFullYear();
+    try {
+      // Convertir acudiente a número
+      const acudienteId = parseInt(newAthlete.acudiente);
 
-    // Validar inscripción inicial obligatoria
-    if (!newAthlete.estadoInscripcion || !newAthlete.conceptoInscripcion) {
-      return showErrorAlert(
-        "Campos requeridos",
-        "Debes completar los datos de inscripción inicial."
-      );
+      // Verificar que existe el acudiente
+      const guardianExists = guardians.find((g) => g.id === acudienteId);
+
+      if (!guardianExists) {
+        showErrorAlert("Error", "El acudiente seleccionado no existe.");
+        console.log("Acudiente buscado:", acudienteId);
+        console.log("Acudientes disponibles:", guardians);
+        return;
+      }
+
+      // Crear deportista
+      const athleteId =
+        data.length > 0 ? Math.max(...data.map((a) => a.id)) + 1 : 1;
+
+      // Determinar estado de inscripción según estado del deportista
+      const inscriptionState =
+        newAthlete.estado === "Inactivo" ? "Suspendida" : "Vigente";
+      const inscriptionConcept =
+        newAthlete.estado === "Inactivo"
+          ? "Inscripción inicial suspendida - Deportista inactivo"
+          : "Inscripción inicial";
+
+      const formattedAthlete = {
+        id: athleteId,
+        nombres: newAthlete.nombres.trim(),
+        apellidos: newAthlete.apellidos.trim(),
+        tipoDocumento: newAthlete.tipoDocumento,
+        numeroDocumento: newAthlete.numeroDocumento?.trim() || "",
+        fechaNacimiento: newAthlete.fechaNacimiento,
+        genero: "masculino",
+        telefono: newAthlete.telefono?.trim() || "",
+        correo: newAthlete.correo?.trim() || "",
+        direccion: "",
+        ciudad: "Medellín",
+        categoria: newAthlete.categoria,
+        estado: newAthlete.estado || "Activo",
+        acudiente: acudienteId,
+        estadoInscripcion: inscriptionState,
+        inscripciones: [
+          {
+            id: 1,
+            fechaInscripcion: new Date().toISOString().split("T")[0],
+            estado: inscriptionState,
+            categoria: newAthlete.categoria,
+            concepto: inscriptionConcept,
+            fechaConcepto: new Date().toISOString().split("T")[0],
+          },
+        ],
+      };
+
+      console.log("Deportista a guardar:", formattedAthlete);
+
+      setData((prev) => [...prev, formattedAthlete]);
+
+      if (newAthlete.estado === "Inactivo") {
+        showSuccessAlert(
+          "Deportista creado",
+          "El deportista fue creado como Inactivo con inscripción suspendida."
+        );
+      } else {
+        showSuccessAlert("Éxito", "El deportista fue creado correctamente.");
+      }
+
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error:", error);
+      showErrorAlert("Error", error.message);
     }
-
-    const inscription = {
-      id: Date.now(),
-      fechaInscripcion: new Date().toISOString().split("T")[0],
-      estadoInscripcion: newAthlete.estadoInscripcion,
-      concepto: newAthlete.conceptoInscripcion,
-      categoria: newAthlete.categoria,
-    };
-
-    const formatted = {
-      ...newAthlete,
-      id: Date.now(),
-      inscripciones: [inscription],
-      estadoInscripcion: inscription.estadoInscripcion, // CAMBIAR: era inscription.estado
-      lastInscription: inscription,
-    };
-
-    setData([formatted, ...data]);
-
-    showSuccessAlert(
-      "Deportista inscrito",
-      "El deportista fue creado con inscripción inicial."
-    );
-    setIsModalOpen(false);
-  } catch (error) {
-    console.error("Error al crear deportista:", error);
-    showErrorAlert("Error", "Ocurrió un error al crear el deportista");
-  }
-};
+  };
 
   const handleUpdate = async (updatedAthlete) => {
     try {
-      setData(
-        data.map((a) => (a.id === updatedAthlete.id ? updatedAthlete : a))
+      console.log("🔄 Actualizando deportista:", updatedAthlete);
+
+      // Asegurar que acudiente sea number y mantener el estado
+      const athleteWithCorrectTypes = {
+        ...updatedAthlete,
+        acudiente: parseInt(updatedAthlete.acudiente),
+        estado: updatedAthlete.estado || "Activo",
+      };
+
+      //  Si el deportista pasa a Inactivo, suspender su inscripción actual
+      if (
+        updatedAthlete.shouldUpdateInscription &&
+        athleteWithCorrectTypes.estado === "Inactivo"
+      ) {
+        const athlete = data.find((a) => a.id === athleteWithCorrectTypes.id);
+
+        if (
+          athlete &&
+          athlete.inscripciones &&
+          athlete.inscripciones.length > 0
+        ) {
+          const currentInscription = athlete.inscripciones[0];
+
+          // Solo suspender si no está ya suspendida o vencida
+          if (currentInscription.estado === "Vigente") {
+            // Crear registro de cambio de estado
+            const stateChangeRecord = {
+              id: crypto.randomUUID(),
+              estado: "Suspendida",
+              estadoAnterior: currentInscription.estado,
+              concepto:
+                "Suspensión automática - Deportista marcado como Inactivo",
+              fechaInscripcion: currentInscription.fechaInscripcion,
+              fechaConcepto: new Date().toISOString(),
+              categoria: currentInscription.categoria,
+              tipo: "cambio_estado",
+            };
+
+            // Actualizar inscripciones
+            athleteWithCorrectTypes.inscripciones = [
+              stateChangeRecord,
+              ...athlete.inscripciones,
+            ];
+            athleteWithCorrectTypes.estadoInscripcion = "Suspendida";
+
+            showSuccessAlert(
+              "Deportista actualizado",
+              "El deportista fue marcado como Inactivo y su inscripción se suspendió automáticamente."
+            );
+          }
+        }
+      }
+
+      //Si el deportista pasa de Inactivo a Activo
+      const athlete = data.find((a) => a.id === athleteWithCorrectTypes.id);
+      if (
+        athlete &&
+        athlete.estado === "Inactivo" &&
+        athleteWithCorrectTypes.estado === "Activo"
+      ) {
+        showSuccessAlert(
+          "Deportista reactivado",
+          "El deportista fue marcado como Activo. IMPORTANTE: Debes ir a 'Gestionar Inscripción' para reactivar su inscripción si corresponde."
+        );
+      }
+
+      setData((prev) =>
+        prev.map((a) =>
+          a.id === athleteWithCorrectTypes.id
+            ? {
+                ...a,
+                ...athleteWithCorrectTypes,
+                // Mantener las inscripciones existentes si no fueron actualizadas
+                inscripciones:
+                  athleteWithCorrectTypes.inscripciones ||
+                  a.inscripciones ||
+                  [],
+              }
+            : a
+        )
       );
-      showSuccessAlert(
-        "Deportista actualizado",
-        "El deportista se actualizó correctamente."
-      );
+
+      // Solo mostrar el mensaje genérico si no se mostró ninguno específico
+      if (
+        !updatedAthlete.shouldUpdateInscription &&
+        !(
+          athlete &&
+          athlete.estado === "Inactivo" &&
+          athleteWithCorrectTypes.estado === "Activo"
+        )
+      ) {
+        showSuccessAlert(
+          "Deportista actualizado",
+          "El deportista se actualizó correctamente."
+        );
+      }
+
       setIsModalOpen(false);
     } catch (error) {
       console.error("Error al actualizar deportista:", error);
@@ -188,12 +295,10 @@ const [athleteForInscription, setAthleteForInscription] = useState(null);
     );
   };
 
-  // -----------------------------
-  // CRUD Acudientes
-  // -----------------------------
+  // CRUD Acudientes (sin cambios)
   const handleSaveGuardian = async (newGuardian) => {
     try {
-      const formatted = { ...newGuardian, id: Date.now() };
+      const formatted = { ...newGuardian, id: crypto.randomUUID() };
       setGuardians([formatted, ...guardians]);
       showSuccessAlert(
         "Acudiente creado",
@@ -265,38 +370,14 @@ const [athleteForInscription, setAthleteForInscription] = useState(null);
     );
   };
 
-  // -----------------------------
-  // Inscripciones
-  // -----------------------------
-  const handleInscriptions = (athlete) => {
-  if (!athlete || athlete.target) return;
-
-  const lastInscription = athlete.inscripciones?.[0];
-  if (lastInscription) {
-    const lastDate = new Date(lastInscription.fechaInscripcion);
-    const renewalDate = new Date(lastDate);
-    renewalDate.setFullYear(renewalDate.getFullYear() + 1);
-
-    if (new Date() < renewalDate) {
-      return showErrorAlert(
-        "Renovación no disponible",
-        `La próxima renovación está disponible a partir del ${renewalDate.toLocaleDateString()}`
-      );
-    }
-  }
-
-  // CAMBIAR ESTAS LÍNEAS:
-  setAthleteForInscription(athlete);
-  setIsInscriptionHistoryModalOpen(true); // Esta línea era la que causaba error
-};
-
+  //  Inscripciones
   const canInscribeAthlete = (athlete) => {
-    if (!athlete || !athlete.inscripciones) return true;
+    if (!athlete) return false;
 
-    const currentYear = new Date().getFullYear();
-    return !(athlete.inscripciones || []).some(
-      (ins) => new Date(ins.fechaInscripcion).getFullYear() === currentYear
-    );
+    const currentInscription = athlete.inscripciones?.[0];
+
+    // SOLO permitir renovar si la inscripción actual está VENCIDA
+    return currentInscription?.estado === "Vencida";
   };
 
   const handleViewInscriptionHistory = (athlete) => {
@@ -304,43 +385,21 @@ const [athleteForInscription, setAthleteForInscription] = useState(null);
     setAthleteForInscription(athlete);
     setIsInscriptionHistoryModalOpen(true);
   };
-// -----------------------------
-// Renovación de inscripción
-// -----------------------------
-const handleOpenRenew = (athlete) => {
-  if (!athlete || athlete.target) return;
-  setAthleteForRenew(athlete);
-  setIsRenewModalOpen(true);
-};
 
-const handleRenewInscription = (athleteId) => {
-  setData((prev) =>
-    prev.map((athlete) => {
-      if (athlete.id === athleteId) {
-        const today = new Date();
-        const newInscription = {
-          id: Date.now(),
-          estadoInscripcion: "Vigente", // CAMBIAR: era "estado"
-          concepto: `Renovación ${today.getFullYear()}`,
-          fechaConcepto: today.toISOString().split("T")[0],
-          fechaInscripcion: today.toISOString().split("T")[0],
-        };
+  const handleOpenInscriptionManagement = (athlete) => {
+    if (!athlete || athlete.target) return;
+    setAthleteForInscription(athlete);
+    setIsInscriptionManagementOpen(true);
+  };
 
-        return {
-          ...athlete,
-          estadoInscripcion: "Vigente",
-          inscripciones: [newInscription, ...(athlete.inscripciones || [])],
-          lastInscription: newInscription,
-        };
-      }
-      return athlete;
-    })
-  );
-};
+  const handleUpdateAthleteFromManagement = (updatedAthlete) => {
+    setData((prev) =>
+      prev.map((athlete) =>
+        athlete.id === updatedAthlete.id ? updatedAthlete : athlete
+      )
+    );
+  };
 
-  // -----------------------------
-  // Render
-  // -----------------------------
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -366,7 +425,6 @@ const handleRenewInscription = (athleteId) => {
                 acudienteNombre:
                   guardians.find((g) => g.id === athlete.acudiente)
                     ?.nombreCompleto || "Sin acudiente",
-                estadoInscripcion: athlete.estadoInscripcion || "",
               }))}
               fileName="Deportistas"
               columns={[
@@ -376,11 +434,7 @@ const handleRenewInscription = (athleteId) => {
                 { header: "Correo", accessor: "correo" },
                 { header: "Teléfono", accessor: "telefono" },
                 { header: "Categoría", accessor: "categoria" },
-                { header: "Estado", accessor: "estado" },
-                {
-                  header: "Estado de inscripción",
-                  accessor: "estadoInscripcion",
-                },
+                { header: "Estado Inscripción", accessor: "estadoInscripcion" },
                 { header: "Acudiente", accessor: "acudienteNombre" },
               ]}
             />
@@ -406,7 +460,7 @@ const handleRenewInscription = (athleteId) => {
         </div>
       </div>
 
-      {/* Tabla */}
+      {/* Tabla - VERSIÓN MEJORADA SIN ESTADO DEPORTISTA */}
       {totalRows > 0 ? (
         <>
           <div className="w-full bg-white rounded-lg">
@@ -440,58 +494,27 @@ const handleRenewInscription = (athleteId) => {
                 ],
                 state: true,
                 stateMap: {
-                  Activo: "bg-green-100 text-green-800",
-                  Inactivo: "bg-red-100 text-red-800",
-                  Lesionado: "bg-yellow-100 text-yellow-800",
-                  Suspendido: "bg-orange-100 text-orange-800",
+                  // 📄 Solo estados de INSCRIPCIÓN
+                  Vigente: "bg-green-100 text-green-800",
+                  Suspendida: "bg-orange-100 text-orange-800",
+                  Vencida: "bg-yellow-100 text-yellow-800",
                 },
               }}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onView={handleView}
-              customActions={(athlete) => {
-                const canInscribe = canInscribeAthlete(athlete);
-                const currentYear = new Date().getFullYear();
-
-                return (
-                  <div className="flex gap-1">
-                    <div className="relative group">
-                      <button
-  onClick={() => handleOpenRenew(athlete)}
-  disabled={!canInscribe}
-  className={`p-2 rounded transition-colors ${
-    !canInscribe
-      ? "opacity-50 cursor-not-allowed bg-gray-100"
-      : "text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50"
-  }`}
-  title={
-    !canInscribe
-      ? `Ya inscrito en ${currentYear}`
-      : `Renovar inscripción`
+             customActions={[
+  {
+    onClick: (athlete) => handleOpenInscriptionManagement(athlete),
+    label: <FaClipboardList className="w-4 h-4" />,
+    className: "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors"
+  },
+  {
+    onClick: (athlete) => handleViewInscriptionHistory(athlete),
+    label: <FaHistory className="w-4 h-4" />,
+    className: "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
   }
->
-  <FaClipboardList className="w-4 h-4" />
-</button>
-
-
-                      {!canInscribe && (
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-gray-800 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                          Ya tiene inscripción {currentYear}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleViewInscriptionHistory(athlete)}
-                      className="p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-                      title="Historial de Inscripciones"
-                    >
-                      <FaHistory className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              }}
+]}
             />
           </div>
           <div className="mt-4">
@@ -576,31 +599,29 @@ const handleRenewInscription = (athleteId) => {
       />
 
       {/* Modales de inscripciones */}
-
-    
-<AthleteRenewModal
-  isOpen={isRenewModalOpen}
-  onClose={() => setIsRenewModalOpen(false)}
-  athlete={athleteForRenew}
-  onRenew={(renewedAthlete) => {
-    handleRenewInscription(renewedAthlete.id);
-    setIsRenewModalOpen(false);
-  }}
-/>
-
-      <InscriptionHistoryModal
-        isOpen={isInscriptionHistoryModalOpen}
-        onClose={() => setIsInscriptionHistoryModalOpen(false)}
+      <InscriptionManagementModal
+        isOpen={isInscriptionManagementOpen}
+        onClose={() => setIsInscriptionManagementOpen(false)}
         athlete={athleteForInscription}
         guardians={guardians}
-        onUpdateInscription={(athleteId, updatedArray) => {
-          setData((prev) =>
-            prev.map((a) =>
-              a.id === athleteId ? { ...a, inscripciones: updatedArray } : a
-            )
-          );
-        }}
+        onUpdateAthlete={handleUpdateAthleteFromManagement}
       />
+
+      {isInscriptionHistoryModalOpen && athleteForInscription && (
+        <InscriptionHistoryModal
+          isOpen={isInscriptionHistoryModalOpen}
+          onClose={() => setIsInscriptionHistoryModalOpen(false)}
+          athlete={athleteForInscription}
+          guardians={guardians}
+          onUpdateInscription={(athleteId, updatedArray) => {
+            setData((prev) =>
+              prev.map((a) =>
+                a.id === athleteId ? { ...a, inscripciones: updatedArray } : a
+              )
+            );
+          }}
+        />
+      )}
     </div>
   );
 };

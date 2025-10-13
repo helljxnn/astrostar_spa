@@ -254,44 +254,6 @@ function DynamicSideBar({
               </motion.div>
             )}
 
-            {visibleModules.users && (
-              <motion.div
-                variants={menuItemVariants}
-                initial="initial"
-                animate="animate"
-                className="mb-1"
-              >
-                <Link
-                  to="/dashboard/users"
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${isActive("/dashboard/users")
-                      ? "bg-indigo-100 text-primary-purple shadow-sm"
-                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <FaUsers size={20} className="shrink-0" />
-                  </motion.div>
-                  <AnimatePresence>
-                    {isExpanded && (
-                      <motion.span
-                        initial={{ opacity: 0, width: 0, x: -10 }}
-                        animate={{ opacity: 1, width: "auto" }}
-                        exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        Usuarios
-                      </motion.span>
-                    )}
-                  </AnimatePresence>
-                </Link>
-              </motion.div>
-            )}
-
             {/* Roles - Solo para admin */}
             {visibleModules.roles && (
               <motion.div
@@ -324,6 +286,44 @@ function DynamicSideBar({
                         transition={{ duration: 0.2 }}
                       >
                         Roles
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
+              </motion.div>
+            )}
+
+            {visibleModules.users && (
+              <motion.div
+                variants={menuItemVariants}
+                initial="initial"
+                animate="animate"
+                className="mb-1"
+              >
+                <Link
+                  to="/dashboard/users"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
+                    } ${isActive("/dashboard/users")
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                    }`}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FaUsers size={20} className="shrink-0" />
+                  </motion.div>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0, x: -10 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        Usuarios
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -551,15 +551,17 @@ function DynamicSideBar({
               >
                 <motion.button
                   onClick={() => toggleMenu("athletes")}
-                  className={`flex items-center justify-between ${isExpanded ? "w-full" : ""
-                    } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
-                    } ${openMenu === "athletes" ||
-                      isActive("/dashboard/athletes") ||
-                      isActive("/dashboard/sports-category") ||
-                      isActive("/dashboard/temporary-workers")
+                  className={`flex items-center justify-between ${
+                    isExpanded ? "w-full" : ""
+                  } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
+                    !isExpanded ? "justify-center" : ""
+                  } ${
+                    openMenu === "athletes" ||
+                    isActive("/dashboard/athletes") ||
+                    isActive("/dashboard/sports-category")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                    }`}
+                  }`}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
@@ -633,36 +635,19 @@ function DynamicSideBar({
                             transition={{ delay: 0.15 }}
                           >
                             <Link
-                              to="/dashboard/athletes"
+                              to="/dashboard/athletes-section"
                               onClick={() => setIsOpen(false)}
-                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/athletes")
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/athletes")
                                   ? "bg-indigo-100 text-primary-purple shadow-sm"
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                }`}
+                              }`}
                             >
                               Gestión de deportistas
                             </Link>
                           </motion.div>
 
-                          {/* Personas Temporales */}
-                          {visibleModules.temporaryWorkers && (
-                            <motion.div
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.2 }}
-                            >
-                              <Link
-                                to="/dashboard/temporary-workers"
-                                onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/temporary-workers")
-                                    ? "bg-indigo-100 text-primary-purple shadow-sm"
-                                    : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
-                              >
-                                Personas temporales
-                              </Link>
-                            </motion.div>
-                          )}
+
                         </div>
                       </motion.div>
                     )}
@@ -747,9 +732,10 @@ function DynamicSideBar({
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Donantes-Patrocinadores
+                              Donantes/Patrocinadores
                             </Link>
                           </motion.div>
+
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -787,6 +773,7 @@ function DynamicSideBar({
                     } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
                     } ${openMenu === "events" ||
                       isActive("/dashboard/events") ||
+                      isActive("/dashboard/temporary-workers") ||
                       isActive("/dashboard/temporary-teams")
                       ? "bg-indigo-100 text-primary-purple shadow-sm"
                       : "text-gray-700 hover:bg-indigo-50 hover:text-black"
@@ -855,11 +842,29 @@ function DynamicSideBar({
                             </Link>
                           </motion.div>
 
-                          {/* Equipos Temporales */}
+                          {/* Personas Temporales */}
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.15 }}
+                          >
+                            <Link
+                              to="/dashboard/temporary-workers"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/temporary-workers")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                                }`}
+                            >
+                              Personas temporales
+                            </Link>
+                          </motion.div>
+
+                          {/* Equipos Temporales */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
                           >
                             <Link
                               to="/dashboard/temporary-teams"
@@ -869,7 +874,7 @@ function DynamicSideBar({
                                   : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                                 }`}
                             >
-                              Equipos Temporales
+                              Equipos
                             </Link>
                           </motion.div>
                         </div>
@@ -983,6 +988,43 @@ function DynamicSideBar({
                     )}
                   </AnimatePresence>
                 )}
+              </motion.div>
+            )}
+
+            {visibleModules.sales && (
+              <motion.div
+                variants={menuItemVariants}
+                initial="initial"
+                animate="animate"
+              >
+                <Link
+                  to="/dashboard/sales"
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-4 px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${!isExpanded ? "justify-center" : ""
+                    } ${isActive("/dashboard/sales")
+                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                    }`}
+                >
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <FaDollarSign size={20} className="shrink-0" />
+                  </motion.div>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.span
+                        initial={{ opacity: 0, width: 0, x: -10 }}
+                        animate={{ opacity: 1, width: "auto" }}
+                        exit={{ opacity: 0, width: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        Ventas
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Link>
               </motion.div>
             )}
           </div>

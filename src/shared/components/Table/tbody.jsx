@@ -22,9 +22,10 @@ const Tbody = ({ options }) => {
     onDelete,
     onView,
     onList,
+    customActions, // ✅ AGREGADO: acciones personalizadas
   } = options.tbody || {};
 
-  const hasActions = onEdit || onDelete || onView || onList;
+  const hasActions = onEdit || onDelete || onView || onList || customActions; // ✅ MODIFICADO
 
   /* --- Si no hay datos --- */
   if (!data || data.length === 0) {
@@ -106,15 +107,23 @@ const Tbody = ({ options }) => {
                   </button>
                 )}
 
-                {onDelete && (
-                  <button
-                    onClick={() => onDelete(item)}
-                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
-                    title="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-                )}
+                {onDelete && (() => {
+                  const isActive = item.estado && item.estado.toLowerCase() === "activo";
+                  return (
+                    <button
+                      onClick={() => !isActive && onDelete(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isActive 
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                          : "bg-red-100 text-red-500 hover:bg-red-500 hover:text-white"
+                      }`}
+                      title={isActive ? "No se puede eliminar empleado activo" : "Eliminar"}
+                      disabled={isActive}
+                    >
+                      <FaTrash />
+                    </button>
+                  );
+                })()}
 
                 {onView && (
                   <button
@@ -134,6 +143,22 @@ const Tbody = ({ options }) => {
                   >
                     <FaList />
                   </button>
+                )}
+
+                {/* ✅ NUEVO: Acciones personalizadas */}
+                {customActions && (
+                  typeof customActions === 'function'
+                    ? customActions(item)
+                    : customActions.map((action, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => action.onClick(item)}
+                          className={action.className}
+                          title={action.title}
+                        >
+                          {action.label}
+                        </button>
+                      ))
                 )}
               </td>
             )}

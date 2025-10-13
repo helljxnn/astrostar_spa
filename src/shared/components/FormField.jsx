@@ -1,5 +1,5 @@
 // components/FormField.jsx
-import React, { useState } from "react";
+import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const FormField = ({
@@ -15,22 +15,10 @@ export const FormField = ({
   onChange,
   onBlur,
   delay = 0,
+  disabled = false,
   ...props
 }) => {
-  // Soporte para estado 'touched' interno para formularios sin hook de validación.
-  const isTouchedExternallyManaged = touched !== undefined;
-  const [isTouchedInternal, setIsTouchedInternal] = useState(false);
-  const wasTouched = isTouchedExternallyManaged ? touched : isTouchedInternal;
-
-  // Lógica de validación.
-  const isFieldEmpty = !value || (typeof value === 'string' && value.trim() === '');
-
-  // El error puede venir de un hook externo o de la validación interna de 'required'.
-  const externalError = wasTouched && error;
-  const requiredError = wasTouched && required && isFieldEmpty && !error;
-
-  const hasError = !!(externalError || requiredError);
-  const errorMessage = externalError ? error : (requiredError ? `El campo '${label.toLowerCase()}' es obligatorio.` : null);
+  const hasError = touched && error;
 
   const handleChange = (e) => {
     const val = e.target.value;
@@ -47,11 +35,6 @@ export const FormField = ({
   };
 
   const handleBlur = (e) => {
-    // Si el estado 'touched' no se maneja externamente, lo actualizamos internamente.
-    if (!isTouchedExternallyManaged) {
-      setIsTouchedInternal(true);
-    }
-
     if (typeof onBlur === "function") {
       // Esta lógica soporta las dos firmas: onBlur(name) y onBlur(e).
       if (onBlur.length === 1) {
@@ -75,23 +58,26 @@ export const FormField = ({
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
-      {type === 'select' ? (
+      {type === "select" ? (
         <select
           name={name}
           value={value}
           onChange={handleChange}
           onBlur={handleBlur}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError
-              ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         >
-          <option value="">{placeholder || "Seleccione una opción"}</option>
-          {options.map(option => (
+          <option value="">{placeholder}</option>
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -104,12 +90,15 @@ export const FormField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent resize-none h-20
-            ${hasError
-              ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
@@ -121,19 +110,22 @@ export const FormField = ({
           onChange={handleChange}
           onBlur={handleBlur}
           placeholder={placeholder}
+          disabled={disabled}
           className={`
             w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${hasError
-              ? 'border-red-300 focus:ring-red-500'
-              : 'border-gray-300 focus:ring-purple-500'
+            ${
+              hasError
+                ? "border-red-300 focus:ring-red-500"
+                : "border-gray-300 focus:ring-purple-500"
             }
+            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
           `}
           {...props}
         />
       )}
 
       <AnimatePresence>
-        {hasError && errorMessage && (
+        {hasError && error && (
           <motion.div
             initial={{ opacity: 0, y: -10, height: 0 }}
             animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -142,7 +134,7 @@ export const FormField = ({
             className="text-red-500 text-xs flex items-center gap-1"
           >
             <span>⚠️</span>
-            <span>{errorMessage}</span>
+            <span>{error}</span>
           </motion.div>
         )}
       </AnimatePresence>
