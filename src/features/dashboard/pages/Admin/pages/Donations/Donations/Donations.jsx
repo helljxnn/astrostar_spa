@@ -25,6 +25,7 @@ const Donations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false); // 👈 NUEVO: Bandera de inicialización
 
   const rowsPerPage = 5;
   const navigate = useNavigate();
@@ -32,44 +33,48 @@ const Donations = () => {
 
   /* ------------------- Cargar y normalizar datos iniciales ------------------- */
   useEffect(() => {
-    if (data.length === 0) {
-      const normalized = donationsData.map((d, idx) => {
-        const donorName = d.donorName ?? d.nombreDonante ?? "";
-        const donationDate = d.donationDate ?? d.fechaDonacion ?? "";
-        const registerDate = d.registerDate ?? d.fechaRegistro ?? "";
-        const statusRaw = d.status ?? d.estado ?? "";
-        const descripcion = d.descripcion ?? "";
+    // Solo cargar datos si NO han sido inicializados
+    if (isInitialized) return; // 👈 NUEVO: Evitar re-inicialización
+    
+    // Cargar datos solo UNA VEZ al montar el componente
+    const normalized = donationsData.map((d, idx) => {
+      const donorName = d.donorName ?? d.nombreDonante ?? "";
+      const donationDate = d.donationDate ?? d.fechaDonacion ?? "";
+      const registerDate = d.registerDate ?? d.fechaRegistro ?? "";
+      const statusRaw = d.status ?? d.estado ?? "";
+      const descripcion = d.descripcion ?? "";
 
-        const items =
-          d.items && Array.isArray(d.items) && d.items.length > 0
-            ? d.items.map((it) => ({
-                donationType: it.donationType ?? it.tipoDonacion ?? "",
-                amount: it.amount ?? it.cantidad ?? "",
-              }))
-            : d.donationType || d.tipoDonacion
-            ? [
-                {
-                  donationType: d.donationType ?? d.tipoDonacion,
-                  amount: d.amount ?? d.cantidad ?? "",
-                },
-              ]
-            : [];
+      const items =
+        d.items && Array.isArray(d.items) && d.items.length > 0
+          ? d.items.map((it) => ({
+              donationType: it.donationType ?? it.tipoDonacion ?? "",
+              amount: it.amount ?? it.cantidad ?? "",
+            }))
+          : d.donationType || d.tipoDonacion
+          ? [
+              {
+                donationType: d.donationType ?? d.tipoDonacion,
+                amount: d.amount ?? d.cantidad ?? "",
+              },
+            ]
+          : [];
 
-        return {
-          ...d,
-          id: d.id ?? idx + 1,
-          donorName,
-          donationDate,
-          registerDate,
-          status: statusRaw,
-          descripcion,
-          items,
-        };
-      });
+      return {
+        ...d,
+        id: d.id ?? idx + 1,
+        donorName,
+        donationDate,
+        registerDate,
+        status: statusRaw,
+        descripcion,
+        items,
+      };
+    });
 
-      setData(normalized);
-    }
-  }, [data]);
+    setData(normalized);
+    setIsInitialized(true); // 👈 NUEVO: Marcar como inicializado
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 👈 Solo ejecutar UNA VEZ al montar
 
   /* ------------------- Recibir nueva o editar donación ------------------- */
   useEffect(() => {
@@ -95,7 +100,7 @@ const Donations = () => {
         new Date().toLocaleDateString("es-CO"),
       registerDate:
         newDonation.registerDate ??
-        new Date().toLocaleDateString("es-CO"), // 👈 Fecha actual automática
+        new Date().toLocaleDateString("es-CO"),
       status: newDonation.status ?? "Registrado",
       descripcion: newDonation.descripcion ?? "",
       items,
@@ -276,6 +281,8 @@ const Donations = () => {
                   ? donationTypes.join(", ")
                   : "Sin tipos",
               status: statusNode,
+              // 👇 MANTENER REFERENCIA AL OBJETO ORIGINAL
+              _original: donation,
             };
           }),
           dataPropertys: [
@@ -286,9 +293,9 @@ const Donations = () => {
             "registerDate",
           ],
         }}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
+        onEdit={(row) => handleEdit(row._original || row)} // 👈 FIX: Usar objeto original
+        onDelete={(row) => handleDelete(row._original || row)} // 👈 FIX: Usar objeto original
+        onView={(row) => handleView(row._original || row)} // 👈 FIX: Usar objeto original
       />
 
       {/* ---------- Paginación ---------- */}

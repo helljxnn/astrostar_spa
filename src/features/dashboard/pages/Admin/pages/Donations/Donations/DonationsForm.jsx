@@ -6,13 +6,13 @@ import { FaTrash } from "react-icons/fa";
 import {
   useFormDonationsValidation,
   donationsValidationRules,
-} from "./Donations/hooks/useFormDonationsValidation";
+} from "./hooks/useFormDonationsValidation";
 
 /* ---------- Utils ---------- */
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts";
 
 const DonationsForm = () => {
   const navigate = useNavigate();
@@ -240,8 +240,13 @@ const DonationsForm = () => {
               <input
                 type="date"
                 value={currentDonation.fechaRegistro}
-                readOnly
-                className="w-full bg-gray-100 border border-gray-300 rounded-xl px-4 py-2 text-gray-600"
+                onChange={(e) =>
+                  setCurrentDonation({
+                    ...currentDonation,
+                    fechaRegistro: e.target.value,
+                  })
+                }
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
               />
             </div>
           </div>
