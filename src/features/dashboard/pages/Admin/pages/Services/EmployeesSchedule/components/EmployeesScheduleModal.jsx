@@ -2,17 +2,22 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
 
-// 🔹 Mock temporal de empleados
+/* ============================================================
+   🔹 MOCK TEMPORAL DE EMPLEADOS
+============================================================ */
 const empleadosMock = [
   { id: 1, nombre: "Juan Pérez", cargo: "Entrenador" },
   { id: 2, nombre: "Ana Gómez", cargo: "Nutricionista" },
 ];
 
+/* ============================================================
+   🔹 COMPONENTE PRINCIPAL: ScheduleModal
+============================================================ */
 export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
-  // ---------------- STATE ----------------
+  /* ---------------- STATE ---------------- */
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [form, setForm] = useState({
     empleadoId: "",
@@ -26,14 +31,16 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
     descripcion: "",
     estado: "Programado",
   });
+  const [originalForm, setOriginalForm] = useState(null);
 
-  const { errors, touched, validate, handleBlur, touchAllFields } =
+  /* ---------------- VALIDACIÓN ---------------- */
+  const { errors, touched, validate, handleBlur, touchAllFields, hasChanges } =
     useFormScheduleValidation();
 
-  // ---------------- EFFECTS ----------------
+  /* ---------------- EFECTO: Cargar datos si es edición ---------------- */
   useEffect(() => {
     if (!isNew && schedule) {
-      setForm({
+      const filledForm = {
         empleadoId: schedule.empleadoId || "",
         empleado: schedule.empleado || "",
         cargo: schedule.cargo || "",
@@ -42,13 +49,15 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
         horaFin: schedule.horaFin || "",
         repeticion: schedule.repeticion || "no",
         customRecurrence: schedule.customRecurrence || null,
-        descripcion: schedule.descripcion || "",
+        descripcion: schedule.descripcion || schedule.observaciones || "",
         estado: schedule.estado || "Programado",
-      });
+      };
+      setForm(filledForm);
+      setOriginalForm(filledForm);
     }
   }, [schedule, isNew]);
 
-  // ---------------- HANDLERS ----------------
+  /* ---------------- HANDLERS ---------------- */
   const handleChange = (name, value) => {
     if (name === "repeticion" && value === "personalizado") {
       setShowCustomModal(true);
@@ -59,21 +68,30 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
 
   const handleSubmit = () => {
     touchAllFields(form);
-    if (validate(form)) {
-      onSave({ ...form, id: schedule?.id || Date.now() });
-      showSuccessAlert(
-        isNew
-          ? "Horario de empleado creado exitosamente"
-          : "Horario de empleado actualizado exitosamente"
-      );
-      onClose();
+
+    if (!validate(form)) return;
+
+    // 🔸 Verificar cambios si es edición
+    if (!isNew && originalForm && !hasChanges(originalForm, form)) {
+      showErrorAlert("No se realizaron cambios para actualizar.");
+      return;
     }
+
+    onSave({ ...form, id: schedule?.id || Date.now() });
+    showSuccessAlert(
+      isNew
+        ? "Horario de empleado creado exitosamente"
+        : "Horario de empleado actualizado exitosamente"
+    );
+    onClose();
   };
 
-  // ---------------- RENDER ----------------
+  /* ============================================================
+     🔹 RENDER
+  ============================================================ */
   return (
     <>
-      {/* Modal principal */}
+      {/* Fondo oscuro del modal */}
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
         <motion.div
           initial={{ opacity: 0, y: -60 }}
@@ -82,7 +100,7 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
           transition={{ duration: 0.3 }}
           className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl overflow-y-auto max-h-[90vh]"
         >
-          {/* Header */}
+          {/* ---------------- Header ---------------- */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-3xl font-bold text-[#9BE9FF]">
               {isNew ? "Crear Horario" : "Editar Horario"}
@@ -95,12 +113,12 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
             </button>
           </div>
 
-          {/* Formulario */}
+          {/* ---------------- Formulario ---------------- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Empleado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Empleado
+                Empleado *
               </label>
               <select
                 value={form.empleadoId}
@@ -197,18 +215,17 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
                 { value: "semana", label: "Cada semana" },
                 { value: "mes", label: "Cada mes" },
                 { value: "anio", label: "Cada año" },
-                { value: "laboral", label: "Todos los días laborales" },
+                { value: "laboral", label: "Días laborales" },
                 { value: "personalizado", label: "Personalizar..." },
               ]}
             />
 
-            {/* Vista previa de personalización */}
-            {form.repeticion === "personalizado" &&
-              form.customRecurrence && (
-                <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                  {form.customRecurrence.label}
-                </div>
-              )}
+            {/* Mostrar resumen de personalización */}
+            {form.repeticion === "personalizado" && form.customRecurrence && (
+              <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                📅 {form.customRecurrence.label}
+              </div>
+            )}
 
             {/* Descripción */}
             <FormField
@@ -218,28 +235,29 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               value={form.descripcion}
               onChange={handleChange}
               onBlur={() => handleBlur("descripcion", form.descripcion, form)}
-              placeholder="Notas adicionales"
+              placeholder="Notas adicionales sobre el horario..."
               error={errors.descripcion}
               touched={touched.descripcion}
             />
 
-            {/* Estado */}
-            <FormField
-              label="Estado"
-              name="estado"
-              type="select"
-              value={form.estado}
-              onChange={handleChange}
-              options={[
-                { value: "Programado", label: "Programado" },
-                { value: "En curso", label: "En curso" },
-                { value: "Finalizado", label: "Finalizado" },
-                { value: "Cancelado", label: "Cancelado" },
-              ]}
-            />
+            {/* Estado (solo si no es nuevo) */}
+            {!isNew && (
+              <FormField
+                label="Estado"
+                name="estado"
+                type="select"
+                value={form.estado}
+                onChange={handleChange}
+                options={[
+                  { value: "Programado", label: "Programado" },
+                  { value: "En curso", label: "En curso" },
+                  { value: "Completado", label: "Completado" },
+                ]}
+              />
+            )}
           </div>
 
-          {/* Botones */}
+          {/* ---------------- Botones ---------------- */}
           <div className="mt-8 flex justify-end gap-4">
             <button
               onClick={onClose}
@@ -257,7 +275,7 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
         </motion.div>
       </div>
 
-      {/* Modal de repetición personalizada */}
+      {/* ---------------- Modal de repetición personalizada ---------------- */}
       {showCustomModal && (
         <CustomRecurrenceModal
           onClose={() => setShowCustomModal(false)}
