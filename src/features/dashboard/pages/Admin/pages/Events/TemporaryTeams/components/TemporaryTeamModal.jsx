@@ -7,6 +7,7 @@ import {
   Trash2,
   ChevronDown,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import SelectionModal from "../components/SelectionModal";
@@ -40,6 +41,7 @@ const TemporaryTeamModal = ({
   const [selectedTrainer, setSelectedTrainer] = useState(null);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [teamType, setTeamType] = useState(null);
+  const [typeValidationError, setTypeValidationError] = useState("");
 
   const {
     values,
@@ -92,9 +94,33 @@ const TemporaryTeamModal = ({
       setSelectedTrainer(null);
       setSelectedPlayers([]);
       setTeamType(null);
+      setTypeValidationError("");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isEditing, teamToEdit]);
+
+  // Validación en tiempo real cuando cambia el entrenador o jugadoras
+  useEffect(() => {
+    if (selectedTrainer && selectedPlayers.length > 0) {
+      const trainerType = selectedTrainer.type;
+      const playersType = selectedPlayers[0]?.type;
+
+      if (trainerType !== playersType) {
+        const trainerTypeText =
+          trainerType === "fundacion" ? "la Fundación" : "Temporales";
+        const playersTypeText =
+          playersType === "fundacion" ? "la Fundación" : "Temporales";
+
+        setTypeValidationError(
+          `El entrenador es de ${trainerTypeText} pero las jugadoras son ${playersTypeText}. Todos deben ser de la misma categoría.`
+        );
+      } else {
+        setTypeValidationError("");
+      }
+    } else {
+      setTypeValidationError("");
+    }
+  }, [selectedTrainer, selectedPlayers]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -103,29 +129,6 @@ const TemporaryTeamModal = ({
       return phone;
     if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
     return phone;
-  };
-
-  // Validar consistencia de tipos
-  const validateTeamConsistency = () => {
-    if (selectedTrainer && selectedPlayers.length > 0) {
-      const trainerType = selectedTrainer.type;
-      const playersType = selectedPlayers[0]?.type;
-
-      if (trainerType !== playersType) {
-        const trainerTypeText =
-          trainerType === "fundacion" ? "Fundación" : "Temporal";
-        const playersTypeText =
-          playersType === "fundacion" ? "Fundación" : "Temporal";
-
-        showErrorAlert(
-          "Tipos inconsistentes",
-          `El entrenador es de tipo ${trainerTypeText} pero las jugadoras son de tipo ${playersTypeText}. El equipo debe estar conformado únicamente por personas de la Fundación o únicamente por personas temporales.`
-        );
-        return false;
-      }
-    }
-
-    return true;
   };
 
   // Manejar selección de entrenador
@@ -151,10 +154,17 @@ const TemporaryTeamModal = ({
     // Si no hay jugadoras, resetear el tipo
     if (updated.length === 0) {
       setTeamType(selectedTrainer?.type || null);
+      setTypeValidationError("");
     }
   };
 
   const handleSubmit = async () => {
+    // Validar tipos antes de continuar
+    if (typeValidationError) {
+      showErrorAlert("Error de validación", typeValidationError);
+      return;
+    }
+
     // Marcar todos como touched
     const allTouched = {};
     Object.keys(temporaryTeamsValidationRules).forEach((field) => {
@@ -163,16 +173,6 @@ const TemporaryTeamModal = ({
     setTouched(allTouched);
 
     if (!validateAllFields()) {
-      const allTouched = {};
-      Object.keys(temporaryTeamsValidationRules).forEach((field) => {
-        allTouched[field] = true;
-      });
-      setTouched(allTouched);
-      return;
-    }
-
-    // Validar consistencia de tipos
-    if (!validateTeamConsistency()) {
       return;
     }
 
@@ -198,7 +198,7 @@ const TemporaryTeamModal = ({
         cantidadJugadoras: selectedPlayers.length,
         estado: values.estado,
         descripcion: values.descripcion,
-        teamType: teamType, // Guardar el tipo de equipo
+        teamType: teamType,
       };
 
       if (isEditing) {
@@ -220,6 +220,7 @@ const TemporaryTeamModal = ({
       setSelectedTrainer(null);
       setSelectedPlayers([]);
       setTeamType(null);
+      setTypeValidationError("");
       onClose();
     } catch (error) {
       console.error(error);
@@ -235,6 +236,7 @@ const TemporaryTeamModal = ({
     setSelectedTrainer(null);
     setSelectedPlayers([]);
     setTeamType(null);
+    setTypeValidationError("");
     onClose();
   };
 
@@ -296,6 +298,23 @@ const TemporaryTeamModal = ({
 
           {/* Body */}
           <div className="p-6 space-y-6">
+            {/* Alerta de validación de tipos en tiempo real */}
+            {typeValidationError && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-3"
+              >
+                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-red-800 mb-1">
+                    Error de tipo de equipo
+                  </h3>
+                  <p className="text-sm text-red-700">{typeValidationError}</p>
+                </div>
+              </motion.div>
+            )}
+
             {/* Información básica */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -327,13 +346,13 @@ const TemporaryTeamModal = ({
               />
             </div>
 
-            {/* Selección de Entrenador - MEJORADO */}
+            {/* Selección de Entrenador */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">
                 Entrenador <span className="text-red-500">*</span>
                 {selectedTrainer && (
                   <span className="ml-2 text-sm font-normal text-gray-500">
-                    • Tipo: {getTeamTypeText()}
+                    Tipo: {getTeamTypeText()}
                   </span>
                 )}
               </label>
@@ -393,8 +412,9 @@ const TemporaryTeamModal = ({
                     type="button"
                     onClick={() => {
                       setSelectedTrainer(null);
-                      setTeamType(null);
+                      setTeamType(selectedPlayers.length > 0 ? selectedPlayers[0].type : null);
                       handleChange("entrenador", "");
+                      setTypeValidationError("");
                     }}
                     className="absolute right-12 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     initial={{ opacity: 0, scale: 0.8 }}
@@ -418,7 +438,7 @@ const TemporaryTeamModal = ({
               )}
             </div>
 
-            {/* Selección de Jugadoras - MEJORADO */}
+            {/* Selección de Jugadoras */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
@@ -433,7 +453,7 @@ const TemporaryTeamModal = ({
                   )}
                   {teamType && selectedPlayers.length > 0 && (
                     <span className="text-sm text-gray-600">
-                      • Tipo: {getTeamTypeText()}
+                      Tipo: {getTeamTypeText()}
                     </span>
                   )}
                 </div>
@@ -496,7 +516,7 @@ const TemporaryTeamModal = ({
                   </div>
                 </button>
 
-                {/* Lista de jugadoras seleccionadas - MEJORADA */}
+                {/* Lista de jugadoras seleccionadas */}
                 {selectedPlayers.length > 0 && (
                   <motion.div
                     className="space-y-2 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200"
@@ -600,7 +620,7 @@ const TemporaryTeamModal = ({
                 )}
               </div>
               <FormField
-                label="Descripción (Opcional)"
+                label="Descripción"
                 name="descripcion"
                 type="textarea"
                 placeholder="Información adicional del equipo..."
@@ -628,12 +648,14 @@ const TemporaryTeamModal = ({
 
               <motion.button
                 onClick={handleSubmit}
-                className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue"
-                whileHover={{
-                  scale: 1.02,
-                  boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-                }}
-                whileTap={{ scale: 0.98 }}
+                disabled={!!typeValidationError}
+                className={`px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg ${
+                  typeValidationError
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-primary-purple to-primary-blue hover:shadow-xl"
+                }`}
+                whileHover={!typeValidationError ? { scale: 1.02 } : {}}
+                whileTap={!typeValidationError ? { scale: 0.98 } : {}}
               >
                 {isEditing ? "Actualizar Equipo" : "Crear Equipo"}
               </motion.button>

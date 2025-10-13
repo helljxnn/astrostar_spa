@@ -16,13 +16,11 @@ const entityTypes = [
   { value: "natural", label: "Persona Natural" },
 ];
 
-const supplierTypes = [
-  { value: "productos", label: "Productos" },
-  { value: "servicios", label: "Servicios" },
-  { value: "materias_primas", label: "Materias Primas" },
-  { value: "tecnologia", label: "Tecnología" },
-  { value: "consultoria", label: "Consultoría" },
-  { value: "transporte", label: "Transporte" },
+const documentTypes = [
+  { value: "CC", label: "Cédula de ciudadanía" },
+  { value: "TI", label: "Tarjeta de identidad" },
+  { value: "CE", label: "Cédula de extranjería" },
+  { value: "PAS", label: "Pasaporte" },
 ];
 
 const states = [
@@ -55,7 +53,7 @@ const ProviderModal = ({
       tipoEntidad: "juridica",
       razonSocial: "",
       nit: "",
-      tipoProveedor: "",
+      tipoDocumento: "",
       contactoPrincipal: "",
       correo: "",
       telefono: "",
@@ -74,7 +72,7 @@ const ProviderModal = ({
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
-        tipoProveedor: providerToEdit.tipoProveedor || "",
+        tipoDocumento: providerToEdit.tipoDocumento || "CC",
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
         telefono: providerToEdit.telefono || "",
@@ -98,6 +96,10 @@ const ProviderModal = ({
     // 1. Marcar todos los campos como tocados
     const allTouched = {};
     Object.keys(providerValidationRules).forEach((field) => {
+      // Solo validar tipoDocumento si es persona natural
+      if (field === "tipoDocumento" && values.tipoEntidad === "juridica") {
+        return;
+      }
       allTouched[field] = true;
     });
     setTouched(allTouched);
@@ -132,6 +134,8 @@ const ProviderModal = ({
       const providerData = {
         ...values,
         telefono: formatPhoneNumber(values.telefono),
+        // Si es jurídica, no incluir tipoDocumento
+        ...(values.tipoEntidad === "juridica" && { tipoDocumento: undefined }),
       };
 
       if (isEditing) {
@@ -325,32 +329,38 @@ const ProviderModal = ({
               required
             />
 
+            {/* Campo Tipo de Documento - Solo para Persona Natural */}
+            <div className={`transition-all duration-200 ${
+              values.tipoEntidad === "natural" 
+                ? "block" 
+                : "hidden"
+            }`}>
+              <FormField
+                label="Tipo de documento"
+                name="tipoDocumento"
+                type="select"
+                placeholder="Selecciona el tipo de documento"
+                options={documentTypes}
+                value={values.tipoDocumento}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.tipoDocumento}
+                touched={touched.tipoDocumento}
+                required={values.tipoEntidad === "natural"}
+              />
+            </div>
+
             <FormField
-              label={values.tipoEntidad === "juridica" ? "NIT" : "Número de Identificación"}
+              label={values.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
               name="nit"
               type="text"
-              placeholder={values.tipoEntidad === "juridica" ? "900123456-7" : "12345678"}
+              placeholder={values.tipoEntidad === "juridica" ? "900123456-7" : "Número de identificación"}
               value={values.nit}
               onChange={handleChange}
               onBlur={handleBlur}
               error={errors.nit}
               touched={touched.nit}
               delay={0.2}
-              required
-            />
-
-            <FormField
-              label="Tipo de Proveedor"
-              name="tipoProveedor"
-              type="select"
-              placeholder="Selecciona el tipo de proveedor"
-              options={supplierTypes}
-              value={values.tipoProveedor}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.tipoProveedor}
-              touched={touched.tipoProveedor}
-              delay={0.25}
               required
             />
 
@@ -364,7 +374,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.contactoPrincipal}
               touched={touched.contactoPrincipal}
-              delay={0.3}
+              delay={0.25}
               required
             />
 
@@ -378,7 +388,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.correo}
               touched={touched.correo}
-              delay={0.35}
+              delay={0.3}
               required
             />
 
@@ -392,7 +402,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.telefono}
               touched={touched.telefono}
-              delay={0.4}
+              delay={0.35}
               required
             />
 
@@ -406,7 +416,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.direccion}
               touched={touched.direccion}
-              delay={0.45}
+              delay={0.4}
               required
             />
 
@@ -420,7 +430,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.ciudad}
               touched={touched.ciudad}
-              delay={0.5}
+              delay={0.45}
               required
             />
 
@@ -429,13 +439,13 @@ const ProviderModal = ({
                 label="Descripción"
                 name="descripcion"
                 type="textarea"
-                placeholder="Descripción detallada del proveedor y sus servicios..."
+                placeholder="Descripción detallada del proveedor, sus productos/servicios y especialidades..."
                 value={values.descripcion}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 error={errors.descripcion}
                 touched={touched.descripcion}
-                delay={0.55}
+                delay={0.5}
                 rows={4}
               />
             </div>
@@ -451,7 +461,7 @@ const ProviderModal = ({
               onBlur={handleBlur}
               error={errors.estado}
               touched={touched.estado}
-              delay={0.6}
+              delay={0.55}
               required
             />
           </div>
@@ -460,7 +470,7 @@ const ProviderModal = ({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.6 }}
             className="flex justify-between pt-6 border-t border-gray-200"
           >
             <motion.button

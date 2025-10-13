@@ -36,6 +36,12 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
   const validateField = (name, value) => {
     const rules = validationRules[name];
     if (!rules) return '';
+    
+    // Si es tipoDocumento y la entidad es jurídica, no validar
+    if (name === 'tipoDocumento' && values.tipoEntidad === 'juridica') {
+      return '';
+    }
+    
     for (const rule of rules) {
       const error = rule(value, values);
       if (error) return error;
@@ -46,6 +52,11 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
   const validateAllFields = () => {
     const newErrors = {};
     Object.keys(validationRules).forEach(name => {
+      // Saltar validación de tipoDocumento si es persona jurídica
+      if (name === 'tipoDocumento' && values.tipoEntidad === 'juridica') {
+        return;
+      }
+      
       const error = validateField(name, values[name]);
       if (error) newErrors[name] = error;
     });
@@ -98,7 +109,15 @@ export const providerValidationRules = {
     (v) => !v?.trim() ? "El NIT es obligatorio" : "",
     (v) => !/^\d{8,15}$/.test(v?.trim().replace(/[\s.-]/g, '')) ? "El NIT debe contener entre 8 y 15 dígitos" : ""
   ],
-  tipoProveedor: [(v) => !v ? "Debe seleccionar un tipo de proveedor" : ""],
+  tipoDocumento: [
+    (v, values) => {
+      // Solo validar si es persona natural
+      if (values?.tipoEntidad === 'natural' && !v) {
+        return "Debe seleccionar un tipo de documento";
+      }
+      return "";
+    }
+  ],
   contactoPrincipal: [
     (v) => !v?.trim() ? "El contacto principal es obligatorio" : "",
     (v) => v?.trim().length < 2 ? "El contacto debe tener al menos 2 caracteres" : "",
