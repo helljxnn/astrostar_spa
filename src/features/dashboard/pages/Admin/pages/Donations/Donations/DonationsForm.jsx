@@ -6,13 +6,13 @@ import { FaTrash } from "react-icons/fa";
 import {
   useFormDonationsValidation,
   donationsValidationRules,
-} from "./Donations/hooks/useFormDonationsValidation";
+} from "./hooks/useFormDonationsValidation";
 
 /* ---------- Utils ---------- */
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts";
 
 const DonationsForm = () => {
   const navigate = useNavigate();
@@ -37,10 +37,10 @@ const DonationsForm = () => {
   );
 
   /* ---------- Detectar si es edición ---------- */
-  const donationToEdit = location.state?.donation;
+  const donationToEdit = location.state?.donation || null;
   const isEditing = location.state?.isEditing ?? false;
 
-  /* ---------- Estado de la donación ---------- */
+  /* ---------- Estado inicial ---------- */
   const [currentDonation, setCurrentDonation] = useState({
     nombreDonante: "",
     descripcion: "",
@@ -52,7 +52,7 @@ const DonationsForm = () => {
 
   /* ---------- Cargar datos si es edición ---------- */
   useEffect(() => {
-    if (donationToEdit) {
+    if (isEditing && donationToEdit) {
       setCurrentDonation({
         nombreDonante: donationToEdit.donorName || "",
         descripcion: donationToEdit.descripcion || "",
@@ -68,9 +68,9 @@ const DonationsForm = () => {
           })) || [{ tipoDonacion: "", cantidad: "" }],
       });
     }
-  }, [donationToEdit]);
+  }, [isEditing, donationToEdit]);
 
-  /* ---------- ➕ Agregar fila dinámica ---------- */
+  /* ---------- ➕ Agregar fila ---------- */
   const handleAddDonationField = () => {
     setCurrentDonation((prev) => ({
       ...prev,
@@ -88,7 +88,7 @@ const DonationsForm = () => {
     setCurrentDonation({ ...currentDonation, donacionesExtra: updated });
   };
 
-  /* ---------- Cambio en campos dinámicos ---------- */
+  /* ---------- Cambios en campos dinámicos ---------- */
   const handleChangeExtra = (index, field, value) => {
     if (field === "tipoDonacion" && value === "Otros") {
       setActiveExtraIndex(index);
@@ -104,7 +104,7 @@ const DonationsForm = () => {
     validateField("donacionesExtra", updated);
   };
 
-  /* ---------- Guardar nuevo tipo desde modal ---------- */
+  /* ---------- Guardar nuevo tipo ---------- */
   const handleGuardarNuevoTipo = () => {
     if (!nuevoTipo.trim()) {
       showErrorAlert("Debes ingresar un tipo de donación.");
@@ -120,14 +120,14 @@ const DonationsForm = () => {
     setCurrentDonation({ ...currentDonation, donacionesExtra: updated });
     validateField("donacionesExtra", updated);
 
+    showSuccessAlert(`Tipo de donación "${nuevoTipo}" agregado y seleccionado.`);
+
     setNuevoTipo("");
     setIsModalOpen(false);
     setActiveExtraIndex(null);
-
-    showSuccessAlert(`Tipo de donación "${nuevoTipo}" agregado y seleccionado.`);
   };
 
-  /* ---------- ✅ Guardar donación ---------- */
+  /* ---------- Guardar / Actualizar ---------- */
   const handleGuardar = () => {
     const isValid = validateForm(currentDonation);
     if (!isValid) {
@@ -141,26 +141,24 @@ const DonationsForm = () => {
       donationDate: currentDonation.fechaDonacion,
       registerDate: currentDonation.fechaRegistro,
       status: currentDonation.estado,
+      descripcion: currentDonation.descripcion,
       items: currentDonation.donacionesExtra.map((d) => ({
         donationType: d.tipoDonacion,
         amount: d.cantidad,
       })),
-      donationType: currentDonation.donacionesExtra[0]?.tipoDonacion || "",
-      amount: currentDonation.donacionesExtra[0]?.cantidad || "",
-      descripcion: currentDonation.descripcion,
     };
 
     showSuccessAlert(
       isEditing
-        ? "Donación actualizada correctamente"
-        : "Donación guardada correctamente"
+        ? "Donación actualizada correctamente."
+        : "Donación registrada correctamente."
     );
 
     setTimeout(() => {
       navigate("/dashboard/donations", {
         state: { newDonation: donationData, isEditing },
       });
-    }, 500);
+    }, 600);
   };
 
   return (
@@ -216,6 +214,43 @@ const DonationsForm = () => {
             )}
           </div>
 
+          {/* Fechas (ahora arriba) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex flex-col">
+              <label className="mb-2 font-medium text-gray-700">
+                Fecha de Donación <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={currentDonation.fechaDonacion}
+                onChange={(e) =>
+                  setCurrentDonation({
+                    ...currentDonation,
+                    fechaDonacion: e.target.value,
+                  })
+                }
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="mb-2 font-medium text-gray-700">
+                Fecha de Registro
+              </label>
+              <input
+                type="date"
+                value={currentDonation.fechaRegistro}
+                onChange={(e) =>
+                  setCurrentDonation({
+                    ...currentDonation,
+                    fechaRegistro: e.target.value,
+                  })
+                }
+                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
+              />
+            </div>
+          </div>
+
           {/* Campos dinámicos */}
           <div className="flex flex-col">
             <label className="mb-2 font-medium text-gray-700 flex items-center justify-between">
@@ -232,10 +267,7 @@ const DonationsForm = () => {
             </label>
 
             {currentDonation.donacionesExtra.map((d, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-5 gap-2 mb-3 items-center"
-              >
+              <div key={index} className="grid grid-cols-5 gap-2 mb-3 items-center">
                 {/* Select tipo */}
                 <div className="col-span-2">
                   <select
@@ -280,12 +312,6 @@ const DonationsForm = () => {
                 </div>
               </div>
             ))}
-
-            {errors.donacionesExtra && (
-              <span className="text-red-500 text-sm">
-                {errors.donacionesExtra}
-              </span>
-            )}
           </div>
 
           {/* Descripción */}
@@ -306,9 +332,6 @@ const DonationsForm = () => {
               placeholder="Ej: Balones de fútbol tamaño 5"
               className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
-            {errors.descripcion && (
-              <span className="text-red-500 text-sm">{errors.descripcion}</span>
-            )}
           </div>
 
           {/* Estado */}
@@ -326,43 +349,6 @@ const DonationsForm = () => {
               <option value="Registrado">Registrado</option>
               <option value="Anulado">Anulado</option>
             </select>
-          </div>
-
-          {/* Fechas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col">
-              <label className="mb-2 font-medium text-gray-700">
-                Fecha de Donación <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={currentDonation.fechaDonacion}
-                onChange={(e) =>
-                  setCurrentDonation({
-                    ...currentDonation,
-                    fechaDonacion: e.target.value,
-                  })
-                }
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              />
-            </div>
-
-            <div className="flex flex-col">
-              <label className="mb-2 font-medium text-gray-700">
-                Fecha de Registro <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={currentDonation.fechaRegistro}
-                onChange={(e) =>
-                  setCurrentDonation({
-                    ...currentDonation,
-                    fechaRegistro: e.target.value,
-                  })
-                }
-                className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              />
-            </div>
           </div>
         </form>
 
@@ -382,12 +368,12 @@ const DonationsForm = () => {
               <strong>Estado:</strong> {currentDonation.estado}
             </p>
             <p>
-              <strong>Fecha Donación:</strong> {currentDonation.fechaDonacion || "N/A"}
+              <strong>Fecha Donación:</strong>{" "}
+              {currentDonation.fechaDonacion || "N/A"}
             </p>
             <p>
               <strong>Fecha Registro:</strong> {currentDonation.fechaRegistro}
             </p>
-
             <div>
               <strong>Donaciones:</strong>
               <ul className="list-disc ml-6 mt-2">

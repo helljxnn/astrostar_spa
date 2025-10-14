@@ -2,17 +2,24 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
 
-// 🔹 Mock temporal de empleados
+/* ============================================================
+   🔹 MOCK TEMPORAL DE EMPLEADOS
+============================================================ */
 const empleadosMock = [
   { id: 1, nombre: "Juan Pérez", cargo: "Entrenador" },
   { id: 2, nombre: "Ana Gómez", cargo: "Nutricionista" },
 ];
 
+/* ============================================================
+   🔹 COMPONENTE PRINCIPAL: ScheduleModal
+============================================================ */
 export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
-  // ---------------- STATE ----------------
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [form, setForm] = useState({
     empleadoId: "",
@@ -26,14 +33,15 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
     descripcion: "",
     estado: "Programado",
   });
+  const [originalForm, setOriginalForm] = useState(null);
 
-  const { errors, touched, validate, handleBlur, touchAllFields } =
+  const { errors, touched, validate, handleBlur, touchAllFields, hasChanges } =
     useFormScheduleValidation();
 
-  // ---------------- EFFECTS ----------------
+  /* ---------------- Cargar datos si es edición ---------------- */
   useEffect(() => {
     if (!isNew && schedule) {
-      setForm({
+      const filledForm = {
         empleadoId: schedule.empleadoId || "",
         empleado: schedule.empleado || "",
         cargo: schedule.cargo || "",
@@ -42,13 +50,20 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
         horaFin: schedule.horaFin || "",
         repeticion: schedule.repeticion || "no",
         customRecurrence: schedule.customRecurrence || null,
-        descripcion: schedule.descripcion || "",
+        descripcion:
+          schedule.descripcion ||
+          schedule.observaciones ||
+          schedule.detalle ||
+          schedule.motivo ||
+          "",
         estado: schedule.estado || "Programado",
-      });
+      };
+      setForm(filledForm);
+      setOriginalForm(filledForm);
     }
   }, [schedule, isNew]);
 
-  // ---------------- HANDLERS ----------------
+  /* ---------------- Handlers ---------------- */
   const handleChange = (name, value) => {
     if (name === "repeticion" && value === "personalizado") {
       setShowCustomModal(true);
@@ -59,48 +74,70 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
 
   const handleSubmit = () => {
     touchAllFields(form);
-    if (validate(form)) {
-      onSave({ ...form, id: schedule?.id || Date.now() });
-      showSuccessAlert(
-        isNew
-          ? "Horario de empleado creado exitosamente"
-          : "Horario de empleado actualizado exitosamente"
-      );
-      onClose();
+
+    if (!validate(form)) return;
+
+    if (!form.descripcion.trim()) {
+      showErrorAlert("La descripción es obligatoria.");
+      return;
     }
+
+    if (!isNew && originalForm && !hasChanges(originalForm, form)) {
+      showErrorAlert("No se realizaron cambios para actualizar.");
+      return;
+    }
+
+    // 🔹 Guardamos el dato para que se muestre correctamente en el detalle
+    const horarioFinal = {
+      ...form,
+      observaciones: form.descripcion,
+      descripcion: form.descripcion,
+      id: schedule?.id || Date.now(),
+    };
+
+    onSave(horarioFinal);
+
+    showSuccessAlert(
+      isNew
+        ? "Horario de empleado creado exitosamente"
+        : "Horario de empleado actualizado exitosamente"
+    );
+
+    onClose();
   };
 
-  // ---------------- RENDER ----------------
+  /* ============================================================
+     🔹 RENDER
+  ============================================================ */
   return (
     <>
-      {/* Modal principal */}
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
         <motion.div
           initial={{ opacity: 0, y: -60 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -60 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl overflow-y-auto max-h-[90vh]"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh]"
         >
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-[#9BE9FF]">
+          {/* ---------------- Header limpio ---------------- */}
+          <div className="flex justify-between items-center mb-6 px-8 py-4 border-b border-gray-200">
+            <h2 className="text-3xl font-bold text-gray-800">
               {isNew ? "Crear Horario" : "Editar Horario"}
             </h2>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              className="text-gray-600 hover:text-gray-800 text-2xl font-bold"
             >
               ✖
             </button>
           </div>
 
-          {/* Formulario */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ---------------- Formulario ---------------- */}
+          <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Empleado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Empleado
+                Empleado *
               </label>
               <select
                 value={form.empleadoId}
@@ -147,7 +184,7 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
 
             {/* Fecha */}
             <FormField
-              label="Fecha"
+              label="Fecha *"
               name="fecha"
               type="date"
               value={form.fecha}
@@ -160,7 +197,7 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
 
             {/* Hora inicio */}
             <FormField
-              label="Hora inicio"
+              label="Hora inicio *"
               name="horaInicio"
               type="time"
               value={form.horaInicio}
@@ -173,7 +210,7 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
 
             {/* Hora fin */}
             <FormField
-              label="Hora fin"
+              label="Hora fin *"
               name="horaFin"
               type="time"
               value={form.horaFin}
@@ -197,50 +234,51 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
                 { value: "semana", label: "Cada semana" },
                 { value: "mes", label: "Cada mes" },
                 { value: "anio", label: "Cada año" },
-                { value: "laboral", label: "Todos los días laborales" },
+                { value: "laboral", label: "Días laborales" },
                 { value: "personalizado", label: "Personalizar..." },
               ]}
             />
 
-            {/* Vista previa de personalización */}
-            {form.repeticion === "personalizado" &&
-              form.customRecurrence && (
-                <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                  {form.customRecurrence.label}
-                </div>
-              )}
+            {/* Resumen personalización */}
+            {form.repeticion === "personalizado" && form.customRecurrence && (
+              <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+                📅 {form.customRecurrence.label}
+              </div>
+            )}
 
             {/* Descripción */}
             <FormField
-              label="Descripción"
+              label="Descripción *"
               name="descripcion"
               type="textarea"
               value={form.descripcion}
               onChange={handleChange}
               onBlur={() => handleBlur("descripcion", form.descripcion, form)}
-              placeholder="Notas adicionales"
+              placeholder="Notas adicionales sobre el horario..."
               error={errors.descripcion}
               touched={touched.descripcion}
+              required
             />
 
             {/* Estado */}
-            <FormField
-              label="Estado"
-              name="estado"
-              type="select"
-              value={form.estado}
-              onChange={handleChange}
-              options={[
-                { value: "Programado", label: "Programado" },
-                { value: "En curso", label: "En curso" },
-                { value: "Finalizado", label: "Finalizado" },
-                { value: "Cancelado", label: "Cancelado" },
-              ]}
-            />
+            {!isNew && (
+              <FormField
+                label="Estado"
+                name="estado"
+                type="select"
+                value={form.estado}
+                onChange={handleChange}
+                options={[
+                  { value: "Programado", label: "Programado" },
+                  { value: "En curso", label: "En curso" },
+                  { value: "Completado", label: "Completado" },
+                ]}
+              />
+            )}
           </div>
 
-          {/* Botones */}
-          <div className="mt-8 flex justify-end gap-4">
+          {/* ---------------- Botones ---------------- */}
+          <div className="flex justify-end gap-4 px-8 pb-8">
             <button
               onClick={onClose}
               className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition"
