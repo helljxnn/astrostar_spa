@@ -1,91 +1,78 @@
-
 import React from "react";
-import { motion } from "framer-motion";
-import { FaEye, FaRegEdit, FaTrash, FaList } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaListUl } from "react-icons/fa";
 
-/* === Animación de filas === */
-const rowVariants = {
-  hidden: { opacity: 0, y: 10 },
-  visible: (i) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.05, duration: 0.4, ease: "easeOut" },
-  }),
-};
+/*
+🎨 COLORES según tus referencias:
+-----------------------------------
+Fondo base: blanco
+Fila hover: #f7f4ff
+Texto Activo: #b5a8ff (morado pastel)
+Texto Inactivo: #9eeaff (celeste pastel)
+Botones:
+  Editar: bg-[#e7f9ff] / icon-[#7ad7ff]
+  Eliminar: bg-[#ffeaea] / icon-[#ff8b8b]
+  Ver: bg-[#f7edff] / icon-[#bdaaff]
+  Listar: bg-[#f1f5f9] / icon-[#9aa9b6]
+*/
 
-const Tbody = ({
-  data = [],
-  dataPropertys = [],     // Ej: ["Nombre","Descripcion","EdadMinima","EdadMaxima"]
-  state = false,          // Muestra columna Estado si es true
-  onEdit,
-  onDelete,
-  onView,
-  onList,
-}) => {
-  const hasActions = onEdit || onDelete || onView || onList;
-
-  // Sin datos
-  if (!data || data.length === 0) {
-    return (
-      <tbody>
-        <tr>
-          <td colSpan="100%" className="p-6 text-center text-gray-400 italic">
-            No hay datos para mostrar.
-          </td>
-        </tr>
-      </tbody>
-    );
-  }
-
+const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
   return (
-    <tbody id="tbody" className="divide-y divide-gray-200">
+    <tbody className="bg-white">
       {data.map((item, index) => {
         const estadoOriginal = item.Estado ?? item.estado ?? "";
-        const estado = String(estadoOriginal).trim().toLowerCase();
+        const estadoNormalizado = String(estadoOriginal).trim().toLowerCase();
 
         const estadoColorClass =
-          estado === "activo"
-            ? "text-primary-purple"
-            : estado === "inactivo"
-            ? "text-primary-blue"
+          estadoNormalizado === "activo" || estadoNormalizado === "registrado"
+            ? "text-[#b5a8ff]"
+            : estadoNormalizado === "inactivo" || estadoNormalizado === "anulado"
+            ? "text-[#9eeaff]"
             : "text-gray-400";
 
         return (
-          <motion.tr
-            key={index}
-            variants={rowVariants}
-            initial="hidden"
-            animate="visible"
-            custom={index}
-            className={`${
-              index % 2 === 0 ? "bg-white" : "bg-purple-50"
-            } hover:bg-purple-100 transition`}
+          <tr
+            key={item.id ?? index}
+            className={`transition-colors ${
+              index % 2 === 0 ? "bg-white" : "bg-white"
+            } hover:bg-[#f7f4ff]`}
           >
-            {/* Columnas dinámicas */}
             {dataPropertys.map((property, i) => (
-              <td
-                key={i}
-                className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm"
-              >
+              <td key={i} className="px-6 py-4 text-sm text-gray-700">
                 {item[property] ?? "-"}
               </td>
             ))}
 
-            {/* Estado */}
-            {state && (
-              <td className="px-6 py-4 whitespace-nowrap">
-                <span className={estadoColorClass}>{estadoOriginal}</span>
-              </td>
-            )}
+            {/* Columna: Estado */}
+            <td className="px-6 py-4 text-sm text-center font-medium">
+              <span className={`${estadoColorClass}`}>{estadoOriginal}</span>
+            </td>
 
-            {/* Acciones */}
-            {hasActions && (
-              <td className="px-6 py-4 flex items-center justify-center gap-2">
+            {/* Columna: Acciones */}
+            <td className="px-6 py-4 text-center">
+              <div className="flex flex-row items-center justify-center gap-3">
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(item)}
+                    className="bg-[#e7f9ff] text-[#7ad7ff] p-2 rounded-full hover:scale-105 transition"
+                    title="Editar"
+                  >
+                    <FaEdit />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(item)}
+                    className="bg-[#ffeaea] text-[#ff8b8b] p-2 rounded-full hover:scale-105 transition"
+                    title="Eliminar"
+                  >
+                    <FaTrash />
+                  </button>
+                )}
                 {onView && (
                   <button
                     onClick={() => onView(item)}
-                    className="p-2 rounded-full bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition"
-                    title="Ver Detalle"
+                    className="bg-[#f7edff] text-[#bdaaff] p-2 rounded-full hover:scale-105 transition"
+                    title="Ver"
                   >
                     <FaEye />
                   </button>
@@ -93,33 +80,15 @@ const Tbody = ({
                 {onList && (
                   <button
                     onClick={() => onList(item)}
-                    className="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-600 hover:text-white transition"
-                    title="Ver Lista"
+                    className="bg-[#f1f5f9] text-[#9aa9b6] p-2 rounded-full hover:scale-105 transition"
+                    title="Listar Detallado"
                   >
-                    <FaList />
+                    <FaListUl />
                   </button>
                 )}
-                {onEdit && (
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition"
-                    title="Editar"
-                  >
-                    <FaRegEdit />
-                  </button>
-                )}
-                {onDelete && (
-                  <button
-                    onClick={() => onDelete(item)}
-                    className="p-2 rounded-full bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition"
-                    title="Eliminar"
-                  >
-                    <FaTrash />
-                  </button>
-                )}
-              </td>
-            )}
-          </motion.tr>
+              </div>
+            </td>
+          </tr>
         );
       })}
     </tbody>
