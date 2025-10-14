@@ -65,6 +65,11 @@ const TemporaryTeams = () => {
     startIndex + rowsPerPage
   );
 
+  // Formatear datos para la tabla
+  const formattedPaginatedData = useMemo(() => {
+    return paginatedData;
+  }, [paginatedData]);
+
   const handlePageChange = (page) => setCurrentPage(page);
 
   // form handlers
@@ -132,6 +137,17 @@ const TemporaryTeams = () => {
 
   return (
     <div className="p-6 font-questrial w-full max-w-full">
+      <style>{`
+        .temporary-teams-table td:nth-child(3),
+        .temporary-teams-table td:nth-child(4) {
+          text-align: center !important;
+        }
+        .temporary-teams-table th:nth-child(3),
+        .temporary-teams-table th:nth-child(4) {
+          text-align: center !important;
+        }
+      `}</style>
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
           Equipos Temporales
@@ -179,7 +195,7 @@ const TemporaryTeams = () => {
       {totalRows > 0 ? (
         <>
           <div className="w-full overflow-x-auto bg-white rounded-lg">
-            <div className="min-w-full">
+            <div className="min-w-full temporary-teams-table">
               <Table
                 thead={{
                   titles: [
@@ -192,7 +208,7 @@ const TemporaryTeams = () => {
                   actions: true,
                 }}
                 tbody={{
-                  data: paginatedData,
+                  data: formattedPaginatedData,
                   dataPropertys: [
                     "nombre",
                     "entrenador",

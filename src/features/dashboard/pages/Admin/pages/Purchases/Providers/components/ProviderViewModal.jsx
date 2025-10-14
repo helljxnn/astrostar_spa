@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   FaTimes, FaBuilding, FaPhone, FaEnvelope, 
   FaUser, FaTag, FaMapMarkerAlt, FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle, FaIdCard
 } from "react-icons/fa";
 
 const ProviderViewModal = ({ isOpen, onClose, provider }) => {
@@ -55,6 +55,16 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
     return phone;
   };
 
+  const getDocumentTypeLabel = (docType) => {
+    const types = {
+      "CC": "Cédula de ciudadanía",
+      "TI": "Tarjeta de identidad",
+      "CE": "Cédula de extranjería",
+      "PAS": "Pasaporte"
+    };
+    return types[docType] || docType;
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -71,7 +81,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
             exit={{ scale: 0.8, opacity: 0, y: 50 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
-            {/* Header - Mismo estilo que AthleteModal */}
+            {/* Header */}
             <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
               <button
                 onClick={onClose}
@@ -90,45 +100,57 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
               </p>
             </div>
 
-            {/* Body - Mismo estilo que AthleteModal */}
+            {/* Body */}
             <div className="p-6 space-y-6">
               {/* Información Empresarial */}
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
                   <FaBuilding className="text-primary-purple" />
-                  Información Empresarial
+                  Información {provider.tipoEntidad === "natural" ? "Personal" : "Empresarial"}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Razón Social */}
-                  <div className="md:col-span-2">
+                  {/* Tipo de Entidad */}
+                  <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Razón Social
+                      Tipo de Entidad
+                    </label>
+                    <p className="text-gray-900 font-medium p-3 bg-gray-50 rounded-lg border border-gray-200 capitalize">
+                      {provider.tipoEntidad === "juridica" ? "Persona Jurídica" : "Persona Natural"}
+                    </p>
+                  </div>
+
+                  {/* Razón Social o Nombre */}
+                  <div>
+                    <label className="text-sm font-medium text-gray-600 mb-2 block">
+                      {provider.tipoEntidad === "juridica" ? "Razón Social" : "Nombre Completo"}
                     </label>
                     <p className="text-gray-900 font-medium p-3 bg-gray-50 rounded-lg border border-gray-200">
                       {provider.razonSocial || "N/A"}
                     </p>
                   </div>
 
-                  {/* NIT */}
+                  {/* NIT o Identificación */}
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      NIT
+                      {provider.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
                     </label>
                     <p className="text-gray-900 font-mono p-3 bg-gray-50 rounded-lg border border-gray-200">
                       {provider.nit || "N/A"}
                     </p>
                   </div>
 
-                  {/* Tipo de Proveedor */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Tipo de Proveedor
-                    </label>
-                    <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200 capitalize">
-                      {provider.tipoProveedor || "N/A"}
-                    </p>
-                  </div>
-
+                  {/* Tipo de Documento - Solo para Persona Natural */}
+                  {provider.tipoEntidad === "natural" && provider.tipoDocumento && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-2">
+                        <FaIdCard className="text-primary-purple" />
+                        Tipo de Documento
+                      </label>
+                      <p className="text-gray-900 p-3 bg-gradient-to-br from-primary-blue/5 to-primary-purple/5 rounded-lg border border-primary-blue/20">
+                        {getDocumentTypeLabel(provider.tipoDocumento)}
+                      </p>
+                    </div>
+                  )}
                   {/* Estado del Proveedor */}
                   <div>
                     <label className="text-sm font-medium text-gray-600 mb-2 block">
@@ -232,17 +254,29 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
               </div>
 
               {/* Información Adicional */}
-              {(provider.servicios || provider.observaciones) && (
+              {(provider.descripcion || provider.servicios || provider.observaciones) && (
                 <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <FaTag className="text-primary-purple" />
                     Información Adicional
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 gap-6">
+                    {/* Descripción */}
+                    {provider.descripcion && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 mb-2 block">
+                          Descripción
+                        </label>
+                        <p className="text-gray-900 p-3 bg-white rounded-lg border border-gray-200 whitespace-pre-line">
+                          {provider.descripcion}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Servicios */}
                     {provider.servicios && (
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="text-sm font-medium text-gray-600 mb-2 block">
                           Servicios Ofrecidos
                         </label>
@@ -254,7 +288,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
 
                     {/* Observaciones */}
                     {provider.observaciones && (
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="text-sm font-medium text-gray-600 mb-2 block">
                           Observaciones
                         </label>
@@ -303,7 +337,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
               )}
             </div>
 
-            {/* Footer - Mismo estilo que AthleteModal */}
+            {/* Footer */}
             <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

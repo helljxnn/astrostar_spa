@@ -17,12 +17,13 @@ import {
 
 // 🔑 Clave única para LocalStorage
 const LOCAL_STORAGE_KEY = "providers";
+const PURCHASES_STORAGE_KEY = "purchases"; // Clave para las compras
 
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 🟢 Estado inicial cargado desde LocalStorage o desde providersData
+  // Estado inicial cargado desde LocalStorage o desde providersData
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     return stored ? JSON.parse(stored) : providersData;
@@ -37,12 +38,12 @@ const Providers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // 🟢 Guardar en LocalStorage cada vez que cambien los datos
+  // Guardar en LocalStorage cada vez que cambien los datos
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
   }, [data]);
 
-  // 🟢 Abrir modal de creación si se navega con el estado adecuado
+  // Abrir modal de creación si se navega con el estado adecuado
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
@@ -53,8 +54,30 @@ const Providers = () => {
     }
   }, [location.state, navigate, location.pathname]);
 
+  // Verificar si un proveedor tiene compras asociadas
+  const checkProviderHasPurchases = (providerId) => {
+    try {
+      const purchasesStored = localStorage.getItem(PURCHASES_STORAGE_KEY);
 
-  // 📞 Formatear teléfono sin +57
+      if (!purchasesStored) return false;
+
+      const purchases = JSON.parse(purchasesStored);
+
+      // Verifica si existe alguna compra con este providerId
+      const hasPurchases = purchases.some(
+        (purchase) =>
+          purchase.providerId === providerId ||
+          purchase.proveedor?.id === providerId
+      );
+
+      return hasPurchases;
+    } catch (error) {
+      console.error("Error al verificar compras del proveedor:", error);
+      return false;
+    }
+  };
+
+  // Formatear teléfono sin +57
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
@@ -67,7 +90,7 @@ const Providers = () => {
     return data.filter((provider) =>
       Object.entries(provider).some(([key, value]) => {
         const stringValue = String(value).trim();
-        
+
         // 🎯 Búsqueda EXACTA para el campo "estado"
         if (key.toLowerCase() === "estado") {
           return stringValue.toLowerCase() === searchTerm.toLowerCase();
@@ -89,7 +112,7 @@ const Providers = () => {
 
   const handlePageChange = (page) => setCurrentPage(page);
 
-  //  Crear proveedor
+  // Crear proveedor
   const handleSave = (newProvider) => {
     const newEntry = {
       ...newProvider,
@@ -101,7 +124,7 @@ const Providers = () => {
     setIsModalOpen(false);
   };
 
-  //  Editar proveedor
+  // Editar proveedor
   const handleUpdate = (updatedProvider) => {
     const updatedEntry = {
       ...updatedProvider,
@@ -115,7 +138,7 @@ const Providers = () => {
     setIsModalOpen(false);
   };
 
-  //  Abrir modal de edición
+  // Abrir modal de edición
   const handleEdit = (provider) => {
     if (!provider || provider.target) return;
     setProviderToEdit(provider);
@@ -130,11 +153,23 @@ const Providers = () => {
     setIsViewModalOpen(true);
   };
 
-  //  Eliminar proveedor
+  // Eliminar proveedor CON VALIDACIÓN DE COMPRAS
   const handleDelete = async (provider) => {
     if (!provider || !provider.id)
       return showErrorAlert("Error", "Proveedor no válido");
 
+    // Verificar si tiene compras asociadas
+    const hasPurchases = checkProviderHasPurchases(provider.id);
+
+    if (hasPurchases) {
+      return showErrorAlert(
+        "No se puede eliminar",
+        `El proveedor "${provider.razonSocial}" tiene compras asociadas y no puede ser eliminado. Para eliminarlo, primero debe eliminar o reasignar las compras relacionadas.`,
+        "error"
+      );
+    }
+
+    // Si no tiene compras, proceder con la confirmación
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
@@ -177,7 +212,6 @@ const Providers = () => {
                 { header: "Razón Social", accessor: "razonSocial" },
                 { header: "NIT", accessor: "nit" },
                 { header: "Tipo de Entidad", accessor: "tipoEntidad" },
-                { header: "Tipo Proveedor", accessor: "tipoProveedor" },
                 { header: "Contacto Principal", accessor: "contactoPrincipal" },
                 { header: "Correo", accessor: "correo" },
                 { header: "Teléfono", accessor: "telefono" },
@@ -210,7 +244,7 @@ const Providers = () => {
                     "Razón Social",
                     "NIT",
                     "Entidad",
-                    "Tipo Proveedor",
+                    "Correo",
                     "Contacto",
                   ],
                   state: true,
@@ -222,7 +256,7 @@ const Providers = () => {
                     "razonSocial",
                     "nit",
                     "tipoEntidad",
-                    "tipoProveedor",
+                    "correo",
                     "contactoPrincipal",
                   ],
                   state: true,
