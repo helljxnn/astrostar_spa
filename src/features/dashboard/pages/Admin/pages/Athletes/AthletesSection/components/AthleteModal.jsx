@@ -30,7 +30,6 @@ const states = [
   { value: "Inactivo", label: "Inactivo" },
 ];
 
-// Helpers
 const calculateAge = (birthDate) => {
   if (!birthDate) return null;
   const today = new Date();
@@ -58,7 +57,6 @@ const AthleteModal = ({
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
 
-  // Formulario
   const {
     values,
     errors,
@@ -115,7 +113,6 @@ const AthleteModal = ({
     }
   }, [isOpen, isEditing, athleteToEdit, setValues]);
 
-  // Calcular categoría automáticamente basada en fecha de nacimiento
   useEffect(() => {
     if (values.fechaNacimiento && !isEditing) {
       const age = calculateAge(values.fechaNacimiento);
@@ -135,7 +132,6 @@ const AthleteModal = ({
     }
   }, [values.fechaNacimiento, handleChange, values.categoria, isEditing]);
 
-  // Sincronizar estado de inscripción cuando cambia el estado del deportista
   useEffect(() => {
     if (isEditing && athleteToEdit) {
       if (values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo") {
@@ -258,7 +254,6 @@ const AthleteModal = ({
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
-        {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
           <button
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
@@ -279,40 +274,12 @@ const AthleteModal = ({
           )}
         </div>
 
-        {/* Body */}
         <div className="p-6 space-y-6">
-          {/* Información Personal */}
           <div className="bg-white border border-gray-200 rounded-xl p-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
               Información Personal
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                label="Nombres"
-                name="nombres"
-                type="text"
-                placeholder="Nombres del deportista"
-                value={values.nombres}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.nombres}
-                touched={touched.nombres}
-                delay={0.1}
-                required
-              />
-              <FormField
-                label="Apellidos"
-                name="apellidos"
-                type="text"
-                placeholder="Apellidos del deportista"
-                value={values.apellidos}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.apellidos}
-                touched={touched.apellidos}
-                delay={0.15}
-                required
-              />
               <FormField
                 label="Tipo de Documento"
                 name="tipoDocumento"
@@ -324,7 +291,7 @@ const AthleteModal = ({
                 onBlur={handleBlur}
                 error={errors.tipoDocumento}
                 touched={touched.tipoDocumento}
-                delay={0.2}
+                delay={0.1}
                 required
               />
               <FormField
@@ -337,6 +304,32 @@ const AthleteModal = ({
                 onBlur={handleBlur}
                 error={errors.numeroDocumento}
                 touched={touched.numeroDocumento}
+                delay={0.15}
+                required
+              />
+              <FormField
+                label="Nombres"
+                name="nombres"
+                type="text"
+                placeholder="Nombres del deportista"
+                value={values.nombres}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.nombres}
+                touched={touched.nombres}
+                delay={0.2}
+                required
+              />
+              <FormField
+                label="Apellidos"
+                name="apellidos"
+                type="text"
+                placeholder="Apellidos del deportista"
+                value={values.apellidos}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.apellidos}
+                touched={touched.apellidos}
                 delay={0.25}
                 required
               />
@@ -423,7 +416,6 @@ const AthleteModal = ({
             </div>
           </div>
 
-          {/* Sección de Acudiente */}
           <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -454,7 +446,6 @@ const AthleteModal = ({
               </div>
             </div>
 
-            {/* Búsqueda de Acudientes */}
             <AnimatePresence>
               {showGuardianSearch && (
                 <motion.div
@@ -517,7 +508,6 @@ const AthleteModal = ({
               )}
             </AnimatePresence>
 
-            {/* Selector de Acudiente */}
             <FormField
               label="Seleccionar Acudiente"
               name="acudiente"
@@ -536,7 +526,6 @@ const AthleteModal = ({
               required
             />
 
-            {/* Información del Acudiente Seleccionado */}
             <AnimatePresence>
               {selectedGuardian && (
                 <motion.div
@@ -579,7 +568,6 @@ const AthleteModal = ({
             </AnimatePresence>
           </div>
 
-          {/* Nota informativa para crear deportista */}
           {!isEditing && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
               <div className="flex items-start gap-3">
@@ -611,7 +599,6 @@ const AthleteModal = ({
             </div>
           )}
 
-          {/* Alerta cuando se cambia a Inactivo en edición */}
           {isEditing && athleteToEdit && values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo" && (
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
               <div className="flex items-start gap-3">
@@ -642,7 +629,6 @@ const AthleteModal = ({
             </div>
           )}
 
-          {/* Footer */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

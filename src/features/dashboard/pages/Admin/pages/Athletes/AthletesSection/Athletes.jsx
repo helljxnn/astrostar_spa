@@ -420,22 +420,68 @@ const Athletes = () => {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
-              data={filteredData.map((athlete) => ({
-                ...athlete,
-                acudienteNombre:
-                  guardians.find((g) => g.id === athlete.acudiente)
-                    ?.nombreCompleto || "Sin acudiente",
-              }))}
+              data={filteredData.map((athlete) => {
+                const guardian = guardians.find(
+                  (g) => g.id === athlete.acudiente
+                );
+                return {
+                  // Información personal completa
+                  nombres: athlete.nombres || "",
+                  apellidos: athlete.apellidos || "",
+                  nombreCompleto: `${athlete.nombres} ${athlete.apellidos}`,
+
+                  // Documentación
+                  tipoDocumento: athlete.tipoDocumento || "",
+                  numeroDocumento: athlete.numeroDocumento || "",
+
+                  // Información de contacto
+                  correo: athlete.correo || "",
+                  telefono: athlete.telefono || "",
+                  direccion: athlete.direccion || "",
+                  ciudad: athlete.ciudad || "",
+
+                  // Información deportiva
+                  fechaNacimiento: athlete.fechaNacimiento || "",
+                  genero: athlete.genero || "",
+                  categoria: athlete.categoria || "",
+
+                  // Estados
+                  estado: athlete.estado || "",
+                  estadoInscripcion: athlete.estadoInscripcion || "",
+
+                  // Información del acudiente
+                  acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
+                  acudienteTipoDoc: guardian?.tipoDocumento || "",
+                  acudienteDocumento: guardian?.identificacion || "",
+                  acudienteTelefono: guardian?.telefono || "",
+                  acudienteCorreo: guardian?.correo || "",
+                  acudienteDireccion: guardian?.direccion || "",
+                  acudienteParentesco: guardian?.parentesco || "",
+
+                  // Información de inscripción actual
+                  fechaInscripcion:
+                    athlete.inscripciones?.[0]?.fechaInscripcion || "",
+                  categoriaInscripcion:
+                    athlete.inscripciones?.[0]?.categoria || "",
+                  conceptoInscripcion:
+                    athlete.inscripciones?.[0]?.concepto || "",
+                };
+              })}
               fileName="Deportistas"
               columns={[
+                // Información Personal
                 { header: "Nombres", accessor: "nombres" },
                 { header: "Apellidos", accessor: "apellidos" },
-                { header: "Documento", accessor: "numeroDocumento" },
+                { header: "Tipo Documento", accessor: "tipoDocumento" },
+                { header: "Número Documento", accessor: "numeroDocumento" },
                 { header: "Correo", accessor: "correo" },
                 { header: "Teléfono", accessor: "telefono" },
+                { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
                 { header: "Categoría", accessor: "categoria" },
+                { header: "Estado", accessor: "estado" },
                 { header: "Estado Inscripción", accessor: "estadoInscripcion" },
                 { header: "Acudiente", accessor: "acudienteNombre" },
+                { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
               ]}
             />
 
@@ -503,18 +549,21 @@ const Athletes = () => {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onView={handleView}
-             customActions={[
-  {
-    onClick: (athlete) => handleOpenInscriptionManagement(athlete),
-    label: <FaClipboardList className="w-4 h-4" />,
-    className: "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors"
-  },
-  {
-    onClick: (athlete) => handleViewInscriptionHistory(athlete),
-    label: <FaHistory className="w-4 h-4" />,
-    className: "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors"
-  }
-]}
+              customActions={[
+                {
+                  onClick: (athlete) =>
+                    handleOpenInscriptionManagement(athlete),
+                  label: <FaClipboardList className="w-4 h-4" />,
+                  className:
+                    "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors",
+                },
+                {
+                  onClick: (athlete) => handleViewInscriptionHistory(athlete),
+                  label: <FaHistory className="w-4 h-4" />,
+                  className:
+                    "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors",
+                },
+              ]}
             />
           </div>
           <div className="mt-4">
