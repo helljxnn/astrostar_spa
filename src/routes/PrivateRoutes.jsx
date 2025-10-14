@@ -20,7 +20,7 @@ import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesS
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
 import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
-import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/components/AttendanceHistory.jsx";
+import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
 
 
 /* --- Usuarios y Roles --- */

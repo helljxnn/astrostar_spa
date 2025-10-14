@@ -1,20 +1,24 @@
+// src/features/dashboard/pages/Admin/pages/Athletes/Assistance/AssistanceAthletes.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import Table from "../../../../../../../shared/components/Table/table.jsx";
+import { useNavigate } from "react-router-dom";
+
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
-import { useNavigate } from "react-router-dom";
 
 export default function AssistanceAthletes() {
   const navigate = useNavigate();
 
-  // === Fecha actual por defecto ===
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [attendance, setAttendance] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 6;
 
-  // === Base de deportistas (datos quemados) ===
+  // Base de deportistas (datos quemados)
   const athletesBase = [
     { id: 1, nombre: "Carlos Gómez", documento: "1032547896", edad: 22, categoria: "Juvenil" },
     { id: 2, nombre: "Laura Pérez", documento: "1056987452", edad: 19, categoria: "Sub-20" },
@@ -26,15 +30,7 @@ export default function AssistanceAthletes() {
     { id: 8, nombre: "Daniela Castaño", documento: "1069854712", edad: 19, categoria: "Sub-20" },
   ];
 
-  // === Estado de asistencia (por fecha) ===
-  const [attendance, setAttendance] = useState([]);
-
-  // === Filtros y paginación ===
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 6;
-
-  // === Cargar asistencia guardada o inicial ===
+  // Cargar asistencia desde localStorage o crear inicial
   useEffect(() => {
     const savedData = localStorage.getItem(`attendance_${selectedDate}`);
     if (savedData) {
@@ -49,38 +45,33 @@ export default function AssistanceAthletes() {
     }
   }, [selectedDate]);
 
-  // === Cambiar asistencia ===
+  // Manejadores
   const handleAttendanceChange = (id) => {
     setAttendance((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, asistencia: !a.asistencia } : a
-      )
+      prev.map((a) => (a.id === id ? { ...a, asistencia: !a.asistencia } : a))
     );
   };
 
-  // === Cambiar observación ===
   const handleObservationChange = (id, value) => {
     setAttendance((prev) =>
       prev.map((a) => (a.id === id ? { ...a, observacion: value } : a))
     );
   };
 
-  // === Guardar asistencia (localStorage) ===
   const handleSave = () => {
     if (!selectedDate) {
       showSuccessAlert("⚠️ Debes seleccionar una fecha antes de guardar.");
       return;
     }
     localStorage.setItem(`attendance_${selectedDate}`, JSON.stringify(attendance));
-    showSuccessAlert(`✅ Asistencia guardada para el ${selectedDate}.`);
+    showSuccessAlert(` Asistencia guardada para el ${selectedDate}.`);
   };
 
-  // === Navegar al historial ===
   const goToHistory = () => {
-    navigate("/admin/athletes-assistance/history");
+    navigate("/dashboard/athletes-assistance/history");
   };
 
-  // === Filtrado ===
+  // Filtrado y paginación
   const filteredData = useMemo(() => {
     if (!searchTerm) return attendance;
     return attendance.filter((a) =>
@@ -88,13 +79,12 @@ export default function AssistanceAthletes() {
     );
   }, [attendance, searchTerm]);
 
-  // === Paginación ===
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
 
-  // === Configuración de Reporte ===
+  // Configuración de reporte
   const reportColumns = [
     { header: "Nombre", accessor: "nombre" },
     { header: "Documento", accessor: "documento" },
@@ -108,13 +98,11 @@ export default function AssistanceAthletes() {
     { header: "Observación", accessor: "observacion" },
   ];
 
-  // === Estilos de color ===
   const gradient = "linear-gradient(90deg, #a4b4ff 0%, #b1b8ff 100%)";
 
-  // === Renderizado ===
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-questrial">
-      {/* === Encabezado === */}
+      {/* Encabezado */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
           Asistencia de Deportistas{" "}
@@ -125,9 +113,8 @@ export default function AssistanceAthletes() {
           )}
         </h1>
 
-        {/* === Controles === */}
         <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-          {/* Selector de fecha */}
+          {/* Fecha */}
           <input
             type="date"
             value={selectedDate}
@@ -154,7 +141,7 @@ export default function AssistanceAthletes() {
             className="text-white px-4 py-2 rounded-lg shadow hover:opacity-90 transition"
             style={{ background: gradient }}
           >
-            💾 Guardar Asistencia
+            Guardar Asistencia
           </button>
 
           <button
@@ -162,7 +149,7 @@ export default function AssistanceAthletes() {
             className="text-white px-4 py-2 rounded-lg shadow hover:opacity-90 transition"
             style={{ background: gradient }}
           >
-            📜 Ver Historial
+            Ver Historial
           </button>
 
           <ReportButton
@@ -173,7 +160,7 @@ export default function AssistanceAthletes() {
         </div>
       </div>
 
-      {/* === Tabla o sin resultados === */}
+      {/* Tabla */}
       {totalRows === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 mb-6">
           <p className="text-gray-600">
@@ -212,7 +199,9 @@ export default function AssistanceAthletes() {
                     className="hover:bg-indigo-50 transition-colors duration-150"
                   >
                     <td className="px-4 py-3">{startIndex + idx + 1}</td>
-                    <td className="px-4 py-3 font-medium text-gray-800">{a.nombre}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">
+                      {a.nombre}
+                    </td>
                     <td className="px-4 py-3">{a.documento}</td>
                     <td className="px-4 py-3 text-center">{a.edad}</td>
                     <td className="px-4 py-3 text-center">{a.categoria}</td>
