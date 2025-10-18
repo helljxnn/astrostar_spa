@@ -1,14 +1,16 @@
-// ================================
+// ================================ 
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute.jsx";
 
-/* Layout general */
+/* --- Layout general --- */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
 /* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
+
+/* --- Servicios --- */
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
@@ -17,6 +19,9 @@ import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
 import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
+import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
+import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
+
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -31,7 +36,7 @@ import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipm
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
-import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/DonationsForm.jsx";
+import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/Donations/DonationsForm.jsx";
 import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/donorsSponsors.jsx";
 
 /* --- Compras --- */
@@ -119,6 +124,36 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute allowedRoles={["admin"]}>
               <TemporaryWorkers />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Asistencia Deportistas --- */}
+        <Route
+          path="athletes-assistance"
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
+              <AssistanceAthletes />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="athletes-assistance/history"
+          element={
+            <PrivateRoute
+              allowedRoles={[
+                "admin",
+                "profesional_deportivo",
+                "profesional_salud",
+              ]}
+            >
+              <AttendanceHistory />
             </PrivateRoute>
           }
         />

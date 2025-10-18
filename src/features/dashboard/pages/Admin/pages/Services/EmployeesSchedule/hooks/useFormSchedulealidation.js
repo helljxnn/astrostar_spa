@@ -25,10 +25,8 @@ export const useFormScheduleValidation = () => {
 
       case "horaFin":
         if (!value) error = "La hora de finalización es obligatoria.";
-        else if (formData.horaInicio && value <= formData.horaInicio) {
-          error =
-            "La hora de finalización debe ser mayor que la hora de inicio.";
-        }
+        else if (formData.horaInicio && value <= formData.horaInicio)
+          error = "La hora de finalización debe ser mayor que la hora de inicio.";
         break;
 
       case "area":
@@ -39,6 +37,7 @@ export const useFormScheduleValidation = () => {
         if (!value?.trim()) error = "Debe seleccionar un estado.";
         break;
 
+      case "descripcion":
       case "observaciones":
         if (value && value.length < 5)
           error = "Las observaciones deben tener al menos 5 caracteres.";
@@ -75,5 +74,9 @@ export const useFormScheduleValidation = () => {
     setTouched(allTouched);
   };
 
-  return { errors, touched, validate, handleBlur, touchAllFields };
+  const hasChanges = (original, current) => {
+    return Object.keys(current).some((key) => current[key] !== original[key]);
+  };
+
+  return { errors, touched, validate, handleBlur, touchAllFields, hasChanges };
 };
