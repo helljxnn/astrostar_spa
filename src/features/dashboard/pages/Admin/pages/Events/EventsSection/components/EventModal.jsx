@@ -38,14 +38,53 @@ export const EventModal = ({
   const { errors, touched, validate, handleBlur, touchAllFields } =
     useFormEventValidation();
 
+  // Función para formatear fecha a YYYY-MM-DD sin problemas de zona horaria
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    
+    // Si ya está en formato correcto YYYY-MM-DD, devolverlo directamente
+    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      return dateString;
+    }
+    
+    // Si es un string que contiene 'T' (ISO string), extraer solo la fecha
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+      return dateString.split('T')[0];
+    }
+    
+    // Si es un objeto Date
+    if (dateString instanceof Date) {
+      const year = dateString.getFullYear();
+      const month = String(dateString.getMonth() + 1).padStart(2, '0');
+      const day = String(dateString.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Para cualquier otro caso, intentar convertir sin zona horaria
+    if (typeof dateString === 'string') {
+      // Si contiene '/', convertir a formato ISO (MM/DD/YYYY)
+      if (dateString.includes('/')) {
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          const month = parts[0].padStart(2, '0');
+          const day = parts[1].padStart(2, '0');
+          const year = parts[2];
+          return `${year}-${month}-${day}`;
+        }
+      }
+    }
+    
+    return dateString;
+  };
+
   useEffect(() => {
     if (!isNew && event) {
       setTipoEvento(event.tipo || "");
       setForm({
         nombre: event.nombre || "",
         descripcion: event.descripcion || "",
-        fechaInicio: event.fechaInicio || "",
-        fechaFin: event.fechaFin || "",
+        fechaInicio: formatDateForInput(event.fechaInicio) || "",
+        fechaFin: formatDateForInput(event.fechaFin) || "",
         horaInicio: event.horaInicio || "",
         horaFin: event.horaFin || "",
         ubicacion: event.ubicacion || "",
@@ -333,7 +372,7 @@ export const EventModal = ({
                     Subir Imagen
                   </label>
                   <ButtonUpload
-                    file={form.imagen}
+                    archivo={form.imagen}
                     onChange={(file) => handleChange("imagen", file)}
                     disabled={mode === "view"}
                   />
@@ -344,7 +383,7 @@ export const EventModal = ({
                     Subir Cronograma
                   </label>
                   <ButtonUpload
-                    file={form.cronograma}
+                    archivo={form.cronograma}
                     onChange={(file) => handleChange("cronograma", file)}
                     disabled={mode === "view"}
                   />
