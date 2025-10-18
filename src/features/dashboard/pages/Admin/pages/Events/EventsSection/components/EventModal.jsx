@@ -109,6 +109,8 @@ export const EventModal = ({
       const isValid = validate({ ...form, tipoEvento });
       
       if (!isValid) {
+        console.log("Errores de validación:", errors);
+        console.log("Datos del formulario:", { ...form, tipoEvento });
         showErrorAlert(
           "Formulario incompleto",
           "Por favor completa todos los campos requeridos correctamente."
@@ -345,10 +347,10 @@ export const EventModal = ({
                   onChange={handleChange}
                   onBlur={() => handleBlur("categoria", form.categoria, form)}
                   options={[
-                    { value: "Infantil", label: "Infantil" },
-                    { value: "Pre Juvenil", label: "Pre Juvenil" },
-                    { value: "Juvenil", label: "Juvenil" },
-                    { value: "Todas", label: "Todas" },
+                    { value: "Deportivo", label: "Deportivo" },
+                    { value: "Educativo", label: "Educativo" },
+                    { value: "Cultural", label: "Cultural" },
+                    { value: "Social", label: "Social" },
                   ]}
                   error={errors.categoria}
                   touched={touched.categoria}

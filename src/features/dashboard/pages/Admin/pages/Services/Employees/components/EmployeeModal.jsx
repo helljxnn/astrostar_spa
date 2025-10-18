@@ -429,7 +429,7 @@ const EmployeeModal = ({
             <div className="flex justify-center">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"
+                className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:opacity-90 transition"
               >
                 Cerrar
               </button>
@@ -445,7 +445,7 @@ const EmployeeModal = ({
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
               >
                 {mode === "edit" ? "Guardar Cambios" : "Crear Empleado"}
               </button>

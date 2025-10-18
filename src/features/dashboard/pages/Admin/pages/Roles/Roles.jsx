@@ -121,7 +121,7 @@ const Roles = () => {
               setSelectedRole(null);
               setIsModalOpen(true);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:opacity-90 transition"
           >
             <FaPlus /> Crear Rol
           </button>
