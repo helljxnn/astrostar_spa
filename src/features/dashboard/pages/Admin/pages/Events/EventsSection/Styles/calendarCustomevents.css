@@ -196,26 +196,26 @@
 
 /* Botón de gestión (FaCog) */
 .event-btn--manage {
-  border-color: #6b7280 !important;
-  color: #6b7280 !important;
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
 }
 
 .event-btn--manage:hover {
-  background: #f3f4f6 !important;
-  border-color: #4b5563 !important;
-  color: #4b5563 !important;
+  background: #f3f0ff !important;
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
 }
 
 /* Botón de inscripción (FaUsers) */
 .event-btn--registration {
-  border-color: #3b82f6 !important;
-  color: #3b82f6 !important;
+  border-color: #8b5cf6 !important;
+  color: #8b5cf6 !important;
 }
 
 .event-btn--registration:hover {
-  background: #eff6ff !important;
-  border-color: #2563eb !important;
-  color: #2563eb !important;
+  background: #f3f0ff !important;
+  border-color: #7c3aed !important;
+  color: #7c3aed !important;
 }
 
 /* Efectos de click */
