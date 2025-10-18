@@ -9,6 +9,7 @@ const temporaryWorkersData = [
     fechaNacimiento: "2006-05-12",
     edad: 19,
     categoria: "Sub 17",
+    equipo: "Águilas Doradas", // Asignado desde módulo de equipos
     estado: "Activo",
   },
   {
@@ -20,7 +21,8 @@ const temporaryWorkersData = [
     telefono: "3207654321",
     fechaNacimiento: "1992-09-10",
     edad: 32,
-    categoria: "No aplica",
+    categoria: "No asignado",
+    equipo: "Leones FC", // Asignado desde módulo de equipos
     estado: "Activo",
   },
   {
@@ -32,7 +34,8 @@ const temporaryWorkersData = [
     telefono: "3109876543",
     fechaNacimiento: "1985-03-22",
     edad: 38,
-    categoria: "No aplica",
+    categoria: "No asignado",
+    equipo: null, // Sin equipo asignado
     estado: "Activo",
   },
   {
@@ -44,7 +47,8 @@ const temporaryWorkersData = [
     telefono: "3151234567",
     fechaNacimiento: "2008-08-15",
     edad: 15,
-    categoria: "Sub 15",
+    categoria: "No asignada", // Sin equipo asignado
+    equipo: null,
     estado: "Activo",
   },
   {
@@ -56,7 +60,8 @@ const temporaryWorkersData = [
     telefono: "3201234567",
     fechaNacimiento: "1988-12-03",
     edad: 35,
-    categoria: "No aplica",
+    categoria: "No asignado",
+    equipo: null, // Sin equipo asignado
     estado: "Activo",
   },
   {
@@ -68,7 +73,8 @@ const temporaryWorkersData = [
     telefono: "3175555666",
     fechaNacimiento: "1990-04-18",
     edad: 33,
-    categoria: "No aplica",
+    categoria: "No asignado",
+    equipo: null, // Sin equipo asignado
     estado: "Activo",
   },
   {
@@ -81,6 +87,7 @@ const temporaryWorkersData = [
     fechaNacimiento: "2009-11-22",
     edad: 14,
     categoria: "Sub 13",
+    equipo: "Tigres Unidos", // Asignado desde módulo de equipos
     estado: "Activo",
   },
   {
@@ -92,7 +99,8 @@ const temporaryWorkersData = [
     telefono: "3127777888",
     fechaNacimiento: "1985-07-30",
     edad: 38,
-    categoria: "No aplica",
+    categoria: "No asignado",
+    equipo: "Halcones Rojos", // Asignado desde módulo de equipos
     estado: "Activo",
   },
 ];

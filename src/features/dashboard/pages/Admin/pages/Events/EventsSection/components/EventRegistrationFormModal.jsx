@@ -10,7 +10,6 @@ import {
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
 
-
 // Datos quemados para equipos
 const mockTeams = [
   {
@@ -107,7 +106,12 @@ const EventRegistrationFormModal = ({
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSection, setSelectedSection] = useState("deportistas"); // "deportistas" o "temporales"
+  // Para eventos de Clausura y Taller, siempre usar "deportistas"
+  const [selectedSection, setSelectedSection] = useState(
+    eventType === "Clausura" || eventType === "Taller"
+      ? "deportistas"
+      : "deportistas"
+  );
   const [selectedTemporalType, setSelectedTemporalType] = useState(""); // Para filtrar personas temporales
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
@@ -149,6 +153,12 @@ const EventRegistrationFormModal = ({
     if (isTeamType) {
       // Si es tipo Equipos, usar solo los datos de equipos
       return mockTeams;
+    } else if (eventType === "Clausura" || eventType === "Taller") {
+      // Para eventos de Clausura y Taller, ÚNICAMENTE deportistas de la fundación
+      console.log(
+        `Evento tipo ${eventType}: Mostrando únicamente deportistas de la fundación`
+      );
+      return formattedAthletes;
     } else if (selectedSection === "deportistas") {
       return formattedAthletes;
     } else {
@@ -291,9 +301,14 @@ const EventRegistrationFormModal = ({
 
   const getSectionTitle = () => {
     if (isTeamType) return "equipos";
-    return selectedSection === "deportistas"
-      ? "deportistas"
-      : "personas temporales";
+
+    // Para eventos de clausura y taller, solo hay deportistas de la fundación
+    if (eventType === "Clausura" || eventType === "Taller") {
+      return "deportistas";
+    }
+
+    if (selectedSection === "deportistas") return "deportistas";
+    return "personas temporales";
   };
 
   return (
@@ -321,8 +336,8 @@ const EventRegistrationFormModal = ({
           </div>
         </div>
 
-        {/* Section Tabs - Solo mostrar si no es tipo Equipos */}
-        {!isTeamType && (
+        {/* Section Tabs - Solo mostrar si no es tipo Equipos y no es evento de Clausura/Taller */}
+        {!isTeamType && eventType !== "Clausura" && eventType !== "Taller" && (
           <div className="border-b border-gray-200 bg-white">
             <div className="flex">
               <button
@@ -549,9 +564,11 @@ const EventRegistrationFormModal = ({
                             <td className="py-3 px-4">
                               <span
                                 className={`px-2 py-1 rounded-full text-sm w-fit ${
-                                  (item.tipoPersona || item.tipo) === "Deportista"
+                                  (item.tipoPersona || item.tipo) ===
+                                  "Deportista"
                                     ? "bg-green-100 text-green-800"
-                                    : (item.tipoPersona || item.tipo) === "Entrenador"
+                                    : (item.tipoPersona || item.tipo) ===
+                                      "Entrenador"
                                     ? "bg-purple-100 text-purple-800"
                                     : "bg-orange-100 text-orange-800"
                                 }`}
@@ -561,12 +578,15 @@ const EventRegistrationFormModal = ({
                             </td>
                             {/* Columna Categoría */}
                             <td className="py-3 px-4">
-                              {item.categoria && item.categoria !== "No aplica" ? (
+                              {item.categoria &&
+                              item.categoria !== "No aplica" ? (
                                 <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
                                   {item.categoria}
                                 </span>
                               ) : (
-                                <span className="text-gray-400 text-sm">No aplica</span>
+                                <span className="text-gray-400 text-sm">
+                                  No aplica
+                                </span>
                               )}
                             </td>
                             {/* Columna Edad */}

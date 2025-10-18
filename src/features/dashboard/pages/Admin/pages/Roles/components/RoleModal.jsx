@@ -195,7 +195,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -458,10 +458,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             </motion.button>
             <motion.button
               onClick={handleSubmit}
-              className="px-8 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl hover:from-primary-purple hover:to-primary-blue transition-all duration-200 font-medium shadow-lg"
+              className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
               whileHover={{
                 scale: 1.02,
-                boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
+                boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)",
               }}
               whileTap={{ scale: 0.98 }}
             >
