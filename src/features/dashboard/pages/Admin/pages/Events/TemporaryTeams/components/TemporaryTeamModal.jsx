@@ -96,7 +96,7 @@ const TemporaryTeamModal = ({
       setTeamType(null);
       setTypeValidationError("");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [isOpen, isEditing, teamToEdit]);
 
   // Validación en tiempo real cuando cambia el entrenador o jugadoras
@@ -652,7 +652,7 @@ const TemporaryTeamModal = ({
                 className={`px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg ${
                   typeValidationError
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-gradient-to-r from-primary-purple to-primary-blue hover:shadow-xl"
+                    : "bg-primary-blue hover:bg-primary-purple hover:shadow-xl"
                 }`}
                 whileHover={!typeValidationError ? { scale: 1.02 } : {}}
                 whileTap={!typeValidationError ? { scale: 0.98 } : {}}

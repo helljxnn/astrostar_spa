@@ -100,7 +100,7 @@ const Tbody = ({ options }) => {
                 {onEdit && (
                   <button
                     onClick={() => onEdit(item)}
-                    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors"
+                    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white transition-colors"
                     title="Editar"
                   >
                     <FaRegEdit />

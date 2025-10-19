@@ -18,10 +18,15 @@ export const useFormRoleValidation = (initialValues, validationRules) => {
 
   const validateAllFields = () => {
     const newErrors = {};
+    const allTouched = {};
+    
     Object.keys(validationRules).forEach(name => {
+      allTouched[name] = true;
       const error = validateField(name, values[name]);
       if (error) newErrors[name] = error;
     });
+    
+    setTouched(allTouched);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

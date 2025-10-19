@@ -258,7 +258,7 @@ const Purchases = () => {
         cancelButtonText: 'Volver',
         customClass: {
           confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2 hover:opacity-90',
-          cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg hover:opacity-90',
+          cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg hover:bg-primary-purple',
         },
         buttonsStyling: false,
         inputValidator: (value) => {
