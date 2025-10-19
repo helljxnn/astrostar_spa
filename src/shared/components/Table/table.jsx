@@ -97,7 +97,7 @@ const Table = ({
             <div className="flex items-center gap-3 mt-3">
               <button
                 onClick={() => tbodyProps.onEdit && tbodyProps.onEdit(item)}
-                className="px-3 py-1 rounded-lg bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors text-xs"
+                className="px-3 py-1 rounded-lg bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white transition-colors text-xs"
               >
                 Editar
               </button>

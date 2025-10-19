@@ -43,7 +43,7 @@ const TemporaryWorkers = () => {
       })
     );
   }, [data, searchTerm]);
-  
+
   // Paginación
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -159,32 +159,32 @@ const TemporaryWorkers = () => {
       </div>
 
       {/* Tabla */}
-     <Table
-  thead={{
-    titles: [
-      "Tipo de Persona",
-      "Nombre",
-      "Identificación",
-      "Categoría",
-      "Edad",
-    ],
-    state: true, 
-  }}
-  tbody={{
-    data: paginatedData,
-    dataPropertys: [
-      "tipoPersona",
-      "nombre",
-      "identificacion",
-      "categoria",
-      "edad",
-    ],
-    state: true,
-  }}
-  onEdit={handleEdit}
-  onDelete={handleDelete}
-  onView={handleView}
-/>
+      <Table
+        thead={{
+          titles: [
+            "Tipo de Persona",
+            "Nombre",
+            "Identificación",
+            "Categoría",
+            "Edad",
+          ],
+          state: true,
+        }}
+        tbody={{
+          data: paginatedData,
+          dataPropertys: [
+            "tipoPersona",
+            "nombre",
+            "identificacion",
+            "categoria",
+            "edad",
+          ],
+          state: true,
+        }}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onView={handleView}
+      />
 
       {/* Paginación */}
       {totalRows > rowsPerPage && (
