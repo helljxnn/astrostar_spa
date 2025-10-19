@@ -553,10 +553,10 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           <motion.button
             onClick={handleEnglishClick}
             whileHover={{ scale: 1.1 }}
-            className="mr-3 bg-primary-green px-3 py-1 rounded-lg flex items-center justify-center gap-2"
+            className="mr-3 bg-primary-blue px-3 py-1 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-purple transition-colors"
           >
-            <FaLanguage className="text-xl text-black" />
-            <span className="text-black font-medium">Inglés</span>
+            <FaLanguage className="text-xl text-white" />
+            <span className="text-white font-medium">Inglés</span>
           </motion.button>
           
           {/* Botones de navegación */}

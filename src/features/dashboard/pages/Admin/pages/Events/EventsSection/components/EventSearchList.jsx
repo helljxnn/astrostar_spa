@@ -132,7 +132,7 @@ const EventSearchList = ({
             <div className="flex flex-wrap gap-2 mt-3 sm:mt-0">
               <button
                 onClick={(e) => handleActionClick(e, "crud", event)}
-                className="flex items-center gap-1 px-3 py-1 bg-primary-purple text-black rounded-lg text-sm font-medium shadow-sm hover:opacity-90 transition-opacity"
+                className="flex items-center gap-1 px-3 py-1 bg-primary-blue text-white rounded-lg text-sm font-medium shadow-sm hover:bg-primary-purple transition-colors"
                 title="Gestionar evento"
               >
                 <FaCog size={12} />
@@ -140,7 +140,7 @@ const EventSearchList = ({
               </button>
               <button
                 onClick={(e) => handleActionClick(e, "registration", event)}
-                className="flex items-center gap-1 px-3 py-1 bg-primary-purple text-black rounded-lg text-sm font-medium shadow-sm hover:opacity-90 transition-opacity"
+                className="flex items-center gap-1 px-3 py-1 bg-primary-blue text-white rounded-lg text-sm font-medium shadow-sm hover:bg-primary-purple transition-colors"
                 title="Inscribir a evento"
               >
                 <FaUsers size={12} />

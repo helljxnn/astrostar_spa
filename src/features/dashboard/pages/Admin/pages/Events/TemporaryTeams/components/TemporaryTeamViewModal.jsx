@@ -196,7 +196,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
             <motion.button
               type="button"
               onClick={onClose}
-              className="px-8 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl transition-all duration-200 font-medium shadow-lg"
+              className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
               whileHover={{
                 scale: 1.02,
                 boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",

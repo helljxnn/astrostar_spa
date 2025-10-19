@@ -396,7 +396,7 @@ const SelectionModal = ({
                   <button
                     onClick={handleConfirm}
                     disabled={selectedItems.length === 0 || !!validationError}
-                    className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full sm:w-auto px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Confirmar Selección
                   </button>

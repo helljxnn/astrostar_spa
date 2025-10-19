@@ -4,8 +4,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
-import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
-import {showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import { 
+  showSuccessAlert, 
+  showConfirmAlert, 
+  showErrorAlert 
+} from "../../../../../../../shared/utils/alerts";
 
 const modules = [
   { name: "Usuarios", icon: "👤" },
@@ -136,10 +139,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
     if (!hasPermissions) {
       setPermissionError("Debe seleccionar al menos un permiso");
-      return;
     }
 
-    if (!isValid || !hasPermissions) return;
+    if (!isValid || !hasPermissions) {
+      showErrorAlert(
+        "Campos incompletos",
+        "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar."
+      );
+      return;
+    }
 
     const roleToSave = {
       ...formData,
@@ -458,7 +466,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             </motion.button>
             <motion.button
               onClick={handleSubmit}
-              className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+              className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
               whileHover={{
                 scale: 1.02,
                 boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)",
