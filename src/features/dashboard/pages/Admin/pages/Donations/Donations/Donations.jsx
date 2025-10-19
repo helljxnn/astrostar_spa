@@ -170,7 +170,6 @@ const Donations = () => {
   };
 
   const handleView = (donation) => setSelectedDonation(donation);
-
   const handleCancel = (donation) => setCancelingDonation(donation);
 
   const handleConfirmCancel = (reason) => {
@@ -226,7 +225,7 @@ const Donations = () => {
 
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-300 to-sky-400 hover:from-sky-400 hover:to-sky-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-[1.03]"
             >
               <FaPlus /> Crear
             </button>
@@ -241,10 +240,10 @@ const Donations = () => {
             titles: [
               "Donante",
               "Tipo de Donación",
-              "Estado",
               "Fecha de Donación",
               "Fecha de Registro",
-              "Acciones Extra",
+              "Estado",
+              "Acciones",
             ],
           }}
           tbody={{
@@ -252,12 +251,9 @@ const Donations = () => {
               const donationTypes =
                 donation.items?.map((i) => i.donationType).filter(Boolean) || [];
 
-              const statusColor =
-                donation.status === "Registrado"
-                  ? "text-primary-purple"
-                  : donation.status === "Anulado"
-                  ? "text-red-600"
-                  : "text-gray-400";
+              const isRegistered = donation.status === "Registrado";
+              const color = isRegistered ? "#B595FF" : "#9BE9FF";
+              const hoverColor = isRegistered ? "#9B78FF" : "#6ED3FF";
 
               return {
                 ...donation,
@@ -266,7 +262,12 @@ const Donations = () => {
                     ? donationTypes.join(", ")
                     : "Sin tipos",
                 status: (
-                  <span className={`font-semibold ${statusColor}`}>
+                  <span
+                    className="font-medium cursor-default transition-all"
+                    style={{ color }}
+                    onMouseEnter={(e) => (e.target.style.color = hoverColor)}
+                    onMouseLeave={(e) => (e.target.style.color = color)}
+                  >
                     {donation.status}
                   </span>
                 ),
@@ -274,9 +275,10 @@ const Donations = () => {
                   donation.status !== "Anulado" ? (
                     <button
                       onClick={() => handleCancel(donation)}
-                      className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors shadow-sm"
+                      className="flex items-center justify-center gap-1 px-3 py-1 bg-[#9BE9FF]/40 text-[#9BE9FF] hover:bg-[#9BE9FF]/60 transition-all rounded-full shadow-sm hover:shadow-md"
                     >
-                      <FaBan size={12} /> Anular
+                      <FaBan size={12} />
+                      <span className="text-xs font-medium">Anular</span>
                     </button>
                   ) : (
                     <span className="text-gray-400 text-sm italic">
@@ -289,9 +291,9 @@ const Donations = () => {
             dataPropertys: [
               "donorName",
               "donationType",
-              "status",
               "donationDate",
               "registerDate",
+              "status",
               "accionesExtra",
             ],
           }}
