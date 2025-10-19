@@ -1,38 +1,39 @@
 import React from "react";
+import Table from "../../../../../../../../shared/components/Table/table";
 
-export default function DonationsTable({ donations }) {
+const DonationsTable = ({ donations, onEdit, onView, onCancel }) => {
   return (
-    <table className="w-full border-collapse border">
-      <thead>
-        <tr className="bg-gray-100">
-          <th className="border px-3 py-2 text-left">Donante</th>
-          <th className="border px-3 py-2 text-left">Tipo</th>
-          <th className="border px-3 py-2 text-left">Cantidad</th>
-          <th className="border px-3 py-2 text-left">Fecha Donación</th>
-          <th className="border px-3 py-2 text-left">Fecha Registro</th>
-          <th className="border px-3 py-2 text-left">Extra</th>
-        </tr>
-      </thead>
-      <tbody>
-        {donations.length === 0 ? (
-          <tr>
-            <td colSpan="6" className="text-center py-4">
-              No hay donaciones registradas.
-            </td>
-          </tr>
-        ) : (
-          donations.map((d, i) => (
-            <tr key={i} className="border-t">
-              <td className="border px-3 py-2">{d.donorName}</td>
-              <td className="border px-3 py-2">{d.type}</td>
-              <td className="border px-3 py-2">{d.quantity}</td>
-              <td className="border px-3 py-2">{d.donationDate}</td>
-              <td className="border px-3 py-2">{d.registerDate}</td>
-              <td className="border px-3 py-2">{d.extraInfo}</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+    <div className="mt-8 bg-white shadow-lg rounded-2xl p-6">
+      <h3 className="text-xl font-bold text-primary-blue mb-4">
+        Lista de Donaciones
+      </h3>
+
+      <Table
+        thead={{
+          titles: [
+            "Donante",
+            "Tipo de Donación",
+            "Fecha de Donación",
+            "Fecha de Registro",
+          ],
+          state: true, // 👈 activa la columna Estado
+        }}
+        tbody={{
+          data: donations,
+          dataPropertys: [
+            "donorName",
+            "donationType",
+            "donationDate",
+            "registerDate",
+          ],
+          state: true, // 👈 indica que las donaciones tienen estado
+        }}
+        onEdit={onEdit}
+        onView={onView}
+        onCancel={onCancel} // 👈 reemplaza eliminar por anular
+      />
+    </div>
   );
-}
+};
+
+export default DonationsTable;
