@@ -38,7 +38,6 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
   const { errors, touched, validate, handleBlur, touchAllFields, hasChanges } =
     useFormScheduleValidation();
 
-  /* ---------------- Cargar datos si es edición ---------------- */
   useEffect(() => {
     if (!isNew && schedule) {
       const filledForm = {
@@ -63,7 +62,6 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
     }
   }, [schedule, isNew]);
 
-  /* ---------------- Handlers ---------------- */
   const handleChange = (name, value) => {
     if (name === "repeticion" && value === "personalizado") {
       setShowCustomModal(true);
@@ -87,7 +85,6 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
       return;
     }
 
-    // 🔹 Guardamos el dato para que se muestre correctamente en el detalle
     const horarioFinal = {
       ...form,
       observaciones: form.descripcion,
@@ -119,21 +116,15 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
           transition={{ duration: 0.3 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh]"
         >
-          {/* ---------------- Header limpio ---------------- */}
-          <div className="flex justify-between items-center mb-6 px-8 py-4 border-b border-gray-200">
-            <h2 className="text-3xl font-bold text-gray-800">
+          {/* ---------------- Header ---------------- */}
+          <div className="px-8 py-6 border-b border-gray-200 text-center">
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#7B61FF] to-[#9BE9FF]">
               {isNew ? "Crear Horario" : "Editar Horario"}
             </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-600 hover:text-gray-800 text-2xl font-bold"
-            >
-              ✖
-            </button>
           </div>
 
           {/* ---------------- Formulario ---------------- */}
-          <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
             {/* Empleado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -239,7 +230,6 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               ]}
             />
 
-            {/* Resumen personalización */}
             {form.repeticion === "personalizado" && form.customRecurrence && (
               <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
                 📅 {form.customRecurrence.label}
@@ -278,18 +268,18 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
           </div>
 
           {/* ---------------- Botones ---------------- */}
-          <div className="flex justify-end gap-4 px-8 pb-8">
+          <div className="flex justify-end gap-4 px-8 pb-8 border-t border-gray-100 pt-6">
             <button
               onClick={onClose}
-              className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition"
+              className="px-6 py-2.5 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition"
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
-              className="px-5 py-2 rounded-lg bg-[#9BE9FF] text-gray-900 font-semibold hover:bg-[#80dfff] transition"
+              className="px-6 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] hover:opacity-90 transition"
             >
-              {isNew ? "Crear" : "Actualizar"}
+              {isNew ? "Crear Horario" : "Actualizar Horario"}
             </button>
           </div>
         </motion.div>
