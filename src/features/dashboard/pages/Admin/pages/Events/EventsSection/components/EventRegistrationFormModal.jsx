@@ -320,17 +320,17 @@ const EventRegistrationFormModal = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
-          <div className="flex items-center gap-4">
+        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
             >
-              <FaArrowLeft className="w-5 h-5" />
+              <FaArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
-            <div>
-              <h2 className="text-2xl font-bold text-center">{getTitle()}</h2>
-              <p className="text-blue-100 mt-1">Evento: {eventName}</p>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg sm:text-2xl font-bold truncate">{getTitle()}</h2>
+              <p className="text-blue-100 mt-1 text-sm sm:text-base truncate">Evento: {eventName}</p>
             </div>
           </div>
         </div>
@@ -347,14 +347,15 @@ const EventRegistrationFormModal = ({
                   setSelectedCategory("");
                   setSelectedTemporalType("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                   selectedSection === "deportistas"
                     ? "border-primary-purple text-primary-purple bg-purple-50"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                <FaUsers className="w-4 h-4" />
-                Deportistas Fundación
+                <FaUsers className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Deportistas Fundación</span>
+                <span className="sm:hidden">Deportistas</span>
               </button>
               <button
                 onClick={() => {
@@ -364,24 +365,25 @@ const EventRegistrationFormModal = ({
                   setSelectedCategory("");
                   setSelectedTemporalType("");
                 }}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                   selectedSection === "temporales"
                     ? "border-primary-purple text-primary-purple bg-purple-50"
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                <FaUserTie className="w-4 h-4" />
-                Personas Temporales
+                <FaUserTie className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Personas Temporales</span>
+                <span className="sm:hidden">Temporales</span>
               </button>
             </div>
           </div>
         )}
 
         {/* Filters */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             {/* Search */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <SearchInput
                 value={searchTerm}
                 onChange={(e) => {
@@ -393,8 +395,8 @@ const EventRegistrationFormModal = ({
             </div>
 
             {/* Filters based on section */}
-            <div className="flex items-center gap-4">
-              <FaFilter className="text-gray-500" />
+            <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+              <FaFilter className="text-gray-500 hidden sm:block" />
 
               {isTeamType ? (
                 <select
@@ -403,7 +405,7 @@ const EventRegistrationFormModal = ({
                     setSelectedCategory(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent text-sm w-full sm:w-auto min-w-0"
                 >
                   <option value="">Todas las categorías</option>
                   {categories.map((category) => (
@@ -419,7 +421,7 @@ const EventRegistrationFormModal = ({
                     setSelectedCategory(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent text-sm w-full sm:w-auto min-w-0"
                 >
                   <option value="">Todas las categorías</option>
                   {categories.map((category) => (
@@ -435,7 +437,7 @@ const EventRegistrationFormModal = ({
                     setSelectedTemporalType(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                  className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent text-sm w-full sm:w-auto min-w-0"
                 >
                   <option value="">Todos los tipos</option>
                   {temporalTypes.map((type) => (
@@ -456,10 +458,10 @@ const EventRegistrationFormModal = ({
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                        className="w-3 h-3 sm:w-4 sm:h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
                         onChange={(e) => {
                           if (e.target.checked) {
                             setSelectedItems([...paginatedData]);
@@ -473,42 +475,44 @@ const EventRegistrationFormModal = ({
                         }
                       />
                     </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                       Nombre
                     </th>
                     {isTeamType ? (
                       <>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Entrenador
                         </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Cantidad Deportistas
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
+                          <span className="hidden sm:inline">Cantidad Deportistas</span>
+                          <span className="sm:hidden">Cant.</span>
                         </th>
                       </>
                     ) : selectedSection === "deportistas" ? (
                       <>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Categoría
                         </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Edad
                         </th>
                       </>
                     ) : (
                       <>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Tipo
                         </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Categoría
                         </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
                           Edad
                         </th>
                       </>
                     )}
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Acompañantes
+                    <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
+                      <span className="hidden sm:inline">Acompañantes</span>
+                      <span className="sm:hidden">Acomp.</span>
                     </th>
                   </tr>
                 </thead>
@@ -524,45 +528,49 @@ const EventRegistrationFormModal = ({
                           isSelected ? "bg-purple-50" : ""
                         }`}
                       >
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4">
                           <input
                             type="checkbox"
-                            className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
                             checked={!!isSelected}
                             onChange={() => handleItemToggle(item)}
                           />
                         </td>
-                        <td className="py-3 px-4 font-medium text-gray-900">
-                          {item.nombre}
+                        <td className="py-2 sm:py-3 px-2 sm:px-4 font-medium text-gray-900 text-xs sm:text-sm">
+                          <div className="truncate max-w-[120px] sm:max-w-none" title={item.nombre}>
+                            {item.nombre}
+                          </div>
                         </td>
                         {isTeamType ? (
                           <>
-                            <td className="py-3 px-4 text-gray-600">
-                              {item.entrenador}
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600 text-xs sm:text-sm">
+                              <div className="truncate max-w-[100px] sm:max-w-none" title={item.entrenador}>
+                                {item.entrenador}
+                              </div>
                             </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-sm font-medium">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-center">
+                              <span className="bg-indigo-100 text-indigo-800 px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium">
                                 {item.cantidadDeportistas}
                               </span>
                             </td>
                           </>
                         ) : selectedSection === "deportistas" ? (
                           <>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
+                              <span className="px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm bg-blue-100 text-blue-800 w-fit">
                                 {item.categoria}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-gray-600">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600 text-xs sm:text-sm">
                               {item.edad} años
                             </td>
                           </>
                         ) : (
                           <>
                             {/* Columna Tipo */}
-                            <td className="py-3 px-4">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
                               <span
-                                className={`px-2 py-1 rounded-full text-sm w-fit ${
+                                className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm w-fit ${
                                   (item.tipoPersona || item.tipo) ===
                                   "Deportista"
                                     ? "bg-green-100 text-green-800"
@@ -576,25 +584,25 @@ const EventRegistrationFormModal = ({
                               </span>
                             </td>
                             {/* Columna Categoría */}
-                            <td className="py-3 px-4">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4">
                               {item.categoria &&
                               item.categoria !== "No aplica" ? (
-                                <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
+                                <span className="px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm bg-blue-100 text-blue-800 w-fit">
                                   {item.categoria}
                                 </span>
                               ) : (
-                                <span className="text-gray-400 text-sm">
+                                <span className="text-gray-400 text-xs sm:text-sm">
                                   No aplica
                                 </span>
                               )}
                             </td>
                             {/* Columna Edad */}
-                            <td className="py-3 px-4 text-gray-600">
+                            <td className="py-2 sm:py-3 px-2 sm:px-4 text-gray-600 text-xs sm:text-sm">
                               {item.edad} años
                             </td>
                           </>
                         )}
-                        <td className="py-3 px-4">
+                        <td className="py-2 sm:py-3 px-2 sm:px-4">
                           <input
                             type="number"
                             min="0"
@@ -606,7 +614,7 @@ const EventRegistrationFormModal = ({
                               handleAcompanantesChange(item.id, e.target.value)
                             }
                             disabled={!isSelected}
-                            className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-purple focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
+                            className="w-12 sm:w-16 px-1 sm:px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-purple focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400 text-xs sm:text-sm"
                           />
                         </td>
                       </tr>
@@ -642,13 +650,14 @@ const EventRegistrationFormModal = ({
         {/* Footer */}
         <div className="flex-shrink-0 p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 text-sm text-gray-600">
-              <span>
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-4 text-xs sm:text-sm text-gray-600 w-full sm:w-auto">
+              <span className="truncate">
                 {selectedItems.length} {getSectionTitle()} seleccionados
               </span>
               {selectedItems.length > 0 && (
-                <span className="font-medium text-primary-purple">
-                  Total acompañantes:{" "}
+                <span className="font-medium text-primary-purple truncate">
+                  <span className="hidden sm:inline">Total acompañantes: </span>
+                  <span className="sm:hidden">Acomp.: </span>
                   {selectedItems.reduce(
                     (total, item) => total + (item.acompanantes || 0),
                     0
