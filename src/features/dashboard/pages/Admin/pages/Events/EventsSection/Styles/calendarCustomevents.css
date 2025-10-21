@@ -1,4 +1,3 @@
-
 .rbc-toolbar {
   display: none !important;
 }
@@ -118,7 +117,7 @@
   .rbc-calendar {
     font-size: 14px !important;
   }
-  
+
   .rbc-header {
     padding: 8px 6px !important;
     font-size: 12px !important;
@@ -129,13 +128,13 @@
   .rbc-calendar {
     font-size: 12px !important;
   }
-  
+
   .rbc-header {
     padding: 6px 2px !important;
     font-size: 10px !important;
     text-align: center !important;
   }
-  
+
   .rbc-date-cell {
     min-height: 90px !important;
     padding: 2px !important;
@@ -147,11 +146,11 @@
     margin: 1px 0 !important;
     border-radius: 4px !important;
   }
-  
+
   .rbc-month-view {
     overflow-x: auto !important;
   }
-  
+
   /* Asegurar que el contenedor del calendario no se corte */
   .events-calendar {
     min-width: 100% !important;
@@ -163,13 +162,13 @@
   .rbc-calendar {
     font-size: 11px !important;
   }
-  
+
   .rbc-header {
     padding: 4px 1px !important;
     font-size: 9px !important;
     text-align: center !important;
   }
-  
+
   .rbc-date-cell {
     min-height: 80px !important;
     padding: 1px !important;
@@ -181,12 +180,12 @@
     margin: 0.5px 0 !important;
     border-radius: 3px !important;
   }
-  
+
   .rbc-month-view {
     min-width: 100% !important;
   }
-  
-  /* Mejorar la visibilidad de las fechas */}
+
+  /* Mejorar la visibilidad de las fechas */
   .rbc-date-cell > a {
     font-size: 12px !important;
     font-weight: 600 !important;
@@ -197,13 +196,13 @@
   .rbc-calendar {
     font-size: 10px !important;
   }
-  
+
   .rbc-header {
     padding: 2px 0.5px !important;
     font-size: 8px !important;
     text-align: center !important;
   }
-  
+
   .rbc-date-cell {
     min-height: 70px !important;
     padding: 0.5px !important;
@@ -215,17 +214,17 @@
     margin: 0.5px 0 !important;
     border-radius: 2px !important;
   }
-  
+
   .rbc-month-view {
     min-width: 100% !important;
   }
-  
+
   /* Mejorar la visibilidad de las fechas en móviles muy pequeños */
   .rbc-date-cell > a {
     font-size: 11px !important;
     font-weight: 700 !important;
   }
-  
+
   /* Asegurar que el calendario ocupe todo el ancho disponible */
   .calendar-container {
     padding: 0.5rem !important;
@@ -235,30 +234,30 @@
 /* Colores por tipo de evento */
 .rbc-event[data-tipo="Festival"],
 .event-Festival {
-  background: linear-gradient(135deg, #9BFFB6 0%, #7AEEA0 100%) !important;
-  border-left-color: #4CD97A !important;
-  color: #0B7A3E !important;
+  background: linear-gradient(135deg, #9bffb6 0%, #7aeea0 100%) !important;
+  border-left-color: #4cd97a !important;
+  color: #0b7a3e !important;
 }
 
 .rbc-event[data-tipo="Torneo"],
 .event-Torneo {
-  background: linear-gradient(135deg, #9BE9FF 0%, #7AD5EA 100%) !important;
-  border-left-color: #4CB5D9 !important;
-  color: #0B5E7A !important;
+  background: linear-gradient(135deg, #9be9ff 0%, #7ad5ea 100%) !important;
+  border-left-color: #4cb5d9 !important;
+  color: #0b5e7a !important;
 }
 
 .rbc-event[data-tipo="Taller"],
 .event-Taller {
-  background: linear-gradient(135deg, #FF95E5 0%, #EA7AD0 100%) !important;
-  border-left-color: #D94CB5 !important;
-  color: #7A0B5E !important;
+  background: linear-gradient(135deg, #ff95e5 0%, #ea7ad0 100%) !important;
+  border-left-color: #d94cb5 !important;
+  color: #7a0b5e !important;
 }
 
 .rbc-event[data-tipo="Clausura"],
 .event-Clausura {
-  background: linear-gradient(135deg, #B595FF 0%, #A07AEA 100%) !important;
-  border-left-color: #7A4CD9 !important;
-  color: #3E0B7A !important;
+  background: linear-gradient(135deg, #b595ff 0%, #a07aea 100%) !important;
+  border-left-color: #7a4cd9 !important;
+  color: #3e0b7a !important;
 }
 /* ===============================
    ESTILOS PARA BOTONES DE EVENTOS
@@ -372,7 +371,7 @@
   .event-actions {
     gap: 1px;
   }
-  
+
   .event-content {
     gap: 2px;
   }
@@ -394,7 +393,7 @@
   .event-actions {
     gap: 1px;
   }
-  
+
   .event-content {
     gap: 1px;
   }
@@ -416,7 +415,7 @@
   .event-actions {
     gap: 0.5px;
   }
-  
+
   .event-content {
     gap: 1px;
   }
