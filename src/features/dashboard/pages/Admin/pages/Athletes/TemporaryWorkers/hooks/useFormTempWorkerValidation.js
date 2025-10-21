@@ -45,7 +45,6 @@ export const useFormTempWorkerValidation = (initialValues, validationRules) => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // 👇 Fuerza marcar todos como touched
   const touchAllFields = () => {
     const allTouched = {};
     Object.keys(validationRules).forEach((name) => {
