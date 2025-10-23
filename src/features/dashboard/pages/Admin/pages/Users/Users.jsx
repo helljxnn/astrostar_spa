@@ -15,11 +15,11 @@ import Table from "../../../../../../shared/components/Table/table";
 import usersData from "../../../../../../shared/models/UserData.js";
 import rolesData from "../../../../../../shared/models/RolesData.js";
 
-// 🔑 Constante clave de LocalStorage
+// Constante clave de LocalStorage
 const LOCAL_STORAGE_KEY = "users";
 
 const Users = () => {
-  // 🟢 Estado inicial cargado desde LocalStorage o desde usersData
+  //  Estado inicial cargado desde LocalStorage o desde usersData
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     return stored ? JSON.parse(stored) : usersData;
@@ -52,13 +52,13 @@ const Users = () => {
     return data.filter((user) =>
       Object.entries(user).some(([key, value]) => {
         const stringValue = String(value).trim();
-        
-        // 🎯 Búsqueda EXACTA para el campo "estado"
+
+        // Búsqueda EXACTA para el campo "estado"
         if (key.toLowerCase() === "estado") {
           return stringValue.toLowerCase() === searchTerm.toLowerCase();
         }
 
-        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        //  Búsqueda PARCIAL para todos los demás campos
         return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
       })
     );
@@ -137,29 +137,27 @@ const Users = () => {
     if (!confirmResult.isConfirmed) return;
 
     try {
-      await new Promise((resolve, reject) => {
+      // Simulamos la promesa sin errores
+      await new Promise((resolve) => {
         setTimeout(() => {
-          if (Math.random() < 0.05) reject(new Error("Error simulado"));
-          else resolve();
+          resolve();
         }, 500);
-      });
+      }); // Actualización de estado (eliminación del usuario)
 
-      setData((prevData) => prevData.filter((u) => u.id !== user.id));
+      setData((prevData) => prevData.filter((u) => u.id !== user.id)); // Mostrar mensaje de éxito (usando 'user' correctamente)
 
-    // ✅ Mostrar éxito
-    showSuccessAlert(
-      "Usuario eliminado",
-      `${userToDelete.nombre} ${userToDelete.apellido} fue eliminado correctamente.`
-    );
-  } catch (error) {
-    // ❌ Mostrar error real
-    showErrorAlert(
-      "Error al eliminar",
-      error.message || "No se pudo eliminar el usuario, intenta de nuevo."
-    );
-  }
-};
-
+      showSuccessAlert(
+        "Usuario eliminado",
+        `${user.nombre} ${user.apellido} fue eliminado correctamente.`
+      );
+    } catch (error) {
+      // El bloque catch se mantiene para manejar cualquier error inesperado
+      showErrorAlert(
+        "Error al eliminar",
+        error.message || "No se pudo eliminar el usuario, intenta de nuevo."
+      );
+    }
+  };
   // Ver usuario
   const handleView = (user) => {
     setUserToView(user);
@@ -213,7 +211,7 @@ const Users = () => {
           </div>
           <button
             onClick={handleCreate}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
           >
             <FaPlus /> Crear Usuario
           </button>

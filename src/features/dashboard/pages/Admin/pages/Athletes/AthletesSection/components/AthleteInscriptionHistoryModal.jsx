@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
   FaHistory,
@@ -13,6 +13,9 @@ import {
   FaSearch,
   FaChevronLeft,
   FaChevronRight,
+  FaFileImage,
+  FaExpand,
+  FaReceipt,
 } from "react-icons/fa";
 
 // Helpers para iconos y colores
@@ -61,19 +64,76 @@ const formatDateTime = (dateString) => {
   }
 };
 
+// Modal para ver comprobante completo
+const ComprobanteModal = ({ comprobante, onClose }) => {
+  if (!comprobante) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="relative max-w-4xl max-h-[90vh] w-full"
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.8, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors p-2 z-10"
+          onClick={onClose}
+        >
+          <FaTimes size={24} />
+        </button>
+        
+        <div className="bg-white rounded-lg overflow-hidden shadow-2xl">
+          <div className="relative">
+            <img
+              src={comprobante.url}
+              alt="Comprobante de pago"
+              className="w-full h-auto max-h-[70vh] object-contain bg-gray-100"
+            />
+          </div>
+          <div className="p-4 bg-gray-50 border-t border-gray-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <FaReceipt className="text-primary-purple" />
+                  Comprobante de Pago
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  {comprobante.nombreArchivo}
+                </p>
+              </div>
+              <div className="text-right text-xs text-gray-500">
+                <p>Subido: {new Date(comprobante.fechaSubida).toLocaleDateString('es-ES')}</p>
+                <p>Tamaño: {(comprobante.tamaño / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
 const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedComprobante, setSelectedComprobante] = useState(null);
   const itemsPerPage = 5;
 
-  // ✅ VALIDACIÓN MEJORADA - Previene crash
   if (!isOpen) return null;
   if (!athlete) {
     console.error("Athlete is undefined in InscriptionHistoryModal");
     return null;
   }
 
-  // ✅ Validar datos críticos
+  // Validar datos críticos
   const safeAthlete = athlete || {};
   const safeInscriptions = Array.isArray(safeAthlete.inscripciones) 
     ? safeAthlete.inscripciones 
@@ -125,7 +185,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     }
   }, [safeInscriptions]);
 
-  // 🔍 BUSCADOR GENERAL SIMPLIFICADO
+  // BUSCADOR GENERAL
   const filteredInscriptions = useMemo(() => {
     if (!searchTerm.trim()) {
       return [...sortedInscriptions];
@@ -170,6 +230,15 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
   const handleClearSearch = () => {
     setSearchTerm("");
     setCurrentPage(1);
+  };
+
+  // Función para formatear tamaño de archivo
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -300,6 +369,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                     const isFirst = globalIndex === 0;
                     const isCambioEstado = inscription.tipo === "cambio_estado";
                     const isRenovacion = inscription.tipo === "renovacion";
+                    const tieneComprobante = inscription.comprobantePago; 
 
                     return (
                       <motion.div
@@ -341,21 +411,41 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                                 </span>
                               </div>
 
-                              {isCambioEstado && (
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded border border-blue-300 font-medium">
-                                  Cambio de estado
-                                </span>
-                              )}
-                              {isRenovacion && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
-                                  Renovación
-                                </span>
-                              )}
-                              {!isCambioEstado && !isRenovacion && (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
-                                  Inscripción inicial
-                                </span>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {isCambioEstado && (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded border border-blue-300 font-medium">
+                                    Cambio de estado
+                                  </span>
+                                )}
+                                {isRenovacion && (
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
+                                    Renovación
+                                  </span>
+                                )}
+                                {!isCambioEstado && !isRenovacion && (
+                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
+                                    Inscripción inicial
+                                  </span>
+                                )}
+                                
+                                {/* Mini botón para ver comprobante */}
+                                {tieneComprobante && (
+                                  <motion.button
+                                    onClick={() => setSelectedComprobante(inscription.comprobantePago)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded border border-green-300 hover:bg-green-200 transition-colors font-medium group relative"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    title="Ver comprobante de pago"
+                                  >
+                                    <FaFileImage size={10} />
+                                    <FaExpand size={8} />
+                                    {/* Tooltip */}
+                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                      Ver comprobante
+                                    </div>
+                                  </motion.button>
+                                )}
+                              </div>
                             </div>
 
                             {isCambioEstado && inscription.estadoAnterior && (
@@ -387,6 +477,38 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                                   {isCambioEstado ? "Motivo del cambio:" : "Concepto:"}
                                 </p>
                                 <p className="text-gray-900">{inscription.concepto}</p>
+                              </div>
+                            )}
+
+                            {/* Sección de comprobante si existe */}
+                            {tieneComprobante && (
+                              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <FaReceipt className="text-green-600" size={16} />
+                                    <div>
+                                      <p className="text-sm font-semibold text-green-700 mb-1">
+                                        Comprobante de pago:
+                                      </p>
+                                      <p className="text-xs text-green-600">
+                                        {inscription.comprobantePago.nombreArchivo}
+                                      </p>
+                                      <p className="text-xs text-green-500 mt-1">
+                                        Subido: {new Date(inscription.comprobantePago.fechaSubida).toLocaleDateString('es-ES')} • 
+                                        Tamaño: {formatFileSize(inscription.comprobantePago.tamaño)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <motion.button
+                                    onClick={() => setSelectedComprobante(inscription.comprobantePago)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                  >
+                                    <FaExpand size={12} />
+                                    Ver Comprobante
+                                  </motion.button>
+                                </div>
                               </div>
                             )}
 
@@ -488,25 +610,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                   </p>
                 )}
               </div>
-            )}
-
-            {/* Nota Informativa */}
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-gray-200 rounded-full p-2 mt-1">
-                  <FaInfoCircle className="text-gray-600" size={14} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-800 mb-1">
-                    Cómo usar el buscador
-                  </h4>
-                  <p className="text-sm text-gray-600">
-                    Escribe cualquier término para buscar en todos los campos: concepto, categoría, 
-                    estado (Vigente, Suspendida, Vencida), tipo de registro o fechas.
-                  </p>
-                </div>
-              </div>
-            </div>
+            )}           
           </div>
         </div>
 
@@ -523,6 +627,16 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
             </motion.button>
           </div>
         </div>
+
+        {/* Modal para ver comprobante */}
+        <AnimatePresence>
+          {selectedComprobante && (
+            <ComprobanteModal
+              comprobante={selectedComprobante}
+              onClose={() => setSelectedComprobante(null)}
+            />
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

@@ -115,15 +115,15 @@ export const Calendar = ({
     );
 
     const dayEvents = events
-      ? events.filter((ev) => {
-          try {
-            const eventDate = combineDateAndTime(ev.date, "00:00");
-            return isSameDay(eventDate, date);
-          } catch {
-            return false;
-          }
-        })
-      : [];
+  ? events.filter((ev) => {
+      try {
+        // Ahora verifica si el día está dentro del rango del evento
+        return isSameDay(new Date(ev.date), date, ev.endDate ? new Date(ev.endDate) : null);
+      } catch {
+        return false;
+      }
+    })
+  : [];
 
     const hasEvent = dayEvents.length > 0;
     const isSelected = selectedDate && isSameDay(selectedDate, date);
@@ -152,7 +152,7 @@ export const Calendar = ({
       return `${hour.toString().padStart(2, '0')}:${minutes}`;
     };
 
-    // ✅ FIX: Verificar si TODOS los eventos del día han pasado su hora
+    // Verificar si TODOS los eventos del día han pasado su hora
     const isPastEventDay = hasEvent && dayEvents.every((ev) => {
       try {
         const time24 = convertTo24Hour(ev.time);
@@ -165,7 +165,7 @@ export const Calendar = ({
       }
     });
 
-    // ✅ FIX: Mejorar la lógica para categorizar eventos
+    // Mejorar la lógica para categorizar eventos
     const eventsByStatus = {
       cancelado: dayEvents.filter((ev) => ev.status === "cancelado"),
       enPausa: dayEvents.filter((ev) => ev.status === "en-pausa"),
@@ -201,14 +201,14 @@ export const Calendar = ({
 
     const sortedDayEvents = sortEventsByDateTime(dayEvents);
 
-    // ✅ FIX: Mejorar la lógica de estilos de botones
+    // Mejorar la lógica de estilos de botones
     let dayButtonClass = "";
     if (isSelected) {
       dayButtonClass = "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
     } else if (isNextEventDay) {
       dayButtonClass = "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
     } else if (isPastEventDay) {
-      // ✅ FIX: Estilo gris para eventos pasados
+      // Estilo gris para eventos pasados
       dayButtonClass = "bg-gray-300 text-gray-600 hover:bg-gray-400";
     } else if (hasEvent) {
       // Solo aplicar el gradiente si hay eventos activos/programados
@@ -225,7 +225,7 @@ export const Calendar = ({
       dayButtonClass = "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
     }
 
-    // ✅ FIX: Mejorar el tooltip para mostrar solo estados relevantes (sin contadores)
+    //Mejorar el tooltip para mostrar solo estados relevantes (sin contadores)
     const tooltipContent = hasEvent ? (
       <div className="text-xs sm:text-sm space-y-1">
         {Object.entries(eventsByStatus).map(
