@@ -18,10 +18,15 @@ export const useFormTempWorkerValidation = (initialValues, validationRules) => {
 
   const validateAllFields = () => {
     const newErrors = {};
+    const allTouched = {};
+    
     Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
       const error = validateField(name, values[name]);
       if (error) newErrors[name] = error;
     });
+    
+    setTouched(allTouched);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -40,6 +45,14 @@ export const useFormTempWorkerValidation = (initialValues, validationRules) => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
+  const touchAllFields = () => {
+    const allTouched = {};
+    Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
+    });
+    setTouched(allTouched);
+  };
+
   return {
     values,
     errors,
@@ -48,6 +61,7 @@ export const useFormTempWorkerValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    touchAllFields,
   };
 };
 

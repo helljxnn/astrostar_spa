@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { FaPlus } from "react-icons/fa";
+import { FaPlus, FaBan } from "react-icons/fa";
 
 /* ---------- Componentes ---------- */
 import Table from "../../../../../../../shared/components/Table/table";
@@ -8,13 +8,13 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import DonationViewModal from "./components/DonationViewModal";
+import CancelDonationModal from "./components/CancelDonationModal";
 
 /* ---------- Datos iniciales ---------- */
 import donationsData from "../../../../../../../shared/models/DonationsData";
 
 /* ---------- Utilidades ---------- */
 import {
-  showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
@@ -25,23 +25,22 @@ const Donations = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedDonation, setSelectedDonation] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false); // 👈 NUEVO: Bandera de inicialización
+  const [cancelingDonation, setCancelingDonation] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const rowsPerPage = 5;
   const navigate = useNavigate();
   const location = useLocation();
 
-  /* ------------------- Cargar y normalizar datos iniciales ------------------- */
+  /* ------------------- Cargar datos iniciales ------------------- */
   useEffect(() => {
-    // Solo cargar datos si NO han sido inicializados
-    if (isInitialized) return; // 👈 NUEVO: Evitar re-inicialización
-    
-    // Cargar datos solo UNA VEZ al montar el componente
+    if (isInitialized) return;
+
     const normalized = donationsData.map((d, idx) => {
       const donorName = d.donorName ?? d.nombreDonante ?? "";
       const donationDate = d.donationDate ?? d.fechaDonacion ?? "";
       const registerDate = d.registerDate ?? d.fechaRegistro ?? "";
-      const statusRaw = d.status ?? d.estado ?? "";
+      const status = d.status ?? d.estado ?? "";
       const descripcion = d.descripcion ?? "";
 
       const items =
@@ -60,31 +59,30 @@ const Donations = () => {
           : [];
 
       return {
-        ...d,
         id: d.id ?? idx + 1,
         donorName,
         donationDate,
         registerDate,
-        status: statusRaw,
+        status,
         descripcion,
         items,
+        cancelReason: d.cancelReason ?? null,
+        cancelDate: d.cancelDate ?? null,
       };
     });
 
     setData(normalized);
-    setIsInitialized(true); // 👈 NUEVO: Marcar como inicializado
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 👈 Solo ejecutar UNA VEZ al montar
+    setIsInitialized(true);
+  }, [isInitialized]);
 
-  /* ------------------- Recibir nueva o editar donación ------------------- */
+  /* ------------------- Crear / Editar donación ------------------- */
   useEffect(() => {
     const newDonation = location.state?.newDonation;
     const isEditing = location.state?.isEditing;
-
     if (!newDonation) return;
 
     const items =
-      newDonation.items && newDonation.items.length > 0
+      newDonation.items?.length > 0
         ? newDonation.items.map((i) => ({
             donationType: i.donationType ?? "",
             amount: i.amount ?? "",
@@ -96,47 +94,40 @@ const Donations = () => {
       id: newDonation.id ?? Date.now(),
       donorName: newDonation.donorName ?? "",
       donationDate:
-        newDonation.donationDate ??
-        new Date().toLocaleDateString("es-CO"),
+        newDonation.donationDate ?? new Date().toLocaleDateString("es-CO"),
       registerDate:
-        newDonation.registerDate ??
-        new Date().toLocaleDateString("es-CO"),
+        newDonation.registerDate ?? new Date().toLocaleDateString("es-CO"),
       status: newDonation.status ?? "Registrado",
       descripcion: newDonation.descripcion ?? "",
       items,
+      cancelReason: null,
+      cancelDate: null,
     };
 
-    if (isEditing) {
-      setData((prev) =>
-        prev.map((d) => (d.id === donation.id ? donation : d))
-      );
-    } else {
-      setData((prev) => [...prev, donation]);
-    }
+    setData((prev) =>
+      isEditing
+        ? prev.map((d) => (d.id === donation.id ? donation : d))
+        : [...prev, donation]
+    );
 
     navigate(location.pathname, { replace: true, state: {} });
   }, [location.state, navigate, location.pathname]);
 
-  /* ------------------- Filtrado / Buscador ------------------- */
+  /* ------------------- Filtrado ------------------- */
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
-
-    const lowerSearch = searchTerm.toLowerCase();
+    const lower = searchTerm.toLowerCase();
 
     return data.filter((item) => {
-      const baseValues = Object.values(item)
+      const text = [
+        item.donorName,
+        item.descripcion,
+        ...item.items.map((i) => `${i.donationType} ${i.amount}`),
+      ]
         .join(" ")
         .toLowerCase();
 
-      const nestedValues =
-        item.items
-          ?.map((it) => `${it.donationType} ${it.amount}`)
-          .join(" ")
-          .toLowerCase() || "";
-
-      return (
-        baseValues.includes(lowerSearch) || nestedValues.includes(lowerSearch)
-      );
+      return text.includes(lower);
     });
   }, [data, searchTerm]);
 
@@ -149,7 +140,7 @@ const Donations = () => {
     startIndex + rowsPerPage
   );
 
-  /* ------------------- Columnas del reporte ------------------- */
+  /* ------------------- Columnas para reportes ------------------- */
   const reportColumns = [
     { key: "donorName", label: "Donante" },
     { key: "donationType", label: "Tipo de Donación" },
@@ -164,13 +155,8 @@ const Donations = () => {
   };
 
   const handleEdit = (donation) => {
-    const donationForEdit = {
-      id: donation.id,
-      donorName: donation.donorName ?? "",
-      donationDate: donation.donationDate ?? "",
-      registerDate: donation.registerDate ?? "",
-      status: donation.status ?? "Registrado",
-      descripcion: donation.descripcion ?? "",
+    const editable = {
+      ...donation,
       items:
         donation.items?.map((i) => ({
           donationType: i.donationType ?? "",
@@ -179,31 +165,36 @@ const Donations = () => {
     };
 
     navigate("/dashboard/donations/form", {
-      state: { donation: donationForEdit, isEditing: true },
+      state: { donation: editable, isEditing: true },
     });
   };
 
   const handleView = (donation) => setSelectedDonation(donation);
+  const handleCancel = (donation) => setCancelingDonation(donation);
 
-  const handleDelete = async (donation) => {
+  const handleConfirmCancel = (reason) => {
     try {
-      const result = await showDeleteAlert(
-        "¿Eliminar donación?",
-        `Se eliminará permanentemente la donación de: ${donation.donorName}`
+      setData((prev) =>
+        prev.map((d) =>
+          d.id === cancelingDonation.id
+            ? {
+                ...d,
+                status: "Anulado",
+                cancelReason: reason,
+                cancelDate: new Date().toLocaleDateString("es-CO"),
+              }
+            : d
+        )
       );
-
-      if (result.isConfirmed) {
-        setData((prev) => prev.filter((item) => item.id !== donation.id));
-        showSuccessAlert(
-          "Donación eliminada",
-          `La donación de ${donation.donorName} fue eliminada correctamente.`
-        );
-      }
-    } catch (error) {
-      console.error("Error deleting donation:", error);
+      showSuccessAlert(
+        "Donación anulada",
+        `La donación de ${cancelingDonation.donorName} fue anulada correctamente.`
+      );
+      setCancelingDonation(null);
+    } catch {
       showErrorAlert(
-        "Error al eliminar",
-        "No se pudo eliminar la donación. Intenta de nuevo."
+        "Error al anular",
+        "No se pudo anular la donación. Intenta de nuevo."
       );
     }
   };
@@ -216,7 +207,6 @@ const Donations = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Donaciones</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          {/* Buscador */}
           <SearchInput
             value={searchTerm}
             onChange={(e) => {
@@ -226,7 +216,6 @@ const Donations = () => {
             placeholder="Buscar donación..."
           />
 
-          {/* Botones */}
           <div className="flex items-center gap-3">
             <ReportButton
               data={filteredData}
@@ -236,7 +225,7 @@ const Donations = () => {
 
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-300 to-sky-400 hover:from-sky-400 hover:to-sky-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-[1.03]"
             >
               <FaPlus /> Crear
             </button>
@@ -245,58 +234,73 @@ const Donations = () => {
       </div>
 
       {/* ---------- Tabla ---------- */}
-      <Table
-        thead={{
-          titles: [
-            "Donante",
-            "Tipo de Donación",
-            "Estado",
-            "Fecha de Donación",
-            "Fecha de Registro",
-          ],
-        }}
-        tbody={{
-          data: paginatedData.map((donation) => {
-            const donationTypes =
-              donation.items?.map((it) => it.donationType).filter(Boolean) || [];
+      <div className="overflow-x-auto">
+        <Table
+          thead={{
+            titles: [
+              "Donante",
+              "Tipo de Donación",
+              "Fecha de Donación",
+              "Fecha de Registro",
+              "Estado",
+              "Acciones",
+            ],
+          }}
+          tbody={{
+            data: paginatedData.map((donation) => {
+              const donationTypes =
+                donation.items?.map((i) => i.donationType).filter(Boolean) || [];
 
-            const statusNode = (() => {
-              let colorClass = "text-gray-400";
-              if (donation.status === "Registrado")
-                colorClass = "text-primary-purple";
-              if (donation.status === "Anulado")
-                colorClass = "text-primary-blue";
+              const isRegistered = donation.status === "Registrado";
+              const color = isRegistered ? "#B595FF" : "#9BE9FF";
+              const hoverColor = isRegistered ? "#9B78FF" : "#6ED3FF";
 
-              return (
-                <span className={`font-semibold ${colorClass}`}>
-                  {donation.status}
-                </span>
-              );
-            })();
-
-            return {
-              ...donation,
-              donationType:
-                donationTypes.length > 0
-                  ? donationTypes.join(", ")
-                  : "Sin tipos",
-              status: statusNode,
-              // 👇 MANTENER REFERENCIA AL OBJETO ORIGINAL
-              _original: donation,
-            };
-          }),
-          dataPropertys: [
-            "donorName",
-            "donationType",
-            "status",
-            "donationDate",
-            "registerDate",
-          ],
-        }}
-        onEdit={(row) => handleEdit(row._original || row)} // 👈 FIX: Usar objeto original
-        onDelete={(row) => handleDelete(row._original || row)} // 👈 FIX: Usar objeto original
-        onView={(row) => handleView(row._original || row)} // 👈 FIX: Usar objeto original
-      />
+              return {
+                ...donation,
+                donationType:
+                  donationTypes.length > 0
+                    ? donationTypes.join(", ")
+                    : "Sin tipos",
+                status: (
+                  <span
+                    className="font-medium cursor-default transition-all"
+                    style={{ color }}
+                    onMouseEnter={(e) => (e.target.style.color = hoverColor)}
+                    onMouseLeave={(e) => (e.target.style.color = color)}
+                  >
+                    {donation.status}
+                  </span>
+                ),
+                accionesExtra:
+                  donation.status !== "Anulado" ? (
+                    <button
+                      onClick={() => handleCancel(donation)}
+                      className="flex items-center justify-center gap-1 px-3 py-1 bg-[#9BE9FF]/40 text-[#9BE9FF] hover:bg-[#9BE9FF]/60 transition-all rounded-full shadow-sm hover:shadow-md"
+                    >
+                      <FaBan size={12} />
+                      <span className="text-xs font-medium">Anular</span>
+                    </button>
+                  ) : (
+                    <span className="text-gray-400 text-sm italic">
+                      Anulado
+                    </span>
+                  ),
+                _original: donation,
+              };
+            }),
+            dataPropertys: [
+              "donorName",
+              "donationType",
+              "donationDate",
+              "registerDate",
+              "status",
+              "accionesExtra",
+            ],
+          }}
+          onEdit={(row) => handleEdit(row._original || row)}
+          onView={(row) => handleView(row._original || row)}
+        />
+      </div>
 
       {/* ---------- Paginación ---------- */}
       {totalRows > rowsPerPage && (
@@ -310,11 +314,19 @@ const Donations = () => {
         />
       )}
 
-      {/* ---------- Modal Ver Donación ---------- */}
+      {/* ---------- Modales ---------- */}
       {selectedDonation && (
         <DonationViewModal
           donation={selectedDonation}
           onClose={() => setSelectedDonation(null)}
+        />
+      )}
+
+      {cancelingDonation && (
+        <CancelDonationModal
+          donation={cancelingDonation}
+          onClose={() => setCancelingDonation(null)}
+          onConfirm={handleConfirmCancel}
         />
       )}
     </div>

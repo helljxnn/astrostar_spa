@@ -3,6 +3,10 @@ import { FaEdit, FaTrash, FaEye, FaBan, FaTimes } from "react-icons/fa";
 import { useState } from "react";
 import ScheduleDetailsModal from "./ScheduleDetailsModal";
 import CancelScheduleModal from "./CancelScheduleModal";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts";
 
 const EmployeeActionModal = ({
   isOpen,
@@ -58,28 +62,43 @@ const EmployeeActionModal = ({
   ].filter((a) => a.available);
 
   // === Handlers ===
-  const handleAction = (actionId) => {
+  const handleAction = async (actionId) => {
     if (actionId === "view") {
-      // Abrir modal de detalles
       setShowDetailsModal(true);
-      onClose(); // Cerrar el menú de acciones
-      return;
-    }
-    
-    if (actionId === "cancel") {
-      // Abrir modal de cancelación
-      setShowCancelModal(true);
-      onClose(); // Cerrar el menú de acciones
+      onClose();
       return;
     }
 
-    // Para edit y delete, ejecutar directamente
+    if (actionId === "cancel") {
+      setShowCancelModal(true);
+      onClose();
+      return;
+    }
+
+    // 🔴 Confirmación antes de eliminar
+    if (actionId === "delete") {
+      const confirmDelete = await showErrorAlert(
+        "¿Eliminar este horario?",
+        "Esta acción no se puede deshacer.",
+        "warning",
+        true // botón de confirmación
+      );
+
+      // Si el usuario confirma
+      if (confirmDelete.isConfirmed) {
+        onAction("delete", employee);
+        showSuccessAlert("Horario eliminado correctamente");
+      }
+      onClose();
+      return;
+    }
+
+    // Para editar
     onAction(actionId, employee);
     onClose();
   };
 
   const handleCancelConfirm = (employeeWithReason) => {
-    // Ejecutar la acción de cancelar con el motivo
     onAction("cancel", employeeWithReason);
     setShowCancelModal(false);
   };

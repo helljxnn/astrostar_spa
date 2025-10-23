@@ -73,10 +73,10 @@ const EventSearchList = ({
         {events.map((event, index) => (
           <div
             key={event.id || index}
-            className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex flex-col lg:flex-row justify-between items-start lg:items-center p-3 sm:p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors gap-3 lg:gap-0"
           >
             <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-semibold text-gray-800 truncate">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-800 truncate">
                 {event.nombre}
               </h3>
               <div className="mt-1 flex flex-wrap gap-2">
@@ -129,22 +129,26 @@ const EventSearchList = ({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 mt-3 sm:mt-0">
+            <div className="flex flex-wrap gap-2 w-full lg:w-auto justify-start lg:justify-end">
               <button
                 onClick={(e) => handleActionClick(e, "crud", event)}
-                className="flex items-center gap-1 px-3 py-1 bg-primary-purple text-black rounded-lg text-sm font-medium shadow-sm hover:opacity-90 transition-opacity"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-primary-blue text-white rounded-lg text-xs sm:text-sm font-medium shadow-sm hover:bg-primary-purple transition-colors flex-1 sm:flex-none justify-center"
                 title="Gestionar evento"
               >
-                <FaCog size={12} />
-                Gestionar
+                <FaCog size={10} className="sm:hidden" />
+                <FaCog size={12} className="hidden sm:inline" />
+                <span className="hidden sm:inline">Gestionar</span>
+                <span className="sm:hidden">Gest.</span>
               </button>
               <button
                 onClick={(e) => handleActionClick(e, "registration", event)}
-                className="flex items-center gap-1 px-3 py-1 bg-primary-purple text-black rounded-lg text-sm font-medium shadow-sm hover:opacity-90 transition-opacity"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-primary-blue text-white rounded-lg text-xs sm:text-sm font-medium shadow-sm hover:bg-primary-purple transition-colors flex-1 sm:flex-none justify-center"
                 title="Inscribir a evento"
               >
-                <FaUsers size={12} />
-                Inscribir
+                <FaUsers size={10} className="sm:hidden" />
+                <FaUsers size={12} className="hidden sm:inline" />
+                <span className="hidden sm:inline">Inscribir</span>
+                <span className="sm:hidden">Insc.</span>
               </button>
             </div>
           </div>
