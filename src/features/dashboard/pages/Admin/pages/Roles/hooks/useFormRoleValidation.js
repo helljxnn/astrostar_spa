@@ -65,19 +65,20 @@ export const useFormRoleValidation = (initialValues, validationRules) => {
     resetForm
   };
 };
-// Reglas de validación para el formulario de roles
+// Reglas de validación para el formulario de roles (mensajes simplificados)
 export const roleValidationRules = {
   nombre: [
-    (value) => !value?.trim() ? 'El nombre es obligatorio' : '',
-    (value) => value?.length < 3 ? 'El nombre debe tener al menos 3 caracteres' : '',
-    (value) => value?.length > 50 ? 'El nombre no puede exceder 50 caracteres' : '',
-    (value) => !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value || '') ? 'El nombre solo puede contener letras y espacios' : ''
+    (value) => !value?.trim() ? 'El nombre del rol es obligatorio.' : '',
+    (value) => value?.trim().length < 2 ? 'El nombre debe tener al menos 2 caracteres.' : '',
+    (value) => value?.trim().length > 50 ? `El nombre no puede exceder 50 caracteres (${value?.trim().length}/50).` : '',
+    (value) => !/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$/.test(value?.trim() || '') ? 'Solo se permiten letras, números y espacios.' : ''
   ],
   descripcion: [
-    (value) => !value?.trim() ? 'La descripción es obligatoria' : '',
-    (value) => value?.length > 200 ? 'La descripción no puede exceder 200 caracteres' : '',
+    (value) => !value?.trim() ? 'La descripción es obligatoria.' : '',
+    (value) => value?.trim().length < 10 ? 'La descripción debe tener al menos 10 caracteres.' : '',
+    (value) => value?.trim().length > 200 ? `La descripción no puede exceder 200 caracteres (${value?.trim().length}/200).` : '',
   ],
   estado: [
-    (value) => !value ? 'Debe seleccionar un estado' : ''
+    (value) => !value ? 'Seleccione un estado válido (Activo o Inactivo).' : ''
   ]
 };

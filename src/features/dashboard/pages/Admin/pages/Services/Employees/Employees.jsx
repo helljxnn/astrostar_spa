@@ -12,7 +12,12 @@ import {
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
 
+// Importaciones para permisos
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+
 const Employees = () => {
+  const { hasPermission } = usePermissions();
   const [data, setData] = useState(employeesData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
@@ -56,6 +61,11 @@ const Employees = () => {
 
   const handleSave = (employee) => {
     if (editingEmployee) {
+      // Editar - verificar permisos
+      if (!hasPermission('employees', 'Editar')) {
+        showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
+        return;
+      }
       setData((prev) =>
         prev.map((item) =>
           item.id === editingEmployee.id
@@ -64,6 +74,11 @@ const Employees = () => {
         )
       );
     } else {
+      // Crear - verificar permisos
+      if (!hasPermission('employees', 'Crear')) {
+        showErrorAlert('Sin permisos', 'No tienes permisos para crear empleados');
+        return;
+      }
       // Generar ID único basado en el máximo ID existente + 1
       const maxId = data.length > 0 ? Math.max(...data.map(emp => emp.id || 0)) : 0;
       setData((prev) => [
@@ -77,18 +92,31 @@ const Employees = () => {
   };
 
   const handleEdit = (employee) => {
+    if (!hasPermission('employees', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
+      return;
+    }
     setEditingEmployee(employee);
     setModalMode("edit");
     setIsModalOpen(true);
   };
 
   const handleView = (employee) => {
+    if (!hasPermission('employees', 'Ver')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para ver empleados');
+      return;
+    }
     setEditingEmployee(employee);
     setModalMode("view");
     setIsModalOpen(true);
   };
 
   const handleDelete = async (employee) => {
+    if (!hasPermission('employees', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar empleados');
+      return;
+    }
+    
     try {
       const result = await showDeleteAlert(
         "¿Eliminar empleado?",
@@ -127,21 +155,26 @@ const Employees = () => {
           />
 
           <div className="flex items-center gap-3">
-            <ReportButton
-              data={filteredData}
-              fileName="Reporte_Empleados"
-              columns={reportColumns}
-            />
-            <button
-              onClick={() => {
-                setEditingEmployee(null);
-                setModalMode("create");
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-            >
-              <FaPlus /> Crear
-            </button>
+            <PermissionGuard module="employees" action="Ver">
+              <ReportButton
+                data={filteredData}
+                fileName="Reporte_Empleados"
+                columns={reportColumns}
+              />
+            </PermissionGuard>
+            
+            <PermissionGuard module="employees" action="Crear">
+              <button
+                onClick={() => {
+                  setEditingEmployee(null);
+                  setModalMode("create");
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus /> Crear
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -150,15 +183,33 @@ const Employees = () => {
         thead={{
           titles: ["Nombre", "Identificación", "Tipo de Empleado", "Rol"],
           state: true,
+          actions: true,
         }}
         tbody={{
           data: paginatedData,
           dataPropertys: ["nombre", "identificacion", "tipoEmpleado", "rol"],
           state: true,
         }}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
+        onEdit={hasPermission('employees', 'Editar') ? handleEdit : null}
+        onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
+        onView={hasPermission('employees', 'Ver') ? handleView : null}
+        buttonConfig={{
+          edit: (item) => ({
+            show: hasPermission('employees', 'Editar'),
+            disabled: false,
+            title: 'Editar empleado'
+          }),
+          delete: (item) => ({
+            show: hasPermission('employees', 'Eliminar'),
+            disabled: false,
+            title: 'Eliminar empleado'
+          }),
+          view: (item) => ({
+            show: hasPermission('employees', 'Ver'),
+            disabled: false,
+            title: 'Ver detalles'
+          })
+        }}
       />
 
       {totalRows > rowsPerPage && (

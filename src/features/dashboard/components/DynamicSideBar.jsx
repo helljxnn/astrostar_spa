@@ -1,6 +1,7 @@
   import { useState, useEffect } from "react";
   import { Link, useLocation } from "react-router-dom";
   import { useAuth } from "../../../shared/contexts/authContext.jsx";
+  import { usePermissions } from "../../../shared/hooks/usePermissions.js";
   import { motion, AnimatePresence } from "framer-motion";
   import {
     MdDashboard,
@@ -48,6 +49,7 @@
     }, []);
     const location = useLocation();
     const { userRole, logout } = useAuth();
+    const { hasModuleAccess, isAdmin } = usePermissions();
 
     const toggleMenu = (menu) => {
       setOpenMenu(openMenu === menu ? null : menu);
@@ -67,68 +69,28 @@
       }
     }, [isExpanded, isMobile]);
 
+    // Usar el sistema de permisos para determinar módulos visibles
     const visibleModules = {
-      dashboard: false,
-      users: false,
-      roles: false,
-      sportsEquipment: false,
-      services: false,
-      athletes: false,
-      donations: false,
-      events: false,
-      purchases: false,
-      employeesSchedule: false,
-      sportsCategory: false,
-      appointmentManagement: false,
-      temporaryWorkers: false,
+      dashboard: isAdmin || hasModuleAccess('dashboard'),
+      users: isAdmin || hasModuleAccess('users'),
+      roles: isAdmin || hasModuleAccess('roles'),
+      sportsEquipment: isAdmin || hasModuleAccess('sportsEquipment'),
+      // Servicios - mostrar si tiene acceso a cualquier submódulo
+      services: isAdmin || hasModuleAccess('employees') || hasModuleAccess('employeesSchedule') || hasModuleAccess('appointmentManagement'),
+      // Deportistas - mostrar si tiene acceso a cualquier submódulo
+      athletes: isAdmin || hasModuleAccess('sportsCategory') || hasModuleAccess('athletesSection') || hasModuleAccess('athletesAssistance'),
+      // Donaciones - mostrar si tiene acceso a cualquier submódulo
+      donations: isAdmin || hasModuleAccess('donorsSponsors') || hasModuleAccess('donationsManagement'),
+      // Eventos - mostrar si tiene acceso a cualquier submódulo
+      events: isAdmin || hasModuleAccess('eventsManagement') || hasModuleAccess('temporaryWorkers') || hasModuleAccess('temporaryTeams'),
+      // Compras - mostrar si tiene acceso a cualquier submódulo
+      purchases: isAdmin || hasModuleAccess('providers') || hasModuleAccess('purchasesManagement'),
+      // Submódulos individuales
+      employeesSchedule: isAdmin || hasModuleAccess('employeesSchedule'),
+      sportsCategory: isAdmin || hasModuleAccess('sportsCategory'),
+      appointmentManagement: isAdmin || hasModuleAccess('appointmentManagement'),
+      temporaryWorkers: isAdmin || hasModuleAccess('temporaryWorkers'),
     };
-
-    switch (userRole) {
-      case "admin":
-        visibleModules.dashboard = true;
-        visibleModules.users = true;
-        visibleModules.roles = true;
-        visibleModules.sportsEquipment = true;
-        visibleModules.services = true;
-        visibleModules.athletes = true;
-        visibleModules.donations = true;
-        visibleModules.events = true;
-        visibleModules.purchases = true;
-        visibleModules.employeesSchedule = true;
-        visibleModules.sportsCategory = true;
-        visibleModules.appointmentManagement = true;
-        visibleModules.temporaryWorkers = true;
-        break;
-
-      case "profesional_deportivo":
-        visibleModules.services = true;
-        visibleModules.athletes = true;
-        visibleModules.employeesSchedule = true;
-        visibleModules.sportsCategory = true;
-        visibleModules.appointmentManagement = true;
-        break;
-
-      case "profesional_salud":
-        visibleModules.services = true;
-        visibleModules.athletes = true;
-        visibleModules.employeesSchedule = true;
-        visibleModules.sportsCategory = true;
-        visibleModules.appointmentManagement = true;
-        break;
-
-      case "deportista":
-        visibleModules.services = false;
-        visibleModules.appointmentManagement = true;
-        break;
-
-      case "acudiente":
-        visibleModules.services = false;
-        visibleModules.appointmentManagement = true;
-        break;
-
-      default:
-        break;
-    }
 
     const sidebarVariants = {
       expanded: {

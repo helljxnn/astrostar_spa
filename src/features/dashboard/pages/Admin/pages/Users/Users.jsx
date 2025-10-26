@@ -13,7 +13,9 @@ import {
 } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
 import usersData from "../../../../../../shared/models/UserData.js";
-import rolesData from "../../../../../../shared/models/RolesData.js";
+import { useRoles } from "../../../../../../shared/hooks/useRoles";
+import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 
 // Constante clave de LocalStorage
 const LOCAL_STORAGE_KEY = "users";
@@ -255,9 +257,29 @@ const Users = () => {
                 Inactivo: "bg-red-100 text-red-800",
               },
             }}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
+            onEdit={hasPermission('users', 'Editar') ? handleEdit : null}
+            onDelete={hasPermission('users', 'Eliminar') ? handleDelete : null}
+            onView={hasPermission('users', 'Ver') ? handleView : null}
+            buttonConfig={{
+              edit: (user) => ({
+                show: hasPermission('users', 'Editar'),
+                disabled: false,
+                className: '',
+                title: 'Editar usuario'
+              }),
+              delete: (user) => ({
+                show: hasPermission('users', 'Eliminar'),
+                disabled: false,
+                className: '',
+                title: 'Eliminar usuario'
+              }),
+              view: (user) => ({
+                show: hasPermission('users', 'Ver'),
+                disabled: false,
+                className: '',
+                title: 'Ver detalles del usuario'
+              })
+            }}
           />
 
           <Pagination
@@ -276,7 +298,7 @@ const Users = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
         onUpdate={handleUpdate}
-        roles={rolesData || []}
+        roles={roles || []}
         userToEdit={userToEdit}
         mode={modalMode}
       />

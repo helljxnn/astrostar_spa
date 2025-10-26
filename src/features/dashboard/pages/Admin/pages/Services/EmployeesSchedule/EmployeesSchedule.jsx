@@ -11,7 +11,12 @@ import EmployeeScheduleReportGenerator from "./components/EmployeeScheduleReport
 import ScheduleDetailsModal from "./components/ScheduleDetailsModal";
 import CancelScheduleModal from "./components/CancelScheduleModal";
 
+// Importaciones para permisos
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+
 const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
+  const { hasPermission } = usePermissions();
   const [schedules, setSchedules] = useState(
     initialSchedules.length > 0
       ? initialSchedules.map((s) => ({
@@ -281,16 +286,22 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         </h1>
         <div className="flex items-center gap-3">
           <EmployeeScheduleSearchBar onSearch={handleSearch} />
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => openModalForSlot(createDefaultSchedule())}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#c084fc] to-[#60a5fa] text-white rounded-lg shadow hover:opacity-90 transition"
-          >
-            <FaPlus />
-            Crear
-          </motion.button>
-          <EmployeeScheduleReportGenerator schedules={filteredSchedules} />
+          
+          <PermissionGuard module="employeesSchedule" action="Crear">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => openModalForSlot(createDefaultSchedule())}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#c084fc] to-[#60a5fa] text-white rounded-lg shadow hover:opacity-90 transition"
+            >
+              <FaPlus />
+              Crear
+            </motion.button>
+          </PermissionGuard>
+          
+          <PermissionGuard module="employeesSchedule" action="Ver">
+            <EmployeeScheduleReportGenerator schedules={filteredSchedules} />
+          </PermissionGuard>
         </div>
       </div>
 
@@ -383,17 +394,19 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         <div className="flex-1 bg-white rounded-2xl shadow-lg p-4 border border-gray-200">
           <EmployeesScheduleCalendar
             schedules={filteredSchedules}
-            onOpenModalForSlot={openModalForSlot}
-            onOpenModalForEvent={(event) => openModalForEvent(event, { readOnly: false })}
-            onEditEvent={(event) => openModalForEvent(event, { readOnly: false })}
-            onViewEvent={(event) => openDetailsModal(event)}
-            onDeleteEvent={deleteSchedule}
-            onCancelEvent={openCancelModal}
+            onOpenModalForSlot={hasPermission('employeesSchedule', 'Crear') ? openModalForSlot : null}
+            onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
+            onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}
+            onViewEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openDetailsModal(event) : null}
+            onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? deleteSchedule : null}
+            onCancelEvent={hasPermission('employeesSchedule', 'Editar') ? openCancelModal : null}
             onSaveNewEvent={(ev) => {
-              setSchedules((prev) => {
-                const exists = prev.some((s) => s.id === ev.id);
-                return exists ? prev : [...prev, ev];
-              });
+              if (hasPermission('employeesSchedule', 'Crear')) {
+                setSchedules((prev) => {
+                  const exists = prev.some((s) => s.id === ev.id);
+                  return exists ? prev : [...prev, ev];
+                });
+              }
             }}
           />
         </div>
