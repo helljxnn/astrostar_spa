@@ -74,12 +74,33 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     if (!permissions || typeof permissions !== "object") return 0;
 
     let count = 0;
-    Object.values(permissions).forEach((modulePerms) => {
-      if (typeof modulePerms === "object" && modulePerms !== null) {
-        count += Object.values(modulePerms).filter(Boolean).length;
+    Object.entries(permissions).forEach(([module, modulePerms]) => {
+      if (Array.isArray(modulePerms)) {
+        count += modulePerms.length;
+      } else if (typeof modulePerms === "object" && modulePerms !== null) {
+        // Solo contar permisos que están en true
+        count += Object.values(modulePerms).filter(value => value === true).length;
+      } else if (modulePerms === true) {
+        count += 1;
       }
     });
     return count;
+  };
+
+  // Función para contar módulos activos
+  const countActiveModules = (permissions) => {
+    if (!permissions || typeof permissions !== "object") return 0;
+
+    return Object.entries(permissions).filter(([module, modulePerms]) => {
+      if (Array.isArray(modulePerms)) {
+        return modulePerms.length > 0;
+      }
+      if (typeof modulePerms === "object" && modulePerms !== null) {
+        // Solo contar módulos que tienen al menos un permiso en true
+        return Object.values(modulePerms).some(value => value === true);
+      }
+      return Boolean(modulePerms);
+    }).length;
   };
 
   // Función para renderizar permisos de forma organizada
@@ -163,9 +184,30 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
       );
     }
 
+    // Filtrar solo módulos que tienen al menos un permiso activo
+    const activeModules = permissionEntries.filter(([module, modulePermissions]) => {
+      if (Array.isArray(modulePermissions)) {
+        return modulePermissions.length > 0;
+      }
+      if (typeof modulePermissions === "object" && modulePermissions !== null) {
+        // Verificar que al menos un permiso esté en true
+        const hasActivePermission = Object.values(modulePermissions).some(value => value === true);
+        return hasActivePermission;
+      }
+      return Boolean(modulePermissions);
+    });
+
+    if (activeModules.length === 0) {
+      return (
+        <p className="text-gray-500 italic">
+          Este rol no tiene permisos activos asignados.
+        </p>
+      );
+    }
+
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {permissionEntries.map(([module, modulePermissions], idx) => (
+        {activeModules.map(([module, modulePermissions], idx) => (
           <div
             key={idx}
             className="border rounded-lg p-4 shadow-sm bg-gradient-to-br from-gray-50 to-gray-100"
@@ -191,25 +233,20 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
             ) : typeof modulePermissions === "object" &&
               modulePermissions !== null ? (
               <div className="space-y-2">
-                {Object.entries(modulePermissions).map(
-                  ([permKey, permValue], pIdx) => (
+                {Object.entries(modulePermissions)
+                  .filter(([permKey, permValue]) => Boolean(permValue)) // Solo mostrar permisos activos
+                  .map(([permKey, permValue], pIdx) => (
                     <div key={pIdx} className="flex items-center gap-2 text-sm">
-                      {permValue ? (
-                        <FaCheck className="text-gray-500" />
-                      ) : (
-                        <FaTimes className="text-gray-500" />
-                      )}
-                      <span
-                        className={`${
-                          permValue
-                            ? "text-gray-700"
-                            : "text-gray-400 line-through"
-                        }`}
-                      >
+                      {getPermissionIcon(permKey)}
+                      <span className="text-gray-700">
                         {formatPermissionName(permKey)}
                       </span>
                     </div>
-                  )
+                  ))}
+                {Object.values(modulePermissions).every(val => !Boolean(val)) && (
+                  <p className="text-gray-400 italic text-sm">
+                    Sin permisos activos en este módulo
+                  </p>
                 )}
               </div>
             ) : (
@@ -316,10 +353,14 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
                   Acceso Completo
                 </span>
               ) : (
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {countActivePermissions(roleData?.permissions)} permisos
-                  activos
-                </span>
+                <div className="flex gap-2">
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    {countActiveModules(roleData?.permissions)} módulos activos
+                  </span>
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                    {countActivePermissions(roleData?.permissions)} permisos activos
+                  </span>
+                </div>
               )}
             </div>
           </div>

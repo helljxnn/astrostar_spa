@@ -13,7 +13,7 @@ import {
 } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
 import usersData from "../../../../../../shared/models/UserData.js";
-import { useRoles } from "../../../../../../shared/hooks/useRoles";
+import rolesService from "../Roles/services/rolesService";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 
@@ -21,8 +21,20 @@ import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 const LOCAL_STORAGE_KEY = "users";
 
 const Users = () => {
-  // Hooks necesarios
-  const { roles, fetchRoles } = useRoles();
+  // Estado para roles
+  const [roles, setRoles] = useState([]);
+
+  // Cargar roles activos
+  const loadRoles = async () => {
+    try {
+      const response = await rolesService.getActiveRoles();
+      if (response.success) {
+        setRoles(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading roles:', error);
+    }
+  };
   const { hasPermission } = usePermissions();
 
   //  Estado inicial cargado desde LocalStorage o desde usersData
@@ -48,8 +60,8 @@ const Users = () => {
 
   // Cargar roles al inicializar el componente
   useEffect(() => {
-    fetchRoles({ limit: 100 }); // Cargar todos los roles para el dropdown
-  }, [fetchRoles]);
+    loadRoles();
+  }, []);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
