@@ -21,6 +21,10 @@ import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 const LOCAL_STORAGE_KEY = "users";
 
 const Users = () => {
+  // Hooks necesarios
+  const { roles, fetchRoles } = useRoles();
+  const { hasPermission } = usePermissions();
+
   //  Estado inicial cargado desde LocalStorage o desde usersData
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -41,6 +45,11 @@ const Users = () => {
   useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
   }, [data]);
+
+  // Cargar roles al inicializar el componente
+  useEffect(() => {
+    fetchRoles({ limit: 100 }); // Cargar todos los roles para el dropdown
+  }, [fetchRoles]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -211,12 +220,14 @@ const Users = () => {
               className="w-full"
             />
           </div>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-          >
-            <FaPlus /> Crear Usuario
-          </button>
+          <PermissionGuard module="users" action="Crear">
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+            >
+              <FaPlus /> Crear Usuario
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
