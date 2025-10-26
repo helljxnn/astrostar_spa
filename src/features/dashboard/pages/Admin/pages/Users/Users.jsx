@@ -13,13 +13,18 @@ import {
 } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
 import usersData from "../../../../../../shared/models/UserData.js";
-import rolesData from "../../../../../../shared/models/RolesData.js";
+import { useRoles } from "../../../../../../shared/hooks/useRoles";
+import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 
 // 🔑 Constante clave de LocalStorage
 const LOCAL_STORAGE_KEY = "users";
 
 const Users = () => {
-  // 🟢 Estado inicial cargado desde LocalStorage o desde usersData
+  const { roles } = useRoles(); // Get roles from API
+  const { hasPermission } = usePermissions();
+  
+  //  Estado inicial cargado desde LocalStorage o desde usersData
   const [data, setData] = useState(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     return stored ? JSON.parse(stored) : usersData;
@@ -211,12 +216,14 @@ const Users = () => {
               className="w-full"
             />
           </div>
-          <button
-            onClick={handleCreate}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
-          >
-            <FaPlus /> Crear Usuario
-          </button>
+          <PermissionGuard module="users" action="Crear">
+            <button
+              onClick={handleCreate}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+            >
+              <FaPlus /> Crear Usuario
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -257,9 +264,29 @@ const Users = () => {
                 Inactivo: "bg-red-100 text-red-800",
               },
             }}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onView={handleView}
+            onEdit={hasPermission('users', 'Editar') ? handleEdit : null}
+            onDelete={hasPermission('users', 'Eliminar') ? handleDelete : null}
+            onView={hasPermission('users', 'Ver') ? handleView : null}
+            buttonConfig={{
+              edit: (user) => ({
+                show: hasPermission('users', 'Editar'),
+                disabled: false,
+                className: '',
+                title: 'Editar usuario'
+              }),
+              delete: (user) => ({
+                show: hasPermission('users', 'Eliminar'),
+                disabled: false,
+                className: '',
+                title: 'Eliminar usuario'
+              }),
+              view: (user) => ({
+                show: hasPermission('users', 'Ver'),
+                disabled: false,
+                className: '',
+                title: 'Ver detalles del usuario'
+              })
+            }}
           />
 
           <Pagination
@@ -278,7 +305,7 @@ const Users = () => {
         onClose={handleCloseModal}
         onSave={handleSave}
         onUpdate={handleUpdate}
-        roles={rolesData || []}
+        roles={roles || []}
         userToEdit={userToEdit}
         mode={modalMode}
       />

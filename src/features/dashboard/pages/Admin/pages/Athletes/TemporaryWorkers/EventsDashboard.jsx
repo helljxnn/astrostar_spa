@@ -3,7 +3,6 @@ import Table from "../../../../../../../shared/components/Table/table";
 import TemporaryWorkerModal from "./components/TemporaryWorkerModal";
 import temporaryWorkersData from "../../../../../../../shared/models/TemporaryWorkersData";
 import { FaPlus } from "react-icons/fa";
-import { IoMdDownload } from "react-icons/io";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
@@ -13,7 +12,12 @@ import {
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
 
+// Importaciones para permisos
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+
 const TemporaryWorkers = () => {
+  const { hasPermission } = usePermissions();
   const [data, setData] = useState(temporaryWorkersData);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
@@ -65,7 +69,11 @@ const TemporaryWorkers = () => {
   // Guardar nuevo o editado
   const handleSave = (workerData) => {
     if (editingWorker) {
-      // Editar
+      // Editar - verificar permisos
+      if (!hasPermission('temporaryWorkers', 'Editar')) {
+        showErrorAlert('Sin permisos', 'No tienes permisos para editar trabajadores temporales');
+        return;
+      }
       setData((prev) =>
         prev.map((item) =>
           item.identificacion === editingWorker.identificacion
@@ -75,7 +83,11 @@ const TemporaryWorkers = () => {
       );
       setEditingWorker(null);
     } else {
-      // Crear
+      // Crear - verificar permisos
+      if (!hasPermission('temporaryWorkers', 'Crear')) {
+        showErrorAlert('Sin permisos', 'No tienes permisos para crear trabajadores temporales');
+        return;
+      }
       setData([...data, workerData]);
     }
     setIsModalOpen(false);
@@ -83,6 +95,10 @@ const TemporaryWorkers = () => {
 
   // Abrir modal en modo edición
   const handleEdit = (worker) => {
+    if (!hasPermission('temporaryWorkers', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar trabajadores temporales');
+      return;
+    }
     setEditingWorker(worker);
     setModalMode("edit");
     setIsModalOpen(true);
@@ -90,6 +106,10 @@ const TemporaryWorkers = () => {
 
   // Ver persona temporal
   const handleView = (worker) => {
+    if (!hasPermission('temporaryWorkers', 'Ver')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para ver trabajadores temporales');
+      return;
+    }
     setEditingWorker(worker);
     setModalMode("view");
     setIsModalOpen(true);
@@ -97,6 +117,11 @@ const TemporaryWorkers = () => {
 
   // Eliminar persona temporal
   const handleDelete = async (worker) => {
+    if (!hasPermission('temporaryWorkers', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar trabajadores temporales');
+      return;
+    }
+    
     try {
       const result = await showDeleteAlert(
         "¿Eliminar persona temporal?",
@@ -139,21 +164,26 @@ const TemporaryWorkers = () => {
             placeholder="Buscar rol..."
           />
           <div className="flex items-center gap-3">
-            <ReportButton
-              data={filteredData}
-              columns={reportColumns}
-              fileName="Personas_Temporales"
-            />
-            <button
-              onClick={() => {
-                setEditingWorker(null);
-                setModalMode("create");
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-            >
-              <FaPlus /> Crear
-            </button>
+            <PermissionGuard module="temporaryWorkers" action="Ver">
+              <ReportButton
+                data={filteredData}
+                columns={reportColumns}
+                fileName="Personas_Temporales"
+              />
+            </PermissionGuard>
+            
+            <PermissionGuard module="temporaryWorkers" action="Crear">
+              <button
+                onClick={() => {
+                  setEditingWorker(null);
+                  setModalMode("create");
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus /> Crear
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -169,6 +199,7 @@ const TemporaryWorkers = () => {
             "Edad",
           ],
           state: true,
+          actions: true,
         }}
         tbody={{
           data: paginatedData,
@@ -181,9 +212,26 @@ const TemporaryWorkers = () => {
           ],
           state: true,
         }}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
+        onEdit={hasPermission('temporaryWorkers', 'Editar') ? handleEdit : null}
+        onDelete={hasPermission('temporaryWorkers', 'Eliminar') ? handleDelete : null}
+        onView={hasPermission('temporaryWorkers', 'Ver') ? handleView : null}
+        buttonConfig={{
+          edit: (item) => ({
+            show: hasPermission('temporaryWorkers', 'Editar'),
+            disabled: false,
+            title: 'Editar trabajador temporal'
+          }),
+          delete: (item) => ({
+            show: hasPermission('temporaryWorkers', 'Eliminar'),
+            disabled: false,
+            title: 'Eliminar trabajador temporal'
+          }),
+          view: (item) => ({
+            show: hasPermission('temporaryWorkers', 'Ver'),
+            disabled: false,
+            title: 'Ver detalles'
+          })
+        }}
       />
 
       {/* Paginación */}

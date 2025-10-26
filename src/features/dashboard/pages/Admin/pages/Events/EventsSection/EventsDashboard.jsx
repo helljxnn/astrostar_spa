@@ -10,7 +10,12 @@ import EventRegistrationFormModal from "./components/EventRegistrationFormModal"
 import { sampleEvents } from "./components/sampleEvents";
 import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
+// Importaciones para permisos
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+
 const Event = () => {
+  const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [modalMode, setModalMode] = useState("create");
@@ -72,6 +77,22 @@ const Event = () => {
   const handleCrudAction = async (action, event) => {
     console.log("Acción CRUD:", action, event);
     console.log("Categoría del evento:", event.categoria);
+    
+    // Verificar permisos antes de ejecutar acciones
+    if (action === 'edit' && !hasPermission('eventsManagement', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar eventos');
+      return;
+    }
+    
+    if (action === 'delete' && !hasPermission('eventsManagement', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar eventos');
+      return;
+    }
+    
+    if (action === 'view' && !hasPermission('eventsManagement', 'Ver')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para ver eventos');
+      return;
+    }
     
     // Función para formatear tiempo
     const formatTime = (date) => {
@@ -227,24 +248,28 @@ const Event = () => {
           <EventSearchBar onSearch={handleSearch} />
           
           {/* Botones */}
-          <button
-            onClick={() => {
-              setSelectedEvent(null);
-              setIsNew(true);
-              setModalMode("create");
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition text-sm whitespace-nowrap"
-          >
-            <FaPlus size={12} /> Crear
-          </button>
+          <PermissionGuard module="eventsManagement" action="Crear">
+            <button
+              onClick={() => {
+                setSelectedEvent(null);
+                setIsNew(true);
+                setModalMode("create");
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition text-sm whitespace-nowrap"
+            >
+              <FaPlus size={12} /> Crear
+            </button>
+          </PermissionGuard>
           
           {/* Componente de reporte */}
-          <EventReportGenerator 
-            data={filteredData} 
-            fileName="eventos" 
-            columns={reportColumns}
-          />
+          <PermissionGuard module="eventsManagement" action="Ver">
+            <EventReportGenerator 
+              data={filteredData} 
+              fileName="eventos" 
+              columns={reportColumns}
+            />
+          </PermissionGuard>
         </div>
       </div>
 

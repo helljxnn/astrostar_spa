@@ -2,26 +2,121 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
+import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
-import { 
-  showSuccessAlert, 
-  showConfirmAlert, 
-  showErrorAlert 
+import {
+  showSuccessAlert,
+  showConfirmAlert,
+  showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
 
-const modules = [
-  { name: "Usuarios", icon: "👤" },
-  { name: "Roles", icon: "🛡️" },
-  { name: "Material deportivo", icon: "🏋️" },
-  { name: "Empleados", icon: "👥" },
-  { name: "Deportistas", icon: "🏃" },
-  { name: "Servicios", icon: "⚙️" },
-  { name: "Donaciones", icon: "❤️" },
-  { name: "Eventos", icon: "📅" },
-  { name: "Compras", icon: "🛒" },
-  { name: "Ventas", icon: "💰" },
-];
+// Organizar módulos por categorías para mejor visualización
+const moduleCategories = {
+  Dashboard: [
+    {
+      name: "Dashboard",
+      icon: "📊",
+      key: "dashboard",
+    },
+  ],
+  Usuarios: [
+    {
+      name: "Usuarios",
+      icon: "👤",
+      key: "users",
+    },
+  ],
+  Roles: [
+    {
+      name: "Roles",
+      icon: "🛡️",
+      key: "roles",
+    },
+  ],
+  "Material Deportivo": [
+    {
+      name: "Material Deportivo",
+      icon: "🏋️",
+      key: "sportsEquipment",
+    },
+  ],
+  Servicios: [
+    {
+      name: "Empleados",
+      icon: "👥",
+      key: "employees",
+    },
+    {
+      name: "Horario Empleados",
+      icon: "⏰",
+      key: "employeesSchedule",
+    },
+    {
+      name: "Gestión de citas",
+      icon: "📅",
+      key: "appointmentManagement",
+    },
+  ],
+  Deportistas: [
+    {
+      name: "Categoría deportiva",
+      icon: "🏆",
+      key: "sportsCategory",
+    },
+    {
+      name: "Gestión de deportistas",
+      icon: "🏃",
+      key: "athletesSection",
+    },
+    {
+      name: "Asistencia Deportistas",
+      icon: "✅",
+      key: "athletesAssistance",
+    },
+  ],
+  Donaciones: [
+    {
+      name: "Donantes/Patrocinadores",
+      icon: "🤝",
+      key: "donorsSponsors",
+    },
+    {
+      name: "Donaciones",
+      icon: "❤️",
+      key: "donationsManagement",
+    },
+  ],
+  Eventos: [
+    {
+      name: "Gestión de Eventos",
+      icon: "📅",
+      key: "eventsManagement",
+    },
+    {
+      name: "Personas temporales",
+      icon: "👷",
+      key: "temporaryWorkers",
+    },
+    {
+      name: "Equipos",
+      icon: "⚽",
+      key: "temporaryTeams",
+    },
+  ],
+  Compras: [
+    {
+      name: "Proveedores",
+      icon: "🏪",
+      key: "providers",
+    },
+    {
+      name: "Compras",
+      icon: "🛒",
+      key: "purchasesManagement",
+    },
+  ],
+};
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
@@ -50,27 +145,62 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     roleValidationRules
   );
 
-  const [expandedModules, setExpandedModules] = useState({});
+  // Hook para validación de nombres duplicados
+  const { nameValidation, validateRoleName, clearValidation, reloadRoles } = useRoleNameValidation(
+    roleData?.id
+  );
+
+  const [expandedCategories, setExpandedCategories] = useState({});
   const [permissionError, setPermissionError] = useState("");
+
+  // Manejar cambios en el nombre con validación de duplicados
+  const handleNameChange = (name, value) => {
+    handleChange(name, value);
+    if (name === 'nombre') {
+      validateRoleName(value);
+    }
+  };
 
   // Si recibimos roleData (editar), precargamos los datos
   useEffect(() => {
     if (roleData) {
+      // Verificar si es el rol de Administrador
+      if (roleData.name === 'Administrador') {
+        showErrorAlert(
+          'Acción no permitida',
+          'El rol de Administrador es un rol del sistema y no puede ser editado.'
+        );
+        onClose();
+        return;
+      }
+
+      // Convertir estado de español a inglés si es necesario
+      let status = roleData.status || roleData.estado || "";
+      if (status === "Activo") status = "Active";
+      if (status === "Inactivo") status = "Inactive";
+
       setFormData({
         id: roleData.id,
-        nombre: roleData.nombre || "",
-        descripcion: roleData.descripcion || "",
-        estado: roleData.estado || "",
-        permisos: roleData.permisos || {},
+        nombre: roleData.name || roleData.nombre || "",
+        descripcion: roleData.description || roleData.descripcion || "",
+        estado: status,
+        permisos: roleData.permissions || roleData.permisos || {},
       });
+      
+      // Limpiar validación de nombres al cargar datos
+      clearValidation();
     }
-  }, [roleData, setFormData]);
+  }, [roleData, setFormData, onClose]);
 
   // Validación de permisos
   useEffect(() => {
     const totalPermissions = Object.values(formData.permisos).reduce(
-      (total, modulePerms) =>
-        total + Object.values(modulePerms).filter(Boolean).length,
+      (total, modulePerms) => {
+        if (typeof modulePerms === "object" && modulePerms !== null) {
+          return total + Object.values(modulePerms).filter(Boolean).length;
+        }
+        return total;
+      },
       0
     );
 
@@ -81,15 +211,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     }
   }, [formData.permisos, touched]);
 
-  // Manejo de permisos
-  const handlePermissionChange = (modulo, action) => {
+  // Manejo de permisos simplificado (cada módulo es independiente)
+  const handlePermissionChange = (moduleKey, action) => {
     setFormData((prev) => {
-      const current = prev.permisos[modulo] || {};
+      const current = prev.permisos[moduleKey] || {};
       return {
         ...prev,
         permisos: {
           ...prev.permisos,
-          [modulo]: {
+          [moduleKey]: {
             ...current,
             [action]: !current[action],
           },
@@ -98,19 +228,52 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     });
   };
 
-  const toggleModuleExpansion = (moduleName) => {
-    setExpandedModules((prev) => ({
+  const toggleCategoryExpansion = (categoryName) => {
+    setExpandedCategories((prev) => ({
       ...prev,
-      [moduleName]: !prev[moduleName],
+      [categoryName]: !prev[categoryName],
     }));
   };
 
-  const selectAllPermissions = (moduleName) => {
+  const selectAllPermissionsForCategory = (categoryName) => {
+    setFormData((prev) => {
+      const newPermisos = { ...prev.permisos };
+
+      moduleCategories[categoryName].forEach((module) => {
+        newPermisos[module.key] = actions.reduce(
+          (acc, action) => ({ ...acc, [action.name]: true }),
+          {}
+        );
+      });
+
+      return {
+        ...prev,
+        permisos: newPermisos,
+      };
+    });
+  };
+
+  const clearAllPermissionsForCategory = (categoryName) => {
+    setFormData((prev) => {
+      const newPermisos = { ...prev.permisos };
+
+      moduleCategories[categoryName].forEach((module) => {
+        newPermisos[module.key] = {};
+      });
+
+      return {
+        ...prev,
+        permisos: newPermisos,
+      };
+    });
+  };
+
+  const selectAllPermissionsForModule = (moduleKey) => {
     setFormData((prev) => ({
       ...prev,
       permisos: {
         ...prev.permisos,
-        [moduleName]: actions.reduce(
+        [moduleKey]: actions.reduce(
           (acc, action) => ({ ...acc, [action.name]: true }),
           {}
         ),
@@ -118,16 +281,26 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     }));
   };
 
-  const clearAllPermissions = (moduleName) => {
+  const clearAllPermissionsForModule = (moduleKey) => {
     setFormData((prev) => ({
       ...prev,
-      permisos: { ...prev.permisos, [moduleName]: {} },
+      permisos: { ...prev.permisos, [moduleKey]: {} },
     }));
   };
 
-  const getModulePermissionCount = (moduleName) => {
-    const modulePermissions = formData.permisos[moduleName] || {};
+  const getModulePermissionCount = (moduleKey) => {
+    const modulePermissions = formData.permisos[moduleKey] || {};
     return Object.values(modulePermissions).filter(Boolean).length;
+  };
+
+  const getCategoryPermissionCount = (categoryName) => {
+    return moduleCategories[categoryName].reduce((total, module) => {
+      return total + getModulePermissionCount(module.key);
+    }, 0);
+  };
+
+  const getCategoryTotalPermissions = (categoryName) => {
+    return moduleCategories[categoryName].length * actions.length;
   };
 
   // Submit
@@ -141,22 +314,35 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       setPermissionError("Debe seleccionar al menos un permiso");
     }
 
-    if (!isValid || !hasPermissions) {
+    // Verificar si hay nombre duplicado
+    if (nameValidation.isDuplicate) {
       showErrorAlert(
-        "Campos incompletos",
-        "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar."
+        "Nombre duplicado",
+        nameValidation.message
       );
       return;
     }
 
+    if (!isValid || !hasPermissions || nameValidation.isChecking) {
+      if (nameValidation.isChecking) {
+        showErrorAlert(
+          "Validando nombre",
+          "Por favor, espere mientras se valida el nombre del rol."
+        );
+      } else {
+        showErrorAlert(
+          "Campos incompletos",
+          "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar."
+        );
+      }
+      return;
+    }
+
     const roleToSave = {
-      ...formData,
-      modulos: modules.map((mod) => ({
-        nombre: mod.name,
-        permisos: actions
-          .filter((action) => formData.permisos[mod.name]?.[action.name])
-          .map((action) => action.name),
-      })),
+      name: formData.nombre,
+      description: formData.descripcion,
+      status: formData.estado,
+      permissions: formData.permisos,
     };
 
     // alerta de confirmación si se está editando
@@ -166,11 +352,14 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         "Los cambios se guardarán y no se podrán deshacer fácilmente."
       );
 
-      if (!result.isConfirmed) return; 
+      if (!result.isConfirmed) return;
     }
 
     // Guardar rol
-    onSave(roleToSave);
+    await onSave(roleToSave);
+
+    // Recargar roles para validación futura
+    await reloadRoles();
 
     showSuccessAlert(
       roleData ? "Rol Actualizado" : "Rol Creado",
@@ -184,6 +373,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     }
 
     setPermissionError("");
+    clearValidation();
     onClose();
   };
 
@@ -203,7 +393,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto relative"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -226,19 +416,42 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         <div className="p-6 space-y-6">
           {/* Campos básicos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              label="Nombre"
-              name="nombre"
-              type="text"
-              placeholder="Nombre del rol"
-              required
-              value={formData.nombre}
-              error={errors.nombre}
-              touched={touched.nombre}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.1}
-            />
+            <div className="space-y-2">
+              <FormField
+                label="Nombre"
+                name="nombre"
+                type="text"
+                placeholder="Nombre del rol"
+                required
+                value={formData.nombre}
+                error={errors.nombre || (nameValidation.isDuplicate ? nameValidation.message : '')}
+                touched={touched.nombre}
+                onChange={handleNameChange}
+                onBlur={handleBlur}
+                delay={0.1}
+              />
+              {/* Estados de validación en tiempo real */}
+              {nameValidation.isChecking && (
+                <div className="text-blue-500 text-sm flex items-center gap-2">
+                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Verificando disponibilidad...</span>
+                </div>
+              )}
+              
+              {!nameValidation.isChecking && nameValidation.isDuplicate && (
+                <div className="text-red-500 text-sm flex items-center gap-1">
+                  <span>❌</span>
+                  <span>Nombre no disponible</span>
+                </div>
+              )}
+              
+              {!nameValidation.isChecking && nameValidation.isAvailable && formData.nombre.trim().length >= 2 && (
+                <div className="text-green-500 text-sm flex items-center gap-1">
+                  <span>✅</span>
+                  <span>Nombre disponible</span>
+                </div>
+              )}
+            </div>
 
             <FormField
               label="Estado"
@@ -247,8 +460,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
               placeholder="Seleccionar estado"
               required
               options={[
-                { value: "Activo", label: "Activo" },
-                { value: "Inactivo", label: "Inactivo" },
+                { value: "Active", label: "Activo" },
+                { value: "Inactive", label: "Inactivo" },
               ]}
               value={formData.estado}
               error={errors.estado}
@@ -289,145 +502,223 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
               </div>
             </div>
 
-            {/* Módulos con permisos */}
+            {/* Módulos organizados por categorías */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {modules.map((module, index) => {
-                  const permissionCount = getModulePermissionCount(module.name);
-                  const isExpanded = expandedModules[module.name];
+              <div className="space-y-6">
+                {Object.entries(moduleCategories).map(
+                  ([categoryName, modules], categoryIndex) => {
+                    const categoryPermissionCount =
+                      getCategoryPermissionCount(categoryName);
+                    const categoryTotalPermissions =
+                      getCategoryTotalPermissions(categoryName);
+                    const isExpanded = expandedCategories[categoryName];
 
-                  return (
-                    <motion.div
-                      key={module.name}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.05 * index }}
-                      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-200"
-                    >
-                      <div
-                        className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                        onClick={() => toggleModuleExpansion(module.name)}
+                    return (
+                      <motion.div
+                        key={categoryName}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.05 * categoryIndex }}
+                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg">{module.icon}</span>
-                            <span className="font-semibold text-gray-800">
-                              {module.name}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {permissionCount > 0 && (
-                              <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
-                                {permissionCount}/4
+                        {/* Header de categoría */}
+                        <div
+                          className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
+                          onClick={() => toggleCategoryExpansion(categoryName)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg font-bold text-gray-800">
+                                {categoryName}
                               </span>
-                            )}
-                            <motion.div
-                              animate={{ rotate: isExpanded ? 180 : 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="text-gray-500"
-                            >
-                              ▼
-                            </motion.div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <AnimatePresence>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: "easeInOut" }}
-                            className="overflow-hidden"
-                          >
-                            <div className="p-4 border-t border-gray-100">
-                              <div className="flex gap-2 mb-3">
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {categoryPermissionCount > 0 && (
+                                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                                  {categoryPermissionCount}/
+                                  {categoryTotalPermissions}
+                                </span>
+                              )}
+                              <div className="flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    selectAllPermissions(module.name)
-                                  }
-                                  className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    selectAllPermissionsForCategory(
+                                      categoryName
+                                    );
+                                  }}
+                                  className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
                                 >
-                                  Seleccionar todo
+                                  Todo
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() =>
-                                    clearAllPermissions(module.name)
-                                  }
-                                  className="text-xs px-3 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    clearAllPermissionsForCategory(
+                                      categoryName
+                                    );
+                                  }}
+                                  className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
                                 >
                                   Limpiar
                                 </button>
                               </div>
-
-                              <div className="grid grid-cols-2 gap-2">
-                                {actions.map((action) => {
-                                  const isChecked =
-                                    formData.permisos[module.name]?.[
-                                      action.name
-                                    ] || false;
-
-                                  return (
-                                    <motion.label
-                                      key={action.name}
-                                      className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all duration-200
-                                        ${
-                                          isChecked
-                                            ? `${action.color} text-white shadow-sm`
-                                            : "bg-gray-50 hover:bg-gray-100 text-gray-700"
-                                        }`}
-                                      whileHover={{ scale: 1.02 }}
-                                      whileTap={{ scale: 0.98 }}
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={() =>
-                                          handlePermissionChange(
-                                            module.name,
-                                            action.name
-                                          )
-                                        }
-                                        className="sr-only"
-                                      />
-                                      <div
-                                        className={`w-4 h-4 rounded border-2 flex items-center justify-center
-                                        ${
-                                          isChecked
-                                            ? "bg-white border-white"
-                                            : "border-gray-300 bg-white"
-                                        }`}
-                                      >
-                                        {isChecked && (
-                                          <motion.div
-                                            initial={{ scale: 0 }}
-                                            animate={{ scale: 1 }}
-                                            className={`text-xs ${action.color.replace(
-                                              "bg-",
-                                              "text-"
-                                            )}`}
-                                          >
-                                            ✓
-                                          </motion.div>
-                                        )}
-                                      </div>
-                                      <span className="text-sm font-medium">
-                                        {action.name}
-                                      </span>
-                                    </motion.label>
-                                  );
-                                })}
-                              </div>
+                              <motion.div
+                                animate={{ rotate: isExpanded ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="text-gray-500"
+                              >
+                                ▼
+                              </motion.div>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </motion.div>
-                  );
-                })}
+                          </div>
+                        </div>
+
+                        {/* Módulos de la categoría */}
+                        <AnimatePresence>
+                          {isExpanded && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              className="overflow-hidden"
+                            >
+                              <div className="p-4 border-t border-gray-100">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                  {modules.map((module, moduleIndex) => {
+                                    const permissionCount =
+                                      getModulePermissionCount(module.key);
+
+                                    return (
+                                      <motion.div
+                                        key={module.key}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{
+                                          delay: 0.05 * moduleIndex,
+                                        }}
+                                        className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200"
+                                      >
+                                        {/* Header del módulo */}
+                                        <div className="flex items-center justify-between mb-3">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-lg">
+                                              {module.icon}
+                                            </span>
+                                            <span className="font-semibold text-gray-800 text-sm">
+                                              {module.name}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            {permissionCount > 0 && (
+                                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                {permissionCount}/
+                                                {actions.length}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Botones de control del módulo */}
+                                        <div className="flex gap-1 mb-3">
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              selectAllPermissionsForModule(
+                                                module.key
+                                              )
+                                            }
+                                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                          >
+                                            Todo
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              clearAllPermissionsForModule(
+                                                module.key
+                                              )
+                                            }
+                                            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                          >
+                                            Limpiar
+                                          </button>
+                                        </div>
+
+                                        {/* Permisos del módulo */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                          {actions.map((action) => {
+                                            const isChecked =
+                                              formData.permisos[module.key]?.[
+                                                action.name
+                                              ] || false;
+
+                                            return (
+                                              <motion.label
+                                                key={action.name}
+                                                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200 text-xs
+                                                ${
+                                                  isChecked
+                                                    ? `${action.color} text-white shadow-sm`
+                                                    : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
+                                                }`}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={isChecked}
+                                                  onChange={() =>
+                                                    handlePermissionChange(
+                                                      module.key,
+                                                      action.name
+                                                    )
+                                                  }
+                                                  className="sr-only"
+                                                />
+                                                <div
+                                                  className={`w-3 h-3 rounded border flex items-center justify-center
+                                                ${
+                                                  isChecked
+                                                    ? "bg-white border-white"
+                                                    : "border-gray-300 bg-white"
+                                                }`}
+                                                >
+                                                  {isChecked && (
+                                                    <motion.div
+                                                      initial={{ scale: 0 }}
+                                                      animate={{ scale: 1 }}
+                                                      className={`text-xs ${action.color.replace(
+                                                        "bg-",
+                                                        "text-"
+                                                      )}`}
+                                                    >
+                                                      ✓
+                                                    </motion.div>
+                                                  )}
+                                                </div>
+                                                <span className="font-medium">
+                                                  {action.name}
+                                                </span>
+                                              </motion.label>
+                                            );
+                                          })}
+                                        </div>
+                                      </motion.div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  }
+                )}
               </div>
             </div>
 
