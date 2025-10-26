@@ -1,50 +1,95 @@
 import { useState, useMemo } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import EmployeeModal from "./components/EmployeeModal";
-import employeesData from "../../../../../../../shared/models/EmployeeData";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import CredentialsModal from "../../../../../../../shared/components/CredentialsModal";
 import {
   showDeleteAlert,
-  showSuccessAlert,
   showErrorAlert,
+  showSuccessAlert,
 } from "../../../../../../../shared/utils/alerts";
 
 // Importaciones para permisos
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
+// Hook personalizado para empleados
+import { useEmployees } from "../../../../../../../shared/hooks/useEmployees";
+
 const Employees = () => {
   const { hasPermission } = usePermissions();
-  const [data, setData] = useState(employeesData);
+  const {
+    employees,
+    loading,
+    pagination,
+    referenceData,
+    createEmployee,
+    updateEmployee,
+    deleteEmployee,
+    changePage
+  } = useEmployees();
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [createdEmployeeData, setCreatedEmployeeData] = useState(null);
 
+  // Filtrar datos localmente si hay término de búsqueda
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    if (!searchTerm) return employees;
 
-    return data.filter((item) =>
-      Object.values(item).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-  }, [data, searchTerm]);
+    return employees.filter((employee) => {
+      const searchFields = [
+        employee.user?.firstName,
+        employee.user?.lastName,
+        employee.user?.email,
+        employee.user?.identification,
+        employee.employeeType?.name,
+        employee.user?.role?.name
+      ];
+      
+      return searchFields.some(field => 
+        field && String(field).toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    });
+  }, [employees, searchTerm]);
 
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
+  // Función para traducir estados
+  const translateStatus = (status) => {
+    const statusMap = {
+      'Active': 'Activo',
+      'Disabled': 'Deshabilitado',
+      'OnVacation': 'En Vacaciones',
+      'Retired': 'Retirado',
+      'Deceased': 'Fallecido'
+    };
+    return statusMap[status] || status;
+  };
 
-  
+  // Usar paginación del servidor cuando no hay búsqueda local
+  const displayData = searchTerm ? filteredData : employees;
+  const totalRows = searchTerm ? filteredData.length : pagination.total;
+
+  // Preparar datos para reporte
+  const reportData = displayData.map(employee => ({
+    tipoDocumento: employee.user?.documentType?.name || '',
+    identificacion: employee.user?.identification || '',
+    nombre: employee.user?.firstName || '',
+    apellido: employee.user?.lastName || '',
+    correo: employee.user?.email || '',
+    telefono: employee.user?.phoneNumber || '',
+    fechaNacimiento: employee.user?.birthDate || '',
+    rol: employee.user?.role?.name || '',
+    tipoEmpleado: employee.employeeType?.name || '',
+    estado: translateStatus(employee.status) || '',
+    fechaCreacion: employee.createdAt || ''
+  }));
+
   const reportColumns = [
     { header: "Tipo Documento", accessor: "tipoDocumento" },
     { header: "Número de Documento", accessor: "identificacion" },
@@ -52,43 +97,55 @@ const Employees = () => {
     { header: "Apellido", accessor: "apellido" },
     { header: "Correo", accessor: "correo" },
     { header: "Teléfono", accessor: "telefono" },
-    { header: "Edad", accessor: "edad" },
+    { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
     { header: "Rol", accessor: "rol" },
     { header: "Tipo Empleado", accessor: "tipoEmpleado" },
     { header: "Estado", accessor: "estado" },
-    { header: "Fecha Asignación", accessor: "fechaAsignacion" },
+    { header: "Fecha Creación", accessor: "fechaCreacion" },
   ];
 
-  const handleSave = (employee) => {
-    if (editingEmployee) {
-      // Editar - verificar permisos
-      if (!hasPermission('employees', 'Editar')) {
-        showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
-        return;
+  const handleSave = async (employeeData) => {
+    try {
+      if (editingEmployee) {
+        // Editar - verificar permisos
+        if (!hasPermission('employees', 'Editar')) {
+          showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
+          return false;
+        }
+        await updateEmployee(editingEmployee.id, employeeData);
+        showSuccessAlert(
+          'Empleado Actualizado',
+          'El empleado ha sido actualizado exitosamente'
+        );
+      } else {
+        // Crear - verificar permisos
+        if (!hasPermission('employees', 'Crear')) {
+          showErrorAlert('Sin permisos', 'No tienes permisos para crear empleados');
+          return false;
+        }
+        
+        const result = await createEmployee(employeeData);
+        
+        // Mostrar modal de credenciales
+        setCreatedEmployeeData({
+          employee: result.data,
+          credentials: {
+            email: result.data.user.email,
+            temporaryPassword: result.temporaryPassword
+          },
+          emailSent: result.emailSent
+        });
+        setShowCredentials(true);
       }
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === editingEmployee.id
-            ? { ...employee, id: editingEmployee.id }
-            : item
-        )
-      );
-    } else {
-      // Crear - verificar permisos
-      if (!hasPermission('employees', 'Crear')) {
-        showErrorAlert('Sin permisos', 'No tienes permisos para crear empleados');
-        return;
-      }
-      // Generar ID único basado en el máximo ID existente + 1
-      const maxId = data.length > 0 ? Math.max(...data.map(emp => emp.id || 0)) : 0;
-      setData((prev) => [
-        ...prev,
-        { ...employee, id: maxId + 1 },
-      ]);
-    }
 
-    setEditingEmployee(null);
-    setIsModalOpen(false);
+      setEditingEmployee(null);
+      setIsModalOpen(false);
+      return true;
+    } catch (error) {
+      // El error ya se maneja en el hook
+      console.error('Error guardando empleado:', error);
+      return false;
+    }
   };
 
   const handleEdit = (employee) => {
@@ -118,24 +175,17 @@ const Employees = () => {
     }
     
     try {
+      const employeeName = `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim();
       const result = await showDeleteAlert(
         "¿Eliminar empleado?",
-        `Se eliminará permanentemente el empleado: ${employee.nombre} ${employee.apellido}`
+        `Se eliminará permanentemente el empleado: ${employeeName}`
       );
 
       if (result.isConfirmed) {
-        setData((prev) => prev.filter((item) => item.id !== employee.id));
-        showSuccessAlert(
-          "Empleado eliminado",
-          `${employee.nombre} ${employee.apellido} ha sido eliminado correctamente.`
-        );
+        await deleteEmployee(employee.id, employeeName);
       }
     } catch (error) {
       console.error("Error al eliminar empleado:", error);
-      showErrorAlert(
-        "Error al eliminar",
-        "No se pudo eliminar el empleado. Intenta de nuevo."
-      );
     }
   };
 
@@ -149,7 +199,10 @@ const Employees = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              // Si hay búsqueda, no cambiar página del servidor
+              if (!e.target.value) {
+                changePage(1);
+              }
             }}
             placeholder="Buscar empleado..."
           />
@@ -157,7 +210,7 @@ const Employees = () => {
           <div className="flex items-center gap-3">
             <PermissionGuard module="employees" action="Ver">
               <ReportButton
-                data={filteredData}
+                data={reportData}
                 fileName="Reporte_Empleados"
                 columns={reportColumns}
               />
@@ -179,48 +232,64 @@ const Employees = () => {
         </div>
       </div>
 
-      <Table
-        thead={{
-          titles: ["Nombre", "Identificación", "Tipo de Empleado", "Rol"],
-          state: true,
-          actions: true,
-        }}
-        tbody={{
-          data: paginatedData,
-          dataPropertys: ["nombre", "identificacion", "tipoEmpleado", "rol"],
-          state: true,
-        }}
-        onEdit={hasPermission('employees', 'Editar') ? handleEdit : null}
-        onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
-        onView={hasPermission('employees', 'Ver') ? handleView : null}
-        buttonConfig={{
-          edit: (item) => ({
-            show: hasPermission('employees', 'Editar'),
-            disabled: false,
-            title: 'Editar empleado'
-          }),
-          delete: (item) => ({
-            show: hasPermission('employees', 'Eliminar'),
-            disabled: false,
-            title: 'Eliminar empleado'
-          }),
-          view: (item) => ({
-            show: hasPermission('employees', 'Ver'),
-            disabled: false,
-            title: 'Ver detalles'
-          })
-        }}
-      />
+      {loading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
+          <span className="ml-2 text-gray-600">Cargando empleados...</span>
+        </div>
+      ) : (
+        <>
+          <Table
+            thead={{
+              titles: ["Nombre Completo", "Identificación", "Tipo de Empleado", "Rol", "Estado"],
+              state: false,
+              actions: true,
+            }}
+            tbody={{
+              data: displayData.map(employee => ({
+                ...employee,
+                nombreCompleto: `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim(),
+                identificacion: employee.user?.identification || '',
+                tipoEmpleado: employee.employeeType?.name || '',
+                rol: employee.user?.role?.name || '',
+                estado: translateStatus(employee.status) || ''
+              })),
+              dataPropertys: ["nombreCompleto", "identificacion", "tipoEmpleado", "rol", "estado"],
+              state: false,
+            }}
+            onEdit={hasPermission('employees', 'Editar') ? handleEdit : null}
+            onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
+            onView={hasPermission('employees', 'Ver') ? handleView : null}
+            buttonConfig={{
+              edit: () => ({
+                show: hasPermission('employees', 'Editar'),
+                disabled: false,
+                title: 'Editar empleado'
+              }),
+              delete: () => ({
+                show: hasPermission('employees', 'Eliminar'),
+                disabled: false,
+                title: 'Eliminar empleado'
+              }),
+              view: () => ({
+                show: hasPermission('employees', 'Ver'),
+                disabled: false,
+                title: 'Ver detalles'
+              })
+            }}
+          />
 
-      {totalRows > rowsPerPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRows={totalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
+          {!searchTerm && totalRows > pagination.limit && (
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.pages}
+              onPageChange={changePage}
+              totalRows={totalRows}
+              rowsPerPage={pagination.limit}
+              startIndex={(pagination.page - 1) * pagination.limit}
+            />
+          )}
+        </>
       )}
 
       <EmployeeModal
@@ -234,6 +303,17 @@ const Employees = () => {
         onDelete={handleDelete}
         employee={editingEmployee}
         mode={modalMode}
+        referenceData={referenceData}
+      />
+
+      <CredentialsModal
+        isOpen={showCredentials}
+        onClose={() => {
+          setShowCredentials(false);
+          setCreatedEmployeeData(null);
+        }}
+        employeeData={createdEmployeeData?.employee?.user}
+        credentials={createdEmployeeData?.credentials}
       />
     </div>
   );

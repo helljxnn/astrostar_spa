@@ -66,46 +66,53 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
   };
 };
 
-// Reglas de validación
+// Reglas de validación actualizadas para el backend
 export const employeeValidationRules = {
-  nombre: [
+  firstName: [
     (value) => (!value?.trim() ? "El nombre es obligatorio" : ""),
-    (value) => value?.length < 3 ? "El nombre debe tener al menos 3 caracteres" : "",
+    (value) => value?.length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
     (value) =>
       !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  apellido: [
+  lastName: [
     (value) => (!value?.trim() ? "El apellido es obligatorio" : ""),
-    (value) => value?.length < 3 ? "El apellido debe tener al menos 3 caracteres" : "",
+    (value) => value?.length < 2 ? "El apellido debe tener al menos 2 caracteres" : "",
     (value) =>
       !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  correo: [
+  middleName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
+  ],
+  secondLastName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
+  ],
+  email: [
     (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
     (value) =>
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
   ],
-  telefono: [
-    (value) => (!value?.trim() ? "El teléfono es obligatorio" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
-    (value) =>
-      value?.length < 7 || value?.length > 15 ? "El teléfono debe tener entre 7 y 15 dígitos" : "",
+  phoneNumber: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^\+?[\d\s\-()]+$/.test(value) ? "Formato de teléfono inválido" : "";
+    },
   ],
-  edad: [
-    (value) => (!value ? "La edad es obligatoria" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "La edad debe ser un número" : "",
-    (value) => parseInt(value) < 18 ? "Debe ser mayor o igual a 18 años" : "",
-    (value) => parseInt(value) > 65 ? "La edad máxima permitida es 65 años" : "",
-  ],
-  identificacion: [
+  identification: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
+    (value) => value?.length < 6 ? "La identificación debe tener al menos 6 caracteres" : "",
+    (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
-  tipoDocumento: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
-  tipoEmpleado: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
-  rol: [(value) => (!value ? "Debe seleccionar un rol" : "")],
-  estado: [(value) => (!value ? "Debe seleccionar un estado" : "")],
-  fechaNacimiento: [
+  documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  employeeTypeId: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
+  roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
+  status: [(value) => (!value ? "Debe seleccionar un estado" : "")],
+  birthDate: [
     (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
     (value) => {
       if (!value) return "";
@@ -116,8 +123,13 @@ export const employeeValidationRules = {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age < 18 ? "Debe ser mayor o igual a 18 años" : "";
+      return age < 16 ? "Debe ser mayor o igual a 16 años" : "";
     },
   ],
-  fechaAsignacion: [(value) => (!value ? "Debe seleccionar una fecha de asignación" : "")],
+  address: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return value.length > 200 ? "La dirección no puede exceder 200 caracteres" : "";
+    },
+  ],
 };

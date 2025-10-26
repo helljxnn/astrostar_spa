@@ -259,17 +259,24 @@ export const loadTrainers = () => {
     const trainers = [];
 
     // 1. DESDE EMPLEADOS (Entrenadores) - FUNDACIÓN
+    // Nota: Esta función ahora debería usar la API de empleados
+    // Por ahora mantenemos compatibilidad con localStorage como fallback
     const employeesRaw = localStorage.getItem("employees");
-    const employees = employeesRaw ? JSON.parse(employeesRaw) : employeesDataReal;
+    const employees = employeesRaw ? JSON.parse(employeesRaw) : [];
 
     const trainersFromEmployees = employees
-      .filter(e => e.tipoEmpleado === "Entrenador" && e.estado === "Activo")
+      .filter(e => {
+        // Adaptado para la nueva estructura del backend
+        const employeeType = e.employeeType?.name || e.tipoEmpleado;
+        const status = e.status || e.estado;
+        return employeeType === "Entrenador" && (status === "Active" || status === "Activo");
+      })
       .map(e => ({
-        id: e.id || e.identificacion,
-        name: e.nombre,
+        id: e.id || e.user?.identification || e.identificacion,
+        name: e.user ? `${e.user.firstName} ${e.user.lastName}` : e.nombre,
         source: "fundacion",
         sourceLabel: "Entrenadores de la Fundación",
-        identification: e.identificacion,
+        identification: e.user?.identification || e.identificacion,
         badge: "Empleado",
         badgeColor: "bg-blue-100 text-blue-800",
         type: "fundacion"
