@@ -39,13 +39,12 @@ const Athletes = () => {
   const [guardianToEdit, setGuardianToEdit] = useState(null);
   const [guardianToView, setGuardianToView] = useState(null);
   const [guardianModalMode, setGuardianModalMode] = useState("create");
+  const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
 
   // Estados de inscripciones
-  const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] =
-    useState(false);
+  const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] = useState(false);
   const [athleteForInscription, setAthleteForInscription] = useState(null);
-  const [isInscriptionManagementOpen, setIsInscriptionManagementOpen] =
-    useState(false);
+  const [isInscriptionManagementOpen, setIsInscriptionManagementOpen] = useState(false);
 
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,8 +64,6 @@ const Athletes = () => {
         ) {
           return stringValue.toLowerCase() === searchTerm.toLowerCase();
         }
-
-        //  Filtrado parcial para los demás campos
         return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
       })
     );
@@ -75,39 +72,39 @@ const Athletes = () => {
   const totalRows = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
+  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
 
   const handlePageChange = (page) => setCurrentPage(page);
 
+  // Función auxiliar para obtener el acudiente
+  const getGuardianById = (guardianId) => {
+    return guardians.find((g) => String(g.id) === String(guardianId));
+  };
+
   const handleSave = async (newAthlete) => {
     try {
-      // Convertir acudiente a número
-      const acudienteId = parseInt(newAthlete.acudiente);
+      console.log("🔥 handleSave - Datos recibidos:", newAthlete);
 
-      // Verificar que existe el acudiente
-      const guardianExists = guardians.find((g) => g.id === acudienteId);
+      const acudienteId = newAthlete.acudiente || null;
 
-      if (!guardianExists) {
-        showErrorAlert("Error", "El acudiente seleccionado no existe.");
-        console.log("Acudiente buscado:", acudienteId);
-        console.log("Acudientes disponibles:", guardians);
-        return;
+      if (acudienteId) {
+        const guardianExists = guardians.find((g) => String(g.id) === String(acudienteId));
+
+        if (!guardianExists) {
+          showErrorAlert("Error", "El acudiente seleccionado no existe.");
+          console.error("❌ Acudiente NO encontrado");
+          return;
+        }
+
+        console.log("✅ Acudiente encontrado:", guardianExists);
       }
 
-      // Crear deportista
-      const athleteId =
-        data.length > 0 ? Math.max(...data.map((a) => a.id)) + 1 : 1;
+      const athleteId = data.length > 0 ? Math.max(...data.map((a) => a.id)) + 1 : 1;
 
-      // Determinar estado de inscripción según estado del deportista
-      const inscriptionState =
-        newAthlete.estado === "Inactivo" ? "Suspendida" : "Vigente";
-      const inscriptionConcept =
-        newAthlete.estado === "Inactivo"
-          ? "Inscripción inicial suspendida - Deportista inactivo"
-          : "Inscripción inicial";
+      const inscriptionState = newAthlete.estado === "Inactivo" ? "Suspendida" : "Vigente";
+      const inscriptionConcept = newAthlete.estado === "Inactivo"
+        ? "Inscripción inicial suspendida - Deportista inactivo"
+        : "Inscripción inicial";
 
       const formattedAthlete = {
         id: athleteId,
@@ -124,6 +121,7 @@ const Athletes = () => {
         categoria: newAthlete.categoria,
         estado: newAthlete.estado || "Activo",
         acudiente: acudienteId,
+        parentesco: newAthlete.parentesco || null,
         estadoInscripcion: inscriptionState,
         inscripciones: [
           {
@@ -137,7 +135,7 @@ const Athletes = () => {
         ],
       };
 
-      console.log("Deportista a guardar:", formattedAthlete);
+      console.log("💾 Deportista formateado:", formattedAthlete);
 
       setData((prev) => [...prev, formattedAthlete]);
 
@@ -151,53 +149,42 @@ const Athletes = () => {
       }
 
       setIsModalOpen(false);
+      setNewlyCreatedGuardianId(null);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("❌ Error en handleSave:", error);
       showErrorAlert("Error", error.message);
     }
   };
 
   const handleUpdate = async (updatedAthlete) => {
     try {
-      console.log("🔄 Actualizando deportista:", updatedAthlete);
-
-      // Asegurar que acudiente sea number y mantener el estado
       const athleteWithCorrectTypes = {
         ...updatedAthlete,
-        acudiente: parseInt(updatedAthlete.acudiente),
+        acudiente: updatedAthlete.acudiente || null,
         estado: updatedAthlete.estado || "Activo",
       };
 
-      //  Si el deportista pasa a Inactivo, suspender su inscripción actual
       if (
         updatedAthlete.shouldUpdateInscription &&
         athleteWithCorrectTypes.estado === "Inactivo"
       ) {
         const athlete = data.find((a) => a.id === athleteWithCorrectTypes.id);
 
-        if (
-          athlete &&
-          athlete.inscripciones &&
-          athlete.inscripciones.length > 0
-        ) {
+        if (athlete && athlete.inscripciones && athlete.inscripciones.length > 0) {
           const currentInscription = athlete.inscripciones[0];
 
-          // Solo suspender si no está ya suspendida o vencida
           if (currentInscription.estado === "Vigente") {
-            // Crear registro de cambio de estado
             const stateChangeRecord = {
               id: crypto.randomUUID(),
               estado: "Suspendida",
               estadoAnterior: currentInscription.estado,
-              concepto:
-                "Suspensión automática - Deportista marcado como Inactivo",
+              concepto: "Suspensión automática - Deportista marcado como Inactivo",
               fechaInscripcion: currentInscription.fechaInscripcion,
               fechaConcepto: new Date().toISOString(),
               categoria: currentInscription.categoria,
               tipo: "cambio_estado",
             };
 
-            // Actualizar inscripciones
             athleteWithCorrectTypes.inscripciones = [
               stateChangeRecord,
               ...athlete.inscripciones,
@@ -212,7 +199,6 @@ const Athletes = () => {
         }
       }
 
-      //Si el deportista pasa de Inactivo a Activo
       const athlete = data.find((a) => a.id === athleteWithCorrectTypes.id);
       if (
         athlete &&
@@ -225,23 +211,20 @@ const Athletes = () => {
         );
       }
 
+      // CLAVE: Actualizar el estado de data completamente
       setData((prev) =>
         prev.map((a) =>
           a.id === athleteWithCorrectTypes.id
             ? {
                 ...a,
                 ...athleteWithCorrectTypes,
-                // Mantener las inscripciones existentes si no fueron actualizadas
                 inscripciones:
-                  athleteWithCorrectTypes.inscripciones ||
-                  a.inscripciones ||
-                  [],
+                  athleteWithCorrectTypes.inscripciones || a.inscripciones || [],
               }
             : a
         )
       );
 
-      // Solo mostrar el mensaje genérico si no se mostró ninguno específico
       if (
         !updatedAthlete.shouldUpdateInscription &&
         !(
@@ -257,6 +240,10 @@ const Athletes = () => {
       }
 
       setIsModalOpen(false);
+      // Actualizar la vista si estaba abierta
+      if (athleteToView && athleteToView.id === athleteWithCorrectTypes.id) {
+        setAthleteToView(athleteWithCorrectTypes);
+      }
     } catch (error) {
       console.error("Error al actualizar deportista:", error);
       showErrorAlert("Error", "Ocurrió un error al actualizar el deportista");
@@ -272,7 +259,9 @@ const Athletes = () => {
 
   const handleView = (athlete) => {
     if (!athlete || athlete.target) return;
-    setAthleteToView(athlete);
+    // Obtener los datos más recientes del atleta
+    const currentAthlete = data.find(a => a.id === athlete.id) || athlete;
+    setAthleteToView(currentAthlete);
     setIsViewModalOpen(true);
   };
 
@@ -295,20 +284,40 @@ const Athletes = () => {
     );
   };
 
-  // CRUD Acudientes (sin cambios)
   const handleSaveGuardian = async (newGuardian) => {
     try {
-      const formatted = { ...newGuardian, id: crypto.randomUUID() };
-      setGuardians([formatted, ...guardians]);
+      const guardianId = guardians.length > 0 
+        ? Math.max(...guardians.map(g => Number(g.id) || 0)) + 1 
+        : 104;
+
+      const formatted = { 
+        ...newGuardian, 
+        id: guardianId 
+      };
+
+      console.log("🆕 Creando acudiente con ID:", guardianId);
+
+      setGuardians(prevGuardians => {
+        const updatedList = [formatted, ...prevGuardians];
+        console.log("📋 Lista actualizada de acudientes:", updatedList);
+        return updatedList;
+      });
+
+      setNewlyCreatedGuardianId(guardianId);
+      console.log("🎯 ID establecido para selección automática:", guardianId);
+
       showSuccessAlert(
         "Acudiente creado",
-        "El acudiente se creó correctamente."
+        "El acudiente se creó correctamente y fue seleccionado automáticamente."
       );
+
       setIsGuardianModalOpen(false);
+
       return formatted;
     } catch (error) {
-      console.error("Error al crear acudiente:", error);
+      console.error(" Error al crear acudiente:", error);
       showErrorAlert("Error", "Ocurrió un error al crear el acudiente");
+      return null;
     }
   };
 
@@ -319,6 +328,12 @@ const Athletes = () => {
           g.id === updatedGuardian.id ? updatedGuardian : g
         )
       );
+      
+      // Actualizar la vista del acudiente si estaba abierta
+      if (guardianToView && guardianToView.id === updatedGuardian.id) {
+        setGuardianToView(updatedGuardian);
+      }
+      
       showSuccessAlert(
         "Acudiente actualizado",
         "El acudiente se actualizó correctamente."
@@ -339,7 +354,9 @@ const Athletes = () => {
 
   const handleViewGuardian = (guardian) => {
     if (!guardian || guardian.target) return;
-    setGuardianToView(guardian);
+    // Obtener los datos más recientes del acudiente
+    const currentGuardian = guardians.find(g => g.id === guardian.id) || guardian;
+    setGuardianToView(currentGuardian);
     setIsGuardianViewOpen(true);
   };
 
@@ -347,7 +364,7 @@ const Athletes = () => {
     if (!guardian || !guardian.id)
       return showErrorAlert("Error", "Acudiente no válido");
 
-    const associatedAthletes = data.filter((a) => a.acudiente === guardian.id);
+    const associatedAthletes = data.filter((a) => String(a.acudiente) === String(guardian.id));
     if (associatedAthletes.length > 0) {
       return showErrorAlert(
         "No se puede eliminar",
@@ -370,25 +387,17 @@ const Athletes = () => {
     );
   };
 
-  //  Inscripciones
-  const canInscribeAthlete = (athlete) => {
-    if (!athlete) return false;
-
-    const currentInscription = athlete.inscripciones?.[0];
-
-    // SOLO permitir renovar si la inscripción actual está VENCIDA
-    return currentInscription?.estado === "Vencida";
-  };
-
   const handleViewInscriptionHistory = (athlete) => {
     if (!athlete || athlete.target) return;
-    setAthleteForInscription(athlete);
+    const currentAthlete = data.find(a => a.id === athlete.id) || athlete;
+    setAthleteForInscription(currentAthlete);
     setIsInscriptionHistoryModalOpen(true);
   };
 
   const handleOpenInscriptionManagement = (athlete) => {
     if (!athlete || athlete.target) return;
-    setAthleteForInscription(athlete);
+    const currentAthlete = data.find(a => a.id === athlete.id) || athlete;
+    setAthleteForInscription(currentAthlete);
     setIsInscriptionManagementOpen(true);
   };
 
@@ -398,6 +407,18 @@ const Athletes = () => {
         athlete.id === updatedAthlete.id ? updatedAthlete : athlete
       )
     );
+    // Actualizar la vista si estaba abierta
+    if (athleteForInscription && athleteForInscription.id === updatedAthlete.id) {
+      setAthleteForInscription(updatedAthlete);
+    }
+    // CRÍTICO: Forzar actualización de GuardianViewModal si estaba abierto
+    if (guardianToView && guardianToView.id) {
+      const updatedGuardianAthletes = data
+        .filter((a) => String(a.acudiente) === String(guardianToView.id))
+        .map((a) => a.id === updatedAthlete.id ? updatedAthlete : a);
+      // Esto fuerza que React detecte el cambio
+      setGuardianToView({ ...guardianToView });
+    }
   };
 
   return (
@@ -421,44 +442,29 @@ const Athletes = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
               data={filteredData.map((athlete) => {
-                const guardian = guardians.find(
-                  (g) => g.id === athlete.acudiente
-                );
+                const guardian = getGuardianById(athlete.acudiente);
                 return {
-                  // Información personal completa
                   nombres: athlete.nombres || "",
                   apellidos: athlete.apellidos || "",
                   nombreCompleto: `${athlete.nombres} ${athlete.apellidos}`,
-
-                  // Documentación
                   tipoDocumento: athlete.tipoDocumento || "",
                   numeroDocumento: athlete.numeroDocumento || "",
-
-                  // Información de contacto
                   correo: athlete.correo || "",
                   telefono: athlete.telefono || "",
                   direccion: athlete.direccion || "",
                   ciudad: athlete.ciudad || "",
-
-                  // Información deportiva
                   fechaNacimiento: athlete.fechaNacimiento || "",
                   genero: athlete.genero || "",
                   categoria: athlete.categoria || "",
-
-                  // Estados
                   estado: athlete.estado || "",
                   estadoInscripcion: athlete.estadoInscripcion || "",
-
-                  // Información del acudiente
                   acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
                   acudienteTipoDoc: guardian?.tipoDocumento || "",
                   acudienteDocumento: guardian?.identificacion || "",
                   acudienteTelefono: guardian?.telefono || "",
                   acudienteCorreo: guardian?.correo || "",
                   acudienteDireccion: guardian?.direccion || "",
-                  acudienteParentesco: guardian?.parentesco || "",
-
-                  // Información de inscripción actual
+                  acudienteParentesco: athlete.parentesco || "",
                   fechaInscripcion:
                     athlete.inscripciones?.[0]?.fechaInscripcion || "",
                   categoriaInscripcion:
@@ -469,7 +475,6 @@ const Athletes = () => {
               })}
               fileName="Deportistas"
               columns={[
-                // Información Personal
                 { header: "Nombres", accessor: "nombres" },
                 { header: "Apellidos", accessor: "apellidos" },
                 { header: "Tipo Documento", accessor: "tipoDocumento" },
@@ -496,17 +501,18 @@ const Athletes = () => {
               onClick={() => {
                 setModalMode("create");
                 setAthleteToEdit(null);
+                setNewlyCreatedGuardianId(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
-              <FaPlus /> Nuevo Deportista
+              <FaPlus /> Crear Deportista
             </button>
           </div>
         </div>
       </div>
 
-      {/* Tabla - VERSIÓN MEJORADA SIN ESTADO DEPORTISTA */}
+      {/* Tabla */}
       {totalRows > 0 ? (
         <>
           <div className="w-full bg-white rounded-lg">
@@ -523,14 +529,16 @@ const Athletes = () => {
                 actions: true,
               }}
               tbody={{
-                data: paginatedData.map((a) => ({
-                  ...a,
-                  nombreCompleto: `${a.nombres} ${a.apellidos}`,
-                  acudienteNombre:
-                    guardians.find((g) => g.id === a.acudiente)
-                      ?.nombreCompleto || "Sin acudiente",
-                  estadoInscripcion: a.estadoInscripcion || "",
-                })),
+                data: paginatedData.map((a) => {
+                  const guardian = getGuardianById(a.acudiente);
+
+                  return {
+                    ...a,
+                    nombreCompleto: `${a.nombres} ${a.apellidos}`,
+                    acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
+                    estadoInscripcion: a.estadoInscripcion || "",
+                  };
+                }),
                 dataPropertys: [
                   "nombreCompleto",
                   "categoria",
@@ -540,7 +548,6 @@ const Athletes = () => {
                 ],
                 state: true,
                 stateMap: {
-                  // 📄 Solo estados de INSCRIPCIÓN
                   Vigente: "bg-green-100 text-green-800",
                   Suspendida: "bg-orange-100 text-orange-800",
                   Vencida: "bg-yellow-100 text-yellow-800",
@@ -551,8 +558,7 @@ const Athletes = () => {
               onView={handleView}
               customActions={[
                 {
-                  onClick: (athlete) =>
-                    handleOpenInscriptionManagement(athlete),
+                  onClick: (athlete) => handleOpenInscriptionManagement(athlete),
                   label: <FaClipboardList className="w-4 h-4" />,
                   className:
                     "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors",
@@ -586,12 +592,16 @@ const Athletes = () => {
       {/* Modales */}
       <AthleteModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setNewlyCreatedGuardianId(null);
+        }}
         onSave={handleSave}
         onUpdate={handleUpdate}
         athleteToEdit={athleteToEdit}
         guardians={guardians}
         mode={modalMode}
+        newlyCreatedGuardianId={newlyCreatedGuardianId}
         onCreateGuardian={() => {
           setGuardianToEdit(null);
           setGuardianModalMode("create");
@@ -611,7 +621,7 @@ const Athletes = () => {
         athlete={athleteToView}
         guardian={
           athleteToView
-            ? guardians.find((g) => g.id === athleteToView.acudiente)
+            ? getGuardianById(athleteToView.acudiente)
             : null
         }
       />
@@ -633,7 +643,9 @@ const Athletes = () => {
 
       <GuardianModal
         isOpen={isGuardianModalOpen}
-        onClose={() => setIsGuardianModalOpen(false)}
+        onClose={() => {
+          setIsGuardianModalOpen(false);
+        }}
         onSave={handleSaveGuardian}
         onUpdate={handleUpdateGuardian}
         guardianToEdit={guardianToEdit}
@@ -644,10 +656,9 @@ const Athletes = () => {
         isOpen={isGuardianViewOpen}
         onClose={() => setIsGuardianViewOpen(false)}
         guardian={guardianToView}
-        athletes={data.filter((a) => a.acudiente === guardianToView?.id)}
+        athletes={data.filter((a) => String(a.acudiente) === String(guardianToView?.id))}
       />
 
-      {/* Modales de inscripciones */}
       <InscriptionManagementModal
         isOpen={isInscriptionManagementOpen}
         onClose={() => setIsInscriptionManagementOpen(false)}

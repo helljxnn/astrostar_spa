@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -37,11 +39,11 @@ const TemporaryTeamModal = ({
   const isEditing = mode === "edit" || teamToEdit !== null;
 
   const [isTrainerModalOpen, setIsTrainerModalOpen] = useState(false);
-  const [isPlayersModalOpen, setIsPlayersModalOpen] = useState(false);
+  const [isAthletesModalOpen, setIsAthletesModalOpen] = useState(false);
   const [selectedTrainer, setSelectedTrainer] = useState(null);
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
+  const [selectedAthletes, setSelectedAthletes] = useState([]);
   const [teamType, setTeamType] = useState(null);
-  const [typeValidationError, setTypeValidationError] = useState("");
+  const [currentCategoria, setCurrentCategoria] = useState(null);
 
   const {
     values,
@@ -53,74 +55,74 @@ const TemporaryTeamModal = ({
     resetForm,
     setTouched,
     setValues,
+    setErrors,
   } = useFormTemporaryTeamsValidation(
     {
       nombreEquipo: "",
       telefono: "",
       entrenador: "",
-      jugadoras: [],
+      deportistas: [],
       estado: "Activo",
       descripcion: "",
+      categoria: "",
     },
     temporaryTeamsValidationRules
   );
 
-  // Cargar datos para edición
+  // Función de validación para categoría
+  const validateCategoria = (value, teamType) => {
+    if (teamType === "temporal") {
+      if (!value?.trim()) return "La categoría es obligatoria para equipos temporales";
+      if (value.trim().length < 2) return "La categoría debe tener al menos 2 caracteres";
+      if (value.trim().length > 50) return "La categoría no puede exceder 50 caracteres";
+      if (/\s{2,}/.test(value)) return "No se permiten espacios dobles";
+    }
+    return "";
+  };
+
   useEffect(() => {
     if (isOpen && isEditing && teamToEdit) {
       setValues({
         nombreEquipo: teamToEdit.nombre || "",
         telefono: teamToEdit.telefono || "",
         entrenador: teamToEdit.entrenador || "",
-        jugadoras: Array.isArray(teamToEdit.jugadoras)
-          ? teamToEdit.jugadoras
+        deportistas: Array.isArray(teamToEdit.deportistas)
+          ? teamToEdit.deportistas
           : [],
         estado: teamToEdit.estado || "Activo",
         descripcion: teamToEdit.descripcion || "",
+        categoria: teamToEdit.categoria || "",
       });
 
-      // Restaurar entrenador seleccionado
       if (teamToEdit.entrenadorData) {
         setSelectedTrainer(teamToEdit.entrenadorData);
         setTeamType(teamToEdit.entrenadorData.type);
       }
 
-      // Restaurar jugadoras seleccionadas
-      if (Array.isArray(teamToEdit.jugadoras)) {
-        setSelectedPlayers(teamToEdit.jugadoras);
+      if (Array.isArray(teamToEdit.deportistas)) {
+        setSelectedAthletes(teamToEdit.deportistas);
+        if (teamToEdit.teamType === "fundacion" && teamToEdit.deportistas.length > 0) {
+          setCurrentCategoria(teamToEdit.deportistas[0].categoria);
+        }
       }
     } else if (isOpen && !isEditing) {
-      // Limpiar al abrir para crear
       setSelectedTrainer(null);
-      setSelectedPlayers([]);
+      setSelectedAthletes([]);
       setTeamType(null);
-      setTypeValidationError("");
+      setCurrentCategoria(null);
     }
-    
   }, [isOpen, isEditing, teamToEdit]);
 
-  // Validación en tiempo real cuando cambia el entrenador o jugadoras
   useEffect(() => {
-    if (selectedTrainer && selectedPlayers.length > 0) {
-      const trainerType = selectedTrainer.type;
-      const playersType = selectedPlayers[0]?.type;
-
-      if (trainerType !== playersType) {
-        const trainerTypeText =
-          trainerType === "fundacion" ? "la Fundación" : "Temporales";
-        const playersTypeText =
-          playersType === "fundacion" ? "la Fundación" : "Temporales";
-
-        setTypeValidationError(
-          `El entrenador es de ${trainerTypeText} pero las jugadoras son ${playersTypeText}. Todos deben ser de la misma categoría.`
-        );
-      } else {
-        setTypeValidationError("");
-      }
+    if (teamType === "fundacion" && selectedAthletes.length > 0) {
+      const categoria = selectedAthletes[0].categoria;
+      setCurrentCategoria(categoria);
     } else {
-      setTypeValidationError("");
+      setCurrentCategoria(null);
     }
-  }, [selectedTrainer, selectedPlayers]);
+  }, [selectedAthletes, teamType]);
+
+  const shouldShowCategoryField = teamType === "temporal";
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -131,116 +133,206 @@ const TemporaryTeamModal = ({
     return phone;
   };
 
-  // Manejar selección de entrenador
   const handleTrainerSelect = (trainer) => {
+    if (selectedAthletes.length > 0 && trainer.type !== selectedAthletes[0]?.type) {
+      showErrorAlert(
+        "Tipo incompatible",
+        `No se puede seleccionar un entrenador ${trainer.type === "fundacion" ? "de la fundación" : "temporal"} cuando tienes deportistas ${selectedAthletes[0]?.type === "fundacion" ? "de la fundación" : "temporales"} seleccionadas.`
+      );
+      return;
+    }
+
     setSelectedTrainer(trainer);
     setTeamType(trainer.type);
     handleChange("entrenador", trainer.name);
     setIsTrainerModalOpen(false);
   };
 
-  // Manejar selección de jugadoras
-  const handlePlayersSelect = (players) => {
-    setSelectedPlayers(players);
-    handleChange("jugadoras", players);
+  const handleAthletesSelect = (athletes) => {
+    if (athletes.length > 0) {
+      const firstAthleteType = athletes[0].type;
+      const hasMixedTypes = athletes.some((athlete) => athlete.type !== firstAthleteType);
+
+      if (hasMixedTypes) {
+        showErrorAlert(
+          "Tipos mixtos no permitidos",
+          "No se pueden seleccionar deportistas de la fundación y temporales en el mismo equipo."
+        );
+        return;
+      }
+
+      if (selectedTrainer && selectedTrainer.type !== firstAthleteType) {
+        showErrorAlert(
+          "Tipo incompatible",
+          `No se pueden seleccionar deportistas ${firstAthleteType === "fundacion" ? "de la fundación" : "temporales"} cuando tienes un entrenador ${selectedTrainer.type === "fundacion" ? "de la fundación" : "temporal"}.`
+        );
+        return;
+      }
+
+      if (firstAthleteType === "fundacion" && athletes.length > 1) {
+        const firstCategory = athletes[0].categoria;
+        const hasMixedCategories = athletes.some((athlete) => athlete.categoria !== firstCategory);
+
+        if (hasMixedCategories) {
+          showErrorAlert(
+            "Categorías mixtas no permitidas",
+            "Todas las deportistas de la fundación deben ser de la misma categoría."
+          );
+          return;
+        }
+      }
+    }
+
+    setSelectedAthletes(athletes);
+    handleChange("deportistas", athletes);
+
+    if (!selectedTrainer && athletes.length > 0) {
+      setTeamType(athletes[0].type);
+    }
+
+    if (teamType === "fundacion" && athletes.length > 0) {
+      const categoria = athletes[0].categoria;
+      setCurrentCategoria(categoria);
+    }
   };
 
-  // Eliminar jugadora seleccionada
-  const removePlayer = (playerId) => {
-    const updated = selectedPlayers.filter((p) => p.id !== playerId);
-    setSelectedPlayers(updated);
-    handleChange("jugadoras", updated);
+  const removeAthlete = (athleteId) => {
+    const updated = selectedAthletes.filter((p) => p.id !== athleteId);
+    setSelectedAthletes(updated);
+    handleChange("deportistas", updated);
 
-    // Si no hay jugadoras, resetear el tipo
     if (updated.length === 0) {
       setTeamType(selectedTrainer?.type || null);
-      setTypeValidationError("");
+      setCurrentCategoria(null);
+    } else if (teamType === "fundacion") {
+      const categoria = updated[0].categoria;
+      setCurrentCategoria(categoria);
     }
   };
 
   const handleSubmit = async () => {
-    // Validar tipos antes de continuar
-    if (typeValidationError) {
-      showErrorAlert("Error de validación", typeValidationError);
-      return;
-    }
-
-    // Marcar todos como touched
     const allTouched = {};
     Object.keys(temporaryTeamsValidationRules).forEach((field) => {
       allTouched[field] = true;
     });
     setTouched(allTouched);
 
-    if (!validateAllFields()) {
+    // Validar campos básicos
+    const basicValidationPassed = validateAllFields();
+
+    // Validación específica para categoría de equipos temporales
+    let categoriaError = "";
+    if (teamType === "temporal") {
+      categoriaError = validateCategoria(values.categoria, teamType);
+      if (categoriaError) {
+        setErrors((prev) => ({ ...prev, categoria: categoriaError }));
+      }
+    }
+
+    if (!basicValidationPassed || categoriaError) {
       return;
+    }
+
+    if (selectedTrainer && selectedAthletes.length > 0 && selectedTrainer.type !== selectedAthletes[0]?.type) {
+      showErrorAlert(
+        "Error de validación",
+        "No se pueden seleccionar un entrenador y deportistas de diferentes tipos (fundación o temporales)."
+      );
+      return;
+    }
+
+    if (selectedAthletes.length > 0) {
+      const firstAthleteType = selectedAthletes[0].type;
+      const hasMixedTypes = selectedAthletes.some((athlete) => athlete.type !== firstAthleteType);
+
+      if (hasMixedTypes) {
+        showErrorAlert(
+          "Error de validación",
+          "No se pueden seleccionar deportistas de diferentes tipos en el mismo equipo."
+        );
+        return;
+      }
+    }
+
+    if (teamType === "fundacion" && selectedAthletes.length > 1) {
+      const firstCategory = selectedAthletes[0].categoria;
+      const hasMixedCategories = selectedAthletes.some((athlete) => athlete.categoria !== firstCategory);
+
+      if (hasMixedCategories) {
+        showErrorAlert(
+          "Error de validación",
+          "Todas las deportistas de la fundación deben ser de la misma categoría."
+        );
+        return;
+      }
     }
 
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
-        "¿Estás seguro?",
-        `¿Deseas actualizar la información del equipo ${
+        "¿Confirmar actualización?",
+        `Se actualizarán los datos del equipo ${
           teamToEdit?.nombre || values.nombreEquipo
-        }?`,
-        { confirmButtonText: "Sí, actualizar", cancelButtonText: "Cancelar" }
+        }`,
+        { confirmButtonText: "Actualizar", cancelButtonText: "Cancelar" }
       );
       if (!confirmResult.isConfirmed) return;
     }
 
     try {
+      const finalCategory = teamType === "fundacion" ? currentCategoria : values.categoria;
+
+      const preparedAthletes = selectedAthletes.map((athlete) => {
+        if (athlete.type === "temporal") {
+          const { categoria, ...athleteWithoutCategory } = athlete;
+          return athleteWithoutCategory;
+        }
+        return athlete;
+      });
+
       const teamData = {
         nombre: values.nombreEquipo,
         telefono: formatPhoneNumber(values.telefono),
         entrenador: values.entrenador,
         entrenadorData: selectedTrainer,
-        jugadoras: selectedPlayers,
-        jugadorasIds: selectedPlayers.map((j) => j.id),
-        cantidadJugadoras: selectedPlayers.length,
+        deportistas: preparedAthletes,
+        deportistasIds: selectedAthletes.map((j) => j.id),
+        cantidadDeportistas: selectedAthletes.length,
         estado: values.estado,
         descripcion: values.descripcion,
         teamType: teamType,
+        categoria: finalCategory,
       };
 
       if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
         await onUpdate(updatedTeamData);
-        showSuccessAlert(
-          "Equipo actualizado",
-          `Los datos de ${teamData.nombre} han sido actualizados.`
-        );
+        showSuccessAlert("Éxito", `${teamData.nombre} ha sido actualizado`);
       } else {
         await onSave(teamData);
-        showSuccessAlert(
-          "Equipo creado",
-          "El equipo ha sido creado exitosamente."
-        );
+        showSuccessAlert("Éxito", `${teamData.nombre} ha sido creado`);
       }
 
       resetForm();
       setSelectedTrainer(null);
-      setSelectedPlayers([]);
+      setSelectedAthletes([]);
       setTeamType(null);
-      setTypeValidationError("");
+      setCurrentCategoria(null);
       onClose();
     } catch (error) {
       console.error(error);
-      showErrorAlert(
-        "Error",
-        error.message || "Ocurrió un error al guardar el equipo"
-      );
+      showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };
 
   const handleClose = () => {
     resetForm();
     setSelectedTrainer(null);
-    setSelectedPlayers([]);
+    setSelectedAthletes([]);
     setTeamType(null);
-    setTypeValidationError("");
+    setCurrentCategoria(null);
     onClose();
   };
 
-  // Obtener texto del tipo de equipo
   const getTeamTypeText = () => {
     if (!teamType) return null;
     return teamType === "fundacion" ? "Fundación" : "Temporales";
@@ -257,20 +349,21 @@ const TemporaryTeamModal = ({
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
-          initial={{ scale: 0.9, opacity: 0, y: 40 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
+          initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+          <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
             <button
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full"
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full"
               onClick={handleClose}
             >
               <XIcon className="w-5 h-5" />
             </button>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
               {isEditing ? "Editar Equipo" : "Crear Equipo"}
             </h2>
             {isEditing && (
@@ -284,70 +377,123 @@ const TemporaryTeamModal = ({
             {teamType && (
               <div className="text-center mt-2">
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                    teamType === "fundacion"
-                      ? "bg-blue-100 text-blue-800"
-                      : "bg-purple-100 text-purple-800"
-                  }`}
+                  className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800"
                 >
                   Equipo de {getTeamTypeText()}
                 </span>
+                {teamType === "fundacion" && currentCategoria && (
+                  <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-200 text-gray-700">
+                    Categoría: {currentCategoria}
+                  </span>
+                )}
               </div>
             )}
           </div>
 
           {/* Body */}
-          <div className="p-6 space-y-6">
-            {/* Alerta de validación de tipos en tiempo real */}
-            {typeValidationError && (
+          <div className="flex-1 overflow-y-auto p-3">
+            {/* Información básica */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-start gap-3"
+                transition={{ delay: 0.1, duration: 0.4 }}
               >
-                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <h3 className="text-sm font-semibold text-red-800 mb-1">
-                    Error de tipo de equipo
-                  </h3>
-                  <p className="text-sm text-red-700">{typeValidationError}</p>
+                <FormField
+                  label="Nombre del Equipo"
+                  name="nombreEquipo"
+                  type="text"
+                  placeholder="Ej: Manuela Vanegas Sub-17"
+                  value={values.nombreEquipo}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.nombreEquipo}
+                  touched={touched.nombreEquipo}
+                  required
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.4 }}
+              >
+                <FormField
+                  label="Número Telefónico"
+                  name="telefono"
+                  type="text"
+                  placeholder="Número de contacto"
+                  value={values.telefono}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.telefono}
+                  touched={touched.telefono}
+                  required
+                />
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.4 }}
+              >
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Estado del Equipo <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="estado"
+                    value={values.estado}
+                    onChange={(e) => handleChange("estado", e.target.value)}
+                    onBlur={() => handleBlur("estado")}
+                    className={`w-full rounded-lg border px-3 py-2 transition focus:ring-2 focus:ring-primary-purple ${
+                      touched.estado && errors.estado
+                        ? "border-red-400"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    <option value="">Seleccione un estado</option>
+                    {states.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {touched.estado && errors.estado && (
+                    <p className="text-sm text-red-500 flex items-center gap-2">
+                      <span>⚠</span> {errors.estado}
+                    </p>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Mostrar categoría automática para equipos de fundación */}
+            {teamType === "fundacion" && currentCategoria && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Categoría del equipo:
+                  </span>
+                  <span className="text-sm text-gray-700 bg-gray-200 px-2 py-1 rounded-full">
+                    {currentCategoria}
+                  </span>
                 </div>
               </motion.div>
             )}
 
-            {/* Información básica */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                label="Nombre del Equipo"
-                name="nombreEquipo"
-                type="text"
-                placeholder="Ej: Manuela Vanegas Sub-17"
-                value={values.nombreEquipo}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.nombreEquipo}
-                touched={touched.nombreEquipo}
-                delay={0.15}
-                required
-              />
-
-              <FormField
-                label="Número Telefónico"
-                name="telefono"
-                type="text"
-                placeholder="Número de contacto"
-                value={values.telefono}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.telefono}
-                touched={touched.telefono}
-                delay={0.2}
-                required
-              />
-            </div>
-
             {/* Selección de Entrenador */}
-            <div className="space-y-3">
+            <motion.div
+              className="space-y-3 mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.4 }}
+            >
               <label className="block text-sm font-medium text-gray-700">
                 Entrenador <span className="text-red-500">*</span>
                 {selectedTrainer && (
@@ -361,7 +507,7 @@ const TemporaryTeamModal = ({
                 <button
                   type="button"
                   onClick={() => setIsTrainerModalOpen(true)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ${
+                  className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
                     touched.entrenador && errors.entrenador
                       ? "border-red-400"
                       : selectedTrainer
@@ -377,12 +523,12 @@ const TemporaryTeamModal = ({
                           : "bg-gray-100 text-gray-400 group-hover:bg-primary-purple/10 group-hover:text-primary-purple"
                       }`}
                     >
-                      <UserCheck className="w-5 h-5" />
+                      <UserCheck className="w-4 h-4" />
                     </div>
                     <div className="text-left">
                       {selectedTrainer ? (
                         <div>
-                          <p className="font-semibold text-gray-900">
+                          <p className="font-semibold text-gray-900 text-sm">
                             {selectedTrainer.name}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -392,14 +538,14 @@ const TemporaryTeamModal = ({
                           </div>
                         </div>
                       ) : (
-                        <p className="text-gray-500 group-hover:text-gray-700">
+                        <p className="text-gray-500 group-hover:text-gray-700 text-sm">
                           Seleccionar entrenador
                         </p>
                       )}
                     </div>
                   </div>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-400 transition-transform ${
+                    className={`w-4 h-4 text-gray-400 transition-transform ${
                       selectedTrainer
                         ? "text-primary-purple"
                         : "group-hover:text-primary-purple"
@@ -408,50 +554,49 @@ const TemporaryTeamModal = ({
                 </button>
 
                 {selectedTrainer && (
-                  <motion.button
+                  <button
                     type="button"
                     onClick={() => {
                       setSelectedTrainer(null);
-                      setTeamType(selectedPlayers.length > 0 ? selectedPlayers[0].type : null);
+                      setTeamType(
+                        selectedAthletes.length > 0 ? selectedAthletes[0].type : null
+                      );
                       handleChange("entrenador", "");
-                      setTypeValidationError("");
+                      setCurrentCategoria(null);
                     }}
-                    className="absolute right-12 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                    className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                   >
-                    <XIcon className="w-4 h-4" />
-                  </motion.button>
+                    <XIcon className="w-3 h-3" />
+                  </button>
                 )}
               </div>
 
               {touched.entrenador && errors.entrenador && (
-                <motion.p
-                  className="text-sm text-red-500 flex items-center gap-2"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
+                <p className="text-sm text-red-500 flex items-center gap-2">
                   <span>⚠</span> {errors.entrenador}
-                </motion.p>
+                </p>
               )}
-            </div>
+            </motion.div>
 
-            {/* Selección de Jugadoras */}
-            <div className="space-y-3">
+            {/* Selección de Deportistas */}
+            <motion.div
+              className="space-y-3 mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+            >
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700">
-                  Jugadoras <span className="text-red-500">*</span>
+                  Deportistas <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-2">
-                  {selectedPlayers.length > 0 && (
-                    <span className="text-sm text-primary-purple font-semibold bg-primary-purple/10 px-3 py-1 rounded-full">
-                      {selectedPlayers.length} seleccionada
-                      {selectedPlayers.length !== 1 ? "s" : ""}
+                  {selectedAthletes.length > 0 && (
+                    <span className="text-sm text-primary-purple font-semibold bg-primary-purple/10 px-2 py-1 rounded-full">
+                      {selectedAthletes.length} seleccionada
+                      {selectedAthletes.length !== 1 ? "s" : ""}
                     </span>
                   )}
-                  {teamType && selectedPlayers.length > 0 && (
+                  {teamType && selectedAthletes.length > 0 && (
                     <span className="text-sm text-gray-600">
                       Tipo: {getTeamTypeText()}
                     </span>
@@ -462,11 +607,11 @@ const TemporaryTeamModal = ({
               <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={() => setIsPlayersModalOpen(true)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ${
-                    touched.jugadoras && errors.jugadoras
+                  onClick={() => setIsAthletesModalOpen(true)}
+                  className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
+                    touched.deportistas && errors.deportistas
                       ? "border-red-400"
-                      : selectedPlayers.length > 0
+                      : selectedAthletes.length > 0
                       ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
                       : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
                   }`}
@@ -474,41 +619,41 @@ const TemporaryTeamModal = ({
                   <div className="flex items-center gap-3">
                     <div
                       className={`p-2 rounded-lg ${
-                        selectedPlayers.length > 0
+                        selectedAthletes.length > 0
                           ? "bg-primary-purple text-white"
                           : "bg-gray-100 text-gray-400 group-hover:bg-primary-purple/10 group-hover:text-primary-purple"
                       }`}
                     >
-                      <Users className="w-5 h-5" />
+                      <Users className="w-4 h-4" />
                     </div>
                     <div className="text-left">
                       <p
-                        className={`font-medium ${
-                          selectedPlayers.length > 0
+                        className={`font-medium text-sm ${
+                          selectedAthletes.length > 0
                             ? "text-gray-900"
                             : "text-gray-500 group-hover:text-gray-700"
                         }`}
                       >
-                        {selectedPlayers.length > 0
-                          ? "Modificar selección de jugadoras"
-                          : "Seleccionar jugadoras"}
+                        {selectedAthletes.length > 0
+                          ? "Modificar selección de deportistas"
+                          : "Seleccionar deportistas"}
                       </p>
-                      {selectedPlayers.length === 0 && (
-                        <p className="text-sm text-gray-400 mt-1">
-                          Haz clic para agregar jugadoras al equipo
+                      {selectedAthletes.length === 0 && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Haz clic para agregar deportistas al equipo
                         </p>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {selectedPlayers.length > 0 && (
-                      <div className="w-6 h-6 bg-primary-purple text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        {selectedPlayers.length}
+                    {selectedAthletes.length > 0 && (
+                      <div className="w-5 h-5 bg-primary-purple text-white rounded-full flex items-center justify-center text-xs font-bold">
+                        {selectedAthletes.length}
                       </div>
                     )}
                     <Plus
-                      className={`w-5 h-5 text-gray-400 transition-transform ${
-                        selectedPlayers.length > 0
+                      className={`w-4 h-4 text-gray-400 transition-transform ${
+                        selectedAthletes.length > 0
                           ? "text-primary-purple"
                           : "group-hover:text-primary-purple"
                       }`}
@@ -516,109 +661,111 @@ const TemporaryTeamModal = ({
                   </div>
                 </button>
 
-                {/* Lista de jugadoras seleccionadas */}
-                {selectedPlayers.length > 0 && (
+                {/* Campo de categoría para equipos temporales */}
+                {shouldShowCategoryField && (
                   <motion.div
-                    className="space-y-2 max-h-60 overflow-y-auto p-4 bg-gray-50 rounded-xl border border-gray-200"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    transition={{ duration: 0.3 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.55, duration: 0.4 }}
                   >
+                    <FormField
+                      label="Categoría del Equipo Temporal"
+                      name="categoria"
+                      type="text"
+                      placeholder="Ej: Sub 17, Sub 15, Mayores"
+                      value={values.categoria}
+                      onChange={(e) => {
+                        handleChange(e);
+                        if (!touched.categoria) {
+                          setTouched((prev) => ({ ...prev, categoria: true }));
+                        }
+                        // Limpiar error si el usuario comienza a escribir
+                        if (errors.categoria) {
+                          setErrors((prev) => ({ ...prev, categoria: "" }));
+                        }
+                      }}
+                      onBlur={() => {
+                        handleBlur("categoria");
+                        // Validación específica para categoría
+                        const categoriaError = validateCategoria(values.categoria, teamType);
+                        if (categoriaError) {
+                          setErrors((prev) => ({ ...prev, categoria: categoriaError }));
+                        }
+                      }}
+                      error={errors.categoria}
+                      touched={touched.categoria}
+                      required
+                    />
+                  </motion.div>
+                )}
+
+                {/* Lista de deportistas seleccionadas */}
+                {selectedAthletes.length > 0 && (
+                  <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-700">
-                        Jugadoras seleccionadas
+                        Deportistas seleccionadas
                       </span>
-                      <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">
-                        {selectedPlayers.length} jugadoras
+                      <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
+                        {selectedAthletes.length} deportistas
                       </span>
                     </div>
-                    {selectedPlayers.map((player, index) => (
+                    {selectedAthletes.map((athlete, index) => (
                       <motion.div
-                        key={player.id}
-                        initial={{ opacity: 0, x: -20 }}
+                        key={athlete.id}
+                        className="flex items-center gap-3 p-2 bg-white rounded border border-gray-200 hover:border-primary-purple/30 hover:shadow-sm transition-all group"
+                        initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-primary-purple/30 hover:shadow-sm transition-all group"
+                        transition={{ delay: 0.6 + index * 0.05, duration: 0.3 }}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 truncate">
-                              {player.name}
+                            <p className="font-medium text-gray-900 text-sm truncate">
+                              {athlete.name}
                             </p>
+                            <span
+                              className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800"
+                            >
+                              {athlete.type === "fundacion" ? "Fundación" : "Temporal"}
+                            </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-gray-600">
-                            {player.categoria && (
-                              <span className="bg-gray-100 px-2 py-0.5 rounded-full">
-                                {player.categoria}
+                            {athlete.categoria && (
+                              <span className="bg-gray-200 px-1.5 py-0.5 rounded-full text-gray-700">
+                                {athlete.categoria}
                               </span>
                             )}
-                            {player.identification && (
-                              <span>{player.identification}</span>
-                            )}
+                            {athlete.identification && <span>{athlete.identification}</span>}
                           </div>
                         </div>
-                        <motion.button
+                        <button
                           type="button"
-                          onClick={() => removePlayer(player.id)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          title="Eliminar jugadora"
+                          onClick={() => removeAthlete(athlete.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
+                          title="Eliminar deportista"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
+                          <Trash2 className="w-3 h-3" />
+                        </button>
                       </motion.div>
                     ))}
-                  </motion.div>
+                  </div>
                 )}
               </div>
 
-              {touched.jugadoras && errors.jugadoras && (
-                <motion.p
-                  className="text-sm text-red-500 flex items-center gap-2"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                >
-                  <span>⚠</span> {errors.jugadoras}
-                </motion.p>
+              {touched.deportistas && errors.deportistas && (
+                <p className="text-sm text-red-500 flex items-center gap-2">
+                  <span>⚠</span> {errors.deportistas}
+                </p>
               )}
-            </div>
+            </motion.div>
 
-            {/* Estado y Descripción */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estado del Equipo <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="estado"
-                  value={values.estado}
-                  onChange={(e) => handleChange("estado", e.target.value)}
-                  onBlur={() => handleBlur("estado")}
-                  className={`w-full rounded-lg border px-4 py-2.5 transition focus:ring-2 focus:ring-primary-purple ${
-                    touched.estado && errors.estado
-                      ? "border-red-400"
-                      : "border-gray-300"
-                  }`}
-                >
-                  <option value="">Seleccione un estado</option>
-                  {states.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-
-                {touched.estado && errors.estado && (
-                  <motion.p
-                    className="mt-2 text-sm text-red-500 flex items-center gap-2"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <span>⚠</span> {errors.estado}
-                  </motion.p>
-                )}
-              </div>
+            {/* Descripción */}
+            <motion.div
+              className="mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.65, duration: 0.4 }}
+            >
               <FormField
                 label="Descripción"
                 name="descripcion"
@@ -630,35 +777,27 @@ const TemporaryTeamModal = ({
                 error={errors.descripcion}
                 touched={touched.descripcion}
                 rows={3}
-                delay={0.4}
               />
-            </div>
+            </motion.div>
+          </div>
 
-            {/* Botones de acción */}
-            <div className="flex justify-between pt-6 border-t border-gray-200">
-              <motion.button
+          {/* Footer */}
+          <div className="flex-shrink-0 border-t border-gray-200 p-3">
+            <div className="flex justify-between">
+              <button
                 type="button"
                 onClick={handleClose}
-                className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
               >
                 Cancelar
-              </motion.button>
+              </button>
 
-              <motion.button
+              <button
                 onClick={handleSubmit}
-                disabled={!!typeValidationError}
-                className={`px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg ${
-                  typeValidationError
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-primary-blue hover:bg-primary-purple hover:shadow-xl"
-                }`}
-                whileHover={!typeValidationError ? { scale: 1.02 } : {}}
-                whileTap={!typeValidationError ? { scale: 0.98 } : {}}
+                className="px-6 py-2 text-white rounded-lg transition-all duration-200 font-medium shadow-lg bg-primary-blue hover:bg-primary-purple"
               >
                 {isEditing ? "Actualizar Equipo" : "Crear Equipo"}
-              </motion.button>
+              </button>
             </div>
           </div>
         </motion.div>
@@ -671,14 +810,17 @@ const TemporaryTeamModal = ({
         mode="trainer"
         onSelect={handleTrainerSelect}
         selectedItems={selectedTrainer ? [selectedTrainer] : []}
+        teamType={teamType}
       />
 
       <SelectionModal
-        isOpen={isPlayersModalOpen}
-        onClose={() => setIsPlayersModalOpen(false)}
-        mode="players"
-        onSelect={handlePlayersSelect}
-        selectedItems={selectedPlayers}
+        isOpen={isAthletesModalOpen}
+        onClose={() => setIsAthletesModalOpen(false)}
+        mode="athletes"
+        onSelect={handleAthletesSelect}
+        selectedItems={selectedAthletes}
+        currentCategoria={teamType === "fundacion" ? currentCategoria : null}
+        teamType={teamType}
       />
     </>
   );

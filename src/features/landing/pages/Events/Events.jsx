@@ -13,7 +13,6 @@ import {
   sortEventsByDateTime,
 } from "../../../../shared/utils/helpers/dateHelpers.js";
 
-import { EventCard } from "./components/EventCard.jsx";
 import { EventModal } from "./components/EventModal.jsx";
 
 export const Events = () => {
@@ -42,6 +41,8 @@ export const Events = () => {
     console.log("handleEventSelect - eventId:", eventId);
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
+    
+    // Auto-reset del highlight después de 5 segundos
     setTimeout(() => {
       console.log("Reseteando highlightedEventId");
       setHighlightedEventId(null);
@@ -49,24 +50,39 @@ export const Events = () => {
   };
 
   const handleDateSelect = (date) => {
+    console.log("📅 handleDateSelect - fecha seleccionada:", date);
     setSelectedDate(date);
 
-    const eventsOnDate = allEvents.filter((event) =>
-      isSameDay(event.date, date)
-    );
+    // Buscar eventos en esa fecha (incluyendo eventos multi-día)
+    const eventsOnDate = allEvents.filter((event) => {
+      // Usar isSameDay con soporte para endDate
+      return isSameDay(new Date(event.date), date, event.endDate ? new Date(event.endDate) : null);
+    });
+
+    console.log("📊 Eventos encontrados en la fecha:", eventsOnDate);
 
     if (eventsOnDate.length > 0) {
       const sortedEvents = sortEventsByDateTime(eventsOnDate);
       const targetEvent = sortedEvents[0];
       const targetEventId = targetEvent.id;
 
+      console.log("🎯 Evento objetivo para highlight:", targetEvent.title, targetEventId);
+
+      // Resetear highlight antes de establecer uno nuevo
       setHighlightedEventId(null);
-      setTimeout(() => {
-        setHighlightedEventId(targetEventId);
-        setSelectedEventId(targetEventId);
-        setSelectedEventType(targetEvent.type);
-      }, 10);
+      
+      // Usar requestAnimationFrame para asegurar que el DOM se actualice
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setHighlightedEventId(targetEventId);
+          setSelectedEventId(targetEventId);
+          setSelectedEventType(targetEvent.type);
+          
+          console.log("✅ Estados actualizados - highlightedEventId:", targetEventId);
+        });
+      });
     } else {
+      console.log("⚠️ No hay eventos en esta fecha");
       setSelectedEventId(null);
       setHighlightedEventId(null);
     }
@@ -83,6 +99,11 @@ export const Events = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setModalEvent(null);
+  };
+
+  const handleHighlightComplete = () => {
+    console.log("🔄 Highlight completado, reseteando...");
+    setHighlightedEventId(null);
   };
 
   return (
@@ -158,6 +179,7 @@ export const Events = () => {
             pastEvents={orderedPast}
             highlightedEventId={highlightedEventId}
             onViewMore={handleViewMore}
+            onHighlightComplete={handleHighlightComplete}
           />
         </motion.div>
       </div>

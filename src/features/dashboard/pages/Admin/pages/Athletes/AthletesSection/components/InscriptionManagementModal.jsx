@@ -12,6 +12,9 @@ import {
   FaExclamationTriangle,
   FaUserCircle,
   FaPauseCircle,
+  FaUpload,
+  FaFileImage,
+  FaTrash,
 } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
@@ -105,7 +108,7 @@ const getAvailableStateChanges = (currentState) => {
   }
 };
 
-// ✅ CORREGIDO: Manejo seguro de cambios en el formulario
+// Manejo seguro de cambios en el formulario
 const handleFormChange = (field, value, setFormFunction) => {
   setFormFunction((prev) => ({
     ...prev,
@@ -124,6 +127,8 @@ const InscriptionManagementModal = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [editingInscription, setEditingInscription] = useState(null);
   const [showConceptoFields, setShowConceptoFields] = useState(false);
+  const [comprobanteFile, setComprobanteFile] = useState(null);
+  const [comprobantePreview, setComprobantePreview] = useState(null);
 
   // Función para obtener fecha y hora actual
   const getCurrentDateTime = () => {
@@ -137,14 +142,14 @@ const InscriptionManagementModal = ({
 
   const [newInscriptionForm, setNewInscriptionForm] = useState({
     estado: "Vigente",
-    fechaInscripcion: getCurrentDate(), // Usar la función que existe
+    fechaInscripcion: getCurrentDate(),
     categoria: "",
   });
 
   const [editForm, setEditForm] = useState({
     estado: "",
     conceptoEstado: "",
-    fechaConcepto: getCurrentDate(), // Usar la función que existe
+    fechaConcepto: getCurrentDate(),
   });
 
   const calculateAge = () => {
@@ -197,7 +202,7 @@ const InscriptionManagementModal = ({
 
       setNewInscriptionForm({
         estado: "Vigente",
-        fechaInscripcion: getCurrentDate(), // Usar la función correcta
+        fechaInscripcion: getCurrentDate(),
         categoria: initialCategory,
       });
     }
@@ -209,10 +214,12 @@ const InscriptionManagementModal = ({
       setEditingInscription(null);
       setIsProcessing(false);
       setShowConceptoFields(false);
+      setComprobanteFile(null);
+      setComprobantePreview(null);
       setEditForm({ 
         estado: "", 
         conceptoEstado: "", 
-        fechaConcepto: getCurrentDate() // Usar la función correcta
+        fechaConcepto: getCurrentDate()
       });
     }
   }, [isOpen]);
@@ -230,13 +237,57 @@ const InscriptionManagementModal = ({
       setEditForm((prev) => ({
         ...prev,
         estado: value,
-        fechaConcepto: getCurrentDate(), // Usar fecha para el form
+        fechaConcepto: getCurrentDate(),
       }));
 
       setShowConceptoFields(isStateChanged);
     } else {
       handleFormChange(field, value, setEditForm);
     }
+  };
+
+  // Manejar subida de comprobante
+  const handleComprobanteUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validar tipo de archivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      showErrorAlert(
+        "Tipo de archivo no válido",
+        "Solo se permiten imágenes (JPEG, PNG, GIF, WebP)"
+      );
+      return;
+    }
+
+    // Validar tamaño (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      showErrorAlert(
+        "Archivo demasiado grande",
+        "El comprobante no puede ser mayor a 5MB"
+      );
+      return;
+    }
+
+    setComprobanteFile(file);
+
+    // Crear preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setComprobantePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 🔄 NUEVA FUNCIÓN: Eliminar comprobante
+  const handleRemoveComprobante = () => {
+    setComprobanteFile(null);
+    setComprobantePreview(null);
+    // Limpiar input file
+    const fileInput = document.getElementById('comprobante-pago');
+    if (fileInput) fileInput.value = '';
   };
 
   const handleStartEdit = (inscription) => {
@@ -246,7 +297,7 @@ const InscriptionManagementModal = ({
     setEditForm({
       estado: inscription.estado ?? currentInscription?.estado ?? "Vigente",
       conceptoEstado: "",
-      fechaConcepto: getCurrentDate(), // Usar la función correcta
+      fechaConcepto: getCurrentDate(),
     });
 
     setShowConceptoFields(false);
@@ -257,16 +308,26 @@ const InscriptionManagementModal = ({
     setEditForm({ 
       estado: "", 
       conceptoEstado: "", 
-      fechaConcepto: getCurrentDate() // Usar la función correcta
+      fechaConcepto: getCurrentDate()
     });
     setShowConceptoFields(false);
   };
 
+  //  Función de crear inscripción para incluir comprobante
   const handleCreateInscription = async () => {
     if (currentInscription && currentInscription.estado !== "Vencida") {
       showErrorAlert(
         "No se puede renovar",
         `Solo puede renovar cuando la inscripción actual esté Vencida. Estado actual: ${currentInscription.estado}`
+      );
+      return;
+    }
+
+    // Comprobante obligatorio
+    if (!comprobanteFile) {
+      showErrorAlert(
+        "Comprobante requerido",
+        "Debe subir una imagen del comprobante de pago para realizar la renovación."
       );
       return;
     }
@@ -281,15 +342,25 @@ const InscriptionManagementModal = ({
     try {
       setIsProcessing(true);
 
+      const comprobanteUrl = URL.createObjectURL(comprobanteFile);
+
       const newInscription = {
         id: crypto.randomUUID(),
         estado: "Vigente",
         concepto: `Renovación ${currentYear}`,
-        fechaInscripcion: getCurrentDateTime(), // Usar fecha/hora completa para el registro
+        fechaInscripcion: getCurrentDateTime(),
         categoria: newInscriptionForm.categoria,
-        fechaConcepto: getCurrentDateTime(), // Usar fecha/hora completa para el registro
+        fechaConcepto: getCurrentDateTime(),
         tipo: "renovacion",
-        estadoAnterior: currentInscription?.estado || "Vencida"
+        estadoAnterior: currentInscription?.estado || "Vencida",
+        //  información del comprobante
+        comprobantePago: {
+          url: comprobanteUrl,
+          nombreArchivo: comprobanteFile.name,
+          fechaSubida: getCurrentDateTime(),
+          tipo: comprobanteFile.type,
+          tamaño: comprobanteFile.size
+        }
       };
 
       const updatedAthlete = {
@@ -306,11 +377,14 @@ const InscriptionManagementModal = ({
         `Se creó una nueva inscripción vigente para ${athlete.nombres} ${athlete.apellidos}.`
       );
 
+      // Limpiar formulario y comprobante
       setNewInscriptionForm({
         estado: "Vigente",
-        fechaInscripcion: getCurrentDate(), // Solo fecha para el form
+        fechaInscripcion: getCurrentDate(),
         categoria: newInscriptionForm.categoria,
       });
+      setComprobanteFile(null);
+      setComprobantePreview(null);
 
       setActiveTab("current");
     } catch (error) {
@@ -353,14 +427,14 @@ const InscriptionManagementModal = ({
       let updatedInscriptions;
 
       if (editForm.estado !== currentInscription.estado) {
-        // ✅ CREAR NUEVO REGISTRO para el cambio de estado
+        //  CREAR NUEVO REGISTRO para el cambio de estado
         const newStateChange = {
           id: crypto.randomUUID(),
           estado: editForm.estado,
           estadoAnterior: currentInscription.estado,
           concepto: editForm.conceptoEstado,
           fechaInscripcion: currentInscription.fechaInscripcion,
-          fechaConcepto: getCurrentDateTime(), // Usar fecha/hora completa
+          fechaConcepto: getCurrentDateTime(),
           categoria: currentInscription.categoria,
           tipo: "cambio_estado"
         };
@@ -424,6 +498,8 @@ const InscriptionManagementModal = ({
     setEditingInscription(null);
     setIsProcessing(false);
     setShowConceptoFields(false);
+    setComprobanteFile(null);
+    setComprobantePreview(null);
     onClose();
   };
 
@@ -443,7 +519,7 @@ const InscriptionManagementModal = ({
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
-        {/* El resto del JSX se mantiene igual */}
+        {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
           <button
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
@@ -468,17 +544,18 @@ const InscriptionManagementModal = ({
           </div>
         </div>
 
+        {/* Tabs */}
         <div className="bg-gray-50 border-b border-gray-200">
           <div className="flex justify-center gap-2 p-3">
             <motion.button
               onClick={() => setActiveTab("current")}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
                 activeTab === "current"
-                  ? "bg-gradient-to-r from-primary-purple to-primary-blue text-white shadow-lg"
+                  ? "bg-primary-blue text-white shadow-lg"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
               disabled={isProcessing}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: activeTab === "current" ? 1 : 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <FaEye size={16} />
@@ -489,11 +566,11 @@ const InscriptionManagementModal = ({
               onClick={() => setActiveTab("new")}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
                 activeTab === "new"
-                  ? "bg-gradient-to-r from-primary-purple to-primary-blue text-white shadow-lg"
+                  ? "bg-primary-blue text-white shadow-lg"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
               }`}
               disabled={isProcessing}
-              whileHover={{ scale: 1.02 }}
+              whileHover={{ scale: activeTab === "new" ? 1 : 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
               <FaPlus size={16} />
@@ -502,6 +579,7 @@ const InscriptionManagementModal = ({
           </div>
         </div>
 
+        {/* Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
             {activeTab === "current" && (
@@ -511,6 +589,7 @@ const InscriptionManagementModal = ({
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
+                {/* Información del Deportista */}
                 <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                     <FaUserCircle className="text-primary-purple" />
@@ -534,6 +613,7 @@ const InscriptionManagementModal = ({
                   </div>
                 </div>
 
+                {/* Estado Actual de Inscripción */}
                 <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -546,7 +626,7 @@ const InscriptionManagementModal = ({
                         .length > 0 && (
                         <motion.button
                           onClick={() => handleStartEdit(currentInscription)}
-                          className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
+                          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                         >
@@ -565,7 +645,7 @@ const InscriptionManagementModal = ({
                       >
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                           <h4 className="font-semibold text-blue-800 mb-2">
-                            📋 Estado actual:{" "}
+                             Estado actual:{" "}
                             <span className="text-blue-900">
                               {currentInscription.estado}
                             </span>
@@ -660,7 +740,7 @@ const InscriptionManagementModal = ({
                               (showConceptoFields &&
                                 !editForm.conceptoEstado?.trim())
                             }
-                            className="px-6 py-2 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -669,7 +749,7 @@ const InscriptionManagementModal = ({
                           <motion.button
                             onClick={handleCancelEdit}
                             disabled={isProcessing}
-                            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                           >
@@ -786,6 +866,7 @@ const InscriptionManagementModal = ({
                   )}
                 </div>
 
+                {/* Información de cambio automático */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <div className="bg-blue-100 rounded-full p-2 mt-1">
@@ -888,16 +969,78 @@ const InscriptionManagementModal = ({
                       />
                     </div>
 
+                    {/* Campo para subir comprobante */}
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 bg-gray-50 hover:border-primary-purple transition-colors">
+                      <div className="text-center">
+                        <FaUpload className="mx-auto text-gray-400 mb-3" size={32} />
+                        <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                          Comprobante de Pago
+                        </h4>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Sube una imagen del comprobante de pago (OBLIGATORIO para renovación)
+                        </p>
+                        
+                        {!comprobantePreview ? (
+                          <div>
+                            <input
+                              id="comprobante-pago"
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                              onChange={handleComprobanteUpload}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="comprobante-pago"
+                              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors cursor-pointer font-medium mx-auto w-fit"
+                            >
+                              <FaUpload size={16} />
+                              Seleccionar Archivo
+                            </label>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Formatos permitidos: JPEG, PNG, GIF, WebP (Máx. 5MB)
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center">
+                            <div className="relative mb-4">
+                              <img
+                                src={comprobantePreview}
+                                alt="Vista previa del comprobante"
+                                className="max-h-48 rounded-lg border border-gray-300"
+                              />
+                              <button
+                                onClick={handleRemoveComprobante}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                              >
+                                <FaTrash size={12} />
+                              </button>
+                            </div>
+                            <p className="text-sm text-green-600 font-medium mb-2">
+                              ✓ Comprobante cargado: {comprobanteFile.name}
+                            </p>
+                            <button
+                              onClick={handleRemoveComprobante}
+                              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
+                            >
+                              <FaTrash size={12} />
+                              Eliminar Comprobante
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex justify-end pt-4 border-t border-gray-200">
                       <motion.button
                         onClick={handleCreateInscription}
                         disabled={
                           isProcessing ||
                           !newInscriptionForm.categoria ||
+                          !comprobanteFile || 
                           (currentInscription &&
                             currentInscription.estado !== "Vencida")
                         }
-                        className="px-8 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                       >
@@ -923,6 +1066,7 @@ const InscriptionManagementModal = ({
           </div>
         </div>
 
+        {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
           <div className="flex justify-end">
             <motion.button

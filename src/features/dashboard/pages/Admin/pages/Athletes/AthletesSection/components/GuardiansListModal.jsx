@@ -19,25 +19,24 @@ const GuardiansListModal = ({
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 8;
 
-const filteredData = useMemo(() => {
-  if (!searchTerm) return guardians;
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return guardians;
 
-  return guardians.filter((item) =>
-    Object.entries(item).some(([key, value]) => {
-      const stringValue = String(value || "").trim();
+    return guardians.filter((item) =>
+      Object.entries(item).some(([key, value]) => {
+        const stringValue = String(value || "").trim();
 
-      if (key.toLowerCase() === "estado") {
-        return (
-          (stringValue === "Activo" && searchTerm === "Activo") ||
-          (stringValue === "Inactivo" && searchTerm === "Inactivo")
-        );
-      }
+        if (key.toLowerCase() === "estado") {
+          return (
+            (stringValue === "Activo" && searchTerm === "Activo") ||
+            (stringValue === "Inactivo" && searchTerm === "Inactivo")
+          );
+        }
 
-      return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-    })
-  );
-}, [guardians, searchTerm]);
-
+        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+    );
+  }, [guardians, searchTerm]);
 
   const totalRows = filteredData.length;
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
@@ -130,7 +129,7 @@ const filteredData = useMemo(() => {
             </div>
             <motion.button
               onClick={onCreateGuardian}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition-all duration-200 font-medium"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
@@ -158,12 +157,18 @@ const filteredData = useMemo(() => {
                       actions: true,
                     }}
                     tbody={{
-                      data: paginatedData.map((guardian) => ({
-                        ...guardian,
-                        deportistasCount: athletes.filter(
-                          (a) => a.acudiente === guardian.id
-                        ).length,
-                      })),
+                      data: paginatedData.map((guardian) => {
+                        const deportistasAsociados = athletes.filter(
+                          (a) => String(a.acudiente) === String(guardian.id)
+                        );
+                        
+                        console.log(`✅ Acudiente: ${guardian.nombreCompleto} (ID: ${guardian.id}) - Deportistas: ${deportistasAsociados.length}`);
+                        
+                        return {
+                          ...guardian,
+                          deportistasCount: deportistasAsociados.length,
+                        };
+                      }),
                       dataPropertys: [
                         "nombreCompleto",
                         "identificacion",

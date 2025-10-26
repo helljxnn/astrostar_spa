@@ -19,6 +19,7 @@ const athletesData = [
     categoria: "Sub 15",
     estado: "Activo",
     acudiente: 101,
+    parentesco: "Padre",
     estadoInscripcion: "Vigente",
     inscripciones: [
       {
@@ -48,8 +49,9 @@ const athletesData = [
     direccion: "Carrera 15 #67-89, Conjunto El Dorado",
     ciudad: "Medellín",
     categoria: "Sub 15",
-    estado: "Activo", // ✅ El deportista sigue activo, solo la inscripción está suspendida
+    estado: "Activo", //  El deportista sigue activo, solo la inscripción está suspendida
     acudiente: 102,
+    parentesco: "Padre",
     estadoInscripcion: "Suspendida",
     inscripciones: [
       {
@@ -81,11 +83,12 @@ const athletesData = [
     categoria: "Juvenil",
     estado: "Activo",
     acudiente: 102,
+    parentesco: "Padre",
     estadoInscripcion: "Vencida",
     inscripciones: [
       {
         id: 103,
-        fechaInscripcion: "2024-01-20", // ✅ 2024 para mostrar vencida
+        fechaInscripcion: "2024-01-20", // 2024 para mostrar vencida
         estado: "Vencida",
         categoria: "Juvenil",
         concepto: "Inscripción anual 2024",
@@ -112,6 +115,7 @@ const athletesData = [
     categoria: "Juvenil",
     estado: "Inactivo", // 
     acudiente: 101,
+    parentesco: "Padre",
     estadoInscripcion: "Suspendida",
     inscripciones: [
       {
@@ -143,6 +147,7 @@ const athletesData = [
     categoria: "Infantil",
     estado: "Activo",
     acudiente: 101,
+    parentesco: "Padre",
     estadoInscripcion: "Vigente",
     inscripciones: [
       {
@@ -174,6 +179,7 @@ const athletesData = [
     categoria: "Sub 15",
     estado: "Activo",
     acudiente: 103,
+    parentesco: "Padre",
     estadoInscripcion: "Vigente",
     inscripciones: [
       {
