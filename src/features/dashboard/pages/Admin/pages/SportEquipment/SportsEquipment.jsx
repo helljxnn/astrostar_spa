@@ -10,6 +10,8 @@ import DarDeBajaModal from "./components/DarDeBajaModal"; // Importar el nuevo m
 import ViewDetails from "../../../../../../shared/components/ViewDetails";
 import ReportButton from "../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../shared/components/SearchInput";
+import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import {
   showSuccessAlert,
   showConfirmAlert,
@@ -22,6 +24,7 @@ const LOCAL_STORAGE_KEY = 'sportsEquipmentData';
 function SportsEquipment() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
 
   // Estado para la lista de datos, inicializado desde localStorage
   const [equipmentList, setEquipmentList] = useState(() => {
@@ -255,23 +258,29 @@ function SportsEquipment() {
             />
           </div>
           <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <ReportButton
-              data={reportData}
-              fileName="Material_Deportivo"
-              columns={[
-                { header: "Nombre", accessor: "NombreMaterial" },
-                { header: "Comprado", accessor: "CantidadComprado" },
-                { header: "Donado", accessor: "CantidadDonado" },
-                { header: "Total", accessor: "Total" },
-                { header: "Estado", accessor: "estado" },
-              ]}
-            />
-            <button onClick={() => setIsDarDeBajaModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
-              Dar de Baja <FaMinusCircle size={18} />
-            </button>
-            <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
-              Crear <SiGoogleforms size={20} />
-            </button>
+            <PermissionGuard module="sportsEquipment" action="Ver">
+              <ReportButton
+                data={reportData}
+                fileName="Material_Deportivo"
+                columns={[
+                  { header: "Nombre", accessor: "NombreMaterial" },
+                  { header: "Comprado", accessor: "CantidadComprado" },
+                  { header: "Donado", accessor: "CantidadDonado" },
+                  { header: "Total", accessor: "Total" },
+                  { header: "Estado", accessor: "estado" },
+                ]}
+              />
+            </PermissionGuard>
+            <PermissionGuard module="sportsEquipment" action="Eliminar">
+              <button onClick={() => setIsDarDeBajaModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
+                Dar de Baja <FaMinusCircle size={18} />
+              </button>
+            </PermissionGuard>
+            <PermissionGuard module="sportsEquipment" action="Crear">
+              <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
+                Crear <SiGoogleforms size={20} />
+              </button>
+            </PermissionGuard>
           </div>
         </div>
         {/* Tabla */}
@@ -297,9 +306,29 @@ function SportsEquipment() {
             ],
             state: true,
           }}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onView={handleView}
+          onEdit={hasPermission('sportsEquipment', 'Editar') ? handleEdit : null}
+          onDelete={hasPermission('sportsEquipment', 'Eliminar') ? handleDelete : null}
+          onView={hasPermission('sportsEquipment', 'Ver') ? handleView : null}
+          buttonConfig={{
+            edit: (item) => ({
+              show: hasPermission('sportsEquipment', 'Editar'),
+              disabled: false,
+              className: '',
+              title: 'Editar material deportivo'
+            }),
+            delete: (item) => ({
+              show: hasPermission('sportsEquipment', 'Eliminar'),
+              disabled: false,
+              className: '',
+              title: 'Eliminar material deportivo'
+            }),
+            view: (item) => ({
+              show: hasPermission('sportsEquipment', 'Ver'),
+              disabled: false,
+              className: '',
+              title: 'Ver detalles del material'
+            })
+          }}
         />
       </div>
       {/* Modal para Crear Material */}

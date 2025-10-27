@@ -1,38 +1,65 @@
-import React from "react";
+import Table from "../../../../../../../shared/components/Table/table";
+import { FaEdit, FaEye } from "react-icons/fa";
 
-export default function DonationsTable({ donations }) {
-  return (
-    <table className="w-full border-collapse border">
-      <thead>
-        <tr className="bg-gray-100">
-          <th className="border px-3 py-2 text-left">Donante</th>
-          <th className="border px-3 py-2 text-left">Tipo</th>
-          <th className="border px-3 py-2 text-left">Cantidad</th>
-          <th className="border px-3 py-2 text-left">Fecha Donación</th>
-          <th className="border px-3 py-2 text-left">Fecha Registro</th>
-          <th className="border px-3 py-2 text-left">Extra</th>
-        </tr>
-      </thead>
-      <tbody>
-        {donations.length === 0 ? (
-          <tr>
-            <td colSpan="6" className="text-center py-4">
-              No hay donaciones registradas.
-            </td>
-          </tr>
-        ) : (
-          donations.map((d, i) => (
-            <tr key={i} className="border-t">
-              <td className="border px-3 py-2">{d.donorName}</td>
-              <td className="border px-3 py-2">{d.type}</td>
-              <td className="border px-3 py-2">{d.quantity}</td>
-              <td className="border px-3 py-2">{d.donationDate}</td>
-              <td className="border px-3 py-2">{d.registerDate}</td>
-              <td className="border px-3 py-2">{d.extraInfo}</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  );
-}
+const DonationTable = ({ donations, onEdit, onView }) => {
+  // ---------- Estilo del estado ----------
+  const getStatusBadge = (status) => {
+    const color =
+      status === "Registrado"
+        ? { bg: "#B595FF", text: "#B595FF" }
+        : { bg: "#9BE9FF", text: "#9BE9FF" };
+
+    return (
+      <div
+        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-opacity-20"
+        style={{ backgroundColor: `${color.bg}33`, color: color.text }}
+      >
+        <span
+          className="inline-block w-2 h-2 rounded-full mr-2"
+          style={{ backgroundColor: color.text }}
+        ></span>
+        {status}
+      </div>
+    );
+  };
+
+  // ---------- Columnas del encabezado ----------
+  const columns = [
+    { header: "Donante", accessor: "donorName" },
+    { header: "Monto", accessor: "amount" },
+    { header: "Fecha", accessor: "date" },
+    { header: "Estado", accessor: "status" },
+    { header: "Acciones", accessor: "actions" },
+  ];
+
+  // ---------- Filas de datos ----------
+  const rows = donations.map((donation) => ({
+    donorName: donation.donorName,
+    amount: `$${donation.amount}`,
+    date: donation.date,
+    status: getStatusBadge(donation.status),
+    actions: (
+      <div className="flex justify-center gap-3">
+        {/* ---------- Editar ---------- */}
+        <button
+          onClick={() => onEdit(donation)}
+          className="p-3 rounded-full bg-[#9BE9FF]/40 text-[#9BE9FF] hover:bg-[#9BE9FF]/60 transition-all shadow-sm"
+        >
+          <FaEdit />
+        </button>
+
+        {/* ---------- Ver ---------- */}
+        <button
+          onClick={() => onView(donation)}
+          className="p-3 rounded-full bg-[#B595FF]/40 text-[#B595FF] hover:bg-[#B595FF]/60 transition-all shadow-sm"
+        >
+          <FaEye />
+        </button>
+      </div>
+    ),
+  }));
+
+  return <Table columns={columns} data={rows} />;
+};
+
+export default DonationTable;

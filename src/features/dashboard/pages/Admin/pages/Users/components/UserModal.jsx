@@ -84,7 +84,6 @@ const UserModal = ({
 
     // 2. Validar todos los campos
     if (!validateAllFields()) {
-      // Aquí es donde se encontraba la alerta. La hemos eliminado.
       return; // detener ejecución si hay errores
     }
 
@@ -150,21 +149,21 @@ const UserModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={handleClose}
           >
             ✕
           </button>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {isEditing ? "Editar Usuario" : "Crear Usuario"}
           </h2>
           {isEditing && (
@@ -178,8 +177,8 @@ const UserModal = ({
         </div>
 
         {/* Body */}
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <FormField
               label="Tipo de documento"
               name="tipoDocumento"
@@ -191,8 +190,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.tipoDocumento}
               touched={touched.tipoDocumento}
-              delay={0.1}
               required
+              delay={0.1}
             />
 
             <FormField
@@ -205,9 +204,10 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.identificacion}
               touched={touched.identificacion}
-              delay={0.15}
               required
+              delay={0.2}
             />
+
             <FormField
               label="Nombre"
               name="nombre"
@@ -218,8 +218,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.nombre}
               touched={touched.nombre}
-              delay={0.1}
               required
+              delay={0.3}
             />
 
             <FormField
@@ -232,8 +232,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.apellido}
               touched={touched.apellido}
-              delay={0.15}
               required
+              delay={0.4}
             />
 
             <FormField
@@ -249,8 +249,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.rol}
               touched={touched.rol}
-              delay={0.4}
               required
+              delay={0.5}
             />
 
             <FormField
@@ -263,8 +263,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.correo}
               touched={touched.correo}
-              delay={0.5}
               required
+              delay={0.6}
             />
 
             <FormField
@@ -277,8 +277,8 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.telefono}
               touched={touched.telefono}
-              delay={0.6}
               required
+              delay={0.7}
             />
 
             <FormField
@@ -292,41 +292,29 @@ const UserModal = ({
               onBlur={handleBlur}
               error={errors.estado}
               touched={touched.estado}
-              delay={0.7}
               required
+              delay={0.8}
             />
           </div>
+        </div>
 
-          {/* Footer */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-            className="flex justify-between pt-6 border-t border-gray-200"
-          >
-            <motion.button
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-gray-200 p-3">
+          <div className="flex justify-between">
+            <button
               type="button"
               onClick={handleClose}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
             >
               Cancelar
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               onClick={handleSubmit}
-              className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg 
-           bg-gradient-to-r from-primary-purple to-primary-blue 
-           hover:from-primary-purple hover:to-primary-blue"
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)",
-              }}
-              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
               {isEditing ? "Actualizar Usuario" : "Crear Usuario"}
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>

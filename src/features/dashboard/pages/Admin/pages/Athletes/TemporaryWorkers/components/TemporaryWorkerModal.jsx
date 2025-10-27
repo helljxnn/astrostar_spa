@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
@@ -11,7 +11,13 @@ import {
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
 
-const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create" }) => {
+const TemporaryWorkerModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  worker,
+  mode = "create",
+}) => {
   const {
     values: formData,
     errors,
@@ -31,6 +37,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
       fechaNacimiento: "",
       edad: "",
       categoria: "",
+      equipo: "",
       estado: "",
     },
     tempWorkerValidationRules
@@ -50,6 +57,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
         fechaNacimiento: "",
         edad: "",
         categoria: "",
+        equipo: "",
         estado: "",
       });
   }, [worker, setFormData, isOpen]);
@@ -61,22 +69,64 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
         age--;
       }
-      
-      setFormData(prevData => ({
+
+      setFormData((prevData) => ({
         ...prevData,
-        edad: age.toString()
+        edad: age.toString(),
       }));
     }
   }, [formData.fechaNacimiento]);
 
+  // Manejar cambios en el equipo para deportistas y entrenadores
+  useEffect(() => {
+    if (formData.equipo && formData.tipoPersona === "Deportista") {
+      // Simular obtener categoría del equipo (esto vendría de la API en producción)
+      const equiposCategorias = {
+        "Águilas Doradas": "Sub 15",
+        "Leones FC": "Sub 17",
+        "Tigres Unidos": "Sub 13",
+        "Panteras Negras": "Sub 15",
+        "Halcones Rojos": "Sub 17",
+        "Lobos Grises": "Sub 13",
+      };
+
+      const categoria = equiposCategorias[formData.equipo] || "No asignada";
+      setFormData((prevData) => ({
+        ...prevData,
+        categoria: categoria,
+      }));
+    } else if (formData.tipoPersona === "Deportista" && !formData.equipo) {
+      // Si es deportista sin equipo, categoría "No asignada"
+      setFormData((prevData) => ({
+        ...prevData,
+        categoria: "No asignada",
+      }));
+    } else if (formData.tipoPersona !== "Deportista") {
+      // Para entrenadores y participantes, siempre "No aplica"
+      setFormData((prevData) => ({
+        ...prevData,
+        categoria: "No aplica",
+      }));
+    }
+  }, [formData.equipo, formData.tipoPersona]);
+
   const handleSubmit = async () => {
     try {
       const isValid = validateAllFields();
-      if (!isValid) return;
+      if (!isValid) {
+        showErrorAlert(
+          "Campos incompletos",
+          "Por favor, complete todos los campos obligatorios antes de continuar."
+        );
+        return;
+      }
 
       // Confirmación solo al editar
       if (mode === "edit") {
@@ -90,7 +140,9 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
       onSave(formData);
 
       showSuccessAlert(
-        mode === "edit" ? "Persona Temporal Editada" : "Persona Temporal Creada",
+        mode === "edit"
+          ? "Persona Temporal Editada"
+          : "Persona Temporal Creada",
         mode === "edit"
           ? "La persona temporal ha sido actualizada exitosamente."
           : "La persona temporal ha sido registrada exitosamente."
@@ -131,7 +183,11 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
             ✕
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {mode === "view" ? "Ver Persona Temporal" : mode === "edit" ? "Editar Persona Temporal" : "Crear Persona Temporal"}
+            {mode === "view"
+              ? "Ver Persona Temporal"
+              : mode === "edit"
+              ? "Editar Persona Temporal"
+              : "Crear Persona Temporal"}
           </h2>
         </div>
 
@@ -291,30 +347,54 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
               onBlur={handleBlur}
             />
 
-            {/* Categoría */}
-            {(formData.tipoPersona === "Deportista" || (mode === "view" && formData.categoria)) && (
+            {/* Campo de Equipo - Solo para Entrenadores y Deportistas (NO para Participantes) */}
+            {(formData.tipoPersona === "Entrenador" ||
+              formData.tipoPersona === "Deportista") && (
+              <FormField
+                label="Equipo Asignado"
+                name="equipo"
+                type="text"
+                required={false}
+                disabled={true} // Siempre deshabilitado - se asigna desde módulo de equipos
+                value={formData.equipo || "No asignado"}
+                error={errors.equipo}
+                touched={touched.equipo}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                helpText="El equipo se asigna desde el módulo de equipos"
+              />
+            )}
+
+            {/* Categoría - Solo para Deportistas y Entrenadores (NO para Participantes) */}
+            {(formData.tipoPersona === "Deportista" ||
+              formData.tipoPersona === "Entrenador") && (
               <FormField
                 label="Categoría"
                 name="categoria"
-                type="select"
-                options={[
-                  { value: "Sub 13", label: "Sub 13" },
-                  { value: "Sub 15", label: "Sub 15" },
-                  { value: "Sub 17", label: "Sub 17" },
-                ]}
-                required={mode !== "view" && formData.tipoPersona === "Deportista"}
-                disabled={mode === "view"}
-                value={formData.categoria}
+                type="text"
+                required={false}
+                disabled={true} // Siempre deshabilitado - se asigna automáticamente
+                value={
+                  formData.categoria ||
+                  (formData.tipoPersona === "Deportista"
+                    ? "No asignada"
+                    : "No aplica")
+                }
                 error={errors.categoria}
                 touched={touched.categoria}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                helpText={
+                  formData.tipoPersona === "Deportista"
+                    ? "La categoría se asigna automáticamente desde el equipo"
+                    : "No aplica para este tipo de persona"
+                }
               />
             )}
 
             {/* Estado */}
             <FormField
-              label="Estado Registro"
+              label="Estado Persona"
               name="estado"
               type="select"
               options={[
@@ -338,7 +418,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
             <div className="flex justify-center">
               <button
                 onClick={onClose}
-                className="px-5 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition"
+                className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
               >
                 Cerrar
               </button>
@@ -354,7 +434,7 @@ const TemporaryWorkerModal = ({ isOpen, onClose, onSave, worker, mode = "create"
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
               >
                 {mode === "edit" ? "Guardar Cambios" : "Crear Persona Temporal"}
               </button>

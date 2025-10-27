@@ -15,7 +15,11 @@ import EnglishRegistrationModal from "./EnglishRegistrationModal";
 import EnglishRegistrationFormModal from "./EnglishRegistrationFormModal";
 
 import DayEventsModal from "./DayEventsModal";
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import {
+  showDeleteAlert,
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({
@@ -41,21 +45,21 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date()); // Fecha actual
   const [events, setEvents] = useState(propEvents);
-  
+
   // Sincronizar eventos cuando cambien las props
   useEffect(() => {
     console.log("EventsCalendar - Eventos recibidos:", propEvents);
     setEvents(propEvents);
   }, [propEvents]);
-  
+
   // Funciones para la navegación del calendario
   const handlePrevious = () => {
     const newDate = new Date(date);
-    if (view === 'month') {
+    if (view === "month") {
       newDate.setMonth(date.getMonth() - 1);
-    } else if (view === 'week') {
+    } else if (view === "week") {
       newDate.setDate(date.getDate() - 7);
-    } else if (view === 'day') {
+    } else if (view === "day") {
       newDate.setDate(date.getDate() - 1);
     }
     setDate(newDate);
@@ -63,11 +67,11 @@ export default function EventsCalendar({ events: propEvents = [] }) {
 
   const handleNext = () => {
     const newDate = new Date(date);
-    if (view === 'month') {
+    if (view === "month") {
       newDate.setMonth(date.getMonth() + 1);
-    } else if (view === 'week') {
+    } else if (view === "week") {
       newDate.setDate(date.getDate() + 7);
-    } else if (view === 'day') {
+    } else if (view === "day") {
       newDate.setDate(date.getDate() + 1);
     }
     setDate(newDate);
@@ -77,8 +81,6 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     setDate(new Date());
   };
 
-
-
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -86,13 +88,21 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   const [modalMode, setModalMode] = useState("create");
 
   // Action modals
-  const [actionModal, setActionModal] = useState({ isOpen: false, position: null, event: null });
-  const [registrationModal, setRegistrationModal] = useState({ isOpen: false, position: null, event: null });
-  const [inscriptionModal, setInscriptionModal] = useState({ 
-    isOpen: false, 
-    eventName: "", 
-    participantType: "", 
-    action: "register" 
+  const [actionModal, setActionModal] = useState({
+    isOpen: false,
+    position: null,
+    event: null,
+  });
+  const [registrationModal, setRegistrationModal] = useState({
+    isOpen: false,
+    position: null,
+    event: null,
+  });
+  const [inscriptionModal, setInscriptionModal] = useState({
+    isOpen: false,
+    eventName: "",
+    participantType: "",
+    action: "register",
   });
 
   // Manejar click en acciones de evento
@@ -102,31 +112,35 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     const viewportHeight = window.innerHeight;
     const modalWidth = 220;
     const modalHeight = 150;
-    
+
     // Determinar si estamos en la penúltima fila del calendario
-    const calendarRect = document.querySelector('.rbc-month-view').getBoundingClientRect();
+    const calendarRect = document
+      .querySelector(".rbc-month-view")
+      .getBoundingClientRect();
     const rowHeight = calendarRect.height / 6; // Aproximadamente 6 filas en vista mensual
-    const isInPenultimateRow = rect.top > (calendarRect.top + rowHeight * 4) && rect.top < (calendarRect.top + rowHeight * 5);
-    
+    const isInPenultimateRow =
+      rect.top > calendarRect.top + rowHeight * 4 &&
+      rect.top < calendarRect.top + rowHeight * 5;
+
     // Posición predeterminada (abajo del botón)
     let top = rect.bottom + 5;
     let left = rect.left;
-    
+
     // Si estamos en la penúltima fila, mostrar el modal arriba
     if (isInPenultimateRow) {
       top = rect.top - modalHeight - 5;
     }
-    
+
     // Ajustar posición para evitar que se corte
     if (left + modalWidth > viewportWidth) {
       left = rect.right - modalWidth;
     }
-    
+
     // Asegurarse de que el modal no se salga de la pantalla
     if (top + modalHeight > viewportHeight) {
       top = rect.top - modalHeight - 5;
     }
-    
+
     if (left < 10) left = 10;
     if (top < 10) top = rect.bottom + 5;
 
@@ -146,83 +160,103 @@ export default function EventsCalendar({ events: propEvents = [] }) {
       handleEventActionClick(e, actionType, event);
     };
 
-    const isMonthView = view === 'month';
-    
+    const isMonthView = view === "month";
+
     // Obtener la inicial del estado
     const getEstadoInicial = () => {
       if (!event.estado) return "?";
-      
+
       const estados = {
-        "programado": "P",
+        programado: "P",
         "en-curso": "C",
-        "finalizado": "F",
-        "cancelado": "X",
-        "en-pausa": "E"
+        finalizado: "F",
+        cancelado: "X",
+        "en-pausa": "E",
       };
-      
+
       // Asegurarse de que el estado existe en el objeto estados
-      return estados[event.estado.toLowerCase()] || event.estado.charAt(0).toUpperCase();
+      return (
+        estados[event.estado.toLowerCase()] ||
+        event.estado.charAt(0).toUpperCase()
+      );
     };
-    
+
     // Obtener color según estado
     const getEstadoColor = () => {
-      if (!event.estado) return '#8b5cf6';
-      
+      if (!event.estado) return "#8b5cf6";
+
       const colores = {
-        "programado": '#3b82f6',
-        "en-curso": '#10b981',
-        "finalizado": '#9ca3af',
-        "cancelado": '#ef4444',
-        "en-pausa": '#f59e0b'
+        programado: "#3b82f6",
+        "en-curso": "#10b981",
+        finalizado: "#9ca3af",
+        cancelado: "#ef4444",
+        "en-pausa": "#f59e0b",
       };
-      return colores[event.estado.toLowerCase()] || '#8b5cf6';
+      return colores[event.estado.toLowerCase()] || "#8b5cf6";
     };
 
     return (
-      <div className="event-content" style={{ 
-        fontSize: isMonthView ? '10px' : '11px',
-        lineHeight: '1.2',
-        padding: '2px'
-      }}>
+      <div
+        className="event-content"
+        style={{
+          fontSize: isMonthView ? "10px" : "11px",
+          lineHeight: "1.2",
+          padding: "2px",
+        }}
+      >
         <div className="event-info">
           <div className="event-title pl-1">
-            <span style={{ 
-              display: 'inline-block',
-              width: '16px',
-              height: '16px',
-              lineHeight: '16px',
-              textAlign: 'center',
-              borderRadius: '50%',
-              backgroundColor: getEstadoColor(),
-              color: 'white',
-              fontSize: '9px',
-              fontWeight: 'bold',
-              marginRight: '4px',
-              verticalAlign: 'middle'
-            }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "16px",
+                height: "16px",
+                lineHeight: "16px",
+                textAlign: "center",
+                borderRadius: "50%",
+                backgroundColor: getEstadoColor(),
+                color: "white",
+                fontSize: "9px",
+                fontWeight: "bold",
+                marginRight: "4px",
+                verticalAlign: "middle",
+              }}
+            >
               {getEstadoInicial()}
             </span>
             {event.title}
           </div>
           {event.ubicacion && !isMonthView && (
-            <div className="event-location" style={{ fontSize: '9px', display: 'flex', alignItems: 'center', gap: '2px' }}>
+            <div
+              className="event-location"
+              style={{
+                fontSize: "9px",
+                display: "flex",
+                alignItems: "center",
+                gap: "2px",
+              }}
+            >
               <FaMapMarkerAlt size={8} /> {event.ubicacion}
             </div>
           )}
         </div>
-        
+
         {/* Botones de acción con iconos de react-icons */}
         <div className="event-actions">
           <button
             onClick={(e) => handleActionClick(e, "crud")}
-            className={`event-btn event-btn--manage ${isMonthView ? 'event-btn--month' : 'event-btn--week-day'}`}
+            className={`event-btn event-btn--manage ${
+              isMonthView ? "event-btn--month" : "event-btn--week-day"
+            }`}
             title="Gestionar evento"
           >
             <FaCog size={isMonthView ? 8 : 10} />
           </button>
           <button
             onClick={(e) => handleActionClick(e, "registration")}
-            className={`event-btn event-btn--registration ${isMonthView ? 'event-btn--month' : 'event-btn--week-day'}`}
+            className={`event-btn event-btn--registration ${
+              isMonthView ? "event-btn--month" : "event-btn--week-day"
+            }`}
             title="Inscripciones"
           >
             <FaUsers size={isMonthView ? 8 : 10} />
@@ -232,21 +266,29 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     );
   };
 
+  // Función helper para formatear fechas sin problemas de zona horaria
+  const formatDateLocal = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Crear (click en slot vacío)
   const handleSlotSelect = ({ start, end }) => {
     // Formatear fechas y horas
     const startDate = new Date(start);
     const endDate = new Date(end);
-    
+
     const formatTime = (date) => {
       return date.toTimeString().slice(0, 5); // HH:MM
     };
-    
+
     setSelectedEvent({
       nombre: "",
       descripcion: "",
-      fechaInicio: startDate.toISOString().split('T')[0],
-      fechaFin: endDate.toISOString().split('T')[0],
+      fechaInicio: formatDateLocal(startDate),
+      fechaFin: formatDateLocal(endDate),
       horaInicio: formatTime(startDate),
       horaFin: formatTime(endDate),
     });
@@ -268,8 +310,10 @@ export default function EventsCalendar({ events: propEvents = [] }) {
       // Crear fechas correctamente incluyendo las horas
       const createDateFromString = (dateString, timeString) => {
         try {
-          const [year, month, day] = dateString.split('-').map(Number);
-          const [hours, minutes] = timeString ? timeString.split(':').map(Number) : [12, 0];
+          const [year, month, day] = dateString.split("-").map(Number);
+          const [hours, minutes] = timeString
+            ? timeString.split(":").map(Number)
+            : [12, 0];
           return new Date(year, month - 1, day, hours, minutes, 0);
         } catch (error) {
           console.error("Error al crear fecha:", error);
@@ -291,8 +335,14 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           patrocinador: newEventData.patrocinador || [],
           imagen: newEventData.imagen || null,
           cronograma: newEventData.cronograma || null,
-          start: createDateFromString(newEventData.fechaInicio, newEventData.horaInicio),
-          end: createDateFromString(newEventData.fechaFin, newEventData.horaFin),
+          start: createDateFromString(
+            newEventData.fechaInicio,
+            newEventData.horaInicio
+          ),
+          end: createDateFromString(
+            newEventData.fechaFin,
+            newEventData.horaFin
+          ),
           color: "bg-primary-purple",
         };
         setEvents((prev) => [...prev, newEvent]);
@@ -309,12 +359,21 @@ export default function EventsCalendar({ events: propEvents = [] }) {
                   telefono: newEventData.telefono || e.telefono,
                   categoria: newEventData.categoria || e.categoria,
                   estado: newEventData.estado || e.estado,
-                  publicar: newEventData.publicar !== undefined ? newEventData.publicar : e.publicar,
+                  publicar:
+                    newEventData.publicar !== undefined
+                      ? newEventData.publicar
+                      : e.publicar,
                   patrocinador: newEventData.patrocinador || e.patrocinador,
                   imagen: newEventData.imagen || e.imagen,
                   cronograma: newEventData.cronograma || e.cronograma,
-                  start: createDateFromString(newEventData.fechaInicio, newEventData.horaInicio),
-                  end: createDateFromString(newEventData.fechaFin, newEventData.horaFin),
+                  start: createDateFromString(
+                    newEventData.fechaInicio,
+                    newEventData.horaInicio
+                  ),
+                  end: createDateFromString(
+                    newEventData.fechaFin,
+                    newEventData.horaFin
+                  ),
                 }
               : e
           )
@@ -332,28 +391,28 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   // Manejar acciones CRUD
   const handleCrudAction = async (action) => {
     const event = actionModal.event;
-    
+
     // Cerrar el modal de acciones primero
     closeAllModals();
-    
+
     // Función para formatear tiempo
     const formatTime = (date) => {
       return date.toTimeString().slice(0, 5); // HH:MM
     };
-    
+
     switch (action) {
       case "edit":
         setTimeout(() => {
           // Formatear fechas y horas correctamente
           const startDate = new Date(event.start);
           const endDate = new Date(event.end);
-          
+
           setSelectedEvent({
             nombre: event.title,
             tipo: event.tipo,
             descripcion: event.descripcion || "",
-            fechaInicio: startDate.toISOString().split('T')[0],
-            fechaFin: endDate.toISOString().split('T')[0],
+            fechaInicio: formatDateLocal(startDate),
+            fechaFin: formatDateLocal(endDate),
             horaInicio: formatTime(startDate),
             horaFin: formatTime(endDate),
             ubicacion: event.ubicacion || "",
@@ -371,14 +430,14 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           setIsModalOpen(true);
         }, 100);
         break;
-        
+
       case "delete":
         try {
           const result = await showDeleteAlert(
             "¿Eliminar evento?",
             `Se eliminará permanentemente el evento: ${event.title}`
           );
-          
+
           if (result.isConfirmed) {
             setEvents((prev) => prev.filter((e) => e.id !== event.id));
             showSuccessAlert(
@@ -394,19 +453,19 @@ export default function EventsCalendar({ events: propEvents = [] }) {
           );
         }
         break;
-        
+
       case "view":
         setTimeout(() => {
           // Formatear fechas y horas correctamente
           const startDate = new Date(event.start);
           const endDate = new Date(event.end);
-          
+
           setSelectedEvent({
             nombre: event.title,
             tipo: event.tipo,
             descripcion: event.descripcion || "",
-            fechaInicio: startDate.toISOString().split('T')[0],
-            fechaFin: endDate.toISOString().split('T')[0],
+            fechaInicio: formatDateLocal(startDate),
+            fechaFin: formatDateLocal(endDate),
             horaInicio: formatTime(startDate),
             horaFin: formatTime(endDate),
             ubicacion: event.ubicacion || "",
@@ -437,7 +496,10 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   });
 
   // Estados para modales de inglés
-  const [englishModal, setEnglishModal] = useState({ isOpen: false, position: null });
+  const [englishModal, setEnglishModal] = useState({
+    isOpen: false,
+    position: null,
+  });
   const [englishFormModal, setEnglishFormModal] = useState({
     isOpen: false,
     action: "register",
@@ -452,10 +514,10 @@ export default function EventsCalendar({ events: propEvents = [] }) {
 
   const handleRegistrationAction = (action, participantType) => {
     const event = registrationModal.event;
-    
+
     // Cerrar el modal de selección primero
     closeAllModals();
-    
+
     if (action === "register") {
       // Usar el nuevo modal de inscripción con formulario
       setTimeout(() => {
@@ -486,19 +548,19 @@ export default function EventsCalendar({ events: propEvents = [] }) {
     const viewportHeight = window.innerHeight;
     const modalWidth = 220;
     const modalHeight = 150;
-    
+
     let top = rect.bottom + 5;
     let left = rect.left;
-    
+
     // Ajustar posición para evitar que se corte
     if (left + modalWidth > viewportWidth) {
       left = rect.right - modalWidth;
     }
-    
+
     if (top + modalHeight > viewportHeight) {
       top = rect.top - modalHeight - 5;
     }
-    
+
     if (left < 10) left = 10;
     if (top < 10) top = rect.bottom + 5;
 
@@ -508,7 +570,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   // Manejar acciones del modal de inglés
   const handleEnglishAction = (action) => {
     setEnglishModal({ isOpen: false, position: null });
-    
+
     setTimeout(() => {
       setEnglishFormModal({
         isOpen: true,
@@ -521,8 +583,18 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   const closeAllModals = () => {
     setActionModal({ isOpen: false, position: null, event: null });
     setRegistrationModal({ isOpen: false, position: null, event: null });
-    setInscriptionModal({ isOpen: false, eventName: "", participantType: "", action: "register" });
-    setRegistrationFormModal({ isOpen: false, eventName: "", participantType: "", eventType: "" });
+    setInscriptionModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      action: "register",
+    });
+    setRegistrationFormModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      eventType: "",
+    });
     setEnglishModal({ isOpen: false, position: null });
     setEnglishFormModal({ isOpen: false, action: "register" });
     setDayEventsModal({ isOpen: false, date: null, events: [] });
@@ -535,66 +607,72 @@ export default function EventsCalendar({ events: propEvents = [] }) {
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex items-center justify-between mb-6"
+        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6"
       >
-        <h2 className="text-3xl font-extrabold text-gray-800 tracking-tight">
+        <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-800 tracking-tight text-center lg:text-left">
           {format(date, "MMMM yyyy", { locale: es })}
         </h2>
-        <div className="flex items-center gap-3">
-          {/* Botón Inglés - Movido a la izquierda del selector */}
-          <motion.button
-            onClick={handleEnglishClick}
-            whileHover={{ scale: 1.1 }}
-            className="mr-3 bg-primary-green px-3 py-1 rounded-lg flex items-center justify-center gap-2"
-          >
-            <FaLanguage className="text-xl text-black" />
-            <span className="text-black font-medium">Inglés</span>
-          </motion.button>
-          
-          {/* Botones de navegación */}
-          <div className="flex items-center">
+        {/* Controls Container */}
+        <div className="flex flex-col gap-3 w-full lg:w-auto">
+          {/* Primera fila: Botón Inglés y Navegación */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+            {/* Botón Inglés */}
             <motion.button
-              onClick={handleToday}
+              onClick={handleEnglishClick}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-l-xl text-sm font-medium shadow-sm"
+              className="bg-primary-blue px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-purple transition-colors flex-shrink-0"
             >
-              {messages.today}
+              <FaLanguage className="text-base text-white" />
+              <span className="text-white font-medium text-sm">Inglés</span>
             </motion.button>
-            <motion.button
-              onClick={handlePrevious}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium shadow-sm"
-            >
-              &lt; {messages.previous}
-            </motion.button>
-            <motion.button
-              onClick={handleNext}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-r-xl text-sm font-medium shadow-sm"
-            >
-              {messages.next} &gt;
-            </motion.button>
+
+            {/* Botones de navegación */}
+            <div className="flex items-center justify-center flex-1 min-w-0">
+              <motion.button
+                onClick={handleToday}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-l-lg text-sm font-medium shadow-sm flex-1 sm:flex-none"
+              >
+                Hoy
+              </motion.button>
+              <motion.button
+                onClick={handlePrevious}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium shadow-sm flex-1 sm:flex-none border-l border-gray-200"
+              >
+                ← Atrás
+              </motion.button>
+              <motion.button
+                onClick={handleNext}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-r-lg text-sm font-medium shadow-sm flex-1 sm:flex-none border-l border-gray-200"
+              >
+                Siguiente →
+              </motion.button>
+            </div>
           </div>
-          
-          {/* Botones de vista */}
-          {["month", "week", "day"].map((viewType) => (
-            <motion.button
-              key={viewType}
-              onClick={() => setView(viewType)}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-5 py-2 rounded-xl text-sm font-semibold shadow transition-all ${
-                view === viewType
-                  ? "bg-primary-purple text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {messages[viewType]}
-            </motion.button>
-          ))}
+
+          {/* Segunda fila: Botones de vista */}
+          <div className="flex items-center justify-center gap-2 w-full">
+            {["month", "week", "day"].map((viewType) => (
+              <motion.button
+                key={viewType}
+                onClick={() => setView(viewType)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`px-4 py-2 rounded-lg text-sm font-semibold shadow transition-all flex-1 sm:flex-none ${
+                  view === viewType
+                    ? "bg-primary-purple text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {messages[viewType]}
+              </motion.button>
+            ))}
+          </div>
         </div>
       </motion.div>
 
@@ -621,13 +699,12 @@ export default function EventsCalendar({ events: propEvents = [] }) {
               date={date}
               onNavigate={setDate}
               components={{
-                event: CustomEvent
+                event: CustomEvent,
               }}
               eventPropGetter={(event) => ({
                 className: `event-${event.tipo}`,
-                'data-tipo': event.tipo
+                "data-tipo": event.tipo,
               })}
-              
               // views={["month", "week", "day"]} // Quitamos para usar solo los personalizados
               messages={messages}
               popup={true}

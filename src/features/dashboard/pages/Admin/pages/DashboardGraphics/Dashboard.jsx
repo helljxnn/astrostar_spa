@@ -2,6 +2,7 @@ import EventsGraphic from "./components/EventsGraphic";
 import AthletesTrackingGraphic from "./components/AthletesTrackingGraphic";
 import HealthServicesGraphic from "./components/HealthServicesGraphic";
 import HealthServicesYearGraphic from "./components/HealthServicesYearGraphic";
+import RegisteredPlayers from "./components/RegisteredPlayers";
 
 function Dashboard() {
   return (
@@ -37,6 +38,9 @@ function Dashboard() {
         <div className="w-full">
           <HealthServicesYearGraphic />
         </div>
+
+        {/* Jugadoras Registradas - Ocupa todo el ancho */}
+        <RegisteredPlayers />
       </div>
 
       {/* Footer informativo para pantallas pequeñas */}

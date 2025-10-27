@@ -1,14 +1,16 @@
-// ================================
+// ================================ 
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
 import PrivateRoute from "./PrivateRoute.jsx";
 
-/* Layout general */
+/* --- Layout general --- */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
 /* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
+
+/* --- Servicios --- */
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
@@ -16,7 +18,10 @@ import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/
 /* --- Deportistas --- */
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
-import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/TemporaryWorkers.jsx";
+import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/EventsDashboard.jsx";
+import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
+import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
+
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -31,7 +36,7 @@ import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipm
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
-import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/Donations/components/DonationsForm.jsx";
+import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/Donations/DonationsForm.jsx";
 import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/donorsSponsors.jsx";
 
 /* --- Compras --- */
@@ -71,15 +76,7 @@ const PrivateRoutes = () => {
         <Route
           path="appointment-management"
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "admin",
-                "profesional_deportivo",
-                "profesional_salud",
-                "deportista",
-                "acudiente",
-              ]}
-            >
+            <PrivateRoute module="appointmentManagement" action="Ver">
               <AppointmentManagement />
             </PrivateRoute>
           }
@@ -89,13 +86,7 @@ const PrivateRoutes = () => {
         <Route
           path="athletes-section"
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "admin",
-                "profesional_deportivo",
-                "profesional_salud",
-              ]}
-            >
+            <PrivateRoute module="athletesSection" action="Ver">
               <Athletes />
             </PrivateRoute>
           }
@@ -103,13 +94,7 @@ const PrivateRoutes = () => {
         <Route
           path="sports-category"
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "admin",
-                "profesional_deportivo",
-                "profesional_salud",
-              ]}
-            >
+            <PrivateRoute module="sportsCategory" action="Ver">
               <SportsCategory />
             </PrivateRoute>
           }
@@ -117,8 +102,26 @@ const PrivateRoutes = () => {
         <Route
           path="temporary-workers"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="temporaryWorkers" action="Ver">
               <TemporaryWorkers />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Asistencia Deportistas --- */}
+        <Route
+          path="athletes-assistance"
+          element={
+            <PrivateRoute module="athletesAssistance" action="Ver">
+              <AssistanceAthletes />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="athletes-assistance/history"
+          element={
+            <PrivateRoute module="athletesAssistance" action="Ver">
+              <AttendanceHistory />
             </PrivateRoute>
           }
         />
@@ -127,7 +130,7 @@ const PrivateRoutes = () => {
         <Route
           path="employees"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="employees" action="Ver">
               <Employees />
             </PrivateRoute>
           }
@@ -135,13 +138,7 @@ const PrivateRoutes = () => {
         <Route
           path="employees-schedule"
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "admin",
-                "profesional_deportivo",
-                "profesional_salud",
-              ]}
-            >
+            <PrivateRoute module="employeesSchedule" action="Ver">
               <EmployeesSchedule />
             </PrivateRoute>
           }
@@ -151,7 +148,7 @@ const PrivateRoutes = () => {
         <Route
           path="users"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="users" action="Ver">
               <Users />
             </PrivateRoute>
           }
@@ -159,7 +156,7 @@ const PrivateRoutes = () => {
         <Route
           path="roles"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="roles" action="Ver">
               <Roles />
             </PrivateRoute>
           }
@@ -169,7 +166,7 @@ const PrivateRoutes = () => {
         <Route
           path="events"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="eventsManagement" action="Ver">
               <EventsDashboard />
             </PrivateRoute>
           }
@@ -177,7 +174,7 @@ const PrivateRoutes = () => {
         <Route
           path="temporary-teams"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="temporaryTeams" action="Ver">
               <TemporaryTeams />
             </PrivateRoute>
           }
@@ -187,7 +184,7 @@ const PrivateRoutes = () => {
         <Route
           path="sportsequipment"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="sportsEquipment" action="Ver">
               <SportsEquipment />
             </PrivateRoute>
           }
@@ -197,7 +194,7 @@ const PrivateRoutes = () => {
         <Route
           path="donations"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="donationsManagement" action="Ver">
               <Donations />
             </PrivateRoute>
           }
@@ -205,7 +202,7 @@ const PrivateRoutes = () => {
         <Route
           path="donations/form"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="donationsManagement" action="Crear">
               <DonationsForm />
             </PrivateRoute>
           }
@@ -213,7 +210,7 @@ const PrivateRoutes = () => {
         <Route
           path="donors-sponsors"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="donorsSponsors" action="Ver">
               <DonorsSponsors />
             </PrivateRoute>
           }
@@ -223,7 +220,7 @@ const PrivateRoutes = () => {
         <Route
           path="purchases"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="purchasesManagement" action="Ver">
               <Purchases />
             </PrivateRoute>
           }
@@ -231,7 +228,7 @@ const PrivateRoutes = () => {
         <Route
           path="providers"
           element={
-            <PrivateRoute allowedRoles={["admin"]}>
+            <PrivateRoute module="providers" action="Ver">
               <Providers />
             </PrivateRoute>
           }
