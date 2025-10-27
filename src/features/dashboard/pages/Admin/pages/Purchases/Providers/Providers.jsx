@@ -8,14 +8,14 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import providersData from "../../../../../../../shared/models/ProvidersData.jsx";
+import providersData from "../../../../../../../shared/models/ProvidersData.js";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 
-// 🔑 Clave única para LocalStorage
+// Clave única para LocalStorage
 const LOCAL_STORAGE_KEY = "providers";
 const PURCHASES_STORAGE_KEY = "purchases"; // Clave para las compras
 
@@ -83,7 +83,7 @@ const Providers = () => {
     return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
   };
 
-  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
+  //  Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
@@ -91,12 +91,12 @@ const Providers = () => {
       Object.entries(provider).some(([key, value]) => {
         const stringValue = String(value).trim();
 
-        // 🎯 Búsqueda EXACTA para el campo "estado"
+        // Búsqueda EXACTA para el campo "estado"
         if (key.toLowerCase() === "estado") {
           return stringValue.toLowerCase() === searchTerm.toLowerCase();
         }
 
-        // 🔍 Búsqueda PARCIAL para todos los demás campos
+        // Búsqueda PARCIAL para todos los demás campos
         return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
       })
     );
