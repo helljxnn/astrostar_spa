@@ -27,6 +27,27 @@ const validatePhone = (value) => {
   return "Formato de teléfono inválido";
 };
 
+// Función para verificar unicidad contra API
+export const checkProviderUniqueness = async (field, value, excludeId = null) => {
+  try {
+    let url = '';
+    
+    if (field === 'nit') {
+      url = `/api/providers/check-nit?nit=${encodeURIComponent(value)}`;
+      if (excludeId) url += `&excludeId=${excludeId}`;
+    }
+    // Puedes agregar más verificaciones aquí para razón social y contacto
+    
+    const response = await fetch(url);
+    const result = await response.json();
+    
+    return result.success ? result.data.available : false;
+  } catch (error) {
+    console.error('Error verificando unicidad:', error);
+    return true; // En caso de error, permitir continuar
+  }
+};
+
 // Hook optimizado
 export const useFormProviderValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -102,8 +123,8 @@ export const providerValidationRules = {
   razonSocial: [
     (v) => !v?.trim() ? "La razón social es obligatoria" : "",
     (v) => v?.trim().length < 3 ? "La razón social debe tener al menos 3 caracteres" : "",
-    (v) => v?.trim().length > 100 ? "La razón social no puede exceder 100 caracteres" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+    (v) => v?.trim().length > 200 ? "La razón social no puede exceder 200 caracteres" : "",
+    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : "",
   ],
   nit: [
     (v) => !v?.trim() ? "El NIT es obligatorio" : "",
@@ -121,14 +142,14 @@ export const providerValidationRules = {
   contactoPrincipal: [
     (v) => !v?.trim() ? "El contacto principal es obligatorio" : "",
     (v) => v?.trim().length < 2 ? "El contacto debe tener al menos 2 caracteres" : "",
-    (v) => v?.trim().length > 80 ? "El contacto no puede exceder 80 caracteres" : "",
+    (v) => v?.trim().length > 150 ? "El contacto no puede exceder 150 caracteres" : "",
     (v) => !isOnlyLetters(v) ? "El contacto solo puede contener letras y espacios" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : "",
   ],
   correo: [
     (v) => !v?.trim() ? "El correo es obligatorio" : "",
     (v) => !isValidEmail(v?.trim() || "") ? "El correo electrónico no es válido" : "",
-    (v) => (v?.trim() || "").length > 100 ? "El correo no puede exceder 100 caracteres" : ""
+    (v) => (v?.trim() || "").length > 150 ? "El correo no puede exceder 150 caracteres" : ""
   ],
   telefono: [validatePhone],
   direccion: [
@@ -140,7 +161,7 @@ export const providerValidationRules = {
   ciudad: [
     (v) => !v?.trim() ? "La ciudad es obligatoria" : "",
     (v) => v?.trim().length < 2 ? "La ciudad debe tener al menos 2 caracteres" : "",
-    (v) => v?.trim().length > 50 ? "La ciudad no puede exceder 50 caracteres" : "",
+    (v) => v?.trim().length > 100 ? "La ciudad no puede exceder 100 caracteres" : "",
     (v) => !isOnlyLetters(v) ? "La ciudad solo puede contener letras y espacios" : "",
     (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
