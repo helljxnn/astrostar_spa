@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import rolesService from '@shared/services/rolesService';
+import rolesService from '../services/rolesService';
 
 export const useRoleNameValidation = (currentRoleId = null) => {
   const [nameValidation, setNameValidation] = useState({

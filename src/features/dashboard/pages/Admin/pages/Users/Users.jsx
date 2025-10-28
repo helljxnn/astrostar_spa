@@ -1,207 +1,93 @@
 // src/features/dashboard/pages/Admin/pages/Users/Users.jsx
-import React, { useState, useEffect, useMemo } from "react";
-import { FaPlus } from "react-icons/fa";
-import UserModal from "./components/UserModal.jsx";
+import React, { useState, useEffect } from "react";
 import UserViewModal from "./components/UserViewModal.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../.././../shared/components/Table/Pagination.jsx";
-import {
-  showConfirmAlert,
-  showSuccessAlert,
-  showErrorAlert,
-  showDeleteAlert,
-} from "../../../../../../shared/utils/alerts.js";
+import Pagination from "../../../../../../shared/components/Table/Pagination.jsx";
+import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
-import usersData from "../../../../../../shared/models/UserData.js";
-import { useRoles } from "../../../../../../shared/hooks/useRoles";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
-
-// Constante clave de LocalStorage
-const LOCAL_STORAGE_KEY = "users";
+import usersService from "./services/UsersService";
 
 const Users = () => {
-  //  Estado inicial cargado desde LocalStorage o desde usersData
-  const [data, setData] = useState(() => {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : usersData;
-  });
+  const { hasPermission } = usePermissions();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState("create");
-  const [userToEdit, setUserToEdit] = useState(null);
   const [userToView, setUserToView] = useState(null);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
+  const [totalRows, setTotalRows] = useState(0);
 
-  //Guardar en LocalStorage cada vez que cambien los datos
-  useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+  // Cargar usuarios desde la API
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await usersService.getUsers({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      });
 
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    return phone.replace(/[\s\-\(\)]/g, ""); // limpio pero sin +57
+      if (response.success) {
+        const formattedUsers = response.data.map((user) => ({
+          id: user.id,
+          nombre: user.firstName,
+          apellido: user.lastName,
+          correo: user.email,
+          identificacion: user.identification,
+          tipoDocumento: user.documentType?.name || "N/A",
+          rol: user.role?.name || "N/A",
+          telefono: user.phoneNumber || "N/A",
+          estado: user.status === "Active" ? "Activo" : "Inactivo",
+          _fullData: user, // Incluye todos los campos para el modal
+        }));
+
+        setData(formattedUsers);
+        setTotalRows(response.pagination?.total || formattedUsers.length);
+      }
+    } catch (error) {
+      console.error("Error loading users:", error);
+      showErrorAlert(
+        "Error al cargar usuarios",
+        error.message || "No se pudieron cargar los usuarios",
+      );
+      setData([]);
+      setTotalRows(0);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+  useEffect(() => {
+    loadUsers();
+  }, [currentPage, searchTerm]);
 
-    return data.filter((user) =>
-      Object.entries(user).some(([key, value]) => {
-        const stringValue = String(value).trim();
-
-        // Búsqueda EXACTA para el campo "estado"
-        if (key.toLowerCase() === "estado") {
-          return stringValue.toLowerCase() === searchTerm.toLowerCase();
-        }
-
-        //  Búsqueda PARCIAL para todos los demás campos
-        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-      })
-    );
-  }, [data, searchTerm]);
-
-  // Paginación
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, endIndex);
-
-  useEffect(() => setCurrentPage(1), [searchTerm]);
+  useEffect(() => {
+    if (currentPage !== 1) setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
   const handlePageChange = (page) => setCurrentPage(page);
-
-  // Crear usuario
-  const handleSave = async (newUser) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() < 0.1)
-          return reject(new Error("Error de servidor simulado"));
-
-        const userWithFormattedPhone = {
-          ...newUser,
-          id: Date.now(),
-          telefono: formatPhoneNumber(newUser.telefono),
-        };
-
-        setData((prevData) => [...prevData, userWithFormattedPhone]);
-        resolve();
-      }, 500);
-    });
-  };
-
-  // Editar usuario
-  const handleUpdate = async (updatedUser) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() < 0.05)
-          return reject(new Error("Error de conexión simulado"));
-
-        const userWithFormattedPhone = {
-          ...updatedUser,
-          telefono: formatPhoneNumber(updatedUser.telefono),
-        };
-
-        setData((prevData) =>
-          prevData.map((user) =>
-            user.id === userWithFormattedPhone.id
-              ? userWithFormattedPhone
-              : user
-          )
-        );
-        resolve();
-      }, 800);
-    });
-  };
-
-  // Eliminar usuario
-  const handleDelete = async (user) => {
-    if (!user?.id) {
-      return showErrorAlert("Error", "Usuario no válido");
-    }
-
-    const confirmResult = await showDeleteAlert(
-      "¿Estás seguro?",
-      `Se eliminará a ${user.nombre} ${user.apellido}. Esta acción no se puede deshacer.`,
-      {
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-      }
-    );
-
-    if (!confirmResult.isConfirmed) return;
-
-    try {
-      // Simulamos la promesa sin errores
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 500);
-      }); // Actualización de estado (eliminación del usuario)
-
-      setData((prevData) => prevData.filter((u) => u.id !== user.id)); // Mostrar mensaje de éxito (usando 'user' correctamente)
-
-      showSuccessAlert(
-        "Usuario eliminado",
-        `${user.nombre} ${user.apellido} fue eliminado correctamente.`
-      );
-    } catch (error) {
-      // El bloque catch se mantiene para manejar cualquier error inesperado
-      showErrorAlert(
-        "Error al eliminar",
-        error.message || "No se pudo eliminar el usuario, intenta de nuevo."
-      );
-    }
-  };
-  // Ver usuario
   const handleView = (user) => {
     setUserToView(user);
     setIsViewModalOpen(true);
   };
-
-  const handleCreate = () => {
-    setModalMode("create");
-    setUserToEdit(null);
-    setIsModalOpen(true);
-  };
-
-  const handleEdit = (user) => {
-    setModalMode("edit");
-    setUserToEdit(user);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setUserToEdit(null);
-    setModalMode("create");
-  };
-
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setUserToView(null);
   };
 
+  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Usuarios
-          {totalRows !== data.length && (
-            <span className="text-sm text-gray-600 ml-2">
-              ({totalRows} de {data.length})
-            </span>
-          )}
-        </h1>
-
+        <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="sm:w-64">
             <SearchInput
@@ -211,30 +97,41 @@ const Users = () => {
               className="w-full"
             />
           </div>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-          >
-            <FaPlus /> Crear Usuario
-          </button>
         </div>
       </div>
 
-      {totalRows === 0 && searchTerm && (
-        <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 mb-6">
-          <p className="text-gray-600">
+      {/* Mensaje de carga */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
+          <span className="ml-2 text-gray-600">Cargando usuarios...</span>
+        </div>
+      )}
+
+      {/* Sin resultados con búsqueda */}
+      {!loading && totalRows === 0 && searchTerm && (
+        <div className="flex justify-center items-center py-8">
+          <span className="text-gray-600">
             No se encontraron usuarios que coincidan con "{searchTerm}"
-          </p>
+          </span>
           <button
             onClick={() => setSearchTerm("")}
-            className="text-primary-purple hover:text-primary-blue mt-2 font-medium"
+            className="text-primary-purple hover:text-primary-blue ml-2 font-medium"
           >
             Limpiar búsqueda
           </button>
         </div>
       )}
 
-      {totalRows > 0 && (
+      {/* Sin usuarios en la BD */}
+      {!loading && totalRows === 0 && !searchTerm && (
+        <div className="flex justify-center items-center py-8">
+          <span className="text-gray-600">No hay datos disponibles</span>
+        </div>
+      )}
+
+      {/* Tabla con datos */}
+      {!loading && totalRows > 0 && (
         <>
           <Table
             thead={{
@@ -243,7 +140,7 @@ const Users = () => {
               actions: true,
             }}
             tbody={{
-              data: paginatedData,
+              data: data,
               dataPropertys: [
                 "nombre",
                 "correo",
@@ -257,31 +154,16 @@ const Users = () => {
                 Inactivo: "bg-red-100 text-red-800",
               },
             }}
-            onEdit={hasPermission('users', 'Editar') ? handleEdit : null}
-            onDelete={hasPermission('users', 'Eliminar') ? handleDelete : null}
-            onView={hasPermission('users', 'Ver') ? handleView : null}
+            onView={hasPermission("users", "Ver") ? handleView : null}
             buttonConfig={{
-              edit: (user) => ({
-                show: hasPermission('users', 'Editar'),
-                disabled: false,
-                className: '',
-                title: 'Editar usuario'
-              }),
-              delete: (user) => ({
-                show: hasPermission('users', 'Eliminar'),
-                disabled: false,
-                className: '',
-                title: 'Eliminar usuario'
-              }),
               view: (user) => ({
-                show: hasPermission('users', 'Ver'),
+                show: hasPermission("users", "Ver"),
                 disabled: false,
-                className: '',
-                title: 'Ver detalles del usuario'
-              })
+                className: "",
+                title: "Ver detalles del usuario",
+              }),
             }}
           />
-
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -293,16 +175,7 @@ const Users = () => {
         </>
       )}
 
-      <UserModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSave={handleSave}
-        onUpdate={handleUpdate}
-        roles={roles || []}
-        userToEdit={userToEdit}
-        mode={modalMode}
-      />
-
+      {/* Modal de vista */}
       <UserViewModal
         isOpen={isViewModalOpen}
         onClose={handleCloseViewModal}

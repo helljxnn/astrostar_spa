@@ -1,5 +1,5 @@
 // src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
@@ -8,27 +8,21 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import providersData from "../../../../../../../shared/models/ProvidersData.jsx";
+// ✅ CORRECCIÓN: Ruta al servicio frontend que hace peticiones HTTP
+import providersService from "./services/ProvidersService.js";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 
-// 🔑 Clave única para LocalStorage
-const LOCAL_STORAGE_KEY = "providers";
-const PURCHASES_STORAGE_KEY = "purchases"; // Clave para las compras
-
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Estado inicial cargado desde LocalStorage o desde providersData
-  const [data, setData] = useState(() => {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : providersData;
-  });
-
+  // Estados
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -36,12 +30,51 @@ const Providers = () => {
   const [providerToView, setProviderToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
   const rowsPerPage = 5;
 
-  // Guardar en LocalStorage cada vez que cambien los datos
+  // Cargar proveedores desde la API con logs de debug
+  const fetchProviders = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Iniciando carga de proveedores...");
+      
+      const response = await providersService.getProviders({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      });
+
+      console.log("📦 Respuesta del servidor:", response);
+
+      if (response.success) {
+        console.log("✅ Proveedores cargados:", response.data?.length || 0);
+        setData(response.data || []);
+        setTotalPages(response.pagination?.pages || 1);
+        setTotalRows(response.pagination?.total || 0);
+      } else {
+        console.warn("⚠️ Respuesta no exitosa:", response);
+        showErrorAlert("Error", "No se pudieron cargar los proveedores");
+      }
+    } catch (error) {
+      console.error("❌ Error fetching providers:", error);
+      console.error("❌ Detalles del error:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      showErrorAlert("Error", "Error al cargar los proveedores desde el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Efecto para cargar datos cuando cambien los filtros o la página
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    fetchProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm]);
 
   // Abrir modal de creación si se navega con el estado adecuado
   useEffect(() => {
@@ -49,93 +82,80 @@ const Providers = () => {
       setModalMode("create");
       setProviderToEdit(null);
       setIsModalOpen(true);
-      // Limpiar el estado para que no se vuelva a abrir al recargar
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
 
-  // Verificar si un proveedor tiene compras asociadas
-  const checkProviderHasPurchases = (providerId) => {
-    try {
-      const purchasesStored = localStorage.getItem(PURCHASES_STORAGE_KEY);
-
-      if (!purchasesStored) return false;
-
-      const purchases = JSON.parse(purchasesStored);
-
-      // Verifica si existe alguna compra con este providerId
-      const hasPurchases = purchases.some(
-        (purchase) =>
-          purchase.providerId === providerId ||
-          purchase.proveedor?.id === providerId
-      );
-
-      return hasPurchases;
-    } catch (error) {
-      console.error("Error al verificar compras del proveedor:", error);
-      return false;
-    }
-  };
-
   // Formatear teléfono sin +57
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
-    return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
+    return phone.replace(/[\s\-\(\)\+57]/g, "");
   };
 
-  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+  // Formatear NIT (solo números)
+  const formatNIT = (nit) => {
+    if (!nit) return nit;
+    return nit.replace(/[^\d]/g, ""); // Elimina todo excepto dígitos
+  };
 
-    return data.filter((provider) =>
-      Object.entries(provider).some(([key, value]) => {
-        const stringValue = String(value).trim();
-
-        // 🎯 Búsqueda EXACTA para el campo "estado"
-        if (key.toLowerCase() === "estado") {
-          return stringValue.toLowerCase() === searchTerm.toLowerCase();
-        }
-
-        // 🔍 Búsqueda PARCIAL para todos los demás campos
-        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-      })
-    );
-  }, [data, searchTerm]);
-
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
-
-  const handlePageChange = (page) => setCurrentPage(page);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
   // Crear proveedor
-  const handleSave = (newProvider) => {
-    const newEntry = {
-      ...newProvider,
-      id: Date.now(),
-      telefono: formatPhoneNumber(newProvider.telefono),
-    };
-    setData([...data, newEntry]);
-    showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
-    setIsModalOpen(false);
+  const handleSave = async (newProvider) => {
+    try {
+      console.log("➕ Creando proveedor:", newProvider);
+      
+      const providerData = {
+        ...newProvider,
+        telefono: formatPhoneNumber(newProvider.telefono),
+      };
+
+      const response = await providersService.createProvider(providerData);
+
+      if (response.success) {
+        showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
+        setIsModalOpen(false);
+        fetchProviders(); // Recargar lista
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo crear el proveedor");
+      }
+    } catch (error) {
+      console.error("❌ Error creating provider:", error);
+      showErrorAlert("Error", "Error al crear el proveedor en el servidor");
+    }
   };
 
   // Editar proveedor
-  const handleUpdate = (updatedProvider) => {
-    const updatedEntry = {
-      ...updatedProvider,
-      telefono: formatPhoneNumber(updatedProvider.telefono),
-    };
-    setData(data.map((p) => (p.id === updatedEntry.id ? updatedEntry : p)));
-    showSuccessAlert(
-      "Proveedor actualizado",
-      "El proveedor se actualizó correctamente."
-    );
-    setIsModalOpen(false);
+  const handleUpdate = async (updatedProvider) => {
+    try {
+      console.log("✏️ Actualizando proveedor:", updatedProvider);
+      
+      const providerData = {
+        ...updatedProvider,
+        telefono: formatPhoneNumber(updatedProvider.telefono),
+      };
+
+      const response = await providersService.updateProvider(
+        updatedProvider.id,
+        providerData
+      );
+
+      if (response.success) {
+        showSuccessAlert(
+          "Proveedor actualizado",
+          "El proveedor se actualizó correctamente."
+        );
+        setIsModalOpen(false);
+        fetchProviders(); // Recargar lista
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo actualizar el proveedor");
+      }
+    } catch (error) {
+      console.error("❌ Error updating provider:", error);
+      showErrorAlert("Error", "Error al actualizar el proveedor en el servidor");
+    }
   };
 
   // Abrir modal de edición
@@ -153,23 +173,13 @@ const Providers = () => {
     setIsViewModalOpen(true);
   };
 
-  // Eliminar proveedor CON VALIDACIÓN DE COMPRAS
+  // Eliminar proveedor
   const handleDelete = async (provider) => {
-    if (!provider || !provider.id)
+    if (!provider || !provider.id) {
       return showErrorAlert("Error", "Proveedor no válido");
-
-    // Verificar si tiene compras asociadas
-    const hasPurchases = checkProviderHasPurchases(provider.id);
-
-    if (hasPurchases) {
-      return showErrorAlert(
-        "No se puede eliminar",
-        `El proveedor "${provider.razonSocial}" tiene compras asociadas y no puede ser eliminado. Para eliminarlo, primero debe eliminar o reasignar las compras relacionadas.`,
-        "error"
-      );
     }
 
-    // Si no tiene compras, proceder con la confirmación
+    // Confirmación de eliminación
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
@@ -178,12 +188,28 @@ const Providers = () => {
 
     if (!confirmResult.isConfirmed) return;
 
-    setData(data.filter((p) => p.id !== provider.id));
-    showSuccessAlert(
-      "Proveedor eliminado",
-      `${provider.razonSocial} fue eliminado correctamente.`
-    );
+    try {
+      console.log("🗑️ Eliminando proveedor:", provider.id);
+      
+      const response = await providersService.deleteProvider(provider.id);
+
+      if (response.success) {
+        showSuccessAlert(
+          "Proveedor eliminado",
+          `${provider.razonSocial} fue eliminado correctamente.`
+        );
+        fetchProviders(); // Recargar lista
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo eliminar el proveedor");
+      }
+    } catch (error) {
+      console.error("❌ Error deleting provider:", error);
+      showErrorAlert("Error", "Error al eliminar el proveedor en el servidor");
+    }
   };
+
+  // Calcular índice de inicio para la paginación
+  const startIndex = (currentPage - 1) * rowsPerPage;
 
   return (
     <div className="p-6 font-questrial w-full max-w-full">
@@ -206,7 +232,7 @@ const Providers = () => {
           {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
-              data={filteredData}
+              data={data}
               fileName="Proveedores"
               columns={[
                 { header: "Razón Social", accessor: "razonSocial" },
@@ -233,8 +259,12 @@ const Providers = () => {
         </div>
       </div>
 
-      {/* Tabla */}
-      {totalRows > 0 ? (
+      {/* Loading State */}
+      {loading ? (
+        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          Cargando proveedores...
+        </div>
+      ) : totalRows > 0 ? (
         <>
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
@@ -251,7 +281,7 @@ const Providers = () => {
                   actions: true,
                 }}
                 tbody={{
-                  data: paginatedData,
+                  data: data,
                   dataPropertys: [
                     "razonSocial",
                     "nit",

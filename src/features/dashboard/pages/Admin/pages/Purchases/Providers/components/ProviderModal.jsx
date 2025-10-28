@@ -10,17 +10,11 @@ import {
   useFormProviderValidation,
   providerValidationRules,
 } from "../hooks/useFormProviderValidation";
+import { useDocumentTypes } from "../../../../../../../../shared/hooks/useDocumentTypes";
 
 const entityTypes = [
   { value: "juridica", label: "Persona Jurídica" },
   { value: "natural", label: "Persona Natural" },
-];
-
-const documentTypes = [
-  { value: "CC", label: "Cédula de ciudadanía" },
-  { value: "TI", label: "Tarjeta de identidad" },
-  { value: "CE", label: "Cédula de extranjería" },
-  { value: "PAS", label: "Pasaporte" },
 ];
 
 const states = [
@@ -37,6 +31,7 @@ const ProviderModal = ({
   mode = providerToEdit ? "edit" : "create",
 }) => {
   const isEditing = mode === "edit" || providerToEdit !== null;
+  const { documentTypes, loading: documentTypesLoading, error: documentTypesError } = useDocumentTypes();
 
   const {
     values,
@@ -65,7 +60,6 @@ const ProviderModal = ({
     providerValidationRules
   );
 
-  // Cargar datos del proveedor cuando se abra el modal en modo edición
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
       setValues({
@@ -93,10 +87,8 @@ const ProviderModal = ({
   };
 
   const handleSubmit = async () => {
-    // 1. Marcar todos los campos como tocados
     const allTouched = {};
     Object.keys(providerValidationRules).forEach((field) => {
-      // Solo validar tipoDocumento si es persona natural
       if (field === "tipoDocumento" && values.tipoEntidad === "juridica") {
         return;
       }
@@ -104,7 +96,6 @@ const ProviderModal = ({
     });
     setTouched(allTouched);
 
-    // 2. Validar todos los campos
     if (!validateAllFields()) {
       if (isEditing) {
         showErrorAlert(
@@ -115,7 +106,6 @@ const ProviderModal = ({
       return;
     }
 
-    // 3. Confirmar en modo edición
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -134,7 +124,6 @@ const ProviderModal = ({
       const providerData = {
         ...values,
         telefono: formatPhoneNumber(values.telefono),
-        // Si es jurídica, no incluir tipoDocumento
         ...(values.tipoEntidad === "juridica" && { tipoDocumento: undefined }),
       };
 
@@ -168,7 +157,6 @@ const ProviderModal = ({
     }
   };
 
-  // Función para cerrar el modal y resetear el formulario
   const handleClose = () => {
     resetForm();
     onClose();
@@ -190,7 +178,6 @@ const ProviderModal = ({
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
-        {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
@@ -211,9 +198,7 @@ const ProviderModal = ({
           )}
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-3">
-          {/* Tipo de Entidad - Radio Buttons Estilizados */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -243,8 +228,6 @@ const ProviderModal = ({
                     onChange={handleChange}
                     className="sr-only"
                   />
-                  
-                  {/* Custom Radio Button */}
                   <div className="flex items-center w-full">
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
@@ -261,8 +244,6 @@ const ProviderModal = ({
                         />
                       )}
                     </div>
-                    
-                    {/* Label con icono */}
                     <div className="ml-3 flex items-center flex-1">
                       <div className={`p-1.5 rounded-lg mr-2 ${
                         values.tipoEntidad === type.value
@@ -290,8 +271,6 @@ const ProviderModal = ({
                       </div>
                     </div>
                   </div>
-
-                  {/* Indicador de selección */}
                   {values.tipoEntidad === type.value && (
                     <motion.div
                       initial={{ scale: 0, rotate: 180 }}
@@ -308,7 +287,6 @@ const ProviderModal = ({
             </div>
           </motion.div>
 
-          {/* Grid de campos */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <motion.div
               key={`razon-social-${values.tipoEntidad}`}
@@ -330,7 +308,6 @@ const ProviderModal = ({
               />
             </motion.div>
 
-            {/* Campo Tipo de Documento - Solo para Persona Natural */}
             <AnimatePresence mode="wait">
               {values.tipoEntidad === "natural" && (
                 <motion.div
@@ -343,19 +320,43 @@ const ProviderModal = ({
                     ease: "easeOut"
                   }}
                 >
-                  <FormField
-                    label="Tipo de documento"
-                    name="tipoDocumento"
-                    type="select"
-                    placeholder="Selecciona el tipo de documento"
-                    options={documentTypes}
-                    value={values.tipoDocumento}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={errors.tipoDocumento}
-                    touched={touched.tipoDocumento}
-                    required={values.tipoEntidad === "natural"}
-                  />
+                  {documentTypesLoading && (
+                    <div className="form-group">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tipo de documento *
+                      </label>
+                      <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
+                        Cargando tipos de documento...
+                      </div>
+                    </div>
+                  )}
+                  
+                  {documentTypesError && (
+                    <div className="form-group">
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tipo de documento *
+                      </label>
+                      <div className="p-3 bg-red-100 text-red-700 rounded-lg">
+                        Error: {documentTypesError}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {!documentTypesLoading && !documentTypesError && (
+                    <FormField
+                      label="Tipo de documento"
+                      name="tipoDocumento"
+                      type="select"
+                      placeholder="Selecciona el tipo de documento"
+                      options={documentTypes}
+                      value={values.tipoDocumento}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      error={errors.tipoDocumento}
+                      touched={touched.tipoDocumento}
+                      required={values.tipoEntidad === "natural"}
+                    />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -524,7 +525,6 @@ const ProviderModal = ({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex-shrink-0 border-t border-gray-200 p-3">
           <div className="flex justify-between">
             <button

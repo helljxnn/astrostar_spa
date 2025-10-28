@@ -1,3 +1,4 @@
+// src/features/dashboard/pages/Admin/pages/Users/components/UserViewModal.jsx
 import React from "react";
 import { motion } from "framer-motion";
 
@@ -9,7 +10,9 @@ const documentTypesLabels = {
 };
 
 const UserViewModal = ({ isOpen, onClose, user }) => {
-  if (!isOpen || !user) return null;
+  if (!isOpen || !user?._fullData) return null;
+
+  const fullUser = user._fullData;
 
   const formatPhoneDisplay = (phone) => {
     if (!phone) return "No especificado";
@@ -18,6 +21,12 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
 
   const getDocumentTypeLabel = (type) => {
     return documentTypesLabels[type] || type;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "No especificado";
+    const d = new Date(date);
+    return `${d.toLocaleDateString("es-ES")} ${d.toLocaleTimeString("es-ES")}`;
   };
 
   return (
@@ -48,7 +57,9 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
           <p className="text-center text-gray-600 mt-2">
             Información completa de:{" "}
             <span className="font-semibold text-primary-purple">
-              {user.nombre} {user.apellido}
+              {fullUser.firstName}{" "}
+              {fullUser.middleName ? fullUser.middleName + " " : ""}
+              {fullUser.lastName} {fullUser.secondLastName || ""}
             </span>
           </p>
         </div>
@@ -67,7 +78,7 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
                 Tipo de documento
               </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {getDocumentTypeLabel(user.tipoDocumento)}
+                {getDocumentTypeLabel(fullUser.documentType?.name || "N/A")}
               </p>
             </motion.div>
 
@@ -82,11 +93,11 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
                 Identificación
               </label>
               <p className="text-gray-900 font-mono p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {user.identificacion}
+                {fullUser.identification}
               </p>
             </motion.div>
 
-            {/* Nombre */}
+            {/* Primer Nombre */}
             <motion.div
               className="space-y-2"
               initial={{ opacity: 0, y: 10 }}
@@ -94,14 +105,29 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               transition={{ delay: 0.3, duration: 0.4 }}
             >
               <label className="text-sm font-medium text-gray-600">
-                Nombre
+                Primer Nombre
               </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {user.nombre}
+                {fullUser.firstName}
               </p>
             </motion.div>
 
-            {/* Apellido */}
+            {/* Segundo Nombre */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Segundo Nombre
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {fullUser.middleName || "No especificado"}
+              </p>
+            </motion.div>
+
+            {/* Primer Apellido */}
             <motion.div
               className="space-y-2"
               initial={{ opacity: 0, y: 10 }}
@@ -109,10 +135,25 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               transition={{ delay: 0.4, duration: 0.4 }}
             >
               <label className="text-sm font-medium text-gray-600">
-                Apellido
+                Primer Apellido
               </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {user.apellido}
+                {fullUser.lastName}
+              </p>
+            </motion.div>
+
+            {/* Segundo Apellido */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Segundo Apellido
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {fullUser.secondLastName || "No especificado"}
               </p>
             </motion.div>
 
@@ -123,11 +164,9 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.4 }}
             >
-              <label className="text-sm font-medium text-gray-600">
-                Rol
-              </label>
+              <label className="text-sm font-medium text-gray-600">Rol</label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {user.rol}
+                {fullUser.role?.name || "N/A"}
               </p>
             </motion.div>
 
@@ -138,11 +177,9 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.4 }}
             >
-              <label className="text-sm font-medium text-gray-600">
-                Correo
-              </label>
+              <label className="text-sm font-medium text-gray-600">Correo</label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {user.correo}
+                {fullUser.email}
               </p>
             </motion.div>
 
@@ -157,7 +194,37 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
                 Número Telefónico
               </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                {formatPhoneDisplay(user.telefono)}
+                {formatPhoneDisplay(fullUser.phoneNumber)}
+              </p>
+            </motion.div>
+
+            {/* Dirección */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.75, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Dirección
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {fullUser.address || "No especificado"}
+              </p>
+            </motion.div>
+
+            {/* Fecha de Nacimiento */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Fecha de Nacimiento
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {formatDate(fullUser.birthDate)}
               </p>
             </motion.div>
 
@@ -166,13 +233,41 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               className="space-y-2"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.4 }}
+              transition={{ delay: 0.85, duration: 0.4 }}
             >
-              <label className="text-sm font-medium text-gray-600">
-                Estado
-              </label>
+              <label className="text-sm font-medium text-gray-600">Estado</label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
                 {user.estado}
+              </p>
+            </motion.div>
+
+            {/* Fecha de Creación */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Fecha de Creación
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {formatDate(fullUser.createdAt)}
+              </p>
+            </motion.div>
+
+            {/* Última Actualización */}
+            <motion.div
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.95, duration: 0.4 }}
+            >
+              <label className="text-sm font-medium text-gray-600">
+                Última Actualización
+              </label>
+              <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                {formatDate(fullUser.updatedAt)}
               </p>
             </motion.div>
           </div>

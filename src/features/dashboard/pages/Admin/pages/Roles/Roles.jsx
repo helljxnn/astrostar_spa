@@ -5,7 +5,7 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../shared/components/Table/Pagination";
 import RoleDetailModal from "./components/RoleDetailModal";
-import { useRoles } from "../../../../../../shared/hooks/useRoles";
+import { useRoles } from "./hooks/useRoles";
 import { useLoading } from "../../../../../../shared/contexts/loaderContext";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
