@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Swal from 'sweetalert2';
-import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../../shared/contexts/authContext.jsx";
+import Swal from "sweetalert2";
+import { Link, useNavigate } from "react-router-dom"; // Importar useNavigate y Link
+import { useAuth } from "../../../shared/contexts/authContext"; // Importar el hook de autenticación
 import logo from "../../../../public/assets/images/astrostar.png";
 import "../Syles/LoginGlow.css";
 
 const Form = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const Toast = Swal.mixin({
     toast: true,
@@ -21,24 +21,28 @@ const Form = () => {
     timerProgressBar: true,
   });
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    if (!email || !password) {
-      Toast.fire({ icon: 'error', title: 'Por favor, ingresa tu correo y contraseña.' });
-      return;
-    }
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      const success = login({ email, password });
-      if (success) {
-        Toast.fire({ icon: 'success', title: '¡Bienvenido de nuevo!' });
-        navigate('/dashboard');
-      } else {
-        Toast.fire({ icon: 'error', title: 'Correo o contraseña incorrectos.' });
-      }
-    }, 1500);
-  }
+
+    const result = await login({ email, password });
+
+    setIsLoading(false);
+
+    if (result.success) {
+      Toast.fire({
+        icon: 'success',
+        title: result.message
+      });
+      // Redirigir al dashboard o a la página principal después del login
+      navigate("/dashboard");
+    } else {
+      Toast.fire({
+        icon: 'error',
+        title: result.message || "Error al iniciar sesión"
+      });
+    }
+  };
 
   return (
     <div className="w-full h-screen flex items-center justify-center relative">

@@ -1,14 +1,16 @@
 import AppRoutes from "./routes/Router";
-import { AuthProvider } from "./shared/contexts/authContext";
-import LoadingProvider from "./shared/contexts/loaderContext";
+import Loader from "./shared/components/loader";
+import { useLoading } from "./shared/contexts/loaderContext";
 
 function App() {
+
+  const { loader } = useLoading();
+
   return (
-    <AuthProvider>
-      <LoadingProvider>
-        <AppRoutes />
-      </LoadingProvider>
-    </AuthProvider>
+    <>
+      { loader && <Loader />}
+      <AppRoutes />
+    </>
   );
 }
 
