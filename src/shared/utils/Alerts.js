@@ -18,6 +18,7 @@ const alerts = {
   focusConfirm: false,
   showClass: { popup: "swal2-show" },
   hideClass: { popup: "swal2-hide" },
+  zIndex: 10001, // Asegurar que aparezca por encima de los modales (que usan 9999)
 };
 
 // Alerta de éxito
@@ -31,6 +32,7 @@ export const showSuccessAlert = (title, text = "") => {
     allowOutsideClick: true,
     allowEscapeKey: true,
     showCloseButton: true,
+    zIndex: 10001,
     customClass: {
       ...alerts.customClass,
       popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
@@ -43,7 +45,7 @@ export const showSuccessAlert = (title, text = "") => {
 
 // Alerta de error
 export const showErrorAlert = (title, text = "") => {
-  return Swal.fire({
+  const swalPromise = Swal.fire({
     ...alerts,
     icon: "error",
     title: `<span style="color:#ff4d4d;">${title}</span>`,
@@ -52,6 +54,7 @@ export const showErrorAlert = (title, text = "") => {
     allowOutsideClick: true,
     allowEscapeKey: true,
     showCloseButton: true,
+    zIndex: 10001,
     customClass: {
       ...alerts.customClass,
       popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] border-l-4 border-l-[#B595FF]`,
@@ -59,7 +62,16 @@ export const showErrorAlert = (title, text = "") => {
       confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] hover:opacity-90`,
     },
     background: "linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 100%)",
+    didOpen: () => {
+      // Forzar z-index después de que se abra
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
+  
+  return swalPromise;
 };
 
 // Alerta de confirmación
@@ -81,6 +93,7 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
     allowOutsideClick: true,
     allowEscapeKey: true,
     showCloseButton: true,
+    zIndex: 10001,
     customClass: {
       ...alerts.customClass,
       popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] border-l-4 border-l-[#9BE9FF]`,
@@ -89,6 +102,13 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
       cancelButton: `${alerts.customClass.cancelButton} text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50`,
     },
     background: "linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%)",
+    didOpen: () => {
+      // Forzar z-index después de que se abra
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
 };
 
@@ -111,6 +131,7 @@ export const showDeleteAlert = (title, text = "", options = {}) => {
     allowOutsideClick: true,
     allowEscapeKey: true,
     showCloseButton: true,
+    zIndex: 10001,
     customClass: {
       ...alerts.customClass,
       popup: `${alerts.customClass.popup} bg-white border border-gray-200`, // Fondo blanco limpio

@@ -12,18 +12,39 @@ export const AuthProvider = ({ children }) => {
     if (token && storedUser) {
       setIsAuthenticated(true);
       setUser(JSON.parse(storedUser));
-      console.log("AuthContext - Sesión restaurada:", {
-        token,
-        user: JSON.parse(storedUser),
-      });
-    } else {
-      console.log("AuthContext - No hay sesión guardada");
     }
   }, []);
 
-  const login = (loginData) => {
-    console.log("AuthContext - Intentando login con:", loginData);
+  const login = async (loginData) => {
 
+    // Intentar login real con backend primero (silencioso)
+    try {
+      const response = await fetch('http://localhost:4000/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success) {
+          const userToStore = result.user;
+          
+          setIsAuthenticated(true);
+          setUser(userToStore);
+          localStorage.setItem("authToken", result.token);
+          localStorage.setItem("user", JSON.stringify(userToStore));
+          return true;
+        }
+      }
+    } catch (error) {
+      // Silencioso: el backend no está disponible, usar fallback
+    }
+
+    // Fallback: usar usuarios hardcodeados si el backend no está disponible
     const users = [
       {
         id: 1,
@@ -35,6 +56,23 @@ export const AuthProvider = ({ children }) => {
         tipoDocumento: "CC",
         identificacion: "123456789",
         correo: "admin@example.com",
+        telefono: "3001234567",
+        avatar: null,
+      },
+      {
+        id: 6,
+        email: "jenniferl.sosa15@gmail.com",
+        password: "ZaEt8%2w84p4",
+        rol: "admin",
+        role: {
+          name: "admin",
+          permissions: {} // Los permisos de admin se generan automáticamente
+        },
+        nombre: "Jennifer",
+        apellido: "Sosa",
+        tipoDocumento: "CC",
+        identificacion: "1234567890",
+        correo: "jenniferl.sosa15@gmail.com",
         telefono: "3001234567",
         avatar: null,
       },
@@ -105,11 +143,9 @@ export const AuthProvider = ({ children }) => {
       setUser(userToStore);
       localStorage.setItem("authToken", token);
       localStorage.setItem("user", JSON.stringify(userToStore));
-      console.log("AuthContext - Login exitoso:", { user: userToStore, token });
       return true;
     }
 
-    console.log("AuthContext - Login fallido: credenciales incorrectas");
     return false;
   };
 
