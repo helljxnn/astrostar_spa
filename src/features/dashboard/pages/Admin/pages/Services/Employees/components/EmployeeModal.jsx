@@ -17,7 +17,7 @@ const EmployeeModal = ({
   onSave,
   employee,
   mode = "create",
-  referenceData = { employeeTypes: [], roles: [], documentTypes: [] },
+  referenceData = { roles: [], documentTypes: [] },
 }) => {
   const {
     values: formData,
@@ -37,19 +37,55 @@ const EmployeeModal = ({
       phoneNumber: "",
       address: "",
       birthDate: "",
+      age: "",
       identification: "",
       documentTypeId: "",
-      employeeTypeId: "",
       roleId: "",
       status: "Active",
     },
     employeeValidationRules
   );
 
+  // Función para calcular la edad
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 0 ? age.toString() : "";
+  };
+
+  // Función personalizada para manejar cambios
+  const handleCustomChange = (name, value) => {
+    if (name === "birthDate") {
+      const age = calculateAge(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        age: age,
+      }));
+    } else {
+      handleChange(name, value);
+    }
+  };
+
   // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
     if (employee && (mode === "edit" || mode === "view")) {
       // Mapear datos del backend al formato del formulario
+      const birthDate = employee.user?.birthDate
+        ? employee.user.birthDate.split("T")[0]
+        : "";
       setFormData({
         firstName: employee.user?.firstName || "",
         middleName: employee.user?.middleName || "",
@@ -58,10 +94,10 @@ const EmployeeModal = ({
         email: employee.user?.email || "",
         phoneNumber: employee.user?.phoneNumber || "",
         address: employee.user?.address || "",
-        birthDate: employee.user?.birthDate ? employee.user.birthDate.split('T')[0] : "",
+        birthDate: birthDate,
+        age: calculateAge(birthDate),
         identification: employee.user?.identification || "",
         documentTypeId: employee.user?.documentTypeId || "",
-        employeeTypeId: employee.employeeTypeId || "",
         roleId: employee.user?.roleId || "",
         status: employee.status || "Active",
       });
@@ -76,9 +112,9 @@ const EmployeeModal = ({
         phoneNumber: "",
         address: "",
         birthDate: "",
+        age: "",
         identification: "",
         documentTypeId: "",
-        employeeTypeId: "",
         roleId: "",
         status: "Active",
       });
@@ -107,7 +143,7 @@ const EmployeeModal = ({
 
       // Llamar onSave y esperar el resultado
       const success = await onSave(formData);
-      
+
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
         // Limpiar formulario
@@ -120,13 +156,13 @@ const EmployeeModal = ({
           phoneNumber: "",
           address: "",
           birthDate: "",
+          age: "",
           identification: "",
           documentTypeId: "",
-          employeeTypeId: "",
           roleId: "",
           status: "Active",
         });
-        
+
         onClose();
       }
     } catch (error) {
@@ -142,7 +178,7 @@ const EmployeeModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -183,9 +219,9 @@ const EmployeeModal = ({
               placeholder="Seleccionar tipo de documento"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={referenceData.documentTypes.map(type => ({
+              options={referenceData.documentTypes.map((type) => ({
                 value: type.id,
-                label: type.name
+                label: type.name,
               }))}
               value={formData.documentTypeId}
               error={errors.documentTypeId}
@@ -296,7 +332,7 @@ const EmployeeModal = ({
               label="Número Telefónico"
               name="phoneNumber"
               type="text"
-              placeholder="+57 300 123 4567"
+              placeholder="300 123 4567"
               required={false}
               disabled={mode === "view"}
               value={formData.phoneNumber}
@@ -334,9 +370,21 @@ const EmployeeModal = ({
               value={formData.birthDate}
               error={errors.birthDate}
               touched={touched.birthDate}
-              onChange={handleChange}
+              onChange={handleCustomChange}
               onBlur={handleBlur}
               delay={0.65}
+            />
+
+            {/* Edad (calculada automáticamente) */}
+            <FormField
+              label="Edad"
+              name="age"
+              type="text"
+              placeholder="Se calcula automáticamente"
+              required={false}
+              disabled={true}
+              value={formData.age ? `${formData.age} años` : ""}
+              delay={0.67}
             />
 
             {/* Rol */}
@@ -347,36 +395,16 @@ const EmployeeModal = ({
               placeholder="Seleccione el rol"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={referenceData.roles.map(role => ({
+              options={referenceData.roles.map((role) => ({
                 value: role.id,
-                label: role.name
+                label: role.name,
               }))}
               value={formData.roleId}
               error={errors.roleId}
               touched={touched.roleId}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.7}
-            />
-
-            {/* Tipo Empleado */}
-            <FormField
-              label="Tipo Empleado"
-              name="employeeTypeId"
-              type="select"
-              placeholder="Seleccionar tipo empleado"
-              required={mode !== "view"}
-              disabled={mode === "view"}
-              options={referenceData.employeeTypes.map(type => ({
-                value: type.id,
-                label: type.name
-              }))}
-              value={formData.employeeTypeId}
-              error={errors.employeeTypeId}
-              touched={touched.employeeTypeId}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.8}
+              delay={0.75}
             />
 
             {/* Estado */}
@@ -398,7 +426,7 @@ const EmployeeModal = ({
               touched={touched.status}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.9}
+              delay={0.8}
             />
           </div>
         </div>

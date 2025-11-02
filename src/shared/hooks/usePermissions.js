@@ -20,7 +20,6 @@ export const usePermissions = () => {
       // Si es admin, dar todos los permisos usando función centralizada
       if (userRole === 'admin') {
         userPermissions = generateAdminPermissions();
-        console.log('🔐 Admin permissions loaded:', Object.keys(userPermissions).length, 'modules');
       } else {
         // Para otros roles, usar los permisos del role si existen
         userPermissions = user.role?.permissions || {};

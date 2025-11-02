@@ -109,7 +109,6 @@ export const employeeValidationRules = {
     (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
   documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
-  employeeTypeId: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
   roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
   status: [(value) => (!value ? "Debe seleccionar un estado" : "")],
   birthDate: [

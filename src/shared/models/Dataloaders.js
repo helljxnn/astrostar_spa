@@ -266,10 +266,9 @@ export const loadTrainers = () => {
 
     const trainersFromEmployees = employees
       .filter(e => {
-        // Adaptado para la nueva estructura del backend
-        const employeeType = e.employeeType?.name || e.tipoEmpleado;
+        // Filtrar solo por estado ya que no hay tipos de empleado
         const status = e.status || e.estado;
-        return employeeType === "Entrenador" && (status === "Active" || status === "Activo");
+        return status === "Active" || status === "Activo";
       })
       .map(e => ({
         id: e.id || e.user?.identification || e.identificacion,

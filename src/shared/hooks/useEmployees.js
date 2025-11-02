@@ -18,7 +18,6 @@ export const useEmployees = () => {
     pages: 0
   });
   const [referenceData, setReferenceData] = useState({
-    employeeTypes: [],
     roles: [],
     documentTypes: []
   });

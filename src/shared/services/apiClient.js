@@ -1,7 +1,4 @@
-/**
- * Cliente HTTP Base - Configuración compartida
- * Proporciona configuración común para todos los servicios
- */
+// Conf Común para consumir api
 
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:4000/api";

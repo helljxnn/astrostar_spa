@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import EmployeeModal from "./components/EmployeeModal";
+import EmployeeViewModal from "./components/EmployeeViewModal";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -33,7 +34,9 @@ const Employees = () => {
   } = useEmployees();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [viewingEmployee, setViewingEmployee] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCredentials, setShowCredentials] = useState(false);
@@ -49,7 +52,7 @@ const Employees = () => {
         employee.user?.lastName,
         employee.user?.email,
         employee.user?.identification,
-        employee.employeeType?.name,
+
         employee.user?.role?.name
       ];
       
@@ -85,7 +88,6 @@ const Employees = () => {
     telefono: employee.user?.phoneNumber || '',
     fechaNacimiento: employee.user?.birthDate || '',
     rol: employee.user?.role?.name || '',
-    tipoEmpleado: employee.employeeType?.name || '',
     estado: translateStatus(employee.status) || '',
     fechaCreacion: employee.createdAt || ''
   }));
@@ -99,7 +101,6 @@ const Employees = () => {
     { header: "Teléfono", accessor: "telefono" },
     { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
     { header: "Rol", accessor: "rol" },
-    { header: "Tipo Empleado", accessor: "tipoEmpleado" },
     { header: "Estado", accessor: "estado" },
     { header: "Fecha Creación", accessor: "fechaCreacion" },
   ];
@@ -163,14 +164,22 @@ const Employees = () => {
       showErrorAlert('Sin permisos', 'No tienes permisos para ver empleados');
       return;
     }
-    setEditingEmployee(employee);
-    setModalMode("view");
-    setIsModalOpen(true);
+    setViewingEmployee(employee);
+    setIsViewModalOpen(true);
   };
 
   const handleDelete = async (employee) => {
     if (!hasPermission('employees', 'Eliminar')) {
       showErrorAlert('Sin permisos', 'No tienes permisos para eliminar empleados');
+      return;
+    }
+
+    // Verificar si el empleado está activo
+    if (employee.status === 'Active') {
+      showErrorAlert(
+        'No se puede eliminar', 
+        'No se puede eliminar un empleado con estado "Activo". Primero cambie el estado a "Deshabilitado" y luego inténtelo de nuevo.'
+      );
       return;
     }
     
@@ -241,7 +250,7 @@ const Employees = () => {
         <>
           <Table
             thead={{
-              titles: ["Nombre Completo", "Identificación", "Tipo de Empleado", "Rol", "Estado"],
+              titles: ["Nombre Completo", "Identificación", "Rol", "Estado"],
               state: false,
               actions: true,
             }}
@@ -250,12 +259,11 @@ const Employees = () => {
                 ...employee,
                 nombreCompleto: `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim(),
                 identificacion: employee.user?.identification || '',
-                tipoEmpleado: employee.employeeType?.name || '',
                 rol: employee.user?.role?.name || '',
                 estado: translateStatus(employee.status) || ''
               })),
-              dataPropertys: ["nombreCompleto", "identificacion", "tipoEmpleado", "rol", "estado"],
-              state: false,
+              dataPropertys: ["nombreCompleto", "identificacion", "rol", "estado"],
+              state: true,
             }}
             onEdit={hasPermission('employees', 'Editar') ? handleEdit : null}
             onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
@@ -266,10 +274,12 @@ const Employees = () => {
                 disabled: false,
                 title: 'Editar empleado'
               }),
-              delete: () => ({
+              delete: (employee) => ({
                 show: hasPermission('employees', 'Eliminar'),
-                disabled: false,
-                title: 'Eliminar empleado'
+                disabled: employee.status === 'Active',
+                title: employee.status === 'Active' 
+                  ? 'No se puede eliminar un empleado activo' 
+                  : 'Eliminar empleado'
               }),
               view: () => ({
                 show: hasPermission('employees', 'Ver'),
@@ -303,6 +313,16 @@ const Employees = () => {
         onDelete={handleDelete}
         employee={editingEmployee}
         mode={modalMode}
+        referenceData={referenceData}
+      />
+
+      <EmployeeViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => {
+          setIsViewModalOpen(false);
+          setViewingEmployee(null);
+        }}
+        employee={viewingEmployee}
         referenceData={referenceData}
       />
 

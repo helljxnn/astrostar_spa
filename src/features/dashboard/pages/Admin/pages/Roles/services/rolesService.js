@@ -1,7 +1,3 @@
-/**
- * Roles Service - Módulo específico de gestión de roles
- * Servicio para manejar todas las operaciones relacionadas con roles
- */
 
 import apiClient from '../../../../../../../shared/services/apiClient';
 
@@ -123,7 +119,15 @@ class RolesService {
    */
   async getActiveRoles() {
     console.log("✅ Fetching active roles only");
-    return this.makeRequest("?status=Active");
+    return this.getAllRoles({ limit: 1000, page: 1 }).then(response => {
+      if (response.success) {
+        return {
+          ...response,
+          data: response.data.filter(role => role.status === 'Active')
+        };
+      }
+      return response;
+    });
   }
 
   /**
