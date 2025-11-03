@@ -26,9 +26,7 @@ class UsersService {
       userType = "" 
     } = params;
     
-    console.log("📋 Fetching users (READ-ONLY):", { 
-      page, limit, search, status, roleId, userType 
-    });
+
     
     return apiClient.get(this.endpoint, { 
       page, 
@@ -46,7 +44,7 @@ class UsersService {
    * @returns {Promise} Datos del usuario
    */
   async getUserById(id) {
-    console.log("🔍 Fetching user by ID:", id);
+
     return apiClient.get(`${this.endpoint}/${id}`);
   }
 
@@ -55,7 +53,7 @@ class UsersService {
    * @returns {Promise} Estadísticas de usuarios
    */
   async getUserStats() {
-    console.log("📊 Fetching user statistics");
+
     return apiClient.get(`${this.endpoint}/stats`);
   }
 
@@ -93,7 +91,7 @@ class UsersService {
    * @returns {Promise} Usuarios que coinciden con la búsqueda
    */
   async searchUsers(searchTerm, limit = 20) {
-    console.log("🔍 Searching users:", { searchTerm, limit });
+
     return this.getUsers({ 
       search: searchTerm, 
       limit,

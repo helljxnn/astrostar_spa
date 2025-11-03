@@ -18,13 +18,35 @@ export const TopBar = ({ onOpenProfileModals }) => {
       .join(" ");
   };
 
+  // Función para obtener el nombre completo del usuario
+  const getUserDisplayName = () => {
+    // Prioridad 1: Estructura del backend (firstName, lastName)
+    if (user?.firstName) {
+      return `${user.firstName} ${user.lastName || ''}`.trim();
+    }
+    
+    // Prioridad 2: Estructura del fallback (nombre, apellido)
+    if (user?.nombre) {
+      return `${user.nombre} ${user.apellido || ''}`.trim();
+    }
+    
+    // Prioridad 3: Rol formateado
+    const role = user?.role?.name || user?.rol;
+    if (role) {
+      return formatRole(role);
+    }
+    
+    // Fallback: Usuario
+    return "Usuario";
+  };
+
   return (
     <header
       className="w-full h-16 px-6 flex items-center justify-between 
       bg-gradient-to-r from-white/70 via-white/60 to-white/70 
       backdrop-blur-lg shadow-md sticky top-0 z-40 border-b border-gray-200 font-montserrat"
     >
-      {/* Rol */}
+      {/* Usuario y Rol */}
       <motion.div
         className="flex items-center gap-3 cursor-default"
         initial={{ opacity: 0, y: -10 }}
@@ -38,14 +60,19 @@ export const TopBar = ({ onOpenProfileModals }) => {
         >
           <FaUserTie size={20} />
         </motion.div>
-        <motion.h4
-          className="text-gray-800 font-semibold tracking-wide text-lg"
+        <motion.div
+          className="flex flex-col"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          {user?.nombre ? `${user.nombre} ${user.apellido}` : formatRole(user?.rol)}
-        </motion.h4>
+          <h4 className="text-gray-800 font-semibold tracking-wide text-lg leading-tight">
+            {getUserDisplayName()}
+          </h4>
+          <span className="text-gray-500 text-sm font-medium">
+            {user?.role?.name || user?.rol || 'Usuario'}
+          </span>
+        </motion.div>
       </motion.div>
 
       {/* Submenu perfil */}

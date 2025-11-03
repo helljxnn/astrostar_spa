@@ -16,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (loginData) => {
-
     // Intentar login real con backend primero (silencioso)
     try {
       const response = await fetch('http://localhost:4000/api/auth/login', {
@@ -31,11 +30,12 @@ export const AuthProvider = ({ children }) => {
         const result = await response.json();
         
         if (result.success) {
-          const userToStore = result.user;
+          const userToStore = result.data.user;
+          const token = result.data.token;
           
           setIsAuthenticated(true);
           setUser(userToStore);
-          localStorage.setItem("authToken", result.token);
+          localStorage.setItem("authToken", token);
           localStorage.setItem("user", JSON.stringify(userToStore));
           return true;
         }
@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         isAuthenticated,
         user,
-        userRole: user?.rol,
+        userRole: user?.rol || user?.role?.name,
         login,
         logout,
         updateUser,

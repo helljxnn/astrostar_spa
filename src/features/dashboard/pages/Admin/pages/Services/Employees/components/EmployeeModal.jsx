@@ -41,7 +41,7 @@ const EmployeeModal = ({
       identification: "",
       documentTypeId: "",
       roleId: "",
-      status: "Active",
+      status: "Activo",
     },
     employeeValidationRules
   );
@@ -99,7 +99,7 @@ const EmployeeModal = ({
         identification: employee.user?.identification || "",
         documentTypeId: employee.user?.documentTypeId || "",
         roleId: employee.user?.roleId || "",
-        status: employee.status || "Active",
+        status: employee.status || "Activo",
       });
     } else {
       // Limpiar formulario para creación
@@ -116,7 +116,7 @@ const EmployeeModal = ({
         identification: "",
         documentTypeId: "",
         roleId: "",
-        status: "Active",
+        status: "Activo",
       });
     }
   }, [employee, setFormData, mode, isOpen]);
@@ -160,7 +160,7 @@ const EmployeeModal = ({
           identification: "",
           documentTypeId: "",
           roleId: "",
-          status: "Active",
+          status: "Activo",
         });
 
         onClose();
@@ -333,7 +333,7 @@ const EmployeeModal = ({
               name="phoneNumber"
               type="text"
               placeholder="300 123 4567"
-              required={false}
+              required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.phoneNumber}
               error={errors.phoneNumber}
@@ -348,8 +348,8 @@ const EmployeeModal = ({
               label="Dirección"
               name="address"
               type="text"
-              placeholder="Dirección de residencia (opcional)"
-              required={false}
+              placeholder="Dirección de residencia"
+              required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.address}
               error={errors.address}
@@ -416,10 +416,10 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
-                { value: "Active", label: "Activo" },
-                { value: "Disabled", label: "Deshabilitado" },
-                { value: "OnVacation", label: "En Vacaciones" },
-                { value: "Retired", label: "Retirado" },
+                { value: "Activo", label: "Activo" },
+                { value: "Licencia", label: "Licencia" },
+                { value: "Desvinculado", label: "Desvinculado" },
+                { value: "Fallecido", label: "Fallecido" },
               ]}
               value={formData.status}
               error={errors.status}

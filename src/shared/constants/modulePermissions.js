@@ -1,31 +1,26 @@
-/**
- * Definición centralizada de todos los módulos del sistema
- * Asegura consistencia entre frontend y backend
- */
-
-// Lista completa de todos los módulos del sistema
+// Todos los módulos del sistema
 export const ALL_MODULES = [
-  'dashboard',
-  'users', 
-  'roles',
-  'sportsEquipment',
-  'employees',
-  'employeesSchedule', 
-  'appointmentManagement',
-  'sportsCategory',
-  'athletesSection',
-  'athletesAssistance',
-  'donorsSponsors',
-  'donationsManagement',
-  'eventsManagement',
-  'temporaryWorkers',
-  'temporaryTeams',
-  'providers',
-  'purchasesManagement'
+  "dashboard",
+  "users",
+  "roles",
+  "sportsEquipment",
+  "employees",
+  "employeesSchedule",
+  "appointmentManagement",
+  "sportsCategory",
+  "athletesSection",
+  "athletesAssistance",
+  "donorsSponsors",
+  "donationsManagement",
+  "eventsManagement",
+  "temporaryWorkers",
+  "temporaryTeams",
+  "providers",
+  "purchasesManagement",
 ];
 
 // Todas las acciones disponibles
-export const ALL_ACTIONS = ['Ver', 'Crear', 'Editar', 'Eliminar'];
+export const ALL_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar"];
 
 /**
  * Genera permisos completos para administrador
@@ -33,14 +28,14 @@ export const ALL_ACTIONS = ['Ver', 'Crear', 'Editar', 'Eliminar'];
  */
 export const generateAdminPermissions = () => {
   const adminPermissions = {};
-  
-  ALL_MODULES.forEach(module => {
+
+  ALL_MODULES.forEach((module) => {
     adminPermissions[module] = {};
-    ALL_ACTIONS.forEach(action => {
+    ALL_ACTIONS.forEach((action) => {
       adminPermissions[module][action] = true;
     });
   });
-  
+
   return adminPermissions;
 };
 
@@ -50,14 +45,14 @@ export const generateAdminPermissions = () => {
  */
 export const generateEmptyPermissions = () => {
   const emptyPermissions = {};
-  
-  ALL_MODULES.forEach(module => {
+
+  ALL_MODULES.forEach((module) => {
     emptyPermissions[module] = {};
-    ALL_ACTIONS.forEach(action => {
+    ALL_ACTIONS.forEach((action) => {
       emptyPermissions[module][action] = false;
     });
   });
-  
+
   return emptyPermissions;
 };
 
@@ -67,19 +62,19 @@ export const generateEmptyPermissions = () => {
  * @returns {boolean} True si la estructura es válida
  */
 export const validatePermissionsStructure = (permissions) => {
-  if (!permissions || typeof permissions !== 'object') {
+  if (!permissions || typeof permissions !== "object") {
     return false;
   }
 
   // Verificar que todos los módulos estén presentes
   for (const module of ALL_MODULES) {
-    if (!permissions[module] || typeof permissions[module] !== 'object') {
+    if (!permissions[module] || typeof permissions[module] !== "object") {
       return false;
     }
 
     // Verificar que todas las acciones estén presentes
     for (const action of ALL_ACTIONS) {
-      if (typeof permissions[module][action] !== 'boolean') {
+      if (typeof permissions[module][action] !== "boolean") {
         return false;
       }
     }
@@ -96,18 +91,18 @@ export const validatePermissionsStructure = (permissions) => {
  */
 export const completePermissions = (permissions = {}, defaultValue = false) => {
   const completePerms = { ...permissions };
-  
-  ALL_MODULES.forEach(module => {
+
+  ALL_MODULES.forEach((module) => {
     if (!completePerms[module]) {
       completePerms[module] = {};
     }
-    
-    ALL_ACTIONS.forEach(action => {
-      if (typeof completePerms[module][action] !== 'boolean') {
+
+    ALL_ACTIONS.forEach((action) => {
+      if (typeof completePerms[module][action] !== "boolean") {
         completePerms[module][action] = defaultValue;
       }
     });
   });
-  
+
   return completePerms;
 };
