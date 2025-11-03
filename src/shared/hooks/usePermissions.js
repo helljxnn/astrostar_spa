@@ -18,7 +18,7 @@ export const usePermissions = () => {
       let userRole = user.role?.name || user.rol || user.role;
 
       // Si es admin, dar todos los permisos usando función centralizada
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'Administrador') {
         userPermissions = generateAdminPermissions();
       } else {
         // Para otros roles, usar los permisos del role si existen
@@ -87,6 +87,6 @@ export const usePermissions = () => {
     getModulePermissions,
     hasAllPermissions,
     hasAnyPermission,
-    isAdmin: user?.role?.name === 'admin' || user?.rol === 'admin' || user?.role === 'admin'
+    isAdmin: user?.role?.name === 'admin' || user?.rol === 'admin' || user?.role === 'admin' || user?.role?.name === 'Administrador'
   };
 };

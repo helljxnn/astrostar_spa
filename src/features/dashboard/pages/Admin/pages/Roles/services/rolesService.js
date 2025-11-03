@@ -16,7 +16,7 @@ class RolesService {
    */
   async getAllRoles(params = {}) {
     const { page = 1, limit = 10, search = "" } = params;
-    console.log("📋 Fetching roles with params:", { page, limit, search });
+
     return apiClient.get(this.endpoint, { page, limit, search });
   }
 
@@ -26,7 +26,7 @@ class RolesService {
    * @returns {Promise} Datos del rol
    */
   async getRoleById(id) {
-    console.log("🔍 Fetching role by ID:", id);
+
     return apiClient.get(`${this.endpoint}/${id}`);
   }
 
@@ -40,7 +40,7 @@ class RolesService {
    * @returns {Promise} Rol creado
    */
   async createRole(roleData) {
-    console.log("➕ Creating new role:", roleData);
+
     return apiClient.post(this.endpoint, roleData);
   }
 
@@ -51,7 +51,7 @@ class RolesService {
    * @returns {Promise} Rol actualizado
    */
   async updateRole(id, roleData) {
-    console.log("✏️ Updating role:", { id, roleData });
+
     return apiClient.put(`${this.endpoint}/${id}`, roleData);
   }
 
@@ -61,7 +61,7 @@ class RolesService {
    * @returns {Promise} Confirmación de eliminación
    */
   async deleteRole(id) {
-    console.log("🗑️ Deleting role:", id);
+
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
@@ -77,9 +77,7 @@ class RolesService {
       params.excludeId = excludeId;
     }
 
-    console.log("🔍 Checking name availability:", { name, excludeId });
     const response = await apiClient.get(`${this.endpoint}/check-name`, params);
-    console.log("📨 Name availability response:", response);
 
     return response;
   }
@@ -89,7 +87,7 @@ class RolesService {
    * @returns {Promise} Estadísticas de roles
    */
   async getRoleStats() {
-    console.log("📊 Fetching role statistics");
+
     return apiClient.get(`${this.endpoint}/stats`);
   }
 
@@ -98,7 +96,7 @@ class RolesService {
    * @returns {Promise} Lista de permisos disponibles
    */
   async getAvailablePermissions() {
-    console.log("🔐 Fetching available permissions");
+
     return apiClient.get(`${this.endpoint}/permissions`);
   }
 
@@ -109,7 +107,7 @@ class RolesService {
    * @returns {Promise} Rol con estado actualizado
    */
   async changeRoleStatus(id, status) {
-    console.log("🔄 Changing role status:", { id, status });
+
     return this.updateRole(id, { status });
   }
 
@@ -118,8 +116,8 @@ class RolesService {
    * @returns {Promise} Lista de roles activos
    */
   async getActiveRoles() {
-    console.log("✅ Fetching active roles only");
-    return this.getAllRoles({ limit: 1000, page: 1 }).then(response => {
+
+    return this.getAllRoles({ limit: 100, page: 1 }).then(response => {
       if (response.success) {
         return {
           ...response,
@@ -137,7 +135,7 @@ class RolesService {
    * @returns {Promise} Rol duplicado
    */
   async duplicateRole(id, newName) {
-    console.log("📋 Duplicating role:", { id, newName });
+
     
     // Primero obtener el rol original
     const originalRole = await this.getRoleById(id);
@@ -160,7 +158,7 @@ class RolesService {
    * @returns {Promise} Roles que coinciden con la búsqueda
    */
   async searchRoles(searchTerm, limit = 20) {
-    console.log("🔍 Searching roles:", { searchTerm, limit });
+
     return this.getAllRoles({ 
       search: searchTerm, 
       limit,
@@ -174,10 +172,10 @@ class RolesService {
    * @returns {Promise} Datos formateados para exportación
    */
   async exportRoles(format = "json") {
-    console.log("📤 Preparing roles export:", format);
+
     
     // Obtener todos los roles sin paginación
-    const allRoles = await this.getAllRoles({ limit: 1000 });
+    const allRoles = await this.getAllRoles({ limit: 100 });
     
     if (format === "csv") {
       return this.formatRolesForCSV(allRoles.data);

@@ -437,7 +437,7 @@
                           className="overflow-hidden"
                         >
                           <div className="pl-12 pr-3 py-2 space-y-1">
-                            {userRole === "admin" && (
+                            {(isAdmin || hasModuleAccess('employees')) && (
                               <motion.div
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}

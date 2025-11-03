@@ -65,10 +65,15 @@ const Employees = () => {
   // Función para traducir estados
   const translateStatus = (status) => {
     const statusMap = {
+      'Activo': 'Activo',
+      'Licencia': 'Licencia',
+      'Desvinculado': 'Desvinculado',
+      'Fallecido': 'Fallecido',
+      // Mantener compatibilidad con estados antiguos
       'Active': 'Activo',
-      'Disabled': 'Deshabilitado',
-      'OnVacation': 'En Vacaciones',
-      'Retired': 'Retirado',
+      'Disabled': 'Desvinculado',
+      'OnVacation': 'Licencia',
+      'Retired': 'Desvinculado',
       'Deceased': 'Fallecido'
     };
     return statusMap[status] || status;
@@ -154,6 +159,16 @@ const Employees = () => {
       showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
       return;
     }
+
+    // Verificar si es el usuario por defecto del sistema
+    if (employee.user?.email === 'astrostar.java@gmail.com') {
+      showErrorAlert(
+        'No se puede editar', 
+        'No se puede editar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.'
+      );
+      return;
+    }
+
     setEditingEmployee(employee);
     setModalMode("edit");
     setIsModalOpen(true);
@@ -174,11 +189,20 @@ const Employees = () => {
       return;
     }
 
-    // Verificar si el empleado está activo
-    if (employee.status === 'Active') {
+    // Verificar si es el usuario por defecto del sistema
+    if (employee.user?.email === 'astrostar.java@gmail.com') {
       showErrorAlert(
         'No se puede eliminar', 
-        'No se puede eliminar un empleado con estado "Activo". Primero cambie el estado a "Deshabilitado" y luego inténtelo de nuevo.'
+        'No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.'
+      );
+      return;
+    }
+
+    // Verificar si el empleado está activo
+    if (employee.status === 'Activo') {
+      showErrorAlert(
+        'No se puede eliminar', 
+        'No se puede eliminar un empleado con estado "Activo". Primero cambie el estado a "Desvinculado", "Licencia" o "Fallecido" y luego inténtelo de nuevo.'
       );
       return;
     }
@@ -269,17 +293,21 @@ const Employees = () => {
             onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
             onView={hasPermission('employees', 'Ver') ? handleView : null}
             buttonConfig={{
-              edit: () => ({
+              edit: (employee) => ({
                 show: hasPermission('employees', 'Editar'),
-                disabled: false,
-                title: 'Editar empleado'
+                disabled: employee.user?.email === 'astrostar.java@gmail.com',
+                title: employee.user?.email === 'astrostar.java@gmail.com'
+                  ? 'No se puede editar el usuario por defecto del sistema'
+                  : 'Editar empleado'
               }),
               delete: (employee) => ({
                 show: hasPermission('employees', 'Eliminar'),
-                disabled: employee.status === 'Active',
-                title: employee.status === 'Active' 
-                  ? 'No se puede eliminar un empleado activo' 
-                  : 'Eliminar empleado'
+                disabled: employee.status === 'Activo' || employee.user?.email === 'astrostar.java@gmail.com',
+                title: employee.user?.email === 'astrostar.java@gmail.com'
+                  ? 'No se puede eliminar el usuario por defecto del sistema'
+                  : employee.status === 'Activo' 
+                    ? 'No se puede eliminar un empleado activo' 
+                    : 'Eliminar empleado'
               }),
               view: () => ({
                 show: hasPermission('employees', 'Ver'),
