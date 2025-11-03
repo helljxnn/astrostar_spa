@@ -60,7 +60,7 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute
               allowedRoles={[
-                "admin",
+                "administrador",
                 "profesional_deportivo",
                 "profesional_salud",
                 "deportista",

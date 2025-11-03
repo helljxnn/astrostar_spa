@@ -1,71 +1,118 @@
-import { createContext, useContext, useState, useEffect } from "react";
+// Importa useMemo y useEffect (que ya tenías)
+import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Requests from "../hooks/requests";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Para saber si estamos verificando el estado inicial
 
+  // Hooks
+  const navigate = useNavigate();
+
+  // URLs para todo lo relacionado con la informacion del usuario
   const URLENDPOINTS = {
     LOGIN: "http://localhost:3000/api/auth/login", // Endpoint par la autenticacion del usuario
-    PASSWORD: "http://localhost:3000/api/auth/profile", // Endpoint para extraer los datos del usuario 
+    PROFILE: "http://localhost:3000/api/auth/profile", // Endpoint para extraer los datos del usuario 
     LOGOUT: "http://localhost:3000/api/auth/logout", // Endpoint para cerrar sesión
-    FORGOTPASSWORD: "http://localhost:3000/api/auth/forgotPassword",
-    RESETPASSWORD: "http://localhost:3000/api/auth/restorePassword",
-    VERIFYPASSWORD: "http://localhost:3000/api/auth/verifyCode",
+    FORGOTPASSWORD: "http://localhost:3000/api/auth/forgotPassword", // Endpoint para la contraseña perdida
+    RESETPASSWORD: "http://localhost:3000/api/auth/restorePassword", // Endpoint para restaurar contraseña
+    VERIFYPASSWORD: "http://localhost:3000/api/auth/verifyCode", // Endpoint para la verificacion del codigo de seguridad
   };
 
-  const login = async (data) => {
+  // 2. ÚNICA fuente de verdad para los datos del usuario
+  const [user, setUser] = useState(null);
+
+  // 3. Estado de autenticación
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+
+  // Funcion para buscar los permisos y privilegios del usuario
+  // donde al momento de recargar el aplicativo no redirija al usuario al 
+  // login o a una vista de no autorizado
+  const checkAuthStatus = async () => {
+      try {
+        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "GET");
+        if (profileResponse.success && profileResponse.data) {
+          setUser(profileResponse.data);
+          setIsAuthenticated(true);
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    };
+
+  // ----- Persistencia de sesion ------
+  useEffect(() => {    
+    checkAuthStatus();
+  }, []); // <-- Array vacío para que se ejecute solo una vez al cargar la app
+
+  // ----- VALORES DERIVADOS CON useMemo -----
+  const userRole = useMemo(() => user?.role?.name || null, [user]);
+  const userPermissions = useMemo(() => user?.role?.permissions || null, [user]);
+
+  // ----- FUNCIONES DE AUTENTICACIÓN -----
+
+  const Login = async (data) => {
     try {
-      if (!data.email || !data.password) { // Corregido: data.email dos veces
+
+      // Validacion para evitar enviar datos vacios
+      if (!data.email || !data.password) {
         return { success: false, message: "Credenciales inválidas" };
       }
-      // La petición de login se hace, y el backend se encarga de la cookie
+
+      // 
       const response = await Requests(URLENDPOINTS.LOGIN, data, "POST");
+
       if (response.success) {
-        // Después de un login exitoso, verificamos el token para obtener los datos del usuario
-        await checkAuth();
+        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "GET");
+
+        if (profileResponse.success && profileResponse.data) {
+          setUser(profileResponse.data);
+          setIsAuthenticated(true);
+        } else {
+          throw new Error("Login exitoso, pero falló al obtener el perfil.");
+        }
+        navigate("/dashboard");
       }
       return response;
-    } catch (error) {
-      // El hook Requests ya lanza un error con el mensaje del backend
-      return { success: false, message: error.message };
-    }
-  };
 
-  const checkAuth = async () => {
-    try {
-      const response = await Requests(URLENDPOINTS.VERIFY, null, "GET");
-      if (response.isAuthenticated) {
-        setUser(response.user);
-        setIsAuthenticated(true);
-      }
     } catch (error) {
       setUser(null);
       setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
+      return { success: false, message: error.message || "Error al iniciar sesión" };
     }
   };
 
-  // Al cargar el provider, verificamos si ya hay una sesión activa
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-
+  const Logout = async () => {
+    try {
+      const response = await Requests(URLENDPOINTS.LOGOUT, null,"GET");
+      if(response.success){
+        setUser(null);
+        setIsAuthenticated(false);
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+    } 
+  };
 
   return (
     <AuthContext.Provider
       value={{
-        login,
+        Login,
+        Logout,
         user,
         isAuthenticated,
-        isLoading,
+        userRole,
+        userPermissions,
       }}
     >
+      {/* Renderizamos los componentes hijos que envuelven al Provider */}
       {children}
     </AuthContext.Provider>
   );
