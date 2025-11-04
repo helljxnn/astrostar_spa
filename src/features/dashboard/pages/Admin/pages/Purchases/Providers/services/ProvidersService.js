@@ -73,14 +73,53 @@ class ProvidersService {
   /**
    * Verificar disponibilidad de NIT
    */
-  async checkNitAvailability(nit, excludeId = null) {
-    const params = { nit };
+  async checkNitAvailability(nit, excludeId = null, tipoEntidad = 'juridica') {
+    const params = { nit, tipoEntidad };
     if (excludeId) {
       params.excludeId = excludeId;
     }
 
-    console.log("🔍 Checking NIT availability:", { nit, excludeId });
+    console.log("🔍 Checking NIT availability:", { nit, excludeId, tipoEntidad });
     return apiClient.get(`${this.endpoint}/check-nit`, params);
+  }
+
+  /**
+   * Verificar disponibilidad de razón social/nombre
+   */
+  async checkBusinessNameAvailability(businessName, excludeId = null, tipoEntidad = 'juridica') {
+    const params = { businessName, tipoEntidad };
+    if (excludeId) {
+      params.excludeId = excludeId;
+    }
+
+    console.log("🔍 Checking business name availability:", { businessName, excludeId, tipoEntidad });
+    return apiClient.get(`${this.endpoint}/check-business-name`, params);
+  }
+
+  /**
+   * Verificar disponibilidad de email
+   */
+  async checkEmailAvailability(email, excludeId = null) {
+    const params = { email };
+    if (excludeId) {
+      params.excludeId = excludeId;
+    }
+
+    console.log("🔍 Checking email availability:", { email, excludeId });
+    return apiClient.get(`${this.endpoint}/check-email`, params);
+  }
+
+  /**
+   * Verificar disponibilidad de contacto principal
+   */
+  async checkContactAvailability(contact, excludeId = null) {
+    const params = { contact };
+    if (excludeId) {
+      params.excludeId = excludeId;
+    }
+
+    console.log("🔍 Checking contact availability:", { contact, excludeId });
+    return apiClient.get(`${this.endpoint}/check-contact`, params);
   }
 
   /**

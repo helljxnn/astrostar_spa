@@ -34,7 +34,7 @@ const Providers = () => {
   const [totalRows, setTotalRows] = useState(0);
   const rowsPerPage = 5;
 
-  // Cargar proveedores desde la API con logs de debug
+  // Cargar proveedores desde la API 
   const fetchProviders = async () => {
     try {
       setLoading(true);

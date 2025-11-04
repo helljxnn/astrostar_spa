@@ -10,6 +10,7 @@ import {
   useFormProviderValidation,
   providerValidationRules,
 } from "../hooks/useFormProviderValidation";
+import { useProviderUniquenessValidation } from "../hooks/useProviderUniquenessValidation";
 import { useDocumentTypes } from "../../../../../../../../shared/hooks/useDocumentTypes";
 
 const entityTypes = [
@@ -33,11 +34,12 @@ const ProviderModal = ({
   const isEditing = mode === "edit" || providerToEdit !== null;
   const { documentTypes, loading: documentTypesLoading, error: documentTypesError } = useDocumentTypes();
 
+  // Hook de validación del formulario
   const {
     values,
     errors,
     touched,
-    handleChange,
+    handleChange: formHandleChange,
     handleBlur,
     validateAllFields,
     resetForm,
@@ -60,13 +62,23 @@ const ProviderModal = ({
     providerValidationRules
   );
 
+  // Hook de validación de campos únicos en tiempo real
+  const {
+    validations,
+    validateField,
+    reloadProviders,
+    clearValidation,
+    clearAllValidations
+  } = useProviderUniquenessValidation(providerToEdit?.id);
+
+  // Cargar datos al editar
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
       setValues({
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
-        tipoDocumento: providerToEdit.tipoDocumento || "CC",
+        tipoDocumento: providerToEdit.tipoDocumento || "",
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
         telefono: providerToEdit.telefono || "",
@@ -75,8 +87,21 @@ const ProviderModal = ({
         descripcion: providerToEdit.descripcion || "",
         estado: providerToEdit.estado || "Activo",
       });
+      
+      // Limpiar validaciones al cargar datos
+      clearAllValidations();
     }
-  }, [isOpen, isEditing, providerToEdit, setValues]);
+  }, [isOpen, isEditing, providerToEdit, setValues, clearAllValidations]);
+
+  // Manejar cambios con validación en tiempo real
+  const handleChange = (name, value) => {
+    formHandleChange(name, value);
+    
+    // Validar campos únicos en tiempo real (solo backend)
+    if (['nit', 'razonSocial', 'correo', 'contactoPrincipal'].includes(name)) {
+      validateField(name, value, values.tipoEntidad);
+    }
+  };
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -96,13 +121,32 @@ const ProviderModal = ({
     });
     setTouched(allTouched);
 
+    // Validar formulario
     if (!validateAllFields()) {
-      if (isEditing) {
-        showErrorAlert(
-          "Campos incompletos",
-          "Por favor completa todos los campos correctamente antes de continuar."
-        );
-      }
+      showErrorAlert(
+        "Campos incompletos",
+        "Por favor completa todos los campos correctamente antes de continuar."
+      );
+      return;
+    }
+
+    // Verificar si hay campos duplicados validados por backend
+    const hasDuplicates = Object.values(validations).some(v => v.backendValidated && v.isDuplicate);
+    if (hasDuplicates) {
+      showErrorAlert(
+        "Datos duplicados",
+        "Algunos campos ya están registrados. Por favor, verifica la información."
+      );
+      return;
+    }
+
+    // Verificar si aún se están validando campos
+    const isStillChecking = Object.values(validations).some(v => v.isChecking);
+    if (isStillChecking) {
+      showErrorAlert(
+        "Validando campos",
+        "Por favor, espera mientras se valida la información."
+      );
       return;
     }
 
@@ -142,7 +186,11 @@ const ProviderModal = ({
         );
       }
 
+      // Recargar proveedores para validación futura
+      await reloadProviders();
+
       resetForm();
+      clearAllValidations();
       onClose();
     } catch (error) {
       console.error(
@@ -159,6 +207,7 @@ const ProviderModal = ({
 
   const handleClose = () => {
     resetForm();
+    clearAllValidations();
     onClose();
   };
 
@@ -225,7 +274,7 @@ const ProviderModal = ({
                     name="tipoEntidad"
                     value={type.value}
                     checked={values.tipoEntidad === type.value}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange('tipoEntidad', e.target.value)}
                     className="sr-only"
                   />
                   <div className="flex items-center w-full">
@@ -288,11 +337,10 @@ const ProviderModal = ({
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Razón Social / Nombre */}
             <motion.div
               key={`razon-social-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
+              className="space-y-2"
             >
               <FormField
                 label={values.tipoEntidad === "juridica" ? "Razón Social" : "Nombre Completo"}
@@ -306,8 +354,36 @@ const ProviderModal = ({
                 touched={touched.razonSocial}
                 required
               />
+              
+              {/* Estados de validación en tiempo real - SOLO BACKEND */}
+              {validations.razonSocial.isChecking && (
+                <div className="text-blue-500 text-xs flex items-center gap-2">
+                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Verificando disponibilidad...</span>
+                </div>
+              )}
+              
+              {validations.razonSocial.backendValidated && validations.razonSocial.isDuplicate && (
+                <div className="text-red-500 text-xs flex items-center gap-1">
+                  <span>❌</span>
+                  <span>{validations.razonSocial.message}</span>
+                </div>
+              )}
+              
+              {validations.razonSocial.backendValidated && validations.razonSocial.isAvailable && (
+                <div className="text-green-500 text-xs flex items-center gap-1">
+                  <span>✅</span>
+                  <span>
+                    {values.tipoEntidad === 'juridica' 
+                      ? 'Razón social disponible' 
+                      : 'Nombre disponible'
+                    }
+                  </span>
+                </div>
+              )}
             </motion.div>
 
+            {/* Tipo de Documento (solo persona natural) */}
             <AnimatePresence mode="wait">
               {values.tipoEntidad === "natural" && (
                 <motion.div
@@ -361,11 +437,10 @@ const ProviderModal = ({
               )}
             </AnimatePresence>
 
+            {/* NIT / Identificación */}
             <motion.div
               key={`nit-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
+              className="space-y-2"
             >
               <FormField
                 label={values.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
@@ -379,13 +454,39 @@ const ProviderModal = ({
                 touched={touched.nit}
                 required
               />
+              
+              {/* Estados de validación en tiempo real - SOLO BACKEND */}
+              {validations.nit.isChecking && (
+                <div className="text-blue-500 text-xs flex items-center gap-2">
+                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Verificando {values.tipoEntidad === 'juridica' ? 'NIT' : 'documento'}...</span>
+                </div>
+              )}
+              
+              {validations.nit.backendValidated && validations.nit.isDuplicate && (
+                <div className="text-red-500 text-xs flex items-center gap-1">
+                  <span>❌</span>
+                  <span>{validations.nit.message}</span>
+                </div>
+              )}
+              
+              {validations.nit.backendValidated && validations.nit.isAvailable && (
+                <div className="text-green-500 text-xs flex items-center gap-1">
+                  <span>✅</span>
+                  <span>
+                    {values.tipoEntidad === 'juridica' 
+                      ? 'NIT disponible' 
+                      : 'Documento disponible'
+                    }
+                  </span>
+                </div>
+              )}
             </motion.div>
 
+            {/* Contacto Principal */}
             <motion.div
               key={`contacto-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.4 }}
+              className="space-y-2"
             >
               <FormField
                 label="Contacto Principal"
@@ -399,13 +500,34 @@ const ProviderModal = ({
                 touched={touched.contactoPrincipal}
                 required
               />
+              
+              {/* Estados de validación en tiempo real - SOLO BACKEND */}
+              {validations.contactoPrincipal.isChecking && (
+                <div className="text-blue-500 text-xs flex items-center gap-2">
+                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Verificando contacto...</span>
+                </div>
+              )}
+              
+              {validations.contactoPrincipal.backendValidated && validations.contactoPrincipal.isDuplicate && (
+                <div className="text-red-500 text-xs flex items-center gap-1">
+                  <span>❌</span>
+                  <span>{validations.contactoPrincipal.message}</span>
+                </div>
+              )}
+              
+              {validations.contactoPrincipal.backendValidated && validations.contactoPrincipal.isAvailable && (
+                <div className="text-green-500 text-xs flex items-center gap-1">
+                  <span>✅</span>
+                  <span>Contacto disponible</span>
+                </div>
+              )}
             </motion.div>
 
+            {/* Correo Electrónico */}
             <motion.div
               key={`correo-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
+              className="space-y-2"
             >
               <FormField
                 label="Correo Electrónico"
@@ -419,13 +541,33 @@ const ProviderModal = ({
                 touched={touched.correo}
                 required
               />
+              
+              {/* Estados de validación en tiempo real - SOLO BACKEND */}
+              {validations.correo.isChecking && (
+                <div className="text-blue-500 text-xs flex items-center gap-2">
+                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Verificando email...</span>
+                </div>
+              )}
+              
+              {validations.correo.backendValidated && validations.correo.isDuplicate && (
+                <div className="text-red-500 text-xs flex items-center gap-1">
+                  <span>❌</span>
+                  <span>{validations.correo.message}</span>
+                </div>
+              )}
+              
+              {validations.correo.backendValidated && validations.correo.isAvailable && (
+                <div className="text-green-500 text-xs flex items-center gap-1">
+                  <span>✅</span>
+                  <span>Email disponible</span>
+                </div>
+              )}
             </motion.div>
 
+            {/* Teléfono */}
             <motion.div
               key={`telefono-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45, duration: 0.4 }}
             >
               <FormField
                 label="Número Telefónico"
@@ -441,11 +583,9 @@ const ProviderModal = ({
               />
             </motion.div>
 
+            {/* Dirección */}
             <motion.div
               key={`direccion-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
             >
               <FormField
                 label="Dirección"
@@ -461,11 +601,9 @@ const ProviderModal = ({
               />
             </motion.div>
 
+            {/* Ciudad */}
             <motion.div
               key={`ciudad-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.4 }}
             >
               <FormField
                 label="Ciudad"
@@ -481,11 +619,9 @@ const ProviderModal = ({
               />
             </motion.div>
 
+            {/* Estado */}
             <motion.div
               key={`estado-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
             >
               <FormField
                 label="Estado"
@@ -502,12 +638,10 @@ const ProviderModal = ({
               />
             </motion.div>
 
+            {/* Descripción */}
             <motion.div
               key={`descripcion-${values.tipoEntidad}`}
               className="lg:col-span-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65, duration: 0.4 }}
             >
               <FormField
                 label="Descripción"
