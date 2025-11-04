@@ -6,8 +6,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import employeeService from '../../features/dashboard/pages/Admin/pages/Services/Employees/services/employeeService.js';
 import { showSuccessAlert, showErrorAlert } from '../utils/alerts.js';
+import { useAuth } from '../contexts/authContext.jsx';
 
 export const useEmployees = () => {
+  const { isAuthenticated } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,7 +20,6 @@ export const useEmployees = () => {
     pages: 0
   });
   const [referenceData, setReferenceData] = useState({
-    employeeTypes: [],
     roles: [],
     documentTypes: []
   });
@@ -192,14 +193,18 @@ export const useEmployees = () => {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
-  // Cargar datos iniciales
+  // Cargar datos iniciales solo si está autenticado
   useEffect(() => {
-    loadReferenceData();
-  }, [loadReferenceData]);
+    if (isAuthenticated) {
+      loadReferenceData();
+    }
+  }, [isAuthenticated, loadReferenceData]);
 
   useEffect(() => {
-    loadEmployees();
-  }, [loadEmployees]);
+    if (isAuthenticated) {
+      loadEmployees();
+    }
+  }, [isAuthenticated, loadEmployees]);
 
   return {
     // Estado
