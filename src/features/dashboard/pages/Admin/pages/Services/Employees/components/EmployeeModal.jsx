@@ -17,6 +17,7 @@ const EmployeeModal = ({
   onSave,
   employee,
   mode = "create",
+  referenceData = { roles: [], documentTypes: [] },
 }) => {
   const {
     values: formData,
@@ -28,43 +29,94 @@ const EmployeeModal = ({
     setValues: setFormData,
   } = useFormEmployeeValidation(
     {
-      nombre: "",
-      apellido: "",
-      correo: "",
-      telefono: "",
-      fechaNacimiento: "",
-      edad: "",
-      identificacion: "",
-      tipoDocumento: "",
-      tipoEmpleado: "",
-      rol: "",
-      estado: "",
-      fechaAsignacion: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      email: "",
+      phoneNumber: "",
+      address: "",
+      birthDate: "",
+      age: "",
+      identification: "",
+      documentTypeId: "",
+      roleId: "",
+      status: "Activo",
     },
     employeeValidationRules
   );
 
+  // Función para calcular la edad
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 0 ? age.toString() : "";
+  };
+
+  // Función personalizada para manejar cambios
+  const handleCustomChange = (name, value) => {
+    if (name === "birthDate") {
+      const age = calculateAge(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        age: age,
+      }));
+    } else {
+      handleChange(name, value);
+    }
+  };
+
   // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
     if (employee && (mode === "edit" || mode === "view")) {
-      setFormData(employee);
-    } else {
-      // Al crear un nuevo empleado, establecer la fecha de asignación como la fecha actual (zona horaria local)
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
+      // Mapear datos del backend al formato del formulario
+      const birthDate = employee.user?.birthDate
+        ? employee.user.birthDate.split("T")[0]
+        : "";
       setFormData({
-        nombre: "",
-        apellido: "",
-        correo: "",
-        telefono: "",
-        fechaNacimiento: "",
-        edad: "",
-        identificacion: "",
-        tipoDocumento: "",
-        tipoEmpleado: "",
-        rol: "",
-        estado: "",
-        fechaAsignacion: today,
+        firstName: employee.user?.firstName || "",
+        middleName: employee.user?.middleName || "",
+        lastName: employee.user?.lastName || "",
+        secondLastName: employee.user?.secondLastName || "",
+        email: employee.user?.email || "",
+        phoneNumber: employee.user?.phoneNumber || "",
+        address: employee.user?.address || "",
+        birthDate: birthDate,
+        age: calculateAge(birthDate),
+        identification: employee.user?.identification || "",
+        documentTypeId: employee.user?.documentTypeId || "",
+        roleId: employee.user?.roleId || "",
+        status: employee.status || "Activo",
+      });
+    } else {
+      // Limpiar formulario para creación
+      setFormData({
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        secondLastName: "",
+        email: "",
+        phoneNumber: "",
+        address: "",
+        birthDate: "",
+        age: "",
+        identification: "",
+        documentTypeId: "",
+        roleId: "",
+        status: "Activo",
       });
     }
   }, [employee, setFormData, mode, isOpen]);
@@ -89,34 +141,30 @@ const EmployeeModal = ({
         if (!result.isConfirmed) return;
       }
 
-      onSave(formData);
+      // Llamar onSave y esperar el resultado
+      const success = await onSave(formData);
 
-      showSuccessAlert(
-        mode === "edit" ? "Empleado Editado" : "Empleado Creado",
-        mode === "edit"
-          ? "El empleado ha sido actualizado exitosamente."
-          : "El empleado ha sido registrado exitosamente."
-      );
+      // Solo cerrar el modal si la operación fue exitosa
+      if (success) {
+        // Limpiar formulario
+        setFormData({
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          email: "",
+          phoneNumber: "",
+          address: "",
+          birthDate: "",
+          age: "",
+          identification: "",
+          documentTypeId: "",
+          roleId: "",
+          status: "Activo",
+        });
 
-      // Limpiar formulario antes de cerrar
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // Formato YYYY-MM-DD
-      setFormData({
-        nombre: "",
-        apellido: "",
-        correo: "",
-        telefono: "",
-        fechaNacimiento: "",
-        edad: "",
-        identificacion: "",
-        tipoDocumento: "",
-        tipoEmpleado: "",
-        rol: "",
-        estado: "",
-        fechaAsignacion: today,
-      });
-
-      onClose();
+        onClose();
+      }
     } catch (error) {
       console.error("Error al guardar empleado:", error);
       showErrorAlert(
@@ -130,13 +178,14 @@ const EmployeeModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 9999 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex flex-col"
+        className="modal-container bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] relative flex flex-col overflow-hidden"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -160,46 +209,23 @@ const EmployeeModal = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="modal-body flex-1 overflow-y-auto p-3 relative">
+          <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
-              name="tipoDocumento"
+              name="documentTypeId"
               type="select"
               placeholder="Seleccionar tipo de documento"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={[
-                {
-                  value: "Cédula de Ciudadanía",
-                  label: "Cédula de Ciudadanía",
-                },
-                {
-                  value: "Permiso Especial de Permanencia",
-                  label: "Permiso Especial de Permanencia",
-                },
-                {
-                  value: "Tarjeta de Extranjería",
-                  label: "Tarjeta de Extranjería",
-                },
-                {
-                  value: "Cédula de Extranjería",
-                  label: "Cédula de Extranjería",
-                },
-                {
-                  value: "Número de Identificación Tributaria",
-                  label: "Número de Identificación Tributaria",
-                },
-                { value: "Pasaporte", label: "Pasaporte" },
-                {
-                  value: "Documento de Identificación Extranjero",
-                  label: "Documento de Identificación Extranjero",
-                },
-              ]}
-              value={formData.tipoDocumento}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
+              options={referenceData.documentTypes.map((type) => ({
+                value: type.id,
+                label: type.name,
+              }))}
+              value={formData.documentTypeId}
+              error={errors.documentTypeId}
+              touched={touched.documentTypeId}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.1}
@@ -208,62 +234,94 @@ const EmployeeModal = ({
             {/* Identificación */}
             <FormField
               label="Número de Documento"
-              name="identificacion"
+              name="identification"
               type="text"
               placeholder="Número de documento del empleado"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.identificacion}
-              error={errors.identificacion}
-              touched={touched.identificacion}
+              value={formData.identification}
+              error={errors.identification}
+              touched={touched.identification}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.2}
             />
 
-            {/* Nombre */}
+            {/* Primer Nombre */}
             <FormField
-              label="Nombre"
-              name="nombre"
+              label="Primer Nombre"
+              name="firstName"
               type="text"
-              placeholder="Nombre del empleado"
+              placeholder="Primer nombre del empleado"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.nombre}
-              error={errors.nombre}
-              touched={touched.nombre}
+              value={formData.firstName}
+              error={errors.firstName}
+              touched={touched.firstName}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.3}
             />
 
-            {/* Apellido */}
+            {/* Segundo Nombre */}
             <FormField
-              label="Apellido"
-              name="apellido"
+              label="Segundo Nombre"
+              name="middleName"
               type="text"
-              placeholder="Apellido del empleado"
+              placeholder="Segundo nombre (opcional)"
+              required={false}
+              disabled={mode === "view"}
+              value={formData.middleName}
+              error={errors.middleName}
+              touched={touched.middleName}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.35}
+            />
+
+            {/* Primer Apellido */}
+            <FormField
+              label="Primer Apellido"
+              name="lastName"
+              type="text"
+              placeholder="Primer apellido del empleado"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.apellido}
-              error={errors.apellido}
-              touched={touched.apellido}
+              value={formData.lastName}
+              error={errors.lastName}
+              touched={touched.lastName}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.4}
             />
 
+            {/* Segundo Apellido */}
+            <FormField
+              label="Segundo Apellido"
+              name="secondLastName"
+              type="text"
+              placeholder="Segundo apellido (opcional)"
+              required={false}
+              disabled={mode === "view"}
+              value={formData.secondLastName}
+              error={errors.secondLastName}
+              touched={touched.secondLastName}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.45}
+            />
+
             {/* Correo */}
             <FormField
-              label="Correo"
-              name="correo"
+              label="Correo Electrónico"
+              name="email"
               type="email"
               placeholder="correo@ejemplo.com"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.correo}
-              error={errors.correo}
-              touched={touched.correo}
+              value={formData.email}
+              error={errors.email}
+              touched={touched.email}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.5}
@@ -272,14 +330,30 @@ const EmployeeModal = ({
             {/* Teléfono */}
             <FormField
               label="Número Telefónico"
-              name="telefono"
+              name="phoneNumber"
               type="text"
-              placeholder="Número de teléfono"
+              placeholder="300 123 4567"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.telefono}
-              error={errors.telefono}
-              touched={touched.telefono}
+              value={formData.phoneNumber}
+              error={errors.phoneNumber}
+              touched={touched.phoneNumber}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.55}
+            />
+
+            {/* Dirección */}
+            <FormField
+              label="Dirección"
+              name="address"
+              type="text"
+              placeholder="Dirección de residencia"
+              required={mode !== "view"}
+              disabled={mode === "view"}
+              value={formData.address}
+              error={errors.address}
+              touched={touched.address}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.6}
@@ -288,143 +362,71 @@ const EmployeeModal = ({
             {/* Fecha de Nacimiento */}
             <FormField
               label="Fecha de Nacimiento"
-              name="fechaNacimiento"
+              name="birthDate"
               type="date"
               placeholder="Fecha de nacimiento"
               required={mode !== "view"}
               disabled={mode === "view"}
-              value={formData.fechaNacimiento}
-              error={errors.fechaNacimiento}
-              touched={touched.fechaNacimiento}
-              onChange={(name, value) => {
-                // Actualizar directamente el campo fechaNacimiento
-                setFormData(prev => ({
-                  ...prev,
-                  fechaNacimiento: value
-                }));
-                
-                // Calcular edad automáticamente
-                if (value) {
-                  const birthDate = new Date(value);
-                  const today = new Date();
-                  let age = today.getFullYear() - birthDate.getFullYear();
-                  const monthDiff = today.getMonth() - birthDate.getMonth();
-                  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                    age--;
-                  }
-                  // Actualizar el campo de edad
-                  setFormData(prev => ({
-                    ...prev,
-                    fechaNacimiento: value,
-                    edad: age.toString()
-                  }));
-                }
-              }}
+              value={formData.birthDate}
+              error={errors.birthDate}
+              touched={touched.birthDate}
+              onChange={handleCustomChange}
               onBlur={handleBlur}
               delay={0.65}
             />
 
-            {/* Edad */}
+            {/* Edad (calculada automáticamente) */}
             <FormField
               label="Edad"
-              name="edad"
-              type="number"
-              placeholder="Edad del empleado"
-              required={mode !== "view"}
-              disabled={true} // Siempre deshabilitado porque se calcula automáticamente
-              value={formData.edad}
-              error={errors.edad}
-              touched={touched.edad}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.7}
+              name="age"
+              type="text"
+              placeholder="Se calcula automáticamente"
+              required={false}
+              disabled={true}
+              value={formData.age ? `${formData.age} años` : ""}
+              delay={0.67}
             />
 
             {/* Rol */}
             <FormField
               label="Rol"
-              name="rol"
+              name="roleId"
               type="select"
               placeholder="Seleccione el rol"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={[
-                {
-                  value: "Profesional Deportivo",
-                  label: "Profesional Deportivo",
-                },
-                {
-                  value: "Profesional en Salud",
-                  label: "Profesional en Salud",
-                },
-              ]}
-              value={formData.rol}
-              error={errors.rol}
-              touched={touched.rol}
+              options={referenceData.roles.map((role) => ({
+                value: role.id,
+                label: role.name,
+              }))}
+              value={formData.roleId}
+              error={errors.roleId}
+              touched={touched.roleId}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.8}
-            />
-
-            {/* Tipo Empleado */}
-            <FormField
-              label="Tipo Empleado"
-              name="tipoEmpleado"
-              type="select"
-              placeholder="Seleccionar tipo empleado"
-              required={mode !== "view"}
-              disabled={mode === "view"}
-              options={[
-                { value: "Entrenador", label: "Entrenador" },
-                { value: "Fisioterapeuta", label: "Fisioterapeuta" },
-                { value: "Psicólogo", label: "Psicólogo" },
-                { value: "Nutricionista", label: "Nutricionista" },
-                { value: "Administrativo", label: "Administrativo" },
-              ]}
-              value={formData.tipoEmpleado}
-              error={errors.tipoEmpleado}
-              touched={touched.tipoEmpleado}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.9}
+              delay={0.75}
             />
 
             {/* Estado */}
             <FormField
               label="Estado"
-              name="estado"
+              name="status"
               type="select"
               placeholder="Seleccionar estado"
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
                 { value: "Activo", label: "Activo" },
-                { value: "Incapacitado", label: "Incapacitado" },
-                { value: "Vacaciones", label: "Vacaciones" },
-                { value: "Retirado", label: "Retirado" },
+                { value: "Licencia", label: "Licencia" },
+                { value: "Desvinculado", label: "Desvinculado" },
                 { value: "Fallecido", label: "Fallecido" },
               ]}
-              value={formData.estado}
-              error={errors.estado}
-              touched={touched.estado}
+              value={formData.status}
+              error={errors.status}
+              touched={touched.status}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={1}
-            />
-
-            {/* Fecha asignación - automática y no modificable */}
-            <FormField
-              label="Fecha Asignación Estado"
-              name="fechaAsignacion"
-              type="date"
-              required={mode !== "view"}
-              disabled={true} // Siempre deshabilitado para que no se pueda modificar
-              value={formData.fechaAsignacion}
-              error={errors.fechaAsignacion}
-              touched={touched.fechaAsignacion}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={1.1}
+              delay={0.8}
             />
           </div>
         </div>

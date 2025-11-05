@@ -8,6 +8,34 @@ import { useAuth } from "../contexts/authContext";
 export const usePermissions = () => {
   // Obtenemos los datos directamente del contexto, que es nuestra única fuente de verdad.
   const { userRole, userPermissions } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const [permissions, setPermissions] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      // Manejar diferentes estructuras de usuario
+      let userPermissions = {};
+      let userRole = user.role?.name || user.rol || user.role;
+
+      // Si es admin, dar todos los permisos usando función centralizada
+      if (userRole === 'admin' || userRole === 'Administrador') {
+        userPermissions = generateAdminPermissions();
+      } else {
+        // Para otros roles, usar los permisos del role si existen
+        userPermissions = user.role?.permissions || {};
+      }
+
+      permissionsService.setUserPermissions(user, userPermissions);
+      setPermissions(userPermissions);
+      setLoading(false);
+    } else {
+      // Limpiar permisos si no está autenticado
+      permissionsService.clearPermissions();
+      setPermissions(null);
+      setLoading(false);
+    }
+  }, [user, isAuthenticated]);
 
   /**
    * Verificar si tiene un permiso específico
@@ -40,6 +68,10 @@ export const usePermissions = () => {
     permissions: userPermissions,
     hasPermission,
     hasModuleAccess,
-    isAdmin: userRole === "Administrador",
+    getAccessibleModules,
+    getModulePermissions,
+    hasAllPermissions,
+    hasAnyPermission,
+    isAdmin: user?.role?.name === 'admin' || user?.rol === 'admin' || user?.role === 'admin' || user?.role?.name === 'Administrador'
   };
 };

@@ -17,7 +17,7 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
   }, [scrollY]);
 
   const handleTypeSelect = (typeId) => {
-    console.log("🔍 EventSelector: Seleccionando tipo", typeId);
+
     onTypeSelect(typeId);
   };
 

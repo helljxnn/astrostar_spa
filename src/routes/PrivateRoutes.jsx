@@ -58,15 +58,7 @@ const PrivateRoutes = () => {
         <Route
           index
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "administrador",
-                "profesional_deportivo",
-                "profesional_salud",
-                "deportista",
-                "acudiente",
-              ]}
-            >
+            <PrivateRoute module="dashboard" action="Ver">
               <Dashboard />
             </PrivateRoute>
           }

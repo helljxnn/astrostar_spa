@@ -426,35 +426,35 @@ function DynamicSideBar({
                   </AnimatePresence>
                 </motion.button>
 
-                {isExpanded && (
-                  <AnimatePresence>
-                    {openMenu === "services" && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pl-12 pr-3 py-2 space-y-1">
-                          {userRole === "admin" && (
-                            <motion.div
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ delay: 0.1 }}
-                            >
-                              <Link
-                                to="/dashboard/employees"
-                                onClick={() => setIsOpen(false)}
-                                className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/employees")
-                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
-                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                                  }`}
+                  {isExpanded && (
+                    <AnimatePresence>
+                      {openMenu === "services" && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: "easeInOut" }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-12 pr-3 py-2 space-y-1">
+                            {(isAdmin || hasModuleAccess('employees')) && (
+                              <motion.div
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.1 }}
                               >
-                                Empleados
-                              </Link>
-                            </motion.div>
-                          )}
+                                <Link
+                                  to="/dashboard/employees"
+                                  onClick={() => setIsOpen(false)}
+                                  className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${isActive("/dashboard/employees")
+                                      ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                      : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                                    }`}
+                                >
+                                  Empleados
+                                </Link>
+                              </motion.div>
+                            )}
 
                           {visibleModules.employeesSchedule && (
                             <motion.div

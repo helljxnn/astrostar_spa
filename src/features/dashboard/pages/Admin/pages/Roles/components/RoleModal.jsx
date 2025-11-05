@@ -1,4 +1,3 @@
-// components/RoleModal.jsx
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -240,10 +239,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       const newPermisos = { ...prev.permisos };
 
       moduleCategories[categoryName].forEach((module) => {
-        newPermisos[module.key] = actions.reduce(
-          (acc, action) => ({ ...acc, [action.name]: true }),
-          {}
-        );
+        // Para Dashboard y Usuarios, solo permitir "Ver"
+        if (module.key === 'dashboard' || module.key === 'users') {
+          newPermisos[module.key] = { Ver: true };
+        } else {
+          newPermisos[module.key] = actions.reduce(
+            (acc, action) => ({ ...acc, [action.name]: true }),
+            {}
+          );
+        }
       });
 
       return {
@@ -273,10 +277,14 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       ...prev,
       permisos: {
         ...prev.permisos,
-        [moduleKey]: actions.reduce(
-          (acc, action) => ({ ...acc, [action.name]: true }),
-          {}
-        ),
+        [moduleKey]: 
+          // Para Dashboard y Usuarios, solo permitir "Ver"
+          moduleKey === 'dashboard' || moduleKey === 'users'
+            ? { Ver: true }
+            : actions.reduce(
+                (acc, action) => ({ ...acc, [action.name]: true }),
+                {}
+              ),
       },
     }));
   };
@@ -300,7 +308,13 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   };
 
   const getCategoryTotalPermissions = (categoryName) => {
-    return moduleCategories[categoryName].length * actions.length;
+    return moduleCategories[categoryName].reduce((total, module) => {
+      // Para Dashboard y Usuarios, solo hay 1 acción disponible (Ver)
+      if (module.key === 'dashboard' || module.key === 'users') {
+        return total + 1;
+      }
+      return total + actions.length;
+    }, 0);
   };
 
   // Submit
@@ -616,7 +630,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                             {permissionCount > 0 && (
                                               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                                                 {permissionCount}/
-                                                {actions.length}
+                                                {module.key === 'dashboard' || module.key === 'users' ? 1 : actions.length}
                                               </span>
                                             )}
                                           </div>
@@ -650,7 +664,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
                                         {/* Permisos del módulo */}
                                         <div className="grid grid-cols-2 gap-2">
-                                          {actions.map((action) => {
+                                          {actions
+                                            .filter((action) => {
+                                              // Para Dashboard y Usuarios, solo mostrar "Ver"
+                                              if (module.key === 'dashboard' || module.key === 'users') {
+                                                return action.name === 'Ver';
+                                              }
+                                              return true;
+                                            })
+                                            .map((action) => {
                                             const isChecked =
                                               formData.permisos[module.key]?.[
                                                 action.name

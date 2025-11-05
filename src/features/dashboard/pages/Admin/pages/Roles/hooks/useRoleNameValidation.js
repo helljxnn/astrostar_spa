@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import rolesService from '@shared/services/rolesService';
+import rolesService from '../services/rolesService';
 
 export const useRoleNameValidation = (currentRoleId = null) => {
   const [nameValidation, setNameValidation] = useState({
@@ -18,11 +18,11 @@ export const useRoleNameValidation = (currentRoleId = null) => {
   useEffect(() => {
     const loadAllRoles = async () => {
       try {
-        const response = await rolesService.getAllRoles({ limit: 1000 });
+        const response = await rolesService.getAllRoles({ limit: 100 });
         if (response.success) {
           setAllRoles(response.data);
           setRolesLoaded(true);
-          console.log('📋 Loaded roles for fallback:', response.data.length);
+
         }
       } catch (error) {
         console.error('Error loading roles:', error);
@@ -47,16 +47,16 @@ export const useRoleNameValidation = (currentRoleId = null) => {
     }
 
     const trimmedName = name.trim();
-    console.log('🔍 Validating role name:', trimmedName, 'excludeId:', currentRoleId);
+
 
     try {
       // Usar el endpoint específico para validación
       const response = await rolesService.checkRoleNameAvailability(trimmedName, currentRoleId);
-      console.log('📡 API Response:', response);
+
       
       if (response.success) {
         if (response.data.available) {
-          console.log('✅ Name is available');
+
           setNameValidation({
             isChecking: false,
             isDuplicate: false,
@@ -65,7 +65,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
             isAvailable: true
           });
         } else {
-          console.log('❌ Name is not available:', response.data.message);
+
           setNameValidation({
             isChecking: false,
             isDuplicate: true,
@@ -85,7 +85,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
         );
 
         if (existingRole) {
-          console.log('🔄 Fallback: Name exists locally');
+
           setNameValidation({
             isChecking: false,
             isDuplicate: true,
@@ -94,7 +94,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
             isAvailable: false
           });
         } else {
-          console.log('🔄 Fallback: Name available locally');
+
           setNameValidation({
             isChecking: false,
             isDuplicate: false,
@@ -136,7 +136,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
   // Función para recargar roles (útil después de crear/editar)
   const reloadRoles = async () => {
     try {
-      const response = await rolesService.getAllRoles({ limit: 1000 });
+      const response = await rolesService.getAllRoles({ limit: 100 });
       if (response.success) {
         setAllRoles(response.data);
       }
