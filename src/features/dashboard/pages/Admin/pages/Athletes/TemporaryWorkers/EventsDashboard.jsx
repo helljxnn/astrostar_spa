@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import TemporaryWorkerModal from "./components/TemporaryWorkerModal";
-import temporaryWorkersData from "../../../../../../../shared/models/TemporaryWorkersData";
+import temporaryWorkersService from "../../../../../../../shared/services/temporaryWorkersService";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -18,15 +18,82 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 const TemporaryWorkers = () => {
   const { hasPermission } = usePermissions();
-  const [data, setData] = useState(temporaryWorkersData);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState(null);
   const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const [referenceData, setReferenceData] = useState({ documentTypes: [] });
+  const rowsPerPage = 10;
 
-  // Filtrar por búsqueda general en cualquier campo del objeto
+  // Cargar datos iniciales
+  useEffect(() => {
+    loadData();
+    loadReferenceData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const response = await temporaryWorkersService.getAll({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm
+      });
+      
+      if (response.success) {
+        // Mapear datos del backend al formato del frontend
+        const mappedData = response.data.map(item => ({
+          id: item.id,
+          tipoPersona: item.personType,
+          nombre: `${item.firstName} ${item.lastName || ''}`.trim(),
+          tipoDocumento: item.documentType?.name || 'N/A',
+          identificacion: item.identification || 'N/A',
+          telefono: item.phone || 'N/A',
+          fechaNacimiento: item.birthDate ? new Date(item.birthDate).toISOString().split('T')[0] : '',
+          edad: item.age || 0,
+          categoria: 'No asignada', // Por ahora no manejamos categorías
+          equipo: null, // Por ahora no manejamos equipos
+          estado: item.status === 'Active' ? 'Activo' : 'Inactivo',
+          // Datos adicionales para el modal
+          email: item.email || '',
+          address: item.address || '',
+          organization: item.organization || '',
+          documentTypeId: item.documentTypeId
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error('Error loading temporary workers:', error);
+      showErrorAlert('Error', 'No se pudieron cargar las personas temporales.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadReferenceData = async () => {
+    try {
+      const response = await temporaryWorkersService.getReferenceData();
+      if (response.success) {
+        setReferenceData(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading reference data:', error);
+    }
+  };
+
+  // Recargar datos cuando cambie la página o búsqueda
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadData();
+    }, 300); // Debounce para búsqueda
+
+    return () => clearTimeout(timeoutId);
+  }, [currentPage, searchTerm]);
+
+  // Filtrar datos localmente (para compatibilidad con el componente actual)
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
 
@@ -48,7 +115,7 @@ const TemporaryWorkers = () => {
     );
   }, [data, searchTerm]);
 
-  // Paginación
+  // Paginación local (por ahora, luego se puede mover al servidor)
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -66,31 +133,64 @@ const TemporaryWorkers = () => {
     { key: "estado", label: "Estado" },
   ];
 
+  // Mapear datos del frontend al backend
+  const mapFrontendToBackend = (frontendData) => {
+    const nombres = frontendData.nombre ? frontendData.nombre.split(' ') : [];
+    
+    return {
+      firstName: nombres[0] || frontendData.firstName || '',
+      lastName: nombres.slice(1).join(' ') || frontendData.lastName || frontendData.apellido || '',
+      identification: frontendData.identificacion,
+      email: frontendData.email || '',
+      phone: frontendData.telefono,
+      birthDate: frontendData.fechaNacimiento,
+      age: parseInt(frontendData.edad) || 0,
+      address: frontendData.address || '',
+      organization: frontendData.organization || '',
+      status: frontendData.estado === 'Activo' ? 'Active' : 'Inactive',
+      documentTypeId: parseInt(frontendData.documentTypeId) || parseInt(frontendData.tipoDocumento),
+      personType: frontendData.tipoPersona
+    };
+  };
+
   // Guardar nuevo o editado
-  const handleSave = (workerData) => {
-    if (editingWorker) {
-      // Editar - verificar permisos
-      if (!hasPermission('temporaryWorkers', 'Editar')) {
-        showErrorAlert('Sin permisos', 'No tienes permisos para editar trabajadores temporales');
-        return;
+  const handleSave = async (workerData) => {
+    try {
+      const backendData = mapFrontendToBackend(workerData);
+      
+      if (editingWorker) {
+        // Editar - verificar permisos
+        if (!hasPermission('temporaryWorkers', 'Editar')) {
+          showErrorAlert('Sin permisos', 'No tienes permisos para editar trabajadores temporales');
+          return false;
+        }
+        
+        const response = await temporaryWorkersService.update(editingWorker.id, backendData);
+        if (response.success) {
+          showSuccessAlert('Éxito', response.message);
+          await loadData(); // Recargar datos
+          return true;
+        }
+      } else {
+        // Crear - verificar permisos
+        if (!hasPermission('temporaryWorkers', 'Crear')) {
+          showErrorAlert('Sin permisos', 'No tienes permisos para crear trabajadores temporales');
+          return false;
+        }
+        
+        const response = await temporaryWorkersService.create(backendData);
+        if (response.success) {
+          showSuccessAlert('Éxito', response.message);
+          await loadData(); // Recargar datos
+          return true;
+        }
       }
-      setData((prev) =>
-        prev.map((item) =>
-          item.identificacion === editingWorker.identificacion
-            ? { ...workerData }
-            : item
-        )
-      );
-      setEditingWorker(null);
-    } else {
-      // Crear - verificar permisos
-      if (!hasPermission('temporaryWorkers', 'Crear')) {
-        showErrorAlert('Sin permisos', 'No tienes permisos para crear trabajadores temporales');
-        return;
-      }
-      setData([...data, workerData]);
+    } catch (error) {
+      console.error('Error saving temporary worker:', error);
+      const errorMessage = error.response?.data?.message || 'Error al guardar la persona temporal';
+      showErrorAlert('Error', errorMessage);
+      return false;
     }
-    setIsModalOpen(false);
   };
 
   // Abrir modal en modo edición
@@ -129,22 +229,28 @@ const TemporaryWorkers = () => {
       );
 
       if (result.isConfirmed) {
-        setData((prev) =>
-          prev.filter((item) => item.identificacion !== worker.identificacion)
-        );
-        showSuccessAlert(
-          "Persona eliminada",
-          `${worker.nombre} ha sido eliminado correctamente.`
-        );
+        const response = await temporaryWorkersService.delete(worker.id);
+        if (response.success) {
+          showSuccessAlert('Éxito', response.message);
+          await loadData(); // Recargar datos
+        }
       }
     } catch (error) {
       console.error("Error al eliminar persona temporal:", error);
-      showErrorAlert(
-        "Error al eliminar",
-        "No se pudo eliminar la persona temporal. Intenta de nuevo."
-      );
+      const errorMessage = error.response?.data?.message || 'Error al eliminar la persona temporal';
+      showErrorAlert('Error', errorMessage);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 font-questrial">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg text-gray-600">Cargando personas temporales...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 font-questrial">
@@ -161,7 +267,7 @@ const TemporaryWorkers = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder="Buscar rol..."
+            placeholder="Buscar persona temporal..."
           />
           <div className="flex items-center gap-3">
             <PermissionGuard module="temporaryWorkers" action="Ver">
@@ -195,8 +301,9 @@ const TemporaryWorkers = () => {
             "Tipo de Persona",
             "Nombre",
             "Identificación",
-            "Categoría",
+            "Teléfono",
             "Edad",
+            "Estado"
           ],
           state: true,
           actions: true,
@@ -207,8 +314,9 @@ const TemporaryWorkers = () => {
             "tipoPersona",
             "nombre",
             "identificacion",
-            "categoria",
+            "telefono",
             "edad",
+            "estado"
           ],
           state: true,
         }}
@@ -257,6 +365,7 @@ const TemporaryWorkers = () => {
         onSave={handleSave}
         worker={editingWorker}
         mode={modalMode}
+        referenceData={referenceData}
       />
     </div>
   );
