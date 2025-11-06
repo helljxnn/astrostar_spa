@@ -114,11 +114,25 @@ const TemporaryPersonViewModal = ({
               delay={0.3}
             />
 
-            {/* Apellido */}
+            {/* Segundo Nombre */}
             <ReadOnlyField
-              label="Apellido"
+              label="Segundo Nombre"
+              value={person.middleName}
+              delay={0.32}
+            />
+
+            {/* Primer Apellido */}
+            <ReadOnlyField
+              label="Primer Apellido"
               value={person.lastName}
               delay={0.35}
+            />
+
+            {/* Segundo Apellido */}
+            <ReadOnlyField
+              label="Segundo Apellido"
+              value={person.secondLastName}
+              delay={0.37}
             />
 
             {/* Correo */}
@@ -132,21 +146,21 @@ const TemporaryPersonViewModal = ({
             <ReadOnlyField
               label="Número Telefónico"
               value={person.phone}
-              delay={0.45}
+              delay={0.42}
             />
 
             {/* Dirección */}
             <ReadOnlyField
               label="Dirección"
               value={person.address}
-              delay={0.5}
+              delay={0.45}
             />
 
             {/* Fecha de Nacimiento */}
             <ReadOnlyField
               label="Fecha de Nacimiento"
               value={formatDate(person.birthDate)}
-              delay={0.55}
+              delay={0.47}
             />
 
             {/* Edad */}
@@ -164,7 +178,7 @@ const TemporaryPersonViewModal = ({
                 }
                 return age >= 0 ? `${age} años` : 'No especificado';
               })()}
-              delay={0.6}
+              delay={0.5}
             />
 
             {/* Equipo - Solo para Deportista y Entrenador */}
@@ -172,7 +186,7 @@ const TemporaryPersonViewModal = ({
               <ReadOnlyField
                 label="Equipo"
                 value={person.team || '(no asignado)'}
-                delay={0.65}
+                delay={0.52}
               />
             )}
 
@@ -181,7 +195,7 @@ const TemporaryPersonViewModal = ({
               <ReadOnlyField
                 label="Categoría"
                 value={person.category || '(no asignado)'}
-                delay={0.67}
+                delay={0.55}
               />
             )}
 
@@ -189,14 +203,14 @@ const TemporaryPersonViewModal = ({
             <ReadOnlyField
               label="Tipo de Persona"
               value={translatePersonType(person.personType)}
-              delay={0.7}
+              delay={0.57}
             />
 
             {/* Estado */}
             <ReadOnlyField
               label="Estado"
               value={translateStatus(person.status)}
-              delay={0.75}
+              delay={0.6}
             />
 
           </div>

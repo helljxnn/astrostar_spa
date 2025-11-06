@@ -27,6 +27,8 @@ const EmployeeModal = ({
     handleBlur,
     validateAllFields,
     setValues: setFormData,
+    resetValidation,
+    resetForm,
   } = useFormEmployeeValidation(
     {
       firstName: "",
@@ -81,45 +83,35 @@ const EmployeeModal = ({
 
   // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
-    if (employee && (mode === "edit" || mode === "view")) {
-      // Mapear datos del backend al formato del formulario
-      const birthDate = employee.user?.birthDate
-        ? employee.user.birthDate.split("T")[0]
-        : "";
-      setFormData({
-        firstName: employee.user?.firstName || "",
-        middleName: employee.user?.middleName || "",
-        lastName: employee.user?.lastName || "",
-        secondLastName: employee.user?.secondLastName || "",
-        email: employee.user?.email || "",
-        phoneNumber: employee.user?.phoneNumber || "",
-        address: employee.user?.address || "",
-        birthDate: birthDate,
-        age: calculateAge(birthDate),
-        identification: employee.user?.identification || "",
-        documentTypeId: employee.user?.documentTypeId || "",
-        roleId: employee.user?.roleId || "",
-        status: employee.status || "Activo",
-      });
-    } else {
-      // Limpiar formulario para creación
-      setFormData({
-        firstName: "",
-        middleName: "",
-        lastName: "",
-        secondLastName: "",
-        email: "",
-        phoneNumber: "",
-        address: "",
-        birthDate: "",
-        age: "",
-        identification: "",
-        documentTypeId: "",
-        roleId: "",
-        status: "Activo",
-      });
+    if (isOpen) {
+      if (employee && (mode === "edit" || mode === "view")) {
+        // Mapear datos del backend al formato del formulario
+        const birthDate = employee.user?.birthDate
+          ? employee.user.birthDate.split("T")[0]
+          : "";
+        setFormData({
+          firstName: employee.user?.firstName || "",
+          middleName: employee.user?.middleName || "",
+          lastName: employee.user?.lastName || "",
+          secondLastName: employee.user?.secondLastName || "",
+          email: employee.user?.email || "",
+          phoneNumber: employee.user?.phoneNumber || "",
+          address: employee.user?.address || "",
+          birthDate: birthDate,
+          age: calculateAge(birthDate),
+          identification: employee.user?.identification || "",
+          documentTypeId: employee.user?.documentTypeId || "",
+          roleId: employee.user?.roleId || "",
+          status: employee.status || "Activo",
+        });
+        // Limpiar validaciones al cargar datos de edición
+        setTimeout(() => resetValidation(), 0);
+      } else {
+        // Limpiar completamente el formulario para creación
+        setTimeout(() => resetForm(), 0);
+      }
     }
-  }, [employee, setFormData, mode, isOpen]);
+  }, [employee, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
@@ -146,23 +138,8 @@ const EmployeeModal = ({
 
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
-        // Limpiar formulario
-        setFormData({
-          firstName: "",
-          middleName: "",
-          lastName: "",
-          secondLastName: "",
-          email: "",
-          phoneNumber: "",
-          address: "",
-          birthDate: "",
-          age: "",
-          identification: "",
-          documentTypeId: "",
-          roleId: "",
-          status: "Activo",
-        });
-
+        // Limpiar completamente el formulario y validaciones
+        resetForm();
         onClose();
       }
     } catch (error) {

@@ -6,6 +6,8 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
+import temporaryPersonsService from "../services/temporaryPersonsService";
+
 
 // Hook de validación personalizado para personas temporales
 const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
@@ -59,42 +61,136 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
     handleChange,
     handleBlur,
     validateAllFields,
-    setValues
+    setValues,
+    setErrors,
+    setTouched
   };
 };
 
-// Reglas de validación
+// Reglas de validación mejoradas
 const temporaryPersonValidationRules = {
   firstName: (value) => {
-    if (!value || !value.trim()) return "El nombre es requerido";
-    if (value.length < 2) return "El nombre debe tener al menos 2 caracteres";
+    if (!value || !value.trim()) return "El primer nombre es requerido";
+    if (value.length < 2) return "El primer nombre debe tener al menos 2 caracteres";
+    if (value.length > 100) return "El primer nombre no puede exceder 100 caracteres";
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El primer nombre solo puede contener letras y espacios";
+    return "";
+  },
+  middleName: (value) => {
+    if (value && value.trim()) {
+      if (value.length < 2) return "El segundo nombre debe tener al menos 2 caracteres";
+      if (value.length > 100) return "El segundo nombre no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El segundo nombre solo puede contener letras y espacios";
+    }
     return "";
   },
   lastName: (value) => {
-    if (!value || !value.trim()) return "El apellido es requerido";
-    if (value.length < 2) return "El apellido debe tener al menos 2 caracteres";
+    if (!value || !value.trim()) return "El primer apellido es requerido";
+    if (value.length < 2) return "El primer apellido debe tener al menos 2 caracteres";
+    if (value.length > 100) return "El primer apellido no puede exceder 100 caracteres";
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El primer apellido solo puede contener letras y espacios";
+    return "";
+  },
+  secondLastName: (value) => {
+    if (value && value.trim()) {
+      if (value.length < 2) return "El segundo apellido debe tener al menos 2 caracteres";
+      if (value.length > 100) return "El segundo apellido no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El segundo apellido solo puede contener letras y espacios";
+    }
     return "";
   },
   personType: (value) => {
     if (!value) return "El tipo de persona es requerido";
+    const validTypes = ['Deportista', 'Entrenador', 'Participante'];
+    if (!validTypes.includes(value)) return "Tipo de persona no válido";
     return "";
   },
   email: (value) => {
-    if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    if (!value || !value.trim()) return "El correo electrónico es requerido";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       return "El formato del email no es válido";
+    }
+    if (value.length > 150) {
+      return "El email no puede exceder 150 caracteres";
     }
     return "";
   },
   phone: (value) => {
-    if (value && !/^\d{10}$/.test(value.replace(/\s/g, ''))) {
-      return "El teléfono debe tener 10 dígitos";
+    if (!value || !value.trim()) return "El número telefónico es requerido";
+    const cleanPhone = value.replace(/[\s\-\+\(\)]/g, '');
+    if (!/^[0-9]+$/.test(cleanPhone)) {
+      return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
+    }
+    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
+      return "El teléfono debe tener entre 7 y 15 dígitos";
     }
     return "";
   },
   identification: (value) => {
-    if (value && value.length < 6) {
+    if (!value || !value.trim()) return "El número de documento es requerido";
+    if (value.length < 6) {
       return "La identificación debe tener al menos 6 caracteres";
     }
+    if (value.length > 50) {
+      return "La identificación no puede exceder 50 caracteres";
+    }
+    if (!/^[a-zA-Z0-9\-]+$/.test(value)) {
+      return "La identificación solo puede contener letras, números y guiones";
+    }
+    return "";
+  },
+  documentTypeId: (value) => {
+    if (!value || (typeof value === 'string' && !value.trim())) return "El tipo de documento es requerido";
+    const numValue = parseInt(value);
+    if (isNaN(numValue) || numValue < 1) {
+      return "Tipo de documento no válido";
+    }
+    return "";
+  },
+  address: (value) => {
+    if (!value || !value.trim()) return "La dirección es requerida";
+    if (value.length > 200) {
+      return "La dirección no puede exceder 200 caracteres";
+    }
+    return "";
+  },
+  birthDate: (value) => {
+    if (!value || !value.trim()) return "La fecha de nacimiento es requerida";
+    const birthDate = new Date(value);
+    if (isNaN(birthDate.getTime())) {
+      return "Fecha de nacimiento no válida";
+    }
+    
+    const today = new Date();
+    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
+    const maxDate = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
+    
+    if (birthDate < minDate) {
+      return "La fecha de nacimiento no puede ser anterior a 120 años";
+    }
+    if (birthDate > maxDate) {
+      return "La persona debe tener al menos 5 años de edad";
+    }
+    return "";
+  },
+  team: (value, allValues) => {
+    // Los campos team y category son opcionales para todos los tipos de persona
+    if (value && value.length > 100) {
+      return "El nombre del equipo no puede exceder 100 caracteres";
+    }
+    return "";
+  },
+  category: (value, allValues) => {
+    // Los campos team y category son opcionales para todos los tipos de persona
+    if (value && value.length > 100) {
+      return "La categoría no puede exceder 100 caracteres";
+    }
+    return "";
+  },
+  status: (value) => {
+    if (!value) return "El estado es requerido";
+    const validStatuses = ['Active', 'Inactive'];
+    if (!validStatuses.includes(value)) return "Estado no válido";
     return "";
   }
 };
@@ -115,10 +211,14 @@ const TemporaryPersonModal = ({
     handleBlur,
     validateAllFields,
     setValues: setFormData,
+    setErrors,
+    setTouched,
   } = useFormTemporaryPersonValidation(
     {
       firstName: "",
+      middleName: "",
       lastName: "",
+      secondLastName: "",
       identification: "",
       email: "",
       phone: "",
@@ -157,13 +257,55 @@ const TemporaryPersonModal = ({
   const handleCustomChange = (name, value) => {
     if (name === "birthDate") {
       const age = calculateAge(value);
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        age: age,
-      }));
+      // Usar handleChange para mantener la consistencia del estado
+      handleChange(name, value);
+      handleChange("age", age);
+    } else if (name === "personType") {
+      // Al cambiar el tipo de persona, limpiar equipo y categoría si no aplican
+      handleChange(name, value);
+      if (value === 'Participante') {
+        handleChange("team", '');
+        handleChange("category", '');
+      }
     } else {
       handleChange(name, value);
+    }
+  };
+
+  // Función personalizada para manejar blur con validación de unicidad
+  const handleCustomBlur = async (name) => {
+    handleBlur(name);
+    
+    // Validar unicidad para campos específicos solo si pasan la validación básica
+    if ((name === 'identification' || name === 'email') && formData[name]) {
+      // Primero validar que el campo cumpla con las reglas básicas
+      const validationRule = temporaryPersonValidationRules[name];
+      const validationError = validationRule ? validationRule(formData[name], formData) : "";
+      
+      // Solo hacer la petición al servidor si no hay errores de validación básica
+      if (!validationError) {
+        const currentId = person && mode === 'edit' ? person.id : null;
+        
+        try {
+          let response;
+          if (name === 'identification') {
+            response = await temporaryPersonsService.checkIdentificationAvailability(formData[name], currentId);
+          } else if (name === 'email') {
+            response = await temporaryPersonsService.checkEmailAvailability(formData[name], currentId);
+          }
+
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = response?.data?.available ?? response?.available ?? true;
+          if (response && !isAvailable) {
+            const errorMessage = response?.data?.message || response?.message || `Este ${name === 'identification' ? 'número de documento' : 'email'} ya está en uso`;
+            // Establecer el error de unicidad
+            setErrors(prev => ({ ...prev, [name]: errorMessage }));
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+          console.warn(`Error validando unicidad de ${name}:`, error);
+        }
+      }
     }
   };
 
@@ -173,7 +315,9 @@ const TemporaryPersonModal = ({
       const birthDate = person.birthDate ? person.birthDate.split("T")[0] : "";
       setFormData({
         firstName: person.firstName || "",
+        middleName: person.middleName || "",
         lastName: person.lastName || "",
+        secondLastName: person.secondLastName || "",
         identification: person.identification || "",
         email: person.email || "",
         phone: person.phone || "",
@@ -186,34 +330,81 @@ const TemporaryPersonModal = ({
         status: person.status || "Active",
         age: calculateAge(birthDate)
       });
-    } else {
-      setFormData({
-        firstName: "",
-        lastName: "",
-        identification: "",
-        email: "",
-        phone: "",
-        birthDate: "",
-        address: "",
-        team: "",
-        category: "",
-        documentTypeId: "",
-        personType: "Participante",
-        status: "Active",
-        age: ""
-      });
+      // Limpiar errores al cargar datos de edición
+      setErrors({});
+      setTouched({});
+    } else if (isOpen) {
+      // Solo limpiar cuando se abre el modal en modo crear
+      clearForm();
     }
   }, [person, setFormData, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
+      // Validar todos los campos
       const isValid = validateAllFields();
+      
       if (!isValid) {
         showErrorAlert(
           "Campos incompletos",
-          "Por favor, complete todos los campos obligatorios antes de continuar."
+          "Por favor, corrija los errores en el formulario antes de continuar."
         );
         return;
+      }
+
+      // Validaciones adicionales de lógica de negocio
+      const businessValidationErrors = validateBusinessLogic();
+      if (businessValidationErrors.length > 0) {
+        showErrorAlert(
+          "Errores de validación",
+          businessValidationErrors.join('. ')
+        );
+        return;
+      }
+
+      // Validar unicidad de campos críticos antes del envío (solo si pasan validación básica)
+      if (formData.identification && !errors.identification) {
+        const currentId = person && mode === 'edit' ? person.id : null;
+        try {
+          const identificationCheck = await temporaryPersonsService.checkIdentificationAvailability(
+            formData.identification, 
+            currentId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = identificationCheck?.data?.available ?? identificationCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Identificación duplicada",
+              "Este número de documento ya está en uso por otra persona temporal."
+            );
+            return;
+          }
+        } catch (error) {
+          console.warn("Error validando unicidad de identificación:", error);
+          // Continuar sin bloquear si hay error en la validación
+        }
+      }
+
+      if (formData.email && !errors.email) {
+        const currentId = person && mode === 'edit' ? person.id : null;
+        try {
+          const emailCheck = await temporaryPersonsService.checkEmailAvailability(
+            formData.email, 
+            currentId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = emailCheck?.data?.available ?? emailCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Email duplicado",
+              "Este email ya está en uso por otra persona temporal."
+            );
+            return;
+          }
+        } catch (error) {
+          console.warn("Error validando unicidad de email:", error);
+          // Continuar sin bloquear si hay error en la validación
+        }
       }
 
       // Confirmación solo al editar
@@ -230,23 +421,7 @@ const TemporaryPersonModal = ({
 
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
-        // Limpiar formulario
-        setFormData({
-          firstName: "",
-          lastName: "",
-          identification: "",
-          email: "",
-          phone: "",
-          birthDate: "",
-          address: "",
-          team: "",
-          category: "",
-          documentTypeId: "",
-          personType: "Participante",
-          status: "Active",
-          age: ""
-        });
-
+        clearForm();
         onClose();
       }
     } catch (error) {
@@ -255,6 +430,43 @@ const TemporaryPersonModal = ({
         "No se pudo guardar la persona temporal. Intenta de nuevo."
       );
     }
+  };
+
+  // Función para limpiar completamente el formulario
+  const clearForm = () => {
+    setFormData({
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      identification: "",
+      email: "",
+      phone: "",
+      birthDate: "",
+      address: "",
+      team: "",
+      category: "",
+      documentTypeId: "",
+      personType: "Participante",
+      status: "Active",
+      age: ""
+    });
+    // También limpiar errores y estado touched
+    setErrors({});
+    setTouched({});
+  };
+
+  // Función para manejar el cierre del modal
+  const handleClose = () => {
+    clearForm();
+    onClose();
+  };
+
+  // Validaciones de lógica de negocio
+  const validateBusinessLogic = () => {
+    const errors = [];
+    // Simplificado - sin validaciones adicionales por ahora
+    return errors;
   };
 
   if (!isOpen) return null;
@@ -278,7 +490,7 @@ const TemporaryPersonModal = ({
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
-            onClick={onClose}
+            onClick={handleClose}
           >
             ✕
           </button>
@@ -297,7 +509,7 @@ const TemporaryPersonModal = ({
               name="documentTypeId"
               type="select"
               placeholder="Seleccionar tipo de documento"
-              required={false}
+              required={true}
               options={referenceData.documentTypes.map((type) => ({
                 value: type.id,
                 label: type.name,
@@ -316,12 +528,12 @@ const TemporaryPersonModal = ({
               name="identification"
               type="text"
               placeholder="Número de documento"
-              required={false}
+              required={true}
               value={formData.identification}
               error={errors.identification}
               touched={touched.identification}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.2}
             />
 
@@ -340,12 +552,27 @@ const TemporaryPersonModal = ({
               delay={0.3}
             />
 
-            {/* Apellido */}
+            {/* Segundo Nombre */}
             <FormField
-              label="Apellido"
+              label="Segundo Nombre"
+              name="middleName"
+              type="text"
+              placeholder="Segundo nombre (opcional)"
+              required={false}
+              value={formData.middleName}
+              error={errors.middleName}
+              touched={touched.middleName}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.32}
+            />
+
+            {/* Primer Apellido */}
+            <FormField
+              label="Primer Apellido"
               name="lastName"
               type="text"
-              placeholder="Apellido"
+              placeholder="Primer apellido"
               required={true}
               value={formData.lastName}
               error={errors.lastName}
@@ -355,18 +582,33 @@ const TemporaryPersonModal = ({
               delay={0.35}
             />
 
+            {/* Segundo Apellido */}
+            <FormField
+              label="Segundo Apellido"
+              name="secondLastName"
+              type="text"
+              placeholder="Segundo apellido (opcional)"
+              required={false}
+              value={formData.secondLastName}
+              error={errors.secondLastName}
+              touched={touched.secondLastName}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.37}
+            />
+
             {/* Correo */}
             <FormField
               label="Correo Electrónico"
               name="email"
               type="email"
               placeholder="correo@ejemplo.com"
-              required={false}
+              required={true}
               value={formData.email}
               error={errors.email}
               touched={touched.email}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.4}
             />
 
@@ -376,13 +618,13 @@ const TemporaryPersonModal = ({
               name="phone"
               type="text"
               placeholder="300 123 4567"
-              required={false}
+              required={true}
               value={formData.phone}
               error={errors.phone}
               touched={touched.phone}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.45}
+              delay={0.42}
             />
 
             {/* Dirección */}
@@ -391,13 +633,13 @@ const TemporaryPersonModal = ({
               name="address"
               type="text"
               placeholder="Dirección de residencia"
-              required={false}
+              required={true}
               value={formData.address}
               error={errors.address}
               touched={touched.address}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.5}
+              delay={0.45}
             />
 
             {/* Fecha de Nacimiento */}
@@ -406,13 +648,13 @@ const TemporaryPersonModal = ({
               name="birthDate"
               type="date"
               placeholder="Fecha de nacimiento"
-              required={false}
+              required={true}
               value={formData.birthDate}
               error={errors.birthDate}
               touched={touched.birthDate}
               onChange={handleCustomChange}
               onBlur={handleBlur}
-              delay={0.55}
+              delay={0.47}
             />
 
             {/* Edad (calculada automáticamente) */}
@@ -424,7 +666,7 @@ const TemporaryPersonModal = ({
               required={false}
               disabled={true}
               value={formData.age ? `${formData.age} años` : ""}
-              delay={0.6}
+              delay={0.5}
             />
 
             {/* Equipo - Solo para Deportista y Entrenador */}
@@ -437,7 +679,9 @@ const TemporaryPersonModal = ({
                 required={false}
                 disabled={true}
                 value={formData.team || '(no asignado)'}
-                delay={0.65}
+                error={errors.team}
+                touched={touched.team}
+                delay={0.52}
               />
             )}
 
@@ -451,7 +695,9 @@ const TemporaryPersonModal = ({
                 required={false}
                 disabled={true}
                 value={formData.category || '(no asignado)'}
-                delay={0.67}
+                error={errors.category}
+                touched={touched.category}
+                delay={0.55}
               />
             )}
 
@@ -472,7 +718,7 @@ const TemporaryPersonModal = ({
               touched={touched.personType}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.7}
+              delay={0.57}
             />
 
             {/* Estado */}
@@ -481,7 +727,7 @@ const TemporaryPersonModal = ({
               name="status"
               type="select"
               placeholder="Seleccionar estado"
-              required={false}
+              required={true}
               options={[
                 { value: "Active", label: "Activo" },
                 { value: "Inactive", label: "Inactivo" },
@@ -491,7 +737,7 @@ const TemporaryPersonModal = ({
               touched={touched.status}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.75}
+              delay={0.6}
             />
 
           </div>
@@ -502,7 +748,7 @@ const TemporaryPersonModal = ({
           <div className="flex justify-between">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
             >
               Cancelar
