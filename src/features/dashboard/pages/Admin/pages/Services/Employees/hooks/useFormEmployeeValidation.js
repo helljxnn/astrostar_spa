@@ -75,6 +75,7 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    setErrors,
     touchAllFields,
     resetValidation,
     resetForm,

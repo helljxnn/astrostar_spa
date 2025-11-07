@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
@@ -10,6 +10,7 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
+import employeeService from "../services/employeeService";
 
 const EmployeeModal = ({
   isOpen,
@@ -29,6 +30,7 @@ const EmployeeModal = ({
     setValues: setFormData,
     resetValidation,
     resetForm,
+    setErrors,
   } = useFormEmployeeValidation(
     {
       firstName: "",
@@ -81,6 +83,48 @@ const EmployeeModal = ({
     }
   };
 
+  // Función personalizada para manejar blur con validación de unicidad
+  const handleCustomBlur = async (name) => {
+    handleBlur(name);
+    
+    // Validar unicidad para campos específicos solo si pasan la validación básica
+    if ((name === 'identification' || name === 'email') && formData[name]) {
+      // Primero validar que el campo cumpla con las reglas básicas
+      const validationRule = employeeValidationRules[name];
+      let validationError = "";
+      if (validationRule) {
+        for (const rule of validationRule) {
+          validationError = rule(formData[name], formData);
+          if (validationError) break;
+        }
+      }
+      
+      // Solo hacer la petición al servidor si no hay errores de validación básica
+      if (!validationError) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        
+        try {
+          let response;
+          if (name === 'identification') {
+            response = await employeeService.checkIdentificationAvailability(formData[name], currentUserId);
+          } else if (name === 'email') {
+            response = await employeeService.checkEmailAvailability(formData[name], currentUserId);
+          }
+
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = response?.data?.available ?? response?.available ?? true;
+          if (response && !isAvailable) {
+            const errorMessage = response?.data?.message || response?.message || `Este ${name === 'identification' ? 'número de documento' : 'email'} ya está en uso`;
+            // Establecer el error de unicidad
+            setErrors(prev => ({ ...prev, [name]: errorMessage }));
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
+      }
+    }
+  };
+
   // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
     if (isOpen) {
@@ -122,6 +166,49 @@ const EmployeeModal = ({
           "Por favor, complete todos los campos obligatorios antes de continuar."
         );
         return;
+      }
+
+      // Validar unicidad de campos críticos antes del envío (solo si pasan validación básica)
+      if (formData.identification && !errors.identification) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        try {
+          const identificationCheck = await employeeService.checkIdentificationAvailability(
+            formData.identification, 
+            currentUserId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = identificationCheck?.data?.available ?? identificationCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Identificación duplicada",
+              "Este número de documento ya está en uso por otro empleado."
+            );
+            return;
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
+      }
+
+      if (formData.email && !errors.email) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        try {
+          const emailCheck = await employeeService.checkEmailAvailability(
+            formData.email, 
+            currentUserId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = emailCheck?.data?.available ?? emailCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Email duplicado",
+              "Este email ya está en uso por otro empleado."
+            );
+            return;
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
       }
 
       // Confirmación solo al editar
@@ -219,7 +306,7 @@ const EmployeeModal = ({
               error={errors.identification}
               touched={touched.identification}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.2}
             />
 
@@ -299,7 +386,7 @@ const EmployeeModal = ({
               error={errors.email}
               touched={touched.email}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.5}
             />
 

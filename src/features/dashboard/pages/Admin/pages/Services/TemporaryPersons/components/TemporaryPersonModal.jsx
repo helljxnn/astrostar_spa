@@ -303,7 +303,6 @@ const TemporaryPersonModal = ({
           }
         } catch (error) {
           // Continuar sin bloquear si hay error en la validación
-          console.warn(`Error validando unicidad de ${name}:`, error);
         }
       }
     }
@@ -380,7 +379,6 @@ const TemporaryPersonModal = ({
             return;
           }
         } catch (error) {
-          console.warn("Error validando unicidad de identificación:", error);
           // Continuar sin bloquear si hay error en la validación
         }
       }
@@ -402,7 +400,6 @@ const TemporaryPersonModal = ({
             return;
           }
         } catch (error) {
-          console.warn("Error validando unicidad de email:", error);
           // Continuar sin bloquear si hay error en la validación
         }
       }
