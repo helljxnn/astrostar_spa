@@ -12,17 +12,27 @@ import { FormField } from "../../../../../../../shared/components/FormField";
  */
 const FormCreate = ({ isOpen, onClose, onSave }) => {
     const initialValues = {
-        nombre: "",
-        estado: "",
+        name: "",
     };
     const [values, setValues] = useState(initialValues);
+    const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
+
+    // Función de validación
+    const validate = (currentValues) => {
+        const newErrors = {};
+        if (!currentValues.name || currentValues.name.trim() === "") {
+            newErrors.name = "El nombre del material es obligatorio.";
+        }
+        return newErrors;
+    };
 
     // Limpiar el formulario cuando el modal se cierra
     useEffect(() => {
         if (!isOpen) {
             setValues(initialValues);
             setTouched({});
+            setErrors({});
         }
     }, [isOpen]);
 
@@ -34,22 +44,17 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
     const handleBlur = (e) => {
         const { name } = e.target;
         setTouched(prev => ({ ...prev, [name]: true }));
+        setErrors(validate(values)); // Validar en el evento onBlur
     };
 
     const handleSubmit = () => {
-        const isNombreValid = values.nombre && values.nombre.trim() !== "";
-        const isEstadoValid = values.estado && values.estado.trim() !== "";
+        const validationErrors = validate(values);
+        setErrors(validationErrors);
+        setTouched({ name: true }); // Marcar todos los campos como tocados
 
-        if (isNombreValid && isEstadoValid) {
-            if (onSave) {
-                onSave(values);
-            }
-        } else {
-            // Marcar todos los campos como "tocados" para mostrar errores
-            setTouched({
-                nombre: true,
-                estado: true,
-            });
+        // Si no hay errores, proceder a guardar
+        if (Object.keys(validationErrors).length === 0) {
+            onSave?.(values);
         }
     };
 
@@ -57,20 +62,14 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
         <Form isOpen={isOpen} title="Crear Nuevo Material Deportivo" submitText="Crear" onClose={onClose} onSubmit={handleSubmit} >
             <FormField
                 label="Nombre del Material"
-                name="nombre" type="text"
+                name="name" type="text"
                 placeholder="Ej: Balón de fútbol"
-                value={values.nombre}
+                value={values.name}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                touched={touched.nombre}
+                touched={touched.name}
+                error={errors.name}
                 required
-            />
-            <FormField
-                label="Estado" name="estado" type="select"
-                value={values.estado} onChange={handleChange}
-                onBlur={handleBlur} touched={touched.estado}
-                required
-                options={[{ value: "Disponible", label: "Disponible" }, { value: "Agotado", label: "Agotado" }, { value: "En Mantenimiento", label: "En Mantenimiento" }]}
             />
         </Form>
     );

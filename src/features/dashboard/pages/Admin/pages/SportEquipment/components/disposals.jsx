@@ -12,7 +12,7 @@ import { showErrorAlert } from '../../../../../../../shared/utils/alerts';
  * @param {function} props.onSave - Función que se ejecuta al guardar la baja.
  * @param {Array} props.equipmentList - Lista de materiales deportivos disponibles.
  */
-const DarDeBajaModal = ({ isOpen, onClose, onSave, equipmentList = [] }) => {
+const Disposals = ({ isOpen, onClose, onSave, equipmentList = [] }) => {
     const getInitialState = () => ({
         equipmentId: '',
         equipmentName: '', // Guardar el nombre para mostrar en la alerta de éxito
@@ -244,4 +244,4 @@ const DarDeBajaModal = ({ isOpen, onClose, onSave, equipmentList = [] }) => {
     );
 };
 
-export default DarDeBajaModal;
+export default Disposals;

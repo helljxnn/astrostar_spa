@@ -1,13 +1,12 @@
-import { useAuth } from "../contexts/authContext";
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/authContext';
+import permissionsService from '../services/permissionsService';
+import { generateAdminPermissions } from '../constants/modulePermissions';
 
 /**
- * Hook para gestionar permisos en componentes React.
- * Este hook es una capa delgada sobre useAuth para proporcionar
- * funciones de ayuda para la verificación de permisos.
+ * Hook para gestionar permisos en componentes React
  */
 export const usePermissions = () => {
-  // Obtenemos los datos directamente del contexto, que es nuestra única fuente de verdad.
-  const { userRole, userPermissions } = useAuth();
   const { user, isAuthenticated } = useAuth();
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,33 +38,49 @@ export const usePermissions = () => {
 
   /**
    * Verificar si tiene un permiso específico
-   * @param {string} module - El nombre del módulo (ej: 'users').
-   * @param {string} action - La acción a verificar (ej: 'Crear').
-   * @returns {boolean}
    */
   const hasPermission = (module, action) => {
-    // Si es Administrador, siempre tiene permiso.
-    if (userRole === "Administrador") return true;
-    // Verificamos directamente sobre el objeto de permisos del contexto.
-    return userPermissions?.[module]?.[action] === true;
+    return permissionsService.hasPermission(module, action);
   };
 
   /**
    * Verificar si tiene acceso a un módulo
-   * (es decir, si tiene al menos un permiso 'Ver', 'Crear', 'Editar' o 'Eliminar' en ese módulo).
-   * @param {string} module - El nombre del módulo.
-   * @returns {boolean}
    */
   const hasModuleAccess = (module) => {
-    if (userRole === "Administrador") return true;
-    if (!userPermissions || !userPermissions[module]) return false;
-    return Object.values(userPermissions[module]).some(
-      (permission) => permission === true
-    );
+    return permissionsService.hasModuleAccess(module);
+  };
+
+  /**
+   * Obtener módulos accesibles
+   */
+  const getAccessibleModules = () => {
+    return permissionsService.getAccessibleModules();
+  };
+
+  /**
+   * Obtener permisos de un módulo específico
+   */
+  const getModulePermissions = (module) => {
+    return permissionsService.getModulePermissions(module);
+  };
+
+  /**
+   * Verificar múltiples permisos
+   */
+  const hasAllPermissions = (permissionChecks) => {
+    return permissionsService.hasAllPermissions(permissionChecks);
+  };
+
+  /**
+   * Verificar si tiene al menos uno de los permisos
+   */
+  const hasAnyPermission = (permissionChecks) => {
+    return permissionsService.hasAnyPermission(permissionChecks);
   };
 
   return {
-    permissions: userPermissions,
+    permissions,
+    loading,
     hasPermission,
     hasModuleAccess,
     getAccessibleModules,

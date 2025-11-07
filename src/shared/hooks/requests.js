@@ -27,15 +27,18 @@ const Requests = async (url, data = null, method, customHeaders = {}) => {
     const responseData = await response.json().catch(() => null);
 
     if (!response.ok) {
-      // Usamos el mensaje del backend si está disponible, si no, el statusText del navegador.
-      const errorMessage =
-        responseData?.message ||
-        response.statusText ||
-        "Ocurrió un error en la petición";
-      const error = new Error(errorMessage);
-      error.status = response.status;
-      error.response = responseData; // Adjuntamos la respuesta completa al error
-      throw error;
+
+      // Validacion para saber si es por la expiracion del token
+      if(response.status === 403){
+        const responseToken = await fetch('http://localhost:3000/api/auth/refreshToken',{
+          method: "POST",
+          credentials: "include",
+        })
+        if(responseToken.ok){
+          // Reintentar la peticion original despues de refrescar el token
+          return await Requests(url, data, method, customHeaders);
+        }
+      }
     }
 
     return responseData;

@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }) => {
 
   // 2. ÚNICA fuente de verdad para los datos del usuario
   const [user, setUser] = useState(null);
-
   // 3. Estado de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -32,13 +31,24 @@ export const AuthProvider = ({ children }) => {
   // login o a una vista de no autorizado
   const checkAuthStatus = async () => {
       try {
-        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "GET");
+
+        // Intenta obtener el perfil del usuario
+        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "POST");
+        // Verifica si la respuesta es exitosa y contiene datos
         if (profileResponse.success && profileResponse.data) {
+          // Actualiza el estado del usuario y la autenticación
           setUser(profileResponse.data);
+          // Guarda el estado de autenticación como verdadero
           setIsAuthenticated(true);
+          // Navega al dashboard si el usuario está autenticado
+          navigate("/dashboard");
         } else {
+          // Si no es exitoso, limpia el estado y redirige al login
           setUser(null);
+          // Guarda el estado de autenticación como falso
           setIsAuthenticated(false);
+          // Redirige al login
+          navigate("/login")
         }
       } catch (error) {
         setUser(null);
@@ -65,14 +75,17 @@ export const AuthProvider = ({ children }) => {
         return { success: false, message: "Credenciales inválidas" };
       }
 
-      // 
+      // Hacemos la petición de login
       const response = await Requests(URLENDPOINTS.LOGIN, data, "POST");
-
+      // Si el login es exitoso, obtenemos el perfil del usuario
       if (response.success) {
-        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "GET");
-
+        // Obtener el perfil del usuario
+        const profileResponse = await Requests(URLENDPOINTS.PROFILE, null, "POST");
+        // Verificar si la obtención del perfil fue exitosa
         if (profileResponse.success && profileResponse.data) {
+          // Actualizar el estado del usuario y la autenticación
           setUser(profileResponse.data);
+          // Guardar el estado de autenticación como verdadero
           setIsAuthenticated(true);
         } else {
           throw new Error("Login exitoso, pero falló al obtener el perfil.");
@@ -89,11 +102,17 @@ export const AuthProvider = ({ children }) => {
   };
 
   const Logout = async () => {
+    // Realizar la petición para cerrar sesión
     try {
+      // Solicitud al endpoint de logout
       const response = await Requests(URLENDPOINTS.LOGOUT, null,"GET");
+      // Si el cierre de sesión es exitoso, limpiar el estado y redirigir al login
       if(response.success){
+        // Limpiar el estado del usuario
         setUser(null);
+        // Guardar el estado de autenticación como falso
         setIsAuthenticated(false);
+        // Redirigir al login
         navigate("/login");
       }
     } catch (error) {
