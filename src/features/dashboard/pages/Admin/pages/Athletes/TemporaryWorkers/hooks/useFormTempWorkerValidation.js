@@ -70,22 +70,23 @@ export const tempWorkerValidationRules = {
   tipoPersona: [(value) => (!value ? "Debe seleccionar un tipo de persona" : "")],
   nombre: [
     (value) => (!value?.trim() ? "El nombre es obligatorio" : ""),
-    (value) => value?.length < 3 ? "Debe tener al menos 3 caracteres" : "",
+    (value) => value?.length < 2 ? "Debe tener al menos 2 caracteres" : "",
   ],
-  tipoDocumento: [(value) => (!value ? "Debe seleccionar un tipo de documento" : "")],
+  documentTypeId: [(value) => (!value ? "Debe seleccionar un tipo de documento" : "")],
   identificacion: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "Solo números válidos" : "",
+    (value) => value?.length < 6 ? "Debe tener al menos 6 caracteres" : "",
   ],
   telefono: [
     (value) => (!value?.trim() ? "El teléfono es obligatorio" : ""),
-    (value) => !/^\d{7,10}$/.test(value || "") ? "Teléfono inválido" : "",
+    (value) => !/^\d{7,10}$/.test(value || "") ? "Teléfono debe tener entre 7 y 10 dígitos" : "",
   ],
-  fechaNacimiento: [(value) => (!value ? "Debe seleccionar una fecha" : "")],
-  edad: [(value) => (!value ? "La edad es obligatoria" : "")],
-  categoria: [
-    (value, values) =>
-      values.tipoPersona === "Jugadora" && !value ? "Debe seleccionar una categoría" : "",
+  email: [
+    (value) => {
+      if (!value) return ""; // Email es opcional
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return !emailRegex.test(value) ? "Email inválido" : "";
+    }
   ],
   estado: [(value) => (!value ? "Debe seleccionar un estado" : "")],
 };

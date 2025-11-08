@@ -17,6 +17,7 @@ const TemporaryWorkerModal = ({
   onSave,
   worker,
   mode = "create",
+  referenceData = { documentTypes: [] },
 }) => {
   const {
     values: formData,
@@ -36,17 +37,68 @@ const TemporaryWorkerModal = ({
       telefono: "",
       fechaNacimiento: "",
       edad: "",
-      categoria: "",
-      equipo: "",
-      estado: "",
+      email: "",
+      address: "",
+      organization: "",
+      estado: "Activo",
+      documentTypeId: "",
     },
     tempWorkerValidationRules
   );
 
-  // Prellenar si es edición
+  // Función para calcular la edad
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 0 ? age.toString() : "";
+  };
+
+  // Función personalizada para manejar cambios
+  const handleCustomChange = (name, value) => {
+    if (name === "fechaNacimiento") {
+      const age = calculateAge(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        edad: age,
+      }));
+    } else {
+      handleChange(name, value);
+    }
+  };
+
+  // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
-    if (worker) setFormData(worker);
-    else
+    if (worker && (mode === "edit" || mode === "view")) {
+      setFormData({
+        tipoPersona: worker.tipoPersona || "",
+        nombre: worker.nombre || "",
+        apellido: "", // Se maneja en nombre completo
+        tipoDocumento: worker.tipoDocumento || "",
+        identificacion: worker.identificacion || "",
+        telefono: worker.telefono || "",
+        fechaNacimiento: worker.fechaNacimiento || "",
+        edad: worker.edad?.toString() || "",
+        email: worker.email || "",
+        address: worker.address || "",
+        organization: worker.organization || "",
+        estado: worker.estado || "Activo",
+        documentTypeId: worker.documentTypeId?.toString() || "",
+      });
+    } else {
+      // Limpiar formulario para creación
       setFormData({
         tipoPersona: "",
         nombre: "",
@@ -56,66 +108,14 @@ const TemporaryWorkerModal = ({
         telefono: "",
         fechaNacimiento: "",
         edad: "",
-        categoria: "",
-        equipo: "",
-        estado: "",
+        email: "",
+        address: "",
+        organization: "",
+        estado: "Activo",
+        documentTypeId: "",
       });
-  }, [worker, setFormData, isOpen]);
-
-  // Calcular edad automáticamente cuando cambia la fecha de nacimiento
-  useEffect(() => {
-    if (formData.fechaNacimiento) {
-      const birthDate = new Date(formData.fechaNacimiento);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-
-      setFormData((prevData) => ({
-        ...prevData,
-        edad: age.toString(),
-      }));
     }
-  }, [formData.fechaNacimiento]);
-
-  // Manejar cambios en el equipo para deportistas y entrenadores
-  useEffect(() => {
-    if (formData.equipo && formData.tipoPersona === "Deportista") {
-      // Simular obtener categoría del equipo (esto vendría de la API en producción)
-      const equiposCategorias = {
-        "Águilas Doradas": "Sub 15",
-        "Leones FC": "Sub 17",
-        "Tigres Unidos": "Sub 13",
-        "Panteras Negras": "Sub 15",
-        "Halcones Rojos": "Sub 17",
-        "Lobos Grises": "Sub 13",
-      };
-
-      const categoria = equiposCategorias[formData.equipo] || "No asignada";
-      setFormData((prevData) => ({
-        ...prevData,
-        categoria: categoria,
-      }));
-    } else if (formData.tipoPersona === "Deportista" && !formData.equipo) {
-      // Si es deportista sin equipo, categoría "No asignada"
-      setFormData((prevData) => ({
-        ...prevData,
-        categoria: "No asignada",
-      }));
-    } else if (formData.tipoPersona !== "Deportista") {
-      // Para entrenadores y participantes, siempre "No aplica"
-      setFormData((prevData) => ({
-        ...prevData,
-        categoria: "No aplica",
-      }));
-    }
-  }, [formData.equipo, formData.tipoPersona]);
+  }, [worker, setFormData, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
@@ -137,18 +137,30 @@ const TemporaryWorkerModal = ({
         if (!result.isConfirmed) return;
       }
 
-      onSave(formData);
+      // Llamar onSave y esperar el resultado
+      const success = await onSave(formData);
 
-      showSuccessAlert(
-        mode === "edit"
-          ? "Persona Temporal Editada"
-          : "Persona Temporal Creada",
-        mode === "edit"
-          ? "La persona temporal ha sido actualizada exitosamente."
-          : "La persona temporal ha sido registrada exitosamente."
-      );
+      // Solo cerrar el modal si la operación fue exitosa
+      if (success) {
+        // Limpiar formulario
+        setFormData({
+          tipoPersona: "",
+          nombre: "",
+          apellido: "",
+          tipoDocumento: "",
+          identificacion: "",
+          telefono: "",
+          fechaNacimiento: "",
+          edad: "",
+          email: "",
+          address: "",
+          organization: "",
+          estado: "Activo",
+          documentTypeId: "",
+        });
 
-      onClose();
+        onClose();
+      }
     } catch (error) {
       console.error("Error al guardar persona temporal:", error);
       showErrorAlert(
@@ -197,44 +209,17 @@ const TemporaryWorkerModal = ({
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
-              name="tipoDocumento"
+              name="documentTypeId"
               type="select"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={[
-                {
-                  value: "Tarjeta de Identidad",
-                  label: "Tarjeta de Identidad",
-                },
-                {
-                  value: "Cédula de Ciudadanía",
-                  label: "Cédula de Ciudadanía",
-                },
-                {
-                  value: "Permiso Especial de Permanencia",
-                  label: "Permiso Especial de Permanencia",
-                },
-                {
-                  value: "Tarjeta de Extranjería",
-                  label: "Tarjeta de Extranjería",
-                },
-                {
-                  value: "Cédula de Extranjería",
-                  label: "Cédula de Extranjería",
-                },
-                {
-                  value: "Número de Identificación Tributaria",
-                  label: "Número de Identificación Tributaria",
-                },
-                { value: "Pasaporte", label: "Pasaporte" },
-                {
-                  value: "Documento de Identificación Extranjero",
-                  label: "Documento de Identificación Extranjero",
-                },
-              ]}
-              value={formData.tipoDocumento}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
+              options={referenceData.documentTypes.map((type) => ({
+                value: type.id.toString(),
+                label: type.name,
+              }))}
+              value={formData.documentTypeId}
+              error={errors.documentTypeId}
+              touched={touched.documentTypeId}
               onChange={handleChange}
               onBlur={handleBlur}
             />
@@ -273,12 +258,12 @@ const TemporaryWorkerModal = ({
               onBlur={handleBlur}
             />
 
-            {/* Nombre */}
+            {/* Nombre Completo */}
             <FormField
-              label="Nombre"
+              label="Nombre Completo"
               name="nombre"
               type="text"
-              placeholder="Nombre"
+              placeholder="Nombre completo"
               required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.nombre}
@@ -288,17 +273,17 @@ const TemporaryWorkerModal = ({
               onBlur={handleBlur}
             />
 
-            {/* Apellido */}
+            {/* Email */}
             <FormField
-              label="Apellido"
-              name="apellido"
-              type="text"
-              placeholder="Apellido"
-              required={mode !== "view"}
+              label="Correo Electrónico"
+              name="email"
+              type="email"
+              placeholder="correo@ejemplo.com"
+              required={false}
               disabled={mode === "view"}
-              value={formData.apellido}
-              error={errors.apellido}
-              touched={touched.apellido}
+              value={formData.email}
+              error={errors.email}
+              touched={touched.email}
               onChange={handleChange}
               onBlur={handleBlur}
             />
@@ -323,12 +308,12 @@ const TemporaryWorkerModal = ({
               label="Fecha de Nacimiento"
               name="fechaNacimiento"
               type="date"
-              required={mode !== "view"}
+              required={false}
               disabled={mode === "view"}
               value={formData.fechaNacimiento}
               error={errors.fechaNacimiento}
               touched={touched.fechaNacimiento}
-              onChange={handleChange}
+              onChange={handleCustomChange}
               onBlur={handleBlur}
             />
 
@@ -338,7 +323,7 @@ const TemporaryWorkerModal = ({
               name="edad"
               type="number"
               placeholder="Edad"
-              required={mode !== "view"}
+              required={false}
               disabled={true}
               value={formData.edad}
               error={errors.edad}
@@ -347,54 +332,39 @@ const TemporaryWorkerModal = ({
               onBlur={handleBlur}
             />
 
-            {/* Campo de Equipo - Solo para Entrenadores y Deportistas (NO para Participantes) */}
-            {(formData.tipoPersona === "Entrenador" ||
-              formData.tipoPersona === "Deportista") && (
-              <FormField
-                label="Equipo Asignado"
-                name="equipo"
-                type="text"
-                required={false}
-                disabled={true} // Siempre deshabilitado - se asigna desde módulo de equipos
-                value={formData.equipo || "No asignado"}
-                error={errors.equipo}
-                touched={touched.equipo}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                helpText="El equipo se asigna desde el módulo de equipos"
-              />
-            )}
+            {/* Dirección */}
+            <FormField
+              label="Dirección"
+              name="address"
+              type="text"
+              placeholder="Dirección"
+              required={false}
+              disabled={mode === "view"}
+              value={formData.address}
+              error={errors.address}
+              touched={touched.address}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
 
-            {/* Categoría - Solo para Deportistas y Entrenadores (NO para Participantes) */}
-            {(formData.tipoPersona === "Deportista" ||
-              formData.tipoPersona === "Entrenador") && (
-              <FormField
-                label="Categoría"
-                name="categoria"
-                type="text"
-                required={false}
-                disabled={true} // Siempre deshabilitado - se asigna automáticamente
-                value={
-                  formData.categoria ||
-                  (formData.tipoPersona === "Deportista"
-                    ? "No asignada"
-                    : "No aplica")
-                }
-                error={errors.categoria}
-                touched={touched.categoria}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                helpText={
-                  formData.tipoPersona === "Deportista"
-                    ? "La categoría se asigna automáticamente desde el equipo"
-                    : "No aplica para este tipo de persona"
-                }
-              />
-            )}
+            {/* Organización */}
+            <FormField
+              label="Organización"
+              name="organization"
+              type="text"
+              placeholder="Organización"
+              required={false}
+              disabled={mode === "view"}
+              value={formData.organization}
+              error={errors.organization}
+              touched={touched.organization}
+              onChange={handleChange}
+              onBlur={handleBlur}
+            />
 
             {/* Estado */}
             <FormField
-              label="Estado Persona"
+              label="Estado"
               name="estado"
               type="select"
               options={[

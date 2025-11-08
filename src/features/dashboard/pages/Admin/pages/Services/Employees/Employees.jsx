@@ -30,7 +30,7 @@ const Employees = () => {
     createEmployee,
     updateEmployee,
     deleteEmployee,
-    changePage
+    changePage,
   } = useEmployees();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,11 +53,13 @@ const Employees = () => {
         employee.user?.email,
         employee.user?.identification,
 
-        employee.user?.role?.name
+        employee.user?.role?.name,
       ];
-      
-      return searchFields.some(field => 
-        field && String(field).toLowerCase().includes(searchTerm.toLowerCase())
+
+      return searchFields.some(
+        (field) =>
+          field &&
+          String(field).toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
   }, [employees, searchTerm]);
@@ -65,16 +67,16 @@ const Employees = () => {
   // Función para traducir estados
   const translateStatus = (status) => {
     const statusMap = {
-      'Activo': 'Activo',
-      'Licencia': 'Licencia',
-      'Desvinculado': 'Desvinculado',
-      'Fallecido': 'Fallecido',
+      Activo: "Activo",
+      Licencia: "Licencia",
+      Desvinculado: "Desvinculado",
+      Fallecido: "Fallecido",
       // Mantener compatibilidad con estados antiguos
-      'Active': 'Activo',
-      'Disabled': 'Desvinculado',
-      'OnVacation': 'Licencia',
-      'Retired': 'Desvinculado',
-      'Deceased': 'Fallecido'
+      Active: "Activo",
+      Disabled: "Desvinculado",
+      OnVacation: "Licencia",
+      Retired: "Desvinculado",
+      Deceased: "Fallecido",
     };
     return statusMap[status] || status;
   };
@@ -84,17 +86,17 @@ const Employees = () => {
   const totalRows = searchTerm ? filteredData.length : pagination.total;
 
   // Preparar datos para reporte
-  const reportData = displayData.map(employee => ({
-    tipoDocumento: employee.user?.documentType?.name || '',
-    identificacion: employee.user?.identification || '',
-    nombre: employee.user?.firstName || '',
-    apellido: employee.user?.lastName || '',
-    correo: employee.user?.email || '',
-    telefono: employee.user?.phoneNumber || '',
-    fechaNacimiento: employee.user?.birthDate || '',
-    rol: employee.user?.role?.name || '',
-    estado: translateStatus(employee.status) || '',
-    fechaCreacion: employee.createdAt || ''
+  const reportData = displayData.map((employee) => ({
+    tipoDocumento: employee.user?.documentType?.name || "",
+    identificacion: employee.user?.identification || "",
+    nombre: employee.user?.firstName || "",
+    apellido: employee.user?.lastName || "",
+    correo: employee.user?.email || "",
+    telefono: employee.user?.phoneNumber || "",
+    fechaNacimiento: employee.user?.birthDate || "",
+    rol: employee.user?.role?.name || "",
+    estado: translateStatus(employee.status) || "",
+    fechaCreacion: employee.createdAt || "",
   }));
 
   const reportColumns = [
@@ -114,32 +116,38 @@ const Employees = () => {
     try {
       if (editingEmployee) {
         // Editar - verificar permisos
-        if (!hasPermission('employees', 'Editar')) {
-          showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
+        if (!hasPermission("employees", "Editar")) {
+          showErrorAlert(
+            "Sin permisos",
+            "No tienes permisos para editar empleados"
+          );
           return false;
         }
         await updateEmployee(editingEmployee.id, employeeData);
         showSuccessAlert(
-          'Empleado Actualizado',
-          'El empleado ha sido actualizado exitosamente'
+          "Empleado Actualizado",
+          "El empleado ha sido actualizado exitosamente"
         );
       } else {
         // Crear - verificar permisos
-        if (!hasPermission('employees', 'Crear')) {
-          showErrorAlert('Sin permisos', 'No tienes permisos para crear empleados');
+        if (!hasPermission("employees", "Crear")) {
+          showErrorAlert(
+            "Sin permisos",
+            "No tienes permisos para crear empleados"
+          );
           return false;
         }
-        
+
         const result = await createEmployee(employeeData);
-        
+
         // Mostrar modal de credenciales
         setCreatedEmployeeData({
           employee: result.data,
           credentials: {
             email: result.data.user.email,
-            temporaryPassword: result.temporaryPassword
+            temporaryPassword: result.temporaryPassword,
           },
-          emailSent: result.emailSent
+          emailSent: result.emailSent,
         });
         setShowCredentials(true);
       }
@@ -149,22 +157,24 @@ const Employees = () => {
       return true;
     } catch (error) {
       // El error ya se maneja en el hook
-      console.error('Error guardando empleado:', error);
       return false;
     }
   };
 
   const handleEdit = (employee) => {
-    if (!hasPermission('employees', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para editar empleados');
+    if (!hasPermission("employees", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar empleados"
+      );
       return;
     }
 
     // Verificar si es el usuario por defecto del sistema
-    if (employee.user?.email === 'astrostar.java@gmail.com') {
+    if (employee.user?.email === "astrostar.java@gmail.com") {
       showErrorAlert(
-        'No se puede editar', 
-        'No se puede editar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.'
+        "No se puede editar",
+        "No se puede editar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema."
       );
       return;
     }
@@ -175,8 +185,8 @@ const Employees = () => {
   };
 
   const handleView = (employee) => {
-    if (!hasPermission('employees', 'Ver')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para ver empleados');
+    if (!hasPermission("employees", "Ver")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para ver empleados");
       return;
     }
     setViewingEmployee(employee);
@@ -184,31 +194,36 @@ const Employees = () => {
   };
 
   const handleDelete = async (employee) => {
-    if (!hasPermission('employees', 'Eliminar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar empleados');
+    if (!hasPermission("employees", "Eliminar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar empleados"
+      );
       return;
     }
 
     // Verificar si es el usuario por defecto del sistema
-    if (employee.user?.email === 'astrostar.java@gmail.com') {
+    if (employee.user?.email === "astrostar.java@gmail.com") {
       showErrorAlert(
-        'No se puede eliminar', 
-        'No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.'
+        "No se puede eliminar",
+        "No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema."
       );
       return;
     }
 
     // Verificar si el empleado está activo
-    if (employee.status === 'Activo') {
+    if (employee.status === "Activo") {
       showErrorAlert(
-        'No se puede eliminar', 
+        "No se puede eliminar",
         'No se puede eliminar un empleado con estado "Activo". Primero cambie el estado a "Desvinculado", "Licencia" o "Fallecido" y luego inténtelo de nuevo.'
       );
       return;
     }
-    
+
     try {
-      const employeeName = `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim();
+      const employeeName = `${employee.user?.firstName || ""} ${
+        employee.user?.lastName || ""
+      }`.trim();
       const result = await showDeleteAlert(
         "¿Eliminar empleado?",
         `Se eliminará permanentemente el empleado: ${employeeName}`
@@ -218,7 +233,7 @@ const Employees = () => {
         await deleteEmployee(employee.id, employeeName);
       }
     } catch (error) {
-      console.error("Error al eliminar empleado:", error);
+      // Error ya manejado por el hook
     }
   };
 
@@ -248,7 +263,7 @@ const Employees = () => {
                 columns={reportColumns}
               />
             </PermissionGuard>
-            
+
             <PermissionGuard module="employees" action="Crear">
               <button
                 onClick={() => {
@@ -279,45 +294,58 @@ const Employees = () => {
               actions: true,
             }}
             tbody={{
-              data: displayData.map(employee => ({
+              data: displayData.map((employee) => ({
                 ...employee,
-                nombreCompleto: `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim(),
-                identificacion: employee.user?.identification || '',
-                rol: employee.user?.role?.name || '',
-                estado: translateStatus(employee.status) || ''
+                nombreCompleto: `${employee.user?.firstName || ""} ${
+                  employee.user?.lastName || ""
+                }`.trim(),
+                identificacion: employee.user?.identification || "",
+                rol: employee.user?.role?.name || "",
+                estado: translateStatus(employee.status) || "",
               })),
-              dataPropertys: ["nombreCompleto", "identificacion", "rol", "estado"],
+              dataPropertys: [
+                "nombreCompleto",
+                "identificacion",
+                "rol",
+                "estado",
+              ],
               state: true,
             }}
-            onEdit={hasPermission('employees', 'Editar') ? handleEdit : null}
-            onDelete={hasPermission('employees', 'Eliminar') ? handleDelete : null}
-            onView={hasPermission('employees', 'Ver') ? handleView : null}
+            onEdit={hasPermission("employees", "Editar") ? handleEdit : null}
+            onDelete={
+              hasPermission("employees", "Eliminar") ? handleDelete : null
+            }
+            onView={hasPermission("employees", "Ver") ? handleView : null}
             buttonConfig={{
               edit: (employee) => ({
-                show: hasPermission('employees', 'Editar'),
-                disabled: employee.user?.email === 'astrostar.java@gmail.com',
-                title: employee.user?.email === 'astrostar.java@gmail.com'
-                  ? 'No se puede editar el usuario por defecto del sistema'
-                  : 'Editar empleado'
+                show: hasPermission("employees", "Editar"),
+                disabled: employee.user?.email === "astrostar.java@gmail.com",
+                title:
+                  employee.user?.email === "astrostar.java@gmail.com"
+                    ? "No se puede editar el usuario por defecto del sistema"
+                    : "Editar empleado",
               }),
               delete: (employee) => ({
-                show: hasPermission('employees', 'Eliminar'),
-                disabled: employee.status === 'Activo' || employee.user?.email === 'astrostar.java@gmail.com',
-                title: employee.user?.email === 'astrostar.java@gmail.com'
-                  ? 'No se puede eliminar el usuario por defecto del sistema'
-                  : employee.status === 'Activo' 
-                    ? 'No se puede eliminar un empleado activo' 
-                    : 'Eliminar empleado'
+                show: hasPermission("employees", "Eliminar"),
+                disabled:
+                  employee.status === "Activo" ||
+                  employee.user?.email === "astrostar.java@gmail.com",
+                title:
+                  employee.user?.email === "astrostar.java@gmail.com"
+                    ? "No se puede eliminar el usuario por defecto del sistema"
+                    : employee.status === "Activo"
+                    ? "No se puede eliminar un empleado activo"
+                    : "Eliminar empleado",
               }),
               view: () => ({
-                show: hasPermission('employees', 'Ver'),
+                show: hasPermission("employees", "Ver"),
                 disabled: false,
-                title: 'Ver detalles'
-              })
+                title: "Ver detalles",
+              }),
             }}
           />
 
-          {!searchTerm && totalRows > pagination.limit && (
+          {totalRows > pagination.limit && (
             <Pagination
               currentPage={pagination.page}
               totalPages={pagination.pages}
