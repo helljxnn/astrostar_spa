@@ -10,7 +10,7 @@ import {
   useFormProviderValidation,
   providerValidationRules,
 } from "../hooks/useFormProviderValidation";
-import { useProviderUniquenessValidation } from "../hooks/useProviderUniquenessValidation";
+import { useRealtimeValidation } from "../hooks/useRealtimeValidation";
 import { useDocumentTypes } from "../../../../../../../../shared/hooks/useDocumentTypes";
 
 const entityTypes = [
@@ -34,17 +34,30 @@ const ProviderModal = ({
   const isEditing = mode === "edit" || providerToEdit !== null;
   const { documentTypes, loading: documentTypesLoading, error: documentTypesError } = useDocumentTypes();
 
-  // Hook de validación del formulario
+  const uniqueDocumentTypes = documentTypes ? documentTypes.filter((doc, index, self) => 
+    index === self.findIndex(d => d.value === doc.value)
+  ) : [];
+
+  const {
+    availabilityErrors,
+    checkingFields,
+    setCheckingFields,
+    debouncedCheckNit,
+    debouncedCheckBusinessName,
+    resetAvailabilityErrors,
+    clearAvailabilityError
+  } = useRealtimeValidation(providerToEdit);
+
   const {
     values,
     errors,
     touched,
-    handleChange: formHandleChange,
+    handleChange: originalHandleChange,
     handleBlur,
     validateAllFields,
     resetForm,
-    setTouched,
     setValues,
+    touchAllFields
   } = useFormProviderValidation(
     {
       tipoEntidad: "juridica",
@@ -62,19 +75,71 @@ const ProviderModal = ({
     providerValidationRules
   );
 
-  // Hook de validación de campos únicos en tiempo real
-  const {
-    validations,
-    validateField,
-    reloadProviders,
-    clearValidation,
-    clearAllValidations
-  } = useProviderUniquenessValidation(providerToEdit?.id);
+  const handleChange = (name, value) => {
+    originalHandleChange(name, value);
 
-  // Cargar datos al editar
+    if (name === 'nit') {
+      clearAvailabilityError('nit');
+      const cleanedValue = value.replace(/[.\-\s]/g, '');
+      if (cleanedValue.length >= 8) {
+        setCheckingFields(prev => ({ ...prev, nit: true }));
+        debouncedCheckNit(value, values.tipoEntidad);
+      } else {
+        clearAvailabilityError('nit');
+      }
+    }
+
+    if (name === 'razonSocial') {
+      clearAvailabilityError('razonSocial');
+      if (value.trim().length >= 3) {
+        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
+        debouncedCheckBusinessName(value, values.tipoEntidad);
+      } else {
+        clearAvailabilityError('razonSocial');
+      }
+    }
+
+    if (name === 'tipoEntidad') {
+      clearAvailabilityError('nit');
+      clearAvailabilityError('razonSocial');
+      
+      if (values.nit && values.nit.trim().length >= 8) {
+        setCheckingFields(prev => ({ ...prev, nit: true }));
+        setTimeout(() => debouncedCheckNit(values.nit, value), 100);
+      }
+      if (values.razonSocial && values.razonSocial.trim().length >= 3) {
+        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
+        setTimeout(() => debouncedCheckBusinessName(values.razonSocial, value), 100);
+      }
+    }
+  };
+
+  const getCombinedError = (fieldName) => {
+    return availabilityErrors[fieldName] || errors[fieldName];
+  };
+
+  const isFieldTouched = (fieldName) => {
+    return touched[fieldName] || availabilityErrors[fieldName];
+  };
+
+  const shouldShowAvailabilityIndicator = (fieldName) => {
+    const value = values[fieldName]?.trim();
+    
+    if (fieldName === 'razonSocial') {
+      return value && value.length >= 3 && !errors[fieldName];
+    }
+    
+    if (fieldName === 'nit') {
+      const cleanedNit = value?.replace(/[.\-\s]/g, '');
+      return cleanedNit && cleanedNit.length >= 8 && !errors[fieldName];
+    }
+    
+    return false;
+  };
+
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
-      setValues({
+      const editData = {
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
@@ -86,22 +151,21 @@ const ProviderModal = ({
         ciudad: providerToEdit.ciudad || "",
         descripcion: providerToEdit.descripcion || "",
         estado: providerToEdit.estado || "Activo",
-      });
-      
-      // Limpiar validaciones al cargar datos
-      clearAllValidations();
-    }
-  }, [isOpen, isEditing, providerToEdit, setValues, clearAllValidations]);
+      };
 
-  // Manejar cambios con validación en tiempo real
-  const handleChange = (name, value) => {
-    formHandleChange(name, value);
-    
-    // Validar campos únicos en tiempo real (solo backend)
-    if (['nit', 'razonSocial', 'correo', 'contactoPrincipal'].includes(name)) {
-      validateField(name, value, values.tipoEntidad);
+      setValues(editData);
+      resetAvailabilityErrors();
+      
+      setTimeout(() => {
+        if (editData.nit && editData.nit.trim().length >= 8) {
+          debouncedCheckNit(editData.nit, editData.tipoEntidad);
+        }
+        if (editData.razonSocial && editData.razonSocial.trim().length >= 3) {
+          debouncedCheckBusinessName(editData.razonSocial, editData.tipoEntidad);
+        }
+      }, 100);
     }
-  };
+  }, [isOpen, isEditing, providerToEdit, setValues, resetAvailabilityErrors, debouncedCheckNit, debouncedCheckBusinessName]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -112,40 +176,36 @@ const ProviderModal = ({
   };
 
   const handleSubmit = async () => {
-    const allTouched = {};
-    Object.keys(providerValidationRules).forEach((field) => {
-      if (field === "tipoDocumento" && values.tipoEntidad === "juridica") {
-        return;
-      }
-      allTouched[field] = true;
-    });
-    setTouched(allTouched);
+    touchAllFields();
 
-    // Validar formulario
-    if (!validateAllFields()) {
+    const hasValidationErrors = !validateAllFields();
+    const hasAvailabilityErrors = Object.keys(availabilityErrors).length > 0;
+    const isChecking = Object.values(checkingFields).some(checking => checking);
+
+    if (isChecking) {
+      showErrorAlert(
+        "Validando datos",
+        "Por favor espera mientras se verifican los datos..."
+      );
+      return;
+    }
+
+    if (hasAvailabilityErrors) {
+      const errorMessages = Object.entries(availabilityErrors)
+        .map(([field, message]) => message)
+        .join('\n');
+      
+      showErrorAlert(
+        "Datos duplicados",
+        errorMessages || "Por favor corrige los campos marcados con error antes de continuar."
+      );
+      return;
+    }
+
+    if (hasValidationErrors) {
       showErrorAlert(
         "Campos incompletos",
         "Por favor completa todos los campos correctamente antes de continuar."
-      );
-      return;
-    }
-
-    // Verificar si hay campos duplicados validados por backend
-    const hasDuplicates = Object.values(validations).some(v => v.backendValidated && v.isDuplicate);
-    if (hasDuplicates) {
-      showErrorAlert(
-        "Datos duplicados",
-        "Algunos campos ya están registrados. Por favor, verifica la información."
-      );
-      return;
-    }
-
-    // Verificar si aún se están validando campos
-    const isStillChecking = Object.values(validations).some(v => v.isChecking);
-    if (isStillChecking) {
-      showErrorAlert(
-        "Validando campos",
-        "Por favor, espera mientras se valida la información."
       );
       return;
     }
@@ -168,30 +228,33 @@ const ProviderModal = ({
       const providerData = {
         ...values,
         telefono: formatPhoneNumber(values.telefono),
-        ...(values.tipoEntidad === "juridica" && { tipoDocumento: undefined }),
       };
 
-      if (isEditing) {
-        const updatedProviderData = { ...providerData, id: providerToEdit.id };
-        await onUpdate(updatedProviderData);
-        showSuccessAlert(
-          "Proveedor actualizado",
-          `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
-        );
-      } else {
-        await onSave(providerData);
-        showSuccessAlert(
-          "Proveedor creado",
-          "El proveedor ha sido creado exitosamente."
-        );
+      if (values.tipoEntidad === 'juridica') {
+        delete providerData.tipoDocumento;
       }
 
-      // Recargar proveedores para validación futura
-      await reloadProviders();
+      let result;
+      if (isEditing) {
+        const updatedProviderData = { ...providerData, id: providerToEdit.id };
+        result = await onUpdate(updatedProviderData);
+      } else {
+        result = await onSave(providerData);
+      }
 
-      resetForm();
-      clearAllValidations();
-      onClose();
+      if (result && result.success) {
+        showSuccessAlert(
+          isEditing ? "Proveedor actualizado" : "Proveedor creado",
+          isEditing 
+            ? `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
+            : "El proveedor ha sido creado exitosamente."
+        );
+        resetForm();
+        resetAvailabilityErrors();
+        onClose();
+      } else {
+        throw new Error(result?.message || `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`);
+      }
     } catch (error) {
       console.error(
         `Error al ${isEditing ? "actualizar" : "crear"} proveedor:`,
@@ -207,8 +270,23 @@ const ProviderModal = ({
 
   const handleClose = () => {
     resetForm();
-    clearAllValidations();
+    resetAvailabilityErrors();
     onClose();
+  };
+
+  const getDynamicLabel = (field) => {
+    switch (field) {
+      case 'razonSocial':
+        return values.tipoEntidad === 'juridica' ? "Razón Social" : "Nombre Completo";
+      case 'nit':
+        return values.tipoEntidad === 'juridica' ? "NIT" : "Documento de Identidad";
+      case 'razonSocialPlaceholder':
+        return values.tipoEntidad === 'juridica' ? "Nombre de la empresa" : "Nombre completo";
+      case 'nitPlaceholder':
+        return values.tipoEntidad === 'juridica' ? "900123456-7" : "Número de identificación";
+      default:
+        return '';
+    }
   };
 
   if (!isOpen) return null;
@@ -227,6 +305,7 @@ const ProviderModal = ({
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
+        {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
@@ -247,7 +326,9 @@ const ProviderModal = ({
           )}
         </div>
 
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-3">
+          {/* Tipo de Entidad */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -255,7 +336,7 @@ const ProviderModal = ({
             className="space-y-3 mb-3"
           >
             <label className="block text-sm font-medium text-gray-700">
-              Tipo de Entidad *
+              Tipo de Entidad
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {entityTypes.map((type) => (
@@ -336,54 +417,47 @@ const ProviderModal = ({
             </div>
           </motion.div>
 
+          {/* Campos del formulario */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {/* Razón Social / Nombre */}
-            <motion.div
-              key={`razon-social-${values.tipoEntidad}`}
-              className="space-y-2"
-            >
+            {/* Razón Social / Nombre con validación en tiempo real */}
+            <motion.div className="relative">
               <FormField
-                label={values.tipoEntidad === "juridica" ? "Razón Social" : "Nombre Completo"}
+                label={getDynamicLabel('razonSocial')}
                 name="razonSocial"
                 type="text"
-                placeholder={values.tipoEntidad === "juridica" ? "Nombre de la empresa" : "Nombre completo"}
+                placeholder={getDynamicLabel('razonSocialPlaceholder')}
                 value={values.razonSocial}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.razonSocial}
-                touched={touched.razonSocial}
+                error={getCombinedError('razonSocial')}
+                touched={isFieldTouched('razonSocial')}
                 required
               />
               
-              {/* Estados de validación en tiempo real - SOLO BACKEND */}
-              {validations.razonSocial.isChecking && (
-                <div className="text-blue-500 text-xs flex items-center gap-2">
-                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span>Verificando disponibilidad...</span>
-                </div>
-              )}
-              
-              {validations.razonSocial.backendValidated && validations.razonSocial.isDuplicate && (
-                <div className="text-red-500 text-xs flex items-center gap-1">
-                  <span>❌</span>
-                  <span>{validations.razonSocial.message}</span>
-                </div>
-              )}
-              
-              {validations.razonSocial.backendValidated && validations.razonSocial.isAvailable && (
-                <div className="text-green-500 text-xs flex items-center gap-1">
-                  <span>✅</span>
-                  <span>
-                    {values.tipoEntidad === 'juridica' 
-                      ? 'Razón social disponible' 
-                      : 'Nombre disponible'
-                    }
-                  </span>
+              {/* Indicadores de estado - SOLO cuando no hay errores */}
+              {!getCombinedError('razonSocial') && shouldShowAvailabilityIndicator('razonSocial') && (
+                <div className="mt-1">
+                  {checkingFields.razonSocial ? (
+                    <div className="text-blue-500 text-sm flex items-center gap-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Verificando disponibilidad...</span>
+                    </div>
+                  ) : (
+                    <div className="text-green-500 text-sm flex items-center gap-1">
+                      <span>✅</span>
+                      <span>
+                        {values.tipoEntidad === 'juridica' 
+                          ? 'Razón social disponible' 
+                          : 'Nombre disponible'
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
 
-            {/* Tipo de Documento (solo persona natural) */}
+            {/* Tipo de Documento (solo para persona natural) */}
             <AnimatePresence mode="wait">
               {values.tipoEntidad === "natural" && (
                 <motion.div
@@ -396,35 +470,13 @@ const ProviderModal = ({
                     ease: "easeOut"
                   }}
                 >
-                  {documentTypesLoading && (
-                    <div className="form-group">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tipo de documento *
-                      </label>
-                      <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
-                        Cargando tipos de documento...
-                      </div>
-                    </div>
-                  )}
-                  
-                  {documentTypesError && (
-                    <div className="form-group">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tipo de documento *
-                      </label>
-                      <div className="p-3 bg-red-100 text-red-700 rounded-lg">
-                        Error: {documentTypesError}
-                      </div>
-                    </div>
-                  )}
-                  
                   {!documentTypesLoading && !documentTypesError && (
                     <FormField
                       label="Tipo de documento"
                       name="tipoDocumento"
                       type="select"
                       placeholder="Selecciona el tipo de documento"
-                      options={documentTypes}
+                      options={uniqueDocumentTypes}
                       value={values.tipoDocumento}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -437,57 +489,46 @@ const ProviderModal = ({
               )}
             </AnimatePresence>
 
-            {/* NIT / Identificación */}
-            <motion.div
-              key={`nit-${values.tipoEntidad}`}
-              className="space-y-2"
-            >
+            {/* NIT / Documento con validación en tiempo real */}
+            <motion.div className="relative">
               <FormField
-                label={values.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
+                label={getDynamicLabel('nit')}
                 name="nit"
                 type="text"
-                placeholder={values.tipoEntidad === "juridica" ? "900123456-7" : "Número de identificación"}
+                placeholder={getDynamicLabel('nitPlaceholder')}
                 value={values.nit}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.nit}
-                touched={touched.nit}
+                error={getCombinedError('nit')}
+                touched={isFieldTouched('nit')}
                 required
               />
               
-              {/* Estados de validación en tiempo real - SOLO BACKEND */}
-              {validations.nit.isChecking && (
-                <div className="text-blue-500 text-xs flex items-center gap-2">
-                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span>Verificando {values.tipoEntidad === 'juridica' ? 'NIT' : 'documento'}...</span>
-                </div>
-              )}
-              
-              {validations.nit.backendValidated && validations.nit.isDuplicate && (
-                <div className="text-red-500 text-xs flex items-center gap-1">
-                  <span>❌</span>
-                  <span>{validations.nit.message}</span>
-                </div>
-              )}
-              
-              {validations.nit.backendValidated && validations.nit.isAvailable && (
-                <div className="text-green-500 text-xs flex items-center gap-1">
-                  <span>✅</span>
-                  <span>
-                    {values.tipoEntidad === 'juridica' 
-                      ? 'NIT disponible' 
-                      : 'Documento disponible'
-                    }
-                  </span>
+              {/* Indicadores de estado - SOLO cuando no hay errores */}
+              {!getCombinedError('nit') && shouldShowAvailabilityIndicator('nit') && (
+                <div className="mt-1">
+                  {checkingFields.nit ? (
+                    <div className="text-blue-500 text-sm flex items-center gap-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Verificando disponibilidad...</span>
+                    </div>
+                  ) : (
+                    <div className="text-green-500 text-sm flex items-center gap-1">
+                      <span>✅</span>
+                      <span>
+                        {values.tipoEntidad === 'juridica' 
+                          ? 'NIT disponible' 
+                          : 'Documento disponible'
+                        }
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
 
-            {/* Contacto Principal */}
-            <motion.div
-              key={`contacto-${values.tipoEntidad}`}
-              className="space-y-2"
-            >
+            {/* Resto de campos */}
+            <motion.div>
               <FormField
                 label="Contacto Principal"
                 name="contactoPrincipal"
@@ -500,75 +541,23 @@ const ProviderModal = ({
                 touched={touched.contactoPrincipal}
                 required
               />
-              
-              {/* Estados de validación en tiempo real - SOLO BACKEND */}
-              {validations.contactoPrincipal.isChecking && (
-                <div className="text-blue-500 text-xs flex items-center gap-2">
-                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span>Verificando contacto...</span>
-                </div>
-              )}
-              
-              {validations.contactoPrincipal.backendValidated && validations.contactoPrincipal.isDuplicate && (
-                <div className="text-red-500 text-xs flex items-center gap-1">
-                  <span>❌</span>
-                  <span>{validations.contactoPrincipal.message}</span>
-                </div>
-              )}
-              
-              {validations.contactoPrincipal.backendValidated && validations.contactoPrincipal.isAvailable && (
-                <div className="text-green-500 text-xs flex items-center gap-1">
-                  <span>✅</span>
-                  <span>Contacto disponible</span>
-                </div>
-              )}
             </motion.div>
 
-            {/* Correo Electrónico */}
-            <motion.div
-              key={`correo-${values.tipoEntidad}`}
-              className="space-y-2"
-            >
+            <motion.div>
               <FormField
                 label="Correo Electrónico"
                 name="correo"
                 type="email"
-                placeholder="correo@empresa.com"
+                placeholder="correo@empresa.com (opcional)"
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleBlur}
                 error={errors.correo}
                 touched={touched.correo}
-                required
               />
-              
-              {/* Estados de validación en tiempo real - SOLO BACKEND */}
-              {validations.correo.isChecking && (
-                <div className="text-blue-500 text-xs flex items-center gap-2">
-                  <div className="animate-spin w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                  <span>Verificando email...</span>
-                </div>
-              )}
-              
-              {validations.correo.backendValidated && validations.correo.isDuplicate && (
-                <div className="text-red-500 text-xs flex items-center gap-1">
-                  <span>❌</span>
-                  <span>{validations.correo.message}</span>
-                </div>
-              )}
-              
-              {validations.correo.backendValidated && validations.correo.isAvailable && (
-                <div className="text-green-500 text-xs flex items-center gap-1">
-                  <span>✅</span>
-                  <span>Email disponible</span>
-                </div>
-              )}
             </motion.div>
 
-            {/* Teléfono */}
-            <motion.div
-              key={`telefono-${values.tipoEntidad}`}
-            >
+            <motion.div>
               <FormField
                 label="Número Telefónico"
                 name="telefono"
@@ -583,10 +572,7 @@ const ProviderModal = ({
               />
             </motion.div>
 
-            {/* Dirección */}
-            <motion.div
-              key={`direccion-${values.tipoEntidad}`}
-            >
+            <motion.div>
               <FormField
                 label="Dirección"
                 name="direccion"
@@ -601,10 +587,7 @@ const ProviderModal = ({
               />
             </motion.div>
 
-            {/* Ciudad */}
-            <motion.div
-              key={`ciudad-${values.tipoEntidad}`}
-            >
+            <motion.div>
               <FormField
                 label="Ciudad"
                 name="ciudad"
@@ -619,10 +602,7 @@ const ProviderModal = ({
               />
             </motion.div>
 
-            {/* Estado */}
-            <motion.div
-              key={`estado-${values.tipoEntidad}`}
-            >
+            <motion.div>
               <FormField
                 label="Estado"
                 name="estado"
@@ -638,16 +618,12 @@ const ProviderModal = ({
               />
             </motion.div>
 
-            {/* Descripción */}
-            <motion.div
-              key={`descripcion-${values.tipoEntidad}`}
-              className="lg:col-span-3"
-            >
+            <motion.div className="lg:col-span-3">
               <FormField
                 label="Descripción"
                 name="descripcion"
                 type="textarea"
-                placeholder="Descripción detallada del proveedor..."
+                placeholder="Descripción detallada del proveedor... "
                 value={values.descripcion}
                 onChange={handleChange}
                 onBlur={handleBlur}
@@ -659,6 +635,7 @@ const ProviderModal = ({
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex-shrink-0 border-t border-gray-200 p-3">
           <div className="flex justify-between">
             <button
@@ -670,9 +647,26 @@ const ProviderModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              disabled={Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
+                Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-primary-blue hover:bg-primary-purple'
+              } text-white`}
             >
-              {isEditing ? "Actualizar Proveedor" : "Crear Proveedor"}
+              {Object.values(checkingFields).some(checking => checking) ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Validando...
+                </>
+              ) : Object.keys(availabilityErrors).length > 0 ? (
+                "Corrige los errores"
+              ) : (
+                isEditing ? "Actualizar Proveedor" : "Crear Proveedor"
+              )}
             </button>
           </div>
         </div>

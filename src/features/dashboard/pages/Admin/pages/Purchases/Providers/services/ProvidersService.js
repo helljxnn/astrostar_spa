@@ -1,3 +1,4 @@
+// src/features/dashboard/pages/Admin/pages/Providers/services/ProvidersService.js
 import apiClient from '../../../../../../../../shared/services/apiClient';
 
 class ProvidersService {
@@ -5,9 +6,6 @@ class ProvidersService {
     this.endpoint = '/providers';
   }
 
-  /**
-   * Obtener todos los proveedores
-   */
   async getProviders(params = {}) {
     const { 
       page = 1, 
@@ -16,10 +14,6 @@ class ProvidersService {
       status = "", 
       entityType = "" 
     } = params;
-    
-    console.log("📋 Fetching providers:", { 
-      page, limit, search, status, entityType 
-    });
     
     return apiClient.get(this.endpoint, { 
       page, 
@@ -30,48 +24,34 @@ class ProvidersService {
     });
   }
 
-  /**
-   * Obtener proveedor por ID
-   */
   async getProviderById(id) {
-    console.log("🔍 Fetching provider by ID:", id);
     return apiClient.get(`${this.endpoint}/${id}`);
   }
 
-  /**
-   * Crear nuevo proveedor
-   */
   async createProvider(providerData) {
-    console.log("➕ Creating new provider:", providerData);
-    return apiClient.post(this.endpoint, providerData);
+    const transformedData = this.transformToBackend(providerData);
+    return apiClient.post(this.endpoint, transformedData);
   }
 
-  /**
-   * Actualizar proveedor
-   */
   async updateProvider(id, providerData) {
-    console.log("✏️ Updating provider:", { id, providerData });
-    return apiClient.put(`${this.endpoint}/${id}`, providerData);
+    const transformedData = this.transformToBackend(providerData);
+    return apiClient.put(`${this.endpoint}/${id}`, transformedData);
   }
 
-  /**
-   * Eliminar proveedor
-   */
   async deleteProvider(id) {
-    console.log("🗑️ Deleting provider:", id);
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
-  /**
-   * Cambiar estado de proveedor
-   */
   async changeProviderStatus(id, status) {
-    console.log("🔄 Changing provider status:", { id, status });
     return apiClient.patch(`${this.endpoint}/${id}/status`, { status });
   }
 
   /**
-   * Verificar disponibilidad de NIT
+   * Verificar disponibilidad de NIT/Documento
+   * @param {string} nit - NIT o documento a verificar
+   * @param {number|null} excludeId - ID a excluir de la verificación (para edición)
+   * @param {string} tipoEntidad - Tipo de entidad ('juridica' o 'natural')
+   * @returns {Promise} Resultado de disponibilidad
    */
   async checkNitAvailability(nit, excludeId = null, tipoEntidad = 'juridica') {
     const params = { nit, tipoEntidad };
@@ -79,12 +59,16 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    console.log("🔍 Checking NIT availability:", { nit, excludeId, tipoEntidad });
-    return apiClient.get(`${this.endpoint}/check-nit`, params);
+    const response = await apiClient.get(`${this.endpoint}/check-nit`, params);
+    return response;
   }
 
   /**
    * Verificar disponibilidad de razón social/nombre
+   * @param {string} businessName - Razón social o nombre a verificar
+   * @param {number|null} excludeId - ID a excluir de la verificación (para edición)
+   * @param {string} tipoEntidad - Tipo de entidad ('juridica' o 'natural')
+   * @returns {Promise} Resultado de disponibilidad
    */
   async checkBusinessNameAvailability(businessName, excludeId = null, tipoEntidad = 'juridica') {
     const params = { businessName, tipoEntidad };
@@ -92,49 +76,35 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    console.log("🔍 Checking business name availability:", { businessName, excludeId, tipoEntidad });
-    return apiClient.get(`${this.endpoint}/check-business-name`, params);
+    const response = await apiClient.get(`${this.endpoint}/check-business-name`, params);
+    return response;
   }
 
-  /**
-   * Verificar disponibilidad de email
-   */
   async checkEmailAvailability(email, excludeId = null) {
     const params = { email };
     if (excludeId) {
       params.excludeId = excludeId;
     }
-
-    console.log("🔍 Checking email availability:", { email, excludeId });
     return apiClient.get(`${this.endpoint}/check-email`, params);
   }
 
-  /**
-   * Verificar disponibilidad de contacto principal
-   */
   async checkContactAvailability(contact, excludeId = null) {
     const params = { contact };
     if (excludeId) {
       params.excludeId = excludeId;
     }
-
-    console.log("🔍 Checking contact availability:", { contact, excludeId });
     return apiClient.get(`${this.endpoint}/check-contact`, params);
   }
 
-  /**
-   * Obtener estadísticas de proveedores
-   */
+  async checkActivePurchases(providerId) {
+    return apiClient.get(`${this.endpoint}/${providerId}/active-purchases`);
+  }
+
   async getProviderStats() {
-    console.log("📊 Fetching provider statistics");
     return apiClient.get(`${this.endpoint}/stats`);
   }
 
-  /**
-   * Buscar proveedores por término específico
-   */
   async searchProviders(searchTerm, limit = 20) {
-    console.log("🔍 Searching providers:", { searchTerm, limit });
     return this.getProviders({ 
       search: searchTerm, 
       limit,
@@ -142,20 +112,36 @@ class ProvidersService {
     });
   }
 
-  /**
-   * Obtener proveedores activos únicamente
-   */
   async getActiveProviders() {
     return this.getProviders({ status: 'Activo' });
   }
 
-  /**
-   * Obtener proveedores por tipo de entidad
-   */
   async getProvidersByEntityType(entityType) {
     return this.getProviders({ entityType });
   }
+
+  transformToBackend(providerData) {
+    const cleanedNit = providerData.nit ? providerData.nit.replace(/[.\-\s]/g, '') : '';
+    
+    const transformed = {
+      tipoEntidad: providerData.tipoEntidad,
+      razonSocial: providerData.razonSocial,
+      nit: cleanedNit,
+      contactoPrincipal: providerData.contactoPrincipal,
+      correo: providerData.correo,
+      telefono: providerData.telefono,
+      direccion: providerData.direccion,
+      ciudad: providerData.ciudad,
+      descripcion: providerData.descripcion || '',
+      estado: providerData.estado
+    };
+
+    if (providerData.tipoEntidad === 'natural' && providerData.tipoDocumento) {
+      transformed.tipoDocumento = providerData.tipoDocumento;
+    }
+
+    return transformed;
+  }
 }
 
-// Exportar instancia única del servicio
 export default new ProvidersService();

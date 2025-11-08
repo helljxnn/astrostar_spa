@@ -1,12 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-// ==================== FUNCIONES AUXILIARES ====================
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
 const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
 const isValidEmail = (email) => /^[a-zA-Z0-9]([a-zA-Z0-9._-])*[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(email);
 const cleanPhone = (phone) => phone.replace(/[\s\-\(\)]/g, '');
 
-// Validación teléfono colombiano
 const validatePhone = (value) => {
   if (!value?.trim()) return "El número telefónico es obligatorio.";
   const phone = cleanPhone(value);
@@ -27,7 +25,6 @@ const validatePhone = (value) => {
   return "Formato de teléfono inválido.";
 };
 
-// ==================== VALIDATION RULES ====================
 export const providerValidationRules = {
   razonSocial: [
     (value, values) => {
@@ -39,15 +36,15 @@ export const providerValidationRules = {
       return '';
     },
     (value, values) => {
-      if (value?.trim().length < 3) {
+      if (value?.trim() && value.trim().length < 3) {
         return values?.tipoEntidad === 'juridica'
           ? "La razón social debe tener al menos 3 caracteres."
           : "El nombre debe tener al menos 3 caracteres.";
       }
       return '';
     },
-    (value) => value?.trim().length > 200 ? `El campo no puede exceder 200 caracteres (${value?.trim().length}/200).` : '',
-    (value) => hasDoubleSpaces(value) ? "No se permiten espacios dobles." : '',
+    (value) => value?.trim() && value.trim().length > 200 ? `El campo no puede exceder 200 caracteres (${value.trim().length}/200).` : '',
+    (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : '',
   ],
   nit: [
     (value, values) => {
@@ -59,7 +56,8 @@ export const providerValidationRules = {
       return '';
     },
     (value) => {
-      const cleaned = value?.trim().replace(/[\s.-]/g, '');
+      if (!value?.trim()) return '';
+      const cleaned = value.trim().replace(/[\s.-]/g, '');
       if (!/^\d{8,15}$/.test(cleaned)) {
         return "Debe contener entre 8 y 15 dígitos.";
       }
@@ -76,33 +74,35 @@ export const providerValidationRules = {
   ],
   contactoPrincipal: [
     (value) => !value?.trim() ? "El contacto principal es obligatorio." : '',
-    (value) => value?.trim().length < 2 ? "El contacto debe tener al menos 2 caracteres." : '',
-    (value) => value?.trim().length > 150 ? `El contacto no puede exceder 150 caracteres (${value?.trim().length}/150).` : '',
-    (value) => !isOnlyLetters(value) ? "El contacto solo puede contener letras y espacios." : '',
-    (value) => hasDoubleSpaces(value) ? "No se permiten espacios dobles." : '',
+    (value) => value?.trim() && value.trim().length < 2 ? "El contacto debe tener al menos 2 caracteres." : '',
+    (value) => value?.trim() && value.trim().length > 150 ? `El contacto no puede exceder 150 caracteres (${value.trim().length}/150).` : '',
+    (value) => value?.trim() && !isOnlyLetters(value) ? "El contacto solo puede contener letras y espacios." : '',
+    (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : '',
   ],
   correo: [
-    (value) => !value?.trim() ? "El correo es obligatorio." : '',
-    (value) => !isValidEmail(value?.trim() || "") ? "El correo electrónico no es válido." : '',
-    (value) => (value?.trim() || "").length > 150 ? `El correo no puede exceder 150 caracteres (${value?.trim().length}/150).` : ''
+    (value) => value?.trim() && !isValidEmail(value.trim()) ? "El correo electrónico no es válido." : '',
+    (value) => value?.trim() && value.trim().length > 150 ? `El correo no puede exceder 150 caracteres (${value.trim().length}/150).` : ''
   ],
-  telefono: [validatePhone],
+  telefono: [
+    (value) => !value?.trim() ? "El número telefónico es obligatorio." : '',
+    (value) => value?.trim() ? validatePhone(value) : ''
+  ],
   direccion: [
     (value) => !value?.trim() ? "La dirección es obligatoria." : '',
-    (value) => value?.trim().length < 10 ? "La dirección debe tener al menos 10 caracteres." : '',
-    (value) => value?.trim().length > 200 ? `La dirección no puede exceder 200 caracteres (${value?.trim().length}/200).` : '',
-    (value) => hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ''
+    (value) => value?.trim() && value.trim().length < 10 ? "La dirección debe tener al menos 10 caracteres." : '',
+    (value) => value?.trim() && value.trim().length > 200 ? `La dirección no puede exceder 200 caracteres (${value.trim().length}/200).` : '',
+    (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ''
   ],
   ciudad: [
     (value) => !value?.trim() ? "La ciudad es obligatoria." : '',
-    (value) => value?.trim().length < 2 ? "La ciudad debe tener al menos 2 caracteres." : '',
-    (value) => value?.trim().length > 100 ? `La ciudad no puede exceder 100 caracteres (${value?.trim().length}/100).` : '',
-    (value) => !isOnlyLetters(value) ? "La ciudad solo puede contener letras y espacios." : '',
-    (value) => hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ''
+    (value) => value?.trim() && value.trim().length < 2 ? "La ciudad debe tener al menos 2 caracteres." : '',
+    (value) => value?.trim() && value.trim().length > 100 ? `La ciudad no puede exceder 100 caracteres (${value.trim().length}/100).` : '',
+    (value) => value?.trim() && !isOnlyLetters(value) ? "La ciudad solo puede contener letras y espacios." : '',
+    (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ''
   ],
   descripcion: [
-    (value) => !value?.trim() ? "" : value.trim().length > 500 ? `La descripción no puede exceder 500 caracteres (${value?.trim().length}/500).` : "",
-    (value) => !value?.trim() ? "" : hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ""
+    (value) => value?.trim() && value.trim().length > 500 ? `La descripción no puede exceder 500 caracteres (${value.trim().length}/500).` : "",
+    (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : ""
   ],
   estado: [
     (value) => !value ? "Debe seleccionar un estado válido (Activo o Inactivo)." : ''
@@ -112,27 +112,25 @@ export const providerValidationRules = {
   ]
 };
 
-// ==================== CUSTOM HOOK ====================
 export const useFormProviderValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
-  const validateField = (name, value) => {
+  const validateField = useCallback((name, value, currentValues = values) => {
     const rules = validationRules[name];
     if (!rules) return '';
 
-    // Si es tipoDocumento y la entidad es jurídica, no validar
-    if (name === 'tipoDocumento' && values.tipoEntidad === 'juridica') {
+    if (name === 'tipoDocumento' && currentValues.tipoEntidad === 'juridica') {
       return '';
     }
     
     for (const rule of rules) {
-      const error = rule(value, values);
+      const error = rule(value, currentValues);
       if (error) return error;
     }
     return '';
-  };
+  }, [values, validationRules]);
 
   const validateAllFields = () => {
     const newErrors = {};
@@ -141,7 +139,6 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
     Object.keys(validationRules).forEach(name => {
       allTouched[name] = true;
       
-      // Saltar validación de tipoDocumento si es persona jurídica
       if (name === 'tipoDocumento' && values.tipoEntidad === 'juridica') {
         return;
       }
@@ -156,19 +153,14 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
   };
 
   const handleChange = (name, value) => {
+    const previousTipoEntidad = values.tipoEntidad;
+    
     setValues(prev => {
       const newValues = { ...prev, [name]: value };
       
-      // Si cambia el tipoEntidad, ajustar tipoDocumento
       if (name === 'tipoEntidad') {
         if (value === 'juridica') {
           newValues.tipoDocumento = '';
-          // Limpiar error de tipoDocumento
-          setErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors.tipoDocumento;
-            return newErrors;
-          });
         } else if (value === 'natural' && !newValues.tipoDocumento) {
           newValues.tipoDocumento = 'CC';
         }
@@ -176,23 +168,100 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       
       return newValues;
     });
-    
-    if (touched[name]) {
+
+    setTimeout(() => {
       const error = validateField(name, value);
-      setErrors(prev => ({ ...prev, [name]: error }));
+      setErrors(prev => {
+        if (error) {
+          return { ...prev, [name]: error };
+        } else {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        }
+      });
+    }, 0);
+
+    if (!touched[name]) {
+      setTimeout(() => {
+        setTouched(prev => ({ ...prev, [name]: true }));
+      }, 0);
+    }
+
+    if (name === 'tipoEntidad' && previousTipoEntidad !== value) {
+      setTimeout(() => {
+        const dependentFields = ['razonSocial', 'nit', 'tipoDocumento'];
+        const newErrors = { ...errors };
+        
+        dependentFields.forEach(fieldName => {
+          const error = validateField(fieldName, values[fieldName]);
+          if (error) {
+            newErrors[fieldName] = error;
+          } else {
+            delete newErrors[fieldName];
+          }
+        });
+        
+        setErrors(newErrors);
+      }, 10);
     }
   };
 
   const handleBlur = (name) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
+    if (!touched[name]) {
+      setTouched(prev => ({ ...prev, [name]: true }));
+    }
+    
     const error = validateField(name, values[name]);
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors(prev => {
+      if (error) {
+        return { ...prev, [name]: error };
+      } else {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      }
+    });
   };
+
+  useEffect(() => {
+    const newErrors = { ...errors };
+    let hasChanges = false;
+
+    Object.keys(touched).forEach(fieldName => {
+      if (touched[fieldName]) {
+        const currentError = validateField(fieldName, values[fieldName]);
+        const hasError = errors[fieldName];
+        
+        if (hasError && !currentError) {
+          delete newErrors[fieldName];
+          hasChanges = true;
+        }
+        else if (!hasError && currentError) {
+          newErrors[fieldName] = currentError;
+          hasChanges = true;
+        }
+      }
+    });
+
+    if (hasChanges) {
+      setErrors(newErrors);
+    }
+  }, [values, touched]);
 
   const resetForm = () => {
     setValues(initialValues);
     setErrors({});
     setTouched({});
+  };
+
+  const touchAllFields = () => {
+    const allTouched = {};
+    Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
+    });
+    setTouched(allTouched);
+    validateAllFields();
   };
 
   return {
@@ -205,6 +274,7 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
     setValues,
     setErrors,
     setTouched,
-    resetForm
+    resetForm,
+    touchAllFields
   };
 };
