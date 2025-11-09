@@ -57,6 +57,7 @@ const ProviderModal = ({
     validateAllFields,
     resetForm,
     setValues,
+    setTouched,
     touchAllFields
   } = useFormProviderValidation(
     {
@@ -100,9 +101,22 @@ const ProviderModal = ({
     }
 
     if (name === 'tipoEntidad') {
+      // Limpiar errores de disponibilidad
       clearAvailabilityError('nit');
       clearAvailabilityError('razonSocial');
       
+      // Resetear el estado de verificación
+      setCheckingFields({ nit: false, razonSocial: false });
+      
+      // Cancelar cualquier verificación pendiente
+      if (debounceTimers.current.nit) {
+        clearTimeout(debounceTimers.current.nit);
+      }
+      if (debounceTimers.current.razonSocial) {
+        clearTimeout(debounceTimers.current.razonSocial);
+      }
+
+      // Reiniciar verificaciones si hay valores existentes
       if (values.nit && values.nit.trim().length >= 8) {
         setCheckingFields(prev => ({ ...prev, nit: true }));
         setTimeout(() => debouncedCheckNit(values.nit, value), 100);
@@ -115,11 +129,16 @@ const ProviderModal = ({
   };
 
   const getCombinedError = (fieldName) => {
+    // Solo retornar error si el campo ha sido tocado
+    if (!touched[fieldName]) {
+      return null;
+    }
     return availabilityErrors[fieldName] || errors[fieldName];
   };
 
   const isFieldTouched = (fieldName) => {
-    return touched[fieldName] || availabilityErrors[fieldName];
+    // Solo mostrar error si el campo ha sido tocado Y tiene error
+    return touched[fieldName] && (errors[fieldName] || availabilityErrors[fieldName]);
   };
 
   const shouldShowAvailabilityIndicator = (fieldName) => {
@@ -154,6 +173,7 @@ const ProviderModal = ({
       };
 
       setValues(editData);
+      setTouched({}); // Resetear touched al cargar datos de edición
       resetAvailabilityErrors();
       
       setTimeout(() => {
@@ -165,7 +185,7 @@ const ProviderModal = ({
         }
       }, 100);
     }
-  }, [isOpen, isEditing, providerToEdit, setValues, resetAvailabilityErrors, debouncedCheckNit, debouncedCheckBusinessName]);
+  }, [isOpen, isEditing, providerToEdit, setValues, setTouched, resetAvailabilityErrors, debouncedCheckNit, debouncedCheckBusinessName]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -250,6 +270,7 @@ const ProviderModal = ({
             : "El proveedor ha sido creado exitosamente."
         );
         resetForm();
+        setTouched({});
         resetAvailabilityErrors();
         onClose();
       } else {
@@ -270,6 +291,7 @@ const ProviderModal = ({
 
   const handleClose = () => {
     resetForm();
+    setTouched({}); // Asegurar que se resetee el estado touched
     resetAvailabilityErrors();
     onClose();
   };
@@ -480,8 +502,8 @@ const ProviderModal = ({
                       value={values.tipoDocumento}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      error={errors.tipoDocumento}
-                      touched={touched.tipoDocumento}
+                      error={getCombinedError('tipoDocumento')}
+                      touched={isFieldTouched('tipoDocumento')}
                       required={values.tipoEntidad === "natural"}
                     />
                   )}
@@ -537,8 +559,8 @@ const ProviderModal = ({
                 value={values.contactoPrincipal}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.contactoPrincipal}
-                touched={touched.contactoPrincipal}
+                error={getCombinedError('contactoPrincipal')}
+                touched={isFieldTouched('contactoPrincipal')}
                 required
               />
             </motion.div>
@@ -552,8 +574,8 @@ const ProviderModal = ({
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.correo}
-                touched={touched.correo}
+                error={getCombinedError('correo')}
+                touched={isFieldTouched('correo')}
               />
             </motion.div>
 
@@ -566,8 +588,8 @@ const ProviderModal = ({
                 value={values.telefono}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.telefono}
-                touched={touched.telefono}
+                error={getCombinedError('telefono')}
+                touched={isFieldTouched('telefono')}
                 required
               />
             </motion.div>
@@ -581,8 +603,8 @@ const ProviderModal = ({
                 value={values.direccion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.direccion}
-                touched={touched.direccion}
+                error={getCombinedError('direccion')}
+                touched={isFieldTouched('direccion')}
                 required
               />
             </motion.div>
@@ -596,8 +618,8 @@ const ProviderModal = ({
                 value={values.ciudad}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.ciudad}
-                touched={touched.ciudad}
+                error={getCombinedError('ciudad')}
+                touched={isFieldTouched('ciudad')}
                 required
               />
             </motion.div>
@@ -612,8 +634,8 @@ const ProviderModal = ({
                 value={values.estado}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.estado}
-                touched={touched.estado}
+                error={getCombinedError('estado')}
+                touched={isFieldTouched('estado')}
                 required
               />
             </motion.div>
@@ -627,8 +649,8 @@ const ProviderModal = ({
                 value={values.descripcion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.descripcion}
-                touched={touched.descripcion}
+                error={getCombinedError('descripcion')}
+                touched={isFieldTouched('descripcion')}
                 rows={3}
               />
             </motion.div>

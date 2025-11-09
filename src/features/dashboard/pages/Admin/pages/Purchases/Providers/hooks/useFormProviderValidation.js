@@ -55,12 +55,22 @@ export const providerValidationRules = {
       }
       return '';
     },
-    (value) => {
+    (value, values) => {
       if (!value?.trim()) return '';
       const cleaned = value.trim().replace(/[\s.-]/g, '');
-      if (!/^\d{8,15}$/.test(cleaned)) {
-        return "Debe contener entre 8 y 15 dígitos.";
+      
+      if (values?.tipoEntidad === 'juridica') {
+        // PERSONA JURÍDICA: Solo números
+        if (!/^\d{8,15}$/.test(cleaned)) {
+          return "El NIT debe contener entre 8 y 15 dígitos numéricos.";
+        }
+      } else {
+        // PERSONA NATURAL: Permite letras y números
+        if (!/^[a-zA-Z0-9\-]{6,20}$/.test(cleaned)) {
+          return "El documento debe contener entre 6 y 20 caracteres alfanuméricos ";
+        }
       }
+      
       return "";
     }
   ],
@@ -188,8 +198,13 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       }, 0);
     }
 
+    // NUEVO: Resetear el estado "touched" cuando cambia el tipo de entidad
     if (name === 'tipoEntidad' && previousTipoEntidad !== value) {
       setTimeout(() => {
+        // Resetear todos los campos touched
+        setTouched({});
+        
+        // Re-validar campos dependientes del tipo de entidad
         const dependentFields = ['razonSocial', 'nit', 'tipoDocumento'];
         const newErrors = { ...errors };
         
