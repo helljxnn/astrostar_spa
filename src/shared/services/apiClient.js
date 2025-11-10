@@ -40,49 +40,44 @@ class ApiClient {
 
       // Si el token de acceso ha expirado (401)
       if (response.status === 401) {
+        // Si ya hay un proceso de refresco en curso, encolamos la petición.
         if (this.isRefreshing) {
-          // Si ya se está refrescando, encolamos la petición para reintentarla después
           return new Promise((resolve, reject) => {
             this.failedQueue.push({ resolve, reject });
-          })
-            .then(() => {
-              // Reintentar la petición original
-              return fetch(url, config);
-            })
-            .then((res) => res.json());
+          }).then(() => {
+            // Una vez que el token se refresque, reintentamos la petición original.
+            return this.request(endpoint, options);
+          });
         }
 
         this.isRefreshing = true;
 
-        return new Promise(async (resolve, reject) => {
-          try {
-            // Intentamos obtener un nuevo token de acceso
-            const refreshResponse = await fetch(
-              `${this.baseURL}/auth/refreshToken`,
-              {
-                method: "POST",
-                credentials: "include",
-              }
-            );
-
-            if (!refreshResponse.ok) {
-              throw new Error("Failed to refresh token");
+        try {
+          // Intentamos obtener un nuevo token de acceso.
+          const refreshResponse = await fetch(
+            `${this.baseURL}/auth/refreshToken`,
+            {
+              method: "POST",
+              credentials: "include",
             }
+          );
 
-            // Procesamos la cola de peticiones fallidas con éxito
-            this.processQueue(null);
-            // Reintentamos la petición original
-            response = await fetch(url, config);
-            resolve(response.json());
-          } catch (error) {
-            // Si el refresh token falla, procesamos la cola con error y deslogueamos
-            this.processQueue(error);
-            this.handleUnauthorized();
-            reject(error);
-          } finally {
-            this.isRefreshing = false;
+          if (!refreshResponse.ok) {
+            throw new Error("Failed to refresh token");
           }
-        });
+
+          // Si el refresco es exitoso, procesamos la cola de peticiones pendientes.
+          this.processQueue(null);
+          // Y reintentamos la petición original que falló.
+          return this.request(endpoint, options);
+        } catch (error) {
+          // Si el refresh token falla, procesamos la cola con error y deslogueamos.
+          this.processQueue(error);
+          this.handleUnauthorized();
+          throw error; // Lanzamos el error para que la llamada original falle.
+        } finally {
+          this.isRefreshing = false;
+        }
       }
 
       if (!response.ok) {

@@ -130,6 +130,7 @@ function SportsEquipment() {
     { label: 'Status', key: 'status' },
     { label: 'Creation Date', key: 'createdAt', format: (date) => new Date(date).toLocaleDateString() },
     { label: 'Last Update', key: 'updatedAt', format: (date) => new Date(date).toLocaleDateString() },
+    { label: 'Disposal History', key: 'disposals', type: 'history' }, // Añadido para mostrar el historial
   ];
 
   const handleRowsPerPageChange = (e) => {
@@ -199,7 +200,7 @@ function SportsEquipment() {
               createdAt: (date) => date ? new Date(date).toLocaleDateString("en-US") : "-",
             },
           }}
-          onEdit={handleOpenEditModal}
+          onEdit={handleOpenEditModal} // onEdit estaba bien
           onDelete={handleDelete}
           onView={handleOpenViewDetails}
           buttonConfig={{

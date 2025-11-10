@@ -63,7 +63,7 @@ const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
                     />
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
                     >
                         {/* Header */}
                         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
@@ -73,30 +73,33 @@ const ViewDetails = ({ isOpen, onClose, data, detailConfig, title }) => {
 
                         {/* Body */}
                         <div className="p-8 space-y-5 flex-grow">
-                            <div className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                                 {detailConfig.map(({ label, key, type, format }) => {
                                     const value = data[key];
 
                                     if (type === 'history' && Array.isArray(value) && value.length > 0) {
                                         return (
-                                            <div key={key} className="col-span-1 sm:col-span-2">
+                                            <div key={key} className="md:col-span-2">
                                                 <p className="text-sm font-semibold text-gray-500 mb-2">{label}</p>
                                                 <div className="border rounded-lg overflow-hidden">
                                                     <table className="w-full text-sm">
                                                         <thead className="bg-gray-50">
                                                             <tr>
                                                                 <th className="px-4 py-2 text-left font-medium text-gray-600">Fecha</th>
-                                                                <th className="px-4 py-2 text-left font-medium text-gray-600">Cantidad</th>
-                                                                <th className="px-4 py-2 text-left font-medium text-gray-600">Motivo</th>
+                                                                <th className="px-4 py-2 text-center font-medium text-gray-600">Cantidad</th>
+                                                                <th className="px-4 py-2 text-left font-medium text-gray-600">Motivo y Observación</th>
                                                                 <th className="px-4 py-2 text-center font-medium text-gray-600">Evidencia</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y">
                                                             {value.map((entry, index) => (
                                                                 <tr key={index}>
-                                                                    <td className="px-4 py-2 text-gray-700">{moment(entry.date).format('DD/MM/YYYY')}</td>
-                                                                    <td className="px-4 py-2 text-red-600 font-semibold">-{entry.quantity}</td>
-                                                                    <td className="px-4 py-2 text-gray-700 break-words">{entry.reason}</td>
+                                                                    <td className="px-4 py-2 text-gray-700 whitespace-nowrap">{moment(entry.createdAt).format('DD/MM/YYYY')}</td>
+                                                                    <td className="px-4 py-2 text-red-600 font-semibold text-center">-{entry.quantity}</td>
+                                                                    <td className="px-4 py-2 text-gray-700">
+                                                                        <p className="font-semibold capitalize">{entry.reason}</p>
+                                                                        {entry.observation && <p className="text-xs text-gray-500 mt-1">{entry.observation}</p>}
+                                                                    </td>
                                                                     <td className="px-4 py-2 text-center">
                                                                         {entry.images && entry.images.length > 0 ? (
                                                                             <button onClick={() => openImageViewer(entry.images)} className="text-primary-purple hover:text-primary-blue">

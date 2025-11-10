@@ -196,9 +196,9 @@ function DonorsSponsors() {
                     onDelete={handleDelete}
                     onView={handleView}
                     buttonConfig={{
-                        edit: { show: hasPermission('donorsSponsors', 'Editar') },
-                        delete: { show: hasPermission('donorsSponsors', 'Eliminar') },
-                        view: { show: hasPermission('donorsSponsors', 'Ver') },
+                        edit: () => hasPermission('donorsSponsors', 'Editar'),
+                        delete: () => hasPermission('donorsSponsors', 'Eliminar'),
+                        view: () => hasPermission('donorsSponsors', 'Ver'),
                     }}
                 />
             </div>
