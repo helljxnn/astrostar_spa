@@ -4,9 +4,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import temporaryPersonsService from '../../features/dashboard/pages/Admin/pages/Services/TemporaryPersons/services/temporaryPersonsService.js';
-import { showSuccessAlert, showErrorAlert } from '../utils/alerts.js';
-import { useAuth } from '../contexts/authContext.jsx';
+import temporaryPersonsService from '../services/temporaryPersonsService.js';
+import { showSuccessAlert, showErrorAlert } from '@shared/utils/alerts.js';
+import { useAuth } from '@shared/contexts/authContext.jsx';
 
 export const useTemporaryPersons = () => {
   const { isAuthenticated } = useAuth();

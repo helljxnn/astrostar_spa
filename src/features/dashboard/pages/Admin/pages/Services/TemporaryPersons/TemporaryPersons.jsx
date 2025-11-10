@@ -3,7 +3,7 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import TemporaryPersonModal from "./components/TemporaryPersonModal.jsx";
 import TemporaryPersonViewModal from "./components/TemporaryPersonViewModal.jsx";
 import { FaPlus } from "react-icons/fa";
-import SearchValidation from "../../../../../../../shared/components/FormValidation/SearchValidation.jsx";
+import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import {
@@ -18,7 +18,7 @@ import PermissionGuard from "../../../../../../../shared/components/PermissionGu
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 // Hook personalizado para personas temporales
-import { useTemporaryPersons } from "../../../../../../../shared/hooks/useTemporaryPersons.js";
+import { useTemporaryPersons } from "./hooks/useTemporaryPersons.js";
 
 
 
@@ -45,32 +45,6 @@ const TemporaryPersons = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return temporaryPersons;
-
-    return temporaryPersons.filter((person) => {
-      const searchFields = [
-        person.firstName,
-        person.middleName,
-        person.lastName,
-        person.secondLastName,
-        person.email,
-        person.identification,
-        person.phone,
-        person.personType,
-        person.team,
-        person.category,
-      ];
-
-      return searchFields.some(
-        (field) =>
-          field &&
-          String(field).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    });
-  }, [temporaryPersons, searchTerm]);
-
   // Función para traducir estados
   const translateStatus = (status) => {
     const statusMap = {
@@ -89,6 +63,46 @@ const TemporaryPersons = () => {
     };
     return typeMap[personType] || personType;
   };
+
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return temporaryPersons;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return temporaryPersons.filter((person) => {
+      // Campos de texto general (búsqueda por contiene)
+      const textFields = [
+        person.firstName,
+        person.middleName,
+        person.lastName,
+        person.secondLastName,
+        person.email,
+        person.identification,
+        person.phone,
+        person.team,
+        person.category,
+      ];
+
+      const textMatch = textFields.some(
+        (field) =>
+          field &&
+          String(field).toLowerCase().includes(searchLower)
+      );
+
+      // Campos de estado y tipo (búsqueda exacta de palabra completa)
+      const translatedStatus = translateStatus(person.status).toLowerCase();
+      const translatedType = translatePersonType(person.personType).toLowerCase();
+      
+      // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
+      const statusMatch = translatedStatus === searchLower || 
+                         person.status?.toLowerCase() === searchLower;
+      const typeMatch = translatedType === searchLower || 
+                       person.personType?.toLowerCase() === searchLower;
+
+      return textMatch || statusMatch || typeMatch;
+    });
+  }, [temporaryPersons, searchTerm]);
 
   // Usar paginación del servidor cuando no hay búsqueda local
   const displayData = searchTerm ? filteredData : temporaryPersons;
@@ -301,20 +315,16 @@ const TemporaryPersons = () => {
         <h1 className="text-2xl font-semibold text-gray-800">Personas Temporales</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchValidation
+          <SearchInput
             value={searchTerm}
-            onChange={(value) => {
-              setSearchTerm(value);
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
               // Si hay búsqueda, no cambiar página del servidor
-              if (!value) {
+              if (!e.target.value) {
                 changePage(1);
               }
             }}
             placeholder="Buscar persona temporal..."
-            maxLength={100}
-            minLength={0}
-            pattern={/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s@.\-_]+$/}
-            className="flex-1"
           />
 
           <div className="flex items-center gap-3">

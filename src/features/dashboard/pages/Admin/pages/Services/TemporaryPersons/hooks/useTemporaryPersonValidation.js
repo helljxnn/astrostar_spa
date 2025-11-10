@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import temporaryPersonsService from '../../features/dashboard/pages/Admin/pages/Services/TemporaryPersons/services/temporaryPersonsService';
+import temporaryPersonsService from '../services/temporaryPersonsService';
 
 export const useTemporaryPersonValidation = () => {
   const [validationErrors, setValidationErrors] = useState({});

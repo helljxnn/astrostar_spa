@@ -18,7 +18,7 @@ import PermissionGuard from "../../../../../../../shared/components/PermissionGu
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 // Hook personalizado para empleados
-import { useEmployees } from "../../../../../../../shared/hooks/useEmployees";
+import { useEmployees } from "./hooks/useEmployees";
 
 const Employees = () => {
   const { hasPermission } = usePermissions();
@@ -42,28 +42,6 @@ const Employees = () => {
   const [showCredentials, setShowCredentials] = useState(false);
   const [createdEmployeeData, setCreatedEmployeeData] = useState(null);
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return employees;
-
-    return employees.filter((employee) => {
-      const searchFields = [
-        employee.user?.firstName,
-        employee.user?.lastName,
-        employee.user?.email,
-        employee.user?.identification,
-
-        employee.user?.role?.name,
-      ];
-
-      return searchFields.some(
-        (field) =>
-          field &&
-          String(field).toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    });
-  }, [employees, searchTerm]);
-
   // Función para traducir estados
   const translateStatus = (status) => {
     const statusMap = {
@@ -80,6 +58,40 @@ const Employees = () => {
     };
     return statusMap[status] || status;
   };
+
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return employees;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return employees.filter((employee) => {
+      // Campos de texto general (búsqueda por contiene)
+      const textFields = [
+        employee.user?.firstName,
+        employee.user?.lastName,
+        employee.user?.email,
+        employee.user?.identification,
+        employee.user?.role?.name,
+      ];
+
+      const textMatch = textFields.some(
+        (field) =>
+          field &&
+          String(field).toLowerCase().includes(searchLower)
+      );
+
+      // Campo de estado (búsqueda exacta de palabra completa)
+      const translatedStatus = translateStatus(employee.status).toLowerCase();
+      
+      // Buscar como palabra completa para evitar que "activo" encuentre "desvinculado"
+      const statusMatch = translatedStatus === searchLower || 
+                         employee.status?.toLowerCase() === searchLower;
+
+      return textMatch || statusMatch;
+    });
+  }, [employees, searchTerm]);
+
 
   // Usar paginación del servidor cuando no hay búsqueda local
   const displayData = searchTerm ? filteredData : employees;

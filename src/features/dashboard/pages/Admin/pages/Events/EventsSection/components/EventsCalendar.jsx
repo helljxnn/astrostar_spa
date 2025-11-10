@@ -41,7 +41,12 @@ const messages = {
   showMore: (total) => `${total} eventos más`,
 };
 
-export default function EventsCalendar({ events: propEvents = [] }) {
+export default function EventsCalendar({ 
+  events: propEvents = [], 
+  referenceData = { categories: [], types: [] },
+  onCreateEvent,
+  onUpdateEvent
+}) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date()); // Fecha actual
   const [events, setEvents] = useState(propEvents);
@@ -305,7 +310,26 @@ export default function EventsCalendar({ events: propEvents = [] }) {
   };
 
   // Guardar
-  const handleSaveEvent = (newEventData) => {
+  const handleSaveEvent = async (newEventData) => {
+    try {
+      if (isNew) {
+        // Crear evento en el backend
+        await onCreateEvent(newEventData);
+      } else {
+        // Actualizar evento en el backend
+        await onUpdateEvent(newEventData.id, newEventData);
+      }
+      
+      // Cerrar el modal
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error guardando evento:', error);
+      // El error ya se muestra en el hook con showErrorAlert
+    }
+  };
+
+  // Función antigua comentada por si se necesita referencia
+  const handleSaveEventOld = (newEventData) => {
     try {
       // Crear fechas correctamente incluyendo las horas
       const createDateFromString = (dateString, timeString) => {
@@ -723,6 +747,7 @@ export default function EventsCalendar({ events: propEvents = [] }) {
             event={selectedEvent}
             isNew={isNew}
             mode={modalMode}
+            referenceData={referenceData}
             onClose={() => {
               setIsModalOpen(false);
               setModalMode("create");
