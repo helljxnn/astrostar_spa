@@ -1,6 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 import 'moment/locale/en-gb'; // Use English locale
+import 'moment/locale/es'; // Usar localización en español
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaTimes } from 'react-icons/fa';
 
@@ -19,20 +20,20 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
 
     // Format details for display
     const details = [
-        { label: "Title", value: appointmentData.title },
-        { label: "Date", value: moment(appointmentData.start).format('dddd, MMMM Do YYYY') },
-        { label: "Time", value: moment(appointmentData.start).format('h:mm a') },
-        { label: "Description / Reason", value: appointmentData.description },
-        { label: "Status", value: appointmentData.status }
+        { label: "Título", value: appointmentData.title },
+        { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') },
+        { label: "Hora", value: moment(appointmentData.start).format('h:mm a') },
+        { label: "Descripción / Razón", value: appointmentData.description },
+        { label: "Estado", value: appointmentData.status },
     ];
 
     if (appointmentData.status === 'CANCELLED') {
         details.push({
-            label: "Cancellation Reason", value: appointmentData.cancellationReason || 'Not specified'
+            label: "Razón de Cancelación", value: appointmentData.cancellationReason || 'No especificada',
         });
     } else if (appointmentData.status === 'COMPLETED') {
         details.push({
-            label: "Conclusion", value: appointmentData.conclusion || 'Not recorded'
+            label: "Conclusión", value: appointmentData.conclusion || 'No registrada',
         });
     }
 
@@ -75,7 +76,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
                         {/* Header */}
                         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
                             <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">Appointment Details</h2>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">Detalles de la Cita</h2>
                         </div>
 
                         {/* Body */}
@@ -84,7 +85,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
                                 {details.map(({ label, value }) => (
                                     <div key={label} className="py-2">
                                         <p className="text-sm font-semibold text-gray-500 mb-1">{label}</p>
-                                        <p className="text-base text-gray-800 break-words">{value || 'N/A'}</p>
+                                        <p className="text-base text-gray-800 break-words">{value || 'No especificado'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -98,13 +99,13 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
                                         onClick={handleCancelClick}
                                         className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all duration-200 font-semibold"
                                     >
-                                        <FaTimes /> Cancel Appointment
+                                        <FaTimes /> Cancelar Cita
                                     </button>
                                     <button
                                         onClick={() => onMarkAsCompleted(appointmentData)}
                                         className="flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-all duration-200 font-semibold"
                                     >
-                                        <FaCheckCircle /> Mark as Completed
+                                        <FaCheckCircle /> Marcar como Completada
                                     </button>
                                 </>
                             )}
@@ -114,7 +115,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
                                 onClick={onClose}
                                 className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium"
                             >
-                                Close
+                                Cerrar
                             </button>
                         </div>
                     </motion.div>

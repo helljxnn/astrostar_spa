@@ -1,31 +1,63 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { SiGoogleforms } from "react-icons/si";
-import { FaEye } from 'react-icons/fa';
+import { FaEye, FaTimesCircle } from 'react-icons/fa';
 import FormCreate from "./components/formCreate";
 import ViewInvoiceDetails from "./components/ViewInvoiceDetails";
-import { showSuccessAlert, showErrorAlert } from '../../../../../../../shared/utils/alerts';
+import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '../../../../../../../shared/utils/alerts';
 import ReportButton from '../../../../../../../shared/components/ReportButton';
-import Pagination from '../../../../../../../shared/components/Table/Pagination';
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import { purchaseService, providerService, sportsEquipmentService } from '../../../../../../../shared/services/purchaseService';
+import apiClient from '../../../../../../../shared/services/apiClient'; // Importamos apiClient directamente
+import Pagination from '../../../../../../../shared/components/Table/Pagination';
 
 const Purchases = () => {
   const [purchasesList, setPurchasesList] = useState([]);
   const [providers, setProviders] = useState([]);
   const [equipment, setEquipment] = useState([]);
-  
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
-  
+
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const rowsPerPage = 10;
 
+  // ==================================================
+  // Lógica de API movida directamente al componente
+  // ==================================================
+  const purchaseAPI = {
+    getAll: (params) => apiClient.get("/purchases", params),
+    getById: (id) => apiClient.get(`/purchases/${id}`),
+    create: (purchaseData) => {
+      const formData = new FormData();
+      formData.append('providerId', purchaseData.providerId);
+      formData.append('purchaseDate', purchaseData.purchaseDate);
+      if (purchaseData.deliveryDate) formData.append('deliveryDate', purchaseData.deliveryDate);
+      if (purchaseData.notes) formData.append('notes', purchaseData.notes);
+      formData.append('items', JSON.stringify(purchaseData.items));
+      if (purchaseData.images && purchaseData.images.length > 0) {
+        purchaseData.images.forEach(image => formData.append('images', image));
+      }
+      return apiClient.post("/purchases", formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    cancel: (id) => apiClient.patch(`/purchases/${id}/cancel`),
+  };
+
+  const providerAPI = {
+    getAll: (params) => apiClient.get("/providers", params),
+  };
+
+  const sportsEquipmentAPI = {
+    getAll: (params) => apiClient.get("/sports-equipment", params),
+  };
+  // ==================================================
+
   const fetchPurchases = useCallback(async (page, search) => {
     try {
-      const response = await purchaseService.getAll({ page, limit: rowsPerPage, search });
+      const response = await purchaseAPI.getAll({ page, limit: rowsPerPage, search });
       if (response.success) {
         setPurchasesList(response.data || []);
         setTotalPages(response.pagination?.pages || 1);
@@ -33,16 +65,16 @@ const Purchases = () => {
     } catch (error) {
       showErrorAlert("Could not fetch purchases.", error.message);
     }
-  }, []);
+  }, [rowsPerPage]); // Dependencia de rowsPerPage
 
   const fetchRequiredData = useCallback(async () => {
     try {
       // Fetch all providers and equipment (assuming not too many for now)
-      const providersResponse = await providerService.getAll({ limit: 1000 });
+      const providersResponse = await providerAPI.getAll({ limit: 1000 });
       if (providersResponse.success) {
         setProviders(providersResponse.data);
       }
-      const equipmentResponse = await sportsEquipmentService.getAll({ limit: 1000 });
+      const equipmentResponse = await sportsEquipmentAPI.getAll({ limit: 1000 });
       if (equipmentResponse.success) {
         setEquipment(equipmentResponse.data);
       }
@@ -61,7 +93,7 @@ const Purchases = () => {
 
   const handleCreate = async (formData) => {
     try {
-      await purchaseService.create(formData);
+      await purchaseAPI.create(formData);
       showSuccessAlert("Created!", "The new purchase has been registered successfully.");
       setIsCreateModalOpen(false);
       fetchPurchases(1, ""); // Go back to first page
@@ -70,9 +102,25 @@ const Purchases = () => {
     }
   };
 
+  const handleCancelPurchase = async (purchase) => {
+    const confirm = await showConfirmAlert(
+      '¿Anular Compra?',
+      `La compra #${purchase.purchaseNumber} será anulada y el stock de sus artículos será revertido. ¿Continuar?`
+    );
+    if (confirm.isConfirmed) {
+      try {
+        await purchaseAPI.cancel(purchase.id);
+        showSuccessAlert("Anulada", "La compra ha sido anulada correctamente.");
+        fetchPurchases(currentPage, searchTerm);
+      } catch (error) {
+        showErrorAlert("Error", error.message || "No se pudo anular la compra.");
+      }
+    }
+  };
+
   const handleViewDetails = async (id) => {
     try {
-      const response = await purchaseService.getById(id);
+      const response = await purchaseAPI.getById(id);
       if (response.success) {
         setSelectedPurchase(response.data);
         setIsViewModalOpen(true);
@@ -158,6 +206,11 @@ const Purchases = () => {
                           <button onClick={() => handleViewDetails(purchase.id)} title="View Details" className="p-2 text-purple-700 bg-purple-100 rounded-full hover:bg-purple-200 transition-colors">
                             <FaEye />
                           </button>
+                          {purchase.status !== 'Cancelled' && (
+                            <button onClick={() => handleCancelPurchase(purchase)} title="Anular Compra" className="p-2 text-red-700 bg-red-100 rounded-full hover:bg-red-200 transition-colors">
+                              <FaTimesCircle />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

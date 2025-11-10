@@ -9,6 +9,8 @@ import Swal from 'sweetalert2';
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
+import { useAuth } from "../../../../../../../shared/contexts/authContext"; // Importar el hook de autenticación
+import apiClient from "../../../../../../../shared/services/apiClient"; // 1. Importar apiClient directamente
 
 // Set moment to use English locale
 moment.locale("en");
@@ -61,14 +63,26 @@ function Appointments() {
     const [view, setView] = useState("month");
     const [date, setDate] = useState(new Date());
     const [searchTerm, setSearchTerm] = useState("");
+    const { user } = useAuth(); // Obtener el usuario autenticado
+
+    // ==================================================
+    // Lógica de API movida directamente al componente
+    // ==================================================
+    const appointmentAPI = {
+        getAll: () => apiClient.get("/appointments"),
+        create: (data) => apiClient.post("/appointments", data),
+        cancel: (id, reason) => apiClient.patch(`/appointments/${id}/cancel`, { reason }),
+    };
+    // ==================================================
 
     const fetchAppointments = useCallback(async () => {
         try {
-            const response = await appointmentService.getAppointments();
+            // 2. Usar el objeto appointmentAPI
+            const response = await appointmentAPI.getAll();
             const formattedAppointments = response.data.map(apt => ({
                 ...apt,
                 start: moment(`${moment(apt.date).format("YYYY-MM-DD")}T${apt.time}`).toDate(),
-                end: moment(`${moment(apt.date).format("YYYY-MM-DD")}T${apt.time}`).add(1, 'hours').toDate(), // Assuming 1-hour duration
+                end: moment(apt.end).toDate(),
             }));
             setAppointments(formattedAppointments);
         } catch (error) {
@@ -164,14 +178,25 @@ function Appointments() {
 
     const handleCreateSubmit = async (formValues) => {
         try {
+            // Si el usuario es un atleta, su ID se usa automáticamente
+            const athleteId = user.role.name === 'Deportista' ? user.id : formValues.athleteId;
+            if (!athleteId) {
+                showErrorAlert("Validation Error", "An athlete must be selected.");
+                return;
+            }
+
             const newAppointment = {
                 title: formValues.title,
-                date: formValues.date,
-                time: formValues.time,
+                start: moment(`${formValues.date}T${formValues.time}`).toISOString(),
+                end: moment(`${formValues.date}T${formValues.time}`).add(1, 'hour').toISOString(), // Asumiendo 1 hora de duración
                 description: formValues.description,
+                athleteId,
+                specialistId: formValues.specialistId,
+                specialtyId: formValues.specialtyId,
             };
 
-            await appointmentService.createAppointment(newAppointment);
+            // 3. Usar el objeto appointmentAPI
+            await appointmentAPI.create(newAppointment);
             showSuccessAlert("Appointment Created!", "The new appointment has been scheduled successfully.");
             fetchAppointments(); // Refetch appointments
             handleCloseCreateModal();
@@ -203,7 +228,8 @@ function Appointments() {
 
         if (reason) {
             try {
-                await appointmentService.cancelAppointment(appointmentToCancel.id, reason);
+                // 4. Usar el objeto appointmentAPI
+                await appointmentAPI.cancel(appointmentToCancel.id, reason);
                 showSuccessAlert("Appointment Cancelled!", "The appointment has been successfully cancelled.");
                 fetchAppointments(); // Refetch
                 handleCloseViewModal();
@@ -212,7 +238,7 @@ function Appointments() {
             }
         }
     };
-    
+
     // Placeholder for now, can be implemented later
     const handleMarkAsCompleted = async (appointmentToComplete) => {
         showSuccessAlert("Completed!", "Appointment marked as completed.");
@@ -301,7 +327,7 @@ function Appointments() {
                         onSelectEvent={handleSelectAppointment}
                         view={view}
                         selectable={true}
-                        onDrillDown={() => {}}
+                        onDrillDown={() => { }}
                         onSelectSlot={handleSelectSlot}
                         onView={setView}
                         toolbar={false}
@@ -314,6 +340,8 @@ function Appointments() {
                 onClose={handleCloseCreateModal}
                 onSave={handleCreateSubmit}
                 initialData={initialSlot}
+                specialtyOptions={specialtyOptions}
+                specialistOptions={specialistOptions}
                 athleteList={sampleAthletes}
             />
             <AppointmentDetails
