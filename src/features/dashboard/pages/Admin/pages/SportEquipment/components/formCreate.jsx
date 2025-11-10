@@ -50,7 +50,7 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
     const handleSubmit = () => {
         const validationErrors = validate(values);
         setErrors(validationErrors);
-        setTouched({ name: true }); // Marcar todos los campos como tocados
+        setTouched({ name: true }); // Marcar el campo como tocado
 
         // Si no hay errores, proceder a guardar
         if (Object.keys(validationErrors).length === 0) {
@@ -60,17 +60,19 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
 
     return (
         <Form isOpen={isOpen} title="Crear Nuevo Material Deportivo" submitText="Crear" onClose={onClose} onSubmit={handleSubmit} >
-            <FormField
-                label="Nombre del Material"
-                name="name" type="text"
-                placeholder="Ej: Balón de fútbol"
-                value={values.name}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                touched={touched.name}
-                error={errors.name}
-                required
-            />
+            <div className="space-y-4">
+                <FormField
+                    label="Nombre del Material"
+                    name="name" type="text"
+                    placeholder="Ej: Balón de fútbol"
+                    value={values.name}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    touched={touched.name}
+                    error={errors.name}
+                    required
+                />
+            </div>
         </Form>
     );
 };

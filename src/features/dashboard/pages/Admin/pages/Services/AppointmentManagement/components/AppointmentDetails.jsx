@@ -1,66 +1,42 @@
 import React from 'react';
 import moment from 'moment';
-import 'moment/locale/es';
+import 'moment/locale/en-gb'; // Use English locale
 import { motion, AnimatePresence } from 'framer-motion';
-import { showConfirmAlert, showSuccessAlert } from '../../../../../../../../shared/utils/alerts';
-import Swal from 'sweetalert2';
 import { FaCheckCircle, FaTimes } from 'react-icons/fa';
 
-// Estas opciones deberían idealmente venir de una fuente compartida o una API.
-// Por ahora, las mantenemos aquí para que el componente sea autónomo.
-const specialtyOptions = [
-    { value: "psicologia", label: "Psicología Deportiva" },
-    { value: "fisioterapia", label: "Fisioterapia" },
-    { value: "nutricion", label: "Nutrición" },
-    { value: "medicina", label: "Medicina Deportiva" },
-];
-
-const getSpecialtyLabel = (value) => {
-    const option = specialtyOptions.find(opt => opt.value === value);
-    return option ? option.label : 'No especificada';
-};
-
-const getAthleteName = (athleteId, athleteList) => {
-    const athlete = athleteList.find(a => a.id === athleteId);
-    return athlete ? `${athlete.nombres} ${athlete.apellidos}` : 'Desconocido';
-};
-
 /**
- * Componente para mostrar los detalles de una cita utilizando el modal genérico ViewDetails.
+ * Component to display the details of an appointment in a modal.
  *
- * @param {object} props - Propiedades del componente.
- * @param {boolean} props.isOpen - Controla si el modal está visible.
- * @param {function} props.onClose - Función para cerrar el modal.
- * @param {object} props.appointmentData - Los datos de la cita a mostrar.
- * @param {Array<object>} props.athleteList - Lista de atletas para resolver nombres.
+ * @param {object} props - Component props.
+ * @param {boolean} props.isOpen - Controls if the modal is visible.
+ * @param {function} props.onClose - Function to close the modal.
+ * @param {object} props.appointmentData - The data of the appointment to display.
+ * @param {function} props.onCancelAppointment - Function to handle appointment cancellation.
+ * @param {function} props.onMarkAsCompleted - Function to handle marking appointment as completed.
  */
-
-const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = [], onCancelAppointment, onMarkAsCompleted }) => {
+const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointment, onMarkAsCompleted }) => {
     if (!appointmentData) return null;
 
-    // Configuración de detalles
+    // Format details for display
     const details = [
-        { label: "Deportista", value: getAthleteName(appointmentData.athlete, athleteList) },
-        { label: "Especialidad", value: getSpecialtyLabel(appointmentData.specialty) },
-        { label: "Especialista", value: appointmentData.specialist },
-        { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') },
-        { label: "Hora", value: moment(appointmentData.start).format('h:mm a') },
-        { label: "Descripción / Motivo", value: appointmentData.description },
-        { label: "Estado de la cita", value: appointmentData.status === 'cancelled' ? 'Cancelada' : (appointmentData.status === 'completed' ? 'Completada' : 'Activa') }
+        { label: "Title", value: appointmentData.title },
+        { label: "Date", value: moment(appointmentData.start).format('dddd, MMMM Do YYYY') },
+        { label: "Time", value: moment(appointmentData.start).format('h:mm a') },
+        { label: "Description / Reason", value: appointmentData.description },
+        { label: "Status", value: appointmentData.status }
     ];
 
-    // Añadir condicionalmente el motivo de cancelación o la conclusión
-    if (appointmentData.status === 'cancelled') {
+    if (appointmentData.status === 'CANCELLED') {
         details.push({
-            label: "Motivo de cancelación", value: appointmentData.cancelReason || 'No especificado'
+            label: "Cancellation Reason", value: appointmentData.cancellationReason || 'Not specified'
         });
-    } else if (appointmentData.status === 'completed') {
+    } else if (appointmentData.status === 'COMPLETED') {
         details.push({
-            label: "Conclusión de la cita", value: appointmentData.conclusion || 'No registrada'
+            label: "Conclusion", value: appointmentData.conclusion || 'Not recorded'
         });
     }
 
-    // Animaciones
+    // Animation variants
     const backdropVariants = {
         hidden: { opacity: 0 },
         visible: { opacity: 1 },
@@ -71,11 +47,10 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
         exit: { scale: 0.9, opacity: 0, y: 30, transition: { duration: 0.2 } },
     };
 
-    // Lógica para cancelar cita: solo delega a onCancelAppointment
-    const handleCancelAppointment = async () => {
+    const handleCancelClick = async () => {
         if (onCancelAppointment) {
             await onCancelAppointment(appointmentData);
-            onClose();
+            // The parent component will close the modal upon success
         }
     };
 
@@ -100,7 +75,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
                         {/* Header */}
                         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
                             <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
-                            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">Detalles de la Cita</h2>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">Appointment Details</h2>
                         </div>
 
                         {/* Body */}
@@ -109,7 +84,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
                                 {details.map(({ label, value }) => (
                                     <div key={label} className="py-2">
                                         <p className="text-sm font-semibold text-gray-500 mb-1">{label}</p>
-                                        <p className="text-base text-gray-800 break-words">{value !== null && value !== undefined && value !== '' ? value : 'N/A'}</p>
+                                        <p className="text-base text-gray-800 break-words">{value || 'N/A'}</p>
                                     </div>
                                 ))}
                             </div>
@@ -117,29 +92,29 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
 
                         {/* Footer */}
                         <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-between items-center gap-4">
-                            {appointmentData.status === 'active' && (
+                            {appointmentData.status === 'SCHEDULED' && (
                                 <>
                                     <button
-                                        onClick={handleCancelAppointment}
+                                        onClick={handleCancelClick}
                                         className="flex items-center gap-2 px-6 py-3 bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all duration-200 font-semibold"
                                     >
-                                        <FaTimes /> Anular Cita
+                                        <FaTimes /> Cancel Appointment
                                     </button>
                                     <button
                                         onClick={() => onMarkAsCompleted(appointmentData)}
                                         className="flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-xl hover:bg-green-200 transition-all duration-200 font-semibold"
                                     >
-                                        <FaCheckCircle /> Marcar como Completada
+                                        <FaCheckCircle /> Mark as Completed
                                     </button>
                                 </>
                             )}
-                            <div className="flex-grow" /> {/* Empuja el botón de cerrar a la derecha si los otros no están */}
+                            <div className="flex-grow" />
                             <button
                                 type="button"
                                 onClick={onClose}
                                 className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-100 transition-all duration-200 font-medium"
                             >
-                                Cerrar
+                                Close
                             </button>
                         </div>
                     </motion.div>

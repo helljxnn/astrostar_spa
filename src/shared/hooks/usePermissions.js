@@ -1,40 +1,30 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/authContext';
-import permissionsService from '../services/permissionsService';
-import { generateAdminPermissions } from '../constants/modulePermissions';
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/authContext";
+import permissionsService from "../services/permissionsService";
 
 /**
  * Hook para gestionar permisos en componentes React
  */
 export const usePermissions = () => {
-  const { user, isAuthenticated } = useAuth();
+  // 1. Pide al contexto los valores que ya están calculados.
+  const { user, isAuthenticated, userRole, userPermissions } = useAuth();
   const [permissions, setPermissions] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Manejar diferentes estructuras de usuario
-      let userPermissions = {};
-      let userRole = user.role?.name || user.rol || user.role;
-
-      // Si es admin, dar todos los permisos usando función centralizada
-      if (userRole === 'admin' || userRole === 'Administrador') {
-        userPermissions = generateAdminPermissions();
-      } else {
-        // Para otros roles, usar los permisos del role si existen
-        userPermissions = user.role?.permissions || {};
-      }
-
-      permissionsService.setUserPermissions(user, userPermissions);
-      setPermissions(userPermissions);
-      setLoading(false);
+      // 2. Usa directamente los permisos del contexto.
+      // Esto funciona para CUALQUIER rol (admin, entrenador, etc.)
+      // porque authContext ya tiene la lógica para obtenerlos.
+      const finalPermissions = userPermissions || {};
+      // 3. Establece los permisos correctos.
+      permissionsService.setUserPermissions(user, finalPermissions);
+      setPermissions(finalPermissions);
     } else {
       // Limpiar permisos si no está autenticado
       permissionsService.clearPermissions();
       setPermissions(null);
-      setLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, userRole, userPermissions]); // 4. Reacciona a cambios en los datos del contexto.
 
   /**
    * Verificar si tiene un permiso específico
@@ -80,13 +70,11 @@ export const usePermissions = () => {
 
   return {
     permissions,
-    loading,
     hasPermission,
     hasModuleAccess,
     getAccessibleModules,
     getModulePermissions,
     hasAllPermissions,
     hasAnyPermission,
-    isAdmin: user?.role?.name === 'admin' || user?.rol === 'admin' || user?.role === 'admin' || user?.role?.name === 'Administrador'
   };
 };

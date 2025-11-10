@@ -51,7 +51,6 @@ const PrivateRoutes = () => {
     <Routes>
       {/* Ruta pública para acceso no autorizado */}
       <Route path="/unauthorized" element={<Unauthorized />} />
-
       {/* Todas las rutas bajo el layout /dashboard */}
       <Route path="/dashboard" element={<DashboardLayout />}>
         {/* --- Principal --- */}

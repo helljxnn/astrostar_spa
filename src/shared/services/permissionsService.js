@@ -1,5 +1,3 @@
-import { ALL_MODULES, generateAdminPermissions } from '../constants/modulePermissions';
-
 /**
  * Servicio para gestionar permisos en el frontend
  */
@@ -15,8 +13,10 @@ class PermissionsService {
    * @param {Object} permissions - Permisos del usuario
    */
   setUserPermissions(user, permissions) {
-    this.userRole = user.role?.name || user.rol || user.role;
-    this.userPermissions = permissions || user.role?.permissions || {};
+    // Hacemos la extracción del rol más segura para evitar errores.
+    this.userRole = user?.role?.name || user?.rol || user?.role || null;
+    // Asignamos los permisos que ya vienen procesados desde el hook.
+    this.userPermissions = permissions || {};
   }
 
   /**
@@ -27,15 +27,18 @@ class PermissionsService {
    */
   hasPermission(module, action) {
     // Si es admin, permitir todo
-    if (this.userRole === 'admin') {
+    if (this.userRole === "Administrador" || this.userRole === "Admin") {
       return true;
     }
 
+    // 1. CORRECCIÓN: Si los permisos no han cargado, retorna false inmediatamente.
+    // Y usamos la sintaxis de corchetes `[module]` para acceder a la propiedad dinámicamente.
     if (!this.userPermissions || !this.userPermissions[module]) {
       return false;
     }
 
-    return Boolean(this.userPermissions[module][action]);
+    // 2. CORRECCIÓN: Usamos .includes() porque tus permisos son un array de strings.
+    return this.userPermissions[module].includes(action);
   }
 
   /**
@@ -45,16 +48,17 @@ class PermissionsService {
    */
   hasModuleAccess(module) {
     // Si es admin, permitir todo
-    if (this.userRole === 'admin') {
+    if (this.userRole === "Administrador" || this.userRole === "Admin") {
       return true;
     }
 
+    // 3. CORRECCIÓN: Misma corrección de sintaxis y de tiempo que en hasPermission.
     if (!this.userPermissions || !this.userPermissions[module]) {
       return false;
     }
 
-    // Verificar si tiene al menos un permiso en el módulo
-    return Object.values(this.userPermissions[module]).some(Boolean);
+    // 4. CORRECCIÓN: Verificamos si el array de permisos para el módulo tiene al menos un elemento.
+    return this.userPermissions[module].length > 0;
   }
 
   /**
@@ -62,7 +66,7 @@ class PermissionsService {
    * @returns {Array} Array de módulos
    */
   getAccessibleModules() {
-    if (this.userRole === 'admin') {
+    if (this.userRole === "Administrador" || this.userRole === "Admin") {
       return ALL_MODULES;
     }
 
@@ -70,9 +74,11 @@ class PermissionsService {
       return [];
     }
 
-    return Object.keys(this.userPermissions).filter(module => {
-      const modulePermissions = this.userPermissions[module];
-      return Object.values(modulePermissions).some(Boolean);
+    return Object.keys(this.userPermissions).filter((module) => {
+      // 5. CORRECCIÓN: Usamos la sintaxis correcta aquí también.
+      return (
+        this.userPermissions[module] && this.userPermissions[module].length > 0
+      );
     });
   }
 
@@ -82,14 +88,16 @@ class PermissionsService {
    * @returns {Object} Permisos del módulo
    */
   getModulePermissions(module) {
-    if (this.userRole === 'admin') {
+    if (this.userRole === "Admin" || this.userRole === "Administrador") {
       const adminPerms = generateAdminPermissions();
-      return adminPerms[module] || {
-        'Ver': true,
-        'Crear': true,
-        'Editar': true,
-        'Eliminar': true
-      };
+      return (
+        adminPerms[module] || {
+          Ver: true,
+          Crear: true,
+          Editar: true,
+          Eliminar: true,
+        }
+      );
     }
 
     return this.userPermissions?.[module] || {};
@@ -101,7 +109,7 @@ class PermissionsService {
    * @returns {boolean} True si tiene todos los permisos
    */
   hasAllPermissions(permissionChecks) {
-    return permissionChecks.every(({ module, action }) => 
+    return permissionChecks.every(({ module, action }) =>
       this.hasPermission(module, action)
     );
   }
@@ -112,7 +120,7 @@ class PermissionsService {
    * @returns {boolean} True si tiene al menos uno de los permisos
    */
   hasAnyPermission(permissionChecks) {
-    return permissionChecks.some(({ module, action }) => 
+    return permissionChecks.some(({ module, action }) =>
       this.hasPermission(module, action)
     );
   }
@@ -133,7 +141,7 @@ class PermissionsService {
     return {
       userRole: this.userRole,
       userPermissions: this.userPermissions,
-      accessibleModules: this.getAccessibleModules()
+      accessibleModules: this.getAccessibleModules(),
     };
   }
 }

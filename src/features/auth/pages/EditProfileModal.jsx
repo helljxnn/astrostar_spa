@@ -1,19 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom"; // 1. Importar useNavigate
 import { FaTimes, FaCamera } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
 import { useFormUserValidation, userValidationRules } from "../../dashboard/pages/Admin/pages/Users/hooks/useFormUserValidation";
+import apiClient from "../../../shared/services/apiClient";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../shared/utils/alerts";
-import ChangePasswordModal from "./ChangePasswordModal";
-
-const documentTypes = [
-    { value: "CC", label: "Cédula de ciudadanía" },
-    { value: "TI", label: "Tarjeta de identidad" },
-    { value: "CE", label: "Cédula de extranjería" },
-    { value: "PAS", label: "Pasaporte" },
-];
-
-const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
+import { useAuth } from "../../../shared/contexts/authContext"; // Importamos el hook de autenticación
+const EditProfileModal = ({ isOpen, onClose, onSave }) => {
     const {
         values,
         errors,
@@ -24,36 +18,69 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
         resetForm,
         setValues,
     } = useFormUserValidation(
-        {
-            nombre: "",
-            apellido: "",
-            tipoDocumento: "",
-            identificacion: "",
-            rol: "",
-            correo: "",
-            telefono: "",
-            estado: "",
+        { // Campos alineados con el backend
+            firstName: "",
+            middleName: "",
+            lastName: "",
+            secondLastName: "",
+            email: "",
+            phoneNumber: "",
+            address: "",
+            birthDate: "",
+            identification: "",
+            documentType: "",
+            age: "",
+            rol: "", // Se mantiene para evitar errores, pero no se envía
+            estado: "", // Se mantiene para evitar errores, pero no se envía
         },
         userValidationRules
     );
 
+    const { user } = useAuth(); // Obtenemos el usuario directamente del contexto
+    const [documentTypes, setDocumentTypes] = useState([]);
     const [avatarPreview, setAvatarPreview] = useState(null);
-    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
     const fileInputRef = useRef(null);
+    const navigate = useNavigate(); // 2. Instanciar useNavigate
 
     useEffect(() => {
+        // Ahora el efecto depende del 'user' del contexto y de 'isOpen'
+        // Se ejecutará cada vez que el modal se abra o los datos del usuario cambien.
         if (isOpen && user) {
+            const fetchDocumentTypes = async () => {
+                try {
+                    const response = await apiClient.get('/auth/documentType');
+                    if (response.success && Array.isArray(response.data)) {
+                        const formattedTypes = response.data.map(doc => ({
+                            value: doc.id, // Asumiendo que el backend devuelve 'id'
+                            label: doc.name, // Asumiendo que el backend devuelve 'name'
+                        }));
+                        setDocumentTypes(formattedTypes);
+                    }
+                } catch (error) {
+                    console.error("Error al cargar los tipos de documento:", error);
+                    showErrorAlert("Error", "No se pudieron cargar los tipos de documento.");
+                }
+            };
+
+            fetchDocumentTypes();
+
+            // Mapeo de los datos del usuario a los campos del formulario
             setValues({
-                nombre: user.nombre || "",
-                apellido: user.apellido || "",
-                tipoDocumento: user.tipoDocumento || "",
-                identificacion: user.identificacion || "",
-                rol: user.rol || "",
-                correo: user.correo || "",
-                telefono: user.telefono || "",
-                estado: user.estado || "Activo", // El estado del perfil propio suele ser Activo
+                firstName: user?.firstName || "",
+                middleName: user?.middleName || "",
+                lastName: user?.lastName || "",
+                secondLastName: user?.secondLastName || "",
+                email: user?.email || "",
+                phoneNumber: user?.phoneNumber || "",
+                address: user?.address || "",
+                birthDate: user?.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
+                identification: user?.identification || "",
+                documentType: user?.documentType?.id || "",
+                age: user?.age || "",
+                rol: user?.role?.name || "",
+                estado: user?.status || "Activo",
             });
-            setAvatarPreview(user.avatar || null);
+            setAvatarPreview(user?.avatar || null);
         }
     }, [isOpen, user, setValues]);
 
@@ -70,8 +97,9 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
         }
     };
 
-    const handleOpenChangePasswordModal = () => {
-        setIsChangePasswordModalOpen(true);
+    const handleRequestPasswordChange = () => {
+        onClose(); // Cerramos el modal actual
+        navigate('/forgot-password'); // 3. Redirigimos al usuario
     };
 
     const handleClose = () => {
@@ -94,16 +122,23 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 
         if (confirmResult.isConfirmed) {
             try {
-                // Excluimos 'rol' y 'estado' de los datos a guardar, ya que no deberían ser editables por el usuario.
-                const { rol, estado, ...dataToSave } = values;
-                // Si hay una nueva vista previa que no es la original, la guardamos.
-                // En una app real, aquí subirías la imagen y obtendrías una URL.
-                // Para esta simulación, guardamos la URL en base64.
+                // Excluimos campos que el usuario no debería poder editar directamente.
+                const { rol, estado, age, ...dataToSave } = values;
+
+                // Lógica para el avatar (simulada, adaptar a tu backend de subida de archivos)
                 if (avatarPreview && avatarPreview !== user.avatar) {
                     dataToSave.avatar = avatarPreview;
                 }
-                await onSave({ ...user, ...dataToSave });
-                showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
+
+                // Llamada a la API para actualizar el perfil
+                const response = await apiClient.put(`/auth/updateProfile/${user.id}`, dataToSave);
+
+                if (response.success) {
+                    showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
+                    if (onSave) onSave({ ...user, ...dataToSave }); // Opcional: notificar al componente padre
+                } else {
+                    showErrorAlert("Error", response.message || "No se pudo actualizar tu perfil.");
+                }
                 handleClose();
             } catch (error) {
                 console.error("Error al actualizar el perfil:", error);
@@ -146,7 +181,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                     <div className="flex flex-col items-center mb-8">
                         <div className="relative">
                             <img
-                                src={avatarPreview || `https://ui-avatars.com/api/?name=${user?.nombre?.[0] || 'U'}&background=random&size=128`}
+                                src={avatarPreview || `https://ui-avatars.com/api/?name=${user?.firstName?.[0] || 'U'}&background=random&size=128`}
                                 alt="Avatar"
                                 className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                             />
@@ -171,86 +206,107 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                             label="Nombre"
-                            name="nombre"
+                            name="firstName"
                             type="text"
                             placeholder="Tu nombre"
-                            value={values.nombre}
+                            value={values.firstName}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.nombre}
-                            touched={touched.nombre}
+                            error={errors.firstName}
+                            touched={touched.firstName}
                             required
                         />
                         <FormField
-                            label="Apellido"
-                            name="apellido"
+                            label="Segundo Nombre"
+                            name="middleName"
                             type="text"
-                            placeholder="Tu apellido"
-                            value={values.apellido}
+                            placeholder="Tu segundo nombre (opcional)"
+                            value={values.middleName}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.apellido}
-                            touched={touched.apellido}
+                            error={errors.middleName}
+                            touched={touched.middleName}
+                        />
+                        <FormField
+                            label="Primer Apellido"
+                            name="lastName"
+                            type="text"
+                            placeholder="Tu apellido"
+                            value={values.lastName}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.lastName}
+                            touched={touched.lastName}
                             required
+                        />
+                        <FormField
+                            label="Segundo Apellido"
+                            name="secondLastName"
+                            type="text"
+                            placeholder="Tu segundo apellido (opcional)"
+                            value={values.secondLastName}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.secondLastName}
+                            touched={touched.secondLastName}
                         />
                         <FormField
                             label="Tipo de documento"
-                            name="tipoDocumento"
+                            name="documentType"
                             type="select"
                             options={documentTypes}
-                            value={values.tipoDocumento}
+                            value={values.documentType}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.tipoDocumento}
-                            touched={touched.tipoDocumento}
+                            error={errors.documentType}
+                            touched={touched.documentType}
                             required
                         />
                         <FormField
                             label="Número de documento"
-                            name="identificacion"
+                            name="identification"
                             type="text"
                             placeholder="Tu número de documento"
-                            value={values.identificacion}
+                            value={values.identification}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.identificacion}
-                            touched={touched.identificacion}
+                            error={errors.identification}
+                            touched={touched.identification}
                             required
                         />
                         <FormField
                             label="Correo Electrónico"
-                            name="correo"
+                            name="email"
                             type="email"
                             placeholder="tu.correo@ejemplo.com"
-                            value={values.correo}
+                            value={values.email}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.correo}
-                            touched={touched.correo}
+                            error={errors.email}
+                            touched={touched.email}
                             required
                         />
                         <FormField
                             label="Número Telefónico"
-                            name="telefono"
+                            name="phoneNumber"
                             type="text"
                             placeholder="Tu número de teléfono"
-                            value={values.telefono}
+                            value={values.phoneNumber}
                             onChange={handleChange}
                             onBlur={handleBlur}
-                            error={errors.telefono}
-                            touched={touched.telefono}
+                            error={errors.phoneNumber}
+                            touched={touched.phoneNumber}
                             required
                         />
                     </div>
 
                     <div className="pt-4">
                         <button
-                            onClick={handleOpenChangePasswordModal}
+                            onClick={handleRequestPasswordChange} // 4. Usar el nuevo manejador
                             className="w-full h-10 rounded-xl bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
                         >
                             Cambiar Contraseña</button>
                     </div>
-
                 </div>
 
                 {/* Footer */}
@@ -273,12 +329,6 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                         Guardar Cambios
                     </motion.button>
                 </div>
-                <ChangePasswordModal
-                    isOpen={isChangePasswordModalOpen}
-                    onClose={() => setIsChangePasswordModalOpen(false)}
-                    email={values.correo} // Pasamos el correo del usuario al modal
-                />
-
             </motion.div>
         </motion.div>
     );

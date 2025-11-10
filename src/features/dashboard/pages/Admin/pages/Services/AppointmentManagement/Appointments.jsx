@@ -1,41 +1,26 @@
-import "react-big-calendar/lib/css/react-big-calendar.css"; // Asegura que los estilos del calendario se carguen
-import "./styles/AppointmentCalendar.css"; // Importar estilos personalizados para el hover
-import React, { useState, useMemo, useCallback } from "react";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+import "./styles/AppointmentCalendar.css";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
-import "moment/locale/es"; // Importar localización en español para moment
 import { SiGoogleforms } from "react-icons/si";
-import { showSuccessAlert, } from "../../../../../../../shared/utils/alerts";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import Swal from 'sweetalert2';
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
-// Configurar moment para que use español globalmente en este componente
-moment.locale("es");
 
-// El localizer le dice a react-big-calendar cómo manejar las fechas
+// Set moment to use English locale
+moment.locale("en");
+
 const localizer = momentLocalizer(moment);
 
-// Datos de ejemplo para las citas. En una app real, esto vendría de una API.
-const sampleAppointments = [
-    {
-        id: 1,
-        title: "Cita con Psicología - Deportista X",
-        start: new Date(new Date().setDate(new Date().getDate() + 1)), // Mañana
-        end: new Date(new Date().setDate(new Date().getDate() + 1)),
-        specialty: "psicologia",
-        specialist: "Dra. Ana Pérez",
-        description: "Revisión de avance con el deportista X.",
-        status: 'active', // Estado inicial para que los botones se muestren
-    },
-];
-
-// Datos de ejemplo para los formularios
+// Mock data - will be replaced by API calls
 const specialtyOptions = [
-    { value: "psicologia", label: "Psicología Deportiva" },
-    { value: "fisioterapia", label: "Fisioterapia" },
-    { value: "nutricion", label: "Nutrición" },
-    { value: "medicina", label: "Medicina Deportiva" },
+    { value: "psicologia", label: "Sport Psychology" },
+    { value: "fisioterapia", label: "Physiotherapy" },
+    { value: "nutricion", label: "Nutrition" },
+    { value: "medicina", label: "Sport Medicine" },
 ];
 
 const specialistOptions = {
@@ -54,41 +39,50 @@ const specialistOptions = {
     ],
 };
 
-// Datos de ejemplo para los deportistas (en una app real, esto vendría de una API)
 const sampleAthletes = [
-    { id: 101, nombres: "Juan", apellidos: "Pérez" },
-    { id: 102, nombres: "María", apellidos: "Gómez" },
-    { id: 103, nombres: "Carlos", apellidos: "Rodríguez" },
+    { id: 101, nombres: "John", apellidos: "Doe" },
+    { id: 102, nombres: "Jane", apellidos: "Smith" },
+    { id: 103, nombres: "Peter", apellidos: "Jones" },
 ];
 
-// Opciones para el filtro de especialistas, aplanando la estructura.
-const allSpecialistOptions = Object.values(specialistOptions).flat();
-
-// Paleta de colores para cada especialidad
 const specialtyColors = {
-    psicologia: '#EAB308',   // Amarillo
-    fisioterapia: '#22C55E', // Verde
-    nutricion: '#3B82F6',    // Azul
-    medicina: '#EF4444',     // Rojo
+    psicologia: '#EAB308',
+    fisioterapia: '#22C55E',
+    nutricion: '#3B82F6',
+    medicina: '#EF4444',
 };
 
 function Appointments() {
-    const [appointments, setAppointments] = useState(sampleAppointments);
+    const [appointments, setAppointments] = useState([]);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const [initialSlot, setInitialSlot] = useState(null); // Para guardar la fecha del slot seleccionado
-    const [view, setView] = useState("month"); // Estado para controlar la vista actual del calendario
-    const [date, setDate] = useState(new Date()); // Estado para la fecha actual del calendario
-    const [searchTerm, setSearchTerm] = useState(""); // Estado para el término de búsqueda
+    const [initialSlot, setInitialSlot] = useState(null);
+    const [view, setView] = useState("month");
+    const [date, setDate] = useState(new Date());
+    const [searchTerm, setSearchTerm] = useState("");
 
+    const fetchAppointments = useCallback(async () => {
+        try {
+            const response = await appointmentService.getAppointments();
+            const formattedAppointments = response.data.map(apt => ({
+                ...apt,
+                start: moment(`${moment(apt.date).format("YYYY-MM-DD")}T${apt.time}`).toDate(),
+                end: moment(`${moment(apt.date).format("YYYY-MM-DD")}T${apt.time}`).add(1, 'hours').toDate(), // Assuming 1-hour duration
+            }));
+            setAppointments(formattedAppointments);
+        } catch (error) {
+            showErrorAlert("Error fetching appointments.");
+        }
+    }, []);
 
-    // Función para dar estilo a las citas del calendario
+    useEffect(() => {
+        fetchAppointments();
+    }, [fetchAppointments]);
+
     const appointmentPropGetter = (event) => {
-        // Obtiene el color de la especialidad o un color por defecto si no se encuentra.
-        const backgroundColor = specialtyColors[event.specialty] || '#6D28D9'; // Morado por defecto
-        let className = 'rbc-event-custom'; // Clase base para estilos comunes
-
+        const backgroundColor = specialtyColors[event.specialty] || '#6D28D9';
+        let className = 'rbc-event-custom';
         const style = {
             backgroundColor,
             borderRadius: "5px",
@@ -97,42 +91,39 @@ function Appointments() {
             display: "block",
         };
 
-        if (event.status === 'cancelled') {
+        if (event.status === 'CANCELLED') {
             className += ' event-cancelled';
         }
-        if (event.status === 'completed') {
+        if (event.status === 'COMPLETED') {
             className += ' event-completed';
         }
         return { className, style };
     };
 
-    // Mensajes en español para el calendario
     const messages = {
-        allDay: 'Todo el día',
-        previous: 'Anterior',
-        next: 'Siguiente',
-        today: 'Hoy',
-        month: 'Mes',
-        week: 'Semana',
-        day: 'Día',
+        allDay: 'All Day',
+        previous: 'Previous',
+        next: 'Next',
+        today: 'Today',
+        month: 'Month',
+        week: 'Week',
+        day: 'Day',
         agenda: 'Agenda',
-        date: 'Fecha',
-        time: 'Hora',
-        event: 'Cita',
-        noEventsInRange: 'No hay citas en este rango.',
-        showMore: total => `+ Ver más (${total})`
+        date: 'Date',
+        time: 'Time',
+        event: 'Appointment',
+        noEventsInRange: 'There are no appointments in this range.',
+        showMore: total => `+ See more (${total})`
     };
 
-    // Funciones para la navegación del calendario
     const handleNavigate = (action) => {
         if (action === 'TODAY') setDate(new Date());
         else setDate(moment(date).add(action === 'PREV' ? -1 : 1, view).toDate());
     };
 
-    // Obtiene la etiqueta de la especialidad a partir de su valor
     const getSpecialtyLabel = (value) => {
         const option = specialtyOptions.find(opt => opt.value === value);
-        return option ? option.label : 'No especificada';
+        return option ? option.label : 'Not specified';
     };
 
     const filteredAppointments = useMemo(() => {
@@ -140,129 +131,104 @@ function Appointments() {
         if (!term) return appointments;
 
         return appointments.filter(appointment => {
-            const specialtyLabel = getSpecialtyLabel(appointment.specialty).toLowerCase();
-            const specialist = (appointment.specialist || '').toLowerCase();
             const title = (appointment.title || '').toLowerCase();
             const description = (appointment.description || '').toLowerCase();
-            const athlete = sampleAthletes.find(a => a.id === appointment.athlete);
-            const athleteName = athlete ? `${athlete.nombres} ${athlete.apellidos}`.toLowerCase() : '';
-
-            return specialtyLabel.includes(term) ||
-                specialist.includes(term) ||
-                title.includes(term) ||
-                description.includes(term) ||
-                athleteName.includes(term);
+            return title.includes(term) || description.includes(term);
         });
     }, [appointments, searchTerm]);
 
     const handleSelectAppointment = (appointment) => {
-        // Solo mostramos el modal de detalles para citas que tienen detalles.
-        if (appointment.specialty) {
-            setSelectedAppointment(appointment);
-            setIsViewModalOpen(true);
-        }
+        setSelectedAppointment(appointment);
+        setIsViewModalOpen(true);
     };
 
     const handleCloseViewModal = () => {
         setIsViewModalOpen(false);
-        // Pequeña demora para que la animación de salida se complete antes de limpiar los datos
-        setTimeout(() => {
-            setSelectedAppointment(null);
-        }, 300);
+        setTimeout(() => setSelectedAppointment(null), 300);
     };
 
     const handleOpenCreateModal = () => {
-        setInitialSlot(null); // Limpiamos cualquier fecha previa al abrir manualmente
+        setInitialSlot(null);
         setIsCreateModalOpen(true);
     };
 
     const handleCloseCreateModal = () => {
         setIsCreateModalOpen(false);
-        setInitialSlot(null); // Limpiamos la fecha al cerrar
+        setInitialSlot(null);
     };
 
     const handleSelectSlot = useCallback((slotInfo) => {
-        // Guardamos la información del slot (que incluye la fecha de inicio)
-        // y abrimos el modal de creación.
         setInitialSlot(slotInfo);
         setIsCreateModalOpen(true);
     }, []);
 
-    const handleCreateSubmit = (formValues) => {
-        // Combinar fecha y hora para crear objetos Date
-        const startDateTime = new Date(`${formValues.date}T${formValues.time}`);
-        const selectedAthlete = sampleAthletes.find(a => a.id === parseInt(formValues.athlete));
-        const athleteName = selectedAthlete ? `${selectedAthlete.nombres} ${selectedAthlete.apellidos}` : 'Deportista Desconocido';
+    const handleCreateSubmit = async (formValues) => {
+        try {
+            const newAppointment = {
+                title: formValues.title,
+                date: formValues.date,
+                time: formValues.time,
+                description: formValues.description,
+            };
 
-        // Suponemos que la cita dura 1 hora
-        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-
-        const newAppointment = {
-            id: Date.now(),
-            title: `Cita: ${athleteName} - ${formValues.specialist}`,
-            start: startDateTime,
-            end: endDateTime,
-            allDay: false,
-            description: formValues.description,
-            specialty: formValues.specialty, // Asegurarse de que el ID del deportista sea un número
-            specialist: formValues.specialist,
-            athlete: formValues.athlete,
-            status: 'active', // Por defecto activa
-            cancelReason: '',
-        };
-
-        setAppointments(prevAppointments => [...prevAppointments, newAppointment]);
-        showSuccessAlert("¡Cita Creada!", "La nueva cita ha sido agendada correctamente.");
-        // El modal se cierra desde el propio AppointmentForm
+            await appointmentService.createAppointment(newAppointment);
+            showSuccessAlert("Appointment Created!", "The new appointment has been scheduled successfully.");
+            fetchAppointments(); // Refetch appointments
+            handleCloseCreateModal();
+        } catch (error) {
+            showErrorAlert("Error creating appointment.");
+        }
     };
 
-    const handleMarkAsCompleted = async (appointmentToComplete) => {
-        const { value: conclusion } = await Swal.fire({
-            title: 'Conclusión de la Cita',
+    const handleCancelAppointment = async (appointmentToCancel) => {
+        const { value: reason } = await Swal.fire({
+            title: 'Reason for cancellation',
             input: 'textarea',
-            inputLabel: 'Por favor, registre la conclusión o los resultados de la cita',
-            inputPlaceholder: 'Escribe la conclusión aquí...',
-            inputAttributes: {
-                'aria-label': 'Conclusión de la cita'
-            },
+            inputLabel: 'Please state the reason for cancellation',
+            inputPlaceholder: 'Enter the reason here...',
             showCancelButton: true,
-            confirmButtonText: 'Guardar y Completar',
-            cancelButtonText: 'Volver',
+            confirmButtonText: 'Cancel Appointment',
+            cancelButtonText: 'Back',
             customClass: {
-                confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2',
-                cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg',
+                confirmButton: 'bg-red-600 text-white font-bold px-6 py-2 rounded-lg mr-2',
+                cancelButton: 'bg-gray-400 text-white font-bold px-6 py-2 rounded-lg',
             },
             buttonsStyling: false,
             inputValidator: (value) => {
                 if (!value) {
-                    return 'Debes ingresar una conclusión para completar la cita.';
+                    return 'You must enter a reason.';
                 }
             }
         });
 
-        if (conclusion) {
-            setAppointments(prev =>
-                prev.map(a =>
-                    a.id === appointmentToComplete.id ? { ...a, status: 'completed', conclusion: conclusion } : a
-                )
-            );
-            showSuccessAlert("¡Cita Completada!", "La cita ha sido marcada como completada y se ha guardado la conclusión.");
-            handleCloseViewModal(); // Cierra el modal de detalles después de la acción
+        if (reason) {
+            try {
+                await appointmentService.cancelAppointment(appointmentToCancel.id, reason);
+                showSuccessAlert("Appointment Cancelled!", "The appointment has been successfully cancelled.");
+                fetchAppointments(); // Refetch
+                handleCloseViewModal();
+            } catch (error) {
+                showErrorAlert(error.message || "Error cancelling appointment.");
+            }
         }
+    };
+    
+    // Placeholder for now, can be implemented later
+    const handleMarkAsCompleted = async (appointmentToComplete) => {
+        showSuccessAlert("Completed!", "Appointment marked as completed.");
+        handleCloseViewModal();
     };
 
     return (
         <div className="w-full h-auto grid grid-rows-[auto_1fr] relative p-4">
-            {/* Cabecera */}
             <div id="header" className="w-full h-auto p-4 flex justify-between items-center">
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-800">Gestión de Citas</h1>
+                    <h1 className="text-4xl font-bold text-gray-800">Appointment Management</h1>
                     <p className="text-gray-500 mt-2">
-                        Visualiza, crea y gestiona las citas
+                        Visualize, create, and manage appointments.
                     </p>
                 </div>
                 <div className="flex items-center gap-4">
-                    {/* Controles de Navegación del Calendario */}
                     <div className="hidden sm:flex items-center justify-center bg-gray-100 rounded-lg p-1 border border-gray-200">
                         <button
                             onClick={() => handleNavigate('PREV')}
@@ -270,16 +236,14 @@ function Appointments() {
                         >
                             &lt;
                         </button>
-
                         <button
                             onClick={() => handleNavigate('TODAY')}
                             className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
                         >
-                            Hoy
+                            Today
                         </button>
-                        {/* Texto del Mes y Año */}
                         <span className="px-4 py-2 text-base font-semibold text-gray-700 w-40 text-center">
-                            {moment(date).format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase())}
+                            {moment(date).format('MMMM YYYY')}
                         </span>
                         <button
                             onClick={() => handleNavigate('NEXT')}
@@ -288,45 +252,41 @@ function Appointments() {
                             &gt;
                         </button>
                     </div>
-
-                    {/* Grupo de botones para las vistas del calendario */}
                     <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
                         <button
                             onClick={() => setView('month')}
                             className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'month' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
                         >
-                            Mes
+                            Month
                         </button>
                         <button
                             onClick={() => setView('week')}
                             className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'week' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
                         >
-                            Semana
+                            Week
                         </button>
                         <button
                             onClick={() => setView('day')}
                             className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'day' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
                         >
-                            Día
+                            Day
                         </button>
                     </div>
                     <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
-                        Crear Cita <SiGoogleforms size={20} />
+                        Create Appointment <SiGoogleforms size={20} />
                     </button>
                 </div>
             </div>
 
-            {/* Cuerpo con el Calendario */}
             <div id="body" className="w-full h-full p-4 bg-white rounded-2xl shadow-lg">
-                {/* Buscador reubicado */}
                 <div className="w-full flex justify-end mb-4">
                     <SearchInput
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar..."
+                        placeholder="Search..."
                     />
                 </div>
-                <div className="h-[50vh]"> {/* Altura flexible para que ocupe el espacio disponible */}
+                <div className="h-[50vh]">
                     <Calendar
                         localizer={localizer}
                         events={filteredAppointments}
@@ -336,26 +296,25 @@ function Appointments() {
                         eventPropGetter={appointmentPropGetter}
                         messages={messages}
                         views={['month', 'week', 'day', 'agenda']}
-                        date={date} // Controla la fecha mostrada
-                        onNavigate={setDate} // Actualiza la fecha al navegar internamente
+                        date={date}
+                        onNavigate={setDate}
                         onSelectEvent={handleSelectAppointment}
                         view={view}
-                        selectable={true} // Hacemos el calendario seleccionable
-                        onDrillDown={() => { }} // Evita el comportamiento por defecto de navegar al día
-                        onSelectSlot={handleSelectSlot} // Manejador para cuando se selecciona un slot
+                        selectable={true}
+                        onDrillDown={() => {}}
+                        onSelectSlot={handleSelectSlot}
                         onView={setView}
-                        toolbar={false} // Desactivamos la barra de herramientas interna
+                        toolbar={false}
                     />
                 </div>
             </div>
 
-            {/* Modal para Crear Cita */}
             <AppointmentForm
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateModal}
                 onSave={handleCreateSubmit}
-                initialData={initialSlot} // Pasamos la fecha seleccionada al formulario
-                athleteList={sampleAthletes} // Pasar la lista de deportistas
+                initialData={initialSlot}
+                athleteList={sampleAthletes}
             />
             <AppointmentDetails
                 isOpen={isViewModalOpen}
@@ -363,39 +322,10 @@ function Appointments() {
                 appointmentData={selectedAppointment}
                 athleteList={sampleAthletes}
                 onMarkAsCompleted={handleMarkAsCompleted}
-                onCancelAppointment={async (appointment) => {
-                    // Solo pedir motivo de cancelación
-                    const { value: reason } = await Swal.fire({
-                        title: 'Motivo de cancelación',
-                        input: 'textarea',
-                        inputLabel: 'Por favor, indique el motivo de la cancelación',
-                        inputPlaceholder: 'Escribe el motivo aquí...',
-                        inputAttributes: {
-                            'aria-label': 'Motivo de cancelación'
-                        },
-                        showCancelButton: true,
-                        confirmButtonText: 'Cancelar cita',
-                        cancelButtonText: 'Volver',
-                        customClass: {
-                            confirmButton: 'bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2',
-                            cancelButton: 'bg-primary-blue text-white font-bold px-6 py-2 rounded-lg',
-                        },
-                        buttonsStyling: false,
-                        inputValidator: (value) => {
-                            if (!value) {
-                                return 'Debes ingresar un motivo';
-                            }
-                        }
-                    });
-                    if (reason) {
-                        setAppointments(prev => prev.map(a => a.id === appointment.id ? { ...a, status: 'cancelled', cancelReason: reason } : a));
-                    }
-                }}
+                onCancelAppointment={handleCancelAppointment}
             />
         </div>
     );
 }
-
-
 
 export default Appointments;

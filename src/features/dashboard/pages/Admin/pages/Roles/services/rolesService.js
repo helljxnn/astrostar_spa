@@ -1,5 +1,5 @@
 
-import apiClient from '../../../../../../../shared/services/apiClient';
+import apiClient from '@shared/services/apiClient';
 
 class RolesService {
   constructor() {

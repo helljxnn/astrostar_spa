@@ -17,21 +17,16 @@ const PrivateRoute = ({
 }) => {
   // Usamos useAuth para la autenticación básica y usePermissions para la lógica de permisos.
   const { isAuthenticated, userRole } = useAuth();
-  const { isAdmin, hasPermission, hasModuleAccess } = usePermissions();
+  const { hasPermission, hasModuleAccess } = usePermissions();
 
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si no hay permisos cargados todavía (caso inicial), podríamos mostrar un loader.
-  // Por ahora, si no está autenticado, ya lo hemos redirigido.
-  // Si está autenticado pero los permisos son null, las comprobaciones de abajo fallarán y denegarán el acceso.
-  // Esto es un comportamiento seguro.
-
-
   // Si es admin, permitir acceso a todo
-  if (isAdmin) {
+  if (userRole === 'Admin' || userRole === 'Administrador') {
+    console.log("Acceso concedido: usuario administrador");
     return children ? children : <Outlet />;
   }
 

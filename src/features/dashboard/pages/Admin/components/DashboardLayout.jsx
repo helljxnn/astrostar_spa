@@ -14,7 +14,7 @@ function DashboardLayout() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isViewModalOpen, setViewModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -92,7 +92,7 @@ function DashboardLayout() {
       {/* Portal para los modales */}
       <Portal>
         <ViewProfileModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} user={user} />
-        <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} user={user} onSave={handleUpdateProfile} />
+        <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} user={user} />
       </Portal>
     </div>
   );
