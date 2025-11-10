@@ -34,7 +34,7 @@ const Users = () => {
       if (response.success) {
         const formattedUsers = response.data.map((user) => ({
           id: user.id,
-          nombre: user.firstName,
+          nombre: `${user.firstName} ${user.lastName}`,
           apellido: user.lastName,
           correo: user.email,
           identificacion: user.identification,

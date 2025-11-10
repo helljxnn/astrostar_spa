@@ -2,28 +2,17 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  FaTimes,
-  FaBuilding,
-  FaPhone,
-  FaEnvelope,
-  FaUser,
-  FaTag,
-  FaMapMarkerAlt,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaIdCard,
-} from "react-icons/fa";
 
 const ProviderViewModal = ({ isOpen, onClose, provider }) => {
   if (!isOpen || !provider) return null;
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("es-CO", {
+    if (!dateString) return "No especificado";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
       year: "numeric",
       month: "long",
-      day: "numeric",
+      day: "numeric"
     });
   };
 
@@ -39,21 +28,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
         return "text-yellow-600 font-semibold";
       default:
         return "text-gray-600 font-semibold";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "activo":
-        return <FaCheckCircle className="text-green-600" />;
-      case "inactivo":
-        return <FaExclamationTriangle className="text-red-600" />;
-      case "suspendido":
-        return <FaExclamationTriangle className="text-orange-600" />;
-      case "pendiente":
-        return <FaExclamationTriangle className="text-yellow-600" />;
-      default:
-        return <FaExclamationTriangle className="text-gray-600" />;
     }
   };
 
@@ -94,22 +68,17 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                 onClick={onClose}
                 className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
               >
-                <FaTimes size={18} />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
               <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-                Detalles del Proveedor
+                Ver Proveedor
               </h2>
-              <p className="text-center text-gray-600 mt-2">
-                Información completa de:{" "}
-                <span className="font-semibold text-primary-purple">
-                  {provider.razonSocial}
-                </span>
-              </p>
             </div>
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-3">
-              {/* Tipo de Entidad */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -122,27 +91,19 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                 <div className="p-3 bg-gradient-to-br from-primary-blue/10 to-primary-purple/10 rounded-lg border-2 border-primary-blue/30">
                   <div className="flex items-center gap-2">
                     {provider.tipoEntidad === "juridica" ? (
-                      <>
-                        <FaBuilding className="text-primary-blue" />
-                        <span className="font-semibold text-primary-blue">
-                          Persona Jurídica
-                        </span>
-                      </>
+                      <span className="font-semibold text-primary-blue">
+                        Persona Jurídica
+                      </span>
                     ) : (
-                      <>
-                        <FaUser className="text-primary-blue" />
-                        <span className="font-semibold text-primary-blue">
-                          Persona Natural
-                        </span>
-                      </>
+                      <span className="font-semibold text-primary-blue">
+                        Persona Natural
+                      </span>
                     )}
                   </div>
                 </div>
               </motion.div>
 
-              {/* Grid de campos */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Razón Social o Nombre */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -160,7 +121,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Tipo de Documento - Solo para Persona Natural */}
                 {provider.tipoEntidad === "natural" &&
                   provider.tipoDocumento && (
                     <motion.div
@@ -179,7 +139,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                     </motion.div>
                   )}
 
-                {/* NIT o Identificación */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -197,7 +156,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Contacto Principal */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -213,7 +171,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Correo Electrónico */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -229,7 +186,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Teléfono */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -245,7 +201,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Dirección */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -261,7 +216,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Ciudad */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -275,7 +229,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
 
-                {/* Estado */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -285,11 +238,12 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                     Estado
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-gray-900">{provider.estado || "N/A"}</p>
+                    <p className="text-gray-900">
+                      {provider.estado || "N/A"}
+                    </p>
                   </div>
                 </motion.div>
 
-                {/* Descripción */}
                 <motion.div
                   className="lg:col-span-3"
                   initial={{ opacity: 0, y: 10 }}
@@ -307,9 +261,8 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                 </motion.div>
               </div>
 
-              {/* Información Adicional (si existe) */}
-              {(provider.fechaRegistro ||
-                provider.servicios ||
+              {/* Información Adicional (condicional) */}
+              {(provider.servicios ||
                 provider.observaciones ||
                 provider.terminosPago ||
                 provider.documentos) && (
@@ -319,27 +272,11 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   transition={{ delay: 0.7, duration: 0.4 }}
                   className="mt-6 pt-6 border-t border-gray-200"
                 >
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <FaTag className="text-primary-purple" />
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Información Adicional
                   </h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Fecha de Registro */}
-                    {provider.fechaRegistro && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Fecha de Registro
-                        </label>
-                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-gray-900">
-                            {formatDate(provider.fechaRegistro)}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Términos de Pago */}
                     {provider.terminosPago && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -353,7 +290,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                       </div>
                     )}
 
-                    {/* Servicios */}
                     {provider.servicios && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -367,7 +303,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                       </div>
                     )}
 
-                    {/* Observaciones */}
                     {provider.observaciones && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -381,7 +316,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                       </div>
                     )}
 
-                    {/* Documentos */}
                     {provider.documentos && (
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -395,6 +329,44 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </div>
                 </motion.div>
               )}
+
+              {/* Información del Sistema*/}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="mt-6 p-4 bg-gray-50 rounded-xl"
+              >
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Información del Sistema
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Fecha de Creación:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.createdAt || provider.fechaRegistro)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Última Actualización:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.updatedAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Estado Asignado:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.statusAssignedAt || provider.updatedAt)}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
 
             {/* Footer */}
@@ -402,7 +374,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
               <div className="flex justify-center">
                 <button
                   onClick={onClose}
-                  className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:opacity-90 transition"
+                  className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors font-medium"
                 >
                   Cerrar
                 </button>
