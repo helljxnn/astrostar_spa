@@ -18,14 +18,12 @@
     useEffect(() => {
       const loadAllCategories = async () => {
         try {
-          const response = await sportsCategoriesService.getAllSportsCategories({ limit: 1000 });
+          const response = await sportsCategoriesService.getAll({ limit: 100 });
           if (response.success) {
             setAllCategories(response.data);
             setCategoriesLoaded(true);
-            console.log('📋 Loaded sports categories for fallback:', response.data.length);
           }
         } catch (error) {
-          console.error('Error loading sports categories:', error);
           setCategoriesLoaded(true); // Marcar como cargado aunque haya error
         }
       };
@@ -47,16 +45,13 @@
       }
 
       const trimmedName = nombre.trim();
-      console.log('🔍 Validating category name:', trimmedName, 'excludeId:', currentCategoryId);
 
       try {
         // Usar el endpoint específico para validación
-        const response = await sportsCategoriesService.checkCategoryNameAvailability(trimmedName, currentCategoryId);
-        console.log('📡 API Response:', response);
+        const response = await sportsCategoriesService.checkName(trimmedName, currentCategoryId);
         
         if (response.success) {
           if (response.data.available) {
-            console.log('✅ Name is available');
             setNameValidation({
               isChecking: false,
               isDuplicate: false,
@@ -65,7 +60,6 @@
               isAvailable: true
             });
           } else {
-            console.log('❌ Name is not available:', response.data.message);
             setNameValidation({
               isChecking: false,
               isDuplicate: true,
@@ -76,7 +70,6 @@
           }
         }
       } catch (error) {
-        console.error('❌ Error validating category name:', error);
         // Fallback a validación local si falla el endpoint
         if (categoriesLoaded) {
           const existingCategory = allCategories.find(category => 
@@ -85,7 +78,6 @@
           );
 
           if (existingCategory) {
-            console.log('🔄 Fallback: Name exists locally');
             setNameValidation({
               isChecking: false,
               isDuplicate: true,
@@ -94,7 +86,6 @@
               isAvailable: false
             });
           } else {
-            console.log('🔄 Fallback: Name available locally');
             setNameValidation({
               isChecking: false,
               isDuplicate: false,
@@ -136,12 +127,12 @@
     // Función para recargar categorías (útil después de crear/editar)
     const reloadCategories = async () => {
       try {
-        const response = await sportsCategoriesService.getAllSportsCategories({ limit: 1000 });
+        const response = await sportsCategoriesService.getAll({ limit: 100 });
         if (response.success) {
           setAllCategories(response.data);
         }
       } catch (error) {
-        console.error('Error reloading categories:', error);
+        // Error silencioso
       }
     };
 
