@@ -1,296 +1,259 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
 import {
   useFormSportsCategoryValidation,
   sportsCategoryValidationRules,
 } from "../hooks/useFormSportsCategoryValidation";
+import { useSportsCategoryNameValidation } from "../hooks/useSportsCategoryNameValidation";
 
-const SportsCategoryModal = ({ isOpen, onClose, onSave, category, isNew = true }) => {
-  // Estado inicial del formulario
+const SportsCategoryModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  category = null,
+  isNew = true,
+}) => {
+  /* ---------- ESTADO INICIAL ---------- */
   const initialForm = {
-    nombreCategoria: "",
+    nombre: "",
     edadMinima: "",
     edadMaxima: "",
     descripcion: "",
     archivo: null,
-    estado: "",
+    estado: "Active", // El backend requiere "Active"/"Inactive"
     publicar: false,
   };
 
   const {
     values,
     errors,
-    touched,
     handleChange,
     handleBlur,
     validateAllFields,
     touchAllFields,
     setValues,
+    setErrors,
   } = useFormSportsCategoryValidation(initialForm, sportsCategoryValidationRules);
 
-  // Prellenar solo si estamos editando
+  const [fileName, setFileName] = useState("No se ha seleccionado ningún archivo");
+
+  const { checkNameUnique } = useSportsCategoryNameValidation();
+
+  /* ---------- EFECTO: CARGA DE DATOS ---------- */
   useEffect(() => {
-    if (!isNew && category) {
-      const editForm = {
-        nombreCategoria: category.Nombre || category.nombreCategoria || "",
-        edadMinima: category.EdadMinima || category.edadMinima || "",
-        edadMaxima: category.EdadMaxima || category.edadMaxima || "",
-        descripcion: category.Descripcion || category.descripcion || "",
-        archivo: category.Archivo || category.archivo || null,
-        estado: category.Estado || category.estado || "",
-        publicar: category.Publicar || category.publicar || false,
+    if (!isOpen) return;
+
+    if (category && !isNew) {
+      const loadedValues = {
+        nombre: category.name || category.nombre || "",
+        edadMinima: String(category.minAge ?? category.edadMinima ?? ""),
+        edadMaxima: String(category.maxAge ?? category.edadMaxima ?? ""),
+        descripcion: category.description || category.descripcion || "",
+        archivo: null,
+        // Normaliza el estado al formato backend
+        estado:
+          category.status === "Inactive" || category.estado === "Inactive"
+            ? "Inactive"
+            : "Active",
+        publicar: Boolean(category.publish ?? category.publicar ?? false),
       };
-      setValues(editForm);
+
+      setValues(loadedValues);
+      setFileName(category.fileName || category.archivo || "No se ha seleccionado ningún archivo");
     } else {
-      // Resetear formulario para nuevo registro
       setValues(initialForm);
+      setFileName("No se ha seleccionado ningún archivo");
     }
   }, [category, isNew, isOpen, setValues]);
 
-  // Manejar archivo
+  /* ---------- MANEJADORES ---------- */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     handleChange("archivo", file);
+    setFileName(file ? file.name : "No se ha seleccionado ningún archivo");
   };
 
-  // Envío del formulario
-  const handleSubmit = (e) => {
-    e && e.preventDefault();
-    
-    console.log("Valores actuales del formulario:", values);
-    
-    // Marcar todos los campos como tocados y validar
+  const handleNameBlur = async () => {
+    handleBlur("nombre");
+
+    if (!values.nombre.trim()) return;
+    if (!isNew && values.nombre === (category?.name || category?.nombre)) return;
+
+    const exists = await checkNameUnique(values.nombre.trim());
+    if (exists) {
+      setErrors((prev) => ({
+        ...prev,
+        nombre: "Ya existe una categoría con este nombre",
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     touchAllFields(values);
-    
-    // Esperar un momento para que se actualice el estado de errores
-    setTimeout(() => {
-      console.log("Errores después de touchAllFields:", errors);
-      
-      // Validar todos los campos
-      const isValid = validateAllFields(values);
-      console.log("¿Es válido el formulario?", isValid);
-      console.log("Errores finales:", errors);
-      
-      if (!isValid) {
-        console.log("Formulario inválido - no se enviará");
-        return;
-      }
+    if (!validateAllFields(values)) return;
 
-      console.log("Formulario válido - enviando datos");
-      const categoryData = {
-        Nombre: values.nombreCategoria,
-        EdadMinima: parseInt(values.edadMinima),
-        EdadMaxima: parseInt(values.edadMaxima),
-        Descripcion: values.descripcion,
-        Estado: values.estado,
-        Publicar: values.publicar,
-        Archivo: values.archivo,
-        id: category?.id || Date.now(),
-      };
+    // ✅ Convertimos el estado antes de enviar (por si alguien lo cambia manualmente)
+    const estadoBack = values.estado === "Activo" ? "Active" : values.estado === "Inactivo" ? "Inactive" : values.estado;
 
-      onSave(categoryData);
-      onClose();
-    }, 100);
+    const formData = new FormData();
+    formData.append("name", values.nombre.trim());
+    formData.append("minAge", values.edadMinima);
+    formData.append("maxAge", values.edadMaxima);
+    formData.append("description", values.descripcion.trim());
+    formData.append("status", estadoBack);
+    formData.append("publish", values.publicar ? "true" : "false");
+
+    if (values.archivo instanceof File) {
+      formData.append("file", values.archivo);
+    }
+
+    onSave(formData);
   };
 
   if (!isOpen) return null;
 
+  /* ---------- RENDER ---------- */
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 px-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.3 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-4xl overflow-y-auto max-h-[90vh]"
+        className="bg-white rounded-[18px] shadow-xl p-8 w-full max-w-5xl overflow-y-auto max-h-[90vh]"
       >
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-[#9BE9FF]">
+        {/* CABECERA */}
+        <div className="flex justify-between items-center mb-7">
+          <h2 className="text-[32px] font-bold text-[#9BE9FF]">
             {isNew ? "Crear Categoría Deportiva" : "Editar Categoría Deportiva"}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold"
           >
-            ✖
+            ✕
           </button>
         </div>
 
-        {/* Body - Formulario */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Nombre categoría */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Nombre categoría <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={values.nombreCategoria}
-              onChange={(e) => handleChange("nombreCategoria", e.target.value)}
-              onBlur={() => handleBlur("nombreCategoria")}
-              placeholder="Nombre de la categoría"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9BE9FF] focus:border-transparent"
-            />
-            {touched.nombreCategoria && errors.nombreCategoria && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.nombreCategoria}</span>
-              </div>
-            )}
-          </div>
+        {/* FORMULARIO */}
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nombre */}
+            <div>
+              <label className="text-sm font-semibold">Nombre categoría *</label>
+              <input
+                type="text"
+                placeholder="Ej: Infantil A"
+                value={values.nombre}
+                onChange={(e) => handleChange("nombre", e.target.value)}
+                onBlur={handleNameBlur}
+                className={`w-full border ${errors.nombre ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+              />
+              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+            </div>
 
-          {/* Edad mínima */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Edad mínima <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={values.edadMinima}
-              onChange={(e) => handleChange("edadMinima", e.target.value)}
-              onBlur={() => handleBlur("edadMinima")}
-              placeholder="Edad mínima"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9BE9FF] focus:border-transparent"
-            />
-            {touched.edadMinima && errors.edadMinima && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.edadMinima}</span>
-              </div>
-            )}
-          </div>
+            {/* Edad mínima */}
+            <div>
+              <label className="text-sm font-semibold">Edad mínima *</label>
+              <input
+                type="number"
+                placeholder="Ej: 10"
+                value={values.edadMinima}
+                onChange={(e) => handleChange("edadMinima", e.target.value)}
+                onBlur={() => handleBlur("edadMinima")}
+                className={`w-full border ${errors.edadMinima ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+              />
+              {errors.edadMinima && <p className="text-red-500 text-xs mt-1">{errors.edadMinima}</p>}
+            </div>
 
-          {/* Edad máxima */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Edad máxima <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              value={values.edadMaxima}
-              onChange={(e) => handleChange("edadMaxima", e.target.value)}
-              onBlur={() => handleBlur("edadMaxima")}
-              placeholder="Edad máxima"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9BE9FF] focus:border-transparent"
-            />
-            {touched.edadMaxima && errors.edadMaxima && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.edadMaxima}</span>
-              </div>
-            )}
-          </div>
+            {/* Edad máxima */}
+            <div>
+              <label className="text-sm font-semibold">Edad máxima *</label>
+              <input
+                type="number"
+                placeholder="Ej: 15"
+                value={values.edadMaxima}
+                onChange={(e) => handleChange("edadMaxima", e.target.value)}
+                onBlur={() => handleBlur("edadMaxima")}
+                className={`w-full border ${errors.edadMaxima ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+              />
+              {errors.edadMaxima && <p className="text-red-500 text-xs mt-1">{errors.edadMaxima}</p>}
+            </div>
 
-          {/* Descripción */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Descripción
-            </label>
-            <textarea
-              value={values.descripcion}
-              onChange={(e) => handleChange("descripcion", e.target.value)}
-              onBlur={() => handleBlur("descripcion")}
-              placeholder="Descripción de la categoría"
-              rows="3"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9BE9FF] focus:border-transparent resize-none"
-            />
-            {touched.descripcion && errors.descripcion && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.descripcion}</span>
-              </div>
-            )}
-          </div>
+            {/* Descripción */}
+            <div>
+              <label className="text-sm font-semibold">Descripción</label>
+              <textarea
+                placeholder="Breve descripción de la categoría..."
+                value={values.descripcion}
+                onChange={(e) => handleChange("descripcion", e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 min-h-[95px] text-sm"
+              />
+            </div>
 
-          {/* Subir archivo */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Subir archivo <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              onBlur={() => handleBlur("archivo")}
-              className="block w-full text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 
-                         file:rounded-full file:border-0 
-                         file:text-sm file:font-semibold
-                         file:bg-[#9BE9FF] file:text-gray-900 
-                         hover:file:bg-[#80dfff] transition"
-            />
-            {touched.archivo && errors.archivo && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.archivo}</span>
-              </div>
-            )}
-            {values.archivo && (
-              <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-2 text-sm text-green-600"
+            {/* Archivo */}
+            <div className="flex items-center gap-3 md:col-span-1">
+              <label className="text-sm font-semibold w-full">
+                Subir archivo (PNG, JPG) *
+              </label>
+              <label className="bg-[#74D5F4] hover:bg-[#5DCFF0] px-4 py-2 text-sm rounded-lg cursor-pointer text-white whitespace-nowrap">
+                Elegir archivo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs text-gray-600">{fileName}</span>
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label className="text-sm font-semibold">Estado *</label>
+              <select
+                value={values.estado}
+                onChange={(e) => handleChange("estado", e.target.value)}
+                onBlur={() => handleBlur("estado")}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm"
               >
-                {typeof values.archivo === 'object' ? values.archivo.name : values.archivo}
-              </motion.span>
-            )}
-          </div>
-
-          {/* Estado */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium text-gray-700">
-              Estado <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={values.estado}
-              onChange={(e) => handleChange("estado", e.target.value)}
-              onBlur={() => handleBlur("estado")}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#9BE9FF] focus:border-transparent"
-            >
-              <option value="">Seleccione estado</option>
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
-            </select>
-            {touched.estado && errors.estado && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-yellow-500">⚠</span>
-                <span className="text-red-500 text-sm">{errors.estado}</span>
-              </div>
-            )}
+                <option value="Active">Activo</option>
+                <option value="Inactive">Inactivo</option>
+              </select>
+              {errors.estado && <p className="text-red-500 text-xs mt-1">{errors.estado}</p>}
+            </div>
           </div>
 
           {/* Publicar */}
-          <div className="flex items-center gap-2 col-span-2">
+          <div className="flex items-center gap-2 mt-4">
             <input
               type="checkbox"
-              name="publicar"
               checked={values.publicar}
               onChange={(e) => handleChange("publicar", e.target.checked)}
-              className="w-4 h-4 text-[#9BE9FF] focus:ring-[#9BE9FF] border-gray-300 rounded"
             />
-            <label className="text-sm font-medium text-gray-700">
-              Publicar categoría
+            <label className="text-sm text-gray-700">
+              Publicar categoría (visible en portal público)
             </label>
           </div>
-        </div>
 
-        {/* Botones */}
-        <div className="mt-8 flex justify-end gap-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            className="px-5 py-2 rounded-lg bg-[#9BE9FF] text-gray-900 font-semibold hover:bg-[#80dfff] transition"
-          >
-            {isNew ? "Crear" : "Actualizar"}
-          </button>
-        </div>
+          {/* Botones */}
+          <div className="flex justify-end gap-4 mt-10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-gray-200"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              className="px-5 py-2 rounded-xl bg-[#74D5F4] text-white font-semibold"
+            >
+              {isNew ? "Crear Categoría" : "Actualizar Categoría"}
+            </button>
+          </div>
+        </form>
       </motion.div>
     </div>
   );
