@@ -206,47 +206,27 @@ const employeesDataReal = [
   }
 ];
 
-// Datos reales de personas temporales
-const temporaryWorkersDataReal = [
+// Datos de ejemplo para personas temporales
+const temporaryPersonsDataReal = [
   {
     id: "t1",
+    tipoPersona: "Entrenador",
+    nombre: "Carlos Rojas",
+    identificacion: "CC.123456789",
+    telefono: "3001234567",
+    estado: "Activo"
+  },
+  {
+    id: "t2", 
     tipoPersona: "Deportista",
     nombre: "Jennifer Lascarro",
-    tipoDocumento: "Tarjeta de Identidad",
     identificacion: "TI.1246789334",
-    telefono: "3001234567",
-    fechaNacimiento: "2006-05-12",
-    edad: 19,
-    categoria: "Sub 17",
-    estado: "Activo",
-  },
-  {
-    id: "t2",
-    tipoPersona: "Entrenador",
-    nombre: "Ana Restrepo",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1397543865",
     telefono: "3207654321",
-    fechaNacimiento: "1992-09-10",
-    edad: 32,
-    categoria: "No aplica",
-    estado: "Activo",
-  },
-  {
-    id: "t3",
-    tipoPersona: "Entrenador",
-    nombre: "Luis Enrique",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1456789123",
-    telefono: "3109876543",
-    fechaNacimiento: "1985-03-22",
-    edad: 38,
-    categoria: "No aplica",
-    estado: "Activo",
+    estado: "Activo"
   }
 ];
 
-// FUNCIONES HELPER PARA CARGAR DATOS
+// FUNCIONES HELPER PARA CARGAR DATOS - VERSIÓN SÍNCRONA
 // ============================================
 
 /**
@@ -259,17 +239,13 @@ export const loadTrainers = () => {
     const trainers = [];
 
     // 1. DESDE EMPLEADOS (Entrenadores) - FUNDACIÓN
-    // Nota: Esta función ahora debería usar la API de empleados
-    // Por ahora mantenemos compatibilidad con localStorage como fallback
     const employeesRaw = localStorage.getItem("employees");
-    const employees = employeesRaw ? JSON.parse(employeesRaw) : [];
+    const employees = employeesRaw ? JSON.parse(employeesRaw) : employeesDataReal;
 
     const trainersFromEmployees = employees
       .filter(e => {
-        // Adaptado para la nueva estructura del backend
-        const employeeType = e.employeeType?.name || e.tipoEmpleado;
         const status = e.status || e.estado;
-        return employeeType === "Entrenador" && (status === "Active" || status === "Activo");
+        return status === "Active" || status === "Activo";
       })
       .map(e => ({
         id: e.id || e.user?.identification || e.identificacion,
@@ -286,7 +262,7 @@ export const loadTrainers = () => {
 
     // 2. DESDE PERSONAS TEMPORALES (Entrenadores) - TEMPORALES
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryPersonsDataReal;
 
     const trainersFromTemporary = temporaryPersons
       .filter(t => t.tipoPersona === "Entrenador" && t.estado === "Activo")
@@ -342,7 +318,7 @@ export const loadAthletes = () => {
 
     // 2. DESDE PERSONAS TEMPORALES (Deportistas) - TEMPORALES - SIN CATEGORÍA
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryPersonsDataReal;
     
     const athletesFromTemporary = temporaryPersons
       .filter(t => t.tipoPersona === "Deportista" && t.estado === "Activo")
@@ -372,20 +348,31 @@ export const loadAthletes = () => {
 export const loadPlayers = loadAthletes;
 
 /**
- * Agrupa datos por fuente
+ * Agrupa datos por fuente - FUNCIÓN MÁS ROBUSTA
  */
 export const groupBySource = (data) => {
+  // Validación robusta para evitar el error
+  if (!data || !Array.isArray(data)) {
+    console.warn('groupBySource: data no es un array válido', data);
+    return [];
+  }
+  
   const sourceMap = new Map();
   
   data.forEach(item => {
-    if (!sourceMap.has(item.source)) {
-      sourceMap.set(item.source, {
-        source: item.source,
-        sourceLabel: item.sourceLabel,
+    if (!item || typeof item !== 'object') return; // Saltar items inválidos
+    
+    const source = item.source || 'unknown';
+    const sourceLabel = item.sourceLabel || 'Sin fuente';
+    
+    if (!sourceMap.has(source)) {
+      sourceMap.set(source, {
+        source: source,
+        sourceLabel: sourceLabel,
         items: []
       });
     }
-    sourceMap.get(item.source).items.push(item);
+    sourceMap.get(source).items.push(item);
   });
 
   return Array.from(sourceMap.values());

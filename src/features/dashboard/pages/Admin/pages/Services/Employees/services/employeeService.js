@@ -20,7 +20,6 @@ class EmployeeService {
       const response = await apiClient.get(this.endpoint, params);
       return response;
     } catch (error) {
-      console.error('Error obteniendo empleados:', error);
       throw error;
     }
   }
@@ -35,7 +34,6 @@ class EmployeeService {
       const response = await apiClient.get(`${this.endpoint}/${id}`);
       return response;
     } catch (error) {
-      console.error('Error obteniendo empleado:', error);
       throw error;
     }
   }
@@ -50,7 +48,6 @@ class EmployeeService {
       const response = await apiClient.post(this.endpoint, employeeData);
       return response;
     } catch (error) {
-      console.error('Error creando empleado:', error);
       throw error;
     }
   }
@@ -66,7 +63,6 @@ class EmployeeService {
       const response = await apiClient.put(`${this.endpoint}/${id}`, employeeData);
       return response;
     } catch (error) {
-      console.error('Error actualizando empleado:', error);
       throw error;
     }
   }
@@ -81,7 +77,6 @@ class EmployeeService {
       const response = await apiClient.delete(`${this.endpoint}/${id}`);
       return response;
     } catch (error) {
-      console.error('Error eliminando empleado:', error);
       throw error;
     }
   }
@@ -95,7 +90,6 @@ class EmployeeService {
       const response = await apiClient.get(`${this.endpoint}/stats`);
       return response;
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
       throw error;
     }
   }
@@ -109,7 +103,6 @@ class EmployeeService {
       const response = await apiClient.get(`${this.endpoint}/reference-data`);
       return response;
     } catch (error) {
-      console.error('Error obteniendo datos de referencia:', error);
       throw error;
     }
   }
@@ -128,7 +121,6 @@ class EmployeeService {
       const response = await apiClient.get(`${this.endpoint}/check-email`, params);
       return response;
     } catch (error) {
-      console.error('Error verificando email:', error);
       throw error;
     }
   }
@@ -147,7 +139,6 @@ class EmployeeService {
       const response = await apiClient.get(`${this.endpoint}/check-identification`, params);
       return response;
     } catch (error) {
-      console.error('Error verificando identificación:', error);
       throw error;
     }
   }

@@ -10,6 +10,7 @@ import {
   useFormProviderValidation,
   providerValidationRules,
 } from "../hooks/useFormProviderValidation";
+import { useRealtimeValidation } from "../hooks/useRealtimeValidation";
 import { useDocumentTypes } from "../../../../../../../../shared/hooks/useDocumentTypes";
 
 const entityTypes = [
@@ -33,16 +34,31 @@ const ProviderModal = ({
   const isEditing = mode === "edit" || providerToEdit !== null;
   const { documentTypes, loading: documentTypesLoading, error: documentTypesError } = useDocumentTypes();
 
+  const uniqueDocumentTypes = documentTypes ? documentTypes.filter((doc, index, self) => 
+    index === self.findIndex(d => d.value === doc.value)
+  ) : [];
+
+  const {
+    availabilityErrors,
+    checkingFields,
+    setCheckingFields,
+    debouncedCheckNit,
+    debouncedCheckBusinessName,
+    resetAvailabilityErrors,
+    clearAvailabilityError
+  } = useRealtimeValidation(providerToEdit);
+
   const {
     values,
     errors,
     touched,
-    handleChange,
+    handleChange: originalHandleChange,
     handleBlur,
     validateAllFields,
     resetForm,
-    setTouched,
     setValues,
+    setTouched,
+    touchAllFields
   } = useFormProviderValidation(
     {
       tipoEntidad: "juridica",
@@ -60,13 +76,93 @@ const ProviderModal = ({
     providerValidationRules
   );
 
+  const handleChange = (name, value) => {
+    originalHandleChange(name, value);
+
+    if (name === 'nit') {
+      clearAvailabilityError('nit');
+      const cleanedValue = value.replace(/[.\-\s]/g, '');
+      if (cleanedValue.length >= 8) {
+        setCheckingFields(prev => ({ ...prev, nit: true }));
+        debouncedCheckNit(value, values.tipoEntidad);
+      } else {
+        clearAvailabilityError('nit');
+      }
+    }
+
+    if (name === 'razonSocial') {
+      clearAvailabilityError('razonSocial');
+      if (value.trim().length >= 3) {
+        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
+        debouncedCheckBusinessName(value, values.tipoEntidad);
+      } else {
+        clearAvailabilityError('razonSocial');
+      }
+    }
+
+    if (name === 'tipoEntidad') {
+      // Limpiar errores de disponibilidad
+      clearAvailabilityError('nit');
+      clearAvailabilityError('razonSocial');
+      
+      // Resetear el estado de verificación
+      setCheckingFields({ nit: false, razonSocial: false });
+      
+      // Cancelar cualquier verificación pendiente
+      if (debounceTimers.current.nit) {
+        clearTimeout(debounceTimers.current.nit);
+      }
+      if (debounceTimers.current.razonSocial) {
+        clearTimeout(debounceTimers.current.razonSocial);
+      }
+
+      // Reiniciar verificaciones si hay valores existentes
+      if (values.nit && values.nit.trim().length >= 8) {
+        setCheckingFields(prev => ({ ...prev, nit: true }));
+        setTimeout(() => debouncedCheckNit(values.nit, value), 100);
+      }
+      if (values.razonSocial && values.razonSocial.trim().length >= 3) {
+        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
+        setTimeout(() => debouncedCheckBusinessName(values.razonSocial, value), 100);
+      }
+    }
+  };
+
+  const getCombinedError = (fieldName) => {
+    // Solo retornar error si el campo ha sido tocado
+    if (!touched[fieldName]) {
+      return null;
+    }
+    return availabilityErrors[fieldName] || errors[fieldName];
+  };
+
+  const isFieldTouched = (fieldName) => {
+    // Solo mostrar error si el campo ha sido tocado Y tiene error
+    return touched[fieldName] && (errors[fieldName] || availabilityErrors[fieldName]);
+  };
+
+  const shouldShowAvailabilityIndicator = (fieldName) => {
+    const value = values[fieldName]?.trim();
+    
+    if (fieldName === 'razonSocial') {
+      return value && value.length >= 3 && !errors[fieldName];
+    }
+    
+    if (fieldName === 'nit') {
+      const cleanedNit = value?.replace(/[.\-\s]/g, '');
+      return cleanedNit && cleanedNit.length >= 8 && !errors[fieldName];
+    }
+    
+    return false;
+  };
+
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
-      setValues({
+      const editData = {
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
-        tipoDocumento: providerToEdit.tipoDocumento || "CC",
+        tipoDocumento: providerToEdit.tipoDocumento || "",
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
         telefono: providerToEdit.telefono || "",
@@ -74,9 +170,22 @@ const ProviderModal = ({
         ciudad: providerToEdit.ciudad || "",
         descripcion: providerToEdit.descripcion || "",
         estado: providerToEdit.estado || "Activo",
-      });
+      };
+
+      setValues(editData);
+      setTouched({}); // Resetear touched al cargar datos de edición
+      resetAvailabilityErrors();
+      
+      setTimeout(() => {
+        if (editData.nit && editData.nit.trim().length >= 8) {
+          debouncedCheckNit(editData.nit, editData.tipoEntidad);
+        }
+        if (editData.razonSocial && editData.razonSocial.trim().length >= 3) {
+          debouncedCheckBusinessName(editData.razonSocial, editData.tipoEntidad);
+        }
+      }, 100);
     }
-  }, [isOpen, isEditing, providerToEdit, setValues]);
+  }, [isOpen, isEditing, providerToEdit, setValues, setTouched, resetAvailabilityErrors, debouncedCheckNit, debouncedCheckBusinessName]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
@@ -87,22 +196,37 @@ const ProviderModal = ({
   };
 
   const handleSubmit = async () => {
-    const allTouched = {};
-    Object.keys(providerValidationRules).forEach((field) => {
-      if (field === "tipoDocumento" && values.tipoEntidad === "juridica") {
-        return;
-      }
-      allTouched[field] = true;
-    });
-    setTouched(allTouched);
+    touchAllFields();
 
-    if (!validateAllFields()) {
-      if (isEditing) {
-        showErrorAlert(
-          "Campos incompletos",
-          "Por favor completa todos los campos correctamente antes de continuar."
-        );
-      }
+    const hasValidationErrors = !validateAllFields();
+    const hasAvailabilityErrors = Object.keys(availabilityErrors).length > 0;
+    const isChecking = Object.values(checkingFields).some(checking => checking);
+
+    if (isChecking) {
+      showErrorAlert(
+        "Validando datos",
+        "Por favor espera mientras se verifican los datos..."
+      );
+      return;
+    }
+
+    if (hasAvailabilityErrors) {
+      const errorMessages = Object.entries(availabilityErrors)
+        .map(([field, message]) => message)
+        .join('\n');
+      
+      showErrorAlert(
+        "Datos duplicados",
+        errorMessages || "Por favor corrige los campos marcados con error antes de continuar."
+      );
+      return;
+    }
+
+    if (hasValidationErrors) {
+      showErrorAlert(
+        "Campos incompletos",
+        "Por favor completa todos los campos correctamente antes de continuar."
+      );
       return;
     }
 
@@ -124,26 +248,34 @@ const ProviderModal = ({
       const providerData = {
         ...values,
         telefono: formatPhoneNumber(values.telefono),
-        ...(values.tipoEntidad === "juridica" && { tipoDocumento: undefined }),
       };
 
-      if (isEditing) {
-        const updatedProviderData = { ...providerData, id: providerToEdit.id };
-        await onUpdate(updatedProviderData);
-        showSuccessAlert(
-          "Proveedor actualizado",
-          `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
-        );
-      } else {
-        await onSave(providerData);
-        showSuccessAlert(
-          "Proveedor creado",
-          "El proveedor ha sido creado exitosamente."
-        );
+      if (values.tipoEntidad === 'juridica') {
+        delete providerData.tipoDocumento;
       }
 
-      resetForm();
-      onClose();
+      let result;
+      if (isEditing) {
+        const updatedProviderData = { ...providerData, id: providerToEdit.id };
+        result = await onUpdate(updatedProviderData);
+      } else {
+        result = await onSave(providerData);
+      }
+
+      if (result && result.success) {
+        showSuccessAlert(
+          isEditing ? "Proveedor actualizado" : "Proveedor creado",
+          isEditing 
+            ? `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
+            : "El proveedor ha sido creado exitosamente."
+        );
+        resetForm();
+        setTouched({});
+        resetAvailabilityErrors();
+        onClose();
+      } else {
+        throw new Error(result?.message || `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`);
+      }
     } catch (error) {
       console.error(
         `Error al ${isEditing ? "actualizar" : "crear"} proveedor:`,
@@ -159,7 +291,24 @@ const ProviderModal = ({
 
   const handleClose = () => {
     resetForm();
+    setTouched({}); // Asegurar que se resetee el estado touched
+    resetAvailabilityErrors();
     onClose();
+  };
+
+  const getDynamicLabel = (field) => {
+    switch (field) {
+      case 'razonSocial':
+        return values.tipoEntidad === 'juridica' ? "Razón Social" : "Nombre Completo";
+      case 'nit':
+        return values.tipoEntidad === 'juridica' ? "NIT" : "Documento de Identidad";
+      case 'razonSocialPlaceholder':
+        return values.tipoEntidad === 'juridica' ? "Nombre de la empresa" : "Nombre completo";
+      case 'nitPlaceholder':
+        return values.tipoEntidad === 'juridica' ? "900123456-7" : "Número de identificación";
+      default:
+        return '';
+    }
   };
 
   if (!isOpen) return null;
@@ -178,6 +327,7 @@ const ProviderModal = ({
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
+        {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
@@ -198,7 +348,9 @@ const ProviderModal = ({
           )}
         </div>
 
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-3">
+          {/* Tipo de Entidad */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -206,7 +358,7 @@ const ProviderModal = ({
             className="space-y-3 mb-3"
           >
             <label className="block text-sm font-medium text-gray-700">
-              Tipo de Entidad *
+              Tipo de Entidad
             </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {entityTypes.map((type) => (
@@ -225,7 +377,7 @@ const ProviderModal = ({
                     name="tipoEntidad"
                     value={type.value}
                     checked={values.tipoEntidad === type.value}
-                    onChange={handleChange}
+                    onChange={(e) => handleChange('tipoEntidad', e.target.value)}
                     className="sr-only"
                   />
                   <div className="flex items-center w-full">
@@ -287,27 +439,47 @@ const ProviderModal = ({
             </div>
           </motion.div>
 
+          {/* Campos del formulario */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <motion.div
-              key={`razon-social-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-            >
+            {/* Razón Social / Nombre con validación en tiempo real */}
+            <motion.div className="relative">
               <FormField
-                label={values.tipoEntidad === "juridica" ? "Razón Social" : "Nombre Completo"}
+                label={getDynamicLabel('razonSocial')}
                 name="razonSocial"
                 type="text"
-                placeholder={values.tipoEntidad === "juridica" ? "Nombre de la empresa" : "Nombre completo"}
+                placeholder={getDynamicLabel('razonSocialPlaceholder')}
                 value={values.razonSocial}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.razonSocial}
-                touched={touched.razonSocial}
+                error={getCombinedError('razonSocial')}
+                touched={isFieldTouched('razonSocial')}
                 required
               />
+              
+              {/* Indicadores de estado - SOLO cuando no hay errores */}
+              {!getCombinedError('razonSocial') && shouldShowAvailabilityIndicator('razonSocial') && (
+                <div className="mt-1">
+                  {checkingFields.razonSocial ? (
+                    <div className="text-blue-500 text-sm flex items-center gap-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Verificando disponibilidad...</span>
+                    </div>
+                  ) : (
+                    <div className="text-green-500 text-sm flex items-center gap-1">
+                      <span>✅</span>
+                      <span>
+                        {values.tipoEntidad === 'juridica' 
+                          ? 'Razón social disponible' 
+                          : 'Nombre disponible'
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
 
+            {/* Tipo de Documento (solo para persona natural) */}
             <AnimatePresence mode="wait">
               {values.tipoEntidad === "natural" && (
                 <motion.div
@@ -320,40 +492,18 @@ const ProviderModal = ({
                     ease: "easeOut"
                   }}
                 >
-                  {documentTypesLoading && (
-                    <div className="form-group">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tipo de documento *
-                      </label>
-                      <div className="p-3 bg-gray-100 rounded-lg text-gray-600">
-                        Cargando tipos de documento...
-                      </div>
-                    </div>
-                  )}
-                  
-                  {documentTypesError && (
-                    <div className="form-group">
-                      <label className="block text-sm font-medium text-gray-700">
-                        Tipo de documento *
-                      </label>
-                      <div className="p-3 bg-red-100 text-red-700 rounded-lg">
-                        Error: {documentTypesError}
-                      </div>
-                    </div>
-                  )}
-                  
                   {!documentTypesLoading && !documentTypesError && (
                     <FormField
                       label="Tipo de documento"
                       name="tipoDocumento"
                       type="select"
                       placeholder="Selecciona el tipo de documento"
-                      options={documentTypes}
+                      options={uniqueDocumentTypes}
                       value={values.tipoDocumento}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      error={errors.tipoDocumento}
-                      touched={touched.tipoDocumento}
+                      error={getCombinedError('tipoDocumento')}
+                      touched={isFieldTouched('tipoDocumento')}
                       required={values.tipoEntidad === "natural"}
                     />
                   )}
@@ -361,32 +511,46 @@ const ProviderModal = ({
               )}
             </AnimatePresence>
 
-            <motion.div
-              key={`nit-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
+            {/* NIT / Documento con validación en tiempo real */}
+            <motion.div className="relative">
               <FormField
-                label={values.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
+                label={getDynamicLabel('nit')}
                 name="nit"
                 type="text"
-                placeholder={values.tipoEntidad === "juridica" ? "900123456-7" : "Número de identificación"}
+                placeholder={getDynamicLabel('nitPlaceholder')}
                 value={values.nit}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.nit}
-                touched={touched.nit}
+                error={getCombinedError('nit')}
+                touched={isFieldTouched('nit')}
                 required
               />
+              
+              {/* Indicadores de estado - SOLO cuando no hay errores */}
+              {!getCombinedError('nit') && shouldShowAvailabilityIndicator('nit') && (
+                <div className="mt-1">
+                  {checkingFields.nit ? (
+                    <div className="text-blue-500 text-sm flex items-center gap-2">
+                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                      <span>Verificando disponibilidad...</span>
+                    </div>
+                  ) : (
+                    <div className="text-green-500 text-sm flex items-center gap-1">
+                      <span>✅</span>
+                      <span>
+                        {values.tipoEntidad === 'juridica' 
+                          ? 'NIT disponible' 
+                          : 'Documento disponible'
+                        }
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
 
-            <motion.div
-              key={`contacto-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.4 }}
-            >
+            {/* Resto de campos */}
+            <motion.div>
               <FormField
                 label="Contacto Principal"
                 name="contactoPrincipal"
@@ -395,38 +559,27 @@ const ProviderModal = ({
                 value={values.contactoPrincipal}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.contactoPrincipal}
-                touched={touched.contactoPrincipal}
+                error={getCombinedError('contactoPrincipal')}
+                touched={isFieldTouched('contactoPrincipal')}
                 required
               />
             </motion.div>
 
-            <motion.div
-              key={`correo-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.4 }}
-            >
+            <motion.div>
               <FormField
                 label="Correo Electrónico"
                 name="correo"
                 type="email"
-                placeholder="correo@empresa.com"
+                placeholder="correo@empresa.com (opcional)"
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.correo}
-                touched={touched.correo}
-                required
+                error={getCombinedError('correo')}
+                touched={isFieldTouched('correo')}
               />
             </motion.div>
 
-            <motion.div
-              key={`telefono-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45, duration: 0.4 }}
-            >
+            <motion.div>
               <FormField
                 label="Número Telefónico"
                 name="telefono"
@@ -435,18 +588,13 @@ const ProviderModal = ({
                 value={values.telefono}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.telefono}
-                touched={touched.telefono}
+                error={getCombinedError('telefono')}
+                touched={isFieldTouched('telefono')}
                 required
               />
             </motion.div>
 
-            <motion.div
-              key={`direccion-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.4 }}
-            >
+            <motion.div>
               <FormField
                 label="Dirección"
                 name="direccion"
@@ -455,18 +603,13 @@ const ProviderModal = ({
                 value={values.direccion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.direccion}
-                touched={touched.direccion}
+                error={getCombinedError('direccion')}
+                touched={isFieldTouched('direccion')}
                 required
               />
             </motion.div>
 
-            <motion.div
-              key={`ciudad-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55, duration: 0.4 }}
-            >
+            <motion.div>
               <FormField
                 label="Ciudad"
                 name="ciudad"
@@ -475,18 +618,13 @@ const ProviderModal = ({
                 value={values.ciudad}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.ciudad}
-                touched={touched.ciudad}
+                error={getCombinedError('ciudad')}
+                touched={isFieldTouched('ciudad')}
                 required
               />
             </motion.div>
 
-            <motion.div
-              key={`estado-${values.tipoEntidad}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.4 }}
-            >
+            <motion.div>
               <FormField
                 label="Estado"
                 name="estado"
@@ -496,35 +634,30 @@ const ProviderModal = ({
                 value={values.estado}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.estado}
-                touched={touched.estado}
+                error={getCombinedError('estado')}
+                touched={isFieldTouched('estado')}
                 required
               />
             </motion.div>
 
-            <motion.div
-              key={`descripcion-${values.tipoEntidad}`}
-              className="lg:col-span-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65, duration: 0.4 }}
-            >
+            <motion.div className="lg:col-span-3">
               <FormField
                 label="Descripción"
                 name="descripcion"
                 type="textarea"
-                placeholder="Descripción detallada del proveedor..."
+                placeholder="Descripción detallada del proveedor... "
                 value={values.descripcion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={errors.descripcion}
-                touched={touched.descripcion}
+                error={getCombinedError('descripcion')}
+                touched={isFieldTouched('descripcion')}
                 rows={3}
               />
             </motion.div>
           </div>
         </div>
 
+        {/* Footer */}
         <div className="flex-shrink-0 border-t border-gray-200 p-3">
           <div className="flex justify-between">
             <button
@@ -536,9 +669,26 @@ const ProviderModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              disabled={Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
+                Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-primary-blue hover:bg-primary-purple'
+              } text-white`}
             >
-              {isEditing ? "Actualizar Proveedor" : "Crear Proveedor"}
+              {Object.values(checkingFields).some(checking => checking) ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Validando...
+                </>
+              ) : Object.keys(availabilityErrors).length > 0 ? (
+                "Corrige los errores"
+              ) : (
+                isEditing ? "Actualizar Proveedor" : "Crear Proveedor"
+              )}
             </button>
           </div>
         </div>

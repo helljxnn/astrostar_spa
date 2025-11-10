@@ -50,9 +50,8 @@ const Tbody = ({ options }) => {
         const estado = estadoOriginal.toLowerCase();
 
         /* Colores unificados (igual que en mobile) */
-        let estadoClass = "text-gray-500";
-        if (estado === "activo") estadoClass = "text-primary-purple";
-        else if (estado === "inactivo") estadoClass = "text-primary-blue";
+        let estadoClass = "text-primary-blue"; // Por defecto azul para todos los estados
+        if (estado === "activo") estadoClass = "text-primary-purple"; // Solo activo en morado
 
         return (
           <motion.tr

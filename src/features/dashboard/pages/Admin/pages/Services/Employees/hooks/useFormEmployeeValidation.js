@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const useFormEmployeeValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -54,6 +54,19 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setTouched(allTouched);
   };
 
+  // 👇 Limpia todas las validaciones y errores
+  const resetValidation = useCallback(() => {
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  // 👇 Resetea completamente el formulario
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
+
   return {
     values,
     errors,
@@ -62,7 +75,10 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    setErrors,
     touchAllFields,
+    resetValidation,
+    resetForm,
   };
 };
 
@@ -98,10 +114,9 @@ export const employeeValidationRules = {
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
   ],
   phoneNumber: [
-    (value) => {
-      if (!value) return ""; // Campo opcional
-      return !/^\+?[\d\s\-()]+$/.test(value) ? "Formato de teléfono inválido" : "";
-    },
+    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
+    (value) => value?.length < 7 ? "El teléfono debe tener al menos 7 dígitos" : "",
+    (value) => !/^\+?[\d\s\-()]+$/.test(value || "") ? "Formato de teléfono inválido" : "",
   ],
   identification: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
@@ -109,7 +124,6 @@ export const employeeValidationRules = {
     (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
   documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
-  employeeTypeId: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
   roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
   status: [(value) => (!value ? "Debe seleccionar un estado" : "")],
   birthDate: [
@@ -127,9 +141,8 @@ export const employeeValidationRules = {
     },
   ],
   address: [
-    (value) => {
-      if (!value) return ""; // Campo opcional
-      return value.length > 200 ? "La dirección no puede exceder 200 caracteres" : "";
-    },
+    (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
+    (value) => value?.length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
+    (value) => value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
   ],
 };

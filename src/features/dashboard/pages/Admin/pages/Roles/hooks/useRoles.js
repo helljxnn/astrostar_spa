@@ -31,7 +31,7 @@ export const useRoles = () => {
     setError(null);
     
     try {
-      console.log('🔄 Fetching roles with params:', params);
+
       const response = await rolesService.getAllRoles(params);
       
       if (response.success) {
@@ -42,7 +42,7 @@ export const useRoles = () => {
           total: 0,
           pages: 0
         });
-        console.log('✅ Roles fetched successfully:', response.data?.length);
+
       } else {
         throw new Error(response.message || 'Error fetching roles');
       }
@@ -64,7 +64,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('➕ Creating role:', roleData);
+
       const response = await rolesService.createRole(roleData);
       
       if (response.success) {
@@ -93,7 +93,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('✏️ Updating role:', { id, roleData });
+
       const response = await rolesService.updateRole(id, roleData);
       
       if (response.success) {
@@ -129,7 +129,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('🗑️ Deleting role:', role.id);
+
       const response = await rolesService.deleteRole(role.id);
       
       if (response.success) {
@@ -156,7 +156,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('🔍 Getting role by ID:', id);
+
       const response = await rolesService.getRoleById(id);
       
       if (response.success) {
@@ -180,7 +180,7 @@ export const useRoles = () => {
    */
   const checkNameAvailability = async (name, excludeId = null) => {
     try {
-      console.log('🔍 Checking name availability:', { name, excludeId });
+
       const response = await rolesService.checkRoleNameAvailability(name, excludeId);
       return response;
     } catch (err) {
@@ -194,7 +194,7 @@ export const useRoles = () => {
    */
   const getRoleStats = async () => {
     try {
-      console.log('📊 Getting role statistics');
+
       const response = await rolesService.getRoleStats();
       return response.data;
     } catch (err) {
@@ -209,7 +209,7 @@ export const useRoles = () => {
    */
   const getAvailablePermissions = async () => {
     try {
-      console.log('🔐 Getting available permissions');
+
       const response = await rolesService.getAvailablePermissions();
       return response.data;
     } catch (err) {
@@ -229,7 +229,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('🔄 Changing role status:', { id, status });
+
       const response = await rolesService.changeRoleStatus(id, status);
       
       if (response.success) {
@@ -259,7 +259,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('📋 Duplicating role:', { id, newName });
+
       const response = await rolesService.duplicateRole(id, newName);
       
       if (response.success) {
@@ -287,7 +287,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('🔍 Searching roles:', searchTerm);
+
       const response = await rolesService.searchRoles(searchTerm, limit);
       
       if (response.success) {
@@ -312,7 +312,7 @@ export const useRoles = () => {
     setLoading(true);
     
     try {
-      console.log('📤 Exporting roles:', format);
+
       const data = await rolesService.exportRoles(format);
       
       // Crear y descargar archivo

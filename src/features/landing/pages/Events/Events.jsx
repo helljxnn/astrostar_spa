@@ -38,19 +38,19 @@ export const Events = () => {
     : null;
 
   const handleEventSelect = (eventId) => {
-    console.log("handleEventSelect - eventId:", eventId);
+
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
     
     // Auto-reset del highlight después de 5 segundos
     setTimeout(() => {
-      console.log("Reseteando highlightedEventId");
+
       setHighlightedEventId(null);
     }, 5000);
   };
 
   const handleDateSelect = (date) => {
-    console.log("📅 handleDateSelect - fecha seleccionada:", date);
+
     setSelectedDate(date);
 
     // Buscar eventos en esa fecha (incluyendo eventos multi-día)
@@ -59,14 +59,14 @@ export const Events = () => {
       return isSameDay(new Date(event.date), date, event.endDate ? new Date(event.endDate) : null);
     });
 
-    console.log("📊 Eventos encontrados en la fecha:", eventsOnDate);
+
 
     if (eventsOnDate.length > 0) {
       const sortedEvents = sortEventsByDateTime(eventsOnDate);
       const targetEvent = sortedEvents[0];
       const targetEventId = targetEvent.id;
 
-      console.log("🎯 Evento objetivo para highlight:", targetEvent.title, targetEventId);
+
 
       // Resetear highlight antes de establecer uno nuevo
       setHighlightedEventId(null);
@@ -78,11 +78,11 @@ export const Events = () => {
           setSelectedEventId(targetEventId);
           setSelectedEventType(targetEvent.type);
           
-          console.log("✅ Estados actualizados - highlightedEventId:", targetEventId);
+
         });
       });
     } else {
-      console.log("⚠️ No hay eventos en esta fecha");
+
       setSelectedEventId(null);
       setHighlightedEventId(null);
     }
@@ -102,7 +102,7 @@ export const Events = () => {
   };
 
   const handleHighlightComplete = () => {
-    console.log("🔄 Highlight completado, reseteando...");
+
     setHighlightedEventId(null);
   };
 

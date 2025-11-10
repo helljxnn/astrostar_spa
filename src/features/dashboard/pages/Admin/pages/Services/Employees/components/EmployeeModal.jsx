@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
@@ -10,6 +10,7 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
+import employeeService from "../services/employeeService";
 
 const EmployeeModal = ({
   isOpen,
@@ -17,7 +18,7 @@ const EmployeeModal = ({
   onSave,
   employee,
   mode = "create",
-  referenceData = { employeeTypes: [], roles: [], documentTypes: [] },
+  referenceData = { roles: [], documentTypes: [] },
 }) => {
   const {
     values: formData,
@@ -27,6 +28,9 @@ const EmployeeModal = ({
     handleBlur,
     validateAllFields,
     setValues: setFormData,
+    resetValidation,
+    resetForm,
+    setErrors,
   } = useFormEmployeeValidation(
     {
       firstName: "",
@@ -37,53 +41,121 @@ const EmployeeModal = ({
       phoneNumber: "",
       address: "",
       birthDate: "",
+      age: "",
       identification: "",
       documentTypeId: "",
-      employeeTypeId: "",
       roleId: "",
-      status: "Active",
+      status: "Activo",
     },
     employeeValidationRules
   );
 
+  // Función para calcular la edad
+  const calculateAge = (birthDate) => {
+    if (!birthDate) return "";
+
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birth.getDate())
+    ) {
+      age--;
+    }
+
+    return age >= 0 ? age.toString() : "";
+  };
+
+  // Función personalizada para manejar cambios
+  const handleCustomChange = (name, value) => {
+    if (name === "birthDate") {
+      const age = calculateAge(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        age: age,
+      }));
+    } else {
+      handleChange(name, value);
+    }
+  };
+
+  // Función personalizada para manejar blur con validación de unicidad
+  const handleCustomBlur = async (name) => {
+    handleBlur(name);
+    
+    // Validar unicidad para campos específicos solo si pasan la validación básica
+    if ((name === 'identification' || name === 'email') && formData[name]) {
+      // Primero validar que el campo cumpla con las reglas básicas
+      const validationRule = employeeValidationRules[name];
+      let validationError = "";
+      if (validationRule) {
+        for (const rule of validationRule) {
+          validationError = rule(formData[name], formData);
+          if (validationError) break;
+        }
+      }
+      
+      // Solo hacer la petición al servidor si no hay errores de validación básica
+      if (!validationError) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        
+        try {
+          let response;
+          if (name === 'identification') {
+            response = await employeeService.checkIdentificationAvailability(formData[name], currentUserId);
+          } else if (name === 'email') {
+            response = await employeeService.checkEmailAvailability(formData[name], currentUserId);
+          }
+
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = response?.data?.available ?? response?.available ?? true;
+          if (response && !isAvailable) {
+            const errorMessage = response?.data?.message || response?.message || `Este ${name === 'identification' ? 'número de documento' : 'email'} ya está en uso`;
+            // Establecer el error de unicidad
+            setErrors(prev => ({ ...prev, [name]: errorMessage }));
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
+      }
+    }
+  };
+
   // Cargar datos si es edición o vista, o limpiar si es creación
   useEffect(() => {
-    if (employee && (mode === "edit" || mode === "view")) {
-      // Mapear datos del backend al formato del formulario
-      setFormData({
-        firstName: employee.user?.firstName || "",
-        middleName: employee.user?.middleName || "",
-        lastName: employee.user?.lastName || "",
-        secondLastName: employee.user?.secondLastName || "",
-        email: employee.user?.email || "",
-        phoneNumber: employee.user?.phoneNumber || "",
-        address: employee.user?.address || "",
-        birthDate: employee.user?.birthDate ? employee.user.birthDate.split('T')[0] : "",
-        identification: employee.user?.identification || "",
-        documentTypeId: employee.user?.documentTypeId || "",
-        employeeTypeId: employee.employeeTypeId || "",
-        roleId: employee.user?.roleId || "",
-        status: employee.status || "Active",
-      });
-    } else {
-      // Limpiar formulario para creación
-      setFormData({
-        firstName: "",
-        middleName: "",
-        lastName: "",
-        secondLastName: "",
-        email: "",
-        phoneNumber: "",
-        address: "",
-        birthDate: "",
-        identification: "",
-        documentTypeId: "",
-        employeeTypeId: "",
-        roleId: "",
-        status: "Active",
-      });
+    if (isOpen) {
+      if (employee && (mode === "edit" || mode === "view")) {
+        // Mapear datos del backend al formato del formulario
+        const birthDate = employee.user?.birthDate
+          ? employee.user.birthDate.split("T")[0]
+          : "";
+        setFormData({
+          firstName: employee.user?.firstName || "",
+          middleName: employee.user?.middleName || "",
+          lastName: employee.user?.lastName || "",
+          secondLastName: employee.user?.secondLastName || "",
+          email: employee.user?.email || "",
+          phoneNumber: employee.user?.phoneNumber || "",
+          address: employee.user?.address || "",
+          birthDate: birthDate,
+          age: calculateAge(birthDate),
+          identification: employee.user?.identification || "",
+          documentTypeId: employee.user?.documentTypeId || "",
+          roleId: employee.user?.roleId || "",
+          status: employee.status || "Activo",
+        });
+        // Limpiar validaciones al cargar datos de edición
+        setTimeout(() => resetValidation(), 0);
+      } else {
+        // Limpiar completamente el formulario para creación
+        setTimeout(() => resetForm(), 0);
+      }
     }
-  }, [employee, setFormData, mode, isOpen]);
+  }, [employee, mode, isOpen]);
 
   const handleSubmit = async () => {
     try {
@@ -94,6 +166,49 @@ const EmployeeModal = ({
           "Por favor, complete todos los campos obligatorios antes de continuar."
         );
         return;
+      }
+
+      // Validar unicidad de campos críticos antes del envío (solo si pasan validación básica)
+      if (formData.identification && !errors.identification) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        try {
+          const identificationCheck = await employeeService.checkIdentificationAvailability(
+            formData.identification, 
+            currentUserId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = identificationCheck?.data?.available ?? identificationCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Identificación duplicada",
+              "Este número de documento ya está en uso por otro empleado."
+            );
+            return;
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
+      }
+
+      if (formData.email && !errors.email) {
+        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
+        try {
+          const emailCheck = await employeeService.checkEmailAvailability(
+            formData.email, 
+            currentUserId
+          );
+          // Manejar diferentes estructuras de respuesta
+          const isAvailable = emailCheck?.data?.available ?? emailCheck?.available ?? true;
+          if (!isAvailable) {
+            showErrorAlert(
+              "Email duplicado",
+              "Este email ya está en uso por otro empleado."
+            );
+            return;
+          }
+        } catch (error) {
+          // Continuar sin bloquear si hay error en la validación
+        }
       }
 
       // Confirmación solo al editar
@@ -107,30 +222,14 @@ const EmployeeModal = ({
 
       // Llamar onSave y esperar el resultado
       const success = await onSave(formData);
-      
+
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
-        // Limpiar formulario
-        setFormData({
-          firstName: "",
-          middleName: "",
-          lastName: "",
-          secondLastName: "",
-          email: "",
-          phoneNumber: "",
-          address: "",
-          birthDate: "",
-          identification: "",
-          documentTypeId: "",
-          employeeTypeId: "",
-          roleId: "",
-          status: "Active",
-        });
-        
+        // Limpiar completamente el formulario y validaciones
+        resetForm();
         onClose();
       }
     } catch (error) {
-      console.error("Error al guardar empleado:", error);
       showErrorAlert(
         "Error al guardar",
         "No se pudo guardar el empleado. Intenta de nuevo."
@@ -142,7 +241,7 @@ const EmployeeModal = ({
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -183,9 +282,9 @@ const EmployeeModal = ({
               placeholder="Seleccionar tipo de documento"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={referenceData.documentTypes.map(type => ({
+              options={referenceData.documentTypes.map((type) => ({
                 value: type.id,
-                label: type.name
+                label: type.name,
               }))}
               value={formData.documentTypeId}
               error={errors.documentTypeId}
@@ -207,7 +306,7 @@ const EmployeeModal = ({
               error={errors.identification}
               touched={touched.identification}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.2}
             />
 
@@ -287,7 +386,7 @@ const EmployeeModal = ({
               error={errors.email}
               touched={touched.email}
               onChange={handleChange}
-              onBlur={handleBlur}
+              onBlur={handleCustomBlur}
               delay={0.5}
             />
 
@@ -296,8 +395,8 @@ const EmployeeModal = ({
               label="Número Telefónico"
               name="phoneNumber"
               type="text"
-              placeholder="+57 300 123 4567"
-              required={false}
+              placeholder="300 123 4567"
+              required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.phoneNumber}
               error={errors.phoneNumber}
@@ -312,8 +411,8 @@ const EmployeeModal = ({
               label="Dirección"
               name="address"
               type="text"
-              placeholder="Dirección de residencia (opcional)"
-              required={false}
+              placeholder="Dirección de residencia"
+              required={mode !== "view"}
               disabled={mode === "view"}
               value={formData.address}
               error={errors.address}
@@ -334,9 +433,21 @@ const EmployeeModal = ({
               value={formData.birthDate}
               error={errors.birthDate}
               touched={touched.birthDate}
-              onChange={handleChange}
+              onChange={handleCustomChange}
               onBlur={handleBlur}
               delay={0.65}
+            />
+
+            {/* Edad (calculada automáticamente) */}
+            <FormField
+              label="Edad"
+              name="age"
+              type="text"
+              placeholder="Se calcula automáticamente"
+              required={false}
+              disabled={true}
+              value={formData.age ? `${formData.age} años` : ""}
+              delay={0.67}
             />
 
             {/* Rol */}
@@ -347,36 +458,16 @@ const EmployeeModal = ({
               placeholder="Seleccione el rol"
               required={mode !== "view"}
               disabled={mode === "view"}
-              options={referenceData.roles.map(role => ({
+              options={referenceData.roles.map((role) => ({
                 value: role.id,
-                label: role.name
+                label: role.name,
               }))}
               value={formData.roleId}
               error={errors.roleId}
               touched={touched.roleId}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.7}
-            />
-
-            {/* Tipo Empleado */}
-            <FormField
-              label="Tipo Empleado"
-              name="employeeTypeId"
-              type="select"
-              placeholder="Seleccionar tipo empleado"
-              required={mode !== "view"}
-              disabled={mode === "view"}
-              options={referenceData.employeeTypes.map(type => ({
-                value: type.id,
-                label: type.name
-              }))}
-              value={formData.employeeTypeId}
-              error={errors.employeeTypeId}
-              touched={touched.employeeTypeId}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.8}
+              delay={0.75}
             />
 
             {/* Estado */}
@@ -388,17 +479,17 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={[
-                { value: "Active", label: "Activo" },
-                { value: "Disabled", label: "Deshabilitado" },
-                { value: "OnVacation", label: "En Vacaciones" },
-                { value: "Retired", label: "Retirado" },
+                { value: "Activo", label: "Activo" },
+                { value: "Licencia", label: "Licencia" },
+                { value: "Desvinculado", label: "Desvinculado" },
+                { value: "Fallecido", label: "Fallecido" },
               ]}
               value={formData.status}
               error={errors.status}
               touched={touched.status}
               onChange={handleChange}
               onBlur={handleBlur}
-              delay={0.9}
+              delay={0.8}
             />
           </div>
         </div>

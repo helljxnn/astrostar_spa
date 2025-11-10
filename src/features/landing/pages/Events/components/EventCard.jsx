@@ -5,7 +5,7 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
 
   useEffect(() => {
     if (isHighlighted && cardRef.current) {
-      console.log("🎯 EventCard: Iniciando scroll para evento", event.id, event.title);
+
       
       requestAnimationFrame(() => {
         if (cardRef.current) {
@@ -19,14 +19,14 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
       });
 
       const highlightTimeoutId = setTimeout(() => {
-        console.log("⏱️ Timeout completado para evento:", event.title);
+
         if (onHighlightComplete) {
           onHighlightComplete();
         }
       }, 2500);
 
       return () => {
-        console.log("🧹 Limpiando timeout para evento:", event.title);
+
         clearTimeout(highlightTimeoutId);
       };
     }

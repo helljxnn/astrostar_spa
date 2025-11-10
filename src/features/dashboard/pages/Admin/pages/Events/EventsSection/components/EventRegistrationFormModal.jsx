@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaFilter, FaUsers, FaUserTie } from "react-icons/fa";
 import SearchInput from "../../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../../shared/components/Table/Pagination";
 import athletesData from "../../../../../../../../shared/models/AthleteData";
-import temporaryWorkersData from "../../../../../../../../shared/models/TemporaryWorkersData";
+import temporaryWorkersService from "../../../../../../../../shared/services/temporaryWorkersService";
 import {
   showSuccessAlert,
   showErrorAlert,

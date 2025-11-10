@@ -1,14 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react"
-import {
-  loadTrainers,
-  loadAthletes,
-  groupBySource,
-  searchInData,
-} from "../../../../../../../../shared/models/Dataloaders"
+import TeamsService from "../services/TeamsService"
 import Pagination from "../../../../../../../../shared/components/Table/Pagination"
 
 const SelectionModal = ({
@@ -24,11 +19,46 @@ const SelectionModal = ({
   const [activeTab, setActiveTab] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedCategory, setSelectedCategory] = useState("")
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
   const rowsPerPage = 5
 
   const isMultiSelect = mode === "athletes"
   const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
   const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
+
+  // Cargar datos desde el backend
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🎯 Modal abierto, modo:', mode)
+      loadData()
+    }
+  }, [isOpen, mode])
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      console.log('🔄 Cargando datos...')
+      let response
+      if (mode === "trainer") {
+        response = await TeamsService.getTrainers()
+        console.log('🏋️ Respuesta entrenadores:', response)
+      } else {
+        response = await TeamsService.getAthletes()
+        console.log('🏃 Respuesta deportistas:', response)
+      }
+      
+      // FIX CRÍTICO: Asegurar que siempre tengamos un array
+      const responseData = Array.isArray(response) ? response : (response?.data || [])
+      console.log('📦 Datos a mostrar:', responseData)
+      setData(responseData)
+    } catch (error) {
+      console.error('❌ Error cargando datos:', error)
+      setData([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const currentTeamType = useMemo(() => {
     if (existingTeamType) return existingTeamType
@@ -36,39 +66,44 @@ const SelectionModal = ({
     return null
   }, [existingTeamType, selectedItems])
 
-  const allData = useMemo(() => {
-    try {
-      return mode === "trainer" ? loadTrainers() : loadAthletes() 
-    } catch (error) {
-      console.error("Error cargando datos:", error)
-      return []
-    }
-  }, [mode])
-
   const groupedData = useMemo(() => {
-    if (!allData || allData.length === 0) return []
-    return groupBySource(allData)
-  }, [allData])
+    console.log('📊 Agrupando datos:', data)
+    if (!data || data.length === 0) return []
+    
+    const fundacion = data.filter(item => item.type === "fundacion")
+    const temporal = data.filter(item => item.type === "temporal")
+    
+    const groups = []
+    
+    if (fundacion.length > 0) {
+      groups.push({
+        source: "fundacion",
+        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
+        items: fundacion
+      })
+    }
+    
+    if (temporal.length > 0) {
+      groups.push({
+        source: "temporal", 
+        sourceLabel: mode === "trainer" ? "Entrenadores Temporales" : "Deportistas Temporales",
+        items: temporal
+      })
+    }
+    
+    console.log('🏷️ Grupos creados:', groups)
+    return groups
+  }, [data, mode])
 
+  // ✅ CORRECTO: Usar solo los datos del tab actual
   const currentGroupData = useMemo(() => {
-    if (!groupedData || groupedData.length === 0) return []
-    return groupedData[activeTab]?.items || []
+    const groupData = groupedData[activeTab]?.items || []
+    console.log('📑 Datos del grupo actual (tab', activeTab, '):', groupData)
+    return groupData
   }, [groupedData, activeTab])
 
-  const categories = useMemo(() => {
-    if (mode !== "athletes") return []
-    if (!currentGroupData || currentGroupData.length === 0) return []
-    
-    const currentSource = groupedData[activeTab]?.source
-    if (currentSource !== "fundacion") return []
-    
-    const foundationAthletes = currentGroupData.filter(item => item.type === "fundacion")
-    const allCategories = [...new Set(foundationAthletes.map((item) => item.categoria).filter(Boolean))]
-    return allCategories.sort()
-  }, [mode, currentGroupData, groupedData, activeTab])
-
   const availableItems = useMemo(() => {
-    let filtered = currentGroupData
+    let filtered = currentGroupData  // ✅ SOLO datos del tab actual
 
     if (currentTeamType) {
       filtered = filtered.filter(item => item.type === currentTeamType)
@@ -81,11 +116,21 @@ const SelectionModal = ({
       })
     }
 
+    console.log('✅ Items disponibles en el tab actual:', filtered)
     return filtered
   }, [currentGroupData, currentTeamType, currentCategoria])
 
   const filteredItems = useMemo(() => {
-    let filtered = searchInData(availableItems, searchTerm)
+    let filtered = availableItems
+
+    if (searchTerm) {
+      const query = searchTerm.toLowerCase()
+      filtered = filtered.filter(item => 
+        item.name?.toLowerCase().includes(query) ||
+        item.identification?.toLowerCase().includes(query) ||
+        (item.categoria && item.categoria.toLowerCase().includes(query))
+      )
+    }
 
     if (mode === "athletes" && selectedCategory) {
       filtered = filtered.filter((item) => {
@@ -94,6 +139,7 @@ const SelectionModal = ({
       })
     }
 
+    console.log('🔍 Elementos filtrados:', filtered)
     return filtered
   }, [availableItems, searchTerm, selectedCategory, mode])
 
@@ -192,13 +238,16 @@ const SelectionModal = ({
           transition={{ duration: 0.2 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
         >
-          {/* Header - Simplificado */}
+          {/* Header */}
           <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {icon}
                 <div>
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
+                  <p className="text-sm opacity-80">
+                    {data.length} elementos cargados • {filteredItems.length} filtrados
+                  </p>
                 </div>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
@@ -206,28 +255,6 @@ const SelectionModal = ({
               </button>
             </div>
           </div>
-
-          {/* Informational Message */}
-          {currentTeamType && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-6 mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg"
-            >
-              <div className="flex items-start gap-3">
-                <Info className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="text-gray-700 text-sm font-medium">
-                    Solo puedes seleccionar {teamInfo.type}
-                    {teamInfo.category && ` de categoría "${teamInfo.category}"`}
-                  </p>
-                  <p className="text-gray-600 text-xs mt-1">
-                    {availabilityStats.availableCount} de {availabilityStats.totalInCurrentTab} elementos disponibles
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
 
           {/* Tabs de fuentes */}
           {groupedData && groupedData.length > 1 && (
@@ -247,11 +274,6 @@ const SelectionModal = ({
                     <span className="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
                       {group.items ? group.items.length : 0}
                     </span>
-                    {currentTeamType && (
-                      <span className="absolute top-1 right-1 text-xs bg-purple-100 text-purple-800 px-1 rounded">
-                        {availableItems.length}
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>
@@ -265,7 +287,7 @@ const SelectionModal = ({
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={`Buscar por nombre, identificación${mode === "athletes" && categories.length > 0 ? " o categoría" : ""}...`}
+                    placeholder={`Buscar por nombre, identificación${mode === "athletes" ? " o categoría" : ""}...`}
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value)
@@ -275,7 +297,7 @@ const SelectionModal = ({
                   />
                 </div>
               </div>
-              {mode === "athletes" && categories && categories.length > 0 && (
+              {mode === "athletes" && (
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
                   <select
@@ -287,7 +309,7 @@ const SelectionModal = ({
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                   >
                     <option value="">Todas las categorías</option>
-                    {categories.map((category) => (
+                    {[...new Set(currentGroupData.filter(item => item.categoria).map(item => item.categoria))].map((category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>
@@ -301,140 +323,143 @@ const SelectionModal = ({
           {/* Contenido - Tabla */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="p-4 sm:p-6 flex-1 overflow-auto">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Seleccionar</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Identificación</th>
-                      {mode === "athletes" && (
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Categoría</th>
-                      )}
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedData && paginatedData.length > 0 ? (
-                      paginatedData.map((item) => {
-                        const selected = isSelected(item)
-                        const isAvailable = isItemAvailable(item)
-                        const displayCategory = item.type === "fundacion" 
-                          ? (item.categoria || "Sin categoría")
-                          : "No aplica"
+              {loading ? (
+                <div className="text-center py-8">Cargando...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Seleccionar</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Identificación</th>
+                        {mode === "athletes" && (
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Categoría</th>
+                        )}
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData && paginatedData.length > 0 ? (
+                        paginatedData.map((item) => {
+                          const selected = isSelected(item)
+                          const isAvailable = isItemAvailable(item)
+                          const displayCategory = item.type === "fundacion" 
+                            ? (item.categoria || "Sin categoría")
+                            : "No aplica"
 
-                        return (
-                          <tr
-                            key={item.id}
-                            className={`border-b border-gray-100 transition-colors ${
-                              selected
-                                ? "bg-purple-50 cursor-pointer"
-                                : !isAvailable
-                                  ? "bg-gray-50 cursor-not-allowed opacity-50"
-                                  : "hover:bg-gray-50 cursor-pointer"
-                            }`}
-                            onClick={() => isAvailable && handleSelect(item)}
-                          >
-                            <td className="py-3 px-4">
-                              <div className="flex items-center">
-                                {isMultiSelect ? (
-                                  <input
-                                    type="checkbox"
-                                    className={`w-4 h-4 focus:ring-primary-purple border-gray-300 rounded ${
-                                      selected ? "text-primary-purple" : "text-gray-300"
-                                    }`}
-                                    checked={selected}
-                                    disabled={!isAvailable}
-                                    onChange={(e) => {
-                                      e.stopPropagation()
-                                      if (isAvailable) handleSelect(item)
-                                    }}
-                                  />
-                                ) : (
-                                  <div
-                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                      selected
-                                        ? "bg-primary-purple border-primary-purple"
-                                        : !isAvailable
-                                          ? "border-gray-300 bg-gray-100"
-                                          : "border-gray-300 hover:border-primary-purple"
-                                    }`}
-                                  >
-                                    {selected && <Check className="w-3 h-3 text-white" />}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`}>
-                                  {item.name}
-                                </span>
-                                {!isAvailable && (
-                                  <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                                    No disponible
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
-                              {item.identification || "N/A"}
-                            </td>
-                            {mode === "athletes" && (
+                          return (
+                            <tr
+                              key={item.id}
+                              className={`border-b border-gray-100 transition-colors ${
+                                selected
+                                  ? "bg-purple-50 cursor-pointer"
+                                  : !isAvailable
+                                    ? "bg-gray-50 cursor-not-allowed opacity-50"
+                                    : "hover:bg-gray-50 cursor-pointer"
+                              }`}
+                              onClick={() => isAvailable && handleSelect(item)}
+                            >
                               <td className="py-3 px-4">
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  !isAvailable
-                                    ? "bg-gray-50 text-gray-300"
-                                    : item.type === "fundacion" && item.categoria
-                                    ? "bg-gray-200 text-gray-700"
-                                    : "bg-gray-100 text-gray-400"
-                                }`}>
-                                  {displayCategory}
+                                <div className="flex items-center">
+                                  {isMultiSelect ? (
+                                    <input
+                                      type="checkbox"
+                                      className={`w-4 h-4 focus:ring-primary-purple border-gray-300 rounded ${
+                                        selected ? "text-primary-purple" : "text-gray-300"
+                                      }`}
+                                      checked={selected}
+                                      disabled={!isAvailable}
+                                      onChange={(e) => {
+                                        e.stopPropagation()
+                                        if (isAvailable) handleSelect(item)
+                                      }}
+                                    />
+                                  ) : (
+                                    <div
+                                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        selected
+                                          ? "bg-primary-purple border-primary-purple"
+                                          : !isAvailable
+                                            ? "border-gray-300 bg-gray-100"
+                                            : "border-gray-300 hover:border-primary-purple"
+                                      }`}
+                                    >
+                                      {selected && <Check className="w-3 h-3 text-white" />}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`}>
+                                    {item.name}
+                                  </span>
+                                  {!isAvailable && (
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                      No disponible
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {item.identification || "N/A"}
+                              </td>
+                              {mode === "athletes" && (
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    !isAvailable
+                                      ? "bg-gray-50 text-gray-300"
+                                      : item.type === "fundacion" && item.categoria
+                                      ? "bg-gray-200 text-gray-700"
+                                      : "bg-gray-100 text-gray-400"
+                                  }`}>
+                                    {displayCategory}
+                                  </span>
+                                </td>
+                              )}
+                              <td className="py-3 px-4">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  item.type === "fundacion" 
+                                    ? "bg-purple-100 text-purple-800" 
+                                    : "bg-blue-100 text-blue-800"
+                                } ${!isAvailable ? 'opacity-50' : ''}`}>
+                                  {item.type === "fundacion" ? "Fundación" : "Temporal"}
                                 </span>
                               </td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={mode === "athletes" ? "5" : "4"} className="py-12 text-center text-gray-500">
+                            <div className="text-4xl mb-4">🔍</div>
+                            <p>
+                              {searchTerm || selectedCategory
+                                ? "No se encontraron resultados con los filtros aplicados"
+                                : "No hay elementos disponibles"
+                              }
+                            </p>
+                            {(searchTerm || selectedCategory) && (
+                              <button
+                                onClick={() => {
+                                  setSearchTerm("")
+                                  setSelectedCategory("")
+                                }}
+                                className="mt-2 text-primary-purple hover:underline"
+                              >
+                                Limpiar filtros
+                              </button>
                             )}
-                            <td className="py-3 px-4">
-                              <span className={`text-xs px-2 py-1 rounded bg-purple-100 text-purple-800 ${
-                                !isAvailable ? 'opacity-50' : ''
-                              }`}>
-                                {item.type === "fundacion" ? "Fundación" : "Temporal"}
-                              </span>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={mode === "athletes" ? "5" : "4"} className="py-12 text-center text-gray-500">
-                          <div className="text-4xl mb-4">🔍</div>
-                          <p>
-                            {currentTeamType 
-                              ? `No hay elementos disponibles que cumplan con las restricciones`
-                              : "No se encontraron resultados"
-                            }
-                          </p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-                {paginatedData.length === 0 && (searchTerm || selectedCategory) && (
-                  <div className="text-center py-4">
-                    <button
-                      onClick={() => {
-                        setSearchTerm("")
-                        setSelectedCategory("")
-                      }}
-                      className="text-primary-purple hover:underline"
-                    >
-                      Limpiar filtros
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {totalRows > rowsPerPage && (
+              {!loading && totalRows > rowsPerPage && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={currentPage}
@@ -449,18 +474,12 @@ const SelectionModal = ({
             </div>
           </div>
 
-          {/* Footer - Mantiene la información */}
+          {/* Footer */}
           <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-sm text-gray-600">
                 {selectedItems.length} {mode === "trainer" ? "entrenador" : "deportistas"} seleccionado
                 {selectedItems.length !== 1 ? "s" : ""}
-                {teamInfo.type && (
-                  <span className="ml-2 text-gray-800 font-semibold">• Tipo: {teamInfo.type}</span>
-                )}
-                {teamInfo.category && (
-                  <span className="ml-2 text-gray-800 font-semibold">• Categoría: {teamInfo.category}</span>
-                )}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button
@@ -473,7 +492,7 @@ const SelectionModal = ({
                   <button
                     onClick={handleConfirm}
                     className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:opacity-90 transition"
-                    >
+                  >
                     Confirmar Selección
                   </button>
                 )}

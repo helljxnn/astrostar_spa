@@ -18,7 +18,7 @@ import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/
 /* --- Deportistas --- */
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
-import TemporaryWorkers from "../features/dashboard/pages/Admin/pages/Athletes/TemporaryWorkers/EventsDashboard.jsx";
+import TemporaryPersons from "../features/dashboard/pages/Admin/pages/Services/TemporaryPersons/TemporaryPersons.jsx";
 import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
 import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
 
@@ -58,15 +58,7 @@ const PrivateRoutes = () => {
         <Route
           index
           element={
-            <PrivateRoute
-              allowedRoles={[
-                "admin",
-                "profesional_deportivo",
-                "profesional_salud",
-                "deportista",
-                "acudiente",
-              ]}
-            >
+            <PrivateRoute module="dashboard" action="Ver">
               <Dashboard />
             </PrivateRoute>
           }
@@ -103,7 +95,7 @@ const PrivateRoutes = () => {
           path="temporary-workers"
           element={
             <PrivateRoute module="temporaryWorkers" action="Ver">
-              <TemporaryWorkers />
+              <TemporaryPersons />
             </PrivateRoute>
           }
         />
