@@ -206,45 +206,33 @@ const employeesDataReal = [
   }
 ];
 
-// Datos reales de personas temporales
-const temporaryWorkersDataReal = [
-  {
-    id: "t1",
-    tipoPersona: "Deportista",
-    nombre: "Jennifer Lascarro",
-    tipoDocumento: "Tarjeta de Identidad",
-    identificacion: "TI.1246789334",
-    telefono: "3001234567",
-    fechaNacimiento: "2006-05-12",
-    edad: 19,
-    categoria: "Sub 17",
-    estado: "Activo",
-  },
-  {
-    id: "t2",
-    tipoPersona: "Entrenador",
-    nombre: "Ana Restrepo",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1397543865",
-    telefono: "3207654321",
-    fechaNacimiento: "1992-09-10",
-    edad: 32,
-    categoria: "No aplica",
-    estado: "Activo",
-  },
-  {
-    id: "t3",
-    tipoPersona: "Entrenador",
-    nombre: "Luis Enrique",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1456789123",
-    telefono: "3109876543",
-    fechaNacimiento: "1985-03-22",
-    edad: 38,
-    categoria: "No aplica",
-    estado: "Activo",
+// Importar servicio de personas temporales
+import temporaryWorkersService from '../services/temporaryWorkersService';
+
+// Función para cargar personas temporales desde la API
+const loadTemporaryWorkersFromAPI = async () => {
+  try {
+    const response = await temporaryWorkersService.getAll({ limit: 100 });
+    if (response.success) {
+      return response.data.map(item => ({
+        id: item.id.toString(),
+        tipoPersona: item.personType,
+        nombre: `${item.firstName} ${item.lastName || ''}`.trim(),
+        tipoDocumento: item.documentType?.name || 'N/A',
+        identificacion: item.identification || 'N/A',
+        telefono: item.phone || 'N/A',
+        fechaNacimiento: item.birthDate ? new Date(item.birthDate).toISOString().split('T')[0] : '',
+        edad: item.age || 0,
+        categoria: item.personType === 'Deportista' ? 'No asignada' : 'No aplica',
+        estado: item.status === 'Active' ? 'Activo' : 'Inactivo',
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error loading temporary workers from API:', error);
+    return [];
   }
-];
+};
 
 // FUNCIONES HELPER PARA CARGAR DATOS
 // ============================================
@@ -254,7 +242,7 @@ const temporaryWorkersDataReal = [
  * 1. Empleados (tipoEmpleado: "Entrenador")
  * 2. Personas Temporales (tipoPersona: "Entrenador")
  */
-export const loadTrainers = () => {
+export const loadTrainers = async () => {
   try {
     const trainers = [];
 
@@ -285,7 +273,7 @@ export const loadTrainers = () => {
 
     // 2. DESDE PERSONAS TEMPORALES (Entrenadores) - TEMPORALES
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : await loadTemporaryWorkersFromAPI();
 
     const trainersFromTemporary = temporaryPersons
       .filter(t => t.tipoPersona === "Entrenador" && t.estado === "Activo")
@@ -314,7 +302,7 @@ export const loadTrainers = () => {
  * 1. Deportistas (estado: "Activo") - CON CATEGORÍA
  * 2. Personas Temporales (tipoPersona: "Deportista") - SIN CATEGORÍA
  */
-export const loadAthletes = () => {
+export const loadAthletes = async () => {
   try {
     const athletes = [];
 
@@ -341,7 +329,7 @@ export const loadAthletes = () => {
 
     // 2. DESDE PERSONAS TEMPORALES (Deportistas) - TEMPORALES - SIN CATEGORÍA
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : await loadTemporaryWorkersFromAPI();
     
     const athletesFromTemporary = temporaryPersons
       .filter(t => t.tipoPersona === "Deportista" && t.estado === "Activo")

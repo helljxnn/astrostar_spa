@@ -7,8 +7,8 @@ import EventSearchBar from "./components/EventSearchBar";
 import EventSearchList from "./components/EventSearchList";
 import EventInscriptionModal from "./components/EventInscriptionModal";
 import EventRegistrationFormModal from "./components/EventRegistrationFormModal";
-import { sampleEvents } from "./components/sampleEvents";
 import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import { useEvents } from "./hooks/useEvents";
 
 // Importaciones para permisos
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
@@ -16,22 +16,14 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 const Event = () => {
   const { hasPermission } = usePermissions();
+  const { events, loading, referenceData, createEvent, updateEvent, deleteEvent } = useEvents();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [isNew, setIsNew] = useState(false);
   const calendarRef = useRef(null);
   
-  const [data, setData] = useState(() => {
-    const transformedEvents = sampleEvents.map(event => ({
-      ...event,
-      start: new Date(event.fechaInicio),
-      end: new Date(event.fechaFin),
-      title: event.nombre
-    }));
-    console.log("EventsDashboard - Eventos transformados:", transformedEvents);
-    return transformedEvents;
-  }); // Usando los datos de ejemplo con formato para el calendario
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchActive, setIsSearchActive] = useState(false);
 
@@ -49,21 +41,27 @@ const Event = () => {
     eventType: "",
   });
 
-  const handleSave = (newEvent) => {
-    setData((prev) => [...prev, newEvent]);
+  const handleSave = async (eventData) => {
+    try {
+      if (isNew) {
+        await createEvent(eventData);
+      } else {
+        await updateEvent(eventData.id, eventData);
+      }
+    } catch (error) {
+      console.error('Error guardando evento:', error);
+    }
   };
 
   // Filtrado general por búsqueda
   const filteredData = useMemo(() => {
-    const result = !searchTerm ? data : data.filter((item) =>
+    const result = !searchTerm ? events : events.filter((item) =>
       Object.values(item).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-    console.log("EventsDashboard - Datos filtrados:", result);
-    console.log("EventsDashboard - SearchTerm:", searchTerm);
     return result;
-  }, [data, searchTerm]);
+  }, [events, searchTerm]);
 
   // Manejar la búsqueda
   const handleSearch = (term) => {
@@ -144,18 +142,10 @@ const Event = () => {
           );
           
           if (result.isConfirmed) {
-            setData((prev) => prev.filter((e) => e.id !== event.id));
-            showSuccessAlert(
-              "Evento eliminado",
-              `${event.title || event.nombre} ha sido eliminado correctamente.`
-            );
+            await deleteEvent(event.id, event.title || event.nombre);
           }
         } catch (error) {
           console.error("Error al eliminar evento:", error);
-          showErrorAlert(
-            "Error al eliminar",
-            "No se pudo eliminar el evento. Intenta de nuevo."
-          );
         }
         break;
         
@@ -285,19 +275,30 @@ const Event = () => {
           isNew={isNew}
           event={selectedEvent}
           mode={modalMode}
+          referenceData={referenceData}
         />
       )}
 
       {/* Contenido condicional: Calendario o Lista de búsqueda */}
       <div className="mt-16">
-        {isSearchActive ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
+          </div>
+        ) : isSearchActive ? (
           <EventSearchList 
             events={filteredData} 
             onCrudAction={handleCrudAction}
             onRegistrationAction={handleRegistrationAction}
           />
         ) : (
-          <EventsCalendar events={filteredData} ref={calendarRef} />
+          <EventsCalendar 
+            events={filteredData} 
+            ref={calendarRef} 
+            referenceData={referenceData}
+            onCreateEvent={createEvent}
+            onUpdateEvent={updateEvent}
+          />
         )}
       </div>
 
