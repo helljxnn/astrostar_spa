@@ -115,6 +115,34 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
   });
 };
 
+// Alerta de advertencia
+export const showWarningAlert = (title, text = "") => {
+  return Swal.fire({
+    ...alerts,
+    icon: "warning",
+    title: `<span style="color:#f59e0b;">${title}</span>`,
+    text,
+    confirmButtonText: "Entendido",
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    showCloseButton: true,
+    customClass: {
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#fef3c7] to-[#fde68a] border-l-4 border-l-[#f59e0b]`,
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90`,
+    },
+    background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+    didOpen: () => {
+      // Asegurar que aparezca por encima de los modales
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
+  });
+};
+
 // Alerta de eliminación (agregar al archivo alerts.js)
 export const showDeleteAlert = (title, text = "", options = {}) => {
   const defaultOptions = {

@@ -1,57 +1,80 @@
+// src/features/dashboard/pages/Admin/pages/Athletes/SportsCategory/hooks/useFormSportsCategoryValidation.js
 import { useState } from "react";
 
+/* ==================== HOOK PRINCIPAL ==================== */
 export const useFormSportsCategoryValidation = (initialValues = {}, validationRules = {}) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
 
+  /* ---------- Validar campo individual ---------- */
   const validateField = (name, value, currentValues = values) => {
     const rules = validationRules[name];
-    if (!rules) return "";
+    if (!rules || !Array.isArray(rules)) return "";
     for (const rule of rules) {
-      const error = rule(value, currentValues);
-      if (error) return error;
+      if (typeof rule === "function") {
+        const error = rule(value, currentValues);
+        if (error) return error;
+      }
     }
     return "";
   };
 
+  /* ---------- Validar todos los campos ---------- */
   const validateAllFields = (vals = values) => {
     const newErrors = {};
+    const allTouched = {};
+
     Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
       const error = validateField(name, vals[name], vals);
       if (error) newErrors[name] = error;
     });
+
+    setTouched(allTouched);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Función validate para compatibilidad con el modal
-  const validate = (formData) => {
-    return validateAllFields(formData);
-  };
-
-  // ✅ para marcar todos los campos como "tocados"
+  /* ---------- Marcar todos los campos como "tocados" ---------- */
   const touchAllFields = (vals = values) => {
     const allTouched = {};
-    Object.keys(vals).forEach((k) => { allTouched[k] = true; });
+    Object.keys(validationRules).forEach((name) => {
+      allTouched[name] = true;
+    });
     setTouched(allTouched);
+
+    const newErrors = {};
+    Object.keys(validationRules).forEach((name) => {
+      const err = validateField(name, vals[name], vals);
+      if (err) newErrors[name] = err;
+    });
+    setErrors(newErrors);
   };
 
+  /* ---------- Manejadores ---------- */
   const handleChange = (name, value) => {
     setValues((prev) => ({ ...prev, [name]: value }));
+
     if (touched[name]) {
       const error = validateField(name, value, { ...values, [name]: value });
       setErrors((prev) => ({ ...prev, [name]: error }));
     }
   };
 
-  // ✅ handleBlur compatible con el modal (recibe name, value, form)
-  const handleBlur = (name, value = values[name], formData = values) => {
+  const handleBlur = (name) => {
     setTouched((prev) => ({ ...prev, [name]: true }));
-    const error = validateField(name, value, formData);
+    const error = validateField(name, values[name], values);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
+  const resetForm = () => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  };
+
+  /* ---------- Retorno ---------- */
   return {
     values,
     errors,
@@ -59,43 +82,106 @@ export const useFormSportsCategoryValidation = (initialValues = {}, validationRu
     handleChange,
     handleBlur,
     validateAllFields,
-    validate, // ✅ Agregado para compatibilidad
     touchAllFields,
     setValues,
+    setErrors,
+    setTouched,
+    resetForm,
   };
 };
 
-// ✅ Reglas de validación actualizadas y más específicas
+/* ==================== REGLAS DE VALIDACIÓN ==================== */
 export const sportsCategoryValidationRules = {
-  nombreCategoria: [
-    (v) => (!v?.trim() ? "El nombre de la categoría es obligatorio" : ""),
-    (v) => (v?.trim().length < 3 ? "El nombre debe tener al menos 3 caracteres" : ""),
-    (v) => (v?.trim().length > 50 ? "El nombre no puede exceder 50 caracteres" : ""),
-  ],
-  edadMinima: [
-    (v) => (!v || v === "" ? "La edad mínima es obligatoria" : ""),
-    (v) => (isNaN(Number(v)) ? "La edad mínima debe ser un número válido" : ""),
-    (v) => (Number(v) < 5 ? "La edad mínima debe ser mayor o igual a 5 años" : ""),
-    (v) => (Number(v) > 50 ? "La edad mínima no puede ser mayor a 50 años" : ""),
-  ],
-  edadMaxima: [
-    (v) => (!v || v === "" ? "La edad máxima es obligatoria" : ""),
-    (v) => (isNaN(Number(v)) ? "La edad máxima debe ser un número válido" : ""),
-    (v) => (Number(v) > 80 ? "La edad máxima no puede ser mayor a 80 años" : ""),
-    (v, values) =>
-      values?.edadMinima && Number(v) <= Number(values.edadMinima)
-        ? "La edad máxima debe ser mayor que la edad mínima"
+  nombre: [
+    (value) =>
+      !value?.trim() ? "El nombre de la categoría es obligatorio." : "",
+    (value) =>
+      value?.trim().length < 3
+        ? "El nombre debe tener al menos 3 caracteres."
+        : "",
+    (value) =>
+      value?.trim().length > 100
+        ? `El nombre no puede exceder 100 caracteres (${value?.trim().length}/100).`
+        : "",
+    (value) =>
+      !/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_]+$/.test(value?.trim() || "")
+        ? "Solo se permiten letras, números, espacios, guiones (-) y guiones bajos (_)."
         : "",
   ],
+
+  edadMinima: [
+    (value) =>
+      value === undefined || value === "" || value === null
+        ? "La edad mínima es obligatoria."
+        : "",
+    (value) =>
+      isNaN(Number(value)) || !Number.isInteger(Number(value))
+        ? "La edad mínima debe ser un número entero."
+        : "",
+    (value) =>
+      Number(value) < 5 ? "La edad mínima debe ser al menos 5 años." : "",
+    (value) =>
+      Number(value) > 79 ? "La edad mínima no puede superar los 79 años." : "",
+  ],
+
+  edadMaxima: [
+    (value) =>
+      value === undefined || value === "" || value === null
+        ? "La edad máxima es obligatoria."
+        : "",
+    (value) =>
+      isNaN(Number(value)) || !Number.isInteger(Number(value))
+        ? "La edad máxima debe ser un número entero."
+        : "",
+    (value) =>
+      Number(value) < 6 ? "La edad máxima debe ser al menos 6 años." : "",
+    (value) =>
+      Number(value) > 80 ? "La edad máxima no puede superar los 80 años." : "",
+    (value, values) => {
+      const min = Number(values?.edadMinima);
+      const max = Number(value);
+      return !isNaN(min) && !isNaN(max) && max <= min
+        ? "La edad máxima debe ser mayor que la edad mínima."
+        : "";
+    },
+  ],
+
   descripcion: [
-    // Descripción opcional, pero si se llena debe tener mínimo
-    (v) => (v && v.trim().length > 0 && v.trim().length < 10 ? "La descripción debe tener al menos 10 caracteres" : ""),
-    (v) => (v && v.trim().length > 500 ? "La descripción no puede exceder 500 caracteres" : ""),
+    (value) =>
+      value &&
+      typeof value === "string" &&
+      value.trim().length > 0 &&
+      value.trim().length < 10
+        ? "La descripción debe tener al menos 10 caracteres si se proporciona."
+        : "",
+    (value) =>
+      value &&
+      typeof value === "string" &&
+      value.trim().length > 500
+        ? `La descripción no puede exceder 500 caracteres (${value.trim().length}/500).`
+        : "",
   ],
+
   estado: [
-    (v) => (!v ? "Debe seleccionar un estado para la categoría" : ""),
+    (value) =>
+      !value || (value !== "Active" && value !== "Inactive")
+        ? "Seleccione un estado válido: Activo o Inactivo."
+        : "",
   ],
+
+  // Archivo opcional — validación simple (opcional)
+  /*
   archivo: [
-    (v) => (!v ? "Debe subir un archivo antes de continuar" : ""),
+    (file) => {
+      if (!file || !(file instanceof File)) return "";
+      const validTypes = ["image/jpeg", "image/png", "image/webp"];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (!validTypes.includes(file.type))
+        return "Solo se permiten archivos JPG, PNG o WEBP.";
+      if (file.size > maxSize)
+        return "El archivo no puede superar los 5 MB.";
+      return "";
+    },
   ],
+  */
 };

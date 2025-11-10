@@ -9,7 +9,6 @@ import {
   Trash2,
   ChevronDown,
   Plus,
-  AlertCircle,
 } from "lucide-react";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import SelectionModal from "../components/SelectionModal";
@@ -18,10 +17,7 @@ import {
   showErrorAlert,
   showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts";
-import {
-  useFormTemporaryTeamsValidation,
-  temporaryTeamsValidationRules,
-} from "../hooks/useFormTemporaryTeamsValidation";
+import TeamsService from "../services/TeamsService";
 
 const states = [
   { value: "Activo", label: "Activo" },
@@ -44,51 +40,22 @@ const TemporaryTeamModal = ({
   const [selectedAthletes, setSelectedAthletes] = useState([]);
   const [teamType, setTeamType] = useState(null);
   const [currentCategoria, setCurrentCategoria] = useState(null);
-
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    validateAllFields,
-    resetForm,
-    setTouched,
-    setValues,
-    setErrors,
-  } = useFormTemporaryTeamsValidation(
-    {
-      nombreEquipo: "",
-      telefono: "",
-      entrenador: "",
-      deportistas: [],
-      estado: "Activo",
-      descripcion: "",
-      categoria: "",
-    },
-    temporaryTeamsValidationRules
-  );
-
-  // Función de validación para categoría
-  const validateCategoria = (value, teamType) => {
-    if (teamType === "temporal") {
-      if (!value?.trim()) return "La categoría es obligatoria para equipos temporales";
-      if (value.trim().length < 2) return "La categoría debe tener al menos 2 caracteres";
-      if (value.trim().length > 50) return "La categoría no puede exceder 50 caracteres";
-      if (/\s{2,}/.test(value)) return "No se permiten espacios dobles";
-    }
-    return "";
-  };
+  const [formData, setFormData] = useState({
+    nombre: "",
+    telefono: "",
+    entrenador: "",
+    estado: "Activo",
+    descripcion: "",
+    categoria: "",
+  });
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (isOpen && isEditing && teamToEdit) {
-      setValues({
-        nombreEquipo: teamToEdit.nombre || "",
+      setFormData({
+        nombre: teamToEdit.nombre || "",
         telefono: teamToEdit.telefono || "",
         entrenador: teamToEdit.entrenador || "",
-        deportistas: Array.isArray(teamToEdit.deportistas)
-          ? teamToEdit.deportistas
-          : [],
         estado: teamToEdit.estado || "Activo",
         descripcion: teamToEdit.descripcion || "",
         categoria: teamToEdit.categoria || "",
@@ -106,10 +73,19 @@ const TemporaryTeamModal = ({
         }
       }
     } else if (isOpen && !isEditing) {
+      setFormData({
+        nombre: "",
+        telefono: "",
+        entrenador: "",
+        estado: "Activo",
+        descripcion: "",
+        categoria: "",
+      });
       setSelectedTrainer(null);
       setSelectedAthletes([]);
       setTeamType(null);
       setCurrentCategoria(null);
+      setErrors({});
     }
   }, [isOpen, isEditing, teamToEdit]);
 
@@ -117,20 +93,47 @@ const TemporaryTeamModal = ({
     if (teamType === "fundacion" && selectedAthletes.length > 0) {
       const categoria = selectedAthletes[0].categoria;
       setCurrentCategoria(categoria);
-    } else {
+      setFormData(prev => ({ ...prev, categoria }));
+    } else if (teamType === "temporal") {
       setCurrentCategoria(null);
     }
   }, [selectedAthletes, teamType]);
 
   const shouldShowCategoryField = teamType === "temporal";
 
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
-      return phone;
-    if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
-    return phone;
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Limpiar error cuando el usuario empiece a escribir
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.nombre?.trim()) {
+      newErrors.nombre = "El nombre del equipo es obligatorio";
+    }
+
+    if (!formData.telefono?.trim()) {
+      newErrors.telefono = "El teléfono es obligatorio";
+    }
+
+    if (!selectedTrainer) {
+      newErrors.entrenador = "Debe seleccionar un entrenador";
+    }
+
+    if (selectedAthletes.length === 0) {
+      newErrors.deportistas = "Debe seleccionar al menos un deportista";
+    }
+
+    if (teamType === "temporal" && !formData.categoria?.trim()) {
+      newErrors.categoria = "La categoría es obligatoria para equipos temporales";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleTrainerSelect = (trainer) => {
@@ -184,7 +187,6 @@ const TemporaryTeamModal = ({
     }
 
     setSelectedAthletes(athletes);
-    handleChange("deportistas", athletes);
 
     if (!selectedTrainer && athletes.length > 0) {
       setTeamType(athletes[0].type);
@@ -193,43 +195,27 @@ const TemporaryTeamModal = ({
     if (teamType === "fundacion" && athletes.length > 0) {
       const categoria = athletes[0].categoria;
       setCurrentCategoria(categoria);
+      handleChange("categoria", categoria);
     }
   };
 
   const removeAthlete = (athleteId) => {
     const updated = selectedAthletes.filter((p) => p.id !== athleteId);
     setSelectedAthletes(updated);
-    handleChange("deportistas", updated);
 
     if (updated.length === 0) {
       setTeamType(selectedTrainer?.type || null);
       setCurrentCategoria(null);
+      handleChange("categoria", "");
     } else if (teamType === "fundacion") {
       const categoria = updated[0].categoria;
       setCurrentCategoria(categoria);
+      handleChange("categoria", categoria);
     }
   };
 
   const handleSubmit = async () => {
-    const allTouched = {};
-    Object.keys(temporaryTeamsValidationRules).forEach((field) => {
-      allTouched[field] = true;
-    });
-    setTouched(allTouched);
-
-    // Validar campos básicos
-    const basicValidationPassed = validateAllFields();
-
-    // Validación específica para categoría de equipos temporales
-    let categoriaError = "";
-    if (teamType === "temporal") {
-      categoriaError = validateCategoria(values.categoria, teamType);
-      if (categoriaError) {
-        setErrors((prev) => ({ ...prev, categoria: categoriaError }));
-      }
-    }
-
-    if (!basicValidationPassed || categoriaError) {
+    if (!validateForm()) {
       return;
     }
 
@@ -270,53 +256,33 @@ const TemporaryTeamModal = ({
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Confirmar actualización?",
-        `Se actualizarán los datos del equipo ${
-          teamToEdit?.nombre || values.nombreEquipo
-        }`,
+        `Se actualizarán los datos del equipo ${teamToEdit?.nombre || formData.nombre}`,
         { confirmButtonText: "Actualizar", cancelButtonText: "Cancelar" }
       );
       if (!confirmResult.isConfirmed) return;
     }
 
     try {
-      const finalCategory = teamType === "fundacion" ? currentCategoria : values.categoria;
-
-      const preparedAthletes = selectedAthletes.map((athlete) => {
-        if (athlete.type === "temporal") {
-          const { categoria, ...athleteWithoutCategory } = athlete;
-          return athleteWithoutCategory;
-        }
-        return athlete;
-      });
-
       const teamData = {
-        nombre: values.nombreEquipo,
-        telefono: formatPhoneNumber(values.telefono),
-        entrenador: values.entrenador,
+        nombre: formData.nombre,
+        telefono: formData.telefono,
+        entrenador: formData.entrenador,
         entrenadorData: selectedTrainer,
-        deportistas: preparedAthletes,
-        deportistasIds: selectedAthletes.map((j) => j.id),
-        cantidadDeportistas: selectedAthletes.length,
-        estado: values.estado,
-        descripcion: values.descripcion,
+        deportistas: selectedAthletes,
+        deportistasIds: selectedAthletes.map(a => a.id),
+        estado: formData.estado,
+        descripcion: formData.descripcion,
         teamType: teamType,
-        categoria: finalCategory,
+        categoria: formData.categoria,
       };
 
       if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
         await onUpdate(updatedTeamData);
-        showSuccessAlert("Éxito", `${teamData.nombre} ha sido actualizado`);
       } else {
         await onSave(teamData);
-        showSuccessAlert("Éxito", `${teamData.nombre} ha sido creado`);
       }
 
-      resetForm();
-      setSelectedTrainer(null);
-      setSelectedAthletes([]);
-      setTeamType(null);
-      setCurrentCategoria(null);
       onClose();
     } catch (error) {
       console.error(error);
@@ -325,11 +291,19 @@ const TemporaryTeamModal = ({
   };
 
   const handleClose = () => {
-    resetForm();
+    setFormData({
+      nombre: "",
+      telefono: "",
+      entrenador: "",
+      estado: "Activo",
+      descripcion: "",
+      categoria: "",
+    });
     setSelectedTrainer(null);
     setSelectedAthletes([]);
     setTeamType(null);
     setCurrentCategoria(null);
+    setErrors({});
     onClose();
   };
 
@@ -401,14 +375,12 @@ const TemporaryTeamModal = ({
               >
                 <FormField
                   label="Nombre del Equipo"
-                  name="nombreEquipo"
+                  name="nombre"
                   type="text"
                   placeholder="Ej: Manuela Vanegas Sub-17"
-                  value={values.nombreEquipo}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.nombreEquipo}
-                  touched={touched.nombreEquipo}
+                  value={formData.nombre}
+                  onChange={(e) => handleChange("nombre", e.target.value)}
+                  error={errors.nombre}
                   required
                 />
               </motion.div>
@@ -423,11 +395,9 @@ const TemporaryTeamModal = ({
                   name="telefono"
                   type="text"
                   placeholder="Número de contacto"
-                  value={values.telefono}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
+                  value={formData.telefono}
+                  onChange={(e) => handleChange("telefono", e.target.value)}
                   error={errors.telefono}
-                  touched={touched.telefono}
                   required
                 />
               </motion.div>
@@ -443,14 +413,9 @@ const TemporaryTeamModal = ({
                   </label>
                   <select
                     name="estado"
-                    value={values.estado}
+                    value={formData.estado}
                     onChange={(e) => handleChange("estado", e.target.value)}
-                    onBlur={() => handleBlur("estado")}
-                    className={`w-full rounded-lg border px-3 py-2 transition focus:ring-2 focus:ring-primary-purple ${
-                      touched.estado && errors.estado
-                        ? "border-red-400"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-full rounded-lg border px-3 py-2 transition focus:ring-2 focus:ring-primary-purple border-gray-300`}
                   >
                     <option value="">Seleccione un estado</option>
                     {states.map((s) => (
@@ -459,12 +424,6 @@ const TemporaryTeamModal = ({
                       </option>
                     ))}
                   </select>
-
-                  {touched.estado && errors.estado && (
-                    <p className="text-sm text-red-500 flex items-center gap-2">
-                      <span>⚠</span> {errors.estado}
-                    </p>
-                  )}
                 </div>
               </motion.div>
             </div>
@@ -508,7 +467,7 @@ const TemporaryTeamModal = ({
                   type="button"
                   onClick={() => setIsTrainerModalOpen(true)}
                   className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
-                    touched.entrenador && errors.entrenador
+                    errors.entrenador
                       ? "border-red-400"
                       : selectedTrainer
                       ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
@@ -571,7 +530,7 @@ const TemporaryTeamModal = ({
                 )}
               </div>
 
-              {touched.entrenador && errors.entrenador && (
+              {errors.entrenador && (
                 <p className="text-sm text-red-500 flex items-center gap-2">
                   <span>⚠</span> {errors.entrenador}
                 </p>
@@ -609,7 +568,7 @@ const TemporaryTeamModal = ({
                   type="button"
                   onClick={() => setIsAthletesModalOpen(true)}
                   className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
-                    touched.deportistas && errors.deportistas
+                    errors.deportistas
                       ? "border-red-400"
                       : selectedAthletes.length > 0
                       ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
@@ -673,27 +632,9 @@ const TemporaryTeamModal = ({
                       name="categoria"
                       type="text"
                       placeholder="Ej: Sub 17, Sub 15, Mayores"
-                      value={values.categoria}
-                      onChange={(e) => {
-                        handleChange(e);
-                        if (!touched.categoria) {
-                          setTouched((prev) => ({ ...prev, categoria: true }));
-                        }
-                        // Limpiar error si el usuario comienza a escribir
-                        if (errors.categoria) {
-                          setErrors((prev) => ({ ...prev, categoria: "" }));
-                        }
-                      }}
-                      onBlur={() => {
-                        handleBlur("categoria");
-                        // Validación específica para categoría
-                        const categoriaError = validateCategoria(values.categoria, teamType);
-                        if (categoriaError) {
-                          setErrors((prev) => ({ ...prev, categoria: categoriaError }));
-                        }
-                      }}
+                      value={formData.categoria}
+                      onChange={(e) => handleChange("categoria", e.target.value)}
                       error={errors.categoria}
-                      touched={touched.categoria}
                       required
                     />
                   </motion.div>
@@ -752,7 +693,7 @@ const TemporaryTeamModal = ({
                 )}
               </div>
 
-              {touched.deportistas && errors.deportistas && (
+              {errors.deportistas && (
                 <p className="text-sm text-red-500 flex items-center gap-2">
                   <span>⚠</span> {errors.deportistas}
                 </p>
@@ -771,11 +712,8 @@ const TemporaryTeamModal = ({
                 name="descripcion"
                 type="textarea"
                 placeholder="Información adicional del equipo..."
-                value={values.descripcion}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.descripcion}
-                touched={touched.descripcion}
+                value={formData.descripcion}
+                onChange={(e) => handleChange("descripcion", e.target.value)}
                 rows={3}
               />
             </motion.div>

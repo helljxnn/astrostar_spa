@@ -16,6 +16,7 @@ export const EventModal = ({
   event,
   isNew,
   mode = "create",
+  referenceData = { categories: [], types: [] }
 }) => {
   const [tipoEvento, setTipoEvento] = useState("");
   const [form, setForm] = useState({
@@ -31,9 +32,24 @@ export const EventModal = ({
     cronograma: null,
     patrocinador: [],
     categoria: "",
+    categoriaId: null,
+    tipoId: null,
     estado: "",
     publicar: false,
   });
+
+  // Mapeo de tipos de evento a tipo de participante
+  const eventTypeParticipantMap = {
+    'Festival': 'Equipos',
+    'Torneo': 'Equipos',
+    'Clausura': 'Deportistas',
+    'Taller': 'Deportistas'
+  };
+
+  // Obtener el tipo de participante según el tipo de evento
+  const getParticipantType = () => {
+    return eventTypeParticipantMap[tipoEvento] || 'Deportistas';
+  };
 
   const { errors, touched, validate, handleBlur, touchAllFields } =
     useFormEventValidation();
@@ -93,6 +109,8 @@ export const EventModal = ({
         cronograma: event.cronograma || null,
         patrocinador: event.patrocinador || [],
         categoria: event.categoria || "",
+        categoriaId: event.categoriaId || null,
+        tipoId: event.tipoId || null,
         estado: event.estado || "",
         publicar: event.publicar || false,
       });
@@ -126,10 +144,16 @@ export const EventModal = ({
         if (!result.isConfirmed) return;
       }
 
+      // Encontrar los IDs de categoría y tipo
+      const selectedType = referenceData.types.find(t => t.name === tipoEvento);
+      const selectedCategory = referenceData.categories.find(c => c.name === form.categoria);
+
       const eventData = { 
         ...form, 
-        tipo: tipoEvento, 
-        id: event?.id || Date.now() 
+        tipo: tipoEvento,
+        tipoId: selectedType?.id || form.tipoId,
+        categoriaId: selectedCategory?.id || form.categoriaId,
+        id: event?.id
       };
       
       await onSave(eventData);
@@ -184,7 +208,7 @@ export const EventModal = ({
             {/* Fila 1 */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Tipo de evento ahora en la primera fila y más pequeño */}
-              <div className="md:col-span-1">
+              <div className="md:col-span-1 space-y-2">
                 <FormField
                   label="Tipo"
                   name="tipoEvento"
@@ -195,15 +219,30 @@ export const EventModal = ({
                   error={errors.tipoEvento}
                   touched={touched.tipoEvento}
                   placeholder="Seleccione tipo"
-                  options={[
-                    { value: "Festival", label: "Festival" },
-                    { value: "Torneo", label: "Torneo" },
-                    { value: "Clausura", label: "Clausura" },
-                    { value: "Taller", label: "Taller" },
-                  ]}
+                  options={referenceData.types.map(type => ({
+                    value: type.name,
+                    label: type.name
+                  }))}
                   required={mode !== "view"}
                   disabled={mode === "view"}
                 />
+                {tipoEvento && (
+                  <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center gap-1">
+                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      <span className="text-xs font-medium text-gray-700">Inscripción:</span>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                      getParticipantType() === 'Equipos' 
+                        ? 'bg-blue-500 text-white' 
+                        : 'bg-green-500 text-white'
+                    }`}>
+                      {getParticipantType()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <FormField
@@ -346,12 +385,10 @@ export const EventModal = ({
                   value={form.categoria}
                   onChange={handleChange}
                   onBlur={() => handleBlur("categoria", form.categoria, form)}
-                  options={[
-                    { value: "Deportivo", label: "Deportivo" },
-                    { value: "Educativo", label: "Educativo" },
-                    { value: "Cultural", label: "Cultural" },
-                    { value: "Social", label: "Social" },
-                  ]}
+                  options={referenceData.categories.map(cat => ({
+                    value: cat.name,
+                    label: cat.name
+                  }))}
                   error={errors.categoria}
                   touched={touched.categoria}
                   required={mode !== "view"}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const useFormEmployeeValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -54,6 +54,19 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setTouched(allTouched);
   };
 
+  // 👇 Limpia todas las validaciones y errores
+  const resetValidation = useCallback(() => {
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  // 👇 Resetea completamente el formulario
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
+
   return {
     values,
     errors,
@@ -62,7 +75,10 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    setErrors,
     touchAllFields,
+    resetValidation,
+    resetForm,
   };
 };
 

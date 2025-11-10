@@ -19,12 +19,10 @@ class ApiClient {
     };
   }
 
-  /**
-   * Método base para realizar peticiones HTTP
-   */
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
 
+    // Config base
     const defaultOptions = {
       // Incluir credenciales (cookies) en todas las peticiones
       credentials: "include",
@@ -33,6 +31,7 @@ class ApiClient {
       },
     };
 
+    // Combinar opciones finales
     const config = { ...defaultOptions, ...options };
 
     try {
@@ -80,14 +79,20 @@ class ApiClient {
         }
       }
 
+      // Manejo de errores HTTP
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
+          errorData.message || `Error HTTP ${response.status}`
         );
       }
 
-      return await response.json();
+      // Algunos endpoints no devuelven JSON
+      const contentType = response.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json();
+      }
+      return await response.text();
     } catch (error) {
       console.error("🚨 API Request failed:", error);
       if (error.message === "Failed to refresh token") {
@@ -125,9 +130,12 @@ class ApiClient {
   }
 
   async put(endpoint, data) {
+    const isFormData = data instanceof FormData;
+    const body = isFormData ? data : JSON.stringify(data);
     return this.request(endpoint, {
       method: "PUT",
-      body: JSON.stringify(data),
+      body,
+      headers: isFormData ? {} : { "Content-Type": "application/json" },
     });
   }
 
