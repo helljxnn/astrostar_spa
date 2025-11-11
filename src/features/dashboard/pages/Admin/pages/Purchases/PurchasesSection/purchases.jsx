@@ -53,7 +53,7 @@ const Purchases = () => {
   const sportsEquipmentAPI = {
     getAll: (params) => apiClient.get("/sports-equipment", params),
   };
-  // ==================================================
+  // ================================================== 
 
   const fetchPurchases = useCallback(async (page, search) => {
     try {
@@ -65,7 +65,7 @@ const Purchases = () => {
     } catch (error) {
       showErrorAlert("Could not fetch purchases.", error.message);
     }
-  }, [rowsPerPage]); // Dependencia de rowsPerPage
+  }, [rowsPerPage]);
 
   const fetchRequiredData = useCallback(async () => {
     try {

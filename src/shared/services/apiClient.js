@@ -61,7 +61,7 @@ class ApiClient {
             }
           );
 
-          if (!refreshResponse.ok) {
+          if (!refreshResponse.success) {
             throw new Error("Failed to refresh token");
           }
 

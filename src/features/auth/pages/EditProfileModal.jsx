@@ -2,11 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom"; // 1. Importar useNavigate
 import { FaTimes, FaCamera } from "react-icons/fa";
+import moment from "moment-timezone";
 import { FormField } from "../../../shared/components/FormField";
 import { useFormUserValidation, userValidationRules } from "../../dashboard/pages/Admin/pages/Users/hooks/useFormUserValidation";
 import apiClient from "../../../shared/services/apiClient";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../shared/utils/alerts";
 import { useAuth } from "../../../shared/contexts/authContext"; // Importamos el hook de autenticación
+
+
 const EditProfileModal = ({ isOpen, onClose, onSave }) => {
     const {
         values,
@@ -73,7 +76,7 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                 email: user?.email || "",
                 phoneNumber: user?.phoneNumber || "",
                 address: user?.address || "",
-                birthDate: user?.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : "",
+                birthDate: user?.birthDate ? moment(user.birthDate).tz('UTC').format('YYYY-MM-DD') : "",
                 identification: user?.identification || "",
                 documentType: user?.documentType?.id || "",
                 age: user?.age || "",
@@ -110,11 +113,6 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
     };
 
     const handleSubmit = async () => {
-        if (!validateAllFields()) {
-            showErrorAlert("Error de validación", "Por favor, revisa los campos del formulario.");
-            return;
-        }
-
         const confirmResult = await showConfirmAlert(
             "¿Actualizar tu perfil?",
             "Tus datos serán modificados."
@@ -125,10 +123,22 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                 // Excluimos campos que el usuario no debería poder editar directamente.
                 const { rol, estado, age, ...dataToSave } = values;
 
-                // Lógica para el avatar (simulada, adaptar a tu backend de subida de archivos)
-                if (avatarPreview && avatarPreview !== user.avatar) {
-                    dataToSave.avatar = avatarPreview;
+                // Prisma espera un objeto para conectar la relación, no solo el ID.
+                if (dataToSave.documentType) {
+                    dataToSave.documentTypeId = parseInt(dataToSave.documentType, 10);
+                    delete dataToSave.documentType; // Eliminamos el campo que causa el conflicto
                 }
+
+                // Convertir la fecha de nacimiento a formato ISO-8601 completo en UTC.
+                // El input de fecha devuelve 'YYYY-MM-DD', pero Prisma espera un DateTime.
+                if (dataToSave.birthDate) {
+                    dataToSave.birthDate = new Date(`${dataToSave.birthDate}T00:00:00.000Z`).toISOString();
+                }
+
+                // Lógica para el avatar (simulada, adaptar a tu backend de subida de archivos)
+                // if (avatarPreview && avatarPreview !== user.avatar) {
+                //     dataToSave.avatar = avatarPreview; // Esto requeriría un endpoint que maneje subida de archivos
+                // }
 
                 // Llamada a la API para actualizar el perfil
                 const response = await apiClient.put(`/auth/updateProfile/${user.id}`, dataToSave);
@@ -296,6 +306,28 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                             onBlur={handleBlur}
                             error={errors.phoneNumber}
                             touched={touched.phoneNumber}
+                            required
+                        />
+                        <FormField
+                            label="Dirección"
+                            name="address"
+                            type="text"
+                            placeholder="Tu dirección de residencia"
+                            value={values.address}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.address}
+                            touched={touched.address}
+                        />
+                        <FormField
+                            label="Fecha de Nacimiento"
+                            name="birthDate"
+                            type="date"
+                            value={values.birthDate}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            error={errors.birthDate}
+                            touched={touched.birthDate}
                             required
                         />
                     </div>

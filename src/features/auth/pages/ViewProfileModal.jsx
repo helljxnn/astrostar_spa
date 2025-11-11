@@ -9,6 +9,7 @@ import {
   FaBriefcase,
   FaBirthdayCake,
   FaMapMarkerAlt,
+  FaUserCheck,
 } from "react-icons/fa";
 import apiClient from "../../../shared/services/apiClient";
 
@@ -21,8 +22,22 @@ const DetailItem = ({ icon, label, value }) => (
       {icon}
     </div>
     <div>
-      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className="text-sm font-medium text-gray-500 ">{label}</p>
       <p className="text-md font-semibold text-gray-800 break-words">
+        {value || "No especificado"}
+      </p>
+    </div>
+  </div>
+);
+
+const StatusItem = ({ label, value }) => (
+  <div className="flex items-start gap-4 py-3">
+    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${value === 'Activo' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+      <FaUserCheck />
+    </div>
+    <div>
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className={`text-md font-semibold break-words ${value === 'Activo' ? 'text-green-700' : 'text-red-700'}`}>
         {value || "No especificado"}
       </p>
     </div>
@@ -34,6 +49,7 @@ const DetailItem = ({ icon, label, value }) => (
  */
 const ViewProfileModal = ({ isOpen, onClose }) => {
   const [user, setUser] = useState(null);
+  console.log(user);
   const [loading, setLoading] = useState(true);
 
   // ================================
@@ -179,6 +195,15 @@ const ViewProfileModal = ({ isOpen, onClose }) => {
                   <DetailItem icon={<FaEnvelope />} label="Correo Electrónico" value={user?.email} />
                   <DetailItem icon={<FaPhone />} label="Número de Teléfono" value={user?.phoneNumber} />
                   <DetailItem icon={<FaMapMarkerAlt />} label="Dirección" value={user?.address} />
+                  <DetailItem
+                    icon={<FaBirthdayCake />}
+                    label="Edad"
+                    value={user?.age ? `${user.age} años` : 'No especificada'}
+                  />
+                  <StatusItem
+                    label="Estado"
+                    value={user?.status}
+                  />
                 </div>
               </div>
             </>

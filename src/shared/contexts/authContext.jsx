@@ -52,18 +52,19 @@ export const AuthProvider = ({ children }) => {
         const userData = profileResponse.data;
         // 🔹 Transformar permisos a formato manejable
         const permissions = formatUserPermissions(userData.role?.permissions);
-        
+
         // 🔹 Guardamos toda la información del usuario, incluyendo permisos
         const fullUserData = {
           ...userData,
           permissions,
         };
-        
+
         // Actualiza el estado del usuario y la autenticación
         setUser(fullUserData);
         // Guarda el estado de autenticación como verdadero
         setIsAuthenticated(true);
-        // Navega al dashboard si el usuario está autenticado
+
+        // Navega al dashboard si el usuario está autenticado y no en una página pública.
         navigate("/dashboard");
       } else {
         // Si no es exitoso, limpia el estado y redirige al login
@@ -81,7 +82,10 @@ export const AuthProvider = ({ children }) => {
 
   // ----- Persistencia de sesion ------
   useEffect(() => {
-    checkAuthStatus();
+    const publicRoutes = ["/login", "/forgot-password", "/reset-password"];
+    if (!publicRoutes.includes(window.location.pathname)) {
+      checkAuthStatus();
+    }
   }, []); // <-- Array vacío para que se ejecute solo una vez al cargar la app
 
   // ----- VALORES DERIVADOS CON useMemo -----
