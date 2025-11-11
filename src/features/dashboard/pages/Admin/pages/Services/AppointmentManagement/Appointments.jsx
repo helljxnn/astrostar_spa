@@ -186,13 +186,13 @@ function Appointments() {
             }
 
             const newAppointment = {
-                title: formValues.title,
-                start: moment(`${formValues.date}T${formValues.time}`).toISOString(),
+                title: formValues.title, // Título de la cita
+                description: formValues.description, // Descripción
+                start: moment(`${formValues.date}T${formValues.time}`).toISOString(), // Fecha y hora de inicio en formato ISO
                 end: moment(`${formValues.date}T${formValues.time}`).add(1, 'hour').toISOString(), // Asumiendo 1 hora de duración
-                description: formValues.description,
-                athleteId,
-                specialistId: formValues.specialistId,
-                specialtyId: formValues.specialtyId,
+                athleteId: parseInt(athleteId), // ID del atleta
+                specialistId: parseInt(formValues.specialistId), // ID del especialista
+                specialtyId: parseInt(formValues.specialtyId), // ID de la especialidad
             };
 
             // 3. Usar el objeto appointmentAPI
@@ -208,7 +208,7 @@ function Appointments() {
     const handleCancelAppointment = async (appointmentToCancel) => {
         const { value: reason } = await Swal.fire({
             title: 'Reason for cancellation',
-            input: 'textarea',
+            input: 'textarea', // El backend espera un 'reason'
             inputLabel: 'Please state the reason for cancellation',
             inputPlaceholder: 'Enter the reason here...',
             showCancelButton: true,
@@ -228,7 +228,7 @@ function Appointments() {
 
         if (reason) {
             try {
-                // 4. Usar el objeto appointmentAPI
+                // 4. Usar el objeto appointmentAPI, pasando el 'reason'
                 await appointmentAPI.cancel(appointmentToCancel.id, reason);
                 showSuccessAlert("Appointment Cancelled!", "The appointment has been successfully cancelled.");
                 fetchAppointments(); // Refetch

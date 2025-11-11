@@ -11,8 +11,6 @@ import Pagination from '../../../../../../../shared/components/Table/Pagination'
 
 const Purchases = () => {
   const [purchasesList, setPurchasesList] = useState([]);
-  const [providers, setProviders] = useState([]);
-  const [equipment, setEquipment] = useState([]);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -29,31 +27,14 @@ const Purchases = () => {
   const purchaseAPI = {
     getAll: (params) => apiClient.get("/purchases", params),
     getById: (id) => apiClient.get(`/purchases/${id}`),
-    create: (purchaseData) => {
-      const formData = new FormData();
-      formData.append('providerId', purchaseData.providerId);
-      formData.append('purchaseDate', purchaseData.purchaseDate);
-      if (purchaseData.deliveryDate) formData.append('deliveryDate', purchaseData.deliveryDate);
-      if (purchaseData.notes) formData.append('notes', purchaseData.notes);
-      formData.append('items', JSON.stringify(purchaseData.items));
-      if (purchaseData.images && purchaseData.images.length > 0) {
-        purchaseData.images.forEach(image => formData.append('images', image));
-      }
-      return apiClient.post("/purchases", formData, {
+    create: (formData) => { // Ahora recibe el FormData directamente
+      return apiClient.post("/purchases", formData, { // Y lo envía
         headers: { 'Content-Type': 'multipart/form-data' },
       });
     },
     cancel: (id) => apiClient.patch(`/purchases/${id}/cancel`),
   };
 
-  const providerAPI = {
-    getAll: (params) => apiClient.get("/providers", params),
-  };
-
-  const sportsEquipmentAPI = {
-    getAll: (params) => apiClient.get("/sports-equipment", params),
-  };
-  // ================================================== 
 
   const fetchPurchases = useCallback(async (page, search) => {
     try {
@@ -67,32 +48,13 @@ const Purchases = () => {
     }
   }, [rowsPerPage]);
 
-  const fetchRequiredData = useCallback(async () => {
-    try {
-      // Fetch all providers and equipment (assuming not too many for now)
-      const providersResponse = await providerAPI.getAll({ limit: 1000 });
-      if (providersResponse.success) {
-        setProviders(providersResponse.data);
-      }
-      const equipmentResponse = await sportsEquipmentAPI.getAll({ limit: 1000 });
-      if (equipmentResponse.success) {
-        setEquipment(equipmentResponse.data);
-      }
-    } catch (error) {
-      showErrorAlert("Could not fetch required data for the form.", error.message);
-    }
-  }, []);
-
   useEffect(() => {
     fetchPurchases(currentPage, searchTerm);
   }, [currentPage, searchTerm, fetchPurchases]);
 
-  useEffect(() => {
-    fetchRequiredData();
-  }, [fetchRequiredData]);
-
   const handleCreate = async (formData) => {
     try {
+      // `formData` ya viene preparado desde `formCreate.jsx`
       await purchaseAPI.create(formData);
       showSuccessAlert("Created!", "The new purchase has been registered successfully.");
       setIsCreateModalOpen(false);
@@ -240,8 +202,6 @@ const Purchases = () => {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreate}
-        equipmentList={equipment}
-        providerList={providers}
       />
       <ViewInvoiceDetails
         isOpen={isViewModalOpen}

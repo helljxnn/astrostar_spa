@@ -21,15 +21,16 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, onCancelAppointm
     // Format details for display
     const details = [
         { label: "Título", value: appointmentData.title },
-        { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') },
+        { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') }, // Usar 'start'
         { label: "Hora", value: moment(appointmentData.start).format('h:mm a') },
         { label: "Descripción / Razón", value: appointmentData.description },
         { label: "Estado", value: appointmentData.status },
     ];
 
     if (appointmentData.status === 'CANCELLED') {
+        // El backend usa 'reasonForCancellation'
         details.push({
-            label: "Razón de Cancelación", value: appointmentData.cancellationReason || 'No especificada',
+            label: "Razón de Cancelación", value: appointmentData.reasonForCancellation || 'No especificada',
         });
     } else if (appointmentData.status === 'COMPLETED') {
         details.push({
