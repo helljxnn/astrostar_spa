@@ -12,8 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
  * @param {function} props.onSubmit - Función que se ejecuta al enviar el formulario.
  * @param {string} props.submitText - El texto para el botón de envío (ej. "Crear", "Guardar Cambios").
  * @param {number} props.id - El id de un registro si para actualizar o no.
+ * @param {string} props.encType - El tipo de codificación del formulario, ej. "multipart/form-data" para subir archivos.
 */
-const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null }) => {
+const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null, encType = "application/x-www-form-urlencoded" }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -70,9 +71,9 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                     {/* Contenedor del Formulario con animación */}
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto"
                     >
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} encType={encType}>
                             {/* Header */}
                             <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
                                 <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>

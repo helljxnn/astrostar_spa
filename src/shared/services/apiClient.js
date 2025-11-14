@@ -22,17 +22,34 @@ class ApiClient {
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
 
-    // Config base
+    // Configuración base sin Content-Type por defecto
     const defaultOptions = {
       // Incluir credenciales (cookies) en todas las peticiones
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: {}, // Lo dejamos vacío por defecto
     };
 
     // Combinar opciones finales
-    const config = { ...defaultOptions, ...options };
+    const config = {
+      ...defaultOptions,
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...options.headers,
+      },
+    };
+
+    // Si el cuerpo NO es FormData y no se ha especificado un Content-Type,
+    // asumimos que es JSON.
+    if (!(config.body instanceof FormData) && !config.headers["Content-Type"]) {
+      config.headers["Content-Type"] = "application/json";
+    }
+
+    // Si es FormData, eliminamos explícitamente el Content-Type para que
+    // el navegador lo genere automáticamente con el 'boundary'.
+    if (config.body instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
 
     try {
       let response = await fetch(url, config);
@@ -61,7 +78,9 @@ class ApiClient {
             }
           );
 
-          if (!refreshResponse.success) {
+          // Asumiendo que el refresh devuelve un JSON con { success: true }
+          const refreshResult = await refreshResponse.json();
+          if (!refreshResponse.ok || !refreshResult.success) {
             throw new Error("Failed to refresh token");
           }
 
@@ -82,9 +101,7 @@ class ApiClient {
       // Manejo de errores HTTP
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `Error HTTP ${response.status}`
-        );
+        throw new Error(errorData.message || `Error HTTP ${response.status}`);
       }
 
       // Algunos endpoints no devuelven JSON
@@ -114,29 +131,23 @@ class ApiClient {
     return this.request(url, { method: "GET" });
   }
 
+  // El método post ahora es más simple, solo pasa los datos
   async post(endpoint, data, options = {}) {
     const config = {
       method: "POST",
       body: data instanceof FormData ? data : JSON.stringify(data),
       ...options,
     };
-    if (!(data instanceof FormData)) {
-      config.headers = {
-        ...config.headers,
-        "Content-Type": "application/json",
-      };
-    }
     return this.request(endpoint, config);
   }
 
-  async put(endpoint, data) {
-    const isFormData = data instanceof FormData;
-    const body = isFormData ? data : JSON.stringify(data);
-    return this.request(endpoint, {
+  async put(endpoint, data, options = {}) {
+    const config = {
       method: "PUT",
-      body,
-      headers: isFormData ? {} : { "Content-Type": "application/json" },
-    });
+      body: data instanceof FormData ? data : JSON.stringify(data),
+      ...options,
+    };
+    return this.request(endpoint, config);
   }
 
   async delete(endpoint) {
