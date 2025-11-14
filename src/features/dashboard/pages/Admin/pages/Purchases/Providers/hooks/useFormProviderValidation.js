@@ -7,21 +7,71 @@ const cleanPhone = (phone) => phone.replace(/[\s\-\(\)]/g, '');
 
 const validatePhone = (value) => {
   if (!value?.trim()) return "El número telefónico es obligatorio.";
+  
   const phone = cleanPhone(value);
   
   if (phone.startsWith('+57') || phone.startsWith('57')) {
     const local = phone.replace(/^(\+57|57)/, '');
-    if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) return "";
+    
+    if (!/^\d+$/.test(local)) {
+      return "El número solo puede contener dígitos después del prefijo.";
+    }
+    
+    if (local.length === 10 && /^3/.test(local)) {
+      return "";
+    }
+    
+    if (local.length === 7 && /^[2-8]/.test(local)) {
+      return "";
+    }
+    
+    if (local.length < 7) {
+      return "Número incompleto. Celular: 3XXXXXXXXX (10 dígitos), Fijo: 2XXXXXXX-8XXXXXXX (7 dígitos)";
+    }
+    
+    if (local.length === 10 && !/^3/.test(local)) {
+      return "Los números celulares deben iniciar con 3.";
+    }
+    
+    if (local.length === 7 && !/^[2-8]/.test(local)) {
+      return "Los números fijos deben iniciar con 2-8.";
+    }
+    
     return "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
   }
 
-  if (!/^\d+$/.test(phone)) return "El teléfono solo puede contener números.";
-  if ((phone.length === 10 && /^3/.test(phone)) || (phone.length === 7 && /^[2-8]/.test(phone))) return "";
-  if (phone.length < 7) return "El número debe tener al menos 7 dígitos.";
-  if (phone.length > 10) return "Número demasiado largo. Máximo 10 dígitos para celular.";
-  if (phone.length === 10 && !/^3/.test(phone)) return "Los números celulares deben iniciar con 3.";
-  if (phone.length === 7 && !/^[2-8]/.test(phone)) return "Los números fijos deben iniciar con 2-8.";
-  if ([8,9].includes(phone.length)) return "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular).";
+  if (!/^\d+$/.test(phone)) {
+    return "El teléfono solo puede contener números.";
+  }
+  
+  if (phone.length === 10 && /^3/.test(phone)) {
+    return "";
+  }
+  
+  if (phone.length === 7 && /^[2-8]/.test(phone)) {
+    return "";
+  }
+  
+  if (phone.length < 7) {
+    return "El número debe tener al menos 7 dígitos.";
+  }
+  
+  if (phone.length > 10) {
+    return "Número demasiado largo. Máximo 10 dígitos para celular.";
+  }
+  
+  if (phone.length === 10 && !/^3/.test(phone)) {
+    return "Los números celulares deben iniciar con 3.";
+  }
+  
+  if (phone.length === 7 && !/^[2-8]/.test(phone)) {
+    return "Los números fijos deben iniciar con 2-8.";
+  }
+  
+  if ([8, 9].includes(phone.length)) {
+    return "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular).";
+  }
+  
   return "Formato de teléfono inválido.";
 };
 
@@ -171,8 +221,6 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       if (name === 'tipoEntidad') {
         if (value === 'juridica') {
           newValues.tipoDocumento = '';
-        } else if (value === 'natural' && !newValues.tipoDocumento) {
-          newValues.tipoDocumento = 'CC';
         }
       }
       

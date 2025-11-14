@@ -27,11 +27,17 @@ const SelectionModal = ({
   const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
   const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
 
-  // Cargar datos desde el backend
+  // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       console.log('🎯 Modal abierto, modo:', mode)
       loadData()
+    } else {
+      // Limpiar datos cuando se cierra
+      setData([])
+      setSearchTerm("")
+      setSelectedCategory("")
+      setCurrentPage(1)
     }
   }, [isOpen, mode])
 
@@ -48,8 +54,17 @@ const SelectionModal = ({
         console.log('🏃 Respuesta deportistas:', response)
       }
       
-      // FIX CRÍTICO: Asegurar que siempre tengamos un array
-      const responseData = Array.isArray(response) ? response : (response?.data || [])
+      // ✅ FIX CRÍTICO: Extraer los datos correctamente
+      let responseData = []
+      
+      if (response && response.success && Array.isArray(response.data)) {
+        responseData = response.data
+      } else if (response && Array.isArray(response.data)) {
+        responseData = response.data
+      } else if (Array.isArray(response)) {
+        responseData = response
+      }
+      
       console.log('📦 Datos a mostrar:', responseData)
       setData(responseData)
     } catch (error) {
