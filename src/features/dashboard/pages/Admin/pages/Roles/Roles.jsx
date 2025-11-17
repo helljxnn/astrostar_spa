@@ -116,14 +116,7 @@ const Roles = () => {
       return;
     }
 
-    // Verificar si el rol está activo
-    if (role.status === 'Active') {
-      showErrorAlert(
-        'Acción no permitida',
-        'No se pueden eliminar roles activos. Cambie el estado a Inactivo primero.'
-      );
-      return;
-    }
+
 
     try {
       ShowLoading();
@@ -175,26 +168,13 @@ const Roles = () => {
       <div className="w-full">
         <Table
           thead={{
-            titles: ["Nombre", "Descripción", "Estado"],
+            titles: ["Nombre", "Descripción"],
             state: false,
           }}
           tbody={{
             data: paginatedData,
-            dataPropertys: ["name", "description", "status"],
-            state: false,
-            customRenderers: {
-              status: (value) => (
-                <span
-                  className={`font-semibold ${
-                    value === 'Active'
-                      ? "text-primary-purple"
-                      : "text-primary-blue"
-                  }`}
-                >
-                  {value === 'Active' ? 'Activo' : 'Inactivo'}
-                </span>
-              )
-            }
+            dataPropertys: ["name", "description"],
+            state: false
           }}
           onEdit={hasPermission('roles', 'Editar') ? handleEdit : null}
           onDelete={hasPermission('roles', 'Eliminar') ? handleDelete : null}
@@ -212,14 +192,12 @@ const Roles = () => {
             }),
             delete: (role) => ({
               show: hasPermission('roles', 'Eliminar'),
-              disabled: role.name === 'Administrador' || role.status === 'Active',
-              className: (role.name === 'Administrador' || role.status === 'Active')
+              disabled: role.name === 'Administrador',
+              className: role.name === 'Administrador'
                 ? 'opacity-50 cursor-not-allowed' 
                 : '',
               title: role.name === 'Administrador' 
                 ? 'El rol de Administrador no puede ser eliminado'
-                : role.status === 'Active'
-                ? 'Los roles activos no pueden ser eliminados'
                 : 'Eliminar rol'
             }),
             view: (role) => ({

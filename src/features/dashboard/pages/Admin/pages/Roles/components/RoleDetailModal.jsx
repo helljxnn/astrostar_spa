@@ -282,15 +282,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         {/* Encabezado */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Detalle del Rol</h2>
-          <div
-            className={`px-3 py-1 rounded-full text-sm font-medium ${
-              roleData?.status === "Active"
-                ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
-            }`}
-          >
-            {roleData?.status === "Active" ? "Activo" : "Inactivo"}
-          </div>
+
         </div>
 
         {/* Info básica */}

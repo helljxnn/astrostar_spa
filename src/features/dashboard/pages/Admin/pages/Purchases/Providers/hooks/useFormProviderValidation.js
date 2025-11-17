@@ -171,9 +171,9 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       if (name === 'tipoEntidad') {
         if (value === 'juridica') {
           newValues.tipoDocumento = '';
-        } else if (value === 'natural' && !newValues.tipoDocumento) {
-          newValues.tipoDocumento = 'CC';
         }
+        // No establecer un valor por defecto para persona natural
+        // El usuario debe seleccionar explícitamente el tipo de documento
       }
       
       return newValues;

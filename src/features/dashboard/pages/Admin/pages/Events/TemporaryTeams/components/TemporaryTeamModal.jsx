@@ -285,7 +285,7 @@ const TemporaryTeamModal = ({
 
       onClose();
     } catch (error) {
-      console.error(error);
+      console.error("Error al guardar equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };

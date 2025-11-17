@@ -5,12 +5,6 @@ import { X, UserCheck, Users } from "lucide-react";
 const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   if (!isOpen || !team) return null;
 
-  console.log("=== TEAM EN VIEW MODAL ===");
-  console.log("Team completo:", team);
-  console.log("team.teamType:", team.teamType);
-  console.log("team.entrenadorData:", team.entrenadorData);
-  console.log("team.deportistas:", team.deportistas);
-
   const formatPhoneDisplay = (phone) => {
     if (!phone) return "No especificado";
     return phone;
@@ -26,24 +20,20 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
       (team.teamType === "fundacion" || team.teamType === "temporal")
     ) {
       detectedType = team.teamType;
-      console.log("Tipo detectado desde team.teamType:", detectedType);
     }
     // Prioridad 2: tipo del entrenador
     else if (team.entrenadorData?.type) {
       detectedType = team.entrenadorData.type;
-      console.log("Tipo detectado desde entrenador:", detectedType);
     }
     // Prioridad 3: tipo de la primera deportista
     else {
       const deportistasList = team.deportistas || team.jugadoras || [];
       if (deportistasList.length > 0 && deportistasList[0]?.type) {
         detectedType = deportistasList[0].type;
-        console.log("Tipo detectado desde deportistas:", detectedType);
       }
     }
 
     if (!detectedType) {
-      console.warn("No se pudo detectar el tipo de equipo");
       return { type: null, text: "No especificado" };
     }
 
@@ -54,7 +44,6 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   };
 
   const teamTypeInfo = getTeamTypeInfo();
-  console.log("TeamTypeInfo final:", teamTypeInfo);
 
   const deportistasList = team.deportistas || team.jugadoras || [];
   const cantidadDeportistas =
