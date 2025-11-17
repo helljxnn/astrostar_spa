@@ -122,7 +122,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                 </motion.div>
 
                 {provider.tipoEntidad === "natural" &&
-                  provider.tipoDocumento && (
+                  (provider.tipoDocumentoNombre || provider.tipoDocumento) && (
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -133,7 +133,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                       </label>
                       <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <p className="text-gray-900">
-                          {getDocumentTypeLabel(provider.tipoDocumento)}
+                          {provider.tipoDocumentoNombre || "No especificado"}
                         </p>
                       </div>
                     </motion.div>

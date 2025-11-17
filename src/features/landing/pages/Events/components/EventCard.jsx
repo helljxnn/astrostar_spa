@@ -56,7 +56,6 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
 
       return formattedStart;
     } catch (error) {
-      console.error("❌ Error formateando fecha:", dateString, error);
       return dateString;
     }
   };
@@ -85,7 +84,6 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
     try {
       eventDate = new Date(event.endDate || event.date);
     } catch (error) {
-      console.error("❌ Error parseando fecha del evento:", event.date, error);
       return event.status || "programado";
     }
     if (event.status === "cancelado" || event.status === "en-pausa") {

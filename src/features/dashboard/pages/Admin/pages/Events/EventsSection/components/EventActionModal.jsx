@@ -1,16 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 
-const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
+const EventActionModal = ({ isOpen, onClose, onAction, position, eventStatus }) => {
   if (!isOpen) return null;
 
-  const actions = [
+  // Verificar si el evento está finalizado
+  const isFinalized = eventStatus === "Finalizado" || eventStatus === "finalizado";
+
+  const allActions = [
     {
       id: "edit",
       label: "Editar evento",
       icon: <FaEdit className="w-4 h-4" />,
       color: "text-blue-600",
       hoverColor: "hover:bg-blue-50",
+      showWhen: !isFinalized, // Solo mostrar si NO está finalizado
     },
     {
       id: "delete",
@@ -18,6 +22,7 @@ const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
       icon: <FaTrash className="w-4 h-4" />,
       color: "text-red-600",
       hoverColor: "hover:bg-red-50",
+      showWhen: true, // Siempre mostrar
     },
     {
       id: "view",
@@ -25,8 +30,12 @@ const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
       icon: <FaEye className="w-4 h-4" />,
       color: "text-gray-600",
       hoverColor: "hover:bg-gray-50",
+      showWhen: true, // Siempre mostrar
     },
   ];
+
+  // Filtrar acciones según el estado del evento
+  const actions = allActions.filter(action => action.showWhen);
 
   return (
     <>

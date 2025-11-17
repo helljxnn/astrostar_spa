@@ -17,31 +17,43 @@ class ApiClient {
       headers: {},
     };
 
-    // 🔑 Si el body no es FormData, setear JSON
+    // Si el body no es FormData, setear JSON
     if (!(options.body instanceof FormData)) {
       defaultOptions.headers["Content-Type"] = "application/json";
     }
 
-    // 🔐 Token de autenticación
+    // Token de autenticación
     const token = localStorage.getItem("authToken");
     if (token) {
       defaultOptions.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Combinar opciones finales
-    const config = { ...defaultOptions, ...options };
+    // Combinar opciones finales - IMPORTANTE: mergear headers correctamente
+    const config = { 
+      ...defaultOptions, 
+      ...options,
+      headers: {
+        ...defaultOptions.headers,
+        ...(options.headers || {})
+      }
+    };
 
     try {
       const response = await fetch(url, config);
 
-      if (response.status === 401) {
-        this.handleUnauthorized();
-        throw new Error("No autorizado");
-      }
-
       // Manejo de errores HTTP
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 401) {
+          // Redirigir al login después de un pequeño delay
+          setTimeout(() => {
+            this.handleUnauthorized();
+          }, 100);
+          
+          throw new Error(errorData.message || "Token inválido");
+        }
+        
         throw new Error(
           errorData.message || `Error HTTP ${response.status}`
         );
@@ -54,13 +66,15 @@ class ApiClient {
       }
       return await response.text();
     } catch (error) {
-      console.error("🚨 Error en la solicitud:", error);
       throw error;
     }
   }
 
   handleUnauthorized() {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
+    // Redirigir al login
+    window.location.href = "/login";
   }
 
   async get(endpoint, params = {}) {
