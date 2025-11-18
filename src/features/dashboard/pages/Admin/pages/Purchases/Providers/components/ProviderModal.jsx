@@ -174,7 +174,7 @@ const ProviderModal = ({
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
-        tipoDocumento: providerToEdit.tipoDocumento || "",
+        tipoDocumento: providerToEdit.tipoDocumento || (providerToEdit.documentTypeId ? providerToEdit.documentTypeId.toString() : ""),
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
         telefono: providerToEdit.telefono || "",
@@ -573,10 +573,12 @@ const ProviderModal = ({
                       name="tipoDocumento"
                       type="select"
                       placeholder="Seleccione el tipo de documento"
-                      // AGREGAR ESTA LÍNEA: Opción por defecto "Seleccione el tipo de documento"
                       options={[
                         { value: "", label: "Seleccione el tipo de documento" },
-                        ...uniqueDocumentTypes,
+                        ...(uniqueDocumentTypes.map(doc => ({
+                          value: doc.value || doc.id.toString(),
+                          label: doc.label || doc.name
+                        })))
                       ]}
                       value={values.tipoDocumento}
                       onChange={handleChange}
