@@ -65,7 +65,11 @@ const ResetPassword = () => {
         setIsSubmitting(true);
 
         try {
-            const response = await apiClient.post('/auth/reset-password', { token, password });
+            // Llamamos al endpoint específico para restablecer la contraseña con un token.
+            const response = await apiClient.post('/auth/reset-password', {
+                token,
+                newPassword: password // Enviamos como 'newPassword' para ser consistentes
+            });
 
             if (response.success) {
                 Toast.fire({ icon: 'success', title: response.message });

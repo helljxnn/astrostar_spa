@@ -71,7 +71,7 @@ class ApiClient {
         try {
           // Intentamos obtener un nuevo token de acceso.
           const refreshResponse = await fetch(
-            `${this.baseURL}/auth/refreshToken`,
+            `${this.baseURL}/auth/refresh-token`,
             {
               method: "POST",
               credentials: "include",

@@ -17,7 +17,6 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
         touched,
         handleChange,
         handleBlur,
-        validateAllFields,
         resetForm,
         setValues,
     } = useFormUserValidation(
@@ -46,28 +45,31 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
     const navigate = useNavigate(); // 2. Instanciar useNavigate
 
     useEffect(() => {
-        // Ahora el efecto depende del 'user' del contexto y de 'isOpen'
-        // Se ejecutará cada vez que el modal se abra o los datos del usuario cambien.
+        // EFECTO 1: Cargar los tipos de documento solo cuando el modal se abre.
         if (isOpen && user) {
             const fetchDocumentTypes = async () => {
                 try {
-                    const response = await apiClient.get('/auth/documentType');
+                    const response = await apiClient.get('/document-types');
                     if (response.success && Array.isArray(response.data)) {
-                        const formattedTypes = response.data.map(doc => ({
-                            value: doc.id, // Asumiendo que el backend devuelve 'id'
-                            label: doc.name, // Asumiendo que el backend devuelve 'name'
-                        }));
-                        setDocumentTypes(formattedTypes);
+                        setDocumentTypes(response.data); // Usar los datos directamente como vienen de la API
+                    } else {
+                        setDocumentTypes([]); // En caso de error, asegurar que sea un array vacío.
                     }
                 } catch (error) {
                     console.error("Error al cargar los tipos de documento:", error);
                     showErrorAlert("Error", "No se pudieron cargar los tipos de documento.");
+                    setDocumentTypes([]);
                 }
             };
 
             fetchDocumentTypes();
+        }
+    }, [isOpen, user]); // Dependencias: Solo se ejecuta si el modal se abre o el usuario cambia.
 
-            // Mapeo de los datos del usuario a los campos del formulario
+    useEffect(() => {
+        // EFECTO 2: Rellenar el formulario cuando los datos estén listos.
+        // Se ejecuta solo si el modal está abierto, tenemos al usuario y la lista de documentos ya se cargó.
+        if (isOpen && user && documentTypes.length > 0) {
             setValues({
                 firstName: user?.firstName || "",
                 middleName: user?.middleName || "",
@@ -78,14 +80,14 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                 address: user?.address || "",
                 birthDate: user?.birthDate ? moment(user.birthDate).tz('UTC').format('YYYY-MM-DD') : "",
                 identification: user?.identification || "",
-                documentType: user?.documentType?.id || "",
+                documentType: String(user?.idDocumentType || ''), // Convertir el ID a string para que coincida con las opciones
                 age: user?.age || "",
                 rol: user?.role?.name || "",
                 estado: user?.status || "Activo",
             });
             setAvatarPreview(user?.avatar || null);
         }
-    }, [isOpen, user, setValues]);
+    }, [isOpen, user, documentTypes, setValues]); // Dependencias: Se ejecuta si cambia algo de esto.
 
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
@@ -141,15 +143,19 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                 // }
 
                 // Llamada a la API para actualizar el perfil
-                const response = await apiClient.put(`/auth/updateProfile/${user.id}`, dataToSave);
+                const response = await apiClient.put(`/auth/profile/${user.id}`, dataToSave);
 
                 if (response.success) {
-                    showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
-                    if (onSave) onSave({ ...user, ...dataToSave }); // Opcional: notificar al componente padre
+                    // Usamos una alerta que espera a que el usuario haga clic en "OK"
+                    await showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
+                    
+                    // Una vez que el usuario cierra la alerta, recargamos la página.
+                    window.location.reload();
+
                 } else {
                     showErrorAlert("Error", response.message || "No se pudo actualizar tu perfil.");
+                    handleClose();
                 }
-                handleClose();
             } catch (error) {
                 console.error("Error al actualizar el perfil:", error);
                 showErrorAlert("Error", "No se pudo actualizar tu perfil. Inténtalo de nuevo.");
@@ -247,7 +253,6 @@ const EditProfileModal = ({ isOpen, onClose, onSave }) => {
                             onBlur={handleBlur}
                             error={errors.lastName}
                             touched={touched.lastName}
-                            required
                         />
                         <FormField
                             label="Segundo Apellido"

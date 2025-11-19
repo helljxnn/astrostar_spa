@@ -32,12 +32,12 @@ const DetailItem = ({ icon, label, value }) => (
 
 const StatusItem = ({ label, value }) => (
   <div className="flex items-start gap-4 py-3">
-    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${value === 'Activo' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+    <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${value === 'Activo' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-600'}`}>
       <FaUserCheck />
     </div>
     <div>
       <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className={`text-md font-semibold break-words ${value === 'Activo' ? 'text-green-700' : 'text-red-700'}`}>
+      <p className={`text-md font-semibold break-words ${value === 'Activo' ? 'text-green-700' : 'text-gray-700'}`}>
         {value || "No especificado"}
       </p>
     </div>
@@ -57,7 +57,7 @@ const ViewProfileModal = ({ isOpen, onClose }) => {
   // ================================
   const fetchProfile = async () => {
     try {
-      const response = await apiClient.post("/auth/profile");
+      const response = await apiClient.get("/auth/profile");
       if (response?.success) {
         setUser(response.data);
       } else {
@@ -177,7 +177,7 @@ const ViewProfileModal = ({ isOpen, onClose }) => {
                   <DetailItem
                     icon={<FaIdCard />}
                     label="Documento"
-                    value={`${user?.documentType?.name || "No especificado"} - ${user?.identification || "N/A"
+                    value={`${user?.documentType} - ${user?.identification || "N/A"
                       }`}
                   />
                   <DetailItem
