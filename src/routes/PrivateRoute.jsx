@@ -26,7 +26,6 @@ const PrivateRoute = ({
 
   // Si es admin, permitir acceso a todo
   if (userRole === 'Admin' || userRole === 'Administrador') {
-    console.log("Acceso concedido: usuario administrador");
     return children ? children : <Outlet />;
   }
 

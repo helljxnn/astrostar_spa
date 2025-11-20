@@ -98,7 +98,7 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                                     <motion.button
                                         type="button"
                                         onClick={onClose}
-                                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                                        className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
@@ -106,8 +106,8 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                                     </motion.button>
                                     <motion.button
                                         type="submit"
-                                        className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple hover:to-primary-blue"
-                                        whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)" }}
+                                        className="px-6 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors font-medium"
+                                        whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
                                         {submitText}

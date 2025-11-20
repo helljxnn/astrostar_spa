@@ -13,6 +13,7 @@ import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import {
   showSuccessAlert, showConfirmAlert, showErrorAlert
 } from "../../../../../../shared/utils/alerts";
+import Pagination from "../../../../../../shared/components/Table/Pagination"; // Importar el componente Pagination
 import sportsEquipmentService from "../../../../../../shared/services/sportsEquipmentService"; // Importamos el servicio
 
 function SportsEquipment() {
@@ -25,45 +26,62 @@ function SportsEquipment() {
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
+  const [totalRows, setTotalRows] = useState(0); // Estado para el total de filas
   const [totalPages, setTotalPages] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Función reutilizable para formatear fechas de manera segura
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    // Si la fecha no es válida, retorna un guion
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("es-CO"); // Formato para Colombia (dd/mm/aaaa)
+  };
 
   const reportData = useMemo(() => {
     return equipmentList.map(item => ({
-      Name: item.name || '',
-      InitialQuantity: item.quantityInitial || 0,
-      TotalQuantity: item.quantityTotal || 0,
-      Status: item.status || 'N/A',
-      CreationDate: new Date(item.createdAt).toLocaleDateString() || '',
+      Nombre: item.name || '',
+      "Cantidad Inicial": item.quantityInitial || 0,
+      "Cantidad Total": item.quantityTotal || 0,
+      Estado: item.status || 'N/A',
+      "Fecha de Creación": formatDate(item.createdAt),
     }));
   }, [equipmentList]);
 
+  const rowsPerPage = 10; // Definir el número de filas por página
+
   const fetchData = async (page, search) => {
     try {
-      const params = { page, limit: rowsPerPage, search };
+      const params = { page, limit: rowsPerPage, search }; // Usar rowsPerPage
       const response = await sportsEquipmentService.getAll(params); // Usamos el servicio
       if (response.success) {
-        setEquipmentList(response.data || []);
+        // Pre-formatear las fechas antes de guardarlas en el estado
+        const formattedEquipment = (response.data || []).map(item => ({ // Corregido: usar response.data directamente
+          ...item,
+          formattedCreatedAt: formatDate(item.createdAt),
+        }));
+        setEquipmentList(formattedEquipment);
         setTotalPages(response.pagination?.pages || 1);
+        setTotalRows(response.pagination?.total || 0); // Establecer el total de filas
       }
     } catch (error) { // Manejo de errores mejorado
-      showErrorAlert("Could not fetch sports equipment.", error.message);
+      showErrorAlert("Error al obtener material", error.message || "No se pudo obtener el material deportivo.");
     }
   };
 
   useEffect(() => {
     fetchData(currentPage, searchTerm);
-  }, [currentPage, searchTerm, rowsPerPage]);
+  }, [currentPage, searchTerm]); // Se ejecuta cuando la página actual o el término de búsqueda cambian
 
   const handleCreate = async (dataForm) => {
     try {
       const response = await sportsEquipmentService.create(dataForm); // Usamos el servicio
       setIsCreateModalOpen(false);
       fetchData(1, "");
-      showSuccessAlert("Equipment saved successfully", response.message); // Usamos el mensaje del backend
+      showSuccessAlert("¡Guardado!", response.message || "Material guardado exitosamente");
     } catch (error) {
-      showErrorAlert("Could not save equipment", error.message);
+      showErrorAlert("Error al guardar", error.message || "No se pudo guardar el material");
     }
   };
 
@@ -73,38 +91,48 @@ function SportsEquipment() {
       const response = await sportsEquipmentService.update(selectedEquipment.id, dataForm); // Usamos el servicio
       setIsEditModalOpen(false);
       fetchData(currentPage, searchTerm);
-      showSuccessAlert("Equipment updated successfully", response.message); // Usamos el mensaje del backend
+      showSuccessAlert("¡Actualizado!", response.message || "Material actualizado exitosamente");
     } catch (error) {
-      showErrorAlert("Could not update equipment", error.message);
+      showErrorAlert("Error al actualizar", error.message || "No se pudo actualizar el material");
     }
   };
 
   const handleDelete = (item) => {
     showConfirmAlert(
-      'Are you sure?',
-      `Equipment "${item.name}" will be deleted. This action cannot be undone.`,
-      async () => {
+      "¿Estás seguro?",
+      `El equipo "${item.name}" será eliminado. Esta acción no se puede deshacer.`,
+      "Sí, ¡eliminar!"
+    ).then(async (result) => {
+      // Si el usuario confirma la acción
+      if (result.isConfirmed) {
         try {
-          await sportsEquipmentService.delete(item.id); // Usamos el servicio
-          showSuccessAlert('Deleted', 'The equipment has been deleted.');
+          // Se ejecuta la petición para eliminar el equipo
+          const response = await sportsEquipmentService.delete(item.id);
+          showSuccessAlert("¡Eliminado!", response.message || "El equipo ha sido eliminado.");
+          // Se actualiza la tabla para reflejar el cambio
           fetchData(currentPage, searchTerm);
         } catch (error) {
-          showErrorAlert('Error', error.message);
+          showErrorAlert("Error", error.message || "No se pudo eliminar el equipo.");
         }
       }
-    );
+    });
   };
 
   const handleCreateDisposal = async (disposalData) => {
     // El ID ahora viene del formulario del modal
     if (!disposalData.equipmentId) return;
     try {
-      await sportsEquipmentService.createDisposal(disposalData.equipmentId, disposalData); // Usamos el servicio
+      // Ahora enviamos directamente el objeto disposalData, ya que no hay archivos.
+      await sportsEquipmentService.createDisposal(disposalData.equipmentId, {
+        quantity: disposalData.quantity,
+        reason: disposalData.reason,
+        observation: disposalData.observation,
+      });
       setIsDisposalModalOpen(false);
-      showSuccessAlert("Success", "Equipment disposal has been registered.");
+      showSuccessAlert("¡Éxito!", "La baja del material ha sido registrada.");
       fetchData(currentPage, searchTerm);
     } catch (error) {
-      showErrorAlert("Error", error.message || "Could not register disposal.");
+      showErrorAlert("Error", error.message || "No se pudo registrar la baja.");
     }
   };
 
@@ -116,91 +144,72 @@ function SportsEquipment() {
   const handleOpenViewDetails = async (item) => {
     try {
       const response = await sportsEquipmentService.getById(item.id); // Usamos el servicio
-      setSelectedEquipment(response.data);
+      // Formateamos las fechas de la respuesta antes de guardarla en el estado
+      const formattedDetails = {
+        ...response.data,
+        formattedCreatedAt: formatDate(response.data.createdAt),
+        formattedUpdatedAt: formatDate(response.data.updatedAt),
+      };
+      setSelectedEquipment(formattedDetails);
       setIsViewDetailsOpen(true);
     } catch (error) {
-      showErrorAlert("Could not fetch details", error.message);
+      showErrorAlert("Error al obtener detalles", error.message || "No se pudieron obtener los detalles.");
     }
   };
 
   const detailConfig = [
-    { label: 'Name', key: 'name' },
-    { label: 'Initial Quantity', key: 'quantityInitial', default: 0 },
-    { label: 'Total Quantity', key: 'quantityTotal', default: 0 },
-    { label: 'Status', key: 'status' },
-    { label: 'Creation Date', key: 'createdAt', format: (date) => new Date(date).toLocaleDateString() },
-    { label: 'Last Update', key: 'updatedAt', format: (date) => new Date(date).toLocaleDateString() },
-    { label: 'Disposal History', key: 'disposals', type: 'history' }, // Añadido para mostrar el historial
+    { label: 'Nombre', key: 'name' },
+    { label: 'Cantidad Inicial', key: 'quantityInitial', default: 0 },
+    { label: 'Cantidad Total', key: 'quantityTotal', default: 0 },
+    { label: 'Estado', key: 'status' },
+    { label: 'Fecha de Creación', key: 'formattedCreatedAt' },
+    { label: 'Última Actualización', key: 'formattedUpdatedAt' },
+    { label: 'Historial de Bajas', key: 'disposals', type: 'history' },
   ];
 
-  const handleRowsPerPageChange = (e) => {
-    setRowsPerPage(Number(e.target.value));
-    setCurrentPage(1); // Resetear a la primera página
-  };
-
   return (
-    <div id="contentSportsEquipment" className="w-full h-auto grid grid-rows-[auto_1fr] relative">
-      <div id="header" className="w-full h-auto p-8">
-        <h1 className="text-4xl font-bold text-gray-800">Sports Equipment</h1>
-      </div>
-      <div id="body" className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4">
-        <div id="actionButtons" className="w-full h-auto p-2 flex flex-row justify-between items-center">
-          <div className="flex items-center gap-4">
-            <SearchInput
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search equipment..."
+    <div id="contentSportsEquipment" className="w-full h-auto p-4 md:p-8 space-y-4">
+      <div id="header" className="w-full flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Material Deportivo</h1>
+        <div id="action-buttons" className="flex items-center justify-end gap-4">
+          <PermissionGuard module="sportsEquipment" action="Ver">
+            <ReportButton
+              data={reportData}
+              fileName="Material_Deportivo"
+              columns={[
+                { header: "Nombre", accessor: "Nombre" },
+                { header: "Cantidad Total", accessor: "Cantidad Total" },
+                { header: "Estado", accessor: "Estado" },
+                { header: "Fecha de Creación", accessor: "Fecha de Creación" },
+              ]}
             />
-            <div className="flex items-center gap-2">
-              <label htmlFor="rowsPerPage" className="text-sm font-medium text-gray-600">Rows:</label>
-              <select
-                id="rowsPerPage"
-                value={rowsPerPage}
-                onChange={handleRowsPerPageChange}
-                className="px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple"
-              >
-                <option value={5}>5</option>
-                <option value={15}>15</option>
-                <option value={25}>25</option>
-              </select>
-            </div>
-          </div>
-          <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <PermissionGuard module="sportsEquipment" action="Ver">
-              <ReportButton
-                data={reportData}
-                fileName="Sports_Equipment"
-                columns={[
-                  { header: "Name", accessor: "Name" },
-                  { header: "Total Quantity", accessor: "TotalQuantity" },
-                  { header: "Status", accessor: "Status" },
-                  { header: "Creation Date", accessor: "CreationDate" },
-                ]}
-              />
-            </PermissionGuard>
-            <PermissionGuard module="sportsEquipment" action="Crear">
-              <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
-                Create <SiGoogleforms size={20} />
-              </button>
-            </PermissionGuard>
-            <button onClick={() => setIsDisposalModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
-              Dar de baja <FaMinusCircle size={20} />
+          </PermissionGuard>
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar material..."
+          />
+          <PermissionGuard module="sportsEquipment" action="Crear">
+            <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition whitespace-nowrap">
+              Crear <SiGoogleforms size={20} />
             </button>
-          </div>
+          </PermissionGuard>
+          <button onClick={() => setIsDisposalModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition whitespace-nowrap">
+            Dar de baja <FaMinusCircle size={20} />
+          </button>
         </div>
+      </div>
+      <div id="body" className="w-full h-auto">
         <Table
-          pagination={{ currentPage, setCurrentPage, totalPages }}
+          // El paginador se renderiza por separado, no como prop de la tabla
           thead={{
-            titles: ["Name", "Total Quantity", "Created", "Status"]
+            titles: ["Nombre", "Cantidad Total", "Creado", "Estado"]
           }}
           tbody={{
             data: equipmentList,
-            dataPropertys: ["name", "quantityTotal", "createdAt", "status"],
-            customRenderers: {
-              createdAt: (date) => date ? new Date(date).toLocaleDateString("en-US") : "-",
-            },
+            dataPropertys: ["name", "quantityTotal", "formattedCreatedAt", "status"],
           }}
-          onEdit={handleOpenEditModal} // onEdit estaba bien
+          onEdit={handleOpenEditModal}
           onDelete={handleDelete}
           onView={handleOpenViewDetails}
           buttonConfig={{
@@ -209,6 +218,22 @@ function SportsEquipment() {
             view: () => hasPermission('sportsEquipment', 'Ver')
           }}
         />
+        {/* Paginación */}
+        {totalRows > 0 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                // fetchData se llamará automáticamente por useEffect cuando currentPage cambie
+              }}
+              totalRows={totalRows}
+              rowsPerPage={rowsPerPage}
+              startIndex={(currentPage - 1) * rowsPerPage}
+            />
+          </div>
+        )}
       </div>
       <FormCreate
         isOpen={isCreateModalOpen}
@@ -231,7 +256,7 @@ function SportsEquipment() {
         onClose={() => setIsViewDetailsOpen(false)}
         data={selectedEquipment}
         detailConfig={detailConfig}
-        title="Equipment Details"
+        title="Detalles del Material"
       />
     </div>
   );

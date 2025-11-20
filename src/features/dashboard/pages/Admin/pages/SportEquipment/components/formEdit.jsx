@@ -70,7 +70,7 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
                 onBlur={handleBlur}
                 touched={touched.status}
                 required
-                options={[{ value: "Activated", label: "Activado" }, { value: "Disabled", label: "Desactivado" }, { value: "SoldOut", label: "Agotado" }]}
+                options={[{ value: "Active", label: "Activado" }, { value: "Inactive", label: "Desactivado" }, { value: "SoldOut", label: "Agotado" }]}
             />
         </Form>
     );

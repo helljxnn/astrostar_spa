@@ -7,24 +7,19 @@ import permissionsService from "../services/permissionsService";
  */
 export const usePermissions = () => {
   // 1. Pide al contexto los valores que ya están calculados.
-  const { user, isAuthenticated, userRole, userPermissions } = useAuth();
-  const [permissions, setPermissions] = useState(null);
+  const { user, isAuthenticated, userPermissions } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated && user) {
       // 2. Usa directamente los permisos del contexto.
-      // Esto funciona para CUALQUIER rol (admin, entrenador, etc.)
-      // porque authContext ya tiene la lógica para obtenerlos.
       const finalPermissions = userPermissions || {};
       // 3. Establece los permisos correctos.
       permissionsService.setUserPermissions(user, finalPermissions);
-      setPermissions(finalPermissions);
     } else {
       // Limpiar permisos si no está autenticado
       permissionsService.clearPermissions();
-      setPermissions(null);
     }
-  }, [user, isAuthenticated, userRole, userPermissions]); // 4. Reacciona a cambios en los datos del contexto.
+  }, [user, isAuthenticated, userPermissions]); // 4. Reacciona a cambios en los datos del contexto.
 
   /**
    * Verificar si tiene un permiso específico
@@ -69,7 +64,7 @@ export const usePermissions = () => {
   };
 
   return {
-    permissions,
+    permissions: userPermissions, // Devuelve directamente los permisos del contexto
     hasPermission,
     hasModuleAccess,
     getAccessibleModules,

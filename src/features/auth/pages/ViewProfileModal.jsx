@@ -49,7 +49,6 @@ const StatusItem = ({ label, value }) => (
  */
 const ViewProfileModal = ({ isOpen, onClose }) => {
   const [user, setUser] = useState(null);
-  console.log(user);
   const [loading, setLoading] = useState(true);
 
   // ================================

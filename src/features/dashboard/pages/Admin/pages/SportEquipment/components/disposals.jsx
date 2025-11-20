@@ -19,13 +19,11 @@ const Disposals = ({ isOpen, onClose, onSave }) => {
         quantity: 1,
         reason: 'other',
         observation: '',
-        images: [], // Estado para los archivos de imagen
     });
 
     const [formData, setFormData] = useState(getInitialState());
     const [equipmentList, setEquipmentList] = useState([]); // Lista de todos los materiales
     const [selectedEquipment, setSelectedEquipment] = useState(null); // Material seleccionado
-    const fileInputRef = useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -43,8 +41,6 @@ const Disposals = ({ isOpen, onClose, onSave }) => {
 
             fetchEquipment();
             setFormData(getInitialState());
-            setSelectedEquipment(null);
-            if (fileInputRef.current) fileInputRef.current.value = ""; // Limpiar input de archivo
         }
     }, [isOpen]);
 
@@ -85,7 +81,6 @@ const Disposals = ({ isOpen, onClose, onSave }) => {
             quantity: quantity,
             reason: formData.reason,
             observation: formData.observation,
-            images: formData.images, // Pasar los archivos de imagen
         });
     };
 
@@ -177,42 +172,6 @@ const Disposals = ({ isOpen, onClose, onSave }) => {
                     />
                 </div>
 
-                {/* Image Upload */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Evidencia (Imágenes)
-                    </label>
-                    <div className="mt-2 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                        <div className="space-y-1 text-center">
-                            <FaImage className="mx-auto h-12 w-12 text-gray-400" />
-                            <div className="flex text-sm text-gray-600">
-                                <label
-                                    htmlFor="file-upload"
-                                    className="relative cursor-pointer bg-white rounded-md font-medium text-primary-purple hover:text-primary-blue focus-within:outline-none"
-                                >
-                                    <span>Sube tus archivos</span>
-                                    <input id="file-upload" name="images" type="file" className="sr-only" multiple accept="image/*" onChange={(e) => setFormData(prev => ({ ...prev, images: [...prev.images, ...Array.from(e.target.files)] }))} ref={fileInputRef} />
-                                </label>
-                                <p className="pl-1">o arrástralos aquí</p>
-                            </div>
-                            <p className="text-xs text-gray-500">PNG, JPG, GIF hasta 10MB</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Image Previews */}
-                {formData.images.length > 0 && (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                        {formData.images.map((file, index) => (
-                            <div key={index} className="relative group">
-                                <img src={URL.createObjectURL(file)} alt={`Preview ${index}`} className="h-24 w-24 object-cover rounded-md" onLoad={e => URL.revokeObjectURL(e.target.src)} />
-                                <button onClick={() => setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))} className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <FaTimes size={12} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
             </div>
         </Form>
     );

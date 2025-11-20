@@ -23,48 +23,21 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   // 3. Estado de autenticación
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  // 🔧 Función para transformar los permisos del usuario
-  const formatUserPermissions = (rolePermissions) => {
-    if (!Array.isArray(rolePermissions)) return {};
-    const formatted = {};
-
-    rolePermissions.forEach((permission) => {
-      formatted[permission.name] = permission.privileges.map((p) => p.name);
-    });
-
-    return formatted;
-  };
-
-
-
-  // Funcion para buscar los permisos y privilegios del usuario
-  // donde al momento de recargar el aplicativo no redirija al usuario al 
-  // login o a una vista de no autorizado
+  console.log(isAuthenticated);
   const checkAuthStatus = async () => {
     try {
 
       // Intenta obtener el perfil del usuario
       const profileResponse = await ApiClient.get(URLENDPOINTS.PROFILE);
+      console.log(profileResponse);
       // Verifica si la respuesta es exitosa y contiene datos
       if (profileResponse.success && profileResponse.data) {
         const userData = profileResponse.data;
-        // 🔹 Transformar permisos a formato manejable
-        const permissions = formatUserPermissions(userData.role?.permissions);
-
-        // 🔹 Guardamos toda la información del usuario, incluyendo permisos
-        const fullUserData = {
-          ...userData,
-          permissions,
-        };
-
         // Actualiza el estado del usuario y la autenticación
-        setUser(fullUserData);
+        setUser(userData);
         // Guarda el estado de autenticación como verdadero
         setIsAuthenticated(true);
-
-        // Navega al dashboard si el usuario está autenticado y no en una página pública.
-        navigate("/dashboard");
+        navigate('/dashboard');
       } else {
         // Si no es exitoso, limpia el estado y redirige al login
         setUser(null);
@@ -81,28 +54,12 @@ export const AuthProvider = ({ children }) => {
 
   // ----- Persistencia de sesion ------
   useEffect(() => {
-    // Leemos las cookies para ver si existe nuestra bandera de sesión.
-    const isLoggedInCookie = document.cookie.split(';').some((item) => item.trim().startsWith('isLoggedIn=true'));
-
-    // No ejecutar checkAuthStatus en rutas públicas que no requieren sesión.
-const publicRoutes = ['/reset-password', '/forgot-password','/about','/categories','/events','/services', '/'];
-    if (publicRoutes.includes(location.pathname)) {
-      setIsAuthenticated(false); // Asegurarse de que no esté autenticado en esta ruta
-      return;
-    }
-
-    // Solo ejecutamos la verificación si la cookie de sesión existe.
-    // Esto evita una llamada a la API innecesaria si sabemos que no hay sesión.
-    if (isLoggedInCookie) {
-      checkAuthStatus();
-    } else {
-      setIsAuthenticated(false);
-    }
-  }, [location.pathname]); // Se ejecuta cuando la ruta cambia
+    checkAuthStatus();
+  }, []);
 
   // ----- VALORES DERIVADOS CON useMemo -----
   const userRole = useMemo(() => user?.role?.name || null, [user]);
-  const userPermissions = useMemo(() => user?.permissions || {}, [user]);
+  const userPermissions = useMemo(() => user?.role?.permissions || {}, [user]);
 
   // ----- FUNCIONES DE AUTENTICACIÓN -----
 
@@ -124,16 +81,8 @@ const publicRoutes = ['/reset-password', '/forgot-password','/about','/categorie
         // Verificar si la obtención del perfil fue exitosa
         if (profileResponse.success && profileResponse.data) {
           const userData = profileResponse.data;
-          const permissions = formatUserPermissions(userData.role?.permissions);
-
-          // 🔹 Guardamos toda la información del usuario, incluyendo permisos
-          const fullUserData = {
-            ...userData,
-            permissions,
-          };
-
           // Actualizar el estado del usuario y la autenticación
-          setUser(fullUserData);
+          setUser(userData);
           // Guardar el estado de autenticación como verdadero
           setIsAuthenticated(true);
           // Creamos una cookie 'bandera' para indicar que hay una sesión activa.
