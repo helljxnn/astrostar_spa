@@ -27,10 +27,16 @@ const SelectionModal = ({
   const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
   const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
 
-  // Cargar datos desde el backend
+  // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       loadData()
+    } else {
+      // Limpiar datos cuando se cierra
+      setData([])
+      setSearchTerm("")
+      setSelectedCategory("")
+      setCurrentPage(1)
     }
   }, [isOpen, mode])
 

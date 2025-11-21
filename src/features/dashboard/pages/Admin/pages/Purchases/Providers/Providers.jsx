@@ -44,30 +44,93 @@ const Providers = () => {
         search: searchTerm,
       });
       if (response.success) {
-        setData(response.data || []);
+        // Enriquecer datos con nombres de tipos de documento
+        const enrichedData = await enrichProvidersWithDocumentTypes(
+          response.data || []
+        );
+        setData(enrichedData);
         setTotalPages(response.pagination?.pages || 1);
         setTotalRows(response.pagination?.total || 0);
-        checkActivePurchasesForProviders(response.data || []);
+        checkActivePurchasesForProviders(enrichedData);
       } else {
         showErrorAlert("Error", "No se pudieron cargar los proveedores");
       }
     } catch (error) {
-      showErrorAlert("Error", "Error al cargar los proveedores desde el servidor");
+      showErrorAlert(
+        "Error",
+        "Error al cargar los proveedores desde el servidor"
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const enrichProvidersWithDocumentTypes = async (providers) => {
+    try {
+      const response = await providersService.getDocumentTypes();
+      if (response.success && response.data) {
+        const documentTypes = response.data;
+
+        return providers.map((provider) => {
+          if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
+            const docType = documentTypes.find(
+              (dt) =>
+                dt.id.toString() === provider.tipoDocumento.toString() ||
+                dt.value === provider.tipoDocumento.toString()
+            );
+            return {
+              ...provider,
+              tipoDocumentoNombre: docType
+                ? docType.name || docType.label
+                : "No especificado",
+              documentType: docType || null,
+            };
+          }
+          return {
+            ...provider,
+            tipoDocumentoNombre: "NIT",
+            documentType: { name: "NIT", label: "NIT" },
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Error enriching providers with document types:", error);
+    }
+
+    return providers.map((provider) => ({
+      ...provider,
+      tipoDocumentoNombre:
+        provider.tipoEntidad === "juridica" ? "NIT" : "No especificado",
+      documentType:
+        provider.tipoEntidad === "juridica"
+          ? { name: "NIT", label: "NIT" }
+          : null,
+    }));
+  };
+
   const checkActivePurchasesForProviders = async (providers) => {
     const purchasesCheck = {};
-    for (const provider of providers) {
+
+    // Usar Promise.all para llamadas paralelas en lugar de secuenciales
+    const promises = providers.map(async (provider) => {
       try {
-        const response = await providersService.checkActivePurchases(provider.id);
-        purchasesCheck[provider.id] = response.hasActivePurchases;
+        const response = await providersService.checkActivePurchases(
+          provider.id
+        );
+        return {
+          id: provider.id,
+          hasActivePurchases: response.hasActivePurchases,
+        };
       } catch (error) {
-        purchasesCheck[provider.id] = false;
+        return { id: provider.id, hasActivePurchases: false };
       }
-    }
+    });
+
+    const results = await Promise.all(promises);
+    results.forEach((result) => {
+      purchasesCheck[result.id] = result.hasActivePurchases;
+    });
+
     setActivePurchasesCheck(purchasesCheck);
   };
 
@@ -86,7 +149,8 @@ const Providers = () => {
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
-    return phone.replace(/[\s\-\(\)\+57]/g, "");
+    // Solo limpiar espacios, guiones y paréntesis, mantener el número completo
+    return phone.replace(/[\s\-\(\)]/g, "");
   };
 
   const handlePageChange = (page) => {
@@ -95,7 +159,10 @@ const Providers = () => {
 
   const handleSave = async (newProvider) => {
     if (!hasPermission("providers", "Crear")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para crear proveedores");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para crear proveedores"
+      );
       return { success: false }; // ← Retornar objeto con success: false
     }
     try {
@@ -104,26 +171,35 @@ const Providers = () => {
         telefono: formatPhoneNumber(newProvider.telefono),
       };
       const response = await providersService.createProvider(providerData);
-      
+
       if (response.success) {
-        showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
+        showSuccessAlert(
+          "Proveedor creado",
+          "El proveedor se creó correctamente."
+        );
         setIsModalOpen(false);
         fetchProviders();
-        return response; // ← IMPORTANTE: Retornar la respuesta exitosa
+        return response; // ← Retornar la respuesta exitosa
       } else {
-        showErrorAlert("Error", response.message || "No se pudo crear el proveedor");
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo crear el proveedor"
+        );
         return { success: false, message: response.message }; // ← Retornar error
       }
     } catch (error) {
-      console.error('Error saving provider:', error);
+      console.error("Error saving provider:", error);
       showErrorAlert("Error", "Error al crear el proveedor en el servidor");
-      throw error; // ← IMPORTANTE: Lanzar el error para que el modal lo capture
+      throw error; // ← Lanzar el error para que el modal lo capture
     }
   };
 
   const handleUpdate = async (updatedProvider) => {
     if (!hasPermission("providers", "Editar")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para editar proveedores");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar proveedores"
+      );
       return { success: false }; // ← Retornar objeto con success: false
     }
     try {
@@ -135,7 +211,7 @@ const Providers = () => {
         updatedProvider.id,
         providerData
       );
-      
+
       if (response.success) {
         showSuccessAlert(
           "Proveedor actualizado",
@@ -143,42 +219,93 @@ const Providers = () => {
         );
         setIsModalOpen(false);
         fetchProviders();
-        return response; 
+        return response;
       } else {
-        showErrorAlert("Error", response.message || "No se pudo actualizar el proveedor");
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo actualizar el proveedor"
+        );
         return { success: false, message: response.message }; // Retornar error
       }
     } catch (error) {
-      console.error('Error updating provider:', error);
-      showErrorAlert("Error", "Error al actualizar el proveedor en el servidor");
-      throw error; 
+      console.error("Error updating provider:", error);
+      showErrorAlert(
+        "Error",
+        "Error al actualizar el proveedor en el servidor"
+      );
+      throw error;
     }
   };
 
-  const handleEdit = (provider) => {
+  const handleEdit = async (provider) => {
     if (!hasPermission("providers", "Editar")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para editar proveedores");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar proveedores"
+      );
       return;
     }
     if (!provider || provider.target) return;
-    setProviderToEdit(provider);
-    setModalMode("edit");
-    setIsModalOpen(true);
+
+    try {
+      // Obtener los datos completos del proveedor desde el backend
+      const response = await providersService.getProviderById(provider.id);
+
+      if (response.success && response.data) {
+        console.log(
+          "Datos completos del proveedor para edición:",
+          response.data
+        );
+        setProviderToEdit(response.data);
+        setModalMode("edit");
+        setIsModalOpen(true);
+      } else {
+        showErrorAlert(
+          "Error",
+          "No se pudieron cargar los datos del proveedor"
+        );
+      }
+    } catch (error) {
+      console.error("Error loading provider for edit:", error);
+      showErrorAlert("Error", "Error al cargar los datos del proveedor");
+    }
   };
 
-  const handleView = (provider) => {
+  const handleView = async (provider) => {
     if (!hasPermission("providers", "Ver")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de proveedores");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver detalles de proveedores"
+      );
       return;
     }
     if (!provider || provider.target) return;
-    setProviderToView(provider);
-    setIsViewModalOpen(true);
+
+    try {
+      // Obtener los datos completos del proveedor desde el backend
+      const response = await providersService.getProviderById(provider.id);
+
+      if (response.success && response.data) {
+        setProviderToView(response.data);
+        setIsViewModalOpen(true);
+      } else {
+        showErrorAlert(
+          "Error",
+          "No se pudieron cargar los datos del proveedor"
+        );
+      }
+    } catch (error) {
+      console.error("Error loading provider for view:", error);
+      showErrorAlert("Error", "Error al cargar los datos del proveedor");
+    }
   };
 
   const handleDelete = async (provider) => {
     if (!hasPermission("providers", "Eliminar")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para eliminar proveedores");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar proveedores"
+      );
       return;
     }
     if (!provider || !provider.id) {
@@ -211,7 +338,10 @@ const Providers = () => {
         );
         fetchProviders();
       } else {
-        showErrorAlert("Error", response.message || "No se pudo eliminar el proveedor");
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo eliminar el proveedor"
+        );
       }
     } catch (error) {
       showErrorAlert("Error", "Error al eliminar el proveedor en el servidor");
@@ -226,7 +356,8 @@ const Providers = () => {
     }),
     delete: (provider) => ({
       show: hasPermission("providers", "Eliminar"),
-      disabled: provider.estado === "Activo" || activePurchasesCheck[provider.id],
+      disabled:
+        provider.estado === "Activo" || activePurchasesCheck[provider.id],
       title:
         provider.estado === "Activo"
           ? "No se puede eliminar un proveedor activo"
@@ -260,46 +391,58 @@ const Providers = () => {
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <PermissionGuard module="providers" action="Ver">
-            <ReportButton
-    data={data}
-    fileName="Proveedores"
-    columns={[
-      { header: "Razón Social", accessor: "razonSocial" },
-      { header: "NIT/Documento", accessor: "nit" },
-      { header: "Tipo de Entidad", accessor: "tipoEntidad" },
-      { header: "Tipo de Documento", accessor: "tipoDocumento" },
-      { header: "Contacto Principal", accessor: "contactoPrincipal" },
-      { header: "Correo Electrónico", accessor: "correo" },
-      { header: "Teléfono", accessor: "telefono" },
-      { header: "Dirección", accessor: "direccion" },
-      { header: "Ciudad", accessor: "ciudad" },
-      { header: "Descripción", accessor: "descripcion" },
-      { header: "Estado", accessor: "estado" },
-      { 
-        header: "Fecha de Registro", 
-        accessor: "fechaRegistro",
-        format: (value) => value ? new Date(value).toLocaleDateString('es-ES') : 'N/A'
-      },
-      { 
-        header: "Última Actualización", 
-        accessor: "updatedAt",
-        format: (value) => value ? new Date(value).toLocaleDateString('es-ES') : 'N/A'
-      }
-    ]}
-    customDataTransform={(provider) => ({
-      ...provider,
-      // Transformar tipoEntidad para que sea más legible
-      tipoEntidad: provider.tipoEntidad === 'juridica' ? 'Persona Jurídica' : 'Persona Natural',
-      // Transformar estado para que sea más legible
-      estado: provider.estado === 'Activo' ? 'Activo' : 'Inactivo',
-      // Usar el nombre del tipo de documento en lugar del ID
-      tipoDocumento: provider.tipoDocumentoNombre || (provider.tipoEntidad === 'juridica' ? 'N/A' : 'No especificado'),
-      // Asegurar que la descripción tenga un valor por defecto si está vacía
-      descripcion: provider.descripcion || 'Sin descripción',
-      // Asegurar que el correo tenga un valor por defecto si está vacío
-      correo: provider.correo || 'No especificado'
-    })}
-  />
+              <ReportButton
+                data={data}
+                fileName="Proveedores"
+                columns={[
+                  { header: "Razón Social", accessor: "razonSocial" },
+                  { header: "NIT/Documento", accessor: "nit" },
+                  { header: "Tipo de Entidad", accessor: "tipoEntidad" },
+                  { header: "Tipo de Documento", accessor: "tipoDocumento" },
+                  {
+                    header: "Contacto Principal",
+                    accessor: "contactoPrincipal",
+                  },
+                  { header: "Correo Electrónico", accessor: "correo" },
+                  { header: "Teléfono", accessor: "telefono" },
+                  { header: "Dirección", accessor: "direccion" },
+                  { header: "Ciudad", accessor: "ciudad" },
+                  { header: "Descripción", accessor: "descripcion" },
+                  { header: "Estado", accessor: "estado" },
+                  {
+                    header: "Fecha de Registro",
+                    accessor: "fechaRegistro",
+                    format: (value) =>
+                      value
+                        ? new Date(value).toLocaleDateString("es-ES")
+                        : "N/A",
+                  },
+                  {
+                    header: "Última Actualización",
+                    accessor: "updatedAt",
+                    format: (value) =>
+                      value
+                        ? new Date(value).toLocaleDateString("es-ES")
+                        : "N/A",
+                  },
+                ]}
+                customDataTransform={(provider) => ({
+                  ...provider,
+                  tipoEntidad:
+                    provider.tipoEntidad === "juridica"
+                      ? "Persona Jurídica"
+                      : "Persona Natural",
+                  estado: provider.estado === "Activo" ? "Activo" : "Inactivo",
+                  tipoDocumento:
+                    provider.documentType?.name ||
+                    provider.tipoDocumentoNombre ||
+                    (provider.tipoEntidad === "juridica"
+                      ? "NIT"
+                      : "No especificado"),
+                  descripcion: provider.descripcion || "Sin descripción",
+                  correo: provider.correo || "No especificado",
+                })}
+              />
             </PermissionGuard>
             <PermissionGuard module="providers" action="Crear">
               <button
@@ -352,8 +495,12 @@ const Providers = () => {
                     Inactivo: "bg-red-100 text-red-800",
                   },
                 }}
-                onEdit={hasPermission("providers", "Editar") ? handleEdit : null}
-                onDelete={hasPermission("providers", "Eliminar") ? handleDelete : null}
+                onEdit={
+                  hasPermission("providers", "Editar") ? handleEdit : null
+                }
+                onDelete={
+                  hasPermission("providers", "Eliminar") ? handleDelete : null
+                }
                 onView={hasPermission("providers", "Ver") ? handleView : null}
                 buttonConfig={buttonConfig}
               />

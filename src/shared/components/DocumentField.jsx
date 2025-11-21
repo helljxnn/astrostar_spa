@@ -4,7 +4,9 @@ import {
   validateDocument, 
   getDocumentPlaceholder, 
   formatDocumentNumber,
-  getDocumentInfo 
+  getDocumentInfo,
+  requiresDigitoVerificacion,
+  calcularDigitoVerificacion
 } from '../utils/documentValidation';
 
 /**
@@ -96,6 +98,7 @@ export const DocumentField = ({
           onFocus={handleFocus}
           disabled={disabled || !documentType}
           placeholder={placeholder}
+          maxLength={documentType === 'Número de Identificación Tributaria' || documentType === 'NIT' ? 10 : undefined}
           className={`
             w-full px-4 py-3 rounded-xl border-2 transition-all duration-200
             ${displayError 
@@ -125,6 +128,16 @@ export const DocumentField = ({
           <span>ℹ️</span>
           <span>{documentInfo?.description}</span>
         </p>
+      )}
+
+      {/* Mostrar NIT calculado con dígito verificador */}
+      {requiresDigitoVerificacion(documentType) && value && value.replace(/[^\d]/g, '').length === 9 && !displayError && (
+        <div className="text-xs text-green-600 flex items-center gap-1 mt-1">
+          <span>✅</span>
+          <span>
+            NIT calculado: <strong>{value.replace(/[^\d]/g, '')}-{calcularDigitoVerificacion(value.replace(/[^\d]/g, ''))}</strong>
+          </span>
+        </div>
       )}
 
       {/* Error */}
