@@ -1,168 +1,87 @@
-  import { useState, useEffect, useRef } from 'react';
-  import sportsCategoriesService from '../services/sportsCategoriesService';
+  import { useState, useEffect, useRef, useCallback } from "react";
+  import useSportsCategories from "./useSportsCategories";
 
   export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
     const [nameValidation, setNameValidation] = useState({
       isChecking: false,
       isDuplicate: false,
-      message: '',
-      existingCategoryName: '',
-      isAvailable: false
+      message: "",
+      isAvailable: false,
     });
 
-    const [allCategories, setAllCategories] = useState([]);
-    const [categoriesLoaded, setCategoriesLoaded] = useState(false);
     const debounceTimer = useRef(null);
 
-    // Cargar todas las categorías una sola vez al inicializar (para fallback)
-    useEffect(() => {
-      const loadAllCategories = async () => {
-        try {
-          const response = await sportsCategoriesService.getAllSportsCategories({ limit: 1000 });
-          if (response.success) {
-            setAllCategories(response.data);
-            setCategoriesLoaded(true);
-            console.log('📋 Loaded sports categories for fallback:', response.data.length);
-          }
-        } catch (error) {
-          console.error('Error loading sports categories:', error);
-          setCategoriesLoaded(true); // Marcar como cargado aunque haya error
-        }
-      };
+    const {
+      fetchSportsCategories,
+      checkCategoryNameAvailability,
+      sportsCategories,
+    } = useSportsCategories();
 
-      loadAllCategories();
+    useEffect(() => {
+      fetchSportsCategories({ limit: 1000 });
     }, []);
 
-    const validateCategoryName = async (nombre) => {
-      // Limpiar validación si el nombre es muy corto
-      if (!nombre || nombre.trim().length < 3) {
-        setNameValidation({
-          isChecking: false,
-          isDuplicate: false,
-          message: '',
-          existingCategoryName: '',
-          isAvailable: false
-        });
-        return;
-      }
+    const validateName = useCallback(
+      async (nombre) => {
+        const trimmed = nombre.trim();
+        if (trimmed.length < 3)
+          return {
+            available: false,
+            message: "Debe tener mínimo 3 caracteres.",
+          };
 
-      const trimmedName = nombre.trim();
-      console.log('🔍 Validating category name:', trimmedName, 'excludeId:', currentCategoryId);
-
-      try {
-        // Usar el endpoint específico para validación
-        const response = await sportsCategoriesService.checkCategoryNameAvailability(trimmedName, currentCategoryId);
-        console.log('📡 API Response:', response);
-        
-        if (response.success) {
-          if (response.data.available) {
-            console.log('✅ Name is available');
-            setNameValidation({
-              isChecking: false,
-              isDuplicate: false,
-              message: '',
-              existingCategoryName: '',
-              isAvailable: true
-            });
-          } else {
-            console.log('❌ Name is not available:', response.data.message);
-            setNameValidation({
-              isChecking: false,
-              isDuplicate: true,
-              message: response.data.message,
-              existingCategoryName: response.data.existingCategory || '',
-              isAvailable: false
-            });
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error validating category name:', error);
-        // Fallback a validación local si falla el endpoint
-        if (categoriesLoaded) {
-          const existingCategory = allCategories.find(category => 
-            category.nombre.toLowerCase() === trimmedName.toLowerCase() && 
-            category.id !== currentCategoryId
+        try {
+          const result = await checkCategoryNameAvailability(
+            trimmed,
+            currentCategoryId ? Number(currentCategoryId) : null
           );
 
-          if (existingCategory) {
-            console.log('🔄 Fallback: Name exists locally');
-            setNameValidation({
-              isChecking: false,
-              isDuplicate: true,
-              message: `El nombre "${trimmedName}" ya está en uso.`,
-              existingCategoryName: existingCategory.nombre,
-              isAvailable: false
-            });
-          } else {
-            console.log('🔄 Fallback: Name available locally');
-            setNameValidation({
-              isChecking: false,
-              isDuplicate: false,
-              message: '',
-              existingCategoryName: '',
-              isAvailable: true
-            });
-          }
+          return {
+            available: result.available,
+            message: result.message,
+          };
+        } catch (error) {
+          console.warn("Backend caído. Usando fallback local.");
+
+          const exists = sportsCategories.some(
+            (c) =>
+              c.id !== currentCategoryId &&
+              c.nombre.toLowerCase() === trimmed.toLowerCase()
+          );
+
+          return {
+            available: !exists,
+            message: exists
+              ? `El nombre "${trimmed}" ya está en uso.`
+              : "Nombre disponible.",
+          };
         }
-      }
+      },
+      [sportsCategories, currentCategoryId]
+    );
+
+    const debouncedValidate = (value) => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+      debounceTimer.current = setTimeout(async () => {
+        setNameValidation((prev) => ({ ...prev, isChecking: true }));
+
+        const result = await validateName(value);
+
+        setNameValidation({
+          isChecking: false,
+          isDuplicate: !result.available,
+          message: result.message,
+          isAvailable: result.available,
+        });
+      }, 400);
     };
-
-    const debouncedValidateCategoryName = (nombre) => {
-      // Limpiar timer anterior
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
-      }
-
-      // Si el nombre es muy corto, validar inmediatamente
-      if (!nombre || nombre.trim().length < 3) {
-        validateCategoryName(nombre);
-        return;
-      }
-
-      // Mostrar estado de verificación inmediatamente
-      setNameValidation(prev => ({ 
-        ...prev, 
-        isChecking: true,
-        isDuplicate: false,
-        isAvailable: false
-      }));
-
-      // Debounce más corto para mejor UX
-      debounceTimer.current = setTimeout(() => {
-        validateCategoryName(nombre);
-      }, 300); // 300ms para ser más rápido
-    };
-
-    // Función para recargar categorías (útil después de crear/editar)
-    const reloadCategories = async () => {
-      try {
-        const response = await sportsCategoriesService.getAllSportsCategories({ limit: 1000 });
-        if (response.success) {
-          setAllCategories(response.data);
-        }
-      } catch (error) {
-        console.error('Error reloading categories:', error);
-      }
-    };
-
-    useEffect(() => {
-      return () => {
-        if (debounceTimer.current) {
-          clearTimeout(debounceTimer.current);
-        }
-      };
-    }, []);
 
     return {
       nameValidation,
-      validateCategoryName: debouncedValidateCategoryName,
-      reloadCategories,
-      clearValidation: () => setNameValidation({
-        isChecking: false,
-        isDuplicate: false,
-        message: '',
-        existingCategoryName: '',
-        isAvailable: false
-      })
+      validateCategoryName: debouncedValidate,
+      validateCategoryNameSync: validateName,
     };
   };
+
+  export default useSportsCategoryNameValidation;

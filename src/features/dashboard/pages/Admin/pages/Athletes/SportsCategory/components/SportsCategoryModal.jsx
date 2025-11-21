@@ -1,29 +1,58 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+
+/* ========================================================== */
+/* HOOKS DE VALIDACIÓN */
+/* ========================================================== */
 import {
   useFormSportsCategoryValidation,
   sportsCategoryValidationRules,
 } from "../hooks/useFormSportsCategoryValidation";
 import { useSportsCategoryNameValidation } from "../hooks/useSportsCategoryNameValidation";
 
+/* ========================================================== */
+/* HOOK PRINCIPAL (para submit final) */
+/* ========================================================== */
+import useSportsCategories from "../hooks/useSportsCategories";
+
+/* ========================================================== */
+/* UTILIDADES */
+/* ========================================================== */
+import {
+  showErrorAlert,
+  showSuccessAlert,
+} from "../../../../../../../../shared/utils/Alerts";
+
+/* ========================================================== */
+/* CONSTANTES */
+/* ========================================================== */
+const MAX_FILE_SIZE_MB = 5;
+
+/* ========================================================== */
+/* COMPONENTE PRINCIPAL */
+/* ========================================================== */
 const SportsCategoryModal = ({
   isOpen,
   onClose,
-  onSave,
   category = null,
   isNew = true,
 }) => {
-  /* ---------- ESTADO INICIAL ---------- */
+  /* ========================================================== */
+  /* ESTADO INICIAL DEL FORMULARIO */
+  /* ========================================================== */
   const initialForm = {
     nombre: "",
     edadMinima: "",
     edadMaxima: "",
     descripcion: "",
     archivo: null,
-    estado: "Active", // El backend requiere "Active"/"Inactive"
+    estado: "Active",
     publicar: false,
   };
 
+  /* ========================================================== */
+  /* HOOKS */
+  /* ========================================================== */
   const {
     values,
     errors,
@@ -35,85 +64,178 @@ const SportsCategoryModal = ({
     setErrors,
   } = useFormSportsCategoryValidation(initialForm, sportsCategoryValidationRules);
 
+  const {
+    nameValidation,
+    validateCategoryName,
+    validateCategoryNameSync,
+    resetForm,
+  } = useSportsCategoryNameValidation(category?.id);
+
+  // ✅ Hook principal — solo para operaciones de guardado (create/update)
+  const { createSportsCategory, updateSportsCategory } = useSportsCategories();
+
+  /* ========================================================== */
+  /* ESTADOS LOCALES */
+  /* ========================================================== */
   const [fileName, setFileName] = useState("No se ha seleccionado ningún archivo");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { checkNameUnique } = useSportsCategoryNameValidation();
-
-  /* ---------- EFECTO: CARGA DE DATOS ---------- */
+  /* ========================================================== */
+  /* EFECTO: CARGAR DATOS EN EDICIÓN */
+  /* ========================================================== */
   useEffect(() => {
     if (!isOpen) return;
 
+    clearValidation();
+    setErrors({});
+    setIsSubmitting(false);
+
     if (category && !isNew) {
-      const loadedValues = {
+      // Modo edición
+      setValues({
         nombre: category.name || category.nombre || "",
         edadMinima: String(category.minAge ?? category.edadMinima ?? ""),
         edadMaxima: String(category.maxAge ?? category.edadMaxima ?? ""),
         descripcion: category.description || category.descripcion || "",
         archivo: null,
-        // Normaliza el estado al formato backend
-        estado:
-          category.status === "Inactive" || category.estado === "Inactive"
-            ? "Inactive"
-            : "Active",
-        publicar: Boolean(category.publish ?? category.publicar ?? false),
-      };
-
-      setValues(loadedValues);
-      setFileName(category.fileName || category.archivo || "No se ha seleccionado ningún archivo");
+        estado: category.status || category.estado || "Active",
+        publicar: Boolean(category.publish ?? category.publicar),
+      });
+      setFileName(
+        category.fileName || category.file || "No se ha seleccionado ningún archivo"
+      );
     } else {
+      // Modo creación
       setValues(initialForm);
       setFileName("No se ha seleccionado ningún archivo");
     }
-  }, [category, isNew, isOpen, setValues]);
+  }, [isOpen, category, isNew, setValues, setErrors, clearValidation]);
 
-  /* ---------- MANEJADORES ---------- */
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  /* ========================================================== */
+  /* HANDLERS */
+  /* ========================================================== */
+
+  const handleNameChange = useCallback(
+    (value) => {
+      handleChange("nombre", value);
+      if (value.trim().length > 0) {
+        validateCategoryName(value.trim());
+      } else {
+        clearValidation();
+      }
+    },
+    [handleChange, validateCategoryName, clearValidation]
+  );
+
+  const handleFileChange = useCallback((e) => {
+    const file = e.target.files?.[0] || null;
+
+    if (file) {
+      const sizeMB = file.size / (1024 * 1024);
+      if (sizeMB > MAX_FILE_SIZE_MB) {
+        showErrorAlert(
+          "Archivo muy pesado",
+          `La imagen supera el límite de ${MAX_FILE_SIZE_MB}MB.`
+        );
+        e.target.value = "";
+        setFileName("No se ha seleccionado ningún archivo");
+        handleChange("archivo", null);
+        return;
+      }
+    }
+
     handleChange("archivo", file);
     setFileName(file ? file.name : "No se ha seleccionado ningún archivo");
-  };
+    handleBlur("archivo");
+  }, [handleChange, handleBlur]);
 
-  const handleNameBlur = async () => {
-    handleBlur("nombre");
+  /* ------------------- SUBMIT ----------------------------- */
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
 
-    if (!values.nombre.trim()) return;
-    if (!isNew && values.nombre === (category?.name || category?.nombre)) return;
+      // 1. Validaciones básicas
+      touchAllFields(values);
+      if (!validateAllFields(values)) {
+        showErrorAlert("Formulario incompleto", "Por favor revisa los campos obligatorios.");
+        return;
+      }
 
-    const exists = await checkNameUnique(values.nombre.trim());
-    if (exists) {
-      setErrors((prev) => ({
-        ...prev,
-        nombre: "Ya existe una categoría con este nombre",
-      }));
-    }
-  };
+      // 2. Validar archivo en modo creación
+      if (isNew && !(values.archivo instanceof File)) {
+        showErrorAlert("Imagen requerida", "Debes subir una imagen para crear la categoría.");
+        return;
+      }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    touchAllFields(values);
-    if (!validateAllFields(values)) return;
+      // 3. ✅ VALIDACIÓN FINAL DE NOMBRE (usando el hook, no el servicio roto)
+      if (values.nombre.trim().length >= 3) {
+        try {
+          const result = await validateCategoryNameSync(values.nombre.trim());
+          if (!result.available) {
+            showErrorAlert("Nombre duplicado", result.message);
+            return;
+          }
+        } catch (err) {
+          // Si falla, dejamos que el backend lo atrape (ya lo hace con 409)
+          console.warn("Validación final falló — delegando al backend", err);
+        }
+      }
 
-    // ✅ Convertimos el estado antes de enviar (por si alguien lo cambia manualmente)
-    const estadoBack = values.estado === "Activo" ? "Active" : values.estado === "Inactivo" ? "Inactive" : values.estado;
+      // 4. Preparar FormData
+      const formData = new FormData();
+      formData.append("name", values.nombre.trim());
+      formData.append("minAge", values.edadMinima);
+      formData.append("maxAge", values.edadMaxima);
+      formData.append("description", values.descripcion.trim());
+      formData.append("status", values.estado);
+      formData.append("publish", values.publicar ? "true" : "false");
 
-    const formData = new FormData();
-    formData.append("name", values.nombre.trim());
-    formData.append("minAge", values.edadMinima);
-    formData.append("maxAge", values.edadMaxima);
-    formData.append("description", values.descripcion.trim());
-    formData.append("status", estadoBack);
-    formData.append("publish", values.publicar ? "true" : "false");
+      if (values.archivo instanceof File) {
+        formData.append("file", values.archivo);
+      }
 
-    if (values.archivo instanceof File) {
-      formData.append("file", values.archivo);
-    }
+      // 5. Guardar
+      setIsSubmitting(true);
+      try {
+        if (isNew) {
+          await createSportsCategory(formData, { page: 1, limit: 10 });
+        } else {
+          await updateSportsCategory(category.id, formData, { page: 1, limit: 10 });
+        }
 
-    onSave(formData);
-  };
+        showSuccessAlert(
+          isNew ? "Categoría creada" : "Categoría actualizada",
+          "La operación se realizó correctamente."
+        );
+        onClose();
+      } catch (error) {
+        // Manejo de errores del backend (incluyendo 409)
+        const msg = error.response?.data?.message || "No se pudo guardar la categoría.";
+        showErrorAlert("Error", msg);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [
+      values,
+      isNew,
+      category?.id,
+      validateCategoryNameSync,
+      createSportsCategory,
+      updateSportsCategory,
+      onClose,
+      touchAllFields,
+      validateAllFields,
+      showErrorAlert,
+      showSuccessAlert,
+    ]
+  );
 
+  /* ========================================================== */
+  /* RENDERIZADO */
+  /* ========================================================== */
   if (!isOpen) return null;
 
-  /* ---------- RENDER ---------- */
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
       <motion.div
@@ -122,14 +244,15 @@ const SportsCategoryModal = ({
         transition={{ duration: 0.3 }}
         className="bg-white rounded-[18px] shadow-xl p-8 w-full max-w-5xl overflow-y-auto max-h-[90vh]"
       >
-        {/* CABECERA */}
+        {/* HEADER */}
         <div className="flex justify-between items-center mb-7">
           <h2 className="text-[32px] font-bold text-[#9BE9FF]">
             {isNew ? "Crear Categoría Deportiva" : "Editar Categoría Deportiva"}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold"
+            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold transition-colors"
+            aria-label="Cerrar modal"
           >
             ✕
           </button>
@@ -138,119 +261,210 @@ const SportsCategoryModal = ({
         {/* FORMULARIO */}
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nombre */}
+            {/* NOMBRE */}
             <div>
-              <label className="text-sm font-semibold">Nombre categoría *</label>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Nombre categoría *
+              </label>
               <input
                 type="text"
-                placeholder="Ej: Infantil A"
                 value={values.nombre}
-                onChange={(e) => handleChange("nombre", e.target.value)}
-                onBlur={handleNameBlur}
-                className={`w-full border ${errors.nombre ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onBlur={() => handleBlur("nombre")}
+                placeholder="Ej: Infantil A"
+                disabled={isSubmitting}
+                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  errors.nombre || nameValidation.isDuplicate
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-300"
+                }`}
               />
-              {errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+              {errors.nombre && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.nombre}
+                </p>
+              )}
+              {nameValidation.isChecking && (
+                <p className="text-blue-500 text-xs mt-1 flex items-center gap-1">
+                  <span className="animate-pulse">🔄</span> Verificando nombre...
+                </p>
+              )}
+              {nameValidation.isDuplicate && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>❌</span> {nameValidation.message}
+                </p>
+              )}
+              {nameValidation.isAvailable && !errors.nombre && (
+                <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
+                  <span>✓</span> Nombre disponible
+                </p>
+              )}
             </div>
 
-            {/* Edad mínima */}
+            {/* EDAD MÍNIMA */}
             <div>
-              <label className="text-sm font-semibold">Edad mínima *</label>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Edad mínima *
+              </label>
               <input
                 type="number"
-                placeholder="Ej: 10"
                 value={values.edadMinima}
                 onChange={(e) => handleChange("edadMinima", e.target.value)}
                 onBlur={() => handleBlur("edadMinima")}
-                className={`w-full border ${errors.edadMinima ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+                placeholder="Ej: 10"
+                min="5"
+                disabled={isSubmitting}
+                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
               />
-              {errors.edadMinima && <p className="text-red-500 text-xs mt-1">{errors.edadMinima}</p>}
+              {errors.edadMinima && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.edadMinima}
+                </p>
+              )}
             </div>
 
-            {/* Edad máxima */}
+            {/* EDAD MÁXIMA */}
             <div>
-              <label className="text-sm font-semibold">Edad máxima *</label>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Edad máxima *
+              </label>
               <input
                 type="number"
-                placeholder="Ej: 15"
                 value={values.edadMaxima}
                 onChange={(e) => handleChange("edadMaxima", e.target.value)}
                 onBlur={() => handleBlur("edadMaxima")}
-                className={`w-full border ${errors.edadMaxima ? "border-red-400" : "border-gray-300"} rounded-xl px-4 py-3 text-sm`}
+                placeholder="Ej: 15"
+                disabled={isSubmitting}
+                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
               />
-              {errors.edadMaxima && <p className="text-red-500 text-xs mt-1">{errors.edadMaxima}</p>}
+              {errors.edadMaxima && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.edadMaxima}
+                </p>
+              )}
             </div>
 
-            {/* Descripción */}
+            {/* DESCRIPCIÓN */}
             <div>
-              <label className="text-sm font-semibold">Descripción</label>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Descripción *
+              </label>
               <textarea
-                placeholder="Breve descripción de la categoría..."
                 value={values.descripcion}
                 onChange={(e) => handleChange("descripcion", e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 min-h-[95px] text-sm"
+                onBlur={() => handleBlur("descripcion")}
+                placeholder="Breve descripción de la categoría..."
+                disabled={isSubmitting}
+                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                  errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
               />
+              {errors.descripcion && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.descripcion}
+                </p>
+              )}
             </div>
 
-            {/* Archivo */}
-            <div className="flex items-center gap-3 md:col-span-1">
-              <label className="text-sm font-semibold w-full">
-                Subir archivo (PNG, JPG) *
+            {/* IMAGEN */}
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                Subir imagen *
               </label>
-              <label className="bg-[#74D5F4] hover:bg-[#5DCFF0] px-4 py-2 text-sm rounded-lg cursor-pointer text-white whitespace-nowrap">
-                Elegir archivo
+              <label
+                className={`${
+                  isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                } bg-[#74D5F4] text-white px-5 py-2.5 rounded-lg text-sm hover:bg-[#5fc4e3] transition-all shadow-sm hover:shadow-md w-fit`}
+              >
+                <span className="flex items-center gap-2">
+                  📁 Elegir archivo
+                </span>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  disabled={isSubmitting}
                   className="hidden"
                 />
               </label>
-              <span className="text-xs text-gray-600">{fileName}</span>
+              <span className="text-xs mt-2 text-gray-600 truncate max-w-full">
+                {fileName}
+              </span>
+              <span className="text-xs text-gray-500 mt-1">
+                Tamaño máximo: {MAX_FILE_SIZE_MB}MB
+              </span>
+              {errors.archivo && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.archivo}
+                </p>
+              )}
             </div>
 
-            {/* Estado */}
+            {/* ESTADO */}
             <div>
-              <label className="text-sm font-semibold">Estado *</label>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Estado *
+              </label>
               <select
                 value={values.estado}
                 onChange={(e) => handleChange("estado", e.target.value)}
                 onBlur={() => handleBlur("estado")}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm"
+                disabled={isSubmitting}
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <option value="Active">Activo</option>
                 <option value="Inactive">Inactivo</option>
               </select>
-              {errors.estado && <p className="text-red-500 text-xs mt-1">{errors.estado}</p>}
+              {errors.estado && (
+                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                  <span>⚠</span> {errors.estado}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Publicar */}
-          <div className="flex items-center gap-2 mt-4">
+          {/* PUBLICAR */}
+          <div className="flex items-center gap-3 mt-6 p-4 bg-gray-50 rounded-lg">
             <input
               type="checkbox"
+              id="publicar"
               checked={values.publicar}
               onChange={(e) => handleChange("publicar", e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
             />
-            <label className="text-sm text-gray-700">
-              Publicar categoría (visible en portal público)
+            <label htmlFor="publicar" className="text-sm text-gray-700 cursor-pointer">
+              Publicar categoría inmediatamente
             </label>
           </div>
 
-          {/* Botones */}
+          {/* BOTONES */}
           <div className="flex justify-end gap-4 mt-10">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2 rounded-xl bg-gray-200"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 transition-colors font-medium text-gray-700 disabled:opacity-50"
             >
               Cancelar
             </button>
-
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-[#74D5F4] text-white font-semibold"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] transition-all shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {isNew ? "Crear Categoría" : "Actualizar Categoría"}
+              {isSubmitting ? (
+                <span className="flex items-center gap-1">
+                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Guardando...
+                </span>
+              ) : (
+                `✓ ${isNew ? "Crear Categoría" : "Actualizar Categoría"}`
+              )}
             </button>
           </div>
         </form>
