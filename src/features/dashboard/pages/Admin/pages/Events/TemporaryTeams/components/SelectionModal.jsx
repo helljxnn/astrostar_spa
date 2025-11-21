@@ -30,7 +30,6 @@ const SelectionModal = ({
   // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      console.log('🎯 Modal abierto, modo:', mode)
       loadData()
     } else {
       // Limpiar datos cuando se cierra
@@ -44,31 +43,18 @@ const SelectionModal = ({
   const loadData = async () => {
     setLoading(true)
     try {
-      console.log('🔄 Cargando datos...')
       let response
       if (mode === "trainer") {
         response = await TeamsService.getTrainers()
-        console.log('🏋️ Respuesta entrenadores:', response)
       } else {
         response = await TeamsService.getAthletes()
-        console.log('🏃 Respuesta deportistas:', response)
       }
       
-      // ✅ FIX CRÍTICO: Extraer los datos correctamente
-      let responseData = []
-      
-      if (response && response.success && Array.isArray(response.data)) {
-        responseData = response.data
-      } else if (response && Array.isArray(response.data)) {
-        responseData = response.data
-      } else if (Array.isArray(response)) {
-        responseData = response
-      }
-      
-      console.log('📦 Datos a mostrar:', responseData)
+      // FIX CRÍTICO: Asegurar que siempre tengamos un array
+      const responseData = Array.isArray(response) ? response : (response?.data || [])
       setData(responseData)
     } catch (error) {
-      console.error('❌ Error cargando datos:', error)
+      console.error('Error cargando datos:', error)
       setData([])
     } finally {
       setLoading(false)
@@ -82,7 +68,6 @@ const SelectionModal = ({
   }, [existingTeamType, selectedItems])
 
   const groupedData = useMemo(() => {
-    console.log('📊 Agrupando datos:', data)
     if (!data || data.length === 0) return []
     
     const fundacion = data.filter(item => item.type === "fundacion")
@@ -106,14 +91,12 @@ const SelectionModal = ({
       })
     }
     
-    console.log('🏷️ Grupos creados:', groups)
     return groups
   }, [data, mode])
 
   // ✅ CORRECTO: Usar solo los datos del tab actual
   const currentGroupData = useMemo(() => {
     const groupData = groupedData[activeTab]?.items || []
-    console.log('📑 Datos del grupo actual (tab', activeTab, '):', groupData)
     return groupData
   }, [groupedData, activeTab])
 
@@ -131,7 +114,6 @@ const SelectionModal = ({
       })
     }
 
-    console.log('✅ Items disponibles en el tab actual:', filtered)
     return filtered
   }, [currentGroupData, currentTeamType, currentCategoria])
 

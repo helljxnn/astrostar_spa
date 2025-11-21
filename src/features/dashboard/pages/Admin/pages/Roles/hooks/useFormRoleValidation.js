@@ -77,8 +77,5 @@ export const roleValidationRules = {
     (value) => !value?.trim() ? 'La descripción es obligatoria.' : '',
     (value) => value?.trim().length < 10 ? 'La descripción debe tener al menos 10 caracteres.' : '',
     (value) => value?.trim().length > 200 ? `La descripción no puede exceder 200 caracteres (${value?.trim().length}/200).` : '',
-  ],
-  estado: [
-    (value) => !value ? 'Seleccione un estado válido (Activo o Inactivo).' : ''
   ]
 };

@@ -292,8 +292,8 @@ const Providers = () => {
       tipoEntidad: provider.tipoEntidad === 'juridica' ? 'Persona Jurídica' : 'Persona Natural',
       // Transformar estado para que sea más legible
       estado: provider.estado === 'Activo' ? 'Activo' : 'Inactivo',
-      // Asegurar que tipoDocumento tenga un valor por defecto si está vacío
-      tipoDocumento: provider.tipoDocumento || (provider.tipoEntidad === 'juridica' ? 'N/A' : 'No especificado'),
+      // Usar el nombre del tipo de documento en lugar del ID
+      tipoDocumento: provider.tipoDocumentoNombre || (provider.tipoEntidad === 'juridica' ? 'N/A' : 'No especificado'),
       // Asegurar que la descripción tenga un valor por defecto si está vacía
       descripcion: provider.descripcion || 'Sin descripción',
       // Asegurar que el correo tenga un valor por defecto si está vacío

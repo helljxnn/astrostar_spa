@@ -1,5 +1,5 @@
 
-import apiClient from '@shared/services/apiClient';
+import apiClient from '../../../../../../../shared/services/apiClient';
 
 class RolesService {
   constructor() {
@@ -35,7 +35,6 @@ class RolesService {
    * @param {object} roleData - Datos del rol a crear
    * @param {string} roleData.name - Nombre del rol
    * @param {string} roleData.description - Descripción del rol
-   * @param {string} roleData.status - Estado del rol (Active/Inactive)
    * @param {object} roleData.permissions - Permisos del rol
    * @returns {Promise} Rol creado
    */
@@ -101,31 +100,12 @@ class RolesService {
   }
 
   /**
-   * Cambiar estado de un rol (Activar/Desactivar)
-   * @param {number} id - ID del rol
-   * @param {string} status - Nuevo estado (Active/Inactive)
-   * @returns {Promise} Rol con estado actualizado
-   */
-  async changeRoleStatus(id, status) {
-
-    return this.updateRole(id, { status });
-  }
-
-  /**
    * Obtener roles activos únicamente
    * @returns {Promise} Lista de roles activos
    */
   async getActiveRoles() {
 
-    return this.getAllRoles({ limit: 100, page: 1 }).then(response => {
-      if (response.success) {
-        return {
-          ...response,
-          data: response.data.filter(role => role.status === 'Active')
-        };
-      }
-      return response;
-    });
+    return this.getAllRoles({ limit: 100, page: 1 });
   }
 
   /**
@@ -144,7 +124,6 @@ class RolesService {
     const duplicatedRoleData = {
       name: newName,
       description: `${originalRole.data.description} (Copia)`,
-      status: originalRole.data.status,
       permissions: originalRole.data.permissions,
     };
 
@@ -190,7 +169,7 @@ class RolesService {
    * @returns {string} Datos en formato CSV
    */
   formatRolesForCSV(roles) {
-    const headers = ["ID", "Nombre", "Descripción", "Estado", "Fecha Creación"];
+    const headers = ["ID", "Nombre", "Descripción", "Fecha Creación"];
     const csvRows = [headers.join(",")];
 
     roles.forEach(role => {
@@ -198,7 +177,6 @@ class RolesService {
         role.id,
         `"${role.name}"`,
         `"${role.description}"`,
-        role.status,
         new Date(role.createdAt).toLocaleDateString()
       ];
       csvRows.push(row.join(","));

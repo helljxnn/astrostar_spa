@@ -245,18 +245,39 @@ export const convertTo24Hour = (time12) => {
 };
 
 export const processEventsStatus = (events) => {
-  const today = new Date();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const currentTime = now.getHours() * 60 + now.getMinutes(); // Minutos desde medianoche
 
   return events.map((event) => {
-    if (event.status === "cancelado" || event.status === "en-pausa") {
+    // No modificar eventos cancelados o en pausa
+    if (event.status === "cancelado" || event.status === "en-pausa" || event.status === "Cancelado" || event.status === "Pausado") {
+      return event;
+    }
+
+    // No modificar eventos ya finalizados
+    if (event.status === "finalizado" || event.status === "Finalizado") {
       return event;
     }
 
     const eventEndDate = event.endDate || event.date;
     const endDate = new Date(eventEndDate);
+    const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
     
-    if (endDate < today) {
+    // Si la fecha de fin ya pasó, marcar como finalizado
+    if (endDateOnly < today) {
       return { ...event, status: "finalizado" };
+    }
+
+    // Si la fecha de fin es hoy, verificar la hora
+    if (endDateOnly.getTime() === today.getTime() && event.endTime) {
+      const [eventHour, eventMin] = event.endTime.split(':').map(Number);
+      const eventTimeInMinutes = eventHour * 60 + eventMin;
+
+      // Si la hora de fin ya pasó, marcar como finalizado
+      if (eventTimeInMinutes <= currentTime) {
+        return { ...event, status: "finalizado" };
+      }
     }
 
     return event;

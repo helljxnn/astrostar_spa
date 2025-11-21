@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import {
   useFormEmployeeValidation,
   employeeValidationRules,
@@ -294,20 +295,22 @@ const EmployeeModal = ({
               delay={0.1}
             />
 
-            {/* Identificación */}
-            <FormField
-              label="Número de Documento"
-              name="identification"
-              type="text"
-              placeholder="Número de documento del empleado"
-              required={mode !== "view"}
-              disabled={mode === "view"}
+            {/* Identificación con validación por tipo de documento */}
+            <DocumentField
+              documentType={
+                referenceData.documentTypes.find(
+                  (dt) => dt.id === parseInt(formData.documentTypeId)
+                )?.name
+              }
               value={formData.identification}
-              error={errors.identification}
-              touched={touched.identification}
               onChange={handleChange}
               onBlur={handleCustomBlur}
-              delay={0.2}
+              error={errors.identification}
+              touched={touched.identification}
+              disabled={mode === "view"}
+              required={mode !== "view"}
+              label="Número de Documento"
+              name="identification"
             />
 
             {/* Primer Nombre */}
@@ -403,6 +406,7 @@ const EmployeeModal = ({
               touched={touched.phoneNumber}
               onChange={handleChange}
               onBlur={handleBlur}
+              maxLength={14}
               delay={0.55}
             />
 
@@ -470,27 +474,29 @@ const EmployeeModal = ({
               delay={0.75}
             />
 
-            {/* Estado */}
-            <FormField
-              label="Estado"
-              name="status"
-              type="select"
-              placeholder="Seleccionar estado"
-              required={mode !== "view"}
-              disabled={mode === "view"}
-              options={[
-                { value: "Activo", label: "Activo" },
-                { value: "Licencia", label: "Licencia" },
-                { value: "Desvinculado", label: "Desvinculado" },
-                { value: "Fallecido", label: "Fallecido" },
-              ]}
-              value={formData.status}
-              error={errors.status}
-              touched={touched.status}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.8}
-            />
+            {/* Estado - Solo visible en modo editar o ver */}
+            {mode !== "create" && (
+              <FormField
+                label="Estado"
+                name="status"
+                type="select"
+                placeholder="Seleccionar estado"
+                required={mode !== "view"}
+                disabled={mode === "view"}
+                options={[
+                  { value: "Activo", label: "Activo" },
+                  { value: "Licencia", label: "Licencia" },
+                  { value: "Desvinculado", label: "Desvinculado" },
+                  { value: "Fallecido", label: "Fallecido" },
+                ]}
+                value={formData.status}
+                error={errors.status}
+                touched={touched.status}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                delay={0.8}
+              />
+            )}
           </div>
         </div>
 
