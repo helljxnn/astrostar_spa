@@ -60,7 +60,7 @@ const TemporaryTeams = () => {
         }
       }
     } catch (error) {
-      console.error('❌ Error cargando equipos:', error);
+      console.error('Error cargando equipos:', error);
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
     } finally {
@@ -123,7 +123,7 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo crear el equipo");
       }
     } catch (error) {
-      console.error('❌ Error creando equipo:', error);
+      console.error('Error creando equipo:', error);
       showErrorAlert("Error", error.message || "No se pudo crear el equipo");
     }
   }
@@ -141,7 +141,7 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo actualizar el equipo");
       }
     } catch (error) {
-      console.error('❌ Error actualizando equipo:', error);
+      console.error('Error actualizando equipo:', error);
       showErrorAlert("Error", error.message || "No se pudo actualizar el equipo");
     }
   }
@@ -179,7 +179,7 @@ const TemporaryTeams = () => {
           showErrorAlert("Error", deleteResult.error || "No se pudo eliminar el equipo");
         }
       } catch (error) {
-        console.error('❌ Error eliminando equipo:', error);
+        console.error('Error eliminando equipo:', error);
         showErrorAlert("Error", error.message || "No se pudo eliminar el equipo");
       }
     }

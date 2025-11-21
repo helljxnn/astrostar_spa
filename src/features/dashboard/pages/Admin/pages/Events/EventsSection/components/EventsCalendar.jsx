@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import es from "date-fns/locale/es";
@@ -41,21 +41,29 @@ const messages = {
   showMore: (total) => `${total} eventos más`,
 };
 
-export default function EventsCalendar({ 
+const EventsCalendar = forwardRef(function EventsCalendar({ 
   events: propEvents = [], 
   referenceData = { categories: [], types: [] },
   onCreateEvent,
-  onUpdateEvent
-}) {
+  onUpdateEvent,
+  onDeleteEvent
+}, ref) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date()); // Fecha actual
   const [events, setEvents] = useState(propEvents);
 
   // Sincronizar eventos cuando cambien las props
   useEffect(() => {
-    console.log("EventsCalendar - Eventos recibidos:", propEvents);
     setEvents(propEvents);
   }, [propEvents]);
+
+  // Exponer funciones al componente padre mediante ref
+  useImperativeHandle(ref, () => ({
+    changeMonth: (newDate) => {
+      setDate(newDate);
+    },
+    getCurrentDate: () => date
+  }));
 
   // Funciones para la navegación del calendario
   const handlePrevious = () => {
@@ -323,7 +331,6 @@ export default function EventsCalendar({
       // Cerrar el modal
       setIsModalOpen(false);
     } catch (error) {
-      console.error('Error guardando evento:', error);
       // El error ya se muestra en el hook con showErrorAlert
     }
   };
@@ -340,7 +347,6 @@ export default function EventsCalendar({
             : [12, 0];
           return new Date(year, month - 1, day, hours, minutes, 0);
         } catch (error) {
-          console.error("Error al crear fecha:", error);
           return new Date(); // Fecha por defecto en caso de error
         }
       };
@@ -404,7 +410,6 @@ export default function EventsCalendar({
         );
       }
     } catch (error) {
-      console.error("Error al guardar evento:", error);
       showErrorAlert(
         "Error al guardar",
         "No se pudo guardar el evento. Intenta de nuevo."
@@ -434,6 +439,7 @@ export default function EventsCalendar({
           setSelectedEvent({
             nombre: event.title,
             tipo: event.tipo,
+            tipoId: event.tipoId,
             descripcion: event.descripcion || "",
             fechaInicio: formatDateLocal(startDate),
             fechaFin: formatDateLocal(endDate),
@@ -442,7 +448,9 @@ export default function EventsCalendar({
             ubicacion: event.ubicacion || "",
             telefono: event.telefono || "",
             categoria: event.categoria || "",
-            estado: event.estado || "",
+            categoriaId: event.categoriaId,
+            estado: event.estadoOriginal || event.estado || "Programado",
+            estadoOriginal: event.estadoOriginal || event.estado || "Programado",
             publicar: event.publicar || false,
             patrocinador: event.patrocinador || [],
             imagen: event.imagen || null,
@@ -463,18 +471,13 @@ export default function EventsCalendar({
           );
 
           if (result.isConfirmed) {
-            setEvents((prev) => prev.filter((e) => e.id !== event.id));
-            showSuccessAlert(
-              "Evento eliminado",
-              `${event.title} ha sido eliminado correctamente.`
-            );
+            // Llamar al backend para eliminar el evento
+            if (onDeleteEvent) {
+              await onDeleteEvent(event.id, event.title);
+            }
           }
         } catch (error) {
-          console.error("Error al eliminar evento:", error);
-          showErrorAlert(
-            "Error al eliminar",
-            "No se pudo eliminar el evento. Intenta de nuevo."
-          );
+          // El error ya se maneja en el hook
         }
         break;
 
@@ -631,32 +634,34 @@ export default function EventsCalendar({
         initial={{ opacity: 0, y: -15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6"
+        className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6"
       >
-        <h2 className="text-2xl lg:text-3xl font-extrabold text-gray-800 tracking-tight text-center lg:text-left">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-800 tracking-tight text-center xl:text-left">
           {format(date, "MMMM yyyy", { locale: es })}
         </h2>
-        {/* Controls Container */}
-        <div className="flex flex-col gap-3 w-full lg:w-auto">
-          {/* Primera fila: Botón Inglés y Navegación */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+        
+        {/* Controls Container - Responsive en múltiples breakpoints */}
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full xl:w-auto">
+          {/* Primera línea en móvil: Inglés + Navegación */}
+          <div className="flex items-center gap-2 w-full md:w-auto">
             {/* Botón Inglés */}
             <motion.button
               onClick={handleEnglishClick}
               whileHover={{ scale: 1.05 }}
-              className="bg-primary-blue px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-purple transition-colors flex-shrink-0"
+              whileTap={{ scale: 0.98 }}
+              className="bg-primary-blue px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-purple transition-colors flex-shrink-0"
             >
-              <FaLanguage className="text-base text-white" />
-              <span className="text-white font-medium text-sm">Inglés</span>
+              <FaLanguage className="text-sm sm:text-base text-white" />
+              <span className="text-white font-medium text-xs sm:text-sm">Inglés</span>
             </motion.button>
 
             {/* Botones de navegación */}
-            <div className="flex items-center justify-center flex-1 min-w-0">
+            <div className="flex items-center justify-center flex-1 md:flex-initial">
               <motion.button
                 onClick={handleToday}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-l-lg text-sm font-medium shadow-sm flex-1 sm:flex-none"
+                className="px-2 sm:px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-l-lg text-xs sm:text-sm font-medium shadow-sm"
               >
                 Hoy
               </motion.button>
@@ -664,7 +669,7 @@ export default function EventsCalendar({
                 onClick={handlePrevious}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-medium shadow-sm flex-1 sm:flex-none border-l border-gray-200"
+                className="px-2 sm:px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm font-medium shadow-sm border-l border-gray-200"
               >
                 ← Atrás
               </motion.button>
@@ -672,22 +677,22 @@ export default function EventsCalendar({
                 onClick={handleNext}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-r-lg text-sm font-medium shadow-sm flex-1 sm:flex-none border-l border-gray-200"
+                className="px-2 sm:px-3 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-r-lg text-xs sm:text-sm font-medium shadow-sm border-l border-gray-200"
               >
                 Siguiente →
               </motion.button>
             </div>
           </div>
 
-          {/* Segunda fila: Botones de vista */}
-          <div className="flex items-center justify-center gap-2 w-full">
+          {/* Segunda línea en móvil: Botones de vista */}
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 w-full md:w-auto">
             {["month", "week", "day"].map((viewType) => (
               <motion.button
                 key={viewType}
                 onClick={() => setView(viewType)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold shadow transition-all flex-1 sm:flex-none ${
+                className={`flex-1 md:flex-initial px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold shadow transition-all ${
                   view === viewType
                     ? "bg-primary-purple text-white shadow-md"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -708,7 +713,7 @@ export default function EventsCalendar({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -15 }}
           transition={{ duration: 0.3 }}
-          className="events-calendar rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white"
+          className="events-calendar rounded-lg sm:rounded-xl lg:rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white"
         >
           <div onClick={closeAllModals}>
             <Calendar
@@ -732,7 +737,7 @@ export default function EventsCalendar({
               // views={["month", "week", "day"]} // Quitamos para usar solo los personalizados
               messages={messages}
               popup={true}
-              style={{ height: "60vh" }}
+              style={{ height: view === "month" ? "65vh" : view === "week" ? "70vh" : "60vh", minHeight: "400px" }}
               onSelectSlot={handleSlotSelect}
               onSelectEvent={handleEventSelect}
             />
@@ -765,6 +770,7 @@ export default function EventsCalendar({
             onClose={closeAllModals}
             onAction={handleCrudAction}
             position={actionModal.position}
+            eventStatus={actionModal.event?.estadoOriginal || actionModal.event?.estado}
           />
         )}
       </AnimatePresence>
@@ -845,3 +851,6 @@ export default function EventsCalendar({
     </div>
   );
 }
+);
+
+export default EventsCalendar;

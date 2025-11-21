@@ -11,9 +11,11 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import SportsCategoryModal from "./components/SportsCategoryModal";
 import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 
 /* ---------- Hooks ---------- */
 import { useSportsCategories } from "./hooks/useSportsCategories";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 /* ---------- Utilidades ---------- */
 import { showErrorAlert, showSuccessAlert } from "../../../../../../../shared/utils/Alerts";
@@ -32,6 +34,11 @@ const SportsCategory = () => {
     getSportsCategoryById,
     getAthletesByCategory,
   } = useSportsCategories();
+
+  const { hasPermission } = usePermissions();
+  
+  // Nombre del módulo en el sistema de permisos
+  const MODULE_NAME = "sportsCategory";
 
   /* ==================== ESTADOS LOCALES ==================== */
   const [searchTerm, setSearchTerm] = useState("");
@@ -72,18 +79,30 @@ const SportsCategory = () => {
 
   /* ==================== OPERACIONES CRUD ==================== */
   const handleCreate = () => {
+    if (!hasPermission(MODULE_NAME, "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear categorías deportivas");
+      return;
+    }
     setSelectedCategory(null);
     setIsNew(true);
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
+    if (!hasPermission(MODULE_NAME, "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar categorías deportivas");
+      return;
+    }
     setSelectedCategory(item);
     setIsNew(false);
     setIsModalOpen(true);
   };
 
   const handleDelete = async (item) => {
+    if (!hasPermission(MODULE_NAME, "Eliminar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para eliminar categorías deportivas");
+      return;
+    }
     const currentParams = { page: currentPage, limit: rowsPerPage, search: searchTerm };
     await deleteSportsCategory(item, currentParams);
   };
@@ -93,9 +112,17 @@ const SportsCategory = () => {
       const currentParams = { page: currentPage, limit: rowsPerPage, search: searchTerm };
 
       if (isNew) {
+        if (!hasPermission(MODULE_NAME, "Crear")) {
+          showErrorAlert("Sin permisos", "No tienes permisos para crear categorías deportivas");
+          return;
+        }
         await createSportsCategory(categoryData, currentParams);
         showSuccessAlert("✅ Categoría creada con éxito");
       } else {
+        if (!hasPermission(MODULE_NAME, "Editar")) {
+          showErrorAlert("Sin permisos", "No tienes permisos para editar categorías deportivas");
+          return;
+        }
         await updateSportsCategory(selectedCategory.id, categoryData, currentParams);
         showSuccessAlert("✅ Categoría actualizada con éxito");
       }
@@ -111,6 +138,10 @@ const SportsCategory = () => {
 
   /* ==================== ACCIONES DE VISUALIZACIÓN ==================== */
   const handleView = async (item) => {
+    if (!hasPermission(MODULE_NAME, "Ver")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de categorías deportivas");
+      return;
+    }
     try {
       const categoryDetails = await getSportsCategoryById(item.id);
       setCategoryToView(categoryDetails);
@@ -122,6 +153,10 @@ const SportsCategory = () => {
   };
 
   const handleList = async (item) => {
+    if (!hasPermission(MODULE_NAME, "Listar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para listar atletas de categorías deportivas");
+      return;
+    }
     try {
       const athletes = await getAthletesByCategory(item.id);
       setCategoryForAthletes(item);
@@ -165,25 +200,29 @@ const SportsCategory = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <ReportButton
-              data={sportsCategories}
-              fileName="CategoriasDeportivas"
-              columns={[
-                { header: "Nombre", accessor: "nombre" },
-                { header: "Descripción", accessor: "descripcion" },
-                { header: "Edad Mínima", accessor: "edadMinima" },
-                { header: "Edad Máxima", accessor: "edadMaxima" },
-                { header: "Estado", accessor: "estado" },
-              ]}
-            />
+            <PermissionGuard module={MODULE_NAME} action="Ver">
+              <ReportButton
+                data={sportsCategories}
+                fileName="CategoriasDeportivas"
+                columns={[
+                  { header: "Nombre", accessor: "nombre" },
+                  { header: "Descripción", accessor: "descripcion" },
+                  { header: "Edad Mínima", accessor: "edadMinima" },
+                  { header: "Edad Máxima", accessor: "edadMaxima" },
+                  { header: "Estado", accessor: "estado" },
+                ]}
+              />
+            </PermissionGuard>
 
-            <button
-              onClick={handleCreate}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaPlus /> Crear Categoría
-            </button>
+            <PermissionGuard module={MODULE_NAME} action="Crear">
+              <button
+                onClick={handleCreate}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaPlus /> Crear Categoría
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -222,12 +261,14 @@ const SportsCategory = () => {
           <div className="text-6xl mb-4">📋</div>
           <p className="text-gray-700 font-medium mb-2">No hay categorías deportivas registradas</p>
           <p className="text-gray-600 mb-6">Comienza creando tu primera categoría deportiva</p>
-          <button
-            onClick={handleCreate}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-primary-purple text-white rounded-lg hover:opacity-90 transition"
-          >
-            <FaPlus /> Crear primera categoría
-          </button>
+          <PermissionGuard module={MODULE_NAME} action="Crear">
+            <button
+              onClick={handleCreate}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-purple text-white rounded-lg hover:opacity-90 transition"
+            >
+              <FaPlus /> Crear primera categoría
+            </button>
+          </PermissionGuard>
         </div>
       )}
 
@@ -242,10 +283,34 @@ const SportsCategory = () => {
                 state: true,
                 stateProperty: "estado",
               }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onList={handleList}
+              onEdit={hasPermission(MODULE_NAME, "Editar") ? handleEdit : null}
+              onDelete={hasPermission(MODULE_NAME, "Eliminar") ? handleDelete : null}
+              onView={hasPermission(MODULE_NAME, "Ver") ? handleView : null}
+              onList={hasPermission(MODULE_NAME, "Listar") ? handleList : null}
+              buttonConfig={{
+                edit: () => ({
+                  show: hasPermission(MODULE_NAME, "Editar"),
+                  disabled: false,
+                  title: "Editar categoría",
+                }),
+                delete: (item) => ({
+                  show: hasPermission(MODULE_NAME, "Eliminar"),
+                  disabled: item.estado === "Activo",
+                  title: item.estado === "Activo" 
+                    ? "No se puede eliminar una categoría activa" 
+                    : "Eliminar categoría",
+                }),
+                view: () => ({
+                  show: hasPermission(MODULE_NAME, "Ver"),
+                  disabled: false,
+                  title: "Ver detalles",
+                }),
+                list: () => ({
+                  show: hasPermission(MODULE_NAME, "Listar"),
+                  disabled: false,
+                  title: "Ver atletas",
+                }),
+              }}
             />
           </div>
 

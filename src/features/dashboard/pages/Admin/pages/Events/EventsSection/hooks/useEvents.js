@@ -41,6 +41,11 @@ export const useEvents = () => {
     const startDate = extractDate(event.startDate);
     const endDate = extractDate(event.endDate);
     
+    // Mantener el estado tal como viene del backend para el modal de edición
+    // Solo normalizar para la visualización en la lista
+    const estadoParaModal = event.status; // Mantener "Pausado", "Programado", etc.
+    const estadoParaLista = event.status === 'Pausado' ? 'pausado' : event.status.toLowerCase();
+    
     return {
       id: event.id,
       nombre: event.name,
@@ -55,7 +60,8 @@ export const useEvents = () => {
       telefono: event.phone,
       categoria: event.category?.name || '',
       categoriaId: event.categoryId,
-      estado: event.status,
+      estado: estadoParaLista, // Para mostrar en la lista
+      estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
@@ -71,6 +77,14 @@ export const useEvents = () => {
    * Transformar evento del frontend al formato del backend
    */
   const transformEventToBackend = (event) => {
+    // Normalizar el estado para que coincida con el backend
+    let normalizedStatus = event.estado || 'Programado';
+    
+    // Convertir "pausado" o variantes a "Pausado"
+    if (normalizedStatus.toLowerCase().includes('pausa')) {
+      normalizedStatus = 'Pausado';
+    }
+    
     return {
       name: event.nombre,
       description: event.descripcion || null,
@@ -80,7 +94,7 @@ export const useEvents = () => {
       endTime: event.horaFin,
       location: event.ubicacion,
       phone: event.telefono,
-      status: event.estado || 'Programado',
+      status: normalizedStatus,
       imageUrl: event.imagen || null,
       scheduleFile: event.cronograma || null,
       publish: event.publicar || false,
@@ -98,8 +112,8 @@ export const useEvents = () => {
     
     try {
       const response = await eventsService.getAll({
-        page: pagination.page,
-        limit: pagination.limit,
+        page: 1,
+        limit: 1000, // Cargar todos los eventos para el calendario
         ...params
       });
 
@@ -116,7 +130,7 @@ export const useEvents = () => {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit]);
+  }, []);
 
 
 
@@ -190,10 +204,16 @@ export const useEvents = () => {
       const response = await eventsService.delete(id);
       
       if (response.success) {
+        // Primero eliminar del estado local inmediatamente
+        setEvents(prevEvents => prevEvents.filter(event => event.id !== parseInt(id)));
+        
         showSuccessAlert('Evento Eliminado', response.message);
         
-        // Recargar la lista
-        await loadEvents();
+        // Forzar recarga completa con timestamp para evitar caché
+        setTimeout(async () => {
+          await loadEvents({ _t: Date.now() });
+        }, 300);
+        
         return true;
       } else {
         throw new Error(response.message || 'Error eliminando evento');
@@ -214,7 +234,6 @@ export const useEvents = () => {
       const response = await eventsService.getStats();
       return response.data;
     } catch (err) {
-      console.error('Error obteniendo estadísticas:', err);
       return null;
     }
   }, []);
@@ -245,7 +264,7 @@ export const useEvents = () => {
           setDataLoaded(true);
         }
       } catch (err) {
-        console.error('Error cargando datos de referencia:', err);
+        // Error cargando datos de referencia
       }
     };
     
@@ -260,10 +279,10 @@ export const useEvents = () => {
 
   // Cargar eventos solo si está autenticado
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && dataLoaded) {
       loadEvents();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dataLoaded, loadEvents]);
 
   return {
     // Estado
