@@ -122,10 +122,30 @@ const Event = () => {
       case "edit":
         // Verificar si el evento está finalizado
         const estadoEvento = event.estadoOriginal || event.estado || "";
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        // Obtener la fecha de fin del evento
+        const eventEndDate = event.end ? new Date(event.end) : new Date(event.start);
+        const endDateOnly = new Date(eventEndDate.getFullYear(), eventEndDate.getMonth(), eventEndDate.getDate());
+        
+        // Verificar si el evento ya finalizó (pasó su fecha)
+        const hasPassed = endDateOnly < today;
+        
+        // No permitir editar si está finalizado
         if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
           showErrorAlert(
             'Evento Finalizado', 
             'No se puede editar un evento que ya finalizó. Solo puedes verlo o eliminarlo.'
+          );
+          return;
+        }
+        
+        // No permitir editar si está cancelado Y ya pasó su fecha
+        if ((estadoEvento === "Cancelado" || estadoEvento === "cancelado") && hasPassed) {
+          showErrorAlert(
+            'Evento Cancelado y Finalizado', 
+            'No se puede editar un evento cancelado cuya fecha ya pasó. Solo puedes verlo o eliminarlo.'
           );
           return;
         }
