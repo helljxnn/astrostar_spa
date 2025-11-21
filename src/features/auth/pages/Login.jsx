@@ -22,7 +22,7 @@ function Login() {
     timerProgressBar: true,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       Toast.fire({
@@ -33,9 +33,8 @@ function Login() {
     }
     setIsLoading(true);
 
-    // Simular delay de autenticación
-    setTimeout(() => {
-      const loginSuccess = login({ email, password });
+    try {
+      const loginSuccess = await login({ email, password });
       setIsLoading(false);
 
       if (loginSuccess) {
@@ -47,7 +46,13 @@ function Login() {
           title: "Correo o contraseña incorrectos.",
         });
       }
-    }, 1500);
+    } catch (error) {
+      setIsLoading(false);
+      Toast.fire({
+        icon: "error",
+        title: "Error de conexión. Intenta de nuevo.",
+      });
+    }
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const useFormEmployeeValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -45,7 +45,7 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // 👇 Fuerza marcar todos como touched
+  // Fuerza marcar todos como touched
   const touchAllFields = () => {
     const allTouched = {};
     Object.keys(validationRules).forEach((name) => {
@@ -53,6 +53,19 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     });
     setTouched(allTouched);
   };
+
+  // Limpia todas las validaciones y errores
+  const resetValidation = useCallback(() => {
+    setErrors({});
+    setTouched({});
+  }, []);
+
+  // Resetea completamente el formulario
+  const resetForm = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
 
   return {
     values,
@@ -62,50 +75,70 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     handleBlur,
     validateAllFields,
     setValues,
+    setErrors,
     touchAllFields,
+    resetValidation,
+    resetForm,
   };
 };
 
-// Reglas de validación
+// Reglas de validación actualizadas para el backend
 export const employeeValidationRules = {
-  nombre: [
+  firstName: [
     (value) => (!value?.trim() ? "El nombre es obligatorio" : ""),
-    (value) => value?.length < 3 ? "El nombre debe tener al menos 3 caracteres" : "",
+    (value) => value?.length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
     (value) =>
       !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  apellido: [
+  lastName: [
     (value) => (!value?.trim() ? "El apellido es obligatorio" : ""),
-    (value) => value?.length < 3 ? "El apellido debe tener al menos 3 caracteres" : "",
+    (value) => value?.length < 2 ? "El apellido debe tener al menos 2 caracteres" : "",
     (value) =>
       !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  correo: [
+  middleName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
+  ],
+  secondLastName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
+  ],
+  email: [
     (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
     (value) =>
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
   ],
-  telefono: [
-    (value) => (!value?.trim() ? "El teléfono es obligatorio" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
-    (value) =>
-      value?.length < 7 || value?.length > 15 ? "El teléfono debe tener entre 7 y 15 dígitos" : "",
+  phoneNumber: [
+    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
+    (value) => {
+      if (!value) return "";
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      
+      if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+        return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
+      }
+      return "";
+    },
   ],
-  edad: [
-    (value) => (!value ? "La edad es obligatoria" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "La edad debe ser un número" : "",
-    (value) => parseInt(value) < 18 ? "Debe ser mayor o igual a 18 años" : "",
-    (value) => parseInt(value) > 65 ? "La edad máxima permitida es 65 años" : "",
-  ],
-  identificacion: [
+  identification: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
-    (value) => !/^\d+$/.test(value || "") ? "Solo se permiten números" : "",
+    (value) => value?.length < 6 ? "La identificación debe tener al menos 6 caracteres" : "",
+    (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
-  tipoDocumento: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
-  tipoEmpleado: [(value) => (!value ? "Debe seleccionar el tipo de empleado" : "")],
-  rol: [(value) => (!value ? "Debe seleccionar un rol" : "")],
-  estado: [(value) => (!value ? "Debe seleccionar un estado" : "")],
-  fechaNacimiento: [
+  documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
+  status: [
+    // El estado solo es requerido en modo editar, en crear se asigna automáticamente como "Activo"
+    (value, formData, mode) => (mode !== 'create' && !value ? "Debe seleccionar un estado" : "")
+  ],
+  birthDate: [
     (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
     (value) => {
       if (!value) return "";
@@ -116,8 +149,12 @@ export const employeeValidationRules = {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      return age < 18 ? "Debe ser mayor o igual a 18 años" : "";
+      return age < 16 ? "Debe ser mayor o igual a 16 años" : "";
     },
   ],
-  fechaAsignacion: [(value) => (!value ? "Debe seleccionar una fecha de asignación" : "")],
+  address: [
+    (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
+    (value) => value?.length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
+    (value) => value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
+  ],
 };

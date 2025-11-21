@@ -162,6 +162,8 @@ const EventSearchList = ({
           onClose={closeAllModals}
           onAction={(action) => onCrudAction(action, actionModal.event)}
           position={actionModal.position}
+          eventStatus={actionModal.event?.estadoOriginal || actionModal.event?.estado}
+          event={actionModal.event}
         />
       )}
 

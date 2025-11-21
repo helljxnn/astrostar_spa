@@ -1,19 +1,28 @@
-import React, { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../../../../../shared/components/Table/table";
 import RoleModal from "./components/RoleModal";
-import rolesData from "../../../../../../shared/models/RolesData";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../shared/components/Table/Pagination";
-import {
-  showConfirmAlert,
-  showSuccessAlert,
-  showErrorAlert,
-} from "../../../../../../shared/utils/alerts";
 import RoleDetailModal from "./components/RoleDetailModal";
+import { useRoles } from "./hooks/useRoles";
+import { useLoading } from "../../../../../../shared/contexts/loaderContext";
+import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
+import { showErrorAlert } from "../../../../../../shared/utils/alerts";
 
 const Roles = () => {
-  const [data, setData] = useState(rolesData);
+  const {
+    roles,
+    pagination,
+    fetchRoles,
+    createRole,
+    updateRole,
+    deleteRole,
+  } = useRoles();
+
+  const { ShowLoading, HideLoading } = useLoading();
+  const { hasPermission } = usePermissions();
 
   // Estado para crear/editar
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,52 +36,64 @@ const Roles = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
 
-  // Filtrar por búsqueda general en cualquier campo del objeto
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+  // Effect to handle search and pagination with API
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      fetchRoles({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      });
+    }, searchTerm ? 300 : 0); // Debounce only for search, immediate for pagination
 
-    return data.filter((item) =>
-      Object.entries(item).some(([key, value]) => {
-        const stringValue = String(value).trim();
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm, currentPage]); // Remove fetchRoles to avoid circular dependency
 
-        // Si es el campo Estado, comparar exacto y sensible a mayúsculas
-        if (key.toLowerCase() === "estado") {
-          return (
-            (stringValue === "Activo" && searchTerm === "Activo") ||
-            (stringValue === "Inactivo" && searchTerm === "Inactivo")
-          );
-        }
-
-        // Para los demás campos, búsqueda parcial insensible a mayúsculas
-        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-      })
-    );
-  }, [data, searchTerm]);
-
-  // Paginación
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Use API data directly (no local filtering since API handles search and pagination)
+  const totalRows = pagination.total || 0;
+  const totalPages = pagination.pages || 0;
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
+  const paginatedData = roles; // API already returns paginated data
+
+
+
+
 
   // Guardar rol (crear o editar)
-  const handleSave = (newRole) => {
-    if (modalMode === "create") {
-      setData([...data, { ...newRole, id: Date.now() }]);
-      showSuccessAlert("Rol creado", "El rol se creó exitosamente.");
-    } else if (modalMode === "edit") {
-      setData(data.map((role) => (role.id === newRole.id ? newRole : role)));
-      showSuccessAlert("Rol actualizado", "El rol se actualizó correctamente.");
+  const handleSave = async (newRole) => {
+    try {
+      ShowLoading();
+
+      const currentParams = {
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      };
+
+      if (modalMode === "create") {
+        await createRole(newRole, currentParams);
+      } else if (modalMode === "edit") {
+        await updateRole(selectedRole.id, newRole, currentParams);
+      }
+
+      setIsModalOpen(false);
+      setSelectedRole(null);
+    } finally {
+      HideLoading();
     }
-    setIsModalOpen(false);
-    setSelectedRole(null);
   };
 
   // Editar rol
   const handleEdit = (role) => {
+    // No permitir editar el rol de Administrador
+    if (role.name === 'Administrador') {
+      showErrorAlert(
+        'Acción no permitida',
+        'El rol de Administrador es un rol del sistema y no puede ser editado.'
+      );
+      return;
+    }
+
     setSelectedRole(role);
     setModalMode("edit");
     setIsModalOpen(true);
@@ -86,16 +107,29 @@ const Roles = () => {
 
   // Eliminar rol con confirmación
   const handleDelete = async (role) => {
-    const result = await showConfirmAlert(
-      "¿Eliminar rol?",
-      `Se eliminará el rol: ${role.nombre}`
-    );
+    // Verificar si es el rol de administrador
+    if (role.name === 'Administrador') {
+      showErrorAlert(
+        'Acción no permitida',
+        'El rol de Administrador es un rol del sistema y no puede ser eliminado.'
+      );
+      return;
+    }
 
-    if (result.isConfirmed) {
-      setData(data.filter((r) => r.id !== role.id));
-      showSuccessAlert("Eliminado", "El rol se eliminó correctamente.");
-    } else {
-      showErrorAlert("Cancelado", "El rol no fue eliminado.");
+
+
+    try {
+      ShowLoading();
+      
+      const currentParams = {
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      };
+      
+      await deleteRole(role, currentParams);
+    } finally {
+      HideLoading();
     }
   };
 
@@ -115,16 +149,18 @@ const Roles = () => {
             placeholder="Buscar rol..."
           />
 
-          <button
-            onClick={() => {
-              setModalMode("create");
-              setSelectedRole(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-          >
-            <FaPlus /> Crear Rol
-          </button>
+          <PermissionGuard module="roles" action="Crear">
+            <button
+              onClick={() => {
+                setModalMode("create");
+                setSelectedRole(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+            >
+              <FaPlus /> Crear Rol
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -133,26 +169,59 @@ const Roles = () => {
         <Table
           thead={{
             titles: ["Nombre", "Descripción"],
-            state: true,
+            state: false,
           }}
           tbody={{
             data: paginatedData,
-            dataPropertys: ["nombre", "descripcion"],
-            state: true,
+            dataPropertys: ["name", "description"],
+            state: false
           }}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onView={handleView}
+          onEdit={hasPermission('roles', 'Editar') ? handleEdit : null}
+          onDelete={hasPermission('roles', 'Eliminar') ? handleDelete : null}
+          onView={hasPermission('roles', 'Ver') ? handleView : null}
+          buttonConfig={{
+            edit: (role) => ({
+              show: hasPermission('roles', 'Editar'),
+              disabled: role.name === 'Administrador',
+              className: role.name === 'Administrador' 
+                ? 'opacity-50 cursor-not-allowed' 
+                : '',
+              title: role.name === 'Administrador' 
+                ? 'El rol de Administrador no puede ser editado' 
+                : 'Editar rol'
+            }),
+            delete: (role) => ({
+              show: hasPermission('roles', 'Eliminar'),
+              disabled: role.name === 'Administrador',
+              className: role.name === 'Administrador'
+                ? 'opacity-50 cursor-not-allowed' 
+                : '',
+              title: role.name === 'Administrador' 
+                ? 'El rol de Administrador no puede ser eliminado'
+                : 'Eliminar rol'
+            }),
+            view: (role) => ({
+              show: hasPermission('roles', 'Ver'),
+              disabled: false,
+              className: '',
+              title: 'Ver detalles del rol'
+            })
+          }}
         />
       </div>
 
+
+
       {/* Paginación */}
-      {totalRows > rowsPerPage && (
+      {totalRows > 0 && (
         <div className="mt-4">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(page) => {
+              setCurrentPage(page);
+              // fetchRoles will be called automatically by useEffect when currentPage changes
+            }}
             totalRows={totalRows}
             rowsPerPage={rowsPerPage}
             startIndex={startIndex}

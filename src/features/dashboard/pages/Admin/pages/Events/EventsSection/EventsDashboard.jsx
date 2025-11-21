@@ -7,28 +7,27 @@ import EventSearchBar from "./components/EventSearchBar";
 import EventSearchList from "./components/EventSearchList";
 import EventInscriptionModal from "./components/EventInscriptionModal";
 import EventRegistrationFormModal from "./components/EventRegistrationFormModal";
-import { sampleEvents } from "./components/sampleEvents";
-import { showDeleteAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import { showDeleteAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import { useEvents } from "./hooks/useEvents";
+
+// Importaciones para permisos
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 const Event = () => {
+  const { hasPermission } = usePermissions();
+  const { events, loading, referenceData, createEvent, updateEvent, deleteEvent } = useEvents();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [isNew, setIsNew] = useState(false);
-  const calendarRef = useRef(null);
   
-  const [data, setData] = useState(() => {
-    const transformedEvents = sampleEvents.map(event => ({
-      ...event,
-      start: new Date(event.fechaInicio),
-      end: new Date(event.fechaFin),
-      title: event.nombre
-    }));
-    console.log("EventsDashboard - Eventos transformados:", transformedEvents);
-    return transformedEvents;
-  }); // Usando los datos de ejemplo con formato para el calendario
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchFilters, setSearchFilters] = useState({ searchTerm: "", status: "" });
   const [isSearchActive, setIsSearchActive] = useState(false);
+  
+  // Ref para controlar el calendario
+  const calendarRef = useRef(null);
 
   // Estados para modales de inscripción
   const [inscriptionModal, setInscriptionModal] = useState({ 
@@ -44,34 +43,67 @@ const Event = () => {
     eventType: "",
   });
 
-  const handleSave = (newEvent) => {
-    setData((prev) => [...prev, newEvent]);
+  const handleSave = async (eventData) => {
+    try {
+      if (isNew) {
+        await createEvent(eventData);
+      } else {
+        await updateEvent(eventData.id, eventData);
+      }
+    } catch (error) {
+      // Error guardando evento
+    }
   };
 
-  // Filtrado general por búsqueda
+  // Filtrado mejorado por nombre y estado
   const filteredData = useMemo(() => {
-    const result = !searchTerm ? data : data.filter((item) =>
-      Object.values(item).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    );
-    console.log("EventsDashboard - Datos filtrados:", result);
-    console.log("EventsDashboard - SearchTerm:", searchTerm);
+    let result = events;
+
+    // Filtrar por nombre
+    if (searchFilters.searchTerm) {
+      result = result.filter((event) => {
+        const nombre = event.title || event.nombre || "";
+        return nombre.toLowerCase().includes(searchFilters.searchTerm.toLowerCase());
+      });
+    }
+
+    // Filtrar por estado
+    if (searchFilters.status) {
+      result = result.filter((event) => {
+        const estado = event.estadoOriginal || event.estado || "";
+        return estado === searchFilters.status;
+      });
+    }
+
     return result;
-  }, [data, searchTerm]);
+  }, [events, searchFilters]);
 
   // Manejar la búsqueda
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    setIsSearchActive(!!term);
+  const handleSearch = (filters) => {
+    setSearchFilters(filters);
+    setIsSearchActive(!!(filters.searchTerm || filters.status));
   };
 
 
 
   // Manejar acciones CRUD (igual que en EventsCalendar)
   const handleCrudAction = async (action, event) => {
-    console.log("Acción CRUD:", action, event);
-    console.log("Categoría del evento:", event.categoria);
+    
+    // Verificar permisos antes de ejecutar acciones
+    if (action === 'edit' && !hasPermission('eventsManagement', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar eventos');
+      return;
+    }
+    
+    if (action === 'delete' && !hasPermission('eventsManagement', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar eventos');
+      return;
+    }
+    
+    if (action === 'view' && !hasPermission('eventsManagement', 'Ver')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para ver eventos');
+      return;
+    }
     
     // Función para formatear tiempo
     const formatTime = (date) => {
@@ -88,6 +120,36 @@ const Event = () => {
     
     switch (action) {
       case "edit":
+        // Verificar si el evento está finalizado
+        const estadoEvento = event.estadoOriginal || event.estado || "";
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        // Obtener la fecha de fin del evento
+        const eventEndDate = event.end ? new Date(event.end) : new Date(event.start);
+        const endDateOnly = new Date(eventEndDate.getFullYear(), eventEndDate.getMonth(), eventEndDate.getDate());
+        
+        // Verificar si el evento ya finalizó (pasó su fecha)
+        const hasPassed = endDateOnly < today;
+        
+        // No permitir editar si está finalizado
+        if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
+          showErrorAlert(
+            'Evento Finalizado', 
+            'No se puede editar un evento que ya finalizó. Solo puedes verlo o eliminarlo.'
+          );
+          return;
+        }
+        
+        // No permitir editar si está cancelado Y ya pasó su fecha
+        if ((estadoEvento === "Cancelado" || estadoEvento === "cancelado") && hasPassed) {
+          showErrorAlert(
+            'Evento Cancelado y Finalizado', 
+            'No se puede editar un evento cancelado cuya fecha ya pasó. Solo puedes verlo o eliminarlo.'
+          );
+          return;
+        }
+
         // Formatear fechas y horas correctamente
         const startDate = new Date(event.start);
         const endDate = new Date(event.end);
@@ -95,6 +157,7 @@ const Event = () => {
         setSelectedEvent({
           nombre: event.title || event.nombre,
           tipo: event.tipo,
+          tipoId: event.tipoId,
           descripcion: event.descripcion || "",
           fechaInicio: formatDateLocal(startDate),
           fechaFin: formatDateLocal(endDate),
@@ -103,7 +166,9 @@ const Event = () => {
           ubicacion: event.ubicacion || "",
           telefono: event.telefono || "",
           categoria: event.categoria || "",
-          estado: event.estado || "",
+          categoriaId: event.categoriaId,
+          estado: event.estadoOriginal || event.estado || "Programado",
+          estadoOriginal: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
           patrocinador: event.patrocinador || [],
           imagen: event.imagen || null,
@@ -123,18 +188,10 @@ const Event = () => {
           );
           
           if (result.isConfirmed) {
-            setData((prev) => prev.filter((e) => e.id !== event.id));
-            showSuccessAlert(
-              "Evento eliminado",
-              `${event.title || event.nombre} ha sido eliminado correctamente.`
-            );
+            await deleteEvent(event.id, event.title || event.nombre);
           }
         } catch (error) {
-          console.error("Error al eliminar evento:", error);
-          showErrorAlert(
-            "Error al eliminar",
-            "No se pudo eliminar el evento. Intenta de nuevo."
-          );
+          // Error al eliminar evento
         }
         break;
         
@@ -170,7 +227,6 @@ const Event = () => {
 
   // Manejar acciones de inscripción (igual que en EventsCalendar)
   const handleRegistrationAction = (action, participantType, event) => {
-    console.log("Acción de inscripción:", action, participantType, event);
     
     if (action === "register") {
       // Usar el modal de inscripción con formulario
@@ -227,24 +283,29 @@ const Event = () => {
           <EventSearchBar onSearch={handleSearch} />
           
           {/* Botones */}
-          <button
-            onClick={() => {
-              setSelectedEvent(null);
-              setIsNew(true);
-              setModalMode("create");
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition text-sm whitespace-nowrap"
-          >
-            <FaPlus size={12} /> Crear
-          </button>
+          <PermissionGuard module="eventsManagement" action="Crear">
+            <button
+              onClick={() => {
+                setSelectedEvent(null);
+                setIsNew(true);
+                setModalMode("create");
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition text-sm whitespace-nowrap"
+            >
+              <FaPlus size={12} /> Crear
+            </button>
+          </PermissionGuard>
           
           {/* Componente de reporte */}
-          <EventReportGenerator 
-            data={filteredData} 
-            fileName="eventos" 
-            columns={reportColumns}
-          />
+          <PermissionGuard module="eventsManagement" action="Ver">
+            <EventReportGenerator 
+              data={filteredData} 
+              fileName="eventos" 
+              columns={reportColumns}
+              calendarRef={calendarRef}
+            />
+          </PermissionGuard>
         </div>
       </div>
 
@@ -260,19 +321,31 @@ const Event = () => {
           isNew={isNew}
           event={selectedEvent}
           mode={modalMode}
+          referenceData={referenceData}
         />
       )}
 
       {/* Contenido condicional: Calendario o Lista de búsqueda */}
       <div className="mt-16">
-        {isSearchActive ? (
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
+          </div>
+        ) : isSearchActive ? (
           <EventSearchList 
             events={filteredData} 
             onCrudAction={handleCrudAction}
             onRegistrationAction={handleRegistrationAction}
           />
         ) : (
-          <EventsCalendar events={filteredData} ref={calendarRef} />
+          <EventsCalendar 
+            ref={calendarRef}
+            events={filteredData} 
+            referenceData={referenceData}
+            onCreateEvent={createEvent}
+            onUpdateEvent={updateEvent}
+            onDeleteEvent={deleteEvent}
+          />
         )}
       </div>
 

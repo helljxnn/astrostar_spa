@@ -11,21 +11,18 @@ export const EventsSection = ({
   const eventRefs = useRef({});
 
   useEffect(() => {
-    console.log(
-      "useEffect en EventsSection, highlightedEventId:",
-      highlightedEventId
-    );
+
     if (highlightedEventId) {
       setTimeout(() => {
         const element = eventRefs.current[highlightedEventId];
         if (element) {
-          console.log("Elemento encontrado, haciendo scroll:", element);
+
           element.scrollIntoView({
             behavior: "smooth",
             block: "center",
           });
         } else {
-          console.log("Elemento no encontrado para el ID:", highlightedEventId);
+
         }
       }, 50);
     }

@@ -1,38 +1,80 @@
 import { useRef, useEffect } from "react";
 
-export const EventCard = ({ event, isHighlighted, onViewMore, onEventDeselect }) => {
+export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplete }) => {
   const cardRef = useRef(null);
 
   useEffect(() => {
     if (isHighlighted && cardRef.current) {
-      cardRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-        inline: "nearest",
+
+      
+      requestAnimationFrame(() => {
+        if (cardRef.current) {
+          cardRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+            inline: "nearest",
+          });
+        
+        }
       });
 
       const highlightTimeoutId = setTimeout(() => {
-        if (onEventDeselect) {
-          onEventDeselect(null);
+
+        if (onHighlightComplete) {
+          onHighlightComplete();
         }
       }, 2500);
 
-      return () => clearTimeout(highlightTimeoutId);
-    }
-  }, [isHighlighted, event.id, onEventDeselect]);
+      return () => {
 
-  const formatDate = (dateString) => {
+        clearTimeout(highlightTimeoutId);
+      };
+    }
+  }, [isHighlighted, event.id, event.title, onHighlightComplete]);
+
+  // Formatear fecha con soporte para rangos
+  const formatDate = (dateString, endDateString = null) => {
     try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString("es-ES", {
+      const startDate = new Date(dateString);
+      const formattedStart = startDate.toLocaleDateString("es-ES", {
         weekday: "long",
-        year: "numeric",
-        month: "long",
         day: "numeric",
+        month: "long",
+        year: "numeric",
       });
+
+      // Si hay endDate y es diferente al inicio
+      if (endDateString && endDateString !== dateString) {
+        const endDate = new Date(endDateString);
+        const formattedEnd = endDate.toLocaleDateString("es-ES", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+        });
+        return `${formattedStart} - ${formattedEnd}`;
+      }
+
+      return formattedStart;
     } catch (error) {
-      console.error("❌ Error formateando fecha:", dateString, error);
       return dateString;
+    }
+  };
+
+  // Calcular duración del evento
+  const getEventDuration = () => {
+    if (!event.endDate || event.endDate === event.date) {
+      return null;
+    }
+
+    try {
+      const start = new Date(event.date);
+      const end = new Date(event.endDate);
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      return diffDays;
+    } catch (error) {
+      return null;
     }
   };
 
@@ -40,13 +82,12 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onEventDeselect })
     const today = new Date();
     let eventDate;
     try {
-      eventDate = new Date(event.date);
+      eventDate = new Date(event.endDate || event.date);
     } catch (error) {
-      console.error("❌ Error parseando fecha del evento:", event.date, error);
       return event.status || "programado";
     }
-    if (event.status === "cancelado") {
-      return "cancelado";
+    if (event.status === "cancelado" || event.status === "en-pausa") {
+      return event.status;
     }
     const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
@@ -88,14 +129,7 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onEventDeselect })
 
   const effectiveStatus = getEffectiveStatus();
   const statusConfig = getStatusConfig(effectiveStatus);
-
-  if (process.env.NODE_ENV === "development" && isHighlighted) {
-    console.log("🎯 EventCard renderizado con highlight:", {
-      eventId: event.id,
-      title: event.title,
-      isHighlighted,
-    });
-  }
+  const duration = getEventDuration();
 
   return (
     <div
@@ -129,11 +163,20 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onEventDeselect })
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          
+          {/* Badge de estado */}
           <div
             className={`absolute top-1 right-1 sm:top-2 sm:right-2 md:top-3 md:right-3 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 rounded sm:rounded-md md:rounded-lg text-xs sm:text-sm font-bold ${statusConfig.bg} ${statusConfig.text} shadow-md backdrop-blur-sm`}
           >
             {statusConfig.label}
           </div>
+
+          {/* Badge de duración (si es multi-día) */}
+          {duration && duration > 1 && (
+            <div className="absolute top-1 left-1 sm:top-2 sm:left-2 md:top-3 md:left-3 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 rounded sm:rounded-md md:rounded-lg text-xs sm:text-sm font-bold bg-white/90 text-[#b595ff] shadow-md backdrop-blur-sm">
+              {duration} días
+            </div>
+          )}
         </div>
 
         <div className="relative p-3 sm:p-4 md:p-6">
@@ -148,14 +191,29 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onEventDeselect })
           </h3>
 
           <div className="space-y-1 sm:space-y-1.5 md:space-y-2 mb-2 sm:mb-3 md:mb-4">
-            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-700">
-              <span className="text-sm sm:text-base md:text-lg">📅</span>
-              <span className="font-semibold">{formatDate(event.date)}</span>
+            {/* Fecha/Rango de fechas */}
+            <div className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-700">
+              <span className="text-sm sm:text-base md:text-lg mt-0.5">📅</span>
+              <div className="flex-1">
+                <span className="font-semibold block">{formatDate(event.date, event.endDate)}</span>
+                {duration && duration > 1 && (
+                  <span className="text-xs text-[#b595ff] font-medium mt-0.5 block">
+                    Evento de {duration} días
+                  </span>
+                )}
+              </div>
             </div>
+
+            {/* Hora */}
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-700">
               <span className="text-sm sm:text-base md:text-lg">🕐</span>
-              <span className="font-medium">{event.time}</span>
+              <span className="font-medium">
+                {event.time}
+                {duration && duration > 1 && " (inicio)"}
+              </span>
             </div>
+
+            {/* Ubicación */}
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-700">
               <span className="text-sm sm:text-base md:text-lg">📍</span>
               <span className="font-medium">{event.location}</span>

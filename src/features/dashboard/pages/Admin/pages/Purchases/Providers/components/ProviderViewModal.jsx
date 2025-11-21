@@ -2,20 +2,16 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  FaTimes, FaBuilding, FaPhone, FaEnvelope, 
-  FaUser, FaTag, FaMapMarkerAlt, FaCheckCircle,
-  FaExclamationTriangle, FaIdCard
-} from "react-icons/fa";
 
 const ProviderViewModal = ({ isOpen, onClose, provider }) => {
   if (!isOpen || !provider) return null;
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("es-CO", {
+    if (!dateString) return "No especificado";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
       year: "numeric",
-      month: "long", 
+      month: "long",
       day: "numeric"
     });
   };
@@ -35,21 +31,6 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status?.toLowerCase()) {
-      case "activo":
-        return <FaCheckCircle className="text-green-600" />;
-      case "inactivo":
-        return <FaExclamationTriangle className="text-red-600" />;
-      case "suspendido":
-        return <FaExclamationTriangle className="text-orange-600" />;
-      case "pendiente":
-        return <FaExclamationTriangle className="text-yellow-600" />;
-      default:
-        return <FaExclamationTriangle className="text-gray-600" />;
-    }
-  };
-
   const formatPhoneDisplay = (phone) => {
     if (!phone) return "N/A";
     return phone;
@@ -57,10 +38,10 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
 
   const getDocumentTypeLabel = (docType) => {
     const types = {
-      "CC": "Cédula de ciudadanía",
-      "TI": "Tarjeta de identidad",
-      "CE": "Cédula de extranjería",
-      "PAS": "Pasaporte"
+      CC: "Cédula de ciudadanía",
+      TI: "Tarjeta de identidad",
+      CE: "Cédula de extranjería",
+      PAS: "Pasaporte",
     };
     return types[docType] || docType;
   };
@@ -75,285 +56,329 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
             initial={{ scale: 0.8, opacity: 0, y: 50 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 50 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+            <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
               >
-                <FaTimes size={18} />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-                Detalles del Proveedor
+              <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                Ver Proveedor
               </h2>
-              <p className="text-center text-gray-600 mt-2">
-                Información completa de:{" "}
-                <span className="font-semibold text-primary-purple">
-                  {provider.razonSocial}
-                </span>
-              </p>
             </div>
 
             {/* Body */}
-            <div className="p-6 space-y-6">
-              {/* Información Empresarial */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
-                  <FaBuilding className="text-primary-purple" />
-                  Información {provider.tipoEntidad === "natural" ? "Personal" : "Empresarial"}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Tipo de Entidad */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Tipo de Entidad
-                    </label>
-                    <p className="text-gray-900 font-medium p-3 bg-gray-50 rounded-lg border border-gray-200 capitalize">
-                      {provider.tipoEntidad === "juridica" ? "Persona Jurídica" : "Persona Natural"}
-                    </p>
+            <div className="flex-1 overflow-y-auto p-3">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.4 }}
+                className="mb-3"
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Entidad
+                </label>
+                <div className="p-3 bg-gradient-to-br from-primary-blue/10 to-primary-purple/10 rounded-lg border-2 border-primary-blue/30">
+                  <div className="flex items-center gap-2">
+                    {provider.tipoEntidad === "juridica" ? (
+                      <span className="font-semibold text-primary-blue">
+                        Persona Jurídica
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-primary-blue">
+                        Persona Natural
+                      </span>
+                    )}
                   </div>
+                </div>
+              </motion.div>
 
-                  {/* Razón Social o Nombre */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      {provider.tipoEntidad === "juridica" ? "Razón Social" : "Nombre Completo"}
-                    </label>
-                    <p className="text-gray-900 font-medium p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {provider.tipoEntidad === "juridica"
+                      ? "Razón Social"
+                      : "Nombre Completo"}
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 font-medium">
                       {provider.razonSocial || "N/A"}
                     </p>
                   </div>
+                </motion.div>
 
-                  {/* NIT o Identificación */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      {provider.tipoEntidad === "juridica" ? "NIT" : "Identificación"}
-                    </label>
-                    <p className="text-gray-900 font-mono p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      {provider.nit || "N/A"}
-                    </p>
-                  </div>
-
-                  {/* Tipo de Documento - Solo para Persona Natural */}
-                  {provider.tipoEntidad === "natural" && provider.tipoDocumento && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 mb-2 block flex items-center gap-2">
-                        <FaIdCard className="text-primary-purple" />
-                        Tipo de Documento
-                      </label>
-                      <p className="text-gray-900 p-3 bg-gradient-to-br from-primary-blue/5 to-primary-purple/5 rounded-lg border border-primary-blue/20">
-                        {getDocumentTypeLabel(provider.tipoDocumento)}
-                      </p>
-                    </div>
-                  )}
-                  {/* Estado del Proveedor */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Estado del Proveedor
-                    </label>
-                    <div className={`p-3 rounded-lg border border-gray-200 flex items-center gap-2 ${getStatusColor(provider.estado)}`}>
-                      {getStatusIcon(provider.estado)}
-                      <span>{provider.estado || "N/A"}</span>
-                    </div>
-                  </div>
-
-                  {/* Fecha de Registro */}
-                  {provider.fechaRegistro && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">
-                        Fecha de Registro
+                {provider.tipoEntidad === "natural" &&
+                  (provider.tipoDocumentoNombre || provider.tipoDocumento) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.25, duration: 0.4 }}
+                    >
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de documento
                       </label>
                       <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                         <p className="text-gray-900">
-                          {formatDate(provider.fechaRegistro)}
+                          {provider.tipoDocumentoNombre || "No especificado"}
                         </p>
                       </div>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
-              </div>
 
-              {/* Información de Contacto */}
-              <div className="bg-white border border-gray-200 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2 flex items-center gap-2">
-                  <FaUser className="text-primary-purple" />
-                  Información de Contacto
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Contacto Principal */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Contacto Principal
-                    </label>
-                    <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {provider.tipoEntidad === "juridica"
+                      ? "NIT"
+                      : "Identificación"}
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 font-mono">
+                      {provider.nit || "N/A"}
+                    </p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Contacto Principal
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">
                       {provider.contactoPrincipal || "N/A"}
                     </p>
                   </div>
+                </motion.div>
 
-                  {/* Teléfono */}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Teléfono
-                    </label>
-                    <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      {formatPhoneDisplay(provider.telefono)}
-                    </p>
-                  </div>
-
-                  {/* Correo Electrónico */}
-                  <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-gray-600 mb-2 block">
-                      Correo Electrónico
-                    </label>
-                    <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200 break-all">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Correo Electrónico
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 break-all text-sm">
                       {provider.correo || "N/A"}
                     </p>
                   </div>
+                </motion.div>
 
-                  {/* Dirección */}
-                  {provider.direccion && (
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">
-                        Dirección
-                      </label>
-                      <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        {provider.direccion}
-                      </p>
-                    </div>
-                  )}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Número Telefónico
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">
+                      {formatPhoneDisplay(provider.telefono)}
+                    </p>
+                  </div>
+                </motion.div>
 
-                  {/* Ciudad */}
-                  {provider.ciudad && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">
-                        Ciudad
-                      </label>
-                      <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        {provider.ciudad}
-                      </p>
-                    </div>
-                  )}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Dirección
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">
+                      {provider.direccion || "N/A"}
+                    </p>
+                  </div>
+                </motion.div>
 
-                  {/* País */}
-                  {provider.pais && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 mb-2 block">
-                        País
-                      </label>
-                      <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        {provider.pais}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ciudad
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{provider.ciudad || "N/A"}</p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Estado
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">
+                      {provider.estado || "N/A"}
+                    </p>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="lg:col-span-3"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.65, duration: 0.4 }}
+                >
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descripción
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 min-h-[80px]">
+                    <p className="text-gray-900 whitespace-pre-line">
+                      {provider.descripcion || "Sin descripción"}
+                    </p>
+                  </div>
+                </motion.div>
               </div>
 
-              {/* Información Adicional */}
-              {(provider.descripcion || provider.servicios || provider.observaciones) && (
-                <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <FaTag className="text-primary-purple" />
+              {/* Información Adicional (condicional) */}
+              {(provider.servicios ||
+                provider.observaciones ||
+                provider.terminosPago ||
+                provider.documentos) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7, duration: 0.4 }}
+                  className="mt-6 pt-6 border-t border-gray-200"
+                >
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">
                     Información Adicional
                   </h3>
-                  
-                  <div className="grid grid-cols-1 gap-6">
-                    {/* Descripción */}
-                    {provider.descripcion && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">
-                          Descripción
-                        </label>
-                        <p className="text-gray-900 p-3 bg-white rounded-lg border border-gray-200 whitespace-pre-line">
-                          {provider.descripcion}
-                        </p>
-                      </div>
-                    )}
 
-                    {/* Servicios */}
-                    {provider.servicios && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">
-                          Servicios Ofrecidos
-                        </label>
-                        <p className="text-gray-900 p-3 bg-white rounded-lg border border-gray-200">
-                          {provider.servicios}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Observaciones */}
-                    {provider.observaciones && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">
-                          Observaciones
-                        </label>
-                        <p className="text-gray-900 p-3 bg-white rounded-lg border border-gray-200 whitespace-pre-line">
-                          {provider.observaciones}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Información de Documentación */}
-              {(provider.documentos || provider.terminosPago) && (
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                    Información de Documentación
-                  </h3>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Términos de Pago */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {provider.terminosPago && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Términos de Pago
                         </label>
-                        <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          {provider.terminosPago}
-                        </p>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-gray-900">
+                            {provider.terminosPago}
+                          </p>
+                        </div>
                       </div>
                     )}
 
-                    {/* Documentos */}
+                    {provider.servicios && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Servicios Ofrecidos
+                        </label>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-gray-900 whitespace-pre-line">
+                            {provider.servicios}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {provider.observaciones && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Observaciones
+                        </label>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-gray-900 whitespace-pre-line">
+                            {provider.observaciones}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     {provider.documentos && (
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 mb-2 block">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
                           Documentos Adjuntos
                         </label>
-                        <p className="text-gray-900 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          {provider.documentos}
-                        </p>
+                        <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-gray-900">{provider.documentos}</p>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               )}
-            </div>
 
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 p-6">
+              {/* Información del Sistema*/}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex justify-end"
+                transition={{ delay: 0.9 }}
+                className="mt-6 p-4 bg-gray-50 rounded-xl"
               >
-                <motion.button
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Información del Sistema
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Fecha de Creación:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.createdAt || provider.fechaRegistro)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Última Actualización:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.updatedAt)}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">
+                      Estado Asignado:
+                    </span>
+                    <p className="text-gray-800">
+                      {formatDate(provider.statusAssignedAt || provider.updatedAt)}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex-shrink-0 border-t border-gray-200 p-3">
+              <div className="flex justify-center">
+                <button
                   onClick={onClose}
-                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors font-medium"
                 >
                   Cerrar
-                </motion.button>
-              </motion.div>
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>

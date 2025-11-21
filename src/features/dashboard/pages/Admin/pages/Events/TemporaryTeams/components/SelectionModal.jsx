@@ -1,141 +1,223 @@
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Users, UserCheck, X, Check, Filter, AlertCircle } from "lucide-react";
-import { loadTrainers, loadPlayers, groupBySource, searchInData } from "../../../../../../../../shared/models/Dataloaders";
-import Pagination from "../../../../../../../../shared/components/Table/Pagination";
+"use client"
 
-/**
- * Modal reutilizable para seleccionar entrenadores o jugadoras con diseño de tabla
- */
-const SelectionModal = ({ 
-  isOpen, 
-  onClose, 
+import { useState, useMemo, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react"
+import TeamsService from "../services/TeamsService"
+import Pagination from "../../../../../../../../shared/components/Table/Pagination"
+
+const SelectionModal = ({
+  isOpen,
+  onClose,
   mode = "trainer",
-  onSelect, 
-  selectedItems = [] 
+  onSelect,
+  selectedItems = [],
+  currentCategoria = null,
+  existingTeamType = null,
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [validationError, setValidationError] = useState("");
-  const rowsPerPage = 5;
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedCategory, setSelectedCategory] = useState("")
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const rowsPerPage = 5
 
-  const isMultiSelect = mode === "players";
-  const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Jugadoras";
-  const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />;
+  const isMultiSelect = mode === "athletes"
+  const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
+  const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
 
-  // Cargar datos según el modo
-  const allData = mode === "trainer" ? loadTrainers() : loadPlayers();
-  
-  // Agrupar por fuente
-  const groupedData = useMemo(() => groupBySource(allData), [allData]);
-
-  // Datos del tab activo
-  const currentGroupData = groupedData[activeTab]?.items || [];
-
-  // Filtrar por búsqueda y categoría
-  const filteredItems = useMemo(() => {
-    let filtered = searchInData(currentGroupData, searchTerm);
-    
-    // Filtro adicional por categoría para jugadoras
-    if (mode === "players" && selectedCategory) {
-      filtered = filtered.filter(item => 
-        item.categoria?.toLowerCase().includes(selectedCategory.toLowerCase())
-      );
+  // Cargar datos desde el backend
+  useEffect(() => {
+    if (isOpen) {
+      loadData()
     }
-    
-    return filtered;
-  }, [currentGroupData, searchTerm, selectedCategory, mode]);
+  }, [isOpen, mode])
 
-  // Paginación
-  const totalRows = filteredItems.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredItems.slice(startIndex, startIndex + rowsPerPage);
-
-  // Categorías únicas para jugadoras (de los datos reales)
-  const categories = useMemo(() => {
-    if (mode !== "players") return [];
-    const allCategories = [...new Set(allData.map(item => item.categoria).filter(Boolean))];
-    return allCategories.sort();
-  }, [mode, allData]);
-
-  // Validar tipos mixtos
-  const validateMixedTypes = (newSelection, item) => {
-    if (newSelection.length === 0) return true;
-    
-    const firstItemType = newSelection[0].type;
-    const newItemType = item.type;
-    
-    if (firstItemType !== newItemType) {
-      const type1 = firstItemType === "fundacion" ? "Fundación" : "Temporales";
-      const type2 = newItemType === "fundacion" ? "Fundación" : "Temporales";
-      setValidationError(`No puedes mezclar ${type1} con ${type2}. El equipo debe ser conformado únicamente por ${type1} o ${type2}.`);
-      return false;
-    }
-    
-    setValidationError("");
-    return true;
-  };
-
-  // Manejar selección
-  const handleSelect = (item) => {
-    if (isMultiSelect) {
-      const isSelected = selectedItems.some(s => s.id === item.id);
-      let newSelection;
-      
-      if (isSelected) {
-        newSelection = selectedItems.filter(s => s.id !== item.id);
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      let response
+      if (mode === "trainer") {
+        response = await TeamsService.getTrainers()
       } else {
-        newSelection = [...selectedItems, item];
-        
-        // Validar tipos mixtos
-        if (!validateMixedTypes(newSelection, item)) {
-          return;
-        }
+        response = await TeamsService.getAthletes()
       }
       
-      onSelect(newSelection);
-    } else {
-      // Para entrenadores, validar que no se mezclen tipos
-      if (selectedItems.length > 0 && selectedItems[0].type !== item.type) {
-        const currentType = selectedItems[0].type === "fundacion" ? "Fundación" : "Temporal";
-        const newType = item.type === "fundacion" ? "Fundación" : "Temporal";
-        setValidationError(`No puedes cambiar de ${currentType} a ${newType}. El entrenador debe ser del mismo tipo que las jugadoras.`);
-        return;
-      }
-      
-      onSelect(item);
-      onClose();
+      // FIX CRÍTICO: Asegurar que siempre tengamos un array
+      const responseData = Array.isArray(response) ? response : (response?.data || [])
+      setData(responseData)
+    } catch (error) {
+      console.error('Error cargando datos:', error)
+      setData([])
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  // Confirmar selección múltiple
+  const currentTeamType = useMemo(() => {
+    if (existingTeamType) return existingTeamType
+    if (selectedItems.length > 0) return selectedItems[0]?.type
+    return null
+  }, [existingTeamType, selectedItems])
+
+  const groupedData = useMemo(() => {
+    if (!data || data.length === 0) return []
+    
+    const fundacion = data.filter(item => item.type === "fundacion")
+    const temporal = data.filter(item => item.type === "temporal")
+    
+    const groups = []
+    
+    if (fundacion.length > 0) {
+      groups.push({
+        source: "fundacion",
+        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
+        items: fundacion
+      })
+    }
+    
+    if (temporal.length > 0) {
+      groups.push({
+        source: "temporal", 
+        sourceLabel: mode === "trainer" ? "Entrenadores Temporales" : "Deportistas Temporales",
+        items: temporal
+      })
+    }
+    
+    return groups
+  }, [data, mode])
+
+  // ✅ CORRECTO: Usar solo los datos del tab actual
+  const currentGroupData = useMemo(() => {
+    const groupData = groupedData[activeTab]?.items || []
+    return groupData
+  }, [groupedData, activeTab])
+
+  const availableItems = useMemo(() => {
+    let filtered = currentGroupData  // ✅ SOLO datos del tab actual
+
+    if (currentTeamType) {
+      filtered = filtered.filter(item => item.type === currentTeamType)
+    }
+
+    if (currentTeamType === "fundacion" && currentCategoria) {
+      filtered = filtered.filter(item => {
+        if (item.type === "temporal") return false
+        return item.categoria === currentCategoria
+      })
+    }
+
+    return filtered
+  }, [currentGroupData, currentTeamType, currentCategoria])
+
+  const filteredItems = useMemo(() => {
+    let filtered = availableItems
+
+    if (searchTerm) {
+      const query = searchTerm.toLowerCase()
+      filtered = filtered.filter(item => 
+        item.name?.toLowerCase().includes(query) ||
+        item.identification?.toLowerCase().includes(query) ||
+        (item.categoria && item.categoria.toLowerCase().includes(query))
+      )
+    }
+
+    if (mode === "athletes" && selectedCategory) {
+      filtered = filtered.filter((item) => {
+        if (item.type === "temporal") return true
+        return item.categoria === selectedCategory
+      })
+    }
+
+    console.log('🔍 Elementos filtrados:', filtered)
+    return filtered
+  }, [availableItems, searchTerm, selectedCategory, mode])
+
+  const totalRows = filteredItems.length
+  const totalPages = Math.ceil(totalRows / rowsPerPage)
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const paginatedData = filteredItems.slice(startIndex, startIndex + rowsPerPage)
+
+  const prepareItemData = (item) => {
+    if (mode === "athletes" && item.type === "temporal") {
+      return {
+        ...item,
+        categoria: undefined
+      }
+    }
+    return item
+  }
+
+  const isItemAvailable = (item) => {
+    if (selectedItems.length === 0 && !currentTeamType) return true
+    if (selectedItems.some(s => s.id === item.id)) return true
+    if (selectedItems.length > 0) {
+      const firstSelectedType = selectedItems[0].type
+      if (item.type !== firstSelectedType) return false
+    }
+    if (currentTeamType && item.type !== currentTeamType) return false
+    if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
+      return item.categoria === currentCategoria
+    }
+    return true
+  }
+
+  const handleSelect = (item) => {
+    if (!isItemAvailable(item)) return
+
+    const preparedItem = prepareItemData(item)
+
+    if (isMultiSelect) {
+      const isSelected = selectedItems.some((s) => s.id === preparedItem.id)
+      let newSelection
+
+      if (isSelected) {
+        newSelection = selectedItems.filter((s) => s.id !== preparedItem.id)
+      } else {
+        newSelection = [...selectedItems, preparedItem]
+      }
+
+      onSelect(newSelection)
+    } else {
+      onSelect(preparedItem)
+      onClose()
+    }
+  }
+
   const handleConfirm = () => {
-    if (validationError) return;
-    onClose();
-  };
+    onClose()
+  }
 
-  // Verificar si un item está seleccionado
-  const isSelected = (item) => selectedItems.some(s => s.id === item.id);
+  const isSelected = (item) => selectedItems.some((s) => s.id === item.id)
 
-  // Limpiar filtros al cambiar tab
   const handleTabChange = (index) => {
-    setActiveTab(index);
-    setSearchTerm("");
-    setSelectedCategory("");
-    setCurrentPage(1);
-    setValidationError("");
-  };
+    setActiveTab(index)
+    setSearchTerm("")
+    setSelectedCategory("")
+    setCurrentPage(1)
+  }
 
-  // Obtener el tipo actual del equipo (si hay selección)
-  const getCurrentTeamType = () => {
-    if (selectedItems.length === 0) return null;
-    return selectedItems[0].type === "fundacion" ? "Fundación" : "Temporales";
-  };
+  const getCurrentTeamInfo = () => {
+    if (!currentTeamType) return { type: null, category: null }
+    
+    const type = currentTeamType === "fundacion" ? "Fundación" : "Temporales"
+    const category = currentCategoria || null
+    return { type, category }
+  }
 
-  if (!isOpen) return null;
+  const getAvailabilityStats = () => {
+    const totalInCurrentTab = currentGroupData.length
+    const availableCount = availableItems.length
+    const unavailableCount = totalInCurrentTab - availableCount
+
+    return { totalInCurrentTab, availableCount, unavailableCount }
+  }
+
+  if (!isOpen) return null
+
+  const teamInfo = getCurrentTeamInfo()
+  const availabilityStats = getAvailabilityStats()
 
   return (
     <AnimatePresence>
@@ -154,46 +236,26 @@ const SelectionModal = ({
                 {icon}
                 <div>
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
-                  {isMultiSelect && (
-                    <div className="text-blue-100 mt-1 text-sm sm:text-base">
-                      <p>{selectedItems.length} seleccionada{selectedItems.length !== 1 ? "s" : ""}</p>
-                      {getCurrentTeamType() && (
-                        <p className="text-blue-200">Tipo: {getCurrentTeamType()}</p>
-                      )}
-                    </div>
-                  )}
+                  <p className="text-sm opacity-80">
+                    {data.length} elementos cargados • {filteredItems.length} filtrados
+                  </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-full transition-colors"
-              >
+              <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
                 <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
-          {/* Alerta de validación */}
-          {validationError && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3"
-            >
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700 text-sm">{validationError}</p>
-            </motion.div>
-          )}
-
           {/* Tabs de fuentes */}
-          {groupedData.length > 1 && (
+          {groupedData && groupedData.length > 1 && (
             <div className="border-b border-gray-200 bg-gray-50">
               <div className="flex">
                 {groupedData.map((group, index) => (
                   <button
                     key={group.source}
                     onClick={() => handleTabChange(index)}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
+                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
                       activeTab === index
                         ? "bg-white text-primary-purple border-b-2 border-primary-purple"
                         : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
@@ -201,7 +263,7 @@ const SelectionModal = ({
                   >
                     {group.sourceLabel}
                     <span className="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
-                      {group.items.length}
+                      {group.items ? group.items.length : 0}
                     </span>
                   </button>
                 ))}
@@ -212,36 +274,33 @@ const SelectionModal = ({
           {/* Filtros */}
           <div className="p-6 border-b border-gray-200 bg-gray-50">
             <div className="flex flex-col md:flex-row gap-4 items-center">
-              {/* Búsqueda */}
               <div className="flex-1">
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={`Buscar por nombre, identificación${mode === 'players' ? ' o categoría' : ''}...`}
+                    placeholder={`Buscar por nombre, identificación${mode === "athletes" ? " o categoría" : ""}...`}
                     value={searchTerm}
                     onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
+                      setSearchTerm(e.target.value)
+                      setCurrentPage(1)
                     }}
                     className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                   />
                 </div>
               </div>
-
-              {/* Filtro de categoría (solo para jugadoras) */}
-              {mode === "players" && categories.length > 0 && (
+              {mode === "athletes" && (
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => {
-                      setSelectedCategory(e.target.value);
-                      setCurrentPage(1);
+                      setSelectedCategory(e.target.value)
+                      setCurrentPage(1)
                     }}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                   >
                     <option value="">Todas las categorías</option>
-                    {categories.map((category) => (
+                    {[...new Set(currentGroupData.filter(item => item.categoria).map(item => item.categoria))].map((category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>
@@ -255,111 +314,143 @@ const SelectionModal = ({
           {/* Contenido - Tabla */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="p-4 sm:p-6 flex-1 overflow-auto">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        Seleccionar
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        Nombre
-                      </th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                        Identificación
-                      </th>
-                      {mode === "players" && (
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Categoría
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedData.map((item) => {
-                      const selected = isSelected(item);
-                      const isDisabled = selectedItems.length > 0 && 
-                                        selectedItems[0].type !== item.type && 
-                                        !selected;
-                      
-                      return (
-                        <tr
-                          key={item.id}
-                          className={`border-b border-gray-100 transition-colors ${
-                            selected 
-                              ? "bg-purple-50 cursor-pointer" 
-                              : isDisabled
-                                ? "bg-gray-50 cursor-not-allowed opacity-50"
-                                : "hover:bg-gray-50 cursor-pointer"
-                          }`}
-                          onClick={() => !isDisabled && handleSelect(item)}
-                        >
-                          <td className="py-3 px-4">
-                            <div className="flex items-center">
-                              {isMultiSelect ? (
-                                <input
-                                  type="checkbox"
-                                  className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
-                                  checked={selected}
-                                  disabled={isDisabled}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    if (!isDisabled) handleSelect(item);
-                                  }}
-                                />
-                              ) : (
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                  selected 
-                                    ? "bg-primary-purple border-primary-purple" 
-                                    : isDisabled
-                                      ? "border-gray-300 bg-gray-100"
-                                      : "border-gray-300"
-                                }`}>
-                                  {selected && <Check className="w-3 h-3 text-white" />}
+              {loading ? (
+                <div className="text-center py-8">Cargando...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Seleccionar</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Identificación</th>
+                        {mode === "athletes" && (
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Categoría</th>
+                        )}
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedData && paginatedData.length > 0 ? (
+                        paginatedData.map((item) => {
+                          const selected = isSelected(item)
+                          const isAvailable = isItemAvailable(item)
+                          const displayCategory = item.type === "fundacion" 
+                            ? (item.categoria || "Sin categoría")
+                            : "No aplica"
+
+                          return (
+                            <tr
+                              key={item.id}
+                              className={`border-b border-gray-100 transition-colors ${
+                                selected
+                                  ? "bg-purple-50 cursor-pointer"
+                                  : !isAvailable
+                                    ? "bg-gray-50 cursor-not-allowed opacity-50"
+                                    : "hover:bg-gray-50 cursor-pointer"
+                              }`}
+                              onClick={() => isAvailable && handleSelect(item)}
+                            >
+                              <td className="py-3 px-4">
+                                <div className="flex items-center">
+                                  {isMultiSelect ? (
+                                    <input
+                                      type="checkbox"
+                                      className={`w-4 h-4 focus:ring-primary-purple border-gray-300 rounded ${
+                                        selected ? "text-primary-purple" : "text-gray-300"
+                                      }`}
+                                      checked={selected}
+                                      disabled={!isAvailable}
+                                      onChange={(e) => {
+                                        e.stopPropagation()
+                                        if (isAvailable) handleSelect(item)
+                                      }}
+                                    />
+                                  ) : (
+                                    <div
+                                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        selected
+                                          ? "bg-primary-purple border-primary-purple"
+                                          : !isAvailable
+                                            ? "border-gray-300 bg-gray-100"
+                                            : "border-gray-300 hover:border-primary-purple"
+                                      }`}
+                                    >
+                                      {selected && <Check className="w-3 h-3 text-white" />}
+                                    </div>
+                                  )}
                                 </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <span className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`}>
+                                    {item.name}
+                                  </span>
+                                  {!isAvailable && (
+                                    <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                      No disponible
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {item.identification || "N/A"}
+                              </td>
+                              {mode === "athletes" && (
+                                <td className="py-3 px-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    !isAvailable
+                                      ? "bg-gray-50 text-gray-300"
+                                      : item.type === "fundacion" && item.categoria
+                                      ? "bg-gray-200 text-gray-700"
+                                      : "bg-gray-100 text-gray-400"
+                                  }`}>
+                                    {displayCategory}
+                                  </span>
+                                </td>
                               )}
-                            </div>
+                              <td className="py-3 px-4">
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  item.type === "fundacion" 
+                                    ? "bg-purple-100 text-purple-800" 
+                                    : "bg-blue-100 text-blue-800"
+                                } ${!isAvailable ? 'opacity-50' : ''}`}>
+                                  {item.type === "fundacion" ? "Fundación" : "Temporal"}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={mode === "athletes" ? "5" : "4"} className="py-12 text-center text-gray-500">
+                            <div className="text-4xl mb-4">🔍</div>
+                            <p>
+                              {searchTerm || selectedCategory
+                                ? "No se encontraron resultados con los filtros aplicados"
+                                : "No hay elementos disponibles"
+                              }
+                            </p>
+                            {(searchTerm || selectedCategory) && (
+                              <button
+                                onClick={() => {
+                                  setSearchTerm("")
+                                  setSelectedCategory("")
+                                }}
+                                className="mt-2 text-primary-purple hover:underline"
+                              >
+                                Limpiar filtros
+                              </button>
+                            )}
                           </td>
-                          <td className="py-3 px-4">
-                            <span className="font-medium text-gray-900">{item.name}</span>
-                          </td>
-                          <td className="py-3 px-4 text-gray-600 text-sm">
-                            {item.identification || "N/A"}
-                          </td>
-                          {mode === "players" && (
-                            <td className="py-3 px-4">
-                              <span className="bg-gray-100 px-2 py-1 rounded-full text-xs">
-                                {item.categoria || "Sin categoría"}
-                              </span>
-                            </td>
-                          )}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-                {paginatedData.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="text-4xl mb-4">🔍</div>
-                    <p>No se encontraron resultados</p>
-                    {(searchTerm || selectedCategory) && (
-                      <button
-                        onClick={() => {
-                          setSearchTerm("");
-                          setSelectedCategory("");
-                        }}
-                        className="mt-2 text-primary-purple hover:underline"
-                      >
-                        Limpiar filtros
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Paginación */}
-              {totalRows > rowsPerPage && (
+              {!loading && totalRows > rowsPerPage && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={currentPage}
@@ -378,12 +469,8 @@ const SelectionModal = ({
           <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-sm text-gray-600">
-                {selectedItems.length} {mode === "trainer" ? "entrenador" : "jugadoras"} seleccionado{selectedItems.length !== 1 ? "s" : ""}
-                {getCurrentTeamType() && (
-                  <span className="ml-2 text-primary-purple font-semibold">
-                    • Tipo: {getCurrentTeamType()}
-                  </span>
-                )}
+                {selectedItems.length} {mode === "trainer" ? "entrenador" : "deportistas"} seleccionado
+                {selectedItems.length !== 1 ? "s" : ""}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button
@@ -395,8 +482,7 @@ const SelectionModal = ({
                 {isMultiSelect && (
                   <button
                     onClick={handleConfirm}
-                    disabled={selectedItems.length === 0 || !!validationError}
-                    className="w-full sm:w-auto px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:opacity-90 transition"
                   >
                     Confirmar Selección
                   </button>
@@ -407,7 +493,7 @@ const SelectionModal = ({
         </motion.div>
       </div>
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default SelectionModal;
+export default SelectionModal

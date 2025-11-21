@@ -1,5 +1,5 @@
 // src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
@@ -8,27 +8,20 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import providersData from "../../../../../../../shared/models/ProvidersData.jsx";
+import providersService from "./services/ProvidersService.js";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
-
-// 🔑 Clave única para LocalStorage
-const LOCAL_STORAGE_KEY = "providers";
-const PURCHASES_STORAGE_KEY = "purchases"; // Clave para las compras
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // Estado inicial cargado desde LocalStorage o desde providersData
-  const [data, setData] = useState(() => {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : providersData;
-  });
-
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -36,161 +29,224 @@ const Providers = () => {
   const [providerToView, setProviderToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
+  const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const rowsPerPage = 5;
+  const { hasPermission } = usePermissions();
 
-  // Guardar en LocalStorage cada vez que cambien los datos
+  const fetchProviders = async () => {
+    try {
+      setLoading(true);
+      const response = await providersService.getProviders({
+        page: currentPage,
+        limit: rowsPerPage,
+        search: searchTerm,
+      });
+      if (response.success) {
+        setData(response.data || []);
+        setTotalPages(response.pagination?.pages || 1);
+        setTotalRows(response.pagination?.total || 0);
+        checkActivePurchasesForProviders(response.data || []);
+      } else {
+        showErrorAlert("Error", "No se pudieron cargar los proveedores");
+      }
+    } catch (error) {
+      showErrorAlert("Error", "Error al cargar los proveedores desde el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const checkActivePurchasesForProviders = async (providers) => {
+    const purchasesCheck = {};
+    for (const provider of providers) {
+      try {
+        const response = await providersService.checkActivePurchases(provider.id);
+        purchasesCheck[provider.id] = response.hasActivePurchases;
+      } catch (error) {
+        purchasesCheck[provider.id] = false;
+      }
+    }
+    setActivePurchasesCheck(purchasesCheck);
+  };
+
   useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-  }, [data]);
+    fetchProviders();
+  }, [currentPage, searchTerm]);
 
-  // Abrir modal de creación si se navega con el estado adecuado
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
       setProviderToEdit(null);
       setIsModalOpen(true);
-      // Limpiar el estado para que no se vuelva a abrir al recargar
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
 
-  // Verificar si un proveedor tiene compras asociadas
-  const checkProviderHasPurchases = (providerId) => {
+  const formatPhoneNumber = (phone) => {
+    if (!phone) return phone;
+    return phone.replace(/[\s\-\(\)\+57]/g, "");
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handleSave = async (newProvider) => {
+    if (!hasPermission("providers", "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear proveedores");
+      return { success: false }; // ← Retornar objeto con success: false
+    }
     try {
-      const purchasesStored = localStorage.getItem(PURCHASES_STORAGE_KEY);
-
-      if (!purchasesStored) return false;
-
-      const purchases = JSON.parse(purchasesStored);
-
-      // Verifica si existe alguna compra con este providerId
-      const hasPurchases = purchases.some(
-        (purchase) =>
-          purchase.providerId === providerId ||
-          purchase.proveedor?.id === providerId
-      );
-
-      return hasPurchases;
+      const providerData = {
+        ...newProvider,
+        telefono: formatPhoneNumber(newProvider.telefono),
+      };
+      const response = await providersService.createProvider(providerData);
+      
+      if (response.success) {
+        showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
+        setIsModalOpen(false);
+        fetchProviders();
+        return response; // ← IMPORTANTE: Retornar la respuesta exitosa
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo crear el proveedor");
+        return { success: false, message: response.message }; // ← Retornar error
+      }
     } catch (error) {
-      console.error("Error al verificar compras del proveedor:", error);
-      return false;
+      console.error('Error saving provider:', error);
+      showErrorAlert("Error", "Error al crear el proveedor en el servidor");
+      throw error; // ← IMPORTANTE: Lanzar el error para que el modal lo capture
     }
   };
 
-  // Formatear teléfono sin +57
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    return phone.replace(/[\s\-\(\)\+57]/g, ""); // limpiar espacios, guiones, paréntesis y +57
+  const handleUpdate = async (updatedProvider) => {
+    if (!hasPermission("providers", "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar proveedores");
+      return { success: false }; // ← Retornar objeto con success: false
+    }
+    try {
+      const providerData = {
+        ...updatedProvider,
+        telefono: formatPhoneNumber(updatedProvider.telefono),
+      };
+      const response = await providersService.updateProvider(
+        updatedProvider.id,
+        providerData
+      );
+      
+      if (response.success) {
+        showSuccessAlert(
+          "Proveedor actualizado",
+          "El proveedor se actualizó correctamente."
+        );
+        setIsModalOpen(false);
+        fetchProviders();
+        return response; 
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo actualizar el proveedor");
+        return { success: false, message: response.message }; // Retornar error
+      }
+    } catch (error) {
+      console.error('Error updating provider:', error);
+      showErrorAlert("Error", "Error al actualizar el proveedor en el servidor");
+      throw error; 
+    }
   };
 
-  // 🔎 Filtrado mejorado - IGUAL QUE ATHLETES Y USERS
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-
-    return data.filter((provider) =>
-      Object.entries(provider).some(([key, value]) => {
-        const stringValue = String(value).trim();
-
-        // 🎯 Búsqueda EXACTA para el campo "estado"
-        if (key.toLowerCase() === "estado") {
-          return stringValue.toLowerCase() === searchTerm.toLowerCase();
-        }
-
-        // 🔍 Búsqueda PARCIAL para todos los demás campos
-        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-      })
-    );
-  }, [data, searchTerm]);
-
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
-
-  const handlePageChange = (page) => setCurrentPage(page);
-
-  // Crear proveedor
-  const handleSave = (newProvider) => {
-    const newEntry = {
-      ...newProvider,
-      id: Date.now(),
-      telefono: formatPhoneNumber(newProvider.telefono),
-    };
-    setData([...data, newEntry]);
-    showSuccessAlert("Proveedor creado", "El proveedor se creó correctamente.");
-    setIsModalOpen(false);
-  };
-
-  // Editar proveedor
-  const handleUpdate = (updatedProvider) => {
-    const updatedEntry = {
-      ...updatedProvider,
-      telefono: formatPhoneNumber(updatedProvider.telefono),
-    };
-    setData(data.map((p) => (p.id === updatedEntry.id ? updatedEntry : p)));
-    showSuccessAlert(
-      "Proveedor actualizado",
-      "El proveedor se actualizó correctamente."
-    );
-    setIsModalOpen(false);
-  };
-
-  // Abrir modal de edición
   const handleEdit = (provider) => {
+    if (!hasPermission("providers", "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar proveedores");
+      return;
+    }
     if (!provider || provider.target) return;
     setProviderToEdit(provider);
     setModalMode("edit");
     setIsModalOpen(true);
   };
 
-  // Ver proveedor
   const handleView = (provider) => {
+    if (!hasPermission("providers", "Ver")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de proveedores");
+      return;
+    }
     if (!provider || provider.target) return;
     setProviderToView(provider);
     setIsViewModalOpen(true);
   };
 
-  // Eliminar proveedor CON VALIDACIÓN DE COMPRAS
   const handleDelete = async (provider) => {
-    if (!provider || !provider.id)
+    if (!hasPermission("providers", "Eliminar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para eliminar proveedores");
+      return;
+    }
+    if (!provider || !provider.id) {
       return showErrorAlert("Error", "Proveedor no válido");
-
-    // Verificar si tiene compras asociadas
-    const hasPurchases = checkProviderHasPurchases(provider.id);
-
-    if (hasPurchases) {
+    }
+    if (provider.estado === "Activo") {
       return showErrorAlert(
         "No se puede eliminar",
-        `El proveedor "${provider.razonSocial}" tiene compras asociadas y no puede ser eliminado. Para eliminarlo, primero debe eliminar o reasignar las compras relacionadas.`,
-        "error"
+        `No se puede eliminar el proveedor "${provider.razonSocial}" porque está en estado "Activo". Primero cambie el estado a "Inactivo".`
       );
     }
-
-    // Si no tiene compras, proceder con la confirmación
+    if (activePurchasesCheck[provider.id]) {
+      return showErrorAlert(
+        "No se puede eliminar",
+        `No se puede eliminar el proveedor "${provider.razonSocial}" porque tiene compras activas asociadas.`
+      );
+    }
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
       { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
     );
-
     if (!confirmResult.isConfirmed) return;
-
-    setData(data.filter((p) => p.id !== provider.id));
-    showSuccessAlert(
-      "Proveedor eliminado",
-      `${provider.razonSocial} fue eliminado correctamente.`
-    );
+    try {
+      const response = await providersService.deleteProvider(provider.id);
+      if (response.success) {
+        showSuccessAlert(
+          "Proveedor eliminado",
+          `${provider.razonSocial} fue eliminado correctamente.`
+        );
+        fetchProviders();
+      } else {
+        showErrorAlert("Error", response.message || "No se pudo eliminar el proveedor");
+      }
+    } catch (error) {
+      showErrorAlert("Error", "Error al eliminar el proveedor en el servidor");
+    }
   };
+
+  const buttonConfig = {
+    edit: (provider) => ({
+      show: hasPermission("providers", "Editar"),
+      disabled: false,
+      title: "Editar proveedor",
+    }),
+    delete: (provider) => ({
+      show: hasPermission("providers", "Eliminar"),
+      disabled: provider.estado === "Activo" || activePurchasesCheck[provider.id],
+      title:
+        provider.estado === "Activo"
+          ? "No se puede eliminar un proveedor activo"
+          : activePurchasesCheck[provider.id]
+          ? "No se puede eliminar con compras activas"
+          : "Eliminar proveedor",
+    }),
+    view: () => ({
+      show: hasPermission("providers", "Ver"),
+      disabled: false,
+      title: "Ver detalles",
+    }),
+  };
+
+  const startIndex = (currentPage - 1) * rowsPerPage;
 
   return (
     <div className="p-6 font-questrial w-full max-w-full">
-      {/* Header con buscador y botones */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
-
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
@@ -202,39 +258,70 @@ const Providers = () => {
               placeholder="Buscar proveedor..."
             />
           </div>
-
-          {/* Botones */}
           <div className="flex flex-col sm:flex-row gap-3">
+            <PermissionGuard module="providers" action="Ver">
             <ReportButton
-              data={filteredData}
-              fileName="Proveedores"
-              columns={[
-                { header: "Razón Social", accessor: "razonSocial" },
-                { header: "NIT", accessor: "nit" },
-                { header: "Tipo de Entidad", accessor: "tipoEntidad" },
-                { header: "Contacto Principal", accessor: "contactoPrincipal" },
-                { header: "Correo", accessor: "correo" },
-                { header: "Teléfono", accessor: "telefono" },
-                { header: "Estado", accessor: "estado" },
-              ]}
-            />
-
-            <button
-              onClick={() => {
-                setModalMode("create");
-                setProviderToEdit(null);
-                setIsModalOpen(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
-            >
-              <FaPlus /> Crear Proveedor
-            </button>
+    data={data}
+    fileName="Proveedores"
+    columns={[
+      { header: "Razón Social", accessor: "razonSocial" },
+      { header: "NIT/Documento", accessor: "nit" },
+      { header: "Tipo de Entidad", accessor: "tipoEntidad" },
+      { header: "Tipo de Documento", accessor: "tipoDocumento" },
+      { header: "Contacto Principal", accessor: "contactoPrincipal" },
+      { header: "Correo Electrónico", accessor: "correo" },
+      { header: "Teléfono", accessor: "telefono" },
+      { header: "Dirección", accessor: "direccion" },
+      { header: "Ciudad", accessor: "ciudad" },
+      { header: "Descripción", accessor: "descripcion" },
+      { header: "Estado", accessor: "estado" },
+      { 
+        header: "Fecha de Registro", 
+        accessor: "fechaRegistro",
+        format: (value) => value ? new Date(value).toLocaleDateString('es-ES') : 'N/A'
+      },
+      { 
+        header: "Última Actualización", 
+        accessor: "updatedAt",
+        format: (value) => value ? new Date(value).toLocaleDateString('es-ES') : 'N/A'
+      }
+    ]}
+    customDataTransform={(provider) => ({
+      ...provider,
+      // Transformar tipoEntidad para que sea más legible
+      tipoEntidad: provider.tipoEntidad === 'juridica' ? 'Persona Jurídica' : 'Persona Natural',
+      // Transformar estado para que sea más legible
+      estado: provider.estado === 'Activo' ? 'Activo' : 'Inactivo',
+      // Usar el nombre del tipo de documento en lugar del ID
+      tipoDocumento: provider.tipoDocumentoNombre || (provider.tipoEntidad === 'juridica' ? 'N/A' : 'No especificado'),
+      // Asegurar que la descripción tenga un valor por defecto si está vacía
+      descripcion: provider.descripcion || 'Sin descripción',
+      // Asegurar que el correo tenga un valor por defecto si está vacío
+      correo: provider.correo || 'No especificado'
+    })}
+  />
+            </PermissionGuard>
+            <PermissionGuard module="providers" action="Crear">
+              <button
+                onClick={() => {
+                  setModalMode("create");
+                  setProviderToEdit(null);
+                  setIsModalOpen(true);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus /> Crear Proveedor
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
 
-      {/* Tabla */}
-      {totalRows > 0 ? (
+      {loading ? (
+        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          Cargando proveedores...
+        </div>
+      ) : totalRows > 0 ? (
         <>
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
@@ -251,7 +338,7 @@ const Providers = () => {
                   actions: true,
                 }}
                 tbody={{
-                  data: paginatedData,
+                  data: data,
                   dataPropertys: [
                     "razonSocial",
                     "nit",
@@ -265,13 +352,13 @@ const Providers = () => {
                     Inactivo: "bg-red-100 text-red-800",
                   },
                 }}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleView}
+                onEdit={hasPermission("providers", "Editar") ? handleEdit : null}
+                onDelete={hasPermission("providers", "Eliminar") ? handleDelete : null}
+                onView={hasPermission("providers", "Ver") ? handleView : null}
+                buttonConfig={buttonConfig}
               />
             </div>
           </div>
-
           <div className="w-full border-none shadow-none">
             <Pagination
               currentPage={currentPage}
@@ -289,7 +376,6 @@ const Providers = () => {
         </div>
       )}
 
-      {/* Modal Crear/Editar */}
       <ProviderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -298,8 +384,6 @@ const Providers = () => {
         providerToEdit={providerToEdit}
         mode={modalMode}
       />
-
-      {/* Modal Ver */}
       <ProviderViewModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}

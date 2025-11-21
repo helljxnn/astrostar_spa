@@ -17,15 +17,17 @@ const Tbody = ({ options }) => {
   const {
     data = [],
     dataPropertys = [],
-    state = false, // ⚡ activa colores para Estado
+    state = false, // activa colores para Estado
     onEdit,
     onDelete,
     onView,
     onList,
-    customActions, // ✅ AGREGADO: acciones personalizadas
+    customActions, //  acciones personalizadas
+    customRenderers = {}, // renderizadores personalizados
+    buttonConfig = {}, // configuración de botones
   } = options.tbody || {};
 
-  const hasActions = onEdit || onDelete || onView || onList || customActions; // ✅ MODIFICADO
+  const hasActions = onEdit || onDelete || onView || onList || customActions; 
 
   /* --- Si no hay datos --- */
   if (!data || data.length === 0) {
@@ -48,9 +50,8 @@ const Tbody = ({ options }) => {
         const estado = estadoOriginal.toLowerCase();
 
         /* Colores unificados (igual que en mobile) */
-        let estadoClass = "text-gray-500";
-        if (estado === "activo") estadoClass = "text-primary-purple";
-        else if (estado === "inactivo") estadoClass = "text-primary-blue";
+        let estadoClass = "text-primary-blue"; // Por defecto azul para todos los estados
+        if (estado === "activo") estadoClass = "text-primary-purple"; // Solo activo en morado
 
         return (
           <motion.tr
@@ -61,9 +62,18 @@ const Tbody = ({ options }) => {
             custom={index}
             className="hover:bg-primary-purple-light/30 transition-colors"
           >
-            {/* 🔹 Columnas dinámicas */}
+            {/*  Columnas dinámicas */}
             {dataPropertys.map((property, i) => {
-              // 👀 Si la columna es Estado → render especial con color
+              // Usar custom renderer si existe
+              if (customRenderers[property]) {
+                return (
+                  <td key={i} className="px-6 py-4 whitespace-nowrap">
+                    {customRenderers[property](item[property], item)}
+                  </td>
+                );
+              }
+
+              //  Si la columna es Estado → render especial con color
               if (state && property.toLowerCase() === "estado") {
                 return (
                   <td
@@ -84,7 +94,7 @@ const Tbody = ({ options }) => {
               );
             })}
 
-            {/* 🔹 Estado extra (si no está en dataPropertys) */}
+            {/*  Estado extra (si no está en dataPropertys) */}
             {state &&
               !dataPropertys.map((p) => p.toLowerCase()).includes("estado") && (
                 <td className="px-6 py-4 whitespace-nowrap font-medium">
@@ -94,46 +104,83 @@ const Tbody = ({ options }) => {
                 </td>
               )}
 
-            {/* 🔹 Acciones dinámicas */}
+            {/*  Acciones dinámicas */}
             {hasActions && (
               <td className="px-6 py-4 flex items-center justify-center gap-3">
-                {onEdit && (
-                  <button
-                    onClick={() => onEdit(item)}
-                    className="p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white transition-colors"
-                    title="Editar"
-                  >
-                    <FaRegEdit />
-                  </button>
-                )}
+                {onEdit && (() => {
+                  const config = buttonConfig.edit ? buttonConfig.edit(item) : {};
+                  const shouldShow = config.show !== false;
+                  const isDisabled = config.disabled || false;
+                  const customClass = config.className || '';
+                  const title = config.title || 'Editar';
 
-                {onDelete && (() => {
-                  const isActive = item.estado && item.estado.toLowerCase() === "activo";
+                  if (!shouldShow) return null;
+
                   return (
                     <button
-                      onClick={() => !isActive && onDelete(item)}
+                      onClick={() => !isDisabled && onEdit(item)}
                       className={`p-2 rounded-full transition-colors ${
-                        isActive 
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                          : "bg-red-100 text-red-500 hover:bg-red-500 hover:text-white"
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                          : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
                       }`}
-                      title={isActive ? "No se puede eliminar empleado activo" : "Eliminar"}
-                      disabled={isActive}
+                      title={title}
+                      disabled={isDisabled}
+                    >
+                      <FaRegEdit />
+                    </button>
+                  );
+                })()}
+
+                {onDelete && (() => {
+                  const config = buttonConfig.delete ? buttonConfig.delete(item) : {};
+                  const shouldShow = config.show !== false;
+                  const isDisabled = config.disabled || false;
+                  const customClass = config.className || '';
+                  const title = config.title || 'Eliminar';
+
+                  if (!shouldShow) return null;
+
+                  return (
+                    <button
+                      onClick={() => !isDisabled && onDelete(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                          : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
+                      }`}
+                      title={title}
+                      disabled={isDisabled}
                     >
                       <FaTrash />
                     </button>
                   );
                 })()}
 
-                {onView && (
-                  <button
-                    onClick={() => onView(item)}
-                    className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors"
-                    title="Ver Detalle"
-                  >
-                    <FaEye />
-                  </button>
-                )}
+                {onView && (() => {
+                  const config = buttonConfig.view ? buttonConfig.view(item) : {};
+                  const shouldShow = config.show !== false;
+                  const isDisabled = config.disabled || false;
+                  const customClass = config.className || '';
+                  const title = config.title || 'Ver Detalle';
+
+                  if (!shouldShow) return null;
+
+                  return (
+                    <button
+                      onClick={() => !isDisabled && onView(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                          : `bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white ${customClass}`
+                      }`}
+                      title={title}
+                      disabled={isDisabled}
+                    >
+                      <FaEye />
+                    </button>
+                  );
+                })()}
 
                 {onList && (
                   <button
@@ -145,7 +192,7 @@ const Tbody = ({ options }) => {
                   </button>
                 )}
 
-                {/* ✅ NUEVO: Acciones personalizadas */}
+                {/* Acciones personalizadas */}
                 {customActions && (
                   typeof customActions === 'function'
                     ? customActions(item)

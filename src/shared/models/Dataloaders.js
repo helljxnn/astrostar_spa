@@ -1,7 +1,6 @@
 // src/utils/dataLoaders.js
 // Utilidades para cargar datos desde localStorage o archivos data.jsx
 
-// ============================================
 // DATOS REALES DE LOS MÓDULOS
 // ============================================
 
@@ -171,7 +170,7 @@ const athletesDataReal = [
   }
 ];
 
-// Datos reales de empleados - AGREGAR ENTRENADORES
+// Datos reales de empleados - ENTRENADORES
 const employeesDataReal = [
   {
     id: "e1",
@@ -207,48 +206,27 @@ const employeesDataReal = [
   }
 ];
 
-// Datos reales de personas temporales - AGREGAR ENTRENADORES
-const temporaryWorkersDataReal = [
+// Datos de ejemplo para personas temporales
+const temporaryPersonsDataReal = [
   {
     id: "t1",
-    tipoPersona: "Jugadora",
-    nombre: "Jennifer Lascarro",
-    tipoDocumento: "Tarjeta de Identidad",
-    identificacion: "TI.1246789334",
+    tipoPersona: "Entrenador",
+    nombre: "Carlos Rojas",
+    identificacion: "CC.123456789",
     telefono: "3001234567",
-    fechaNacimiento: "2006-05-12",
-    edad: 19,
-    categoria: "Sub 17",
-    estado: "Activo",
+    estado: "Activo"
   },
   {
-    id: "t2",
-    tipoPersona: "Entrenador",
-    nombre: "Ana Restrepo",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1397543865",
+    id: "t2", 
+    tipoPersona: "Deportista",
+    nombre: "Jennifer Lascarro",
+    identificacion: "TI.1246789334",
     telefono: "3207654321",
-    fechaNacimiento: "1992-09-10",
-    edad: 32,
-    categoria: "No aplica",
-    estado: "Activo",
-  },
-  {
-    id: "t3",
-    tipoPersona: "Entrenador",
-    nombre: "Luis Enrique",
-    tipoDocumento: "Cédula de Ciudadanía",
-    identificacion: "CC.1456789123",
-    telefono: "3109876543",
-    fechaNacimiento: "1985-03-22",
-    edad: 38,
-    categoria: "No aplica",
-    estado: "Activo",
+    estado: "Activo"
   }
 ];
 
-// ============================================
-// FUNCIONES HELPER PARA CARGAR DATOS
+// FUNCIONES HELPER PARA CARGAR DATOS - VERSIÓN SÍNCRONA
 // ============================================
 
 /**
@@ -260,53 +238,47 @@ export const loadTrainers = () => {
   try {
     const trainers = [];
 
-    console.log("=== INICIANDO CARGA DE ENTRENADORES ===");
-
     // 1. DESDE EMPLEADOS (Entrenadores) - FUNDACIÓN
     const employeesRaw = localStorage.getItem("employees");
     const employees = employeesRaw ? JSON.parse(employeesRaw) : employeesDataReal;
-    
-    console.log("Empleados encontrados:", employees);
 
     const trainersFromEmployees = employees
-      .filter(e => e.tipoEmpleado === "Entrenador" && e.estado === "Activo")
+      .filter(e => {
+        const status = e.status || e.estado;
+        return status === "Active" || status === "Activo";
+      })
       .map(e => ({
-        id: e.id || e.identificacion,
-        name: e.nombre,
-        source: "Empleado",
-        sourceLabel: "Empleado Fundación",
-        identification: e.identificacion,
+        id: e.id || e.user?.identification || e.identificacion,
+        name: e.user ? `${e.user.firstName} ${e.user.lastName}` : e.nombre,
+        source: "fundacion",
+        sourceLabel: "Entrenadores de la Fundación",
+        identification: e.user?.identification || e.identificacion,
         badge: "Empleado",
         badgeColor: "bg-blue-100 text-blue-800",
-        type: "fundacion" // ← AGREGAR ESTA PROPIEDAD
+        type: "fundacion"
       }));
 
-    console.log("Entrenadores de empleados:", trainersFromEmployees);
     trainers.push(...trainersFromEmployees);
 
     // 2. DESDE PERSONAS TEMPORALES (Entrenadores) - TEMPORALES
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
-    
-    console.log("Personas temporales encontradas:", temporaryPersons);
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryPersonsDataReal;
 
     const trainersFromTemporary = temporaryPersons
       .filter(t => t.tipoPersona === "Entrenador" && t.estado === "Activo")
       .map(t => ({
         id: t.id || t.identificacion,
         name: t.nombre,
-        source: "Temporal",
-        sourceLabel: "Persona Temporal",
+        source: "temporal",
+        sourceLabel: "Entrenadores Temporales",
         identification: t.identificacion,
         badge: "Temporal",
         badgeColor: "bg-purple-100 text-purple-800",
-        type: "temporal" // ← AGREGAR ESTA PROPIEDAD
+        type: "temporal"
       }));
 
-    console.log("Entrenadores temporales:", trainersFromTemporary);
     trainers.push(...trainersFromTemporary);
 
-    console.log("=== TOTAL ENTRENADORES CARGADOS ===", trainers);
     return trainers;
   } catch (error) {
     console.error("Error cargando entrenadores:", error);
@@ -315,78 +287,92 @@ export const loadTrainers = () => {
 };
 
 /**
- * Carga jugadoras desde múltiples fuentes:
- * 1. Deportistas (estado: "Activo")
- * 2. Personas Temporales (tipoPersona: "Jugadora")
+ * Carga deportistas desde múltiples fuentes:
+ * 1. Deportistas (estado: "Activo") - CON CATEGORÍA
+ * 2. Personas Temporales (tipoPersona: "Deportista") - SIN CATEGORÍA
  */
-export const loadPlayers = () => {
+export const loadAthletes = () => {
   try {
-    const players = [];
+    const athletes = [];
 
-    // 1. DESDE DEPORTISTAS (Athletes) - FUNDACIÓN
+    // 1. DESDE DEPORTISTAS (Athletes) - FUNDACIÓN - CON CATEGORÍA
     const athletesRaw = localStorage.getItem("athletes");
-    const athletes = athletesRaw ? JSON.parse(athletesRaw) : athletesDataReal;
+    const athletesData = athletesRaw ? JSON.parse(athletesRaw) : athletesDataReal;
     
-    const playersFromAthletes = athletes
+    const athletesFromFoundation = athletesData
       .filter(a => a.estado === "Activo")
       .map(a => ({
         id: a.id,
         name: `${a.nombres} ${a.apellidos}`,
-        source: "Deportista",
-        sourceLabel: "Deportista Fundación",
+        source: "fundacion",
+        sourceLabel: "Deportistas de la Fundación",
         identification: a.numeroDocumento,
         categoria: a.categoria,
         badge: "Deportista",
         badgeColor: "bg-green-100 text-green-800",
         additionalInfo: `${a.genero === "femenino" ? "Femenino" : "Masculino"} - ${a.ciudad}`,
-        type: "fundacion" // ← AGREGAR ESTA PROPIEDAD
+        type: "fundacion"
       }));
 
-    players.push(...playersFromAthletes);
+    athletes.push(...athletesFromFoundation);
 
-    // 2. DESDE PERSONAS TEMPORALES (Jugadoras) - TEMPORALES
+    // 2. DESDE PERSONAS TEMPORALES (Deportistas) - TEMPORALES - SIN CATEGORÍA
     const temporaryRaw = localStorage.getItem("temporaryPersons");
-    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryWorkersDataReal;
+    const temporaryPersons = temporaryRaw ? JSON.parse(temporaryRaw) : temporaryPersonsDataReal;
     
-    const playersFromTemporary = temporaryPersons
-      .filter(t => t.tipoPersona === "Jugadora" && t.estado === "Activo")
+    const athletesFromTemporary = temporaryPersons
+      .filter(t => t.tipoPersona === "Deportista" && t.estado === "Activo")
       .map(t => ({
         id: t.id,
         name: t.nombre,
-        source: "Temporal",
-        sourceLabel: "Persona Temporal",
+        source: "temporal",
+        sourceLabel: "Deportistas Temporales",
         identification: t.identificacion,
-        categoria: t.categoria,
+        categoria: undefined, // EXPLÍCITAMENTE SIN CATEGORÍA
         badge: "Temporal",
         badgeColor: "bg-purple-100 text-purple-800",
         additionalInfo: `${t.edad} años`,
-        type: "temporal" // ← AGREGAR ESTA PROPIEDAD
+        type: "temporal"
       }));
 
-    players.push(...playersFromTemporary);
+    athletes.push(...athletesFromTemporary);
 
-    return players;
+    return athletes;
   } catch (error) {
-    console.error("Error cargando jugadoras:", error);
+    console.error("Error cargando deportistas:", error);
     return [];
   }
 };
 
+// MANTENER COMPATIBILIDAD CON CÓDIGO EXISTENTE
+export const loadPlayers = loadAthletes;
+
 /**
- * Agrupa datos por fuente
+ * Agrupa datos por fuente - FUNCIÓN MÁS ROBUSTA
  */
 export const groupBySource = (data) => {
+  // Validación robusta para evitar el error
+  if (!data || !Array.isArray(data)) {
+    console.warn('groupBySource: data no es un array válido', data);
+    return [];
+  }
+  
   const sourceMap = new Map();
   
   data.forEach(item => {
-    if (!sourceMap.has(item.source)) {
-      sourceMap.set(item.source, {
-        source: item.source,
-        sourceLabel: item.sourceLabel,
+    if (!item || typeof item !== 'object') return; // Saltar items inválidos
+    
+    const source = item.source || 'unknown';
+    const sourceLabel = item.sourceLabel || 'Sin fuente';
+    
+    if (!sourceMap.has(source)) {
+      sourceMap.set(source, {
+        source: source,
+        sourceLabel: sourceLabel,
         items: []
       });
     }
-    sourceMap.get(item.source).items.push(item);
+    sourceMap.get(source).items.push(item);
   });
 
   return Array.from(sourceMap.values());
@@ -402,7 +388,7 @@ export const searchInData = (data, searchTerm) => {
   return data.filter(item => 
     item.name?.toLowerCase().includes(query) ||
     item.identification?.toLowerCase().includes(query) ||
-    item.categoria?.toLowerCase().includes(query) ||
+    (item.categoria && item.categoria.toLowerCase().includes(query)) ||
     item.additionalInfo?.toLowerCase().includes(query)
   );
 };
@@ -413,4 +399,13 @@ export const searchInData = (data, searchTerm) => {
 export const filterByType = (data, type) => {
   if (!type) return data;
   return data.filter(item => item.type === type);
+};
+
+export default {
+  loadTrainers,
+  loadAthletes,
+  loadPlayers, // MANTENER para compatibilidad
+  groupBySource,
+  searchInData,
+  filterByType
 };

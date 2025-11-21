@@ -11,6 +11,7 @@ const Table = ({
   onDelete,
   onView, // para vista detallada
   customActions, // para botones personalizados
+  buttonConfig = {}, // configuración de botones
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -45,6 +46,7 @@ const Table = ({
     onDelete,
     onView,
     customActions,
+    buttonConfig,
   };
 
   return (
@@ -101,22 +103,12 @@ const Table = ({
               >
                 Editar
               </button>
-              {(() => {
-                const isActive = item.estado && item.estado.toLowerCase() === "activo";
-                return (
-                  <button
-                    onClick={() => !isActive && tbodyProps.onDelete && tbodyProps.onDelete(item)}
-                    className={`px-3 py-1 rounded-lg transition-colors text-xs ${
-                      isActive 
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                        : "bg-red-100 text-red-500 hover:bg-red-500 hover:text-white"
-                    }`}
-                    disabled={isActive}
-                  >
-                    Eliminar
-                  </button>
-                );
-              })()}
+              <button
+                onClick={() => tbodyProps.onDelete && tbodyProps.onDelete(item)}
+                className="px-3 py-1 rounded-lg bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs"
+              >
+                Eliminar
+              </button>
               {tbodyProps.onView && (
                 <button
                   onClick={() => tbodyProps.onView(item)}

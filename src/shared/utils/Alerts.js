@@ -38,12 +38,19 @@ export const showSuccessAlert = (title, text = "") => {
       confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] hover:opacity-90`,
     },
     background: "linear-gradient(135deg, #f0f9ff 0%, #f5f3ff 100%)",
+    didOpen: () => {
+      // Asegurar que aparezca por encima de los modales
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
 };
 
 // Alerta de error
 export const showErrorAlert = (title, text = "") => {
-  return Swal.fire({
+  const swalPromise = Swal.fire({
     ...alerts,
     icon: "error",
     title: `<span style="color:#ff4d4d;">${title}</span>`,
@@ -59,7 +66,16 @@ export const showErrorAlert = (title, text = "") => {
       confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] hover:opacity-90`,
     },
     background: "linear-gradient(135deg, #fdf2f8 0%, #f3e8ff 100%)",
+    didOpen: () => {
+      // Forzar z-index después de que se abra
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
+  
+  return swalPromise;
 };
 
 // Alerta de confirmación
@@ -89,6 +105,41 @@ export const showConfirmAlert = (title, text = "", options = {}) => {
       cancelButton: `${alerts.customClass.cancelButton} text-gray-600 border-gray-300 hover:border-gray-400 hover:bg-gray-50`,
     },
     background: "linear-gradient(135deg, #eff6ff 0%, #f3e8ff 100%)",
+    didOpen: () => {
+      // Forzar z-index después de que se abra
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
+  });
+};
+
+// Alerta de advertencia
+export const showWarningAlert = (title, text = "") => {
+  return Swal.fire({
+    ...alerts,
+    icon: "warning",
+    title: `<span style="color:#f59e0b;">${title}</span>`,
+    text,
+    confirmButtonText: "Entendido",
+    allowOutsideClick: true,
+    allowEscapeKey: true,
+    showCloseButton: true,
+    customClass: {
+      ...alerts.customClass,
+      popup: `${alerts.customClass.popup} bg-gradient-to-br from-[#fef3c7] to-[#fde68a] border-l-4 border-l-[#f59e0b]`,
+      title: `${alerts.customClass.title}`,
+      confirmButton: `${alerts.customClass.confirmButton} bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90`,
+    },
+    background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+    didOpen: () => {
+      // Asegurar que aparezca por encima de los modales
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
 };
 
@@ -120,5 +171,12 @@ export const showDeleteAlert = (title, text = "", options = {}) => {
       icon: "text-[#dc2626]", 
     },
     background: "#ffffff", // Fondo blanco
+    didOpen: () => {
+      // Forzar z-index después de que se abra
+      const swalContainer = document.querySelector('.swal2-container');
+      if (swalContainer) {
+        swalContainer.style.zIndex = '10001';
+      }
+    }
   });
 };

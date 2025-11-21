@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes } from "react-icons/fa";
+import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes, FaInfoCircle, FaExclamationCircle } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import {
   showSuccessAlert,
   showErrorAlert,
-  showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts";
 import {
   useFormAthleteValidation,
@@ -22,12 +21,25 @@ const documentTypes = [
 const categories = [
   { value: "Infantil", label: "Infantil" },
   { value: "Sub 15", label: "Sub-15" },
-  { value: "Juvenil", label: "Juvenil " },
+  { value: "Juvenil", label: "Juvenil" },
 ];
 
 const states = [
   { value: "Activo", label: "Activo" },
   { value: "Inactivo", label: "Inactivo" },
+];
+
+const parentescoOptions = [
+  { value: "Madre", label: "Madre" },
+  { value: "Padre", label: "Padre" },
+  { value: "Abuelo/a", label: "Abuelo/a" },
+  { value: "Tío/a", label: "Tío/a" },
+  { value: "Hermano/a", label: "Hermano/a" },
+  { value: "Primo/a", label: "Primo/a" },
+  { value: "Tutor/a Legal", label: "Tutor/a Legal" },
+  { value: "Vecino/a", label: "Vecino/a" },
+  { value: "Amigo/a de la familia", label: "Amigo/a de la familia" },
+  { value: "Otro", label: "Otro (especificar)" },
 ];
 
 const calculateAge = (birthDate) => {
@@ -52,10 +64,14 @@ const AthleteModal = ({
   mode = athleteToEdit ? "edit" : "create",
   onCreateGuardian,
   onViewGuardian,
+  newlyCreatedGuardianId = null,
 }) => {
   const isEditing = mode === "edit" || athleteToEdit !== null;
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
+  const [currentAge, setCurrentAge] = useState(null);
+  const [otroParentesco, setOtroParentesco] = useState("");
+  const [hasDateOfBirth, setHasDateOfBirth] = useState(false);
 
   const {
     values,
@@ -79,12 +95,40 @@ const AthleteModal = ({
       categoria: "",
       estado: "Activo",
       acudiente: "",
+      parentesco: "",
     },
     athleteValidationRules
   );
 
   useEffect(() => {
+    if (values.fechaNacimiento) {
+      const age = calculateAge(values.fechaNacimiento);
+      setCurrentAge(age);
+      setHasDateOfBirth(true);
+    } else {
+      setCurrentAge(null);
+      setHasDateOfBirth(false);
+    }
+  }, [values.fechaNacimiento]);
+
+  useEffect(() => {
+    if (newlyCreatedGuardianId && guardians.length > 0 && !isEditing) {
+      const guardianExists = guardians.find(g => g.id === newlyCreatedGuardianId);
+      if (guardianExists) {
+        handleChange({
+          target: { 
+            name: "acudiente", 
+            value: newlyCreatedGuardianId.toString() 
+          },
+        });
+      }
+    }
+  }, [newlyCreatedGuardianId, guardians, isEditing]);
+
+  useEffect(() => {
     if (isOpen && isEditing && athleteToEdit) {
+      const fechaNacimiento = athleteToEdit.fechaNacimiento || "";
+      
       setValues({
         nombres: athleteToEdit.nombres || "",
         apellidos: athleteToEdit.apellidos || "",
@@ -92,11 +136,18 @@ const AthleteModal = ({
         numeroDocumento: athleteToEdit.numeroDocumento || "",
         correo: athleteToEdit.correo || "",
         telefono: athleteToEdit.telefono || "",
-        fechaNacimiento: athleteToEdit.fechaNacimiento || "",
+        fechaNacimiento: fechaNacimiento,
         categoria: athleteToEdit.categoria || "",
         estado: athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
+        parentesco: athleteToEdit.parentesco || "",
       });
+      
+      setHasDateOfBirth(!!fechaNacimiento);
+      
+      if (athleteToEdit.parentesco && !parentescoOptions.some(opt => opt.value === athleteToEdit.parentesco)) {
+        setOtroParentesco(athleteToEdit.parentesco);
+      }
     } else if (isOpen && !isEditing) {
       setValues({
         nombres: "",
@@ -109,9 +160,27 @@ const AthleteModal = ({
         categoria: "",
         estado: "Activo",
         acudiente: "",
+        parentesco: "",
       });
+      setOtroParentesco("");
+      setHasDateOfBirth(false);
     }
   }, [isOpen, isEditing, athleteToEdit, setValues]);
+
+  const handleParentescoChange = (e) => {
+    const { value } = e.target;
+    handleChange(e);
+    handleBlur(e);
+    
+    if (value !== "Otro") {
+      setOtroParentesco("");
+    }
+  };
+
+  const handleFechaNacimientoChange = (e) => {
+    handleChange(e);
+    handleBlur(e);
+  };
 
   useEffect(() => {
     if (values.fechaNacimiento && !isEditing) {
@@ -132,23 +201,6 @@ const AthleteModal = ({
     }
   }, [values.fechaNacimiento, handleChange, values.categoria, isEditing]);
 
-  useEffect(() => {
-    if (isEditing && athleteToEdit) {
-      if (values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo") {
-        console.log("⚠️ Deportista marcado como Inactivo - La inscripción se suspenderá automáticamente");
-      }
-    }
-  }, [values.estado, isEditing, athleteToEdit]);
-
-  const formatPhoneNumber = (phone) => {
-    if (!phone) return phone;
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
-      return phone;
-    if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
-    return phone;
-  };
-
   const filteredGuardians = guardians.filter(
     (guardian) =>
       guardian.nombreCompleto
@@ -158,24 +210,76 @@ const AthleteModal = ({
   );
 
   const selectedGuardian = guardians.find(
-    (g) => g.id.toString() === values.acudiente.toString()
+    (g) => g.id?.toString() === values.acudiente?.toString()
   );
+
+  const isMinor = currentAge !== null && currentAge < 18;
+  const isAcudienteRequired = hasDateOfBirth && isMinor;
+
+  const getFinalParentesco = () => {
+    if (values.parentesco === "Otro" && otroParentesco.trim()) {
+      return otroParentesco.trim();
+    }
+    return values.parentesco;
+  };
+
+  const getAcudienteOptions = () => {
+    const baseOptions = guardians.map((g) => ({
+      value: g.id.toString(),
+      label: `${g.nombreCompleto} - ${g.identificacion}`,
+    }));
+
+    if (hasDateOfBirth && !isAcudienteRequired) {
+      return [
+        { value: "", label: "Sin acudiente" },
+        ...baseOptions
+      ];
+    }
+
+    return baseOptions;
+  };
 
   const handleSubmit = async (e) => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
 
-    console.log("🚀 INICIANDO SUBMIT");
-    console.log("📦 Valores del formulario:", values);
+    // Marcar todos los campos como tocados para mostrar errores
+    const allTouched = {};
+    Object.keys(athleteValidationRules).forEach((f) => (allTouched[f] = true));
+    setTouched(allTouched);
 
-    if (!values.nombres || !values.apellidos || !values.acudiente) {
-      showErrorAlert("Error", "Faltan campos obligatorios");
-      console.log("❌ Validación falló");
+    if (!validateAllFields()) {
+      return;
+    }
+
+    if (isAcudienteRequired && !values.acudiente) {
+      showErrorAlert(
+        "Acudiente requerido",
+        "Los menores de edad deben tener un acudiente asignado."
+      );
+      return;
+    }
+
+    if (values.acudiente && !values.parentesco) {
+      showErrorAlert(
+        "Parentesco requerido",
+        "Debes especificar el parentesco con el acudiente."
+      );
+      return;
+    }
+
+    if (values.acudiente && values.parentesco === "Otro" && !otroParentesco.trim()) {
+      showErrorAlert(
+        "Parentesco requerido",
+        "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'."
+      );
       return;
     }
 
     try {
+      const finalParentesco = getFinalParentesco();
+      
       const athleteData = {
         nombres: values.nombres.trim(),
         apellidos: values.apellidos.trim(),
@@ -186,24 +290,26 @@ const AthleteModal = ({
         fechaNacimiento: values.fechaNacimiento,
         categoria: values.categoria,
         estado: values.estado,
-        acudiente: values.acudiente,
+        acudiente: values.acudiente || null,
+        parentesco: values.acudiente ? finalParentesco : null,
       };
 
-      console.log("📤 Enviando a onSave:", athleteData);
-
       if (isEditing) {
-        const updateData = { 
-          ...athleteData, 
+        const updateData = {
+          ...athleteData,
           id: athleteToEdit.id,
-          shouldUpdateInscription: values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo"
+          shouldUpdateInscription:
+            values.estado === "Inactivo" &&
+            athleteToEdit.estado !== "Inactivo",
         };
         await onUpdate(updateData);
       } else {
         await onSave(athleteData);
       }
 
-      console.log("✅ Save/Update completado");
       resetForm();
+      setOtroParentesco("");
+      setHasDateOfBirth(false);
       onClose();
     } catch (error) {
       console.error("❌ Error en submit:", error);
@@ -233,8 +339,11 @@ const AthleteModal = ({
 
   const handleClose = () => {
     resetForm();
+    setOtroParentesco("");
+    setHasDateOfBirth(false);
     setShowGuardianSearch(false);
     setGuardianSearchTerm("");
+    setCurrentAge(null);
     onClose();
   };
 
@@ -248,20 +357,20 @@ const AthleteModal = ({
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={handleClose}
           >
-            <FaTimes size={18} />
+            <FaTimes size={16} />
           </button>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {isEditing ? "Editar Deportista" : "Crear Deportista"}
           </h2>
           {isEditing && (
@@ -274,175 +383,247 @@ const AthleteModal = ({
           )}
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+        <div className="flex-1 overflow-y-auto p-3">
+          {hasDateOfBirth && currentAge !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`mb-3 p-3 rounded-lg border ${
+                isMinor
+                  ? "bg-blue-50 border-blue-200"
+                  : "bg-green-50 border-green-200"
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <FaInfoCircle
+                  className={isMinor ? "text-blue-600" : "text-green-600"}
+                  size={18}
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-800">
+                    Edad: {currentAge} años - {isMinor ? "Menor de edad" : "Mayor de edad"}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          <div className="mb-3">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
               Información Personal
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                label="Tipo de Documento"
-                name="tipoDocumento"
-                type="select"
-                placeholder="Selecciona el tipo de documento"
-                options={documentTypes}
-                value={values.tipoDocumento}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.tipoDocumento}
-                touched={touched.tipoDocumento}
-                delay={0.1}
-                required
-              />
-              <FormField
-                label="Número de Documento"
-                name="numeroDocumento"
-                type="text"
-                placeholder="Número de identificación"
-                value={values.numeroDocumento}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.numeroDocumento}
-                touched={touched.numeroDocumento}
-                delay={0.15}
-                required
-              />
-              <FormField
-                label="Nombres"
-                name="nombres"
-                type="text"
-                placeholder="Nombres del deportista"
-                value={values.nombres}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.nombres}
-                touched={touched.nombres}
-                delay={0.2}
-                required
-              />
-              <FormField
-                label="Apellidos"
-                name="apellidos"
-                type="text"
-                placeholder="Apellidos del deportista"
-                value={values.apellidos}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.apellidos}
-                touched={touched.apellidos}
-                delay={0.25}
-                required
-              />
-              <FormField
-                label="Correo Electrónico"
-                name="correo"
-                type="email"
-                placeholder="correo@ejemplo.com"
-                value={values.correo}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.correo}
-                touched={touched.correo}
-                delay={0.3}
-                required
-              />
-              <FormField
-                label="Número Telefónico"
-                name="telefono"
-                type="text"
-                placeholder="3001234567 o 6012345678"
-                value={values.telefono}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.telefono}
-                touched={touched.telefono}
-                delay={0.35}
-                required
-              />
-              <FormField
-                label="Fecha de Nacimiento"
-                name="fechaNacimiento"
-                type="date"
-                placeholder="Selecciona la fecha"
-                value={values.fechaNacimiento}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.fechaNacimiento}
-                touched={touched.fechaNacimiento}
-                delay={0.4}
-                required
-                helperText={
-                  values.fechaNacimiento
-                    ? `Edad: ${calculateAge(values.fechaNacimiento)} años`
-                    : ""
-                }
-              />
-              <FormField
-                label="Categoría"
-                name="categoria"
-                type="select"
-                placeholder="Selecciona la categoría"
-                options={categories}
-                value={values.categoria}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.categoria}
-                touched={touched.categoria}
-                delay={0.5}
-                required
-                helperText={
-                  !isEditing ? "Se calcula automáticamente según la edad" : ""
-                }
-              />
-              <FormField
-                label="Estado del Deportista"
-                name="estado"
-                type="select"
-                placeholder="Selecciona el estado"
-                options={states}
-                value={values.estado}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.estado}
-                touched={touched.estado}
-                delay={0.55}
-                required
-                helperText={
-                  values.estado === "Activo"
-                    ? "Participa normalmente en actividades"
-                    : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá automáticamente"
-                }
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div>
+                <FormField
+                  label="Tipo de Documento"
+                  name="tipoDocumento"
+                  type="select"
+                  placeholder="Selecciona el tipo de documento"
+                  options={documentTypes}
+                  value={values.tipoDocumento}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.tipoDocumento}
+                  touched={touched.tipoDocumento}
+                  required
+                  delay={0.1}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Número de Documento"
+                  name="numeroDocumento"
+                  type="text"
+                  placeholder="Número de identificación"
+                  value={values.numeroDocumento}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.numeroDocumento}
+                  touched={touched.numeroDocumento}
+                  required
+                  delay={0.2}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Nombres"
+                  name="nombres"
+                  type="text"
+                  placeholder="Nombres de la deportista"
+                  value={values.nombres}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.nombres}
+                  touched={touched.nombres}
+                  required
+                  delay={0.3}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Apellidos"
+                  name="apellidos"
+                  type="text"
+                  placeholder="Apellidos de la deportista"
+                  value={values.apellidos}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.apellidos}
+                  touched={touched.apellidos}
+                  required
+                  delay={0.4}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Correo Electrónico"
+                  name="correo"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={values.correo}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.correo}
+                  touched={touched.correo}
+                  required
+                  delay={0.5}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Número Telefónico"
+                  name="telefono"
+                  type="text"
+                  placeholder="Número de Teléfono"
+                  value={values.telefono}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.telefono}
+                  touched={touched.telefono}
+                  required
+                  delay={0.6}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Fecha de Nacimiento"
+                  name="fechaNacimiento"
+                  type="date"
+                  placeholder="Selecciona la fecha"
+                  value={values.fechaNacimiento}
+                  onChange={handleFechaNacimientoChange}
+                  onBlur={handleBlur}
+                  error={errors.fechaNacimiento}
+                  touched={touched.fechaNacimiento}
+                  required
+                  helperText={
+                    currentAge !== null
+                      ? `Edad: ${currentAge} años ${isMinor ? "(Menor)" : "(Mayor)"}`
+                      : "Ingresa la fecha para determinar si requiere acudiente"
+                  }
+                  delay={0.7}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Categoría"
+                  name="categoria"
+                  type="select"
+                  placeholder="Selecciona la categoría"
+                  options={categories}
+                  value={values.categoria}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.categoria}
+                  touched={touched.categoria}
+                  required
+                  helperText={!isEditing ? "Se calcula automáticamente según la edad" : ""}
+                  delay={0.8}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Estado de la Deportista"
+                  name="estado"
+                  type="select"
+                  placeholder="Selecciona el estado"
+                  options={states}
+                  value={values.estado}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.estado}
+                  touched={touched.estado}
+                  required
+                  helperText={
+                    values.estado === "Activo"
+                      ? "Participa normalmente en actividades"
+                      : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá"
+                  }
+                  delay={0.9}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between mb-4">
+          <motion.div
+            className={`rounded-lg p-3 border mb-3 ${
+              !hasDateOfBirth
+                ? "bg-gray-50 border-gray-200"
+                : isAcudienteRequired
+                ? "bg-blue-50 border-blue-200"
+                : values.acudiente
+                ? "bg-purple-50 border-purple-200"
+                : "bg-green-50 border-green-200"
+            }`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1, duration: 0.4 }}
+          >
+            <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <FaUserShield className="text-primary-purple" />
                 Información del Acudiente
+                {!hasDateOfBirth && (
+                  <span className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded-full">
+                    PENDIENTE
+                  </span>
+                )}
+                {hasDateOfBirth && isAcudienteRequired && (
+                  <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded-full">
+                    OBLIGATORIO
+                  </span>
+                )}
+                {hasDateOfBirth && !isAcudienteRequired && (
+                  <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                    OPCIONAL
+                  </span>
+                )}
               </h3>
               <div className="flex gap-2">
-                <motion.button
+                <button
                   type="button"
                   onClick={() => setShowGuardianSearch(!showGuardianSearch)}
                   className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm font-medium"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <FaSearch size={12} />
                   {showGuardianSearch ? "Ocultar" : "Buscar"}
-                </motion.button>
-                <motion.button
+                </button>
+                <button
                   type="button"
                   onClick={handleCreateGuardian}
                   className="flex items-center gap-2 px-3 py-2 bg-primary-purple text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-sm font-medium"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <FaPlus size={12} />
                   Crear Nuevo
-                </motion.button>
+                </button>
               </div>
             </div>
 
@@ -452,7 +633,7 @@ const AthleteModal = ({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mb-4"
+                  className="mb-3"
                 >
                   <div className="relative">
                     <input
@@ -460,44 +641,42 @@ const AthleteModal = ({
                       placeholder="Buscar acudiente por nombre o documento..."
                       value={guardianSearchTerm}
                       onChange={(e) => setGuardianSearchTerm(e.target.value)}
-                      className="w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200 text-sm"
                     />
                     <FaSearch
-                      className="absolute right-3 top-4 text-gray-400"
-                      size={14}
+                      className="absolute right-3 top-3 text-gray-400"
+                      size={12}
                     />
                   </div>
                   {guardianSearchTerm && (
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-2 max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg"
+                      className="mt-2 max-h-32 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg"
                     >
                       {filteredGuardians.length > 0 ? (
                         filteredGuardians.map((guardian) => (
-                          <motion.button
+                          <button
                             key={guardian.id}
                             type="button"
                             onClick={() =>
                               handleSelectGuardianFromSearch(guardian)
                             }
-                            className="w-full px-4 py-3 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors duration-150"
-                            whileHover={{ backgroundColor: "#faf5ff" }}
+                            className="w-full px-3 py-2 text-left hover:bg-purple-50 border-b border-gray-100 last:border-b-0 transition-colors duration-150 text-sm"
                           >
                             <div className="font-medium text-gray-800">
                               {guardian.nombreCompleto}
                             </div>
-                            <div className="text-sm text-gray-600">
-                              {guardian.tipoDocumento}:{" "}
-                              {guardian.identificacion}
+                            <div className="text-xs text-gray-600">
+                              {guardian.tipoDocumento}: {guardian.identificacion}
                             </div>
-                          </motion.button>
+                          </button>
                         ))
                       ) : (
-                        <div className="px-4 py-6 text-gray-500 text-center">
+                        <div className="px-3 py-4 text-gray-500 text-center text-sm">
                           <FaUserShield
-                            size={24}
-                            className="mx-auto mb-2 text-gray-300"
+                            size={20}
+                            className="mx-auto mb-1 text-gray-300"
                           />
                           <p>No se encontraron acudientes</p>
                         </div>
@@ -508,23 +687,93 @@ const AthleteModal = ({
               )}
             </AnimatePresence>
 
-            <FormField
-              label="Seleccionar Acudiente"
-              name="acudiente"
-              type="select"
-              placeholder="Selecciona un acudiente"
-              options={guardians.map((g) => ({
-                value: g.id.toString(),
-                label: `${g.nombreCompleto} - ${g.identificacion}`,
-              }))}
-              value={values.acudiente}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.acudiente}
-              touched={touched.acudiente}
-              delay={0.8}
-              required
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <FormField
+                  label="Seleccionar Acudiente"
+                  name="acudiente"
+                  type="select"
+                  placeholder={
+                    !hasDateOfBirth 
+                      ? "Primero ingresa la fecha de nacimiento" 
+                      : isAcudienteRequired
+                      ? "Selecciona un acudiente"
+                      : "Selecciona un acudiente (Opcional)"
+                  }
+                  options={getAcudienteOptions()} 
+                  value={values.acudiente}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.acudiente}
+                  touched={touched.acudiente}
+                  required={isAcudienteRequired}
+                  disabled={!hasDateOfBirth}
+                />
+              </div>
+
+              {values.acudiente && (
+                <div className="space-y-2">
+                  <div>
+                    <FormField
+                      label="Parentesco"
+                      name="parentesco"
+                      type="select"
+                      placeholder="Selecciona el parentesco"
+                      options={parentescoOptions}
+                      value={values.parentesco}
+                      onChange={handleParentescoChange}
+                      onBlur={handleBlur}
+                      error={errors.parentesco}
+                      touched={touched.parentesco}
+                      required
+                      helperText="Relación del acudiente con el deportista"
+                    />
+                    {errors.parentesco && touched.parentesco && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-1 flex items-start gap-1 p-2 bg-red-50 border border-red-200 rounded"
+                      >
+                        <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0" size={12} />
+                        <p className="text-red-600 text-xs">{errors.parentesco}</p>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {values.parentesco === "Otro" && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="space-y-1"
+                    >
+                      <label className="block text-sm font-medium text-gray-700">
+                        Especificar parentesco *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Vecino, Amigo de la familia, Conocido..."
+                        value={otroParentesco}
+                        onChange={(e) => setOtroParentesco(e.target.value)}
+                        onBlur={handleBlur}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200 text-sm"
+                        required
+                      />
+                      {otroParentesco === "" && touched.parentesco && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-1 flex items-start gap-1 p-2 bg-red-50 border border-red-200 rounded"
+                        >
+                          <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0" size={12} />
+                          <p className="text-red-600 text-xs">Debes especificar el tipo de parentesco</p>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              )}
+            </div>
 
             <AnimatePresence>
               {selectedGuardian && (
@@ -532,17 +781,15 @@ const AthleteModal = ({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 bg-white rounded-lg p-4 border border-gray-200"
+                  className="mt-3 bg-white rounded-lg p-3 border border-gray-200"
                 >
                   <div className="flex justify-between items-start">
-                    <div className="space-y-1 text-sm flex-1">
+                    <div className="space-y-1 text-xs flex-1">
                       <div>
-                        <strong>Nombre:</strong>{" "}
-                        {selectedGuardian.nombreCompleto}
+                        <strong>Nombre:</strong> {selectedGuardian.nombreCompleto}
                       </div>
                       <div>
-                        <strong>Documento:</strong>{" "}
-                        {selectedGuardian.tipoDocumento} -{" "}
+                        <strong>Documento:</strong> {selectedGuardian.tipoDocumento} -{" "}
                         {selectedGuardian.identificacion}
                       </div>
                       <div>
@@ -551,29 +798,50 @@ const AthleteModal = ({
                       <div>
                         <strong>Correo:</strong> {selectedGuardian.correo}
                       </div>
+                      {values.parentesco && (
+                        <div>
+                          <strong>Parentesco:</strong>{" "}
+                          <span className="text-primary-purple font-semibold">
+                            {getFinalParentesco()}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <motion.button
+                    <button
                       type="button"
                       onClick={handleViewGuardian}
-                      className="ml-4 flex items-center gap-1 px-3 py-2 bg-primary-purple text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
+                      className="ml-3 flex items-center gap-1 px-2 py-1 bg-primary-purple text-white rounded hover:bg-purple-700 transition-colors text-xs font-medium"
                     >
-                      <FaEye size={12} />
+                      <FaEye size={10} />
                       Ver
-                    </motion.button>
+                    </button>
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+
+            {hasDateOfBirth && !isAcudienteRequired && !values.acudiente && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800"
+              >
+                Este deportista es mayor de edad. El acudiente es opcional pero puede ser asignado si es necesario.
+              </motion.div>
+            )}
+          </motion.div>
 
           {!isEditing && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 rounded-full p-2 mt-1">
+            <motion.div
+              className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2, duration: 0.4 }}
+            >
+              <div className="flex items-start gap-2">
+                <div className="bg-blue-100 rounded-full p-1 mt-0.5">
                   <svg
-                    className="w-4 h-4 text-blue-600"
+                    className="w-3 h-3 text-blue-600"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -585,75 +853,37 @@ const AthleteModal = ({
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-blue-800 mb-1">
+                  <h4 className="font-medium text-blue-800 mb-1 text-sm">
                     Inscripción automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear este deportista, se generará automáticamente una
-                    inscripción inicial. Si seleccionas "Inactivo", la inscripción 
-                    se creará con estado "Suspendida". Si seleccionas "Activo", 
-                    se creará con estado "Vigente".
+                    Al crear la deportista, se generará automáticamente una
+                    inscripción inicial con estado "Vigente". Si seleccionas "Inactivo", la inscripción se
+                    creará con estado "Suspendida".
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
+        </div>
 
-          {isEditing && athleteToEdit && values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo" && (
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="bg-orange-100 rounded-full p-2 mt-1">
-                  <svg
-                    className="w-4 h-4 text-orange-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-medium text-orange-800 mb-1">
-                    ⚠️ Cambio de estado a Inactivo
-                  </h4>
-                  <p className="text-sm text-orange-700">
-                    Al marcar este deportista como "Inactivo", su inscripción actual 
-                    (si está Vigente) se suspenderá automáticamente. Este cambio quedará 
-                    registrado en el historial de inscripciones.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="flex justify-between pt-6 border-t border-gray-200"
-          >
-            <motion.button
+        <div className="flex-shrink-0 border-t border-gray-200 p-3">
+          <div className="flex justify-between">
+            <button
               type="button"
               onClick={handleClose}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
             >
               Cancelar
-            </motion.button>
-            <motion.button
+            </button>
+            <button
               type="button"
               onClick={(event) => handleSubmit(event)}
-              className="px-8 py-3 text-white rounded-xl font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
               {isEditing ? "Actualizar Deportista" : "Crear Deportista"}
-            </motion.button>
-          </motion.div>
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
