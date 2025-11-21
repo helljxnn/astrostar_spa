@@ -32,11 +32,18 @@ const ProviderModal = ({
   mode = providerToEdit ? "edit" : "create",
 }) => {
   const isEditing = mode === "edit" || providerToEdit !== null;
-  const { documentTypes, loading: documentTypesLoading, error: documentTypesError } = useDocumentTypes();
+  const {
+    documentTypes,
+    loading: documentTypesLoading,
+    error: documentTypesError,
+  } = useDocumentTypes();
 
-  const uniqueDocumentTypes = documentTypes ? documentTypes.filter((doc, index, self) => 
-    index === self.findIndex(d => d.value === doc.value)
-  ) : [];
+  const uniqueDocumentTypes = documentTypes
+    ? documentTypes.filter(
+        (doc, index, self) =>
+          index === self.findIndex((d) => d.value === doc.value)
+      )
+    : [];
 
   const {
     availabilityErrors,
@@ -45,7 +52,7 @@ const ProviderModal = ({
     debouncedCheckNit,
     debouncedCheckBusinessName,
     resetAvailabilityErrors,
-    clearAvailabilityError
+    clearAvailabilityError,
   } = useRealtimeValidation(providerToEdit);
 
   const {
@@ -58,7 +65,7 @@ const ProviderModal = ({
     resetForm,
     setValues,
     setTouched,
-    touchAllFields
+    touchAllFields,
   } = useFormProviderValidation(
     {
       tipoEntidad: "juridica",
@@ -79,35 +86,35 @@ const ProviderModal = ({
   const handleChange = (name, value) => {
     originalHandleChange(name, value);
 
-    if (name === 'nit') {
-      clearAvailabilityError('nit');
-      const cleanedValue = value.replace(/[.\-\s]/g, '');
+    if (name === "nit") {
+      clearAvailabilityError("nit");
+      const cleanedValue = value.replace(/[.\-\s]/g, "");
       if (cleanedValue.length >= 8) {
-        setCheckingFields(prev => ({ ...prev, nit: true }));
+        setCheckingFields((prev) => ({ ...prev, nit: true }));
         debouncedCheckNit(value, values.tipoEntidad);
       } else {
-        clearAvailabilityError('nit');
+        clearAvailabilityError("nit");
       }
     }
 
-    if (name === 'razonSocial') {
-      clearAvailabilityError('razonSocial');
+    if (name === "razonSocial") {
+      clearAvailabilityError("razonSocial");
       if (value.trim().length >= 3) {
-        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
+        setCheckingFields((prev) => ({ ...prev, razonSocial: true }));
         debouncedCheckBusinessName(value, values.tipoEntidad);
       } else {
-        clearAvailabilityError('razonSocial');
+        clearAvailabilityError("razonSocial");
       }
     }
 
-    if (name === 'tipoEntidad') {
+    if (name === "tipoEntidad") {
       // Limpiar errores de disponibilidad
-      clearAvailabilityError('nit');
-      clearAvailabilityError('razonSocial');
-      
+      clearAvailabilityError("nit");
+      clearAvailabilityError("razonSocial");
+
       // Resetear el estado de verificación
       setCheckingFields({ nit: false, razonSocial: false });
-      
+
       // Cancelar cualquier verificación pendiente
       if (debounceTimers.current.nit) {
         clearTimeout(debounceTimers.current.nit);
@@ -118,12 +125,15 @@ const ProviderModal = ({
 
       // Reiniciar verificaciones si hay valores existentes
       if (values.nit && values.nit.trim().length >= 8) {
-        setCheckingFields(prev => ({ ...prev, nit: true }));
+        setCheckingFields((prev) => ({ ...prev, nit: true }));
         setTimeout(() => debouncedCheckNit(values.nit, value), 100);
       }
       if (values.razonSocial && values.razonSocial.trim().length >= 3) {
-        setCheckingFields(prev => ({ ...prev, razonSocial: true }));
-        setTimeout(() => debouncedCheckBusinessName(values.razonSocial, value), 100);
+        setCheckingFields((prev) => ({ ...prev, razonSocial: true }));
+        setTimeout(
+          () => debouncedCheckBusinessName(values.razonSocial, value),
+          100
+        );
       }
     }
   };
@@ -138,21 +148,23 @@ const ProviderModal = ({
 
   const isFieldTouched = (fieldName) => {
     // Solo mostrar error si el campo ha sido tocado Y tiene error
-    return touched[fieldName] && (errors[fieldName] || availabilityErrors[fieldName]);
+    return (
+      touched[fieldName] && (errors[fieldName] || availabilityErrors[fieldName])
+    );
   };
 
   const shouldShowAvailabilityIndicator = (fieldName) => {
     const value = values[fieldName]?.trim();
-    
-    if (fieldName === 'razonSocial') {
+
+    if (fieldName === "razonSocial") {
       return value && value.length >= 3 && !errors[fieldName];
     }
-    
-    if (fieldName === 'nit') {
-      const cleanedNit = value?.replace(/[.\-\s]/g, '');
+
+    if (fieldName === "nit") {
+      const cleanedNit = value?.replace(/[.\-\s]/g, "");
       return cleanedNit && cleanedNit.length >= 8 && !errors[fieldName];
     }
-    
+
     return false;
   };
 
@@ -175,22 +187,35 @@ const ProviderModal = ({
       setValues(editData);
       setTouched({}); // Resetear touched al cargar datos de edición
       resetAvailabilityErrors();
-      
+
       setTimeout(() => {
         if (editData.nit && editData.nit.trim().length >= 8) {
           debouncedCheckNit(editData.nit, editData.tipoEntidad);
         }
         if (editData.razonSocial && editData.razonSocial.trim().length >= 3) {
-          debouncedCheckBusinessName(editData.razonSocial, editData.tipoEntidad);
+          debouncedCheckBusinessName(
+            editData.razonSocial,
+            editData.tipoEntidad
+          );
         }
       }, 100);
     }
-  }, [isOpen, isEditing, providerToEdit, setValues, setTouched, resetAvailabilityErrors, debouncedCheckNit, debouncedCheckBusinessName]);
+  }, [
+    isOpen,
+    isEditing,
+    providerToEdit,
+    setValues,
+    setTouched,
+    resetAvailabilityErrors,
+    debouncedCheckNit,
+    debouncedCheckBusinessName,
+  ]);
 
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57")) return phone;
+    if (cleanPhone.startsWith("+57") || cleanPhone.startsWith("57"))
+      return phone;
     if (/^\d{7,10}$/.test(cleanPhone)) return `+57 ${cleanPhone}`;
     return phone;
   };
@@ -200,7 +225,9 @@ const ProviderModal = ({
 
     const hasValidationErrors = !validateAllFields();
     const hasAvailabilityErrors = Object.keys(availabilityErrors).length > 0;
-    const isChecking = Object.values(checkingFields).some(checking => checking);
+    const isChecking = Object.values(checkingFields).some(
+      (checking) => checking
+    );
 
     if (isChecking) {
       showErrorAlert(
@@ -213,11 +240,12 @@ const ProviderModal = ({
     if (hasAvailabilityErrors) {
       const errorMessages = Object.entries(availabilityErrors)
         .map(([field, message]) => message)
-        .join('\n');
-      
+        .join("\n");
+
       showErrorAlert(
         "Datos duplicados",
-        errorMessages || "Por favor corrige los campos marcados con error antes de continuar."
+        errorMessages ||
+          "Por favor corrige los campos marcados con error antes de continuar."
       );
       return;
     }
@@ -250,7 +278,7 @@ const ProviderModal = ({
         telefono: formatPhoneNumber(values.telefono),
       };
 
-      if (values.tipoEntidad === 'juridica') {
+      if (values.tipoEntidad === "juridica") {
         delete providerData.tipoDocumento;
       }
 
@@ -265,7 +293,7 @@ const ProviderModal = ({
       if (result && result.success) {
         showSuccessAlert(
           isEditing ? "Proveedor actualizado" : "Proveedor creado",
-          isEditing 
+          isEditing
             ? `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
             : "El proveedor ha sido creado exitosamente."
         );
@@ -274,7 +302,10 @@ const ProviderModal = ({
         resetAvailabilityErrors();
         onClose();
       } else {
-        throw new Error(result?.message || `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`);
+        throw new Error(
+          result?.message ||
+            `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`
+        );
       }
     } catch (error) {
       console.error(
@@ -284,7 +315,9 @@ const ProviderModal = ({
       showErrorAlert(
         "Error",
         error.message ||
-          `Ocurrió un error al ${isEditing ? "actualizar" : "crear"} el proveedor`
+          `Ocurrió un error al ${
+            isEditing ? "actualizar" : "crear"
+          } el proveedor`
       );
     }
   };
@@ -298,16 +331,24 @@ const ProviderModal = ({
 
   const getDynamicLabel = (field) => {
     switch (field) {
-      case 'razonSocial':
-        return values.tipoEntidad === 'juridica' ? "Razón Social" : "Nombre Completo";
-      case 'nit':
-        return values.tipoEntidad === 'juridica' ? "NIT" : "Documento de Identidad";
-      case 'razonSocialPlaceholder':
-        return values.tipoEntidad === 'juridica' ? "Nombre de la empresa" : "Nombre completo";
-      case 'nitPlaceholder':
-        return values.tipoEntidad === 'juridica' ? "900123456-7" : "Número de identificación";
+      case "razonSocial":
+        return values.tipoEntidad === "juridica"
+          ? "Razón Social"
+          : "Nombre Completo";
+      case "nit":
+        return values.tipoEntidad === "juridica"
+          ? "NIT"
+          : "Documento de Identidad";
+      case "razonSocialPlaceholder":
+        return values.tipoEntidad === "juridica"
+          ? "Nombre de la empresa"
+          : "Nombre completo";
+      case "nitPlaceholder":
+        return values.tipoEntidad === "juridica"
+          ? "900123456-7"
+          : "Número de identificación";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -377,7 +418,9 @@ const ProviderModal = ({
                     name="tipoEntidad"
                     value={type.value}
                     checked={values.tipoEntidad === type.value}
-                    onChange={(e) => handleChange('tipoEntidad', e.target.value)}
+                    onChange={(e) =>
+                      handleChange("tipoEntidad", e.target.value)
+                    }
                     className="sr-only"
                   />
                   <div className="flex items-center w-full">
@@ -397,27 +440,51 @@ const ProviderModal = ({
                       )}
                     </div>
                     <div className="ml-3 flex items-center flex-1">
-                      <div className={`p-1.5 rounded-lg mr-2 ${
-                        values.tipoEntidad === type.value
-                          ? "bg-primary-blue/20 text-primary-blue"
-                          : "bg-gray-100 text-gray-600"
-                      }`}>
+                      <div
+                        className={`p-1.5 rounded-lg mr-2 ${
+                          values.tipoEntidad === type.value
+                            ? "bg-primary-blue/20 text-primary-blue"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
                         {type.value === "juridica" ? (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                            />
                           </svg>
                         ) : (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
                           </svg>
                         )}
                       </div>
                       <div>
-                        <span className={`text-sm font-semibold block ${
-                          values.tipoEntidad === type.value
-                            ? "text-primary-blue"
-                            : "text-gray-700"
-                        }`}>
+                        <span
+                          className={`text-sm font-semibold block ${
+                            values.tipoEntidad === type.value
+                              ? "text-primary-blue"
+                              : "text-gray-700"
+                          }`}
+                        >
                           {type.label}
                         </span>
                       </div>
@@ -429,8 +496,16 @@ const ProviderModal = ({
                       animate={{ scale: 1, rotate: 0 }}
                       className="absolute top-2 right-2 text-primary-blue"
                     >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     </motion.div>
                   )}
@@ -444,39 +519,39 @@ const ProviderModal = ({
             {/* Razón Social / Nombre con validación en tiempo real */}
             <motion.div className="relative">
               <FormField
-                label={getDynamicLabel('razonSocial')}
+                label={getDynamicLabel("razonSocial")}
                 name="razonSocial"
                 type="text"
-                placeholder={getDynamicLabel('razonSocialPlaceholder')}
+                placeholder={getDynamicLabel("razonSocialPlaceholder")}
                 value={values.razonSocial}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('razonSocial')}
-                touched={isFieldTouched('razonSocial')}
+                error={getCombinedError("razonSocial")}
+                touched={isFieldTouched("razonSocial")}
                 required
               />
-              
+
               {/* Indicadores de estado - SOLO cuando no hay errores */}
-              {!getCombinedError('razonSocial') && shouldShowAvailabilityIndicator('razonSocial') && (
-                <div className="mt-1">
-                  {checkingFields.razonSocial ? (
-                    <div className="text-blue-500 text-sm flex items-center gap-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                      <span>Verificando disponibilidad...</span>
-                    </div>
-                  ) : (
-                    <div className="text-green-500 text-sm flex items-center gap-1">
-                      <span>✅</span>
-                      <span>
-                        {values.tipoEntidad === 'juridica' 
-                          ? 'Razón social disponible' 
-                          : 'Nombre disponible'
-                        }
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {!getCombinedError("razonSocial") &&
+                shouldShowAvailabilityIndicator("razonSocial") && (
+                  <div className="mt-1">
+                    {checkingFields.razonSocial ? (
+                      <div className="text-blue-500 text-sm flex items-center gap-2">
+                        <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                        <span>Verificando disponibilidad...</span>
+                      </div>
+                    ) : (
+                      <div className="text-green-500 text-sm flex items-center gap-1">
+                        <span>✅</span>
+                        <span>
+                          {values.tipoEntidad === "juridica"
+                            ? "Razón social disponible"
+                            : "Nombre disponible"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
             </motion.div>
 
             {/* Tipo de Documento (solo para persona natural) */}
@@ -487,9 +562,9 @@ const ProviderModal = ({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ 
+                  transition={{
                     duration: 0.15,
-                    ease: "easeOut"
+                    ease: "easeOut",
                   }}
                 >
                   {!documentTypesLoading && !documentTypesError && (
@@ -497,13 +572,17 @@ const ProviderModal = ({
                       label="Tipo de documento"
                       name="tipoDocumento"
                       type="select"
-                      placeholder="Selecciona el tipo de documento"
-                      options={uniqueDocumentTypes}
+                      placeholder="Seleccione el tipo de documento"
+                      // AGREGAR ESTA LÍNEA: Opción por defecto "Seleccione el tipo de documento"
+                      options={[
+                        { value: "", label: "Seleccione el tipo de documento" },
+                        ...uniqueDocumentTypes,
+                      ]}
                       value={values.tipoDocumento}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      error={getCombinedError('tipoDocumento')}
-                      touched={isFieldTouched('tipoDocumento')}
+                      error={getCombinedError("tipoDocumento")}
+                      touched={isFieldTouched("tipoDocumento")}
                       required={values.tipoEntidad === "natural"}
                     />
                   )}
@@ -514,39 +593,39 @@ const ProviderModal = ({
             {/* NIT / Documento con validación en tiempo real */}
             <motion.div className="relative">
               <FormField
-                label={getDynamicLabel('nit')}
+                label={getDynamicLabel("nit")}
                 name="nit"
                 type="text"
-                placeholder={getDynamicLabel('nitPlaceholder')}
+                placeholder={getDynamicLabel("nitPlaceholder")}
                 value={values.nit}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('nit')}
-                touched={isFieldTouched('nit')}
+                error={getCombinedError("nit")}
+                touched={isFieldTouched("nit")}
                 required
               />
-              
+
               {/* Indicadores de estado - SOLO cuando no hay errores */}
-              {!getCombinedError('nit') && shouldShowAvailabilityIndicator('nit') && (
-                <div className="mt-1">
-                  {checkingFields.nit ? (
-                    <div className="text-blue-500 text-sm flex items-center gap-2">
-                      <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                      <span>Verificando disponibilidad...</span>
-                    </div>
-                  ) : (
-                    <div className="text-green-500 text-sm flex items-center gap-1">
-                      <span>✅</span>
-                      <span>
-                        {values.tipoEntidad === 'juridica' 
-                          ? 'NIT disponible' 
-                          : 'Documento disponible'
-                        }
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {!getCombinedError("nit") &&
+                shouldShowAvailabilityIndicator("nit") && (
+                  <div className="mt-1">
+                    {checkingFields.nit ? (
+                      <div className="text-blue-500 text-sm flex items-center gap-2">
+                        <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                        <span>Verificando disponibilidad...</span>
+                      </div>
+                    ) : (
+                      <div className="text-green-500 text-sm flex items-center gap-1">
+                        <span>✅</span>
+                        <span>
+                          {values.tipoEntidad === "juridica"
+                            ? "NIT disponible"
+                            : "Documento disponible"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
             </motion.div>
 
             {/* Resto de campos */}
@@ -559,8 +638,8 @@ const ProviderModal = ({
                 value={values.contactoPrincipal}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('contactoPrincipal')}
-                touched={isFieldTouched('contactoPrincipal')}
+                error={getCombinedError("contactoPrincipal")}
+                touched={isFieldTouched("contactoPrincipal")}
                 required
               />
             </motion.div>
@@ -574,8 +653,8 @@ const ProviderModal = ({
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('correo')}
-                touched={isFieldTouched('correo')}
+                error={getCombinedError("correo")}
+                touched={isFieldTouched("correo")}
               />
             </motion.div>
 
@@ -588,8 +667,8 @@ const ProviderModal = ({
                 value={values.telefono}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('telefono')}
-                touched={isFieldTouched('telefono')}
+                error={getCombinedError("telefono")}
+                touched={isFieldTouched("telefono")}
                 required
               />
             </motion.div>
@@ -603,8 +682,8 @@ const ProviderModal = ({
                 value={values.direccion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('direccion')}
-                touched={isFieldTouched('direccion')}
+                error={getCombinedError("direccion")}
+                touched={isFieldTouched("direccion")}
                 required
               />
             </motion.div>
@@ -618,8 +697,8 @@ const ProviderModal = ({
                 value={values.ciudad}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('ciudad')}
-                touched={isFieldTouched('ciudad')}
+                error={getCombinedError("ciudad")}
+                touched={isFieldTouched("ciudad")}
                 required
               />
             </motion.div>
@@ -634,8 +713,8 @@ const ProviderModal = ({
                 value={values.estado}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('estado')}
-                touched={isFieldTouched('estado')}
+                error={getCombinedError("estado")}
+                touched={isFieldTouched("estado")}
                 required
               />
             </motion.div>
@@ -649,8 +728,8 @@ const ProviderModal = ({
                 value={values.descripcion}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                error={getCombinedError('descripcion')}
-                touched={isFieldTouched('descripcion')}
+                error={getCombinedError("descripcion")}
+                touched={isFieldTouched("descripcion")}
                 rows={3}
               />
             </motion.div>
@@ -669,25 +748,47 @@ const ProviderModal = ({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0}
+              disabled={
+                Object.values(checkingFields).some((checking) => checking) ||
+                Object.keys(availabilityErrors).length > 0
+              }
               className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
-                Object.values(checkingFields).some(checking => checking) || Object.keys(availabilityErrors).length > 0
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-primary-blue hover:bg-primary-purple'
+                Object.values(checkingFields).some((checking) => checking) ||
+                Object.keys(availabilityErrors).length > 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-primary-blue hover:bg-primary-purple"
               } text-white`}
             >
-              {Object.values(checkingFields).some(checking => checking) ? (
+              {Object.values(checkingFields).some((checking) => checking) ? (
                 <>
-                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Validando...
                 </>
               ) : Object.keys(availabilityErrors).length > 0 ? (
                 "Corrige los errores"
+              ) : isEditing ? (
+                "Actualizar Proveedor"
               ) : (
-                isEditing ? "Actualizar Proveedor" : "Crear Proveedor"
+                "Crear Proveedor"
               )}
             </button>
           </div>

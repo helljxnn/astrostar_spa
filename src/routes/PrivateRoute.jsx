@@ -1,43 +1,31 @@
 import React from 'react';
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/contexts/authContext.jsx";
-import { usePermissions } from '../shared/hooks/usePermissions';
+import { usePermissions } from '../shared/hooks/usePermissions.js';
 import { motion } from 'framer-motion';
 
 /**
  * Componente para proteger rutas basado en roles y permisos
  */
-const PrivateRoute = ({ 
+const PrivateRoute = ({
   allowedRoles, // Sistema legacy - array de roles
   module,       // Sistema nuevo - módulo específico
   action = 'Ver', // Sistema nuevo - acción específica
   fallbackPath = '/dashboard',
   showFallback = true,
-  children 
+  children
 }) => {
+  // Usamos useAuth para la autenticación básica y usePermissions para la lógica de permisos.
   const { isAuthenticated, userRole } = useAuth();
-  const { hasPermission, hasModuleAccess, loading, isAdmin } = usePermissions();
+  const { hasPermission, hasModuleAccess } = usePermissions();
 
   // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-
-  // Mostrar loading mientras se cargan los permisos 
-  if ((module || action !== 'Ver') && loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-primary-blue border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <Navigate to="/login" replace />;
   }
 
   // Si es admin, permitir acceso a todo
-  if (isAdmin) {
+  if (userRole === 'Admin' || userRole === 'Administrador') {
     return children ? children : <Outlet />;
   }
 
@@ -64,7 +52,7 @@ const PrivateRoute = ({
 
   // SISTEMA LEGACY: Verificación por roles (mantener compatibilidad)
   if (allowedRoles && !allowedRoles.includes(userRole)) {
-    return <Navigate to="/unauthorized" />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
   // Si hay children, devolver los children, de lo contrario devolver Outlet

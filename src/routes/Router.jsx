@@ -10,6 +10,7 @@ import Login from "../features/auth/pages/Login.jsx";
 import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx"; 
+import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
 
 function AppRoutes() {
   return (
@@ -25,6 +26,7 @@ function AppRoutes() {
       {/* Rutas de autenticación sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />

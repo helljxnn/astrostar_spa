@@ -1,363 +1,262 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import Table from "../../../../../../shared/components/Table/table";
 import { SiGoogleforms } from "react-icons/si";
 import { FaMinusCircle } from "react-icons/fa";
-import { IoMdDownload } from "react-icons/io";
 import FormCreate from "./components/formCreate";
 import FormEdit from "./components/formEdit";
-import DarDeBajaModal from "./components/DarDeBajaModal"; // Importar el nuevo modal
+import Disposals from "./components/disposals";
 import ViewDetails from "../../../../../../shared/components/ViewDetails";
 import ReportButton from "../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import {
-  showSuccessAlert,
-  showConfirmAlert,
-  showErrorAlert
+  showSuccessAlert, showConfirmAlert, showErrorAlert
 } from "../../../../../../shared/utils/alerts";
-
-// Clave para guardar los datos en localStorage
-const LOCAL_STORAGE_KEY = 'sportsEquipmentData';
+import Pagination from "../../../../../../shared/components/Table/Pagination"; // Importar el componente Pagination
+import sportsEquipmentService from "../../../../../../shared/services/sportsEquipmentService"; // Importamos el servicio
 
 function SportsEquipment() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
-  // Estado para la lista de datos, inicializado desde localStorage
-  const [equipmentList, setEquipmentList] = useState(() => {
-    try {
-      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      // Si existe 'storedData' (incluso si es '[]'), lo usamos.
-      if (storedData) {
-        return JSON.parse(storedData);
-      }
-    } catch (error) {
-      console.error("Error al leer desde localStorage:", error);
-    }
-    // Si no hay datos en localStorage, empezamos con una lista vacía.
-    return [];
-  });
-
-  // Estados para controlar la visibilidad de los modales
+  const [equipmentList, setEquipmentList] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isDarDeBajaModalOpen, setIsDarDeBajaModalOpen] = useState(false); // Estado para el nuevo modal
+  const [isDisposalModalOpen, setIsDisposalModalOpen] = useState(false);
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
-  // Estado para el término de búsqueda
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
+  const [totalRows, setTotalRows] = useState(0); // Estado para el total de filas
+  const [totalPages, setTotalPages] = useState(1);
 
-  // useEffect para guardar los cambios en localStorage cada vez que la lista se modifica
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(equipmentList));
-    } catch (error) {
-      console.error("Error al guardar en localStorage:", error);
-    }
+  // Función reutilizable para formatear fechas de manera segura
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    // Si la fecha no es válida, retorna un guion
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString("es-CO"); // Formato para Colombia (dd/mm/aaaa)
+  };
+
+  const reportData = useMemo(() => {
+    return equipmentList.map(item => ({
+      Nombre: item.name || '',
+      "Cantidad Inicial": item.quantityInitial || 0,
+      "Cantidad Total": item.quantityTotal || 0,
+      Estado: item.status || 'N/A',
+      "Fecha de Creación": formatDate(item.createdAt),
+    }));
   }, [equipmentList]);
 
-  // useEffect para abrir el modal de creación si se navega con el estado adecuado
+  const rowsPerPage = 10; // Definir el número de filas por página
+
+  const fetchData = async (page, search) => {
+    try {
+      const params = { page, limit: rowsPerPage, search }; // Usar rowsPerPage
+      const response = await sportsEquipmentService.getAll(params); // Usamos el servicio
+      if (response.success) {
+        // Pre-formatear las fechas antes de guardarlas en el estado
+        const formattedEquipment = (response.data || []).map(item => ({ // Corregido: usar response.data directamente
+          ...item,
+          formattedCreatedAt: formatDate(item.createdAt),
+        }));
+        setEquipmentList(formattedEquipment);
+        setTotalPages(response.pagination?.pages || 1);
+        setTotalRows(response.pagination?.total || 0); // Establecer el total de filas
+      }
+    } catch (error) { // Manejo de errores mejorado
+      showErrorAlert("Error al obtener material", error.message || "No se pudo obtener el material deportivo.");
+    }
+  };
+
   useEffect(() => {
-    if (location.state?.openCreateModal) {
-      setIsCreateModalOpen(true);
-      // Limpiar el estado de la ubicación para que no se vuelva a abrir al recargar
-      navigate(location.pathname, { replace: true, state: {} });
+    fetchData(currentPage, searchTerm);
+  }, [currentPage, searchTerm]); // Se ejecuta cuando la página actual o el término de búsqueda cambian
+
+  const handleCreate = async (dataForm) => {
+    try {
+      const response = await sportsEquipmentService.create(dataForm); // Usamos el servicio
+      setIsCreateModalOpen(false);
+      fetchData(1, "");
+      showSuccessAlert("¡Guardado!", response.message || "Material guardado exitosamente");
+    } catch (error) {
+      showErrorAlert("Error al guardar", error.message || "No se pudo guardar el material");
     }
-  }, [location.state, navigate, location.pathname]);
-
-
-
-  // Filtramos los datos basándonos en el término de búsqueda.
-  // Usamos useMemo para evitar recalcular en cada render si los datos o el término no cambian.
-  const filteredEquipment = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    if (!term) return equipmentList;
-    // Busca en todos los valores de cada objeto
-    return equipmentList.filter(item => Object.values(item).some(value => String(value).toLowerCase().includes(term)));
-  }, [equipmentList, searchTerm]);
-
-  const handleOpenCreateModal = () => {
-    setIsCreateModalOpen(true);
   };
 
-  const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
+  const handleUpdate = async (dataForm) => {
+    if (!selectedEquipment?.id) return;
+    try {
+      const response = await sportsEquipmentService.update(selectedEquipment.id, dataForm); // Usamos el servicio
+      setIsEditModalOpen(false);
+      fetchData(currentPage, searchTerm);
+      showSuccessAlert("¡Actualizado!", response.message || "Material actualizado exitosamente");
+    } catch (error) {
+      showErrorAlert("Error al actualizar", error.message || "No se pudo actualizar el material");
+    }
   };
 
-  const handleCreate = (newData) => {
-    // En una app real, aquí también validarías que el nombre no exista ya.
-    const newEquipment = {
-      id: Date.now(), // Asignamos un ID único
-      NombreMaterial: newData.nombre,
-      CantidadInicial: 0, // Se establece en 0 por reglas de negocio.
-      CantidadComprado: 0,
-      CantidadDonado: 0,
-      Total: 0, // El total inicial es 0, se actualizará con compras/donaciones.
-      estado: newData.estado,
-      bajaHistory: [], // Inicializar el historial de bajas
-    };
-
-    // Añadimos el nuevo equipo al principio de la lista
-    setEquipmentList(prevList => [newEquipment, ...prevList]);
-    handleCloseCreateModal();
-    showSuccessAlert("¡Creado!", "El nuevo material deportivo se ha registrado correctamente.");
-  };
-
-  const handleDarDeBajaSubmit = (lossData) => {
-    const { equipmentId, quantity, reason, images } = lossData;
-
-    setEquipmentList(prevList =>
-      prevList.map(item => {
-        if (item.id === equipmentId) {
-          const newTotal = Math.max(0, item.Total - quantity);
-          const newHistoryEntry = {
-            date: new Date().toISOString(),
-            quantity: Number(quantity),
-            reason,
-            images,
-          };
-          // Asegurarse de que bajaHistory exista antes de añadir
-          const existingHistory = item.bajaHistory || [];
-          return {
-            ...item,
-            Total: newTotal,
-            bajaHistory: [...existingHistory, newHistoryEntry],
-          };
+  const handleDelete = (item) => {
+    showConfirmAlert(
+      "¿Estás seguro?",
+      `El equipo "${item.name}" será eliminado. Esta acción no se puede deshacer.`,
+      "Sí, ¡eliminar!"
+    ).then(async (result) => {
+      // Si el usuario confirma la acción
+      if (result.isConfirmed) {
+        try {
+          // Se ejecuta la petición para eliminar el equipo
+          const response = await sportsEquipmentService.delete(item.id);
+          showSuccessAlert("¡Eliminado!", response.message || "El equipo ha sido eliminado.");
+          // Se actualiza la tabla para reflejar el cambio
+          fetchData(currentPage, searchTerm);
+        } catch (error) {
+          showErrorAlert("Error", error.message || "No se pudo eliminar el equipo.");
         }
-        return item;
-      })
-    );
-
-    setIsDarDeBajaModalOpen(false);
-    showSuccessAlert("¡Baja Registrada!", `Se han dado de baja ${quantity} unidades de "${lossData.equipmentName}".`);
-  }
-
-  // --- Lógica para Editar y Eliminar ---
-  // Estas funciones se pasarán como props a la tabla.
-  // La tabla las usará para los botones de acción de cada fila.
-
-  const handleEdit = (item) => {
-    setSelectedEquipment(item); // Guardamos el item completo
-    setIsEditModalOpen(true); // Abrimos el modal de edición
-  };
-
-  const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
-    setSelectedEquipment(null); // Limpiamos el item seleccionado al cerrar
-  };
-
-  const handleUpdate = (updatedData) => {
-    // Lógica para actualizar el item en nuestra lista de estado
-    const updatedList = equipmentList.map(item => {
-      // Usamos el ID para garantizar que actualizamos el item correcto.
-      if (item.id === selectedEquipment.id) {
-        return {
-          ...item, // Mantenemos las cantidades y otros datos intactos
-          NombreMaterial: updatedData.nombre,
-          estado: updatedData.estado,
-        };
       }
-      return item;
     });
-    setEquipmentList(updatedList);
-    handleCloseEditModal(); // Cerramos el modal
-    showSuccessAlert(
-      "¡Actualizado!",
-      "El material deportivo se ha actualizado correctamente."
-    );
   };
 
-  const handleDelete = async (itemToDelete) => {
-    const result = await showConfirmAlert(
-      "¿Estás seguro de eliminar?",
-      `El material "${itemToDelete.NombreMaterial}" se eliminará permanentemente.`,
-      {
-        confirmButtonText: "Sí, eliminar",
-        cancelButtonText: "Cancelar",
-      }
-    );
-
-    if (result.isConfirmed) {
-      try {
-        // Filtramos la lista para excluir el item a eliminar.
-        const updatedList = equipmentList.filter(
-          (item) => item.id !== itemToDelete.id // Usamos el ID para eliminar
-        );
-        setEquipmentList(updatedList);
-        showSuccessAlert(
-          "¡Eliminado!",
-          `El material "${itemToDelete.NombreMaterial}" ha sido eliminado con éxito.`
-        );
-      } catch (error) {
-        console.error("Error al eliminar el material:", error);
-        showErrorAlert("Error", "Ocurrió un error al eliminar el material.");
-      }
+  const handleCreateDisposal = async (disposalData) => {
+    // El ID ahora viene del formulario del modal
+    if (!disposalData.equipmentId) return;
+    try {
+      // Ahora enviamos directamente el objeto disposalData, ya que no hay archivos.
+      await sportsEquipmentService.createDisposal(disposalData.equipmentId, {
+        quantity: disposalData.quantity,
+        reason: disposalData.reason,
+        observation: disposalData.observation,
+      });
+      setIsDisposalModalOpen(false);
+      showSuccessAlert("¡Éxito!", "La baja del material ha sido registrada.");
+      fetchData(currentPage, searchTerm);
+    } catch (error) {
+      showErrorAlert("Error", error.message || "No se pudo registrar la baja.");
     }
   };
 
-  const handleView = (item) => {
+  const handleOpenEditModal = (item) => {
     setSelectedEquipment(item);
-    setIsViewModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
-  const handleCloseViewModal = () => {
-    setIsViewModalOpen(false);
-    setSelectedEquipment(null);
+  const handleOpenViewDetails = async (item) => {
+    try {
+      const response = await sportsEquipmentService.getById(item.id); // Usamos el servicio
+      // Formateamos las fechas de la respuesta antes de guardarla en el estado
+      const formattedDetails = {
+        ...response.data,
+        formattedCreatedAt: formatDate(response.data.createdAt),
+        formattedUpdatedAt: formatDate(response.data.updatedAt),
+      };
+      setSelectedEquipment(formattedDetails);
+      setIsViewDetailsOpen(true);
+    } catch (error) {
+      showErrorAlert("Error al obtener detalles", error.message || "No se pudieron obtener los detalles.");
+    }
   };
 
-  // Configuración para el modal de detalles reutilizable
-  const equipmentDetailConfig = [
-    { label: "Nombre del Material", key: "NombreMaterial" },
-    { label: "Cantidad Inicial", key: "CantidadInicial" },
-    { label: "Cantidad Comprada", key: "CantidadComprado" },
-    { label: "Cantidad Donada", key: "CantidadDonado" },
-    { label: "Total en Inventario", key: "Total" },
-    { label: "Estado", key: "estado" },
-    { label: "Historial de Bajas", key: "bajaHistory", type: "history", historyKeys: { date: 'date', quantity: 'quantity', reason: 'reason', images: 'images' } },
+  const detailConfig = [
+    { label: 'Nombre', key: 'name' },
+    { label: 'Cantidad Inicial', key: 'quantityInitial', default: 0 },
+    { label: 'Cantidad Total', key: 'quantityTotal', default: 0 },
+    { label: 'Estado', key: 'status' },
+    { label: 'Fecha de Creación', key: 'formattedCreatedAt' },
+    { label: 'Última Actualización', key: 'formattedUpdatedAt' },
+    { label: 'Historial de Bajas', key: 'disposals', type: 'history' },
   ];
 
-  // Prepara los datos para el reporte, asegurando que no haya valores nulos/undefined
-  const reportData = useMemo(() => {
-    return filteredEquipment.map(item => ({
-      NombreMaterial: item.NombreMaterial || '',
-      CantidadComprado: item.CantidadComprado || 0,
-      CantidadDonado: item.CantidadDonado || 0,
-      Total: item.Total || 0,
-      estado: item.estado || '',
-    }));
-  }, [filteredEquipment]);
-
   return (
-    <div
-      id="contentSportsEquipment"
-      className="w-full h-auto grid grid-rows-[auto_1fr] relative"
-    >
-      {/* Contenedor index */}
-      <div id="header" className="w-full h-auto p-8">
-        {/* Cabecera */}
-        <h1 className="text-4xl font-bold text-gray-800">Material deportivo</h1>
-      </div>
-      <div
-        id="body"
-        className="w-full h-auto grid grid-rows-[auto_1fr] gap-2 p-4"
-      >
-        {/* Cuerpo */}
-        <div
-          id="actionButtons"
-          className="w-full h-auto p-2 flex flex-row justify-between items-center"
-        >
-          {/* Botones */}
-          <div className="w-1/3">
-            <SearchInput
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar material..."
+    <div id="contentSportsEquipment" className="w-full h-auto p-4 md:p-8 space-y-4">
+      <div id="header" className="w-full flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Material Deportivo</h1>
+        <div id="action-buttons" className="flex items-center justify-end gap-4">
+          <PermissionGuard module="sportsEquipment" action="Ver">
+            <ReportButton
+              data={reportData}
+              fileName="Material_Deportivo"
+              columns={[
+                { header: "Nombre", accessor: "Nombre" },
+                { header: "Cantidad Total", accessor: "Cantidad Total" },
+                { header: "Estado", accessor: "Estado" },
+                { header: "Fecha de Creación", accessor: "Fecha de Creación" },
+              ]}
             />
-          </div>
-          <div id="buttons" className="h-auto flex flex-row items-center justify-end gap-4">
-            <PermissionGuard module="sportsEquipment" action="Ver">
-              <ReportButton
-                data={reportData}
-                fileName="Material_Deportivo"
-                columns={[
-                  { header: "Nombre", accessor: "NombreMaterial" },
-                  { header: "Comprado", accessor: "CantidadComprado" },
-                  { header: "Donado", accessor: "CantidadDonado" },
-                  { header: "Total", accessor: "Total" },
-                  { header: "Estado", accessor: "estado" },
-                ]}
-              />
-            </PermissionGuard>
-            <PermissionGuard module="sportsEquipment" action="Eliminar">
-              <button onClick={() => setIsDarDeBajaModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg shadow hover:bg-red-600 transition whitespace-nowrap">
-                Dar de Baja <FaMinusCircle size={18} />
-              </button>
-            </PermissionGuard>
-            <PermissionGuard module="sportsEquipment" action="Crear">
-              <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
-                Crear <SiGoogleforms size={20} />
-              </button>
-            </PermissionGuard>
-          </div>
+          </PermissionGuard>
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar material..."
+          />
+          <PermissionGuard module="sportsEquipment" action="Crear">
+            <button onClick={() => setIsCreateModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition whitespace-nowrap">
+              Crear <SiGoogleforms size={20} />
+            </button>
+          </PermissionGuard>
+          <button onClick={() => setIsDisposalModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition whitespace-nowrap">
+            Dar de baja <FaMinusCircle size={20} />
+          </button>
         </div>
-        {/* Tabla */}
+      </div>
+      <div id="body" className="w-full h-auto">
         <Table
-          rowsPerPage={4}
-          paginationFrom={4}
+          // El paginador se renderiza por separado, no como prop de la tabla
           thead={{
-            titles: [
-              "Nombre",
-              "Comprado",
-              "Donado",
-              "Total",
-            ],
-            state: true,
+            titles: ["Nombre", "Cantidad Total", "Creado", "Estado"]
           }}
           tbody={{
-            data: filteredEquipment,
-            dataPropertys: [
-              "NombreMaterial",
-              "CantidadComprado",
-              "CantidadDonado",
-              "Total",
-            ],
-            state: true,
+            data: equipmentList,
+            dataPropertys: ["name", "quantityTotal", "formattedCreatedAt", "status"],
           }}
-          onEdit={hasPermission('sportsEquipment', 'Editar') ? handleEdit : null}
-          onDelete={hasPermission('sportsEquipment', 'Eliminar') ? handleDelete : null}
-          onView={hasPermission('sportsEquipment', 'Ver') ? handleView : null}
+          onEdit={handleOpenEditModal}
+          onDelete={handleDelete}
+          onView={handleOpenViewDetails}
           buttonConfig={{
-            edit: (item) => ({
-              show: hasPermission('sportsEquipment', 'Editar'),
-              disabled: false,
-              className: '',
-              title: 'Editar material deportivo'
-            }),
-            delete: (item) => ({
-              show: hasPermission('sportsEquipment', 'Eliminar'),
-              disabled: false,
-              className: '',
-              title: 'Eliminar material deportivo'
-            }),
-            view: (item) => ({
-              show: hasPermission('sportsEquipment', 'Ver'),
-              disabled: false,
-              className: '',
-              title: 'Ver detalles del material'
-            })
+            edit: () => hasPermission('sportsEquipment', 'Editar'),
+            delete: () => hasPermission('sportsEquipment', 'Eliminar'),
+            view: () => hasPermission('sportsEquipment', 'Ver')
           }}
         />
+        {/* Paginación */}
+        {totalRows > 0 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                // fetchData se llamará automáticamente por useEffect cuando currentPage cambie
+              }}
+              totalRows={totalRows}
+              rowsPerPage={rowsPerPage}
+              startIndex={(currentPage - 1) * rowsPerPage}
+            />
+          </div>
+        )}
       </div>
-      {/* Modal para Crear Material */}
       <FormCreate
         isOpen={isCreateModalOpen}
-        onClose={handleCloseCreateModal}
+        onClose={() => setIsCreateModalOpen(false)}
         onSave={handleCreate}
       />
-      {/* Modal para Editar Material. Se renderiza aquí y se controla con estado. */}
       <FormEdit
         isOpen={isEditModalOpen}
-        onClose={handleCloseEditModal}
+        onClose={() => setIsEditModalOpen(false)}
         onSave={handleUpdate}
         equipmentData={selectedEquipment}
       />
-      {/* Modal para Dar de Baja */}
-      <DarDeBajaModal
-        isOpen={isDarDeBajaModalOpen}
-        onClose={() => setIsDarDeBajaModalOpen(false)}
-        onSave={handleDarDeBajaSubmit}
-        equipmentList={equipmentList}
+      <Disposals
+        isOpen={isDisposalModalOpen}
+        onClose={() => setIsDisposalModalOpen(false)}
+        onSave={handleCreateDisposal}
       />
-      {/* Modal reutilizable para Ver Detalles */}
       <ViewDetails
-        isOpen={isViewModalOpen}
-        onClose={handleCloseViewModal}
+        isOpen={isViewDetailsOpen}
+        onClose={() => setIsViewDetailsOpen(false)}
         data={selectedEquipment}
-        detailConfig={equipmentDetailConfig}
-        title="Detalles del Material Deportivo"
+        detailConfig={detailConfig}
+        title="Detalles del Material"
       />
     </div>
   );

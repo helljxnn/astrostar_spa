@@ -50,28 +50,15 @@ export const usePermissions = () => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      // Manejar diferentes estructuras de usuario
-      let userPermissions = {};
-      let userRole = user.role?.name || user.rol || user.role;
-
-      // Si es admin, dar todos los permisos usando función centralizada
-      if (userRole === 'admin' || userRole === 'Administrador') {
-        userPermissions = generateAdminPermissions();
-      } else {
-        // Para otros roles, usar los permisos del role si existen
-        userPermissions = user.role?.permissions || {};
-      }
-
-      permissionsService.setUserPermissions(user, userPermissions);
-      setPermissions(userPermissions);
-      setLoading(false);
+      // 2. Usa directamente los permisos del contexto.
+      const finalPermissions = userPermissions || {};
+      // 3. Establece los permisos correctos.
+      permissionsService.setUserPermissions(user, finalPermissions);
     } else {
       // Limpiar permisos si no está autenticado
       permissionsService.clearPermissions();
-      setPermissions(null);
-      setLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, userPermissions]); // 4. Reacciona a cambios en los datos del contexto.
 
   // Refrescar permisos periódicamente (cada 30 segundos)
   useEffect(() => {
@@ -127,8 +114,7 @@ export const usePermissions = () => {
   };
 
   return {
-    permissions,
-    loading,
+    permissions: userPermissions, // Devuelve directamente los permisos del contexto
     hasPermission,
     hasModuleAccess,
     getAccessibleModules,

@@ -27,7 +27,9 @@ export const FormField = ({
       // Esta lógica soporta las dos firmas: onChange(e) y onChange(name, value).
       if (onChange.length === 2) {
         onChange(name, val);
+        onChange(name, val);
       } else {
+        onChange(e);
         onChange(e);
       }
     }
@@ -37,6 +39,7 @@ export const FormField = ({
     if (typeof onBlur === "function") {
       // Esta lógica soporta las dos firmas: onBlur(name) y onBlur(e).
       if (onBlur.length === 1) {
+        onBlur(name);
         onBlur(name);
       } else {
         onBlur(e);

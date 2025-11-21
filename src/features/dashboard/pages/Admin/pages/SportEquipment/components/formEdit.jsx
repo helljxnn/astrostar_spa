@@ -4,8 +4,8 @@ import { FormField } from "../../../../../../../shared/components/FormField";
 
 const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
     const initialValues = {
-        nombre: "",
-        estado: "",
+        name: "",
+        status: "",
     };
     const [values, setValues] = useState(initialValues);
     const [touched, setTouched] = useState({});
@@ -13,8 +13,8 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
     useEffect(() => {
         if (isOpen && equipmentData) {
             setValues({
-                nombre: equipmentData.NombreMaterial || "",
-                estado: equipmentData.estado || "",
+                name: equipmentData.name || "",
+                status: equipmentData.status || "",
             });
         } else if (!isOpen) {
             setValues(initialValues);
@@ -33,18 +33,18 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
     };
 
     const handleFormSubmit = () => {
-        const isNombreValid = values.nombre && values.nombre.trim() !== "";
-        const isEstadoValid = values.estado && values.estado.trim() !== "";
+        const isNameValid = values.name && values.name.trim() !== "";
+        const isStatusValid = values.status && values.status.trim() !== "";
 
-        if (isNombreValid && isEstadoValid) {
+        if (isNameValid && isStatusValid) {
             if (onSave) {
                 onSave(values);
             }
         } else {
             // Mark all fields as touched to show errors on submit
             setTouched({
-                nombre: true,
-                estado: true,
+                name: true,
+                status: true,
             });
         }
     };
@@ -53,24 +53,24 @@ const FormEdit = ({ isOpen, onClose, equipmentData, onSave }) => {
         <Form isOpen={isOpen} title="Editar Material Deportivo" submitText="Guardar Cambios" onClose={onClose} onSubmit={handleFormSubmit} >
             <FormField
                 label="Nombre del Material"
-                name="nombre" type="text"
+                name="name" type="text"
                 placeholder="Ej: Balón de fútbol"
-                value={values.nombre}
+                value={values.name}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                touched={touched.nombre}
+                touched={touched.name}
                 required
             />
             <FormField
                 label="Estado"
-                name="estado"
+                name="status"
                 type="select"
-                value={values.estado}
+                value={values.status}
                 onChange={handleChange}
                 onBlur={handleBlur}
-                touched={touched.estado}
+                touched={touched.status}
                 required
-                options={[{ value: "Disponible", label: "Disponible" }, { value: "Agotado", label: "Agotado" }, { value: "En Mantenimiento", label: "En Mantenimiento" }]}
+                options={[{ value: "Active", label: "Activado" }, { value: "Inactive", label: "Desactivado" }, { value: "SoldOut", label: "Agotado" }]}
             />
         </Form>
     );

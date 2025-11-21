@@ -14,7 +14,7 @@ function DashboardLayout() {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isViewModalOpen, setViewModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     const checkIfMobile = () => {
@@ -64,13 +64,12 @@ function DashboardLayout() {
 
       {/* Contenido Principal */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${
-          isMobile
-            ? "ml-0"
-            : isExpanded
+        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out ${isMobile
+          ? "ml-0"
+          : isExpanded
             ? "ml-[18rem]" // Espacio para sidebar expandido
             : "ml-[5rem]" // Espacio para sidebar colapsado
-        }`}
+          }`}
       >
         <TopBar
           toggleSidebar={toggleSidebarExpansion}
@@ -93,7 +92,7 @@ function DashboardLayout() {
       {/* Portal para los modales */}
       <Portal>
         <ViewProfileModal isOpen={isViewModalOpen} onClose={() => setViewModalOpen(false)} user={user} />
-        <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} user={user} onSave={handleUpdateProfile} />
+        <EditProfileModal isOpen={isEditModalOpen} onClose={() => setEditModalOpen(false)} user={user} />
       </Portal>
     </div>
   );

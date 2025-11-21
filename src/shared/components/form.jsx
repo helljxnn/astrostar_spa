@@ -12,8 +12,9 @@ import { motion, AnimatePresence } from "framer-motion";
  * @param {function} props.onSubmit - Función que se ejecuta al enviar el formulario.
  * @param {string} props.submitText - El texto para el botón de envío (ej. "Crear", "Guardar Cambios").
  * @param {number} props.id - El id de un registro si para actualizar o no.
+ * @param {string} props.encType - El tipo de codificación del formulario, ej. "multipart/form-data" para subir archivos.
 */
-const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null }) => {
+const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null, encType = "application/x-www-form-urlencoded" }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -70,9 +71,9 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                     {/* Contenedor del Formulario con animación */}
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-y-auto"
                     >
-                        <form onSubmit={handleSubmit}>
+                        <form onSubmit={handleSubmit} encType={encType}>
                             {/* Header */}
                             <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
                                 <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
@@ -97,7 +98,7 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                                     <motion.button
                                         type="button"
                                         onClick={onClose}
-                                        className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                                        className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
@@ -105,8 +106,8 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                                     </motion.button>
                                     <motion.button
                                         type="submit"
-                                        className="px-8 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple hover:to-primary-blue"
-                                        whileHover={{ scale: 1.02, boxShadow: "0 10px 25px rgba(139, 92, 246, 0.3)" }}
+                                        className="px-6 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors font-medium"
+                                        whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                     >
                                         {submitText}

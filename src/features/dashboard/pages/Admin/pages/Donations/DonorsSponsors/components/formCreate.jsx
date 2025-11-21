@@ -4,15 +4,15 @@ import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 
 const FormCreate = ({ isOpen, onClose, onSave }) => {
     const getInitialState = () => ({
-        identificacion: "",
-        nombre: "",
-        personaContacto: "",
-        tipo: "Donante",
-        tipoPersona: "Natural",
-        telefono: "",
-        correo: "",
-        direccion: "",
-        estado: "Activo",
+        identification: "",
+        name: "",
+        contactPerson: "",
+        type: "Donor",
+        personType: "Natural",
+        phone: "",
+        email: "",
+        address: "",
+        status: "Active",
     });
 
     const [formData, setFormData] = useState(getInitialState());
@@ -22,16 +22,16 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
     // Función auxiliar para validar un campo específico
     const validateField = (name, value) => {
         let error = '';
-        if (name === 'identificacion' && !value.trim()) {
-            error = "La identificación es requerida.";
-        } else if (name === 'nombre' && !value.trim()) {
-            error = "El nombre es requerido.";
-        } else if (name === 'telefono' && !value.trim()) {
-            error = "El teléfono es requerido.";
-        } else if (name === 'correo') {
-            if (!value.trim()) {
-                error = "El correo es requerido.";
-            } else if (!/\S+@\S+\.\S+/.test(value.trim())) {
+        if (name === 'identification' && !(value || '').trim()) {
+            error = "Identification is required.";
+        } else if (name === 'name' && !(value || '').trim()) {
+            error = "Name is required.";
+        } else if (name === 'phone' && !(value || '').trim()) {
+            error = "Phone is required.";
+        } else if (name === 'email') {
+            if (!(value || '').trim()) {
+                error = "Email is required.";
+            } else if (!/\S+@\S+\.\S+/.test((value || '').trim())) {
                 error = "El formato del correo no es válido.";
             }
         }
@@ -41,7 +41,7 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
 
-        if (name === 'telefono') {
+        if (name === 'phone') {
             // Permite solo números y un string vacío
             if (/^[0-9]*$/.test(value)) {
                 setFormData(prev => ({ ...prev, [name]: value }));
@@ -65,7 +65,7 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
     const validateForm = () => {
         const newErrors = {};
         // Validar todos los campos obligatorios al intentar enviar
-        ['identificacion', 'nombre', 'telefono', 'correo'].forEach(name => {
+        ['identification', 'name', 'phone', 'email'].forEach(name => {
             const error = validateField(name, formData[name]);
             if (error) newErrors[name] = error; // Solo añadir si hay un error real
         });
@@ -78,8 +78,8 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
             onSave(formData);
         } else {
             // Si hay errores, marcar todos los campos obligatorios como tocados para mostrar los errores
-            setTouched({ identificacion: true, nombre: true, telefono: true, correo: true });
-            showErrorAlert("Error de Validación", "Por favor, complete todos los campos obligatorios.");
+            setTouched({ identification: true, name: true, phone: true, email: true });
+            showErrorAlert("Validation Error", "Please complete all required fields.");
         }
     };
 
@@ -96,65 +96,65 @@ const FormCreate = ({ isOpen, onClose, onSave }) => {
             isOpen={isOpen}
             onClose={handleClose}
             onSubmit={handleFormSubmit}
-            title="Crear Donante / Patrocinador"
-            submitText="Crear"
+            title="Create Donor / Sponsor"
+            submitText="Create"
         >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label htmlFor="identificacion" className="block text-sm font-medium text-gray-700 mb-1">Identificación (NIT/Cédula) <span className="text-red-500">*</span></label>
-                    <input type="text" id="identificacion" name="identificacion" value={formData.identificacion} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: 123456789-0" />
-                    {touched.identificacion && errors.identificacion && <p className="text-red-500 text-xs mt-1">{errors.identificacion}</p>}
+                    <label htmlFor="identification" className="block text-sm font-medium text-gray-700 mb-1">Identification (NIT/ID) <span className="text-red-500">*</span></label>
+                    <input type="text" id="identification" name="identification" value={formData.identification} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="e.g., 123456789-0" />
+                    {touched.identification && errors.identification && <p className="text-red-500 text-xs mt-1">{errors.identification}</p>}
                 </div>
 
                 <div>
-                    <label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-1">Nombre / Razón Social <span className="text-red-500">*</span></label>
-                    <input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: Juan Pérez o Empresa S.A.S." />
-                    {touched.nombre && errors.nombre && <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>}
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name / Company Name <span className="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="e.g., John Doe or Company Inc." />
+                    {touched.name && errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="md:col-span-2">
-                    <label htmlFor="personaContacto" className="block text-sm font-medium text-gray-700 mb-1">Persona de Contacto</label>
-                    <input type="text" id="personaContacto" name="personaContacto" value={formData.personaContacto} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: Ana García (Opcional)" />
+                    <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                    <input type="text" id="contactPerson" name="contactPerson" value={formData.contactPerson} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="e.g., Jane Smith (Optional)" />
                 </div>
 
                 <div>
-                    <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                    <select id="tipo" name="tipo" value={formData.tipo} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
-                        <option value="Donante">Donante</option>
-                        <option value="Patrocinador">Patrocinador</option>
+                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select id="type" name="type" value={formData.type} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
+                        <option value="Donor">Donor</option>
+                        <option value="Sponsor">Sponsor</option>
                     </select>
                 </div>
 
                 <div>
-                    <label htmlFor="tipoPersona" className="block text-sm font-medium text-gray-700 mb-1">Tipo de Persona</label>
-                    <select id="tipoPersona" name="tipoPersona" value={formData.tipoPersona} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
+                    <label htmlFor="personType" className="block text-sm font-medium text-gray-700 mb-1">Person Type</label>
+                    <select id="personType" name="personType" value={formData.personType} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
                         <option value="Natural">Natural</option>
-                        <option value="Jurídica">Jurídica</option>
+                        <option value="Legal">Legal</option>
                     </select>
                 </div>
 
                 <div>
-                    <label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-1">Teléfono <span className="text-red-500">*</span></label>
-                    <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: 3001234567" />
-                    {touched.telefono && errors.telefono && <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>}
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-red-500">*</span></label>
+                    <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="e.g., 3001234567" />
+                    {touched.phone && errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                 </div>
 
                 <div>
-                    <label htmlFor="correo" className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico <span className="text-red-500">*</span></label>
-                    <input type="email" id="correo" name="correo" value={formData.correo} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="ejemplo@correo.com" />
-                    {touched.correo && errors.correo && <p className="text-red-500 text-xs mt-1">{errors.correo}</p>}
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                    <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="example@email.com" />
+                    {touched.email && errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                 </div>
 
                 <div className="md:col-span-2">
-                    <label htmlFor="direccion" className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
-                    <input type="text" id="direccion" name="direccion" value={formData.direccion} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="Ej: Calle 10 # 20-30 (Opcional)" />
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                    <input type="text" id="address" name="address" value={formData.address} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple" placeholder="e.g., 123 Main St (Optional)" />
                 </div>
 
                 <div>
-                    <label htmlFor="estado" className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                    <select id="estado" name="estado" value={formData.estado} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="status" name="status" value={formData.status} onChange={handleChange} onBlur={handleBlur} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-purple focus:border-primary-purple">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
                     </select>
                 </div>
             </div>

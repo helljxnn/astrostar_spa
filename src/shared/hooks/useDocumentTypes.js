@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import ApiClient from '../services/apiClient'; 
+import ApiClient from '@shared/services/apiClient'; 
 
 export const useDocumentTypes = () => {
   const [documentTypes, setDocumentTypes] = useState([]);

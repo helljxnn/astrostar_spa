@@ -1,5 +1,3 @@
-// Conf Común para consumir api
-
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
@@ -89,7 +87,7 @@ class ApiClient {
     return this.request(endpoint, {
       method: "POST",
       body,
-      // ⚠️ No forzar headers si es FormData
+      // No forzar headers si es FormData
       headers: isFormData ? {} : { "Content-Type": "application/json" },
     });
   }

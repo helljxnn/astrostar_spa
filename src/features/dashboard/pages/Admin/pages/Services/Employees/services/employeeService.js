@@ -3,7 +3,7 @@
  * Maneja todas las operaciones CRUD de empleados
  */
 
-import apiClient from '../../../../../../../../shared/services/apiClient.js';
+import apiClient from '@shared/services/apiClient';
 
 class EmployeeService {
   constructor() {
