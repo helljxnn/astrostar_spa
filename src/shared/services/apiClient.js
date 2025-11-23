@@ -105,6 +105,7 @@ class ApiClient {
   }
 
   async delete(endpoint) {
+    console.log(`🗑️ Ejecutando DELETE en: ${endpoint}`);
     return this.request(endpoint, { method: "DELETE" });
   }
 }

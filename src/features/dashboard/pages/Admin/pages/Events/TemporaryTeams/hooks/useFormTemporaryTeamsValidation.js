@@ -121,7 +121,6 @@ export const temporaryTeamsValidationRules = {
     (v) => (v?.trim().length > 100 ? "El nombre no puede exceder 100 caracteres" : ""),
     (v) => (hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""),
   ],
-  telefono: [validatePhone],
   entrenador: [(v) => (!v ? "Debe seleccionar un entrenador" : "")],
   deportistas: [(v) => (!v || v.length === 0 ? "Debe seleccionar al menos una deportista" : "")],
   estado: [(v) => (!v ? "Debe seleccionar un estado" : "")],

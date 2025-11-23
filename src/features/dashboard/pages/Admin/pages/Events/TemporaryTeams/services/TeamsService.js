@@ -311,6 +311,130 @@ class TeamsService {
   async getTeamsByType(teamType) {
     return this.getTeams({ teamType });
   }
+
+  async getSportsCategories() {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/sports-categories`);
+      
+      if (response && response.success) {
+        return {
+          success: true,
+          data: response.data || []
+        };
+      }
+      
+      return {
+        success: false,
+        data: [],
+        error: response?.message || 'Error obteniendo categorías deportivas'
+      };
+    } catch (error) {
+      console.error('Error obteniendo categorías deportivas:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message
+      };
+    }
+  }
+
+  async checkDuplicateTemporalTeam({ athleteIds, trainerId, excludeId = null }) {
+    try {
+      // Validar que al menos uno de los parámetros esté presente
+      if ((!athleteIds || athleteIds.length === 0) && !trainerId) {
+        throw new Error('Se requiere al menos athleteIds o trainerId');
+      }
+      
+      // Construir los parámetros correctamente
+      const queryParams = new URLSearchParams();
+      
+      // Solo agregar athleteIds si hay elementos
+      if (athleteIds && athleteIds.length > 0) {
+        queryParams.append('athleteIds', athleteIds.join(','));
+      }
+      
+      // Solo agregar trainerId si existe
+      if (trainerId) {
+        queryParams.append('trainerId', trainerId.toString());
+      }
+      
+      // Solo agregar excludeId si existe
+      if (excludeId) {
+        queryParams.append('excludeId', excludeId.toString());
+      }
+      
+      console.log('🌐 Llamando al backend con params:', queryParams.toString());
+      
+      const response = await apiClient.get(`${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`);
+      
+      console.log('📡 Respuesta del backend:', response);
+      
+      if (response && response.success !== undefined) {
+        return {
+          success: true,
+          available: response.available,
+          message: response.message
+        };
+      }
+      
+      return {
+        success: false,
+        error: response?.message || 'Error verificando equipo duplicado'
+      };
+    } catch (error) {
+      console.error('Error verificando equipo duplicado:', error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  async checkTemporalTrainerAvailability(trainerId, excludeId = null) {
+    try {
+      // Construir los parámetros manualmente para evitar el error del backend
+      const queryParams = new URLSearchParams();
+      queryParams.append('trainerId', trainerId.toString());
+      
+      if (excludeId) {
+        queryParams.append('excludeId', excludeId.toString());
+      }
+      
+      console.log('🌐 Validando entrenador con params:', queryParams.toString());
+      
+      const response = await apiClient.get(`${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`);
+      
+      console.log('📡 Respuesta validación entrenador:', response);
+      
+      if (response && response.success !== undefined) {
+        return {
+          success: true,
+          available: response.available,
+          message: response.message
+        };
+      }
+      
+      return {
+        success: false,
+        error: response?.message || 'Error verificando entrenador'
+      };
+    } catch (error) {
+      console.error('❌ Error verificando entrenador:', error);
+      return {
+        success: false,
+        error: error.message,
+        available: true // Asumir disponible en caso de error para no bloquear
+      };
+    }
+  }
+
+  async checkTemporalAthletesAvailability(athleteIds, excludeId = null) {
+    // No enviar trainerId null, solo athleteIds
+    return this.checkDuplicateTemporalTeam({ 
+      athleteIds, 
+      excludeId 
+    });
+  }
 }
 
 export default new TeamsService();
