@@ -1,28 +1,87 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
 const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
-const isValidEmail = (email) => /^[a-zA-Z0-9]([a-zA-Z0-9._-])*[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(email);
-const cleanPhone = (phone) => phone.replace(/[\s\-\(\)]/g, '');
+const isValidEmail = (email) => /^[a-zA-Z0-9]([a-zA-Z0-9._-])*@[a-zA-Z0-9]([a-zA-Z0-9.-])*\.[a-zA-Z]{2,}$/.test(email);
 
-const validatePhone = (value) => {
-  if (!value?.trim()) return "El número telefónico es obligatorio.";
-  const phone = cleanPhone(value);
+// Validaciones específicas por tipo de documento (del módulo de empleados)
+const getDocumentValidation = (documentTypeName, value) => {
+  if (!documentTypeName || !value?.trim()) return '';
   
-  if (phone.startsWith('+57') || phone.startsWith('57')) {
-    const local = phone.replace(/^(\+57|57)/, '');
-    if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) return "";
-    return "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
+  const docName = documentTypeName.toLowerCase();
+  
+  // Cédula de Ciudadanía
+  if (docName.includes('cédula') || docName.includes('cedula') || docName.includes('ciudadanía')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 10) {
+      return "La cédula debe tener entre 6 y 10 dígitos.";
+    }
+    return '';
   }
-
-  if (!/^\d+$/.test(phone)) return "El teléfono solo puede contener números.";
-  if ((phone.length === 10 && /^3/.test(phone)) || (phone.length === 7 && /^[2-8]/.test(phone))) return "";
-  if (phone.length < 7) return "El número debe tener al menos 7 dígitos.";
-  if (phone.length > 10) return "Número demasiado largo. Máximo 10 dígitos para celular.";
-  if (phone.length === 10 && !/^3/.test(phone)) return "Los números celulares deben iniciar con 3.";
-  if (phone.length === 7 && !/^[2-8]/.test(phone)) return "Los números fijos deben iniciar con 2-8.";
-  if ([8,9].includes(phone.length)) return "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular).";
-  return "Formato de teléfono inválido.";
+  
+  // Cédula de Extranjería
+  if (docName.includes('extranjería') || docName.includes('extranjeria')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula de extranjería solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 12) {
+      return "La cédula de extranjería debe tener entre 6 y 12 dígitos.";
+    }
+    return '';
+  }
+  
+  // Pasaporte
+  if (docName.includes('pasaporte')) {
+    if (!/^[A-Za-z0-9]+$/.test(value)) {
+      return "El pasaporte solo puede contener letras y números.";
+    }
+    if (value.length < 6 || value.length > 15) {
+      return "El pasaporte debe tener entre 6 y 15 caracteres.";
+    }
+    return '';
+  }
+  
+  // Tarjeta de Identidad
+  if (docName.includes('tarjeta') && docName.includes('identidad')) {
+    if (!/^\d+$/.test(value)) {
+      return "La tarjeta de identidad solo puede contener números.";
+    }
+    if (value.length < 8 || value.length > 11) {
+      return "La tarjeta de identidad debe tener entre 8 y 11 dígitos.";
+    }
+    return '';
+  }
+  
+  // NIT (Número de Identificación Tributaria)
+  if (docName.includes('tributaria') || docName.includes('nit')) {
+    if (!/^\d+$/.test(value)) {
+      return "El NIT solo puede contener números, sin guiones ni puntos.";
+    }
+    if (value.length !== 10) {
+      return "El NIT debe tener exactamente 10 dígitos.";
+    }
+    return '';
+  }
+  
+  // Registro Civil
+  if (docName.includes('registro') && docName.includes('civil')) {
+    if (!/^\d+$/.test(value)) {
+      return "El registro civil solo puede contener números.";
+    }
+    if (value.length < 8 || value.length > 15) {
+      return "El registro civil debe tener entre 8 y 15 dígitos.";
+    }
+    return '';
+  }
+  
+  // Validación genérica para otros tipos
+  if (value.length > 20) {
+    return "El documento no puede exceder los 20 caracteres.";
+  }
+  
+  return '';
 };
 
 export const providerValidationRules = {
@@ -49,25 +108,44 @@ export const providerValidationRules = {
   nit: [
     (value, values) => {
       if (!value?.trim()) {
-        return values?.tipoEntidad === 'juridica'
-          ? "El NIT es obligatorio."
+        return values?.tipoEntidad === 'juridica' 
+          ? "El NIT es obligatorio." 
           : "El documento de identidad es obligatorio.";
       }
       return '';
     },
-    (value, values) => {
+    (value, values, documentTypes = []) => {
       if (!value?.trim()) return '';
-      const cleaned = value.trim().replace(/[\s.-]/g, '');
       
       if (values?.tipoEntidad === 'juridica') {
-        // PERSONA JURÍDICA: Solo números
-        if (!/^\d{8,15}$/.test(cleaned)) {
-          return "El NIT debe contener entre 8 y 15 dígitos numéricos.";
+        // PERSONA JURÍDICA: Exactamente 10 dígitos, solo números
+        if (!/^\d+$/.test(value)) {
+          return "El NIT solo puede contener números, sin guiones ni puntos.";
+        }
+        if (value.length !== 10) {
+          return "El NIT debe tener exactamente 10 dígitos.";
         }
       } else {
-        // PERSONA NATURAL: Permite letras y números
-        if (!/^[a-zA-Z0-9\-]{6,20}$/.test(cleaned)) {
-          return "El documento debe contener entre 6 y 20 caracteres alfanuméricos ";
+        // PERSONA NATURAL: Verificar si seleccionó NIT
+        const selectedDocType = documentTypes.find(
+          dt => (dt.id?.toString() === values?.tipoDocumento || dt.value === values?.tipoDocumento)
+        );
+        
+        // Detectar si es NIT por nombre o label
+        const docName = selectedDocType?.name || selectedDocType?.label || '';
+        const isNIT = docName.toLowerCase().includes('tributaria') || docName.toLowerCase().includes('nit');
+        
+        if (isNIT) {
+          // PERSONA NATURAL CON NIT: Exactamente las mismas validaciones que jurídica
+          if (!/^\d+$/.test(value)) {
+            return "El NIT solo puede contener números, sin guiones ni puntos.";
+          }
+          if (value.length !== 10) {
+            return "El NIT debe tener exactamente 10 dígitos.";
+          }
+        } else {
+          // PERSONA NATURAL CON OTROS DOCUMENTOS: Usar validaciones específicas
+          return getDocumentValidation(docName, value);
         }
       }
       
@@ -94,8 +172,18 @@ export const providerValidationRules = {
     (value) => value?.trim() && value.trim().length > 150 ? `El correo no puede exceder 150 caracteres (${value.trim().length}/150).` : ''
   ],
   telefono: [
-    (value) => !value?.trim() ? "El número telefónico es obligatorio." : '',
-    (value) => value?.trim() ? validatePhone(value) : ''
+    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
+    (value) => {
+      if (!value) return "";
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      
+      if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+        return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
+      }
+      return "";
+    },
   ],
   direccion: [
     (value) => !value?.trim() ? "La dirección es obligatoria." : '',
@@ -122,10 +210,11 @@ export const providerValidationRules = {
   ]
 };
 
-export const useFormProviderValidation = (initialValues, validationRules) => {
+export const useFormProviderValidation = (initialValues, validationRules, isEditing = false, documentTypes = []) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [originalValues, setOriginalValues] = useState(initialValues);
 
   const validateField = useCallback((name, value, currentValues = values) => {
     const rules = validationRules[name];
@@ -136,11 +225,11 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
     }
     
     for (const rule of rules) {
-      const error = rule(value, currentValues);
+      const error = rule(value, currentValues, documentTypes);
       if (error) return error;
     }
     return '';
-  }, [values, validationRules]);
+  }, [values, validationRules, documentTypes]);
 
   const validateAllFields = () => {
     const newErrors = {};
@@ -169,11 +258,19 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       const newValues = { ...prev, [name]: value };
       
       if (name === 'tipoEntidad') {
-        if (value === 'juridica') {
+        if (!isEditing) {
+          // MODO CREAR: Limpiar todos los campos
           newValues.tipoDocumento = '';
+          newValues.nit = '';
+          newValues.razonSocial = '';
+          newValues.contactoPrincipal = '';
+          newValues.correo = '';
+          newValues.telefono = '';
+          newValues.direccion = '';
+          newValues.ciudad = '';
+          newValues.descripcion = '';
         }
-        // No establecer un valor por defecto para persona natural
-        // El usuario debe seleccionar explícitamente el tipo de documento
+        // En modo edición, no limpiar automáticamente - dejar que el componente maneje la restauración
       }
       
       return newValues;
@@ -185,8 +282,7 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
         if (error) {
           return { ...prev, [name]: error };
         } else {
-          const newErrors = { ...prev };
-          delete newErrors[name];
+          const { [name]: removed, ...newErrors } = prev;
           return newErrors;
         }
       });
@@ -198,26 +294,22 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       }, 0);
     }
 
-    // NUEVO: Resetear el estado "touched" cuando cambia el tipo de entidad
-    if (name === 'tipoEntidad' && previousTipoEntidad !== value) {
+    if (name === 'tipoDocumento') {
+      // Limpiar el campo nit cuando se cambia el tipo de documento
       setTimeout(() => {
-        // Resetear todos los campos touched
-        setTouched({});
-        
-        // Re-validar campos dependientes del tipo de entidad
-        const dependentFields = ['razonSocial', 'nit', 'tipoDocumento'];
-        const newErrors = { ...errors };
-        
-        dependentFields.forEach(fieldName => {
-          const error = validateField(fieldName, values[fieldName]);
-          if (error) {
-            newErrors[fieldName] = error;
-          } else {
-            delete newErrors[fieldName];
-          }
+        setValues(prev => ({ ...prev, nit: '' }));
+        setErrors(prev => {
+          const { nit: removed, ...newErrors } = prev;
+          return newErrors;
         });
-        
-        setErrors(newErrors);
+      }, 0);
+    }
+
+    if (name === 'tipoEntidad' && previousTipoEntidad !== value && !isEditing) {
+      setTimeout(() => {
+        // Limpiar TODOS los touched y errores al cambiar tipo de entidad (solo en modo crear)
+        setTouched({});
+        setErrors({});
       }, 10);
     }
   };
@@ -232,8 +324,7 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
       if (error) {
         return { ...prev, [name]: error };
       } else {
-        const newErrors = { ...prev };
-        delete newErrors[name];
+        const { [name]: removed, ...newErrors } = prev;
         return newErrors;
       }
     });
@@ -268,6 +359,16 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
     setValues(initialValues);
     setErrors({});
     setTouched({});
+    setOriginalValues(initialValues);
+  };
+
+  const updateOriginalValues = (newValues) => {
+    setOriginalValues(newValues);
+  };
+
+  const resetValidation = () => {
+    setErrors({});
+    setTouched({});
   };
 
   const touchAllFields = () => {
@@ -290,6 +391,8 @@ export const useFormProviderValidation = (initialValues, validationRules) => {
     setErrors,
     setTouched,
     resetForm,
-    touchAllFields
+    resetValidation,
+    touchAllFields,
+    updateOriginalValues
   };
 };

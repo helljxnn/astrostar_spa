@@ -60,12 +60,22 @@ export const documentValidationRules = {
     errorMessagePattern: 'El número solo debe contener letras, números y guiones'
   },
   'Número de Identificación Tributaria': {
-    minLength: 9,
+    minLength: 10,
     maxLength: 10,
     pattern: /^[0-9]+$/,
-    errorMessageMin: 'La identificación debe tener al menos 9 caracteres',
-    errorMessageMax: 'La identificación no puede exceder 10 caracteres',
-    errorMessagePattern: 'El NIT solo debe contener números'
+    errorMessageMin: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessageMax: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessagePattern: 'El NIT solo puede contener números, sin guiones ni puntos',
+    hasDigitoVerificacion: false
+  },
+  'NIT': {
+    minLength: 10,
+    maxLength: 10,
+    pattern: /^[0-9]+$/,
+    errorMessageMin: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessageMax: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessagePattern: 'El NIT solo puede contener números, sin guiones ni puntos',
+    hasDigitoVerificacion: false
   }
 };
 
@@ -139,10 +149,31 @@ export const getDocumentPlaceholder = (documentType) => {
     'Permiso de Permanencia': 'Ej: PP-123456',
     'Tarjeta de Extranjería': 'Ej: TE-123456',
     'Número de Identificación Extranjero': 'Ej: NIE-123456',
-    'Número de Identificación Tributaria': 'Ej: 900123456'
+    'Número de Identificación Tributaria': '10 dígitos (solo números)',
+    'NIT': '10 dígitos (solo números)'
   };
 
   return placeholders[documentType] || 'Ingrese el número de documento';
+};
+
+/**
+ * Calcula el dígito de verificación para un NIT de 9 dígitos
+ * @param {string} nitBase - NIT de 9 dígitos
+ * @returns {number|null} Dígito de verificación o null si es inválido
+ */
+export const calcularDigitoVerificacion = (nitBase) => {
+  if (!nitBase || nitBase.length !== 9) return null;
+  
+  const secuencia = [3, 7, 13, 17, 19, 23, 29, 37, 41];
+  let suma = 0;
+  
+  for (let i = 0; i < 9; i++) {
+    const digito = parseInt(nitBase[i]);
+    suma += digito * secuencia[i];
+  }
+  
+  const residuo = suma % 11;
+  return residuo <= 1 ? residuo : 11 - residuo;
 };
 
 /**
@@ -181,13 +212,29 @@ export const getDocumentInfo = (documentType) => {
     return {
       minLength: 6,
       maxLength: 20,
-      description: 'Entre 6 y 20 caracteres'
+      description: 'Entre 6 y 20 caracteres',
+      hasDigitoVerificacion: false
     };
   }
 
   return {
     minLength: rules.minLength,
     maxLength: rules.maxLength,
-    description: `Entre ${rules.minLength} y ${rules.maxLength} caracteres`
+    description: rules.hasDigitoVerificacion 
+      ? `${rules.minLength} dígitos (sin DV)` 
+      : (documentType === 'Número de Identificación Tributaria' || documentType === 'NIT')
+        ? 'Solo números, sin guiones ni puntos'
+        : `Entre ${rules.minLength} y ${rules.maxLength} caracteres`,
+    hasDigitoVerificacion: rules.hasDigitoVerificacion || false
   };
+};
+
+/**
+ * Verifica si un tipo de documento requiere cálculo de dígito verificador
+ * @param {string} documentType - Tipo de documento
+ * @returns {boolean} True si requiere dígito verificador
+ */
+export const requiresDigitoVerificacion = (documentType) => {
+  const rules = documentValidationRules[documentType];
+  return rules?.hasDigitoVerificacion || false;
 };

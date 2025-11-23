@@ -16,35 +16,9 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
     });
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case "activo":
-        return "text-green-600 font-semibold";
-      case "inactivo":
-        return "text-red-600 font-semibold";
-      case "suspendido":
-        return "text-orange-600 font-semibold";
-      case "pendiente":
-        return "text-yellow-600 font-semibold";
-      default:
-        return "text-gray-600 font-semibold";
-    }
-  };
 
-  const formatPhoneDisplay = (phone) => {
-    if (!phone) return "N/A";
-    return phone;
-  };
 
-  const getDocumentTypeLabel = (docType) => {
-    const types = {
-      CC: "Cédula de ciudadanía",
-      TI: "Tarjeta de identidad",
-      CE: "Cédula de extranjería",
-      PAS: "Pasaporte",
-    };
-    return types[docType] || docType;
-  };
+  // Función removida - se usa tipoDocumentoNombre directamente desde la API
 
   return (
     <AnimatePresence>
@@ -196,7 +170,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-gray-900">
-                      {formatPhoneDisplay(provider.telefono)}
+                      {provider.telefono || "N/A"}
                     </p>
                   </div>
                 </motion.div>
@@ -362,7 +336,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                       Estado Asignado:
                     </span>
                     <p className="text-gray-800">
-                      {formatDate(provider.statusAssignedAt || provider.updatedAt)}
+                      {provider.estado || "No especificado"}
                     </p>
                   </div>
                 </div>
