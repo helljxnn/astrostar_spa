@@ -5,10 +5,7 @@ import { X, UserCheck, Users } from "lucide-react";
 const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   if (!isOpen || !team) return null;
 
-  const formatPhoneDisplay = (phone) => {
-    if (!phone) return "No especificado";
-    return phone;
-  };
+
 
   // Función simplificada y más robusta
   const getTeamTypeInfo = () => {
@@ -109,23 +106,6 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
             >
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
-                  Teléfono
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-gray-900 text-sm">
-                    {formatPhoneDisplay(team.telefono)}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
                   Estado del Equipo
                 </label>
                 <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -138,7 +118,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.4 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
             >
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -169,37 +149,101 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
             </motion.div>
           </div>
 
-          {/* Entrenador */}
+          {/* Información del Entrenador Principal */}
           <motion.div
-            className="space-y-3 mb-3"
+            className="mb-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.4 }}
           >
-            <label className="block text-sm font-medium text-gray-700">
-              Entrenador
-            </label>
-
-            <div className="p-3 rounded-lg border-2 border-primary-purple/30 bg-primary-purple/5">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary-purple text-white">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900 text-sm">
-                    {team.entrenador}
+            <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+              <UserCheck className="w-4 h-4 text-primary-purple" />
+              Entrenador Principal
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Nombre Completo
+                </label>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-gray-900 text-sm font-medium">
+                    {team.entrenador || "No especificado"}
                   </p>
-                  {team.entrenadorData && (
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <span className="text-xs text-gray-600">
-                        {team.entrenadorData.identification}
-                      </span>
-                    </div>
-                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Identificación
+                </label>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-gray-900 text-sm">
+                    {team.entrenadorData?.identification || "No especificado"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-medium text-gray-600">
+                  Teléfono
+                </label>
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-gray-900 text-sm">
+                    {team.entrenadorData?.phoneNumber || "No especificado"}
+                  </p>
                 </div>
               </div>
             </div>
           </motion.div>
+
+          {/* Información del Segundo Entrenador - Solo si existe */}
+          {team.segundoEntrenador && (
+            <motion.div
+              className="mb-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.4 }}
+            >
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-primary-purple" />
+                Segundo Entrenador
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600">
+                    Nombre Completo
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 text-sm font-medium">
+                      {team.segundoEntrenador}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600">
+                    Identificación
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 text-sm">
+                      {team.segundoEntrenadorData?.identification || "No especificado"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600">
+                    Teléfono
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-900 text-sm">
+                      {team.segundoEntrenadorData?.phoneNumber || "No especificado"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Deportistas */}
           <motion.div
@@ -232,29 +276,49 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                 {deportistasList.map((athlete, index) => (
                   <motion.div
                     key={athlete.id || index}
-                    className="flex items-center gap-3 p-2 bg-white rounded border border-gray-200 hover:border-primary-purple/30 hover:shadow-sm transition-all"
+                    className="bg-white rounded-lg border border-gray-200 p-3 hover:border-primary-purple/30 hover:shadow-sm transition-all"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.7 + index * 0.05, duration: 0.3 }}
                   >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium text-gray-900 text-sm truncate">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Nombre
+                        </label>
+                        <p className="font-medium text-gray-900 text-sm">
                           {athlete.name || athlete}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 flex-wrap">
-                        {athlete.categoria && (
-                          <span className="text-gray-600">
-                            Categoría: {athlete.categoria}
-                          </span>
-                        )}
-                        {athlete.identification && (
-                          <span className="text-gray-600">
-                            {athlete.identification}
-                          </span>
-                        )}
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Identificación
+                        </label>
+                        <p className="text-gray-900 text-sm">
+                          {athlete.identification || "N/A"}
+                        </p>
                       </div>
+                      
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          Teléfono
+                        </label>
+                        <p className="text-gray-900 text-sm">
+                          {athlete.phoneNumber || "N/A"}
+                        </p>
+                      </div>
+                      
+                      {athlete.categoria && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            Categoría
+                          </label>
+                          <span className="inline-block px-2 py-1 rounded-full text-xs bg-gray-200 text-gray-700">
+                            {athlete.categoria}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 ))}
