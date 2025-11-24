@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
 import { FiMail, FiArrowLeft } from 'react-icons/fi';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
@@ -10,6 +10,7 @@ function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const navigate = useNavigate();
 
   const Toast = Swal.mixin({
     toast: true,
@@ -19,7 +20,7 @@ function ForgotPassword() {
     timerProgressBar: true,
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
       Toast.fire({ icon: 'error', title: 'Por favor, ingresa tu correo electrónico.' });
@@ -35,65 +36,44 @@ function ForgotPassword() {
 
     setIsLoading(true);
     
-    // Simular envío de email
-    setTimeout(() => {
-      setIsLoading(false);
-      setEmailSent(true);
-      Toast.fire({ 
-        icon: 'success', 
-        title: 'Instrucciones enviadas a tu correo electrónico.' 
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:4000/api'}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
       });
-    }, 2000);
+
+      const data = await response.json();
+
+      if (data.success) {
+        Toast.fire({ 
+          icon: 'success', 
+          title: 'Código enviado a tu correo electrónico.' 
+        });
+        // Redirigir automáticamente a la página de verificación
+        setTimeout(() => {
+          navigate('/verify-code', { state: { email } });
+        }, 1500);
+      } else {
+        Toast.fire({ 
+          icon: 'error', 
+          title: data.message || 'Error al enviar el correo.' 
+        });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      Toast.fire({ 
+        icon: 'error', 
+        title: 'Error al conectar con el servidor.' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  if (emailSent) {
-    return (
-      <div className="relative w-screen h-screen flex items-center justify-center">
-        {/* Fondo con imagen + blur */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${bgImage})` }}
-        />
-        <div className="absolute inset-0 backdrop-blur-xs bg-black/20" />
 
-        {/* Contenedor del mensaje */}
-        <div className="glow-container">
-          <div className="login-box text-center">
-            <div className="flex justify-center mb-4">
-              <img src={logo} alt="AstroStar Logo" className="w-24 h-24" />
-            </div>
-            
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiMail className="w-8 h-8 text-green-600" />
-              </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-black to-primary-purple bg-clip-text text-transparent mb-2">
-                ¡Correo Enviado!
-              </h1>
-              <p className="text-gray-600 text-sm">
-                Hemos enviado las instrucciones para restablecer tu contraseña a:
-              </p>
-              <p className="text-gray-800 font-semibold mt-1 bg-gray-100 px-3 py-1 rounded-lg">{email}</p>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500">
-                Si no recibes el correo en unos minutos, revisa tu carpeta de spam.
-              </p>
-              
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-black to-primary-purple text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
-              >
-                <FiArrowLeft className="w-4 h-4" />
-                Volver al Login
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative w-screen h-screen flex items-center justify-center">

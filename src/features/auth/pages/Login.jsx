@@ -33,24 +33,16 @@ function Login() {
     }
     setIsLoading(true);
 
-    try {
-      const loginSuccess = await login({ email, password });
-      setIsLoading(false);
+    const result = await login({ email, password });
+    setIsLoading(false);
 
-      if (loginSuccess) {
-        Toast.fire({ icon: "success", title: "¡Bienvenido de nuevo!" });
-        navigate("/dashboard");
-      } else {
-        Toast.fire({
-          icon: "error",
-          title: "Correo o contraseña incorrectos.",
-        });
-      }
-    } catch (error) {
-      setIsLoading(false);
+    if (result.success) {
+      Toast.fire({ icon: "success", title: "¡Bienvenido de nuevo!" });
+      navigate("/dashboard");
+    } else {
       Toast.fire({
         icon: "error",
-        title: "Error de conexión. Intenta de nuevo.",
+        title: result.message || "Correo o contraseña incorrectos.",
       });
     }
   };

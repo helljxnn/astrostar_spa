@@ -41,13 +41,22 @@ function DashboardLayout() {
     setIsExpanded(!isExpanded);
   };
 
-  const handleUpdateProfile = (updatedData) => {
-    // Aquí llamarías a la función para actualizar el usuario en el backend y luego en el contexto.
-    console.log("Updating profile with:", updatedData);
-    if (updateUser) {
-      updateUser(updatedData);
+  const handleUpdateProfile = async (updatedData) => {
+    try {
+      // Actualizar el contexto con los nuevos datos
+      if (updateUser) {
+        updateUser(updatedData);
+      }
+      // Actualizar también en localStorage
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        const userObj = JSON.parse(storedUser);
+        localStorage.setItem("user", JSON.stringify({ ...userObj, ...updatedData }));
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      throw error;
     }
-    setEditModalOpen(false);
   };
 
   return (

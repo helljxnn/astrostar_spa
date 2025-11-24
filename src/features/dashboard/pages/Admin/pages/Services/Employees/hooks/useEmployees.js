@@ -195,15 +195,13 @@ export const useEmployees = () => {
 
   // Cargar datos iniciales solo si está autenticado
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (isAuthenticated && token) {
+    if (isAuthenticated) {
       loadReferenceData();
     }
   }, [isAuthenticated, loadReferenceData]);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (isAuthenticated && token) {
+    if (isAuthenticated) {
       loadEmployees();
     }
   }, [isAuthenticated, loadEmployees]);
