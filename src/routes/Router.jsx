@@ -8,6 +8,8 @@ import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
 import Login from "../features/auth/pages/Login.jsx";
 import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
+import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
+import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx"; 
 
@@ -25,6 +27,8 @@ function AppRoutes() {
       {/* Rutas de autenticación sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/verify-code" element={<VerifyCode />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />

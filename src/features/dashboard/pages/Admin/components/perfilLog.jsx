@@ -36,7 +36,7 @@ const PerfilLog = ({ onOpenProfileModals }) => {
                     <img src={user.avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover" />
                 ) : (
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-purple to-primary-blue flex items-center justify-center text-white font-bold text-sm">
-                        {user?.nombre ? user.nombre.charAt(0).toUpperCase() : 'U'}
+                        {(user?.firstName || user?.nombre) ? (user.firstName || user.nombre).charAt(0).toUpperCase() : 'U'}
                     </div>
                 )}
                 {/* Flecha desplegable */}

@@ -1,24 +1,59 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import apiClient from "../services/apiClient";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    const storedUser = localStorage.getItem("user");
-    if (token && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-    }
+    // Intentar restaurar sesión desde el servidor usando refresh token (cookie)
+    const restoreSession = async () => {
+      const storedUser = localStorage.getItem("user");
+      
+      if (storedUser) {
+        try {
+          // Intentar obtener un nuevo access token usando el refresh token (cookie)
+          const response = await fetch('http://localhost:4000/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include', // Enviar cookies
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            const accessToken = result.data.accessToken;
+            
+            // Almacenar access token en memoria del apiClient
+            apiClient.setAccessToken(accessToken);
+            
+            setIsAuthenticated(true);
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Si falla, limpiar datos
+            localStorage.removeItem("user");
+          }
+        } catch (error) {
+          console.error('Error restaurando sesión:', error);
+          localStorage.removeItem("user");
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (loginData) => {
     try {
       const response = await fetch('http://localhost:4000/api/auth/login', {
         method: 'POST',
+        credentials: 'include', // Importante: recibir cookies
         headers: {
           'Content-Type': 'application/json',
         },
@@ -30,22 +65,45 @@ export const AuthProvider = ({ children }) => {
         
         if (result.success) {
           const userToStore = result.data.user;
-          const token = result.data.token;
+          const accessToken = result.data.accessToken;
           
+          // Almacenar access token SOLO en memoria del apiClient
+          apiClient.setAccessToken(accessToken);
+          
+          // Almacenar solo datos del usuario en localStorage
           setIsAuthenticated(true);
           setUser(userToStore);
-          localStorage.setItem("authToken", token);
           localStorage.setItem("user", JSON.stringify(userToStore));
           
-          return true;
+          // El refresh token ya está en una cookie HttpOnly
+          
+          return { success: true };
         }
       }
       
-      // Si la respuesta no es ok, mostrar el error
+      // Si la respuesta no es ok, obtener el mensaje de error del servidor
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || 'Credenciales inválidas');
+      
+      // Personalizar mensajes según el código de estado
+      let errorMessage = 'Credenciales inválidas';
+      
+      if (response.status === 401) {
+        errorMessage = errorData.message || 'Correo o contraseña incorrectos';
+      } else if (response.status === 403) {
+        errorMessage = errorData.message || 'Acceso denegado';
+      } else if (response.status >= 500) {
+        errorMessage = 'Error del servidor. Intenta más tarde';
+      } else if (!navigator.onLine) {
+        errorMessage = 'Sin conexión a internet';
+      }
+      
+      return { success: false, message: errorMessage };
     } catch (error) {
-      throw error;
+      // Error de red o conexión
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return { success: false, message: 'No se pudo conectar con el servidor. Verifica tu conexión' };
+      }
+      return { success: false, message: error.message || 'Error inesperado. Intenta de nuevo' };
     }
   };
 
@@ -57,11 +115,25 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      // Cerrar sesión en el servidor (limpia cookie HttpOnly)
+      await fetch('http://localhost:4000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Enviar cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch(() => {
+        // Ignorar errores de red al cerrar sesión
+      });
+    } finally {
+      // Siempre limpiar el estado local
+      apiClient.clearAccessToken();
+      setIsAuthenticated(false);
+      setUser(null);
+      localStorage.removeItem("user");
+    }
   };
 
   return (
@@ -73,6 +145,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        isLoading,
       }}
     >
       {children}
