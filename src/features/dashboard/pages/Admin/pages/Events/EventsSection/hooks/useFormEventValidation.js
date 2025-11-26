@@ -1,17 +1,70 @@
 // useFormEventValidation.js
 import { useState } from "react";
+import apiClient from "../../../../../../../../shared/services/apiClient";
+
+let nameCheckTimeout = null;
 
 export const useFormEventValidation = () => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [isCheckingName, setIsCheckingName] = useState(false);
+
+  // Función para verificar disponibilidad del nombre en tiempo real
+  const checkNameAvailability = async (name, eventId = null) => {
+    // Limpiar timeout anterior
+    if (nameCheckTimeout) {
+      clearTimeout(nameCheckTimeout);
+    }
+
+    // Esperar 500ms después de que el usuario deje de escribir
+    nameCheckTimeout = setTimeout(async () => {
+      if (!name || name.length < 3) return;
+
+      setIsCheckingName(true);
+      try {
+        let url = `/events/check-name?name=${encodeURIComponent(name)}`;
+        if (eventId) {
+          url += `&excludeId=${eventId}`;
+        }
+
+        const response = await apiClient.get(url);
+        
+        if (response.success && !response.available) {
+          setErrors((prev) => ({ 
+            ...prev, 
+            nombre: response.message 
+          }));
+        } else {
+          // Limpiar error de nombre si está disponible
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            if (newErrors.nombre && newErrors.nombre.includes('Ya existe')) {
+              delete newErrors.nombre;
+            }
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        console.error('Error verificando nombre:', error);
+      } finally {
+        setIsCheckingName(false);
+      }
+    }, 500);
+  };
 
   const validateField = (name, value, formData) => {
     let error = "";
 
     switch (name) {
       case "nombre":
-        if (!value?.trim()) error = "El nombre del evento es obligatorio.";
-        else if (value.length < 3) error = "El nombre debe tener al menos 3 caracteres.";
+        if (!value?.trim()) {
+          error = "El nombre del evento es obligatorio.";
+        } else if (value.length < 3) {
+          error = "El nombre debe tener al menos 3 caracteres.";
+        } else {
+          // Validación asíncrona del nombre (se ejecutará después)
+          checkNameAvailability(value, formData.id);
+        }
         break;
 
       case "descripcion":
@@ -22,15 +75,8 @@ export const useFormEventValidation = () => {
       case "fechaInicio":
         if (!value) {
           error = "La fecha de inicio es obligatoria.";
-        } else if (!formData.id) {
-          // Solo validar al crear eventos nuevos
-          const now = new Date();
-          const selectedDateTime = new Date(value + 'T' + (formData.horaInicio || '00:00'));
-          
-          if (selectedDateTime < now) {
-            error = "No puedes crear un evento con fecha y hora de inicio pasadas.";
-          }
         }
+        // Permitir fechas de inicio en el pasado
         break;
 
       case "fechaFin":
@@ -39,12 +85,12 @@ export const useFormEventValidation = () => {
         } else if (formData.fechaInicio && value < formData.fechaInicio) {
           error = "La fecha de finalización no puede ser menor a la de inicio.";
         } else if (!formData.id) {
-          // Solo validar al crear eventos nuevos
+          // Solo validar al crear eventos nuevos - la fecha y hora de fin deben ser futuras
           const now = new Date();
           const selectedDateTime = new Date(value + 'T' + (formData.horaFin || '23:59'));
           
-          if (selectedDateTime < now) {
-            error = "No puedes crear un evento con fecha y hora de finalización pasadas.";
+          if (selectedDateTime <= now) {
+            error = "La fecha y hora de finalización deben ser futuras.";
           }
         }
         break;
@@ -52,15 +98,8 @@ export const useFormEventValidation = () => {
       case "horaInicio":
         if (!value) {
           error = "La hora de inicio es obligatoria.";
-        } else if (!formData.id && formData.fechaInicio) {
-          // Validar que la fecha y hora de inicio no sean pasadas
-          const now = new Date();
-          const selectedDateTime = new Date(formData.fechaInicio + 'T' + value);
-          
-          if (selectedDateTime < now) {
-            error = "No puedes crear un evento con fecha y hora de inicio pasadas.";
-          }
         }
+        // Permitir horas de inicio en el pasado
         break;
 
       case "horaFin":
@@ -69,12 +108,12 @@ export const useFormEventValidation = () => {
         } else if (formData.horaInicio && formData.fechaInicio === formData.fechaFin && value <= formData.horaInicio) {
           error = "La hora de finalización debe ser posterior a la de inicio.";
         } else if (!formData.id && formData.fechaFin) {
-          // Validar que la fecha y hora de fin no sean pasadas
+          // Validar que la fecha y hora de fin sean futuras
           const now = new Date();
           const selectedDateTime = new Date(formData.fechaFin + 'T' + value);
           
-          if (selectedDateTime < now) {
-            error = "No puedes crear un evento con fecha y hora de finalización pasadas.";
+          if (selectedDateTime <= now) {
+            error = "La fecha y hora de finalización deben ser futuras.";
           }
         }
         break;
@@ -154,5 +193,5 @@ export const useFormEventValidation = () => {
     setTouched(allTouched);
   };
 
-  return { errors, touched, validate, handleBlur, touchAllFields };
+  return { errors, touched, validate, handleBlur, touchAllFields, isCheckingName };
 };
