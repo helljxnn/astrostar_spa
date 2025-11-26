@@ -17,6 +17,8 @@ const SelectionModal = ({
   forceFoundationType = false,
   excludeTrainerId = null, // ID del entrenador a excluir (para segundo entrenador)
   initialTabType = null, // Tipo inicial para abrir el tab correcto (fundacion o temporal)
+  unavailableAthleteIds = [], // IDs de deportistas que ya están en otros equipos
+  excludeTeamId = null, // ID del equipo actual (para edición)
 }) => {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState(0)
@@ -126,6 +128,26 @@ const SelectionModal = ({
     }
   }, [isOpen, groupedData, initialTabType, activeTab])
 
+  // Detectar la categoría seleccionada automáticamente
+  const autoSelectedCategory = useMemo(() => {
+    if (mode !== "athletes") return null
+    if (selectedItems.length === 0) return null
+    
+    // Buscar el primer deportista de fundación seleccionado
+    const firstFoundationAthlete = selectedItems.find(item => item.type === "fundacion" && item.categoria)
+    return firstFoundationAthlete?.categoria || null
+  }, [selectedItems, mode])
+
+  // Actualizar el filtro de categoría cuando se detecta una categoría seleccionada
+  useEffect(() => {
+    if (autoSelectedCategory && selectedCategory !== autoSelectedCategory) {
+      setSelectedCategory(autoSelectedCategory)
+    } else if (!autoSelectedCategory && selectedCategory !== "") {
+      // Si no hay categoría seleccionada, limpiar el filtro
+      setSelectedCategory("")
+    }
+  }, [autoSelectedCategory])
+
   // ✅ CORRECTO: Usar solo los datos del tab actual
   const currentGroupData = useMemo(() => {
     const groupData = groupedData[activeTab]?.items || []
@@ -133,10 +155,22 @@ const SelectionModal = ({
   }, [groupedData, activeTab])
 
   const availableItems = useMemo(() => {
-    // Mostrar todos los elementos del tab actual, sin filtrar por tipo
-    // La disponibilidad se maneja en isItemAvailable
-    return currentGroupData
-  }, [currentGroupData])
+    let items = currentGroupData
+    
+    // Solo filtrar si hay deportistas de fundación seleccionados con categoría
+    const hasFoundationAthletesSelected = selectedItems.some(item => item.type === "fundacion" && item.categoria)
+    
+    if (mode === "athletes" && autoSelectedCategory && hasFoundationAthletesSelected && groupedData[activeTab]?.source === "fundacion") {
+      items = items.filter(item => {
+        // Mantener los ya seleccionados
+        if (selectedItems.some(s => s.id === item.id)) return true
+        // Solo mostrar deportistas de la misma categoría
+        return item.categoria === autoSelectedCategory
+      })
+    }
+    
+    return items
+  }, [currentGroupData, mode, autoSelectedCategory, groupedData, activeTab, selectedItems])
 
   const filteredItems = useMemo(() => {
     let filtered = availableItems
@@ -183,21 +217,28 @@ const SelectionModal = ({
     // Si ya está seleccionado, está disponible
     if (selectedItems.some(s => s.id === item.id)) return true
     
-    // Si no hay tipo de equipo definido y no hay selecciones, todo está disponible
-    if (selectedItems.length === 0 && !currentTeamType) return true
-    
-    // Si hay elementos seleccionados, solo permitir del mismo tipo
-    if (selectedItems.length > 0) {
-      const firstSelectedType = selectedItems[0].type
-      if (item.type !== firstSelectedType) return false
-    }
-    
-    // Si hay un tipo de equipo definido, solo permitir ese tipo
+    // Si hay un tipo de equipo definido desde props, solo permitir ese tipo
     if (currentTeamType && item.type !== currentTeamType) return false
     
-    // Para deportistas de fundación, verificar categoría
-    if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
-      return item.categoria === currentCategoria
+    // Si no hay selecciones, todo está disponible
+    if (selectedItems.length === 0) {
+      // EXCEPCIÓN: Si viene currentCategoria de props (editando equipo), aplicar restricción
+      if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
+        return item.categoria === currentCategoria
+      }
+      return true
+    }
+    
+    // Si hay elementos seleccionados, solo permitir del mismo tipo
+    const firstSelectedType = selectedItems[0].type
+    if (item.type !== firstSelectedType) return false
+    
+    // Para deportistas de fundación, verificar categoría solo si hay deportistas de fundación seleccionados
+    if (mode === "athletes" && item.type === "fundacion") {
+      const hasFoundationAthletesSelected = selectedItems.some(s => s.type === "fundacion" && s.categoria)
+      if (hasFoundationAthletesSelected && autoSelectedCategory && item.categoria) {
+        return item.categoria === autoSelectedCategory
+      }
     }
     
     return true
@@ -220,7 +261,16 @@ const SelectionModal = ({
 
       onSelect(newSelection)
     } else {
-      onSelect(preparedItem)
+      // Para selección única (entrenadores)
+      const isAlreadySelected = selectedItems.some((s) => s.id === preparedItem.id)
+      
+      if (isAlreadySelected) {
+        // Si ya está seleccionado, deseleccionar (enviar null)
+        onSelect(null)
+      } else {
+        // Si no está seleccionado, seleccionar
+        onSelect(preparedItem)
+      }
       onClose()
     }
   }
@@ -303,14 +353,13 @@ const SelectionModal = ({
                       key={group.source}
                       onClick={() => !isTabDisabled && handleTabChange(index)}
                       disabled={isTabDisabled}
-                      className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative group ${
+                      className={`flex-1 py-3 px-4 text-sm font-medium transition-colors ${
                         activeTab === index
                           ? "bg-white text-primary-purple border-b-2 border-primary-purple"
                           : isTabDisabled
                           ? "text-gray-400 cursor-not-allowed bg-gray-100"
                           : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                       }`}
-                      title={isTabDisabled ? `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo` : ""}
                     >
                       {group.sourceLabel}
                       <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
@@ -318,16 +367,6 @@ const SelectionModal = ({
                       }`}>
                         {group.items ? group.items.length : 0}
                       </span>
-                      
-                      {/* Tooltip para tabs deshabilitados */}
-                      {isTabDisabled && (
-                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 z-50 hidden group-hover:block pointer-events-none">
-                          <div className="bg-gray-700 text-white text-[10px] rounded py-1 px-2 whitespace-nowrap shadow-lg">
-                            No se pueden seleccionar {mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-transparent border-b-gray-700"></div>
-                          </div>
-                        </div>
-                      )}
                     </button>
                   );
                 })}
@@ -400,11 +439,20 @@ const SelectionModal = ({
                         paginatedData.map((item) => {
                           const selected = isSelected(item)
                           const isAvailable = isItemAvailable(item)
+                          
+                          // Verificar si es deportista temporal no disponible
+                          const isTemporalUnavailable = mode === "athletes" && 
+                                                       item.type === "temporal" && 
+                                                       unavailableAthleteIds.includes(item.id);
+                          
                           const displayCategory = item.type === "fundacion" 
                             ? (item.categoria || "Sin categoría")
                             : "No aplica"
 
                           const getUnavailableReason = () => {
+                            if (isTemporalUnavailable) {
+                              return "Esta deportista ya está registrada en otro equipo activo";
+                            }
                             if (isAvailable) return null;
                             if (currentTeamType && item.type !== currentTeamType) {
                               return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
@@ -419,18 +467,30 @@ const SelectionModal = ({
                             <tr
                               key={item.id}
                               className={`border-b border-gray-100 transition-colors relative group ${
-                                selected
+                                selected && isTemporalUnavailable
+                                  ? "bg-rose-50 cursor-pointer"
+                                  : selected
                                   ? "bg-purple-50 cursor-pointer"
-                                  : !isAvailable
+                                  : isTemporalUnavailable
+                                    ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
+                                    : !isAvailable
                                     ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
                                     : "hover:bg-gray-50 cursor-pointer"
                               }`}
                               onClick={(e) => {
-                                if (!isAvailable) {
+                                // Si está seleccionada y es temporal no disponible, permitir deseleccionar
+                                if (isTemporalUnavailable && selected) {
+                                  handleSelect(item);
+                                  return;
+                                }
+                                
+                                // Si no está disponible y no está seleccionada, bloquear
+                                if (!isAvailable || isTemporalUnavailable) {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   return false;
                                 }
+                                
                                 handleSelect(item);
                               }}
                             >
@@ -443,10 +503,15 @@ const SelectionModal = ({
                                         selected ? "text-primary-purple" : "text-gray-300"
                                       }`}
                                       checked={selected}
-                                      disabled={!isAvailable}
+                                      disabled={!isAvailable && !(isTemporalUnavailable && selected)}
                                       onChange={(e) => {
                                         e.stopPropagation()
-                                        if (isAvailable) handleSelect(item)
+                                        // Permitir deseleccionar si está seleccionada y es temporal no disponible
+                                        if (isTemporalUnavailable && selected) {
+                                          handleSelect(item)
+                                        } else if (isAvailable && !isTemporalUnavailable) {
+                                          handleSelect(item)
+                                        }
                                       }}
                                     />
                                   ) : (
@@ -466,24 +531,18 @@ const SelectionModal = ({
                               </td>
                               <td className="py-3 px-4 relative">
                                 <div className="flex items-center gap-2">
-                                  <span className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`}>
+                                  <span 
+                                    className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`} 
+                                    title={(!isAvailable || isTemporalUnavailable) ? getUnavailableReason() : ''}
+                                  >
                                     {item.name}
                                   </span>
-                                  {!isAvailable && (
-                                    <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded font-medium">
-                                      No disponible
+                                  {isTemporalUnavailable && (
+                                    <span className="text-xs bg-rose-100 text-rose-600 px-2 py-0.5 rounded">
+                                      Ya asignada
                                     </span>
                                   )}
                                 </div>
-                                {/* Tooltip visible en toda la fila */}
-                                {!isAvailable && (
-                                  <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block pointer-events-none">
-                                    <div className="bg-gray-700 text-white text-[10px] rounded py-1 px-2 whitespace-nowrap shadow-lg">
-                                      {getUnavailableReason()}
-                                      <div className="absolute bottom-full left-4 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-transparent border-b-gray-700"></div>
-                                    </div>
-                                  </div>
-                                )}
                               </td>
                               <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {item.identification || "N/A"}

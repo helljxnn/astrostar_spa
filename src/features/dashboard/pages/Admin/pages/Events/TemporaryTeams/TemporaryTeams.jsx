@@ -173,12 +173,6 @@ const TemporaryTeams = () => {
       return;
     }
     
-    // Validar que el equipo esté inactivo
-    if (team.estado === 'Activo') {
-      showErrorAlert('Acción no permitida', 'Solo se pueden eliminar equipos con estado "Inactivo"');
-      return;
-    }
-    
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará el equipo ${team.nombre}. Esta acción no se puede deshacer.`,
@@ -268,8 +262,7 @@ const TemporaryTeams = () => {
             buttonConfig={{
               edit: (item) => ({ show: hasPermission('temporaryTeams', 'Editar') }),
               delete: (item) => ({ 
-                show: hasPermission('temporaryTeams', 'Eliminar'),
-                disabled: item.estado === 'Activo'
+                show: hasPermission('temporaryTeams', 'Eliminar')
               }),
               view: (item) => ({ show: hasPermission('temporaryTeams', 'Ver') }),
             }}

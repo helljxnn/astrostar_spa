@@ -435,6 +435,53 @@ class TeamsService {
       excludeId 
     });
   }
+
+  async checkTemporalPersonAvailability(personId, excludeTeamId = null) {
+    try {
+      const params = new URLSearchParams({ 
+        personId: personId.toString() 
+      });
+      
+      if (excludeTeamId) {
+        params.append('excludeTeamId', excludeTeamId.toString());
+      }
+      
+      const url = `${this.endpoint}/check-temporal-person-availability?${params}`;
+      console.log('🌐 Verificando disponibilidad de persona temporal');
+      console.log('   URL:', url);
+      console.log('   personId:', personId);
+      console.log('   excludeTeamId:', excludeTeamId);
+      
+      const response = await apiClient.get(url);
+      
+      console.log('📡 Respuesta disponibilidad completa:', response);
+      console.log('   available:', response.available);
+      console.log('   message:', response.message);
+      console.log('   success:', response.success);
+      
+      if (response && response.success !== undefined) {
+        return {
+          success: true,
+          available: response.available,
+          message: response.message
+        };
+      }
+      
+      return {
+        success: false,
+        available: true,
+        error: response?.message || 'Error verificando disponibilidad'
+      };
+    } catch (error) {
+      console.error('❌ Error verificando disponibilidad:', error);
+      console.error('   Error completo:', error.response?.data || error.message);
+      return {
+        success: false,
+        available: true,
+        error: error.message
+      };
+    }
+  }
 }
 
 export default new TeamsService();
