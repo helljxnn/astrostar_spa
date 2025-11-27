@@ -49,7 +49,7 @@ export const useEvents = () => {
     return {
       id: event.id,
       nombre: event.name,
-      tipo: event.type?.name || '',
+      tipo: event.ServiceType?.name || '',
       tipoId: event.typeId,
       descripcion: event.description || '',
       fechaInicio: startDate,
@@ -58,14 +58,14 @@ export const useEvents = () => {
       horaFin: event.endTime,
       ubicacion: event.location,
       telefono: event.phone,
-      categoria: event.category?.name || '',
+      categoria: event.sportsCategory?.nombre || '',
       categoriaId: event.categoryId,
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
-      patrocinador: event.sponsors?.map(s => s.sponsor.name) || [],
+      patrocinador: event.ServiceSponsor?.map(s => s.Sponsor.name) || [],
       // Para el calendario
       start: new Date(startDate + 'T' + event.startTime),
       end: new Date(endDate + 'T' + event.endTime),

@@ -11,6 +11,7 @@ import EventActionModal from "./EventActionModal";
 import EventRegistrationModal from "./EventRegistrationModal";
 import EventInscriptionModal from "./EventInscriptionModal";
 import EventRegistrationFormModal from "./EventRegistrationFormModal";
+import ViewRegistrationsModal from "./ViewRegistrationsModal";
 import EnglishRegistrationModal from "./EnglishRegistrationModal";
 import EnglishRegistrationFormModal from "./EnglishRegistrationFormModal";
 
@@ -289,6 +290,24 @@ const EventsCalendar = forwardRef(function EventsCalendar({
 
   // Crear (click en slot vacío)
   const handleSlotSelect = ({ start, end }) => {
+    // Validar que la fecha seleccionada sea al menos el día siguiente
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const selectedDate = new Date(start);
+    const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+    
+    // Si la fecha seleccionada es hoy o anterior, mostrar error y no abrir el modal
+    if (selectedDateOnly < tomorrow) {
+      showErrorAlert(
+        'Fecha no válida',
+        'Los eventos deben crearse con al menos un día de anticipación. Por favor, selecciona una fecha a partir de mañana.'
+      );
+      return;
+    }
+
     // Formatear fechas y horas
     const startDate = new Date(start);
     const endDate = new Date(end);
@@ -821,7 +840,14 @@ const EventsCalendar = forwardRef(function EventsCalendar({
 
       {/* Modal de inscripción de participantes */}
       <AnimatePresence>
-        {inscriptionModal.isOpen && (
+        {inscriptionModal.isOpen && inscriptionModal.action === "viewRegistrations" ? (
+          <ViewRegistrationsModal
+            isOpen={inscriptionModal.isOpen}
+            onClose={closeAllModals}
+            eventName={inscriptionModal.eventName}
+            participantType={inscriptionModal.participantType}
+          />
+        ) : inscriptionModal.isOpen && (
           <EventInscriptionModal
             isOpen={inscriptionModal.isOpen}
             onClose={closeAllModals}

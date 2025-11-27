@@ -10,8 +10,8 @@ import {
   showErrorAlert,
 } from "../../../../../../../../shared/utils/alerts";
 
-// Datos quemados para equipos
-const mockTeams = [
+// Datos quemados para equipos de la fundación
+const mockFoundationTeams = [
   {
     id: 1,
     nombre: "Águilas Doradas",
@@ -19,6 +19,7 @@ const mockTeams = [
     entrenador: "Carlos Rodríguez",
     cantidadDeportistas: 18,
     acompanantes: 0,
+    teamType: "Fundacion",
   },
   {
     id: 2,
@@ -27,6 +28,7 @@ const mockTeams = [
     entrenador: "Ana María López",
     cantidadDeportistas: 22,
     acompanantes: 0,
+    teamType: "Fundacion",
   },
   {
     id: 3,
@@ -35,6 +37,7 @@ const mockTeams = [
     entrenador: "Miguel Hernández",
     cantidadDeportistas: 16,
     acompanantes: 0,
+    teamType: "Fundacion",
   },
   {
     id: 4,
@@ -43,6 +46,7 @@ const mockTeams = [
     entrenador: "Laura Martínez",
     cantidadDeportistas: 20,
     acompanantes: 0,
+    teamType: "Fundacion",
   },
   {
     id: 5,
@@ -51,14 +55,47 @@ const mockTeams = [
     entrenador: "Roberto Silva",
     cantidadDeportistas: 19,
     acompanantes: 0,
+    teamType: "Fundacion",
   },
+];
+
+// Datos quemados para equipos temporales
+const mockTemporaryTeams = [
   {
     id: 6,
-    nombre: "Lobos Grises",
-    categoria: "Sub 13",
-    entrenador: "Patricia González",
-    cantidadDeportistas: 15,
+    nombre: "Estrellas del Sur",
+    categoria: "Sub 15",
+    entrenador: "Roberto Sánchez",
+    cantidadDeportistas: 11,
     acompanantes: 0,
+    teamType: "Temporal",
+  },
+  {
+    id: 7,
+    nombre: "Relámpagos FC",
+    categoria: "Sub 17",
+    entrenador: "Diana Torres",
+    cantidadDeportistas: 14,
+    acompanantes: 0,
+    teamType: "Temporal",
+  },
+  {
+    id: 8,
+    nombre: "Cóndores Unidos",
+    categoria: "Sub 19",
+    entrenador: "Miguel Ángel Castro",
+    cantidadDeportistas: 16,
+    acompanantes: 0,
+    teamType: "Temporal",
+  },
+  {
+    id: 9,
+    nombre: "Dragones FC",
+    categoria: "Sub 13",
+    entrenador: "Patricia Ramírez",
+    cantidadDeportistas: 9,
+    acompanantes: 0,
+    teamType: "Temporal",
   },
 ];
 
@@ -67,25 +104,49 @@ const getGlobalInscriptions = () => {
   if (typeof window !== "undefined" && window.globalInscriptions) {
     return window.globalInscriptions;
   }
-  // Inicializar si no existe
+  // Inicializar si no existe - incluir equipos de fundación y temporales con ambos formatos
   const initial = {
     teams: [
-      { id: 1, name: "Águilas Doradas", category: "Sub 15", members: 12 },
-      { id: 2, name: "Leones FC", category: "Sub 17", members: 15 },
+      { 
+        id: 1, 
+        name: "Águilas Doradas",
+        nombre: "Águilas Doradas",
+        category: "Sub 15",
+        categoria: "Sub 15",
+        members: 12,
+        cantidadDeportistas: 12,
+        teamType: "Fundacion" 
+      },
+      { 
+        id: 6, 
+        name: "Estrellas del Sur",
+        nombre: "Estrellas del Sur",
+        category: "Sub 15",
+        categoria: "Sub 15",
+        members: 11,
+        cantidadDeportistas: 11,
+        teamType: "Temporal" 
+      },
     ],
     athletes: [
       {
         id: 1,
         name: "María González",
+        nombre: "María González",
         category: "Sub 15",
+        categoria: "Sub 15",
         age: 14,
+        edad: 14,
         sport: "Fútbol",
       },
       {
         id: 2,
         name: "Carlos Rodríguez",
+        nombre: "Carlos Rodríguez",
         category: "Sub 17",
+        categoria: "Sub 17",
         age: 16,
+        edad: 16,
         sport: "Baloncesto",
       },
     ],
@@ -103,24 +164,81 @@ const EventRegistrationFormModal = ({
   participantType,
   eventType,
 }) => {
+  // Determinar el tipo de participante primero
+  const isTeamType = participantType === "Equipos";
+  
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   // Para eventos de Clausura y Taller, siempre usar "deportistas"
+  // Para equipos, iniciar con "fundacion"
   const [selectedSection, setSelectedSection] = useState(
     eventType === "Clausura" || eventType === "Taller"
       ? "deportistas"
+      : isTeamType
+      ? "fundacion"
       : "deportistas"
   );
   const [selectedTemporalType, setSelectedTemporalType] = useState(""); // Para filtrar personas temporales
   const [currentPage, setCurrentPage] = useState(1);
+  const [temporaryWorkersData, setTemporaryWorkersData] = useState([]);
   const rowsPerPage = 5;
+
+  // Cargar personas temporales al montar el componente
+  useEffect(() => {
+    const loadTemporaryWorkers = async () => {
+      try {
+        const workers = await temporaryWorkersService.getAll();
+        setTemporaryWorkersData(workers);
+      } catch (error) {
+        console.error("Error al cargar personas temporales:", error);
+        setTemporaryWorkersData([]);
+      }
+    };
+
+    if (isOpen) {
+      loadTemporaryWorkers();
+    }
+  }, [isOpen]);
+
+  // Cargar equipos/deportistas ya inscritos al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      const globalInscriptions = getGlobalInscriptions();
+      
+      if (isTeamType && globalInscriptions.teams.length > 0) {
+        // Convertir equipos inscritos al formato del modal
+        const inscribedTeams = globalInscriptions.teams.map(team => ({
+          id: team.id,
+          nombre: team.name || team.nombre,
+          categoria: team.category || team.categoria,
+          entrenador: "Entrenador Asignado",
+          cantidadDeportistas: team.members || team.cantidadDeportistas || 0,
+          teamType: team.teamType || "Fundacion",
+          acompanantes: 0,
+        }));
+        setSelectedItems(inscribedTeams);
+      } else if (isPlayerType && globalInscriptions.athletes.length > 0) {
+        // Convertir deportistas inscritos al formato del modal
+        const inscribedAthletes = globalInscriptions.athletes.map(athlete => ({
+          id: athlete.id,
+          nombre: athlete.name || athlete.nombre,
+          categoria: athlete.category || athlete.categoria,
+          edad: athlete.age || athlete.edad || 0,
+          tipo: "Deportista",
+          acompanantes: 0,
+        }));
+        setSelectedItems(inscribedAthletes);
+      } else {
+        setSelectedItems([]);
+      }
+    }
+  }, [isOpen, isTeamType, isPlayerType]);
 
   if (!isOpen) return null;
 
   const isPlayerType =
     participantType === "Deportistas" || participantType === "Jugadoras";
-  const isTeamType = participantType === "Equipos";
 
   // Preparar datos de deportistas
   const formattedAthletes = athletesData.map((athlete) => ({
@@ -150,8 +268,13 @@ const EventRegistrationFormModal = ({
   // Determinar qué datos usar según el tipo de participante y sección seleccionada
   const getCurrentData = () => {
     if (isTeamType) {
-      // Si es tipo Equipos, usar solo los datos de equipos
-      return mockTeams;
+      // Si es tipo Equipos, separar por fundación y temporales
+      if (selectedSection === "fundacion") {
+        return mockFoundationTeams;
+      } else if (selectedSection === "temporales") {
+        return mockTemporaryTeams;
+      }
+      return mockFoundationTeams; // Por defecto, fundación
     } else if (eventType === "Clausura" || eventType === "Taller") {
       // Para eventos de Clausura y Taller, ÚNICAMENTE deportistas de la fundación
       return formattedAthletes;
@@ -172,9 +295,9 @@ const EventRegistrationFormModal = ({
     if (searchTerm) {
       filtered = filtered.filter(
         (item) =>
-          item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.categoria.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          item.tipo.toLowerCase().includes(searchTerm.toLowerCase())
+          item.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.categoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.tipo?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -208,7 +331,7 @@ const EventRegistrationFormModal = ({
 
   // Categorías únicas para el filtro
   const categories = isTeamType
-    ? [...new Set(mockTeams.map((item) => item.categoria))]
+    ? [...new Set([...mockFoundationTeams, ...mockTemporaryTeams].map((item) => item.categoria))]
     : [...new Set(formattedAthletes.map((item) => item.categoria))];
 
   // Tipos de personas temporales
@@ -239,49 +362,45 @@ const EventRegistrationFormModal = ({
 
   const handleSave = async () => {
     try {
-      // Aquí iría la lógica para guardar las inscripciones
+      // Actualizar el sistema global de inscripciones
+      const globalInscriptions = getGlobalInscriptions();
 
-      // Simular éxito (puedes cambiar esto para simular error)
-      const success = Math.random() > 0.1; // 90% de éxito
+      // Convertir formato para compatibilidad con EventInscriptionModal
+      const convertedItems = selectedItems.map((item) => ({
+        id: item.id,
+        name: item.nombre,
+        nombre: item.nombre,
+        category: item.categoria,
+        categoria: item.categoria,
+        age: item.edad,
+        edad: item.edad,
+        sport: isPlayerType ? "Deporte" : undefined,
+        members: !isPlayerType ? item.cantidadDeportistas : undefined,
+        cantidadDeportistas: !isPlayerType ? item.cantidadDeportistas : undefined,
+        teamType: isTeamType ? item.teamType : undefined,
+      }));
 
-      if (success) {
-        // Actualizar el sistema global de inscripciones
-        const globalInscriptions = getGlobalInscriptions();
-
-        // Convertir formato para compatibilidad con EventInscriptionModal
-        const convertedItems = selectedItems.map((item) => ({
-          id: item.id,
-          name: item.nombre,
-          category: item.categoria,
-          age: item.edad,
-          sport: isPlayerType ? "Deporte" : undefined,
-          members: !isPlayerType ? 12 : undefined,
-        }));
-
-        if (isPlayerType) {
-          globalInscriptions.athletes = convertedItems;
-        } else {
-          globalInscriptions.teams = convertedItems;
-        }
-
-        showSuccessAlert(
-          `${
-            getSectionTitle().charAt(0).toUpperCase() +
-            getSectionTitle().slice(1)
-          } inscritos`,
-          `Se han inscrito ${
-            selectedItems.length
-          } ${getSectionTitle()} exitosamente.`
-        );
-        onClose();
+      if (isPlayerType) {
+        globalInscriptions.athletes = convertedItems;
       } else {
-        throw new Error("Error simulado en la inscripción");
+        globalInscriptions.teams = convertedItems;
       }
+
+      showSuccessAlert(
+        `${
+          getSectionTitle().charAt(0).toUpperCase() +
+          getSectionTitle().slice(1)
+        } inscritos`,
+        `Se han inscrito ${
+          selectedItems.length
+        } ${getSectionTitle()} exitosamente.`
+      );
+      onClose();
     } catch (error) {
       console.error("Error al inscribir:", error);
       showErrorAlert(
         "Error al inscribir",
-        "No se pudieron inscribir los Equipos. Intenta de nuevo."
+        `No se pudieron inscribir los ${getSectionTitle()}. Intenta de nuevo.`
       );
     }
   };
@@ -331,46 +450,89 @@ const EventRegistrationFormModal = ({
           </div>
         </div>
 
-        {/* Section Tabs - Solo mostrar si no es tipo Equipos y no es evento de Clausura/Taller */}
-        {!isTeamType && eventType !== "Clausura" && eventType !== "Taller" && (
+        {/* Section Tabs - Mostrar según el tipo de participante */}
+        {(isTeamType || (eventType !== "Clausura" && eventType !== "Taller")) && (
           <div className="border-b border-gray-200 bg-white">
             <div className="flex">
-              <button
-                onClick={() => {
-                  setSelectedSection("deportistas");
-                  setCurrentPage(1);
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                  setSelectedTemporalType("");
-                }}
-                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
-                  selectedSection === "deportistas"
-                    ? "border-primary-purple text-primary-purple bg-purple-50"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <FaUsers className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Deportistas Fundación</span>
-                <span className="sm:hidden">Deportistas</span>
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedSection("temporales");
-                  setCurrentPage(1);
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                  setSelectedTemporalType("");
-                }}
-                className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
-                  selectedSection === "temporales"
-                    ? "border-primary-purple text-primary-purple bg-purple-50"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <FaUserTie className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Personas Temporales</span>
-                <span className="sm:hidden">Temporales</span>
-              </button>
+              {isTeamType ? (
+                <>
+                  {/* Tabs para Equipos */}
+                  <button
+                    onClick={() => {
+                      setSelectedSection("fundacion");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "fundacion"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUsers className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Equipos de la Fundación</span>
+                    <span className="sm:hidden">Fundación</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedSection("temporales");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "temporales"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUserTie className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Equipos Temporales</span>
+                    <span className="sm:hidden">Temporales</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Tabs para Deportistas */}
+                  <button
+                    onClick={() => {
+                      setSelectedSection("deportistas");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                      setSelectedTemporalType("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "deportistas"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUsers className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Deportistas Fundación</span>
+                    <span className="sm:hidden">Deportistas</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedSection("temporales");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                      setSelectedTemporalType("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "temporales"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUserTie className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Personas Temporales</span>
+                    <span className="sm:hidden">Temporales</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -450,8 +612,9 @@ const EventRegistrationFormModal = ({
         {/* Table */}
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="p-4 sm:p-6 flex-1 overflow-auto">
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 sm:py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">
@@ -625,6 +788,7 @@ const EventRegistrationFormModal = ({
                   <p>No se encontraron resultados</p>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Pagination */}

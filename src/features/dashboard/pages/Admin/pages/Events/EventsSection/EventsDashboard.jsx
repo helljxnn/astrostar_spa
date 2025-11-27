@@ -7,6 +7,7 @@ import EventSearchBar from "./components/EventSearchBar";
 import EventSearchList from "./components/EventSearchList";
 import EventInscriptionModal from "./components/EventInscriptionModal";
 import EventRegistrationFormModal from "./components/EventRegistrationFormModal";
+import ViewRegistrationsModal from "./components/ViewRegistrationsModal";
 import { showDeleteAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import { useEvents } from "./hooks/useEvents";
 
@@ -350,7 +351,14 @@ const Event = () => {
       </div>
 
       {/* Modales de inscripción */}
-      {inscriptionModal.isOpen && (
+      {inscriptionModal.isOpen && inscriptionModal.action === "viewRegistrations" ? (
+        <ViewRegistrationsModal
+          isOpen={inscriptionModal.isOpen}
+          onClose={closeAllModals}
+          eventName={inscriptionModal.eventName}
+          participantType={inscriptionModal.participantType}
+        />
+      ) : inscriptionModal.isOpen && (
         <EventInscriptionModal
           isOpen={inscriptionModal.isOpen}
           onClose={closeAllModals}

@@ -95,27 +95,39 @@ export const EventModal = ({
   };
 
   useEffect(() => {
-    if (!isNew && event) {
-      setTipoEvento(event.tipo || "");
-      setForm({
-        id: event.id || null, // Agregar el ID del evento
-        nombre: event.nombre || "",
-        descripcion: event.descripcion || "",
-        fechaInicio: formatDateForInput(event.fechaInicio) || "",
-        fechaFin: formatDateForInput(event.fechaFin) || "",
-        horaInicio: event.horaInicio || "",
-        horaFin: event.horaFin || "",
-        ubicacion: event.ubicacion || "",
-        telefono: event.telefono || "",
-        imagen: event.imagen || null,
-        cronograma: event.cronograma || null,
-        patrocinador: event.patrocinador || [],
-        categoria: event.categoria || "",
-        categoriaId: event.categoriaId || null,
-        tipoId: event.tipoId || null,
-        estado: event.estadoOriginal || event.estado || "Programado",
-        publicar: event.publicar || false,
-      });
+    if (event) {
+      if (isNew) {
+        // Cuando es nuevo, solo cargar las fechas seleccionadas del calendario
+        setForm(prev => ({
+          ...prev,
+          fechaInicio: formatDateForInput(event.fechaInicio) || "",
+          fechaFin: formatDateForInput(event.fechaFin) || "",
+          horaInicio: event.horaInicio || "",
+          horaFin: event.horaFin || "",
+        }));
+      } else {
+        // Cuando es edición, cargar todos los datos del evento
+        setTipoEvento(event.tipo || "");
+        setForm({
+          id: event.id || null,
+          nombre: event.nombre || "",
+          descripcion: event.descripcion || "",
+          fechaInicio: formatDateForInput(event.fechaInicio) || "",
+          fechaFin: formatDateForInput(event.fechaFin) || "",
+          horaInicio: event.horaInicio || "",
+          horaFin: event.horaFin || "",
+          ubicacion: event.ubicacion || "",
+          telefono: event.telefono || "",
+          imagen: event.imagen || null,
+          cronograma: event.cronograma || null,
+          patrocinador: event.patrocinador || [],
+          categoria: event.categoria || "",
+          categoriaId: event.categoriaId || null,
+          tipoId: event.tipoId || null,
+          estado: event.estadoOriginal || event.estado || "Programado",
+          publicar: event.publicar || false,
+        });
+      }
     }
   }, [event, isNew]);
 

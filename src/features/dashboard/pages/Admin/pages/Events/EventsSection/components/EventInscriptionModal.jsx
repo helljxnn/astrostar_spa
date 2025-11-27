@@ -5,13 +5,21 @@ import SearchInput from "../../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../../shared/components/Table/Pagination";
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 
-// Datos quemados para equipos
-const mockTeams = [
-  { id: 1, name: "Águilas Doradas", category: "Sub 15", members: 12 },
-  { id: 2, name: "Leones FC", category: "Sub 17", members: 15 },
-  { id: 3, name: "Tigres Unidos", category: "Sub 13", members: 10 },
-  { id: 4, name: "Panteras Negras", category: "Sub 15", members: 14 },
-  { id: 5, name: "Halcones Rojos", category: "Sub 17", members: 13 },
+// Datos quemados para equipos de la fundación
+const mockFoundationTeams = [
+  { id: 1, name: "Águilas Doradas", category: "Sub 15", members: 12, teamType: "Fundacion" },
+  { id: 2, name: "Leones FC", category: "Sub 17", members: 15, teamType: "Fundacion" },
+  { id: 3, name: "Tigres Unidos", category: "Sub 13", members: 10, teamType: "Fundacion" },
+  { id: 4, name: "Panteras Negras", category: "Sub 15", members: 14, teamType: "Fundacion" },
+  { id: 5, name: "Halcones Rojos", category: "Sub 17", members: 13, teamType: "Fundacion" },
+];
+
+// Datos quemados para equipos temporales
+const mockTemporaryTeams = [
+  { id: 6, name: "Estrellas del Sur", category: "Sub 15", members: 11, teamType: "Temporal" },
+  { id: 7, name: "Relámpagos FC", category: "Sub 17", members: 14, teamType: "Temporal" },
+  { id: 8, name: "Cóndores Unidos", category: "Sub 19", members: 16, teamType: "Temporal" },
+  { id: 9, name: "Dragones FC", category: "Sub 13", members: 9, teamType: "Temporal" },
 ];
 
 // Datos quemados para deportistas
@@ -33,7 +41,7 @@ const getGlobalInscriptions = () => {
   }
   // Inicializar si no existe
   const initial = {
-    teams: [mockTeams[0], mockTeams[1]], // Primeros 2 equipos inscritos por defecto
+    teams: [mockFoundationTeams[0], mockTemporaryTeams[0]], // 1 equipo de fundación y 1 temporal por defecto
     athletes: [mockAthletes[0], mockAthletes[1]], // Primeros 2 deportistas inscritos por defecto
   };
   if (typeof window !== 'undefined') {
@@ -49,11 +57,13 @@ const EventInscriptionModal = ({
   participantType, 
   action = "register" 
 }) => {
+  // Determinar el tipo de participante primero
+  const isTeamType = participantType === "Equipos";
+  
   // Obtener elementos inscritos desde el estado global
   const getInitialSelectedItems = () => {
     if (action === "editRegistrations" || action === "viewRegistrations") {
       const globalInscriptions = getGlobalInscriptions();
-      const isTeamType = participantType === "Equipos";
       
       if (isTeamType) {
         // Transformar datos de equipos para consistencia
@@ -63,6 +73,7 @@ const EventInscriptionModal = ({
           categoria: team.category,
           entrenador: "Entrenador Asignado",
           cantidadDeportistas: team.members,
+          teamType: team.teamType,
           acompanantes: 0,
         }));
       } else {
@@ -83,7 +94,7 @@ const EventInscriptionModal = ({
   const [selectedItems, setSelectedItems] = useState(getInitialSelectedItems());
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSection, setSelectedSection] = useState("deportistas");
+  const [selectedSection, setSelectedSection] = useState(isTeamType ? "fundacion" : "deportistas");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 3;
 
@@ -95,23 +106,27 @@ const EventInscriptionModal = ({
       setSearchTerm("");
       setSelectedCategory("");
       setCurrentPage(1);
+      // Reiniciar la sección según el tipo de participante
+      setSelectedSection(isTeamType ? "fundacion" : "deportistas");
     }
   }, [isOpen, action, participantType]);
 
   if (!isOpen) return null;
 
-  const isTeamType = participantType === "Equipos";
   const isViewMode = action === "viewRegistrations";
 
   // Preparar datos según el tipo
   const getCurrentData = () => {
     if (isTeamType) {
-      return mockTeams.map(team => ({
+      // Seleccionar equipos según la sección activa
+      const teamsSource = selectedSection === "fundacion" ? mockFoundationTeams : mockTemporaryTeams;
+      return teamsSource.map(team => ({
         id: team.id,
         nombre: team.name,
         categoria: team.category,
         entrenador: "Entrenador Asignado",
         cantidadDeportistas: team.members,
+        teamType: team.teamType,
         acompanantes: 0,
       }));
     } else if (selectedSection === "deportistas") {
@@ -192,8 +207,8 @@ const EventInscriptionModal = ({
         if (!result.isConfirmed) return;
       }
 
-      // Simular éxito/error
-      const success = Math.random() > 0.1; // 90% de éxito
+      // Simular éxito (cambiar a false para simular error)
+      const success = true;
       
       if (!success) {
         throw new Error("Error simulado al guardar");
@@ -202,7 +217,6 @@ const EventInscriptionModal = ({
       // Actualizar el estado global
       if (action === "editRegistrations") {
         const globalInscriptions = getGlobalInscriptions();
-        const isTeamType = participantType === "Equipos";
         if (isTeamType) {
           globalInscriptions.teams = [...selectedItems];
         } else {
@@ -267,42 +281,83 @@ const EventInscriptionModal = ({
           </div>
         </div>
 
-        {/* Section Tabs - Solo mostrar si no es tipo Equipos y no es modo vista */}
-        {!isTeamType && !isViewMode && (
+        {/* Section Tabs - Mostrar según el tipo de participante */}
+        {(isTeamType || !isViewMode) && (
           <div className="border-b border-gray-200 bg-white">
             <div className="flex">
-              <button
-                onClick={() => {
-                  setSelectedSection("deportistas");
-                  setCurrentPage(1);
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  selectedSection === "deportistas"
-                    ? "border-primary-purple text-primary-purple bg-purple-50"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <FaUsers className="w-4 h-4" />
-                Deportistas Fundación
-              </button>
-              <button
-                onClick={() => {
-                  setSelectedSection("temporales");
-                  setCurrentPage(1);
-                  setSearchTerm("");
-                  setSelectedCategory("");
-                }}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                  selectedSection === "temporales"
-                    ? "border-primary-purple text-primary-purple bg-purple-50"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                }`}
-              >
-                <FaUserTie className="w-4 h-4" />
-                Personas Temporales
-              </button>
+              {isTeamType ? (
+                <>
+                  {/* Tabs para Equipos */}
+                  <button
+                    onClick={() => {
+                      setSelectedSection("fundacion");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "fundacion"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUsers className="w-4 h-4" />
+                    Equipos de la Fundación
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedSection("temporales");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "temporales"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUserTie className="w-4 h-4" />
+                    Equipos Temporales
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Tabs para Deportistas */}
+                  <button
+                    onClick={() => {
+                      setSelectedSection("deportistas");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "deportistas"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUsers className="w-4 h-4" />
+                    Deportistas Fundación
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedSection("temporales");
+                      setCurrentPage(1);
+                      setSearchTerm("");
+                      setSelectedCategory("");
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+                      selectedSection === "temporales"
+                        ? "border-primary-purple text-primary-purple bg-purple-50"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <FaUserTie className="w-4 h-4" />
+                    Personas Temporales
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
