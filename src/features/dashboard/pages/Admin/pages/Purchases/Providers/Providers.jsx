@@ -311,12 +311,6 @@ const Providers = () => {
     if (!provider || !provider.id) {
       return showErrorAlert("Error", "Proveedor no válido");
     }
-    if (provider.estado === "Activo") {
-      return showErrorAlert(
-        "No se puede eliminar",
-        `No se puede eliminar el proveedor "${provider.razonSocial}" porque está en estado "Activo". Primero cambie el estado a "Inactivo".`
-      );
-    }
     if (activePurchasesCheck[provider.id]) {
       return showErrorAlert(
         "No se puede eliminar",
@@ -356,14 +350,10 @@ const Providers = () => {
     }),
     delete: (provider) => ({
       show: hasPermission("providers", "Eliminar"),
-      disabled:
-        provider.estado === "Activo" || activePurchasesCheck[provider.id],
-      title:
-        provider.estado === "Activo"
-          ? "No se puede eliminar un proveedor activo"
-          : activePurchasesCheck[provider.id]
-          ? "No se puede eliminar con compras activas"
-          : "Eliminar proveedor",
+      disabled: activePurchasesCheck[provider.id],
+      title: activePurchasesCheck[provider.id]
+        ? "No se puede eliminar con compras activas"
+        : "Eliminar proveedor",
     }),
     view: () => ({
       show: hasPermission("providers", "Ver"),

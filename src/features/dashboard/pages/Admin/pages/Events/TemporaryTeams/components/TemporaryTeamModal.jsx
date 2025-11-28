@@ -197,6 +197,82 @@ const TemporaryTeamModal = ({
     validateTrainer();
   }, [selectedTrainer, teamToEdit?.id, isInitialLoad, teamToEdit]);
 
+  // Validar nombre del equipo en tiempo real
+  useEffect(() => {
+    console.log('🔄 useEffect nombre ejecutado:', {
+      nombre: formData.nombre,
+      touched: touched.nombre,
+      isInitialLoad,
+      teamToEditId: teamToEdit?.id
+    });
+
+    const validateName = async () => {
+      // No validar si el campo está vacío
+      if (!formData.nombre?.trim()) {
+        console.log('⏭️ Saltando validación - campo vacío');
+        // Limpiar error si el campo está vacío
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.nombre;
+          return newErrors;
+        });
+        return;
+      }
+
+      // Solo validar si el campo ha sido tocado al menos una vez
+      if (!touched.nombre) {
+        console.log('⏭️ Saltando validación - campo no tocado');
+        return;
+      }
+
+      // Si es carga inicial y estamos editando, no validar
+      if (isInitialLoad && teamToEdit) {
+        console.log('⏭️ Saltando validación - carga inicial de edición');
+        return;
+      }
+
+      console.log('🔍 Validando nombre:', formData.nombre);
+
+      try {
+        const result = await TeamsService.checkNameAvailability(
+          formData.nombre,
+          teamToEdit?.id
+        );
+
+        console.log('📋 Resultado validación nombre:', result);
+
+        if (result.success && !result.available) {
+          console.log('⚠️ Nombre NO disponible - MOSTRANDO ERROR');
+          setErrors(prev => ({
+            ...prev,
+            nombre: "Este nombre ya está registrado"
+          }));
+          // Marcar como tocado para que el error persista
+          setTouched(prev => ({
+            ...prev,
+            nombre: true
+          }));
+        } else if (result.success && result.available) {
+          console.log('✅ Nombre disponible - LIMPIANDO ERROR');
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors.nombre;
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error validando nombre:', error);
+      }
+    };
+
+    // Debounce para evitar muchas llamadas a la API
+    const timeoutId = setTimeout(() => {
+      validateName();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.nombre, touched.nombre, teamToEdit?.id, isInitialLoad, teamToEdit]);
+
   // Validar entrenador en tiempo real (solo después de interactuar)
   useEffect(() => {
     // Solo validar si el campo ya fue tocado
@@ -353,7 +429,11 @@ const TemporaryTeamModal = ({
         } else if (/\s{2,}/.test(value)) {
           newErrors.nombre = "No se permiten espacios dobles";
         } else {
-          delete newErrors.nombre;
+          // NO eliminar el error aquí, el useEffect de validación de nombre duplicado lo manejará
+          // Solo eliminar si no hay error de duplicado
+          if (errors.nombre !== "Este nombre ya está registrado") {
+            delete newErrors.nombre;
+          }
         }
         break;
       case 'entrenador':
@@ -397,6 +477,12 @@ const TemporaryTeamModal = ({
   };
 
   const getCombinedError = (fieldName) => {
+    // Para el campo nombre, si hay error de duplicado, mostrarlo siempre
+    if (fieldName === 'nombre' && errors[fieldName] === "Este nombre ya está registrado") {
+      return errors[fieldName];
+    }
+    
+    // Para otros errores, solo mostrar si el campo fue tocado
     if (!touched[fieldName]) {
       return null;
     }
