@@ -1,13 +1,13 @@
 import { useState, useMemo, useRef } from "react";
-import { EventModal } from "./components/EventModal";
+import { EventModal } from "./components/eventManage/EventModal";
 import { FaPlus } from "react-icons/fa";
-import EventsCalendar from "./components/EventsCalendar";
-import EventReportGenerator from "./components/EventReportGenerator";
-import EventSearchBar from "./components/EventSearchBar";
-import EventSearchList from "./components/EventSearchList";
-import EventInscriptionModal from "./components/EventInscriptionModal";
-import EventRegistrationFormModal from "./components/EventRegistrationFormModal";
-import ViewRegistrationsModal from "./components/ViewRegistrationsModal";
+import EventsCalendar from "./components/eventManage/EventsCalendar";
+import EventReportGenerator from "./components/eventManage/EventReportGenerator";
+import EventSearchBar from "./components/eventManage/EventSearchBar";
+import EventSearchList from "./components/eventManage/EventSearchList";
+import EventInscriptionModal from "./components/registration/EventInscriptionModal";
+import EventRegistrationFormModal from "./components/registration/EventRegistrationFormModal";
+import ViewRegistrationsModal from "./components/registration/ViewRegistrationsModal";
 import { showDeleteAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import { useEvents } from "./hooks/useEvents";
 
@@ -369,13 +369,16 @@ const Event = () => {
       )}
 
       {registrationFormModal.isOpen && (
-        <EventRegistrationFormModal
-          isOpen={registrationFormModal.isOpen}
-          onClose={closeAllModals}
-          eventName={registrationFormModal.eventName}
-          participantType={registrationFormModal.participantType}
-          eventType={registrationFormModal.eventType}
-        />
+        <>
+          {console.log('🚀 Renderizando EventRegistrationFormModal con:', registrationFormModal)}
+          <EventRegistrationFormModal
+            isOpen={registrationFormModal.isOpen}
+            onClose={closeAllModals}
+            eventName={registrationFormModal.eventName}
+            participantType={registrationFormModal.participantType}
+            eventType={registrationFormModal.eventType}
+          />
+        </>
       )}
     </div>
   );

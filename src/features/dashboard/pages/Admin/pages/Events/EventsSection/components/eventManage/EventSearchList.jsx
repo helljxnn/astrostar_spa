@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaCog, FaUsers } from "react-icons/fa";
 import EventActionModal from "./EventActionModal";
-import EventRegistrationModal from "./EventRegistrationModal";
+import EventRegistrationModal from "../registration/EventRegistrationModal";
 
 const EventSearchList = ({
   events,

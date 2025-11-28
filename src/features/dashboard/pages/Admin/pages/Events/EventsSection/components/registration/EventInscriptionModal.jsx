@@ -1,38 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaFilter, FaUsers, FaUserTie } from "react-icons/fa";
-import SearchInput from "../../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../../shared/components/Table/Pagination";
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
-
-// Datos quemados para equipos de la fundación
-const mockFoundationTeams = [
-  { id: 1, name: "Águilas Doradas", category: "Sub 15", members: 12, teamType: "Fundacion" },
-  { id: 2, name: "Leones FC", category: "Sub 17", members: 15, teamType: "Fundacion" },
-  { id: 3, name: "Tigres Unidos", category: "Sub 13", members: 10, teamType: "Fundacion" },
-  { id: 4, name: "Panteras Negras", category: "Sub 15", members: 14, teamType: "Fundacion" },
-  { id: 5, name: "Halcones Rojos", category: "Sub 17", members: 13, teamType: "Fundacion" },
-];
-
-// Datos quemados para equipos temporales
-const mockTemporaryTeams = [
-  { id: 6, name: "Estrellas del Sur", category: "Sub 15", members: 11, teamType: "Temporal" },
-  { id: 7, name: "Relámpagos FC", category: "Sub 17", members: 14, teamType: "Temporal" },
-  { id: 8, name: "Cóndores Unidos", category: "Sub 19", members: 16, teamType: "Temporal" },
-  { id: 9, name: "Dragones FC", category: "Sub 13", members: 9, teamType: "Temporal" },
-];
-
-// Datos quemados para deportistas
-const mockAthletes = [
-  { id: 1, name: "María González", category: "Sub 15", age: 14, sport: "Fútbol" },
-  { id: 2, name: "Carlos Rodríguez", category: "Sub 17", age: 16, sport: "Baloncesto" },
-  { id: 3, name: "Ana Martínez", category: "Sub 13", age: 12, sport: "Voleibol" },
-  { id: 4, name: "Luis Pérez", category: "Sub 15", age: 15, sport: "Fútbol" },
-  { id: 5, name: "Sofia López", category: "Sub 17", age: 17, sport: "Atletismo" },
-  { id: 6, name: "Diego Hernández", category: "Sub 13", age: 13, sport: "Natación" },
-  { id: 7, name: "Valentina Castro", category: "Sub 15", age: 14, sport: "Gimnasia" },
-  { id: 8, name: "Andrés Morales", category: "Sub 17", age: 16, sport: "Tenis" },
-];
+import SearchInput from "../../../../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../../../../shared/components/Table/Pagination";
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
+import TeamsService from "../../../TemporaryTeams/services/TeamsService";
 
 // Sistema global para simular inscripciones persistentes
 const getGlobalInscriptions = () => {
@@ -41,8 +13,8 @@ const getGlobalInscriptions = () => {
   }
   // Inicializar si no existe
   const initial = {
-    teams: [mockFoundationTeams[0], mockTemporaryTeams[0]], // 1 equipo de fundación y 1 temporal por defecto
-    athletes: [mockAthletes[0], mockAthletes[1]], // Primeros 2 deportistas inscritos por defecto
+    teams: [],
+    athletes: [],
   };
   if (typeof window !== 'undefined') {
     window.globalInscriptions = initial;
@@ -57,8 +29,11 @@ const EventInscriptionModal = ({
   participantType, 
   action = "register" 
 }) => {
+  console.log('🎯 EventInscriptionModal renderizado:', { isOpen, eventName, participantType, action });
+  
   // Determinar el tipo de participante primero
   const isTeamType = participantType === "Equipos";
+  console.log('🔍 isTeamType:', isTeamType);
   
   // Obtener elementos inscritos desde el estado global
   const getInitialSelectedItems = () => {
@@ -71,8 +46,8 @@ const EventInscriptionModal = ({
           id: team.id,
           nombre: team.name,
           categoria: team.category,
-          entrenador: "Entrenador Asignado",
-          cantidadDeportistas: team.members,
+          entrenador: team.coach || "Entrenador Asignado",
+          cantidadDeportistas: team._count?.members || 0,
           teamType: team.teamType,
           acompanantes: 0,
         }));
@@ -96,20 +71,75 @@ const EventInscriptionModal = ({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSection, setSelectedSection] = useState(isTeamType ? "fundacion" : "deportistas");
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [foundationTeams, setFoundationTeams] = useState([]);
+  const [temporaryTeams, setTemporaryTeams] = useState([]);
   const rowsPerPage = 3;
+
+  // Cargar equipos desde la API
+  useEffect(() => {
+    console.log('🔍 EventInscriptionModal useEffect:', { isOpen, isTeamType, participantType });
+    if (isOpen && isTeamType) {
+      console.log('✅ Condiciones cumplidas, cargando equipos...');
+      loadTeams();
+    } else {
+      console.log('⚠️ Condiciones no cumplidas:', { isOpen, isTeamType });
+    }
+  }, [isOpen, isTeamType]);
+
+  const loadTeams = async () => {
+    console.log('🔄 Iniciando carga de equipos...');
+    setLoading(true);
+    try {
+      // Cargar equipos de la fundación
+      console.log('📡 Solicitando equipos de la fundación...');
+      const foundationResponse = await TeamsService.getTeams({
+        teamType: 'Fundacion',
+        status: 'Active',
+        limit: 100
+      });
+      
+      console.log('✅ Respuesta equipos fundación:', foundationResponse);
+      
+      if (foundationResponse.success) {
+        setFoundationTeams(foundationResponse.data || []);
+        console.log('✅ Equipos fundación cargados:', foundationResponse.data?.length || 0);
+      }
+
+      // Cargar equipos temporales
+      console.log('📡 Solicitando equipos temporales...');
+      const temporaryResponse = await TeamsService.getTeams({
+        teamType: 'Temporal',
+        status: 'Active',
+        limit: 100
+      });
+      
+      console.log('✅ Respuesta equipos temporales:', temporaryResponse);
+      
+      if (temporaryResponse.success) {
+        setTemporaryTeams(temporaryResponse.data || []);
+        console.log('✅ Equipos temporales cargados:', temporaryResponse.data?.length || 0);
+      }
+    } catch (error) {
+      console.error('❌ Error cargando equipos:', error);
+      // Comentado temporalmente para depuración
+      // showErrorAlert('Error', 'No se pudieron cargar los equipos');
+    } finally {
+      setLoading(false);
+      console.log('✅ Carga de equipos finalizada');
+    }
+  };
 
   // Reiniciar estado cuando cambie la acción o se abra el modal
   useEffect(() => {
     if (isOpen) {
-      const initialItems = getInitialSelectedItems();
-      setSelectedItems(initialItems);
       setSearchTerm("");
       setSelectedCategory("");
       setCurrentPage(1);
       // Reiniciar la sección según el tipo de participante
       setSelectedSection(isTeamType ? "fundacion" : "deportistas");
     }
-  }, [isOpen, action, participantType]);
+  }, [isOpen, isTeamType]);
 
   if (!isOpen) return null;
 
@@ -119,25 +149,19 @@ const EventInscriptionModal = ({
   const getCurrentData = () => {
     if (isTeamType) {
       // Seleccionar equipos según la sección activa
-      const teamsSource = selectedSection === "fundacion" ? mockFoundationTeams : mockTemporaryTeams;
+      const teamsSource = selectedSection === "fundacion" ? foundationTeams : temporaryTeams;
       return teamsSource.map(team => ({
         id: team.id,
         nombre: team.name,
         categoria: team.category,
-        entrenador: "Entrenador Asignado",
-        cantidadDeportistas: team.members,
+        entrenador: team.coach || "Sin entrenador",
+        cantidadDeportistas: team._count?.members || 0,
         teamType: team.teamType,
         acompanantes: 0,
       }));
     } else if (selectedSection === "deportistas") {
-      return mockAthletes.map(athlete => ({
-        id: athlete.id,
-        nombre: athlete.name,
-        categoria: athlete.category,
-        edad: athlete.age,
-        tipo: "Deportista",
-        acompanantes: 0,
-      }));
+      // TODO: Implementar carga de deportistas desde la API
+      return [];
     } else {
       // Personas temporales (vacío por ahora, se puede agregar después)
       return [];
@@ -404,130 +428,139 @@ const EventInscriptionModal = ({
         {/* Content */}
         <div className="flex-1 overflow-hidden">
           <div className="p-6">
-            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedItems([...paginatedData]);
-                          } else {
-                            setSelectedItems([]);
-                          }
-                        }}
-                        checked={
-                          paginatedData.length > 0 &&
-                          selectedItems.length === paginatedData.length
-                        }
-                        disabled={isViewMode}
-                      />
-                    </th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Nombre
-                    </th>
-                    {isTeamType ? (
-                      <>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Entrenador
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Cantidad Deportistas
-                        </th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Categoría
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Edad
-                        </th>
-                      </>
-                    )}
-                    <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                      Acompañantes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedData.map((item) => {
-                    const isSelected = selectedItems.find(
-                      (selected) => selected.id === item.id
-                    );
-                    return (
-                      <tr
-                        key={item.id}
-                        className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                          isSelected ? "bg-purple-50" : ""
-                        }`}
-                      >
-                        <td className="py-3 px-4">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
-                            checked={!!isSelected}
-                            onChange={() => handleItemToggle(item)}
-                            disabled={isViewMode}
-                          />
-                        </td>
-                        <td className="py-3 px-4 font-medium text-gray-900">
-                          {item.nombre}
-                        </td>
-                        {isTeamType ? (
-                          <>
-                            <td className="py-3 px-4 text-gray-600">
-                              {item.entrenador}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-sm font-medium">
-                                {item.cantidadDeportistas}
-                              </span>
-                            </td>
-                          </>
-                        ) : (
-                          <>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
-                                {item.categoria}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {item.edad} años
-                            </td>
-                          </>
-                        )}
-                        <td className="py-3 px-4">
-                          <input
-                            type="number"
-                            min="0"
-                            max="10"
-                            value={
-                              isSelected ? isSelected.acompanantes || 0 : 0
-                            }
-                            onChange={(e) =>
-                              handleAcompanantesChange(item.id, e.target.value)
-                            }
-                            disabled={!isSelected || isViewMode}
-                            className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-purple focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {paginatedData.length === 0 && (
+            {loading ? (
+              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                <div className="text-center py-12 text-gray-500">
+                  <div className="text-4xl mb-4">⏳</div>
+                  <p>Cargando datos...</p>
+                </div>
+              </div>
+            ) : paginatedData.length === 0 ? (
+              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
                 <div className="text-center py-12 text-gray-500">
                   <div className="text-4xl mb-4">🔍</div>
                   <p>No se encontraron resultados</p>
                 </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedItems([...paginatedData]);
+                            } else {
+                              setSelectedItems([]);
+                            }
+                          }}
+                          checked={
+                            paginatedData.length > 0 &&
+                            selectedItems.length === paginatedData.length
+                          }
+                          disabled={isViewMode}
+                        />
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        Nombre
+                      </th>
+                      {isTeamType ? (
+                        <>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                            Entrenador
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                            Cantidad Deportistas
+                          </th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                            Categoría
+                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                            Edad
+                          </th>
+                        </>
+                      )}
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">
+                        Acompañantes
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedData.map((item) => {
+                      const isSelected = selectedItems.find(
+                        (selected) => selected.id === item.id
+                      );
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                            isSelected ? "bg-purple-50" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-4">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 text-primary-purple focus:ring-primary-purple border-gray-300 rounded"
+                              checked={!!isSelected}
+                              onChange={() => handleItemToggle(item)}
+                              disabled={isViewMode}
+                            />
+                          </td>
+                          <td className="py-3 px-4 font-medium text-gray-900">
+                            {item.nombre}
+                          </td>
+                          {isTeamType ? (
+                            <>
+                              <td className="py-3 px-4 text-gray-600">
+                                {item.entrenador}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-sm font-medium">
+                                  {item.cantidadDeportistas}
+                                </span>
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 w-fit">
+                                  {item.categoria}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-600">
+                                {item.edad} años
+                              </td>
+                            </>
+                          )}
+                          <td className="py-3 px-4">
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={
+                                isSelected ? isSelected.acompanantes || 0 : 0
+                              }
+                              onChange={(e) =>
+                                handleAcompanantesChange(item.id, e.target.value)
+                              }
+                              disabled={!isSelected || isViewMode}
+                              className="w-16 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-primary-purple focus:border-transparent disabled:bg-gray-100 disabled:text-gray-400"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
             {/* Pagination */}
             {totalRows > rowsPerPage && (

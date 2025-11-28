@@ -15,14 +15,12 @@ class TeamsService {
         teamType = "" 
       } = params;
       
-      const response = await apiClient.get(this.endpoint, { 
-        params: {
-          page, 
-          limit, 
-          search,
-          status,
-          teamType
-        }
+      const response = await apiClient.get(this.endpoint, {
+        page, 
+        limit, 
+        search,
+        status,
+        teamType
       });
       
       if (response && response.success) {

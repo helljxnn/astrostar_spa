@@ -5,22 +5,22 @@ import es from "date-fns/locale/es";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaLanguage, FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import "../Styles/calendarCustomevents.css";
-import { EventModal } from "../components/EventModal";
+import "../../Styles/calendarCustomevents.css";
+import { EventModal } from "./EventModal";
 import EventActionModal from "./EventActionModal";
-import EventRegistrationModal from "./EventRegistrationModal";
-import EventInscriptionModal from "./EventInscriptionModal";
-import EventRegistrationFormModal from "./EventRegistrationFormModal";
-import ViewRegistrationsModal from "./ViewRegistrationsModal";
-import EnglishRegistrationModal from "./EnglishRegistrationModal";
-import EnglishRegistrationFormModal from "./EnglishRegistrationFormModal";
+import EventRegistrationModal from "../registration/EventRegistrationModal";
+import EventInscriptionModal from "../registration/EventInscriptionModal";
+import EventRegistrationFormModal from "../registration/EventRegistrationFormModal";
+import ViewRegistrationsModal from "../registration/ViewRegistrationsModal";
+import EnglishRegistrationModal from "../english/EnglishRegistrationModal";
+import EnglishRegistrationFormModal from "../english/EnglishRegistrationFormModal";
 
 import DayEventsModal from "./DayEventsModal";
 import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts";
 
 const locales = { es };
 const localizer = dateFnsLocalizer({

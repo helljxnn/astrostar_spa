@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { FormField } from "../../../../../../../../shared/components/FormField";
-import { useFormEventValidation } from "../hooks/useFormEventValidation";
+import { FormField } from "../../../../../../../../../shared/components/FormField";
+import { useFormEventValidation } from "../../hooks/useFormEventValidation";
 import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts";
 import { SponsorsSelector } from "./SponsorsSelector";
 import CloudinaryUpload from "./CloudinaryUpload";
 
