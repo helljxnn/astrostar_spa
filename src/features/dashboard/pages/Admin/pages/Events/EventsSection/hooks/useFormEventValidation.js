@@ -75,8 +75,17 @@ export const useFormEventValidation = () => {
       case "fechaInicio":
         if (!value) {
           error = "La fecha de inicio es obligatoria.";
+        } else if (!formData.id) {
+          // Solo validar al crear eventos nuevos - la fecha de inicio debe ser futura
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const selectedDate = new Date(value);
+          const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+          
+          if (selectedDateOnly <= today) {
+            error = "Selecciona una fecha próxima para el evento.";
+          }
         }
-        // Permitir fechas de inicio en el pasado
         break;
 
       case "fechaFin":
@@ -98,8 +107,15 @@ export const useFormEventValidation = () => {
       case "horaInicio":
         if (!value) {
           error = "La hora de inicio es obligatoria.";
+        } else if (!formData.id && formData.fechaInicio) {
+          // Validar que la fecha y hora de inicio sean futuras
+          const now = new Date();
+          const selectedDateTime = new Date(formData.fechaInicio + 'T' + value);
+          
+          if (selectedDateTime <= now) {
+            error = "La fecha y hora de inicio deben ser futuras.";
+          }
         }
-        // Permitir horas de inicio en el pasado
         break;
 
       case "horaFin":
@@ -113,7 +129,7 @@ export const useFormEventValidation = () => {
           const selectedDateTime = new Date(formData.fechaFin + 'T' + value);
           
           if (selectedDateTime <= now) {
-            error = "La fecha y hora de finalización deben ser futuras.";
+            error = "La fecha y hora de finalización deben ser próximas.";
           }
         }
         break;
@@ -126,12 +142,39 @@ export const useFormEventValidation = () => {
         if (!value?.trim()) {
           error = "El teléfono es obligatorio.";
         } else {
-          // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
-          const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
-          const phoneWithoutCode = /^\d{10}$/; // 3226758060
+          const phone = value.trim();
           
-          if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
-            error = "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
+          // Validar si tiene código de país
+          if (phone.startsWith('+57') || phone.startsWith('57')) {
+            // Remover código de país y espacios
+            const local = phone.replace(/^(\+57|57)\s*/, '').replace(/\s/g, '');
+            if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) {
+              error = "";
+            } else {
+              error = "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
+            }
+          } else {
+            // Validar sin código de país
+            if (!/^[\d\s]+$/.test(phone)) {
+              error = "El teléfono solo puede contener números";
+            } else {
+              const cleanPhone = phone.replace(/\s/g, '');
+              if ((cleanPhone.length === 10 && /^3/.test(cleanPhone)) || (cleanPhone.length === 7 && /^[2-8]/.test(cleanPhone))) {
+                error = "";
+              } else if (cleanPhone.length < 7) {
+                error = "El número debe tener al menos 7 dígitos";
+              } else if (cleanPhone.length > 10) {
+                error = "Número demasiado largo. Máximo 10 dígitos para celular";
+              } else if (cleanPhone.length === 10 && !/^3/.test(cleanPhone)) {
+                error = "Los números celulares deben iniciar con 3";
+              } else if (cleanPhone.length === 7 && !/^[2-8]/.test(cleanPhone)) {
+                error = "Los números fijos deben iniciar con 2-8";
+              } else if ([8, 9].includes(cleanPhone.length)) {
+                error = "Longitud inválida. Use 7 dígitos (fijo) o 10 dígitos (celular)";
+              } else {
+                error = "Formato de teléfono inválido";
+              }
+            }
           }
         }
         break;
@@ -149,8 +192,10 @@ export const useFormEventValidation = () => {
         // Haciendo los patrocinadores opcionales
         break;
 
-      case "categoria":
-        if (!value?.trim()) error = "Debe seleccionar una categoría.";
+      case "categoryIds":
+        if (!value || !Array.isArray(value) || value.length === 0) {
+          error = "Debe seleccionar al menos una categoría.";
+        }
         break;
 
       case "estado":

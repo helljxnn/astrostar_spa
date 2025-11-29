@@ -7,8 +7,8 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../../../shared/utils/alerts";
-import { SponsorsSelector } from "./SponsorsSelector";
 import CloudinaryUpload from "./CloudinaryUpload";
+import { MultiSelect } from "./MultiSelect";
 
 export const EventModal = ({
   onClose,
@@ -32,8 +32,7 @@ export const EventModal = ({
     imagen: null,
     cronograma: null,
     patrocinador: [],
-    categoria: "",
-    categoriaId: null,
+    categoryIds: [],
     tipoId: null,
     estado: "Programado", // Estado por defecto al crear
     publicar: false,
@@ -121,8 +120,7 @@ export const EventModal = ({
           imagen: event.imagen || null,
           cronograma: event.cronograma || null,
           patrocinador: event.patrocinador || [],
-          categoria: event.categoria || "",
-          categoriaId: event.categoriaId || null,
+          categoryIds: event.categoryIds || [],
           tipoId: event.tipoId || null,
           estado: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
@@ -156,15 +154,13 @@ export const EventModal = ({
         if (!result.isConfirmed) return;
       }
 
-      // Encontrar los IDs de categoría y tipo
+      // Encontrar el ID del tipo
       const selectedType = referenceData.types.find(t => t.name === tipoEvento);
-      const selectedCategory = referenceData.categories.find(c => c.name === form.categoria);
 
       const eventData = { 
         ...form, 
         tipo: tipoEvento,
         tipoId: selectedType?.id || form.tipoId,
-        categoriaId: selectedCategory?.id || form.categoriaId,
         id: event?.id
       };
       
@@ -217,8 +213,8 @@ export const EventModal = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* El resto de campos aparece cuando hay tipoEvento */}
           <>
-            {/* Fila 1 - Tipo, Nombre, Categoría, Ubicación */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Fila 1 - Tipo, Nombre, Ubicación */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <FormField
                   label="Tipo"
@@ -280,23 +276,6 @@ export const EventModal = ({
               </div>
 
               <FormField
-                label="Categoría"
-                name="categoria"
-                type="select"
-                value={form.categoria}
-                onChange={handleChange}
-                onBlur={() => handleBlur("categoria", form.categoria, form)}
-                options={referenceData.categories.map(cat => ({
-                  value: cat.name,
-                  label: cat.name
-                }))}
-                error={errors.categoria}
-                touched={touched.categoria}
-                required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <FormField
                 label="Ubicación"
                 name="ubicacion"
                 value={form.ubicacion}
@@ -310,8 +289,46 @@ export const EventModal = ({
               />
             </div>
 
-            {/* Fila 2 - Teléfono, Patrocinadores y Descripción */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Fila 1.5 - Categorías y Patrocinadores (Multi-select) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MultiSelect
+                label="Categorías"
+                name="categoryIds"
+                options={referenceData.categories.map(cat => ({
+                  value: cat.id,
+                  label: cat.name,
+                  description: cat.ageRange
+                }))}
+                value={form.categoryIds}
+                onChange={handleChange}
+                error={errors.categoryIds}
+                touched={touched.categoryIds}
+                disabled={mode === "view"}
+                placeholder="Selecciona categorías"
+                required={true}
+              />
+
+              <MultiSelect
+                label="Patrocinadores"
+                name="patrocinador"
+                options={[
+                  { value: "Natipan", label: "Natipan" },
+                  { value: "Ponymalta", label: "Ponymalta" },
+                  { value: "NovaSport", label: "NovaSport" },
+                  { value: "Adidas", label: "Adidas" }
+                ]}
+                value={form.patrocinador}
+                onChange={handleChange}
+                error={errors.patrocinador}
+                touched={touched.patrocinador}
+                disabled={mode === "view"}
+                placeholder="Selecciona patrocinadores"
+                required={false}
+              />
+            </div>
+
+            {/* Fila 2 - Teléfono y Descripción */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
                 label="Teléfono"
                 name="telefono"
@@ -322,14 +339,6 @@ export const EventModal = ({
                 error={errors.telefono}
                 touched={touched.telefono}
                 required={mode !== "view"}
-                disabled={mode === "view"}
-              />
-
-              <SponsorsSelector
-                value={form.patrocinador}
-                onChange={(val) => handleChange("patrocinador", val)}
-                error={errors.patrocinador}
-                touched={touched.patrocinador}
                 disabled={mode === "view"}
               />
 
@@ -433,19 +442,45 @@ export const EventModal = ({
                   />
                 </div>
 
-                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors h-fit">
-                  <input
-                    type="checkbox"
-                    id="publicar-evento"
-                    name="publicar"
-                    checked={form.publicar}
-                    onChange={(e) => handleChange("publicar", e.target.checked)}
-                    disabled={mode === "view"}
-                    className="w-4 h-4 text-purple-600 focus:ring-purple-500 focus:ring-1 border-purple-300 rounded cursor-pointer"
-                  />
-                  <label htmlFor="publicar-evento" className="text-xs font-medium text-purple-700 cursor-pointer select-none">
-                    Publicar evento
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium text-gray-700">
+                    Publicar Evento
                   </label>
+                  <div className="flex items-center gap-3">
+                    {/* Toggle Switch */}
+                    <button
+                      type="button"
+                      onClick={() => mode !== "view" && handleChange("publicar", !form.publicar)}
+                      disabled={mode === "view"}
+                      className={`
+                        relative inline-flex h-6 w-11 items-center rounded-full
+                        transition-colors duration-200 ease-in-out
+                        focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
+                        ${mode === "view" ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
+                        ${form.publicar ? 'bg-primary-purple' : 'bg-gray-300'}
+                      `}
+                    >
+                      <span
+                        className={`
+                          inline-block h-4 w-4 transform rounded-full bg-white
+                          transition-transform duration-200 ease-in-out
+                          ${form.publicar ? 'translate-x-6' : 'translate-x-1'}
+                        `}
+                      />
+                    </button>
+                    
+                    {/* Label con estado */}
+                    <span className={`text-sm font-medium ${form.publicar ? 'text-primary-purple' : 'text-gray-500'}`}>
+                      {form.publicar ? 'Visible para todos' : 'Solo visible para administradores'}
+                    </span>
+                  </div>
+                  
+                  {/* Descripción */}
+                  <p className="text-xs text-gray-500">
+                    {form.publicar 
+                      ? 'El evento será visible en la página pública' 
+                      : 'El evento solo será visible en el panel de administración'}
+                  </p>
                 </div>
 
                 {/* Estado - Visible en modo view y edit */}

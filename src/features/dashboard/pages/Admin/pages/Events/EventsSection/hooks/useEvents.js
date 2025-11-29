@@ -46,6 +46,11 @@ export const useEvents = () => {
     const estadoParaModal = event.status; // Mantener "Pausado", "Programado", etc.
     const estadoParaLista = event.status === 'Pausado' ? 'pausado' : event.status.toLowerCase();
     
+    // Extraer categorías del evento
+    const categories = event.ServiceCategory || [];
+    const categoryIds = categories.map(sc => sc.categoryId);
+    const categoryNames = categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean);
+    
     return {
       id: event.id,
       nombre: event.name,
@@ -58,8 +63,8 @@ export const useEvents = () => {
       horaFin: event.endTime,
       ubicacion: event.location,
       telefono: event.phone,
-      categoria: event.sportsCategory?.nombre || '',
-      categoriaId: event.categoryId,
+      categoria: categoryNames.join(', ') || '', // Para mostrar en lista
+      categoryIds: categoryIds, // Para el formulario
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
@@ -99,7 +104,8 @@ export const useEvents = () => {
       imageUrl: event.imagen || null,
       scheduleFile: event.cronograma || null,
       publish: event.publicar || false,
-      categoryId: event.categoriaId,
+      categoryIds: event.categoryIds || [],
+      sponsorNames: event.patrocinador || [],
       typeId: event.tipoId
     };
   };
