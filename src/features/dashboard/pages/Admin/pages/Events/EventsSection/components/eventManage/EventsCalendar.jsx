@@ -8,8 +8,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../../Styles/calendarCustomevents.css";
 import { EventModal } from "./EventModal";
 import EventActionModal from "./EventActionModal";
-import EventRegistrationModal from "../registration/EventRegistrationModal";
-import EventInscriptionModal from "../registration/EventInscriptionModal";
+import EventRegistrationOptionsModal from "../registration/EventRegistrationOptionsModal";
 import EventRegistrationFormModal from "../registration/EventRegistrationFormModal";
 import ViewRegistrationsModal from "../registration/ViewRegistrationsModal";
 import EnglishRegistrationModal from "../english/EnglishRegistrationModal";
@@ -47,7 +46,8 @@ const EventsCalendar = forwardRef(function EventsCalendar({
   referenceData = { categories: [], types: [] },
   onCreateEvent,
   onUpdateEvent,
-  onDeleteEvent
+  onDeleteEvent,
+  onRefresh
 }, ref) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date()); // Fecha actual
@@ -117,6 +117,7 @@ const EventsCalendar = forwardRef(function EventsCalendar({
     eventName: "",
     participantType: "",
     action: "register",
+    eventId: null,
   });
 
   // Manejar click en acciones de evento
@@ -569,6 +570,8 @@ const EventsCalendar = forwardRef(function EventsCalendar({
     eventName: "",
     participantType: "",
     eventType: "",
+    eventId: null,
+    mode: "register",
   });
 
   // Estados para modales de inglés
@@ -590,28 +593,49 @@ const EventsCalendar = forwardRef(function EventsCalendar({
 
   const handleRegistrationAction = (action, participantType) => {
     const event = registrationModal.event;
+    
+    // Validar estado del evento antes de permitir inscripciones
+    const estadoEvento = event.estadoOriginal || event.estado || "";
 
-    // Cerrar el modal de selección primero
     closeAllModals();
 
-    if (action === "register") {
-      // Usar el nuevo modal de inscripción con formulario
+    if (action === "register" || action === "editRegistrations") {
+      // No permitir inscribir o editar inscripciones si el evento está finalizado o cancelado
+      if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
+        showErrorAlert(
+          'Evento Finalizado', 
+          'No se pueden realizar inscripciones en un evento finalizado.'
+        );
+        return;
+      }
+      
+      if (estadoEvento === "Cancelado" || estadoEvento === "cancelado") {
+        showErrorAlert(
+          'Evento Cancelado', 
+          'No se pueden realizar inscripciones en un evento cancelado.'
+        );
+        return;
+      }
+      
       setTimeout(() => {
         setRegistrationFormModal({
           isOpen: true,
           eventName: event.title,
           participantType: participantType,
           eventType: event.tipo,
+          eventId: event.id,
+          mode: action === "editRegistrations" ? "edit" : "register",
         });
       }, 100);
-    } else {
-      // Usar el modal anterior para editar y ver
+    } else if (action === "viewRegistrations") {
+      // Permitir ver inscripciones sin importar el estado
       setTimeout(() => {
         setInscriptionModal({
           isOpen: true,
           eventName: event.title,
           participantType: participantType,
           action: action,
+          eventId: event.id,
         });
       }, 100);
     }
@@ -664,12 +688,15 @@ const EventsCalendar = forwardRef(function EventsCalendar({
       eventName: "",
       participantType: "",
       action: "register",
+      eventId: null,
     });
     setRegistrationFormModal({
       isOpen: false,
       eventName: "",
       participantType: "",
       eventType: "",
+      eventId: null,
+      mode: "register",
     });
     setEnglishModal({ isOpen: false, position: null });
     setEnglishFormModal({ isOpen: false, action: "register" });
@@ -825,35 +852,30 @@ const EventsCalendar = forwardRef(function EventsCalendar({
         )}
       </AnimatePresence>
 
-      {/* Modal de inscripciones */}
+      {/* Modal de opciones de inscripción */}
       <AnimatePresence>
         {registrationModal.isOpen && (
-          <EventRegistrationModal
+          <EventRegistrationOptionsModal
             isOpen={registrationModal.isOpen}
             onClose={closeAllModals}
             onAction={handleRegistrationAction}
             position={registrationModal.position}
             eventType={registrationModal.event?.tipo}
+            hasRegistrations={registrationModal.event?.hasRegistrations || false}
+            eventStatus={registrationModal.event?.estadoOriginal || registrationModal.event?.estado || ""}
           />
         )}
       </AnimatePresence>
 
       {/* Modal de inscripción de participantes */}
       <AnimatePresence>
-        {inscriptionModal.isOpen && inscriptionModal.action === "viewRegistrations" ? (
+        {inscriptionModal.isOpen && inscriptionModal.action === "viewRegistrations" && (
           <ViewRegistrationsModal
             isOpen={inscriptionModal.isOpen}
             onClose={closeAllModals}
             eventName={inscriptionModal.eventName}
             participantType={inscriptionModal.participantType}
-          />
-        ) : inscriptionModal.isOpen && (
-          <EventInscriptionModal
-            isOpen={inscriptionModal.isOpen}
-            onClose={closeAllModals}
-            eventName={inscriptionModal.eventName}
-            participantType={inscriptionModal.participantType}
-            action={inscriptionModal.action}
+            eventId={inscriptionModal.eventId}
           />
         )}
       </AnimatePresence>
@@ -867,6 +889,11 @@ const EventsCalendar = forwardRef(function EventsCalendar({
             eventName={registrationFormModal.eventName}
             participantType={registrationFormModal.participantType}
             eventType={registrationFormModal.eventType}
+            eventId={registrationFormModal.eventId}
+            mode={registrationFormModal.mode}
+            onSuccess={() => {
+              if (onRefresh) onRefresh();
+            }}
           />
         )}
       </AnimatePresence>

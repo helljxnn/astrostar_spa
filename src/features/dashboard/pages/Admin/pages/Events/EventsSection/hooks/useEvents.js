@@ -66,6 +66,7 @@ export const useEvents = () => {
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
       patrocinador: event.ServiceSponsor?.map(s => s.Sponsor.name) || [],
+      hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
       // Para el calendario
       start: new Date(startDate + 'T' + event.startTime),
       end: new Date(endDate + 'T' + event.endTime),

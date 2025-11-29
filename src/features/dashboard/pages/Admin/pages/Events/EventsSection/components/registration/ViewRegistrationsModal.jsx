@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FaArrowLeft, 
@@ -9,73 +9,61 @@ import {
   FaUserFriends,
   FaChartBar
 } from "react-icons/fa";
-
-// Sistema global de inscripciones
-const getGlobalInscriptions = () => {
-  if (typeof window !== "undefined" && window.globalInscriptions) {
-    return window.globalInscriptions;
-  }
-  // Inicializar con datos de ejemplo si no existe
-  const initial = {
-    teams: [
-      { 
-        id: 1, 
-        name: "Águilas Doradas", 
-        nombre: "Águilas Doradas",
-        category: "Sub 15", 
-        categoria: "Sub 15",
-        members: 12,
-        cantidadDeportistas: 12,
-        teamType: "Fundacion" 
-      },
-      { 
-        id: 6, 
-        name: "Estrellas del Sur", 
-        nombre: "Estrellas del Sur",
-        category: "Sub 15", 
-        categoria: "Sub 15",
-        members: 11,
-        cantidadDeportistas: 11,
-        teamType: "Temporal" 
-      },
-    ],
-    athletes: []
-  };
-  if (typeof window !== "undefined") {
-    window.globalInscriptions = initial;
-  }
-  return initial;
-};
+import RegistrationsService from "../../services/RegistrationsService";
+import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
 
 const ViewRegistrationsModal = ({ 
   isOpen, 
   onClose, 
   eventName, 
-  participantType 
+  participantType,
+  eventId
 }) => {
   const isTeamType = participantType === "Equipos";
   const [selectedSection, setSelectedSection] = useState(isTeamType ? "fundacion" : "deportistas");
   const [searchTerm, setSearchTerm] = useState("");
+  const [registrations, setRegistrations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Cargar inscripciones cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && eventId && isTeamType) {
+      loadRegistrations();
+    }
+  }, [isOpen, eventId, isTeamType]);
+
+  const loadRegistrations = async () => {
+    setLoading(true);
+    try {
+      const response = await RegistrationsService.getEventRegistrations(eventId);
+      
+      if (response.success && response.data) {
+        setRegistrations(response.data);
+      }
+    } catch (error) {
+      console.error('Error cargando inscripciones:', error);
+      showErrorAlert('Error', 'No se pudieron cargar las inscripciones');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
-
-  const globalInscriptions = getGlobalInscriptions();
   
-  // Obtener datos según el tipo
+  // Transformar inscripciones a formato del componente
   const allItems = isTeamType 
-    ? globalInscriptions.teams.map(team => ({
-        id: team.id,
-        nombre: team.name || team.nombre || 'Sin nombre',
-        categoria: team.category || team.categoria || 'Sin categoría',
-        miembros: team.members || team.cantidadDeportistas || 0,
-        teamType: team.teamType || "Fundacion",
-      }))
-    : globalInscriptions.athletes.map(athlete => ({
-        id: athlete.id,
-        nombre: athlete.name || athlete.nombre || 'Sin nombre',
-        categoria: athlete.category || athlete.categoria || 'Sin categoría',
-        edad: athlete.age || athlete.edad || 0,
-      }));
+    ? registrations
+        .filter(reg => reg.team)
+        .map(reg => ({
+          id: reg.team.id,
+          nombre: reg.team.name || 'Sin nombre',
+          categoria: reg.team.category || 'Sin categoría',
+          miembros: reg.team._count?.members || 0,
+          teamType: reg.team.teamType || "Fundacion",
+          registrationId: reg.id,
+          status: reg.status,
+        }))
+    : []; // Por ahora solo soportamos equipos
 
   // Filtrar por sección (fundación o temporal)
   const filteredBySection = isTeamType

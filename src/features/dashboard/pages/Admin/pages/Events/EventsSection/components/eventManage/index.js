@@ -7,6 +7,5 @@ export { default as EventSearchBar } from './EventSearchBar';
 export { default as EventSearchList } from './EventSearchList';
 export { default as EventReportGenerator } from './EventReportGenerator';
 export { default as DayEventsModal } from './DayEventsModal';
-export { default as ButtonUpload } from './ButtonUpload';
 export { default as CloudinaryUpload } from './CloudinaryUpload';
 export { default as SponsorsSelector } from './SponsorsSelector';

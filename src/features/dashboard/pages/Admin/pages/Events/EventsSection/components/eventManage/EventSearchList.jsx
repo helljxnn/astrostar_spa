@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaCog, FaUsers } from "react-icons/fa";
 import EventActionModal from "./EventActionModal";
-import EventRegistrationModal from "../registration/EventRegistrationModal";
+import EventRegistrationOptionsModal from "../registration/EventRegistrationOptionsModal";
 
 const EventSearchList = ({
   events,
@@ -168,7 +168,7 @@ const EventSearchList = ({
       )}
 
       {registrationModal.isOpen && (
-        <EventRegistrationModal
+        <EventRegistrationOptionsModal
           isOpen={registrationModal.isOpen}
           onClose={closeAllModals}
           onAction={(action, participantType) =>
@@ -180,6 +180,8 @@ const EventSearchList = ({
           }
           position={registrationModal.position}
           eventType={registrationModal.event?.tipo}
+          hasRegistrations={registrationModal.event?.hasRegistrations || false}
+          eventStatus={registrationModal.event?.estadoOriginal || registrationModal.event?.estado || ""}
         />
       )}
     </div>
