@@ -1,87 +1,136 @@
-  import { useState, useEffect, useRef, useCallback } from "react";
-  import useSportsCategories from "./useSportsCategories";
+// useSportsCategoryNameValidation.js
+import { useState, useRef, useEffect, useCallback } from "react";
+import useSportsCategories from "./useSportsCategories";
 
-  export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
-    const [nameValidation, setNameValidation] = useState({
-      isChecking: false,
-      isDuplicate: false,
-      message: "",
-      isAvailable: false,
-    });
+export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
+  const [nameValidation, setNameValidation] = useState({
+    isChecking: false,
+    isDuplicate: false,
+    message: "",
+    isAvailable: false,
+  });
 
-    const debounceTimer = useRef(null);
+  const debounceTimer = useRef(null);
 
-    const {
-      fetchSportsCategories,
-      checkCategoryNameAvailability,
-      sportsCategories,
-    } = useSportsCategories();
+  const { fetchSportsCategories, categories, checkCategoryNameAvailability } = useSportsCategories();
 
-    useEffect(() => {
-      fetchSportsCategories({ limit: 1000 });
-    }, []);
+  useEffect(() => {
+    if (!categories || categories.length === 0) {
+      fetchSportsCategories({ limit: 1000 }).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const validateName = useCallback(
-      async (nombre) => {
-        const trimmed = nombre.trim();
-        if (trimmed.length < 3)
-          return {
-            available: false,
-            message: "Debe tener mínimo 3 caracteres.",
-          };
+  const existsLocal = useCallback(
+    (trimmedLower) =>
+      (categories || []).some((c) => {
+        const id = c?.id ?? c?.Id ?? null;
+        const name = (c?.name || c?.nombre || "").toString().trim().toLowerCase();
+        return id !== currentCategoryId && name === trimmedLower;
+      }),
+    [categories, currentCategoryId]
+  );
 
-        try {
-          const result = await checkCategoryNameAvailability(
-            trimmed,
-            currentCategoryId ? Number(currentCategoryId) : null
-          );
+  const validateNameRemote = useCallback(
+    async (nombre) => {
+      const trimmed = String(nombre || "").trim().toLowerCase();
+      if (trimmed.length < 3) {
+        return { available: false, message: "Debe tener minimo 3 caracteres." };
+      }
 
-          return {
-            available: result.available,
-            message: result.message,
-          };
-        } catch (error) {
-          console.warn("Backend caído. Usando fallback local.");
+      if (existsLocal(trimmed)) {
+        return { available: false, message: `El nombre "${nombre}" ya existe.` };
+      }
 
-          const exists = sportsCategories.some(
-            (c) =>
-              c.id !== currentCategoryId &&
-              c.nombre.toLowerCase() === trimmed.toLowerCase()
-          );
-
-          return {
-            available: !exists,
-            message: exists
-              ? `El nombre "${trimmed}" ya está en uso.`
-              : "Nombre disponible.",
-          };
+      try {
+        const res = await checkCategoryNameAvailability(trimmed, currentCategoryId ? Number(currentCategoryId) : null);
+        if (res && typeof res.available === "boolean") {
+          return { available: res.available, message: res.message || (res.available ? "Nombre disponible." : "Nombre en uso.") };
         }
-      },
-      [sportsCategories, currentCategoryId]
-    );
+        if (res?.data && typeof res.data.available === "boolean") {
+          return { available: res.data.available, message: res.data.message || "" };
+        }
+        return { available: true, message: "Nombre disponible." };
+      } catch (err) {
+        const exists = existsLocal(trimmed);
+        return {
+          available: !exists,
+          message: exists ? `El nombre "${nombre}" ya está en uso (offline).` : "Nombre disponible (offline).",
+        };
+      }
+    },
+    [checkCategoryNameAvailability, currentCategoryId, existsLocal]
+  );
 
-    const debouncedValidate = (value) => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+  const validateCategoryName = (value) => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-      debounceTimer.current = setTimeout(async () => {
-        setNameValidation((prev) => ({ ...prev, isChecking: true }));
+    const trimmed = String(value || "").trim();
+    const trimmedLower = trimmed.toLowerCase();
 
-        const result = await validateName(value);
+    if (!trimmed || trimmed.length < 3) {
+      setNameValidation({
+        isChecking: false,
+        isDuplicate: true,
+        message: trimmed ? "Debe tener minimo 3 caracteres." : "El nombre es obligatorio",
+        isAvailable: false,
+      });
+      return;
+    }
 
-        setNameValidation({
-          isChecking: false,
-          isDuplicate: !result.available,
-          message: result.message,
-          isAvailable: result.available,
-        });
-      }, 400);
-    };
+    if (existsLocal(trimmedLower)) {
+      setNameValidation({
+        isChecking: false,
+        isDuplicate: true,
+        message: `El nombre "${value}" ya existe.`,
+        isAvailable: false,
+      });
+    } else {
+      setNameValidation((p) => ({ ...p, isChecking: true, isDuplicate: false, message: "", isAvailable: false }));
+    }
 
-    return {
-      nameValidation,
-      validateCategoryName: debouncedValidate,
-      validateCategoryNameSync: validateName,
-    };
+    debounceTimer.current = setTimeout(async () => {
+      const result = await validateNameRemote(value);
+      setNameValidation({
+        isChecking: false,
+        isDuplicate: !result.available,
+        message: result.message,
+        isAvailable: result.available,
+      });
+    }, 150);
   };
 
-  export default useSportsCategoryNameValidation;
+  const validateCategoryNameSync = async (value) => {
+    setNameValidation((p) => ({ ...p, isChecking: true }));
+    try {
+      const result = await validateNameRemote(value);
+      setNameValidation({
+        isChecking: false,
+        isDuplicate: !result.available,
+        message: result.message,
+        isAvailable: result.available,
+      });
+      return result;
+    } catch (err) {
+      setNameValidation({ isChecking: false, isDuplicate: false, message: "", isAvailable: true });
+      return { available: true };
+    }
+  };
+
+  const resetNameValidation = () => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    setNameValidation({ isChecking: false, isDuplicate: false, message: "", isAvailable: false });
+  };
+
+  return {
+    nameValidation,
+    validateCategoryName,
+    validateCategoryNameSync,
+    resetNameValidation,
+  };
+};
+
+export default useSportsCategoryNameValidation;

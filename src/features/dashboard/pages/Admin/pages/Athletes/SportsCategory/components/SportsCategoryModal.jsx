@@ -1,239 +1,195 @@
-import { useState, useEffect, useCallback } from "react";
+// SportsCategoryModal.jsx
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-
-/* ========================================================== */
-/* HOOKS DE VALIDACIÓN */
-/* ========================================================== */
 import {
   useFormSportsCategoryValidation,
   sportsCategoryValidationRules,
 } from "../hooks/useFormSportsCategoryValidation";
-import { useSportsCategoryNameValidation } from "../hooks/useSportsCategoryNameValidation";
+import useSportsCategoryNameValidation from "../hooks/useSportsCategoryNameValidation";
+import { useSportsCategories } from "../hooks/useSportsCategories";
+import { showErrorAlert, showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
 
-/* ========================================================== */
-/* HOOK PRINCIPAL (para submit final) */
-/* ========================================================== */
-import useSportsCategories from "../hooks/useSportsCategories";
-
-/* ========================================================== */
-/* UTILIDADES */
-/* ========================================================== */
-import {
-  showErrorAlert,
-  showSuccessAlert,
-} from "../../../../../../../../shared/utils/Alerts";
-
-/* ========================================================== */
-/* CONSTANTES */
-/* ========================================================== */
 const MAX_FILE_SIZE_MB = 5;
 
-/* ========================================================== */
-/* COMPONENTE PRINCIPAL */
-/* ========================================================== */
-const SportsCategoryModal = ({
-  isOpen,
-  onClose,
-  category = null,
-  isNew = true,
-}) => {
-  /* ========================================================== */
-  /* ESTADO INICIAL DEL FORMULARIO */
-  /* ========================================================== */
+const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true }) => {
+  // Estado inicial del formulario
   const initialForm = {
     nombre: "",
     edadMinima: "",
     edadMaxima: "",
     descripcion: "",
     archivo: null,
-    estado: "Active",
+    estado: "Activo",
     publicar: false,
   };
 
-  /* ========================================================== */
-  /* HOOKS */
-  /* ========================================================== */
+  // Hooks de validación y gestión de formulario
   const {
     values,
+    setValues,
     errors,
+    setErrors,
     handleChange,
     handleBlur,
-    validateAllFields,
-    touchAllFields,
-    setValues,
-    setErrors,
+    validateForm,
+    clearValidation,
+    isSubmitting,
+    setIsSubmitting,
   } = useFormSportsCategoryValidation(initialForm, sportsCategoryValidationRules);
 
-  const {
-    nameValidation,
-    validateCategoryName,
-    validateCategoryNameSync,
-    resetForm,
-  } = useSportsCategoryNameValidation(category?.id);
+  // Validación de nombre único
+  const { nameValidation, validateCategoryName, validateCategoryNameSync, resetNameValidation } =
+    useSportsCategoryNameValidation(category?.id || null);
 
-  // ✅ Hook principal — solo para operaciones de guardado (create/update)
+  // Hooks para CRUD de categorías
   const { createSportsCategory, updateSportsCategory } = useSportsCategories();
 
-  /* ========================================================== */
-  /* ESTADOS LOCALES */
-  /* ========================================================== */
+  // Estado de archivo
   const [fileName, setFileName] = useState("No se ha seleccionado ningún archivo");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const debounceRef = useRef(null);
 
-  /* ========================================================== */
-  /* EFECTO: CARGAR DATOS EN EDICIÓN */
-  /* ========================================================== */
+  // Efecto al abrir/cerrar el modal
   useEffect(() => {
     if (!isOpen) return;
 
     clearValidation();
+    resetNameValidation();
     setErrors({});
     setIsSubmitting(false);
 
     if (category && !isNew) {
-      // Modo edición
       setValues({
-        nombre: category.name || category.nombre || "",
+        nombre: category.name ?? category.nombre ?? "",
         edadMinima: String(category.minAge ?? category.edadMinima ?? ""),
         edadMaxima: String(category.maxAge ?? category.edadMaxima ?? ""),
-        descripcion: category.description || category.descripcion || "",
+        descripcion: category.description ?? category.descripcion ?? "",
         archivo: null,
-        estado: category.status || category.estado || "Active",
+        estado: category.status ?? "Activo",
         publicar: Boolean(category.publish ?? category.publicar),
       });
-      setFileName(
-        category.fileName || category.file || "No se ha seleccionado ningún archivo"
-      );
+      setFileName(category.fileName ?? "No se ha seleccionado ningún archivo");
+      setPreviewUrl(category.fileUrl ?? category.imageUrl ?? "");
     } else {
-      // Modo creación
       setValues(initialForm);
       setFileName("No se ha seleccionado ningún archivo");
+      setPreviewUrl("");
     }
-  }, [isOpen, category, isNew, setValues, setErrors, clearValidation]);
 
-  /* ========================================================== */
-  /* HANDLERS */
-  /* ========================================================== */
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, category, isNew]);
 
-  const handleNameChange = useCallback(
-    (value) => {
-      handleChange("nombre", value);
-      if (value.trim().length > 0) {
-        validateCategoryName(value.trim());
-      } else {
-        clearValidation();
-      }
-    },
-    [handleChange, validateCategoryName, clearValidation]
-  );
+  // Manejo de cambio de nombre con debounce
+  const handleNameChange = (val) => {
+    handleChange("nombre", val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = String(val || "").trim();
+      if (trimmed.length > 2) validateCategoryName(trimmed);
+      else resetNameValidation();
+    }, 450);
+  };
 
-  const handleFileChange = useCallback((e) => {
-    const file = e.target.files?.[0] || null;
-
-    if (file) {
-      const sizeMB = file.size / (1024 * 1024);
-      if (sizeMB > MAX_FILE_SIZE_MB) {
-        showErrorAlert(
-          "Archivo muy pesado",
-          `La imagen supera el límite de ${MAX_FILE_SIZE_MB}MB.`
-        );
+  // Manejo de archivo
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
+        showErrorAlert("Archivo muy pesado", `La imagen supera ${MAX_FILE_SIZE_MB}MB.`);
         e.target.value = "";
         setFileName("No se ha seleccionado ningún archivo");
         handleChange("archivo", null);
+        setPreviewUrl("");
         return;
       }
+      const reader = new FileReader();
+      reader.onload = () => setPreviewUrl(reader.result);
+      reader.readAsDataURL(f);
+    }
+    handleChange("archivo", f);
+    setFileName(f ? f.name : "No se ha seleccionado ningún archivo");
+  };
+
+  // ✅ Envío del formulario — ahora con FormData (subida desde backend)
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validaciones locales
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      showErrorAlert("Formulario incompleto", "Revisa los campos obligatorios");
+      return;
     }
 
-    handleChange("archivo", file);
-    setFileName(file ? file.name : "No se ha seleccionado ningún archivo");
-    handleBlur("archivo");
-  }, [handleChange, handleBlur]);
+    if (nameValidation.isDuplicate) {
+      showErrorAlert("Nombre duplicado", "Este nombre ya existe.");
+      return;
+    }
 
-  /* ------------------- SUBMIT ----------------------------- */
-  const handleSubmit = useCallback(
-    async (e) => {
-      e.preventDefault();
+    const minA = parseInt(values.edadMinima);
+    const maxA = parseInt(values.edadMaxima);
+    if (isNaN(minA) || isNaN(maxA) || minA >= maxA) {
+      showErrorAlert("Error en edades", "Edad máxima debe ser mayor que mínima.");
+      return;
+    }
 
-      // 1. Validaciones básicas
-      touchAllFields(values);
-      if (!validateAllFields(values)) {
-        showErrorAlert("Formulario incompleto", "Por favor revisa los campos obligatorios.");
+    // Validación remota de nombre
+    try {
+      const sync = await validateCategoryNameSync(values.nombre.trim());
+      if (!sync.available) {
+        showErrorAlert("Nombre duplicado", sync.message || "Nombre en uso");
         return;
       }
+    } catch {
+      // fallback: continuar si la validación falla
+    }
 
-      // 2. Validar archivo en modo creación
-      if (isNew && !(values.archivo instanceof File)) {
-        showErrorAlert("Imagen requerida", "Debes subir una imagen para crear la categoría.");
-        return;
-      }
+    setIsSubmitting(true);
 
-      // 3. ✅ VALIDACIÓN FINAL DE NOMBRE (usando el hook, no el servicio roto)
-      if (values.nombre.trim().length >= 3) {
-        try {
-          const result = await validateCategoryNameSync(values.nombre.trim());
-          if (!result.available) {
-            showErrorAlert("Nombre duplicado", result.message);
-            return;
-          }
-        } catch (err) {
-          // Si falla, dejamos que el backend lo atrape (ya lo hace con 409)
-          console.warn("Validación final falló — delegando al backend", err);
-        }
-      }
-
-      // 4. Preparar FormData
+    try {
+      // ✅ FormData: el backend subirá la imagen usando sus credenciales de Cloudinary
       const formData = new FormData();
       formData.append("name", values.nombre.trim());
-      formData.append("minAge", values.edadMinima);
-      formData.append("maxAge", values.edadMaxima);
       formData.append("description", values.descripcion.trim());
-      formData.append("status", values.estado);
-      formData.append("publish", values.publicar ? "true" : "false");
-
+      formData.append("minAge", minA);
+      formData.append("maxAge", maxA);
+      formData.append("status", values.estado || "Activo");
+      formData.append("publicar", values.publicar ? "true" : "false");
+      
+      // ✅ CORREGIDO: "file" (no "image") para coincidir con upload.single('file')
       if (values.archivo instanceof File) {
         formData.append("file", values.archivo);
       }
 
-      // 5. Guardar
-      setIsSubmitting(true);
-      try {
-        if (isNew) {
-          await createSportsCategory(formData, { page: 1, limit: 10 });
-        } else {
-          await updateSportsCategory(category.id, formData, { page: 1, limit: 10 });
-        }
-
-        showSuccessAlert(
-          isNew ? "Categoría creada" : "Categoría actualizada",
-          "La operación se realizó correctamente."
-        );
-        onClose();
-      } catch (error) {
-        // Manejo de errores del backend (incluyendo 409)
-        const msg = error.response?.data?.message || "No se pudo guardar la categoría.";
-        showErrorAlert("Error", msg);
-      } finally {
-        setIsSubmitting(false);
+      // Crear o actualizar
+      if (isNew) {
+        await createSportsCategory(formData, { page: 1, limit: 10 });
+      } else {
+        await updateSportsCategory(category.id, formData, { page: 1, limit: 10 });
       }
-    },
-    [
-      values,
-      isNew,
-      category?.id,
-      validateCategoryNameSync,
-      createSportsCategory,
-      updateSportsCategory,
-      onClose,
-      touchAllFields,
-      validateAllFields,
-      showErrorAlert,
-      showSuccessAlert,
-    ]
-  );
 
-  /* ========================================================== */
-  /* RENDERIZADO */
-  /* ========================================================== */
+      showSuccessAlert(
+        isNew ? "✅ Categoría creada" : "✅ Categoría actualizada",
+        "Ahora se verá en la landing si está publicada."
+      );
+      onClose();
+    } catch (err) {
+      console.error("handleSubmit error:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "No se pudo guardar la categoría. Revisa los campos.";
+      showErrorAlert("❌ Error al guardar", message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Render condicional
   if (!isOpen) return null;
 
   return (
@@ -241,27 +197,25 @@ const SportsCategoryModal = ({
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25 }}
         className="bg-white rounded-[18px] shadow-xl p-8 w-full max-w-5xl overflow-y-auto max-h-[90vh]"
       >
-        {/* HEADER */}
         <div className="flex justify-between items-center mb-7">
           <h2 className="text-[32px] font-bold text-[#9BE9FF]">
             {isNew ? "Crear Categoría Deportiva" : "Editar Categoría Deportiva"}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold transition-colors"
-            aria-label="Cerrar modal"
+            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold"
+            aria-label="Cerrar"
           >
             ✕
           </button>
         </div>
 
-        {/* FORMULARIO */}
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* NOMBRE */}
+            {/* Nombre */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-1 block">
                 Nombre categoría *
@@ -272,36 +226,19 @@ const SportsCategoryModal = ({
                 onChange={(e) => handleNameChange(e.target.value)}
                 onBlur={() => handleBlur("nombre")}
                 placeholder="Ej: Infantil A"
-                disabled={isSubmitting}
-                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
-                  errors.nombre || nameValidation.isDuplicate
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-300"
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
+                  errors.nombre ? "border-red-400 bg-red-50" : "border-gray-300"
                 }`}
               />
-              {errors.nombre && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.nombre}
-                </p>
+              {errors.nombre && <p className="text-red-500 text-xs mt-1">⚠ {errors.nombre}</p>}
+              {values.nombre && values.nombre.trim().length > 0 && values.nombre.trim().length < 3 && (
+                <p className="text-yellow-500 text-xs mt-1">⚠ Mínimo 3 caracteres</p>
               )}
-              {nameValidation.isChecking && (
-                <p className="text-blue-500 text-xs mt-1 flex items-center gap-1">
-                  <span className="animate-pulse">🔄</span> Verificando nombre...
-                </p>
-              )}
-              {nameValidation.isDuplicate && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>❌</span> {nameValidation.message}
-                </p>
-              )}
-              {nameValidation.isAvailable && !errors.nombre && (
-                <p className="text-green-500 text-xs mt-1 flex items-center gap-1">
-                  <span>✓</span> Nombre disponible
-                </p>
-              )}
+              {nameValidation.isChecking && <p className="text-gray-500 text-xs mt-1">Comprobando nombre...</p>}
+              {nameValidation.isDuplicate && <p className="text-red-500 text-xs mt-1">⚠ Este nombre ya existe</p>}
             </div>
 
-            {/* EDAD MÍNIMA */}
+            {/* Edad mínima */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-1 block">
                 Edad mínima *
@@ -312,20 +249,16 @@ const SportsCategoryModal = ({
                 onChange={(e) => handleChange("edadMinima", e.target.value)}
                 onBlur={() => handleBlur("edadMinima")}
                 placeholder="Ej: 10"
-                min="5"
-                disabled={isSubmitting}
-                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
                   errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300"
                 }`}
               />
-              {errors.edadMinima && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.edadMinima}
-                </p>
+              {values.edadMinima && values.edadMaxima && parseInt(values.edadMinima) >= parseInt(values.edadMaxima) && (
+                <p className="text-red-500 text-xs mt-1">⚠ Edad máxima debe ser mayor que mínima</p>
               )}
             </div>
 
-            {/* EDAD MÁXIMA */}
+            {/* Edad máxima */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-1 block">
                 Edad máxima *
@@ -336,19 +269,16 @@ const SportsCategoryModal = ({
                 onChange={(e) => handleChange("edadMaxima", e.target.value)}
                 onBlur={() => handleBlur("edadMaxima")}
                 placeholder="Ej: 15"
-                disabled={isSubmitting}
-                className={`w-full border rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
                   errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300"
                 }`}
               />
-              {errors.edadMaxima && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.edadMaxima}
-                </p>
+              {values.edadMinima && values.edadMaxima && parseInt(values.edadMinima) >= parseInt(values.edadMaxima) && (
+                <p className="text-red-500 text-xs mt-1">⚠ Edad máxima debe ser mayor que mínima</p>
               )}
             </div>
 
-            {/* DESCRIPCIÓN */}
+            {/* Descripción */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-1 block">
                 Descripción *
@@ -357,114 +287,94 @@ const SportsCategoryModal = ({
                 value={values.descripcion}
                 onChange={(e) => handleChange("descripcion", e.target.value)}
                 onBlur={() => handleBlur("descripcion")}
-                placeholder="Breve descripción de la categoría..."
-                disabled={isSubmitting}
-                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                placeholder="Breve descripción..."
+                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none ${
                   errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300"
                 }`}
               />
-              {errors.descripcion && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.descripcion}
-                </p>
-              )}
             </div>
 
-            {/* IMAGEN */}
+            {/* Imagen */}
             <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-700 mb-2 block">
-                Subir imagen *
+              <label className="text-sm font-semibold text-gray-700 mb-2">
+                Subir imagen {isNew ? "*" : ""}
               </label>
-              <label
-                className={`${
-                  isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                } bg-[#74D5F4] text-white px-5 py-2.5 rounded-lg text-sm hover:bg-[#5fc4e3] transition-all shadow-sm hover:shadow-md w-fit`}
-              >
-                <span className="flex items-center gap-2">
-                  📁 Elegir archivo
-                </span>
+              <label className="cursor-pointer bg-[#74D5F4] text-white px-5 py-2.5 rounded-lg text-sm w-fit">
+                📁 Elegir archivo
                 <input
                   type="file"
+                  name="archivo"
                   accept="image/*"
                   onChange={handleFileChange}
-                  disabled={isSubmitting}
                   className="hidden"
                 />
               </label>
-              <span className="text-xs mt-2 text-gray-600 truncate max-w-full">
-                {fileName}
-              </span>
+              <span className="text-xs mt-2 text-gray-600 truncate">{fileName}</span>
               <span className="text-xs text-gray-500 mt-1">
                 Tamaño máximo: {MAX_FILE_SIZE_MB}MB
               </span>
-              {errors.archivo && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.archivo}
-                </p>
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Vista previa"
+                  className="mt-2 w-32 h-32 object-cover rounded-lg border"
+                />
+              )}
+              {values.archivo && values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
+                <p className="text-red-500 text-xs mt-1">⚠ La imagen supera {MAX_FILE_SIZE_MB}MB</p>
               )}
             </div>
 
-            {/* ESTADO */}
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1 block">
-                Estado *
-              </label>
-              <select
-                value={values.estado}
-                onChange={(e) => handleChange("estado", e.target.value)}
-                onBlur={() => handleBlur("estado")}
-                disabled={isSubmitting}
-                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <option value="Active">Activo</option>
-                <option value="Inactive">Inactivo</option>
-              </select>
-              {errors.estado && (
-                <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                  <span>⚠</span> {errors.estado}
-                </p>
-              )}
-            </div>
+            {/* Estado (solo en edición) */}
+            {!isNew && (
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                  Estado *
+                </label>
+                <select
+                  value={values.estado}
+                  onChange={(e) => handleChange("estado", e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3 text-sm"
+                >
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
+            )}
           </div>
 
-          {/* PUBLICAR */}
-          <div className="flex items-center gap-3 mt-6 p-4 bg-gray-50 rounded-lg">
+          {/* Checkbox de publicación */}
+          <div
+            className={`flex items-center gap-3 mt-6 p-4 rounded-lg ${
+              values.publicar ? "bg-green-50 border border-green-200" : "bg-gray-50"
+            }`}
+          >
             <input
               type="checkbox"
-              id="publicar"
               checked={values.publicar}
               onChange={(e) => handleChange("publicar", e.target.checked)}
-              disabled={isSubmitting}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              className="w-4 h-4"
             />
-            <label htmlFor="publicar" className="text-sm text-gray-700 cursor-pointer">
-              Publicar categoría inmediatamente
+            <label className="text-sm">
+              {values.publicar ? "✅ PUBLICADA EN LANDING" : "Publicar categoría inmediatamente"}
             </label>
           </div>
 
-          {/* BOTONES */}
+          {/* Botones */}
           <div className="flex justify-end gap-4 mt-10">
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 transition-colors font-medium text-gray-700 disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] transition-all shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70"
             >
-              {isSubmitting ? (
-                <span className="flex items-center gap-1">
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Guardando...
-                </span>
-              ) : (
-                `✓ ${isNew ? "Crear Categoría" : "Actualizar Categoría"}`
-              )}
+              {isSubmitting ? "Guardando..." : isNew ? "Crear Categoría" : "Actualizar Categoría"}
             </button>
           </div>
         </form>

@@ -1,79 +1,80 @@
-// ===============================
-// HOOK PRINCIPAL DE CATEGORÍAS
-// ===============================
-
+// useSportsCategories.js
 import { useState, useCallback } from "react";
 import apiClient from "../../../../../../../../shared/services/apiClient";
-import {
-  showErrorAlert,
-  showSuccessAlert,
-  showDeleteAlert,
-} from "../../../../../../../../shared/utils/Alerts";
+import { showErrorAlert, showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
 
 const API_URL = "/sports-categories";
 
-const useSportsCategories = () => {
+const normalizeCategory = (raw = {}) => {
+  const id = raw.id ?? raw.Id ?? raw.ID ?? raw.categoryId ?? raw.categoryID;
+  const name = raw.name ?? raw.nombre ?? "";
+  const description = raw.description ?? raw.descripcion ?? "";
+  const minAge = raw.minAge ?? raw.edadMinima ?? null;
+  const maxAge = raw.maxAge ?? raw.edadMaxima ?? null;
+  const status = raw.status ?? raw.estado ?? "";
+  const publish = raw.publish ?? raw.publicar ?? false;
+  const archivo = raw.archivo ?? raw.imageUrl ?? raw.file ?? raw.fileUrl ?? raw.image ?? "";
+
+  return {
+    ...raw,
+    id,
+    nombre: name,
+    name,
+    descripcion: description,
+    description,
+    edadMinima: minAge,
+    minAge,
+    edadMaxima: maxAge,
+    maxAge,
+    estado: status,
+    status,
+    publicar: publish,
+    publish,
+    archivo,
+    imageUrl: raw.imageUrl ?? archivo,
+  };
+};
+
+export function useSportsCategories() {
   const [sportsCategories, setSportsCategories] = useState([]);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    pages: 0,
-  });
+  const [categories, setCategories] = useState([]);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [lastUploadedFile, setLastUploadedFile] = useState(null);
 
-  // ===========================
-  // LISTAR
-  // ===========================
   const fetchSportsCategories = useCallback(
     async ({ page = 1, limit = 10, search = "", status = "" } = {}) => {
       try {
         setLoading(true);
         setError(null);
 
-        const params = { page, limit, search, status };
-        Object.keys(params).forEach(
-          (k) => (params[k] === "" || params[k] == null) && delete params[k]
-        );
+        const response = await apiClient.get(API_URL, { params: { page, limit, search, status } });
+        const items = response?.data?.data || response?.data || response || [];
+        const normalized = Array.isArray(items) ? items.map(normalizeCategory) : [];
 
-        const { data } = await apiClient.get(API_URL, { params });
+        const respPagination =
+          response?.data?.pagination || response?.pagination || {
+            page,
+            limit,
+            total: Array.isArray(items) ? items.length : 0,
+            pages: Math.ceil((Array.isArray(items) ? items.length : 0) / limit),
+          };
 
-        const raw = Array.isArray(data.data)
-          ? data.data
-          : Array.isArray(data)
-          ? data
-          : [];
+        setSportsCategories(normalized);
+        setCategories(normalized);
+        setPagination({
+          page: respPagination.page || page,
+          limit: respPagination.limit || limit,
+          total: respPagination.total ?? (Array.isArray(items) ? items.length : 0),
+          pages: respPagination.pages ?? Math.ceil((respPagination.total ?? (Array.isArray(items) ? items.length : 0)) / limit),
+        });
 
-        const categories = raw.map((item) => ({
-          id: item.id,
-          nombre: item.nombre || item.name,
-          descripcion: item.descripcion || item.description,
-          edadMinima: item.edadMinima ?? item.minAge,
-          edadMaxima: item.edadMaxima ?? item.maxAge,
-          estado: item.estado || item.status,
-          publicar: item.publicar ?? item.publish,
-          archivo: item.archivo || item.file || null,
-        }));
-
-        const pag = data.pagination || {
-          page: data.page || page,
-          limit: data.limit || limit,
-          total: data.total || categories.length,
-          pages: data.pages || 1,
-        };
-
-        setSportsCategories(categories);
-        setPagination(pag);
+        return { success: true, data: normalized, pagination: respPagination };
       } catch (err) {
-        const msg =
-          err.response?.data?.message ||
-          err.message ||
-          "Error al cargar categorías";
-
-        setError(msg);
-        showErrorAlert("Error", msg);
+        console.error("fetchSportsCategories error:", err);
+        setError(err?.message || "No se pudieron cargar las categorías.");
+        showErrorAlert("Error", "No se pudieron cargar las categorías.");
+        throw err;
       } finally {
         setLoading(false);
       }
@@ -81,121 +82,96 @@ const useSportsCategories = () => {
     []
   );
 
-  // ===========================
-  // VALIDAR NOMBRE (BACKEND)
-  // ===========================
-  const checkCategoryNameAvailability = async (name, id = null) => {
-    try {
-      const { data } = await apiClient.get(`${API_URL}/validate-name`, {
-        params: { name, id },
-      });
-
-      return {
-        available: data?.available ?? false,
-        message: data?.message || "",
-      };
-    } catch (err) {
-      console.warn("Error en validación backend");
-      throw err;
-    }
-  };
-
-  // ===========================
-  // CREAR
-  // ===========================
-  const createSportsCategory = async (formData, params) => {
+  const createSportsCategory = async (data, params = {}) => {
     try {
       setLoading(true);
-
-      const file = formData.get("file");
-      setLastUploadedFile(file || null);
-
-      await apiClient.post(API_URL, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
+      const response = await apiClient.post(API_URL, data);
       showSuccessAlert("Categoría creada", "Se creó correctamente.");
       await fetchSportsCategories(params);
+      return { success: true, data: response };
     } catch (err) {
-      const msg =
-        err.response?.data?.message || "No se pudo crear la categoría";
-      showErrorAlert("Error", msg);
+      console.error("createSportsCategory error:", err);
+      showErrorAlert("Error", err?.response?.data?.message || err?.message || "No se pudo crear la categoría.");
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // ===========================
-  // ACTUALIZAR
-  // ===========================
-  const updateSportsCategory = async (id, formData, params) => {
+  const updateSportsCategory = async (id, data, params = {}) => {
     try {
       setLoading(true);
-
-      const file = formData.get("file");
-      if (file) setLastUploadedFile(file);
-
-      await apiClient.put(`${API_URL}/${id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      showSuccessAlert("Actualizada", "Se actualizó correctamente.");
+      const response = await apiClient.put(`${API_URL}/${id}`, data);
+      showSuccessAlert("Categoría actualizada", "Cambios guardados.");
       await fetchSportsCategories(params);
+      return { success: true, data: response };
     } catch (err) {
-      const msg =
-        err.response?.data?.message || "No se pudo actualizar la categoría";
-      showErrorAlert("Error", msg);
+      console.error("updateSportsCategory error:", err);
+      showErrorAlert("Error", err?.response?.data?.message || err?.message || "No se pudo actualizar la categoría.");
       throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // ===========================
-  // ELIMINAR
-  // ===========================
-  const deleteSportsCategory = async (id, params) => {
-    const found = sportsCategories.find((c) => c.id === id);
-    if (!found) return false;
-
-    const result = await showDeleteAlert(
-      "¿Eliminar categoría?",
-      `La categoría "${found.nombre}" será eliminada.`
-    );
-
-    if (!result.isConfirmed) return false;
-
+  const deleteSportsCategory = async (id, params = {}) => {
     try {
       setLoading(true);
-
       await apiClient.delete(`${API_URL}/${id}`);
-
-      showSuccessAlert("Eliminada", "Se eliminó correctamente.");
+      showSuccessAlert("Eliminada", "Categoría eliminada correctamente.");
       await fetchSportsCategories(params);
-      return true;
     } catch (err) {
-      const msg =
-        err.response?.data?.message || "No se pudo eliminar la categoría";
-      showErrorAlert("Error", msg);
-      return false;
+      console.error("deleteSportsCategory error:", err);
+      showErrorAlert("Error", "No se pudo eliminar la categoría.");
+      throw err;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getSportsCategoryById = async (id) => {
+    const response = await apiClient.get(`${API_URL}/${id}`);
+    const raw = response?.data?.data || response?.data || response || {};
+    return normalizeCategory(raw);
+  };
+
+  const getAthletesByCategory = async (id) => {
+    const response = await apiClient.get(`${API_URL}/${id}/athletes`);
+    const data = response?.data?.data || response?.data || [];
+    return Array.isArray(data) ? data : [];
+  };
+
+  // check name availability -> devuelve { available: boolean, message? }
+  const checkCategoryNameAvailability = async (name, excludeId = null) => {
+    const trimmed = (name ?? "").trim();
+    if (!trimmed) return { available: false, message: "El nombre es obligatorio" };
+    if (trimmed.length < 3) return { available: false, message: "Debe tener al menos 3 caracteres." };
+
+    try {
+      const params = { name: trimmed };
+      if (excludeId) params.excludeId = excludeId;
+      const response = await apiClient.get(`${API_URL}/validate-name`, { params });
+      return response?.data || response || { available: true };
+    } catch (err) {
+      console.warn("checkCategoryNameAvailability fallback (backend error):", err);
+      return { available: true };
     }
   };
 
   return {
     sportsCategories,
+    categories,
     pagination,
     loading,
     error,
-    lastUploadedFile,
     fetchSportsCategories,
     createSportsCategory,
     updateSportsCategory,
     deleteSportsCategory,
+    getSportsCategoryById,
+    getAthletesByCategory,
     checkCategoryNameAvailability,
   };
-};
+}
 
 export default useSportsCategories;

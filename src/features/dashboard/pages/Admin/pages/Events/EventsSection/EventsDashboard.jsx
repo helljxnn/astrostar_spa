@@ -59,7 +59,7 @@ const Event = () => {
       Object.values(item).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
-    );
+        );
     return result;
   }, [events, searchTerm]);
 

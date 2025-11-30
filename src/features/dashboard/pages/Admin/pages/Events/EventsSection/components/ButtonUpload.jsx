@@ -72,9 +72,8 @@ const CargadorArchivos = ({ archivo: propArchivo, onChange, disabled }) => {
   return (
     <ContenedorSubida>
       <div
-        className={`zona-arrastre ${isDragOver ? "drag-over" : ""} ${
-          disabled ? "disabled" : ""
-        }`}
+        className={`zona-arrastre ${isDragOver ? "drag-over" : ""} ${disabled ? "disabled" : ""
+          }`}
         onClick={manejarClick}
         onDragOver={manejarDragOver}
         onDragEnter={manejarDragEnter}
@@ -109,8 +108,8 @@ const CargadorArchivos = ({ archivo: propArchivo, onChange, disabled }) => {
           {disabled
             ? "Solo lectura"
             : isDragOver
-            ? "Suelta el archivo aquí"
-            : "Arrastra archivos aquí"}
+              ? "Suelta el archivo aquí"
+              : "Arrastra archivos aquí"}
           <br />
           {!isDragOver && !disabled && (
             <span className="link">o selecciona archivo</span>
