@@ -209,8 +209,6 @@ const EventInscriptionModal = ({
           globalInscriptions.athletes = [...selectedItems];
         }
       }
-
-      console.log(`${action} - Selected ${participantType}:`, selectedItems);
       
       if (action === "editRegistrations") {
         showSuccessAlert(

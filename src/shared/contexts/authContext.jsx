@@ -1,25 +1,59 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import apiClient from "../services/apiClient";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    const storedUser = localStorage.getItem("user");
-    if (token && storedUser) {
-      setIsAuthenticated(true);
-      setUser(JSON.parse(storedUser));
-    }
+    // Intentar restaurar sesión desde el servidor usando refresh token (cookie)
+    const restoreSession = async () => {
+      const storedUser = localStorage.getItem("user");
+      
+      if (storedUser) {
+        try {
+          // Intentar obtener un nuevo access token usando el refresh token (cookie)
+          const response = await fetch('http://localhost:4000/api/auth/refresh', {
+            method: 'POST',
+            credentials: 'include', // Enviar cookies
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            const accessToken = result.data.accessToken;
+            
+            // Almacenar access token en memoria del apiClient
+            apiClient.setAccessToken(accessToken);
+            
+            setIsAuthenticated(true);
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Si falla, limpiar datos
+            localStorage.removeItem("user");
+          }
+        } catch (error) {
+          console.error('Error restaurando sesión:', error);
+          localStorage.removeItem("user");
+        }
+      }
+      
+      setIsLoading(false);
+    };
+
+    restoreSession();
   }, []);
 
   const login = async (loginData) => {
-    // Intentar login real con backend primero (silencioso)
     try {
       const response = await fetch('http://localhost:4000/api/auth/login', {
         method: 'POST',
+        credentials: 'include', // Importante: recibir cookies
         headers: {
           'Content-Type': 'application/json',
         },
@@ -31,122 +65,46 @@ export const AuthProvider = ({ children }) => {
         
         if (result.success) {
           const userToStore = result.data.user;
-          const token = result.data.token;
+          const accessToken = result.data.accessToken;
           
+          // Almacenar access token SOLO en memoria del apiClient
+          apiClient.setAccessToken(accessToken);
+          
+          // Almacenar solo datos del usuario en localStorage
           setIsAuthenticated(true);
           setUser(userToStore);
-          localStorage.setItem("authToken", token);
           localStorage.setItem("user", JSON.stringify(userToStore));
-          return true;
+          
+          // El refresh token ya está en una cookie HttpOnly
+          
+          return { success: true };
         }
       }
+      
+      // Si la respuesta no es ok, obtener el mensaje de error del servidor
+      const errorData = await response.json().catch(() => ({}));
+      
+      // Personalizar mensajes según el código de estado
+      let errorMessage = 'Credenciales inválidas';
+      
+      if (response.status === 401) {
+        errorMessage = errorData.message || 'Correo o contraseña incorrectos';
+      } else if (response.status === 403) {
+        errorMessage = errorData.message || 'Acceso denegado';
+      } else if (response.status >= 500) {
+        errorMessage = 'Error del servidor. Intenta más tarde';
+      } else if (!navigator.onLine) {
+        errorMessage = 'Sin conexión a internet';
+      }
+      
+      return { success: false, message: errorMessage };
     } catch (error) {
-      // Silencioso: el backend no está disponible, usar fallback
+      // Error de red o conexión
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return { success: false, message: 'No se pudo conectar con el servidor. Verifica tu conexión' };
+      }
+      return { success: false, message: error.message || 'Error inesperado. Intenta de nuevo' };
     }
-
-    // Fallback: usar usuarios hardcodeados si el backend no está disponible
-    const users = [
-      {
-        id: 1,
-        email: "admin@example.com",
-        password: "admin123",
-        rol: "admin",
-        nombre: "Admin",
-        apellido: "Astro",
-        tipoDocumento: "CC",
-        identificacion: "123456789",
-        correo: "admin@example.com",
-        telefono: "3001234567",
-        avatar: null,
-      },
-      {
-        id: 6,
-        email: "jenniferl.sosa15@gmail.com",
-        password: "ZaEt8%2w84p4",
-        rol: "admin",
-        role: {
-          name: "admin",
-          permissions: {} // Los permisos de admin se generan automáticamente
-        },
-        nombre: "Jennifer",
-        apellido: "Sosa",
-        tipoDocumento: "CC",
-        identificacion: "1234567890",
-        correo: "jenniferl.sosa15@gmail.com",
-        telefono: "3001234567",
-        avatar: null,
-      },
-      {
-        id: 2,
-        email: "pro@example.com",
-        password: "pro123",
-        rol: "profesional_deportivo",
-        nombre: "Carlos",
-        apellido: "Ruiz",
-        tipoDocumento: "CC",
-        identificacion: "987654321",
-        correo: "pro@example.com",
-        telefono: "3017654321",
-        avatar: null,
-      },
-      {
-        id: 3,
-        email: "salud@example.com",
-        password: "salud123",
-        rol: "profesional_salud",
-        nombre: "Ana",
-        apellido: "Pérez",
-        tipoDocumento: "CE",
-        identificacion: "1122334455",
-        correo: "salud@example.com",
-        telefono: "3021122334",
-        avatar: null,
-      },
-      {
-        id: 4,
-        email: "deportista@example.com",
-        password: "dep123",
-        rol: "deportista",
-        nombre: "Juan",
-        apellido: "Pérez",
-        tipoDocumento: "TI",
-        identificacion: "100200300",
-        correo: "deportista@example.com",
-        telefono: "3032003000",
-        avatar: null,
-      },
-      {
-        id: 5,
-        email: "acudiente@example.com",
-        password: "acu123",
-        rol: "acudiente",
-        nombre: "Maria",
-        apellido: "Gómez",
-        tipoDocumento: "CC",
-        identificacion: "55667788",
-        correo: "acudiente@example.com",
-        telefono: "3045566778",
-        avatar: null,
-      },
-    ];
-
-    const foundUser = users.find(
-      (u) => u.email === loginData.email && u.password === loginData.password
-    );
-
-    if (foundUser) {
-      const token = `fake-${foundUser.rol}-token`;
-      const userToStore = { ...foundUser };
-      delete userToStore.password; // No guardar la contraseña
-
-      setIsAuthenticated(true);
-      setUser(userToStore);
-      localStorage.setItem("authToken", token);
-      localStorage.setItem("user", JSON.stringify(userToStore));
-      return true;
-    }
-
-    return false;
   };
 
   const updateUser = (updatedData) => {
@@ -157,11 +115,25 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      // Cerrar sesión en el servidor (limpia cookie HttpOnly)
+      await fetch('http://localhost:4000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Enviar cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).catch(() => {
+        // Ignorar errores de red al cerrar sesión
+      });
+    } finally {
+      // Siempre limpiar el estado local
+      apiClient.clearAccessToken();
+      setIsAuthenticated(false);
+      setUser(null);
+      localStorage.removeItem("user");
+    }
   };
 
   return (
@@ -173,6 +145,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        isLoading,
       }}
     >
       {children}

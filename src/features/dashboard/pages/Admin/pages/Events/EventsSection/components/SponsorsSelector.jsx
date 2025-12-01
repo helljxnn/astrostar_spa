@@ -35,7 +35,7 @@ export const SponsorsSelector = ({ value = [], onChange, error, touched, disable
     return (
       <div className="flex flex-col">
         <label className="mb-2 font-medium text-gray-700">
-          Patrocinadores <span className="text-gray-400 font-normal text-sm">(Opcional)</span>
+          Patrocinadores
         </label>
         <div className="p-3 bg-gray-100 rounded-lg">
           {value.length > 0 ? (
@@ -60,7 +60,7 @@ export const SponsorsSelector = ({ value = [], onChange, error, touched, disable
   return (
     <div className="flex flex-col relative" ref={containerRef}>
       <label className="mb-0 font-semibold text-gray-700 text-lg">
-        Patrocinadores <span className="text-gray-400 font-normal text-sm">(Opcional)</span>
+        Patrocinadores
       </label>
 
       {/* Caja principal */}

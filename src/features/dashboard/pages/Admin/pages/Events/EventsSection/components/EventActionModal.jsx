@@ -1,16 +1,39 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 
-const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
+const EventActionModal = ({ isOpen, onClose, onAction, position, eventStatus, event }) => {
   if (!isOpen) return null;
 
-  const actions = [
+  // Verificar si el evento está finalizado
+  const isFinalized = eventStatus === "Finalizado" || eventStatus === "finalizado";
+  
+  // Verificar si el evento está cancelado y ya pasó su fecha
+  const isCancelledAndPassed = () => {
+    if (!event || (eventStatus !== "Cancelado" && eventStatus !== "cancelado")) {
+      return false;
+    }
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    // Obtener la fecha de fin del evento
+    const eventEndDate = event.end ? new Date(event.end) : new Date(event.start);
+    const endDateOnly = new Date(eventEndDate.getFullYear(), eventEndDate.getMonth(), eventEndDate.getDate());
+    
+    // Verificar si el evento ya pasó su fecha
+    return endDateOnly < today;
+  };
+  
+  const cannotEdit = isFinalized || isCancelledAndPassed();
+
+  const allActions = [
     {
       id: "edit",
       label: "Editar evento",
       icon: <FaEdit className="w-4 h-4" />,
       color: "text-blue-600",
       hoverColor: "hover:bg-blue-50",
+      showWhen: !cannotEdit, // Solo mostrar si NO está finalizado o cancelado y pasado
     },
     {
       id: "delete",
@@ -18,6 +41,7 @@ const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
       icon: <FaTrash className="w-4 h-4" />,
       color: "text-red-600",
       hoverColor: "hover:bg-red-50",
+      showWhen: true, // Siempre mostrar
     },
     {
       id: "view",
@@ -25,8 +49,12 @@ const EventActionModal = ({ isOpen, onClose, onAction, position }) => {
       icon: <FaEye className="w-4 h-4" />,
       color: "text-gray-600",
       hoverColor: "hover:bg-gray-50",
+      showWhen: true, // Siempre mostrar
     },
   ];
+
+  // Filtrar acciones según el estado del evento
+  const actions = allActions.filter(action => action.showWhen);
 
   return (
     <>

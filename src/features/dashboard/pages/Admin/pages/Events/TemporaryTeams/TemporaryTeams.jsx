@@ -8,9 +8,12 @@ import Table from "../../../../../../../shared/components/Table/table.jsx"
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx"
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
 import TeamsService from "./services/TeamsService.js"
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts.js"
+import { showSuccessAlert, showErrorAlert, showDeleteAlert } from "../../../../../../../shared/utils/alerts.js"
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard"
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions"
 
 const TemporaryTeams = () => {
+  const { hasPermission } = usePermissions()
   const [data, setData] = useState([])
   const [loading, setLoading] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -60,7 +63,7 @@ const TemporaryTeams = () => {
         }
       }
     } catch (error) {
-      console.error('❌ Error cargando equipos:', error);
+      console.error('Error cargando equipos:', error);
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
     } finally {
@@ -94,7 +97,6 @@ const TemporaryTeams = () => {
         id: team.id,
         nombre: team.nombre || team.name || "Sin nombre",
         entrenador: team.entrenador || team.coach || "Sin entrenador",
-        telefono: team.telefono || team.phone || "N/A",
         cantidadDeportistas: deportistasCount, // ✅ Solo deportistas
         categoria: team.categoria || team.category || "N/A",
         estado: team.estado || (team.status === 'Active' ? 'Activo' : 'Inactivo'),
@@ -123,7 +125,7 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo crear el equipo");
       }
     } catch (error) {
-      console.error('❌ Error creando equipo:', error);
+      console.error('Error creando equipo:', error);
       showErrorAlert("Error", error.message || "No se pudo crear el equipo");
     }
   }
@@ -141,47 +143,70 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo actualizar el equipo");
       }
     } catch (error) {
-      console.error('❌ Error actualizando equipo:', error);
+      console.error('Error actualizando equipo:', error);
       showErrorAlert("Error", error.message || "No se pudo actualizar el equipo");
     }
   }
 
   const handleEdit = (team) => {
+    if (!hasPermission('temporaryTeams', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar equipos');
+      return;
+    }
     setTeamToEdit(team);
     setModalMode("edit");
     setIsModalOpen(true);
   }
 
   const handleView = (team) => {
+    if (!hasPermission('temporaryTeams', 'Ver')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para ver equipos');
+      return;
+    }
     setTeamToView(team);
     setIsViewModalOpen(true);
   }
 
   const handleDelete = async (team) => {
-    const { default: Swal } = await import("sweetalert2");
-    const result = await Swal.fire({
-      title: "¿Eliminar equipo?",
-      text: `¿Estás seguro de que quieres eliminar el equipo "${team.nombre}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sí, eliminar",
-      cancelButtonText: "Cancelar",
-      confirmButtonColor: "#d33",
-    })
-
-    if (result.isConfirmed) {
-      try {
-        const deleteResult = await TeamsService.deleteTeam(team.id);
-        if (deleteResult.success) {
-          showSuccessAlert("Eliminado", deleteResult.message || `${team.nombre} fue eliminado`);
-          await loadTeams();
-        } else {
-          showErrorAlert("Error", deleteResult.error || "No se pudo eliminar el equipo");
-        }
-      } catch (error) {
-        console.error('❌ Error eliminando equipo:', error);
-        showErrorAlert("Error", error.message || "No se pudo eliminar el equipo");
+    if (!hasPermission('temporaryTeams', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar equipos');
+      return;
+    }
+    
+    // Validar que el equipo esté inactivo
+    if (team.estado === 'Activo') {
+      showErrorAlert('Acción no permitida', 'Solo se pueden eliminar equipos con estado "Inactivo"');
+      return;
+    }
+    
+    const confirmResult = await showDeleteAlert(
+      "¿Estás seguro?",
+      `Se eliminará el equipo ${team.nombre}. Esta acción no se puede deshacer.`,
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+    );
+    
+    if (!confirmResult.isConfirmed) return;
+    
+    try {
+      const deleteResult = await TeamsService.deleteTeam(team.id);
+      
+      if (deleteResult.success) {
+        showSuccessAlert(
+          "Equipo eliminado",
+          `${team.nombre} fue eliminado correctamente.`
+        );
+        // Forzar recarga completa para asegurar datos actualizados
+        setCurrentPage(1);
+        await loadTeams();
+      } else {
+        showErrorAlert(
+          "Error",
+          deleteResult.error || "No se pudo eliminar el equipo"
+        );
       }
+    } catch (error) {
+      console.error('Error eliminando equipo:', error);
+      showErrorAlert("Error", "Error al eliminar el equipo en el servidor");
     }
   }
 
@@ -202,16 +227,18 @@ const TemporaryTeams = () => {
             />
           </div>
 
-          <button
-            onClick={() => {
-              setModalMode("create");
-              setTeamToEdit(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
-          >
-            <FaPlus /> Crear Equipo
-          </button>
+          <PermissionGuard module="temporaryTeams" action="Crear">
+            <button
+              onClick={() => {
+                setModalMode("create");
+                setTeamToEdit(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+            >
+              <FaPlus /> Crear Equipo
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -219,29 +246,34 @@ const TemporaryTeams = () => {
         <div className="text-center py-8 text-gray-600">Cargando equipos...</div>
       ) : formattedData.length > 0 ? (
         <>
-          <div className="w-full overflow-x-auto bg-white rounded-lg shadow">
-            <Table
-              thead={{
-                // ✅ CORRECCIÓN: Quitamos "Estado" duplicado - el componente Table ya lo muestra
-                titles: ["Nombre", "Entrenador", "Teléfono", "Deportistas", "Categoría", "Tipo"],
-                state: true, // Esto muestra la columna de estado automáticamente
-                actions: true,
-              }}
-              tbody={{
-                data: formattedData,
-                // ✅ CORRECCIÓN: Solo estas propiedades, el estado se maneja automáticamente
-                dataPropertys: ["nombre", "entrenador", "telefono", "cantidadDeportistas", "categoria", "teamTypeForDisplay"],
-                state: true,
-                stateMap: {
-                  Activo: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
-                  Inactivo: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
-                },
-              }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-            />
-          </div>
+          <Table
+            thead={{
+              titles: ["Nombre", "Entrenador", "Deportistas", "Categoría", "Tipo"],
+              state: true,
+              actions: true,
+            }}
+            tbody={{
+              data: formattedData,
+              dataPropertys: ["nombre", "entrenador", "cantidadDeportistas", "categoria", "teamTypeForDisplay"],
+              state: true,
+              stateMap: {
+                Activo: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
+                Inactivo: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
+              },
+            }}
+            rowsPerPage={1000}
+            onEdit={hasPermission('temporaryTeams', 'Editar') ? handleEdit : null}
+            onDelete={hasPermission('temporaryTeams', 'Eliminar') ? handleDelete : null}
+            onView={hasPermission('temporaryTeams', 'Ver') ? handleView : null}
+            buttonConfig={{
+              edit: (item) => ({ show: hasPermission('temporaryTeams', 'Editar') }),
+              delete: (item) => ({ 
+                show: hasPermission('temporaryTeams', 'Eliminar'),
+                disabled: item.estado === 'Activo'
+              }),
+              view: (item) => ({ show: hasPermission('temporaryTeams', 'Ver') }),
+            }}
+          />
 
           <div className="mt-6">
             <Pagination

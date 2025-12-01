@@ -138,7 +138,6 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     {
       nombre: "",
       descripcion: "",
-      estado: "",
       permisos: {},
     },
     roleValidationRules
@@ -173,16 +172,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         return;
       }
 
-      // Convertir estado de español a inglés si es necesario
-      let status = roleData.status || roleData.estado || "";
-      if (status === "Activo") status = "Active";
-      if (status === "Inactivo") status = "Inactive";
-
       setFormData({
         id: roleData.id,
         nombre: roleData.name || roleData.nombre || "",
         descripcion: roleData.description || roleData.descripcion || "",
-        estado: status,
         permisos: roleData.permissions || roleData.permisos || {},
       });
       
@@ -355,7 +348,6 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     const roleToSave = {
       name: formData.nombre,
       description: formData.descripcion,
-      status: formData.estado,
       permissions: formData.permisos,
     };
 
@@ -383,7 +375,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     );
 
     if (!roleData) {
-      setFormData({ nombre: "", descripcion: "", estado: "", permisos: {} });
+      setFormData({ nombre: "", descripcion: "", permisos: {} });
     }
 
     setPermissionError("");
@@ -468,36 +460,19 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             </div>
 
             <FormField
-              label="Estado"
-              name="estado"
-              type="select"
-              placeholder="Seleccionar estado"
+              label="Descripción"
+              name="descripcion"
+              type="textarea"
+              placeholder="Descripción del rol"
               required
-              options={[
-                { value: "Active", label: "Activo" },
-                { value: "Inactive", label: "Inactivo" },
-              ]}
-              value={formData.estado}
-              error={errors.estado}
-              touched={touched.estado}
+              value={formData.descripcion}
+              error={errors.descripcion}
+              touched={touched.descripcion}
               onChange={handleChange}
               onBlur={handleBlur}
               delay={0.2}
             />
           </div>
-
-          <FormField
-            label="Descripción"
-            name="descripcion"
-            type="textarea"
-            placeholder="Descripción del rol"
-            value={formData.descripcion}
-            error={errors.descripcion}
-            touched={touched.descripcion}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            delay={0.3}
-          />
 
           {/* Permisos */}
           <motion.div

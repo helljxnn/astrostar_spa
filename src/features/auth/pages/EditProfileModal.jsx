@@ -1,73 +1,70 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { FaTimes, FaCamera } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
-import { useFormUserValidation, userValidationRules } from "../../dashboard/pages/Admin/pages/Users/hooks/useFormUserValidation";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../shared/utils/alerts";
 import ChangePasswordModal from "./ChangePasswordModal";
-
-const documentTypes = [
-    { value: "CC", label: "Cédula de ciudadanía" },
-    { value: "TI", label: "Tarjeta de identidad" },
-    { value: "CE", label: "Cédula de extranjería" },
-    { value: "PAS", label: "Pasaporte" },
-];
+import EmailVerificationModal from "./EmailVerificationModal";
 
 const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
-    const {
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        validateAllFields,
-        resetForm,
-        setValues,
-    } = useFormUserValidation(
-        {
-            nombre: "",
-            apellido: "",
-            tipoDocumento: "",
-            identificacion: "",
-            rol: "",
-            correo: "",
-            telefono: "",
-            estado: "",
-        },
-        userValidationRules
-    );
-
-    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [formData, setFormData] = useState({
+        correo: "",
+        telefono: "",
+        direccion: ""
+    });
+    const [originalEmail, setOriginalEmail] = useState("");
+    const [errors, setErrors] = useState({});
     const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
-    const fileInputRef = useRef(null);
+    const [isEmailVerificationModalOpen, setIsEmailVerificationModalOpen] = useState(false);
+    const [pendingEmail, setPendingEmail] = useState("");
 
     useEffect(() => {
         if (isOpen && user) {
-            setValues({
-                nombre: user.nombre || "",
-                apellido: user.apellido || "",
-                tipoDocumento: user.tipoDocumento || "",
-                identificacion: user.identificacion || "",
-                rol: user.rol || "",
-                correo: user.correo || "",
-                telefono: user.telefono || "",
-                estado: user.estado || "Activo", // El estado del perfil propio suele ser Activo
+            const email = user.email || user.correo || "";
+            setFormData({
+                correo: email,
+                telefono: user.phoneNumber || user.telefono || "",
+                direccion: user.address || user.direccion || ""
             });
-            setAvatarPreview(user.avatar || null);
+            setOriginalEmail(email);
+            setErrors({});
         }
-    }, [isOpen, user, setValues]);
+    }, [isOpen, user]);
 
-    const handleAvatarChange = (e) => {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith("image/")) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAvatarPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        } else {
-            setAvatarPreview(user.avatar || null);
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        // Limpiar error del campo cuando el usuario empieza a escribir
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ""
+            }));
         }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        // Validar correo
+        if (!formData.correo.trim()) {
+            newErrors.correo = "El correo es requerido";
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
+            newErrors.correo = "Correo electrónico inválido";
+        }
+
+        // Validar teléfono
+        if (!formData.telefono.trim()) {
+            newErrors.telefono = "El teléfono es requerido";
+        } else if (!/^\d{7,10}$/.test(formData.telefono.replace(/\s/g, ''))) {
+            newErrors.telefono = "Teléfono inválido (7-10 dígitos)";
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleOpenChangePasswordModal = () => {
@@ -75,39 +72,156 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
     };
 
     const handleClose = () => {
-        resetForm();
-        setAvatarPreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        setFormData({
+            correo: "",
+            telefono: "",
+            direccion: ""
+        });
+        setErrors({});
         onClose();
     };
 
+    const handleRequestEmailChange = async (newEmail) => {
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+            const token = localStorage.getItem('authToken');
+            
+            const response = await fetch(`${API_BASE_URL}/auth/request-email-change`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ newEmail })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                showErrorAlert('Error', data.message || 'No se pudo enviar el código de verificación.');
+                return false;
+            }
+
+            // Mostrar modal de verificación
+            setPendingEmail(newEmail);
+            setIsEmailVerificationModalOpen(true);
+            return true;
+
+        } catch (error) {
+            console.error('Error solicitando cambio de email:', error);
+            showErrorAlert('Error', 'No se pudo enviar el código. Inténtalo de nuevo.');
+            return false;
+        }
+    };
+
+    const handleVerifyEmailCode = async (code) => {
+        try {
+            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+            const token = localStorage.getItem('authToken');
+            
+            const verifyResponse = await fetch(`${API_BASE_URL}/auth/verify-email-change`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ token: code })
+            });
+
+            const verifyData = await verifyResponse.json();
+
+            if (!verifyResponse.ok || !verifyData.success) {
+                throw new Error(verifyData.message || 'Código inválido o expirado');
+            }
+
+            // Actualizar usuario en el contexto
+            if (verifyData.data) {
+                await onSave(verifyData.data);
+            }
+
+            // Cerrar modal de verificación
+            setIsEmailVerificationModalOpen(false);
+            
+            // Actualizar teléfono y dirección si es necesario
+            try {
+                await fetch(`${API_BASE_URL}/auth/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: formData.telefono,
+                        address: formData.direccion || null
+                    })
+                });
+            } catch (error) {
+                console.error('Error actualizando otros campos:', error);
+            }
+
+            showSuccessAlert('¡Email Actualizado!', 'Tu correo electrónico ha sido cambiado exitosamente.');
+            handleClose();
+
+        } catch (error) {
+            throw error; // Re-lanzar para que el modal lo maneje
+        }
+    };
+
     const handleSubmit = async () => {
-        if (!validateAllFields()) {
+        if (!validateForm()) {
             showErrorAlert("Error de validación", "Por favor, revisa los campos del formulario.");
             return;
         }
 
-        const confirmResult = await showConfirmAlert(
-            "¿Actualizar tu perfil?",
-            "Tus datos serán modificados."
-        );
+        const emailChanged = formData.correo !== originalEmail;
 
-        if (confirmResult.isConfirmed) {
-            try {
-                // Excluimos 'rol' y 'estado' de los datos a guardar, ya que no deberían ser editables por el usuario.
-                const { rol, estado, ...dataToSave } = values;
-                // Si hay una nueva vista previa que no es la original, la guardamos.
-                // En una app real, aquí subirías la imagen y obtendrías una URL.
-                // Para esta simulación, guardamos la URL en base64.
-                if (avatarPreview && avatarPreview !== user.avatar) {
-                    dataToSave.avatar = avatarPreview;
+        if (emailChanged) {
+            // Si el email cambió, solicitar verificación
+            const confirmResult = await showConfirmAlert(
+                "¿Cambiar correo electrónico?",
+                "Se enviará un código de verificación a tu nuevo correo."
+            );
+
+            if (confirmResult.isConfirmed) {
+                await handleRequestEmailChange(formData.correo);
+            }
+        } else {
+            // Si el email no cambió, actualizar solo teléfono y dirección
+            const confirmResult = await showConfirmAlert(
+                "¿Actualizar tu perfil?",
+                "Tus datos serán modificados."
+            );
+
+            if (confirmResult.isConfirmed) {
+                try {
+                    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+                    const token = localStorage.getItem('authToken');
+                    
+                    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            phoneNumber: formData.telefono,
+                            address: formData.direccion || null
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        await onSave(data.data);
+                        showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
+                        handleClose();
+                    } else {
+                        showErrorAlert("Error", data.message || "No se pudo actualizar tu perfil.");
+                    }
+                } catch (error) {
+                    console.error("Error al actualizar el perfil:", error);
+                    showErrorAlert("Error", "No se pudo actualizar tu perfil. Inténtalo de nuevo.");
                 }
-                await onSave({ ...user, ...dataToSave });
-                showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
-                handleClose();
-            } catch (error) {
-                console.error("Error al actualizar el perfil:", error);
-                showErrorAlert("Error", "No se pudo actualizar tu perfil. Inténtalo de nuevo.");
             }
         }
     };
@@ -143,90 +257,48 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 
                 {/* Body */}
                 <div className="p-6">
-                    <div className="flex flex-col items-center mb-8">
-                        <div className="relative">
-                            <img
-                                src={avatarPreview || `https://ui-avatars.com/api/?name=${user?.nombre?.[0] || 'U'}&background=random&size=128`}
-                                alt="Avatar"
-                                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="absolute -bottom-2 -right-2 bg-primary-blue text-white p-3 rounded-full shadow-md hover:bg-primary-purple transition-colors"
-                                aria-label="Cambiar foto de perfil"
-                            >
-                                <FaCamera />
-                            </button>
+                    {/* Información del usuario (solo lectura) */}
+                    <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                        <h3 className="text-sm font-semibold text-gray-600 mb-3">Información Personal</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-xs text-gray-500">Nombre Completo</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {`${user?.firstName || ''} ${user?.middleName || ''} ${user?.lastName || ''} ${user?.secondLastName || ''}`.replace(/\s+/g, ' ').trim()}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Tipo de Documento</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {user?.documentType?.name || 'No especificado'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Número de Documento</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {user?.identification || 'No especificado'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-gray-500">Rol</p>
+                                <p className="text-sm font-medium text-gray-800">
+                                    {user?.role?.name?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'No especificado'}
+                                </p>
+                            </div>
                         </div>
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleAvatarChange}
-                            className="hidden"
-                            accept="image/png, image/jpeg, image/gif"
-                        />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <FormField
-                            label="Nombre"
-                            name="nombre"
-                            type="text"
-                            placeholder="Tu nombre"
-                            value={values.nombre}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={errors.nombre}
-                            touched={touched.nombre}
-                            required
-                        />
-                        <FormField
-                            label="Apellido"
-                            name="apellido"
-                            type="text"
-                            placeholder="Tu apellido"
-                            value={values.apellido}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={errors.apellido}
-                            touched={touched.apellido}
-                            required
-                        />
-                        <FormField
-                            label="Tipo de documento"
-                            name="tipoDocumento"
-                            type="select"
-                            options={documentTypes}
-                            value={values.tipoDocumento}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={errors.tipoDocumento}
-                            touched={touched.tipoDocumento}
-                            required
-                        />
-                        <FormField
-                            label="Número de documento"
-                            name="identificacion"
-                            type="text"
-                            placeholder="Tu número de documento"
-                            value={values.identificacion}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={errors.identificacion}
-                            touched={touched.identificacion}
-                            required
-                        />
+                    {/* Campos editables */}
+                    <div className="space-y-4">
                         <FormField
                             label="Correo Electrónico"
                             name="correo"
                             type="email"
                             placeholder="tu.correo@ejemplo.com"
-                            value={values.correo}
+                            value={formData.correo}
                             onChange={handleChange}
-                            onBlur={handleBlur}
                             error={errors.correo}
-                            touched={touched.correo}
+                            touched={true}
                             required
                         />
                         <FormField
@@ -234,23 +306,32 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                             name="telefono"
                             type="text"
                             placeholder="Tu número de teléfono"
-                            value={values.telefono}
+                            value={formData.telefono}
                             onChange={handleChange}
-                            onBlur={handleBlur}
                             error={errors.telefono}
-                            touched={touched.telefono}
+                            touched={true}
                             required
+                        />
+                        <FormField
+                            label="Dirección"
+                            name="direccion"
+                            type="text"
+                            placeholder="Tu dirección (opcional)"
+                            value={formData.direccion}
+                            onChange={handleChange}
+                            error={errors.direccion}
+                            touched={true}
                         />
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-6">
                         <button
                             onClick={handleOpenChangePasswordModal}
-                            className="w-full h-10 rounded-xl bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
+                            className="w-full h-12 rounded-xl bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:scale-[1.02] transition-transform"
                         >
-                            Cambiar Contraseña</button>
+                            Cambiar Contraseña
+                        </button>
                     </div>
-
                 </div>
 
                 {/* Footer */}
@@ -266,8 +347,8 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                     </motion.button>
                     <motion.button
                         onClick={handleSubmit}
-                        className="px-8 py-2.5 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-xl font-medium shadow-lg"
-                        whileHover={{ scale: 1.02, boxShadow: "0 4px 15px rgba(139, 92, 246, 0.3)" }}
+                        className="px-8 py-2.5 bg-primary-purple text-white rounded-xl font-medium shadow-md hover:bg-primary-blue transition-colors"
+                        whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                     >
                         Guardar Cambios
@@ -276,7 +357,14 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                 <ChangePasswordModal
                     isOpen={isChangePasswordModalOpen}
                     onClose={() => setIsChangePasswordModalOpen(false)}
-                    email={values.correo} // Pasamos el correo del usuario al modal
+                    email={formData.correo}
+                />
+
+                <EmailVerificationModal
+                    isOpen={isEmailVerificationModalOpen}
+                    onClose={() => setIsEmailVerificationModalOpen(false)}
+                    newEmail={pendingEmail}
+                    onVerify={handleVerifyEmailCode}
                 />
 
             </motion.div>

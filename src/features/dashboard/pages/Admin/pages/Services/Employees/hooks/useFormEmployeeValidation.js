@@ -45,7 +45,7 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  // 👇 Fuerza marcar todos como touched
+  // Fuerza marcar todos como touched
   const touchAllFields = () => {
     const allTouched = {};
     Object.keys(validationRules).forEach((name) => {
@@ -54,13 +54,13 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     setTouched(allTouched);
   };
 
-  // 👇 Limpia todas las validaciones y errores
+  // Limpia todas las validaciones y errores
   const resetValidation = useCallback(() => {
     setErrors({});
     setTouched({});
   }, []);
 
-  // 👇 Resetea completamente el formulario
+  // Resetea completamente el formulario
   const resetForm = useCallback(() => {
     setValues(initialValues);
     setErrors({});
@@ -115,8 +115,17 @@ export const employeeValidationRules = {
   ],
   phoneNumber: [
     (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
-    (value) => value?.length < 7 ? "El teléfono debe tener al menos 7 dígitos" : "",
-    (value) => !/^\+?[\d\s\-()]+$/.test(value || "") ? "Formato de teléfono inválido" : "",
+    (value) => {
+      if (!value) return "";
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      
+      if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+        return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
+      }
+      return "";
+    },
   ],
   identification: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
@@ -125,7 +134,10 @@ export const employeeValidationRules = {
   ],
   documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
   roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
-  status: [(value) => (!value ? "Debe seleccionar un estado" : "")],
+  status: [
+    // El estado solo es requerido en modo editar, en crear se asigna automáticamente como "Activo"
+    (value, formData, mode) => (mode !== 'create' && !value ? "Debe seleccionar un estado" : "")
+  ],
   birthDate: [
     (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
     (value) => {

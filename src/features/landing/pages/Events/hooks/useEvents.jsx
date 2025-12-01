@@ -72,7 +72,7 @@
           try {
             setSelectedDate(new Date(nextEvent.date));
           } catch (error) {
-            console.error("❌ Error parseando fecha:", error);
+            // Error parseando fecha
           }
         }
       }
@@ -89,7 +89,7 @@
             try {
               setSelectedDate(new Date(nextEvent.date));
             } catch (error) {
-              console.error("❌ Error parseando fecha:", error);
+              // Error parseando fecha
             }
           } else {
             setSelectedEventId(null);

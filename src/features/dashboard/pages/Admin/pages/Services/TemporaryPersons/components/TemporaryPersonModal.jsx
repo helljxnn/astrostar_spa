@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import {
   showSuccessAlert,
   showConfirmAlert,
@@ -121,22 +122,14 @@ const temporaryPersonValidationRules = {
     if (!/^[0-9]+$/.test(cleanPhone)) {
       return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
     }
-    if (cleanPhone.length < 7 || cleanPhone.length > 15) {
-      return "El teléfono debe tener entre 7 y 15 dígitos";
+    if (cleanPhone.length < 7 || cleanPhone.length > 14) {
+      return "El teléfono debe tener entre 7 y 14 dígitos";
     }
     return "";
   },
   identification: (value) => {
     if (!value || !value.trim()) return "El número de documento es requerido";
-    if (value.length < 6) {
-      return "La identificación debe tener al menos 6 caracteres";
-    }
-    if (value.length > 50) {
-      return "La identificación no puede exceder 50 caracteres";
-    }
-    if (!/^[a-zA-Z0-9\-]+$/.test(value)) {
-      return "La identificación solo puede contener letras, números y guiones";
-    }
+    // La validación de longitud y formato se maneja automáticamente en DocumentField según el tipo de documento
     return "";
   },
   documentTypeId: (value) => {
@@ -187,10 +180,13 @@ const temporaryPersonValidationRules = {
     }
     return "";
   },
-  status: (value) => {
-    if (!value) return "El estado es requerido";
-    const validStatuses = ['Active', 'Inactive'];
-    if (!validStatuses.includes(value)) return "Estado no válido";
+  status: (value, formData, mode) => {
+    // El estado solo es requerido en modo editar
+    if (mode === 'edit') {
+      if (!value) return "El estado es requerido";
+      const validStatuses = ['Active', 'Inactive'];
+      if (!validStatuses.includes(value)) return "Estado no válido";
+    }
     return "";
   }
 };
@@ -519,19 +515,21 @@ const TemporaryPersonModal = ({
               delay={0.1}
             />
 
-            {/* Identificación */}
-            <FormField
-              label="Número de Documento"
-              name="identification"
-              type="text"
-              placeholder="Número de documento"
-              required={true}
+            {/* Identificación con validación por tipo de documento */}
+            <DocumentField
+              documentType={
+                referenceData.documentTypes.find(
+                  (dt) => dt.id === parseInt(formData.documentTypeId)
+                )?.name
+              }
               value={formData.identification}
-              error={errors.identification}
-              touched={touched.identification}
               onChange={handleChange}
               onBlur={handleCustomBlur}
-              delay={0.2}
+              error={errors.identification}
+              touched={touched.identification}
+              required={true}
+              label="Número de Documento"
+              name="identification"
             />
 
             {/* Primer Nombre */}
@@ -621,6 +619,7 @@ const TemporaryPersonModal = ({
               touched={touched.phone}
               onChange={handleChange}
               onBlur={handleBlur}
+              maxLength={14}
               delay={0.42}
             />
 
@@ -718,24 +717,26 @@ const TemporaryPersonModal = ({
               delay={0.57}
             />
 
-            {/* Estado */}
-            <FormField
-              label="Estado"
-              name="status"
-              type="select"
-              placeholder="Seleccionar estado"
-              required={true}
-              options={[
-                { value: "Active", label: "Activo" },
-                { value: "Inactive", label: "Inactivo" },
-              ]}
-              value={formData.status}
-              error={errors.status}
-              touched={touched.status}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.6}
-            />
+            {/* Estado - Solo visible en modo editar */}
+            {mode === "edit" && (
+              <FormField
+                label="Estado"
+                name="status"
+                type="select"
+                placeholder="Seleccionar estado"
+                required={true}
+                options={[
+                  { value: "Active", label: "Activo" },
+                  { value: "Inactive", label: "Inactivo" },
+                ]}
+                value={formData.status}
+                error={errors.status}
+                touched={touched.status}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                delay={0.6}
+              />
+            )}
 
           </div>
         </div>

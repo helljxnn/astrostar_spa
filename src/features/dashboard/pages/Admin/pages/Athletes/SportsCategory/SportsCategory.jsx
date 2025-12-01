@@ -9,6 +9,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import SportsCategoryModal from "./components/SportsCategoryModal";
 import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 
 import { useSportsCategories } from "./hooks/useSportsCategories";
 import { showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/Alerts";
@@ -102,12 +103,20 @@ const SportsCategory = () => {
   const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
 
   const handleCreate = () => {
+    if (!hasPermission(MODULE_NAME, "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear categorías deportivas");
+      return;
+    }
     setSelectedCategory(null);
     setIsNew(true);
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
+    if (!hasPermission(MODULE_NAME, "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar categorías deportivas");
+      return;
+    }
     setSelectedCategory(item);
     setIsNew(false);
     setIsModalOpen(true);
@@ -137,6 +146,10 @@ const SportsCategory = () => {
   };
 
   const handleView = async (item) => {
+    if (!hasPermission(MODULE_NAME, "Ver")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de categorías deportivas");
+      return;
+    }
     try {
       const details = await getSportsCategoryById(item.id);
       setCategoryToView(details);
@@ -147,6 +160,10 @@ const SportsCategory = () => {
   };
 
   const handleList = async (item) => {
+    if (!hasPermission(MODULE_NAME, "Listar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para listar atletas de categorías deportivas");
+      return;
+    }
     try {
       const athletes = await getAthletesByCategory(item.id);
       setCategoryForAthletes(item);

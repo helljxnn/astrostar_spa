@@ -221,8 +221,6 @@ const EnglishRegistrationFormModal = ({
         if (!result.isConfirmed) return;
       }
 
-      console.log(`${action === "edit" ? "Editar" : "Inscribir"} deportistas en inglés:`, selectedItems);
-
       // Simular éxito
       const success = Math.random() > 0.1; // 90% de éxito
 

@@ -49,12 +49,12 @@ export const useTemporaryPersonValidation = () => {
     
     phone: (value) => {
       if (value && value.trim()) {
-        const cleanPhone = value.replace(/[\s\-\+\(\)]/g, '');
-        if (!/^[0-9]+$/.test(cleanPhone)) {
-          return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
-        }
-        if (cleanPhone.length < 7 || cleanPhone.length > 15) {
-          return "El teléfono debe tener entre 7 y 15 dígitos";
+        // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+        const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+        const phoneWithoutCode = /^\d{10}$/; // 3226758060
+        
+        if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+          return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
         }
       }
       return "";

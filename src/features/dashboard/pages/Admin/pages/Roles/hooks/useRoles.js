@@ -219,35 +219,7 @@ export const useRoles = () => {
     }
   };
 
-  /**
-   * Cambiar estado de un rol
-   * @param {number} id - ID del rol
-   * @param {string} status - Nuevo estado
-   * @param {object} currentParams - Parámetros actuales para refrescar
-   */
-  const changeRoleStatus = async (id, status, currentParams = {}) => {
-    setLoading(true);
-    
-    try {
 
-      const response = await rolesService.changeRoleStatus(id, status);
-      
-      if (response.success) {
-        const statusText = status === 'Active' ? 'activado' : 'desactivado';
-        showSuccessAlert('Éxito', `Rol ${statusText} correctamente`);
-        await fetchRoles(currentParams);
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Error changing role status');
-      }
-    } catch (err) {
-      console.error('❌ Error changing role status:', err);
-      showErrorAlert('Error', err.message || 'No se pudo cambiar el estado del rol');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   /**
    * Duplicar un rol
@@ -357,7 +329,6 @@ export const useRoles = () => {
     checkNameAvailability,
     getRoleStats,
     getAvailablePermissions,
-    changeRoleStatus,
     duplicateRole,
     searchRoles,
     exportRoles

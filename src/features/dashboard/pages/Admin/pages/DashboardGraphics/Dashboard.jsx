@@ -1,10 +1,29 @@
+import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import EventsGraphic from "./components/EventsGraphic";
 import AthletesTrackingGraphic from "./components/AthletesTrackingGraphic";
 import HealthServicesGraphic from "./components/HealthServicesGraphic";
 import HealthServicesYearGraphic from "./components/HealthServicesYearGraphic";
 import RegisteredPlayers from "./components/RegisteredPlayers";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 
 function Dashboard() {
+  const { hasModuleAccess, isAdmin } = usePermissions();
+  const navigate = useNavigate();
+
+  // Verificar acceso al dashboard
+  useEffect(() => {
+    if (!isAdmin && !hasModuleAccess('dashboard')) {
+      // Redirigir a la primera página a la que tenga acceso
+      navigate('/dashboard/users', { replace: true });
+    }
+  }, [isAdmin, hasModuleAccess, navigate]);
+
+  // Si no tiene acceso, no renderizar nada (mientras redirige)
+  if (!isAdmin && !hasModuleAccess('dashboard')) {
+    return null;
+  }
+
   return (
     <div className="p-3 sm:p-4 md:p-6 max-w-full overflow-x-hidden">
       {/* Header responsive */}

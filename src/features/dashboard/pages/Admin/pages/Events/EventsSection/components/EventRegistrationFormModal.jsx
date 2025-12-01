@@ -154,9 +154,6 @@ const EventRegistrationFormModal = ({
       return mockTeams;
     } else if (eventType === "Clausura" || eventType === "Taller") {
       // Para eventos de Clausura y Taller, ÚNICAMENTE deportistas de la fundación
-      console.log(
-        `Evento tipo ${eventType}: Mostrando únicamente deportistas de la fundación`
-      );
       return formattedAthletes;
     } else if (selectedSection === "deportistas") {
       return formattedAthletes;
@@ -242,7 +239,6 @@ const EventRegistrationFormModal = ({
 
   const handleSave = async () => {
     try {
-      console.log("Inscribir Equipos:", selectedItems);
       // Aquí iría la lógica para guardar las inscripciones
 
       // Simular éxito (puedes cambiar esto para simular error)

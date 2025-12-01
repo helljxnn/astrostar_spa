@@ -13,7 +13,10 @@ const SelectionModal = ({
   onSelect,
   selectedItems = [],
   currentCategoria = null,
-  existingTeamType = null,
+  teamType = null,
+  forceFoundationType = false,
+  excludeTrainerId = null, // ID del entrenador a excluir (para segundo entrenador)
+  initialTabType = null, // Tipo inicial para abrir el tab correcto (fundacion o temporal)
 }) => {
   const [searchTerm, setSearchTerm] = useState("")
   const [activeTab, setActiveTab] = useState(0)
@@ -27,31 +30,40 @@ const SelectionModal = ({
   const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
   const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
 
-  // Cargar datos desde el backend
+  // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      console.log('🎯 Modal abierto, modo:', mode)
       loadData()
+    } else {
+      // Limpiar datos cuando se cierra
+      setData([])
+      setSearchTerm("")
+      setSelectedCategory("")
+      setCurrentPage(1)
+      setActiveTab(0)
     }
   }, [isOpen, mode])
 
   const loadData = async () => {
     setLoading(true)
     try {
-      console.log('🔄 Cargando datos...')
       let response
       if (mode === "trainer") {
         response = await TeamsService.getTrainers()
-        console.log('🏋️ Respuesta entrenadores:', response)
       } else {
         response = await TeamsService.getAthletes()
-        console.log('🏃 Respuesta deportistas:', response)
       }
       
+      console.log('📥 Respuesta del servicio:', response)
+      
       // FIX CRÍTICO: Asegurar que siempre tengamos un array
-      const responseData = Array.isArray(response) ? response : (response?.data || [])
-      console.log('📦 Datos a mostrar:', responseData)
-      setData(responseData)
+      if (response && response.success && Array.isArray(response.data)) {
+        console.log('✅ Datos cargados:', response.data.length, 'elementos')
+        setData(response.data)
+      } else {
+        console.warn('⚠️ Respuesta inválida o sin datos:', response)
+        setData([])
+      }
     } catch (error) {
       console.error('❌ Error cargando datos:', error)
       setData([])
@@ -61,14 +73,24 @@ const SelectionModal = ({
   }
 
   const currentTeamType = useMemo(() => {
-    if (existingTeamType) return existingTeamType
+    if (forceFoundationType) return "fundacion"
+    if (teamType) return teamType
     if (selectedItems.length > 0) return selectedItems[0]?.type
     return null
-  }, [existingTeamType, selectedItems])
+  }, [teamType, selectedItems, forceFoundationType])
 
   const groupedData = useMemo(() => {
-    console.log('📊 Agrupando datos:', data)
     if (!data || data.length === 0) return []
+    
+    // Si forceFoundationType está activo, solo mostrar fundación
+    if (forceFoundationType) {
+      const fundacion = data.filter(item => item.type === "fundacion")
+      return fundacion.length > 0 ? [{
+        source: "fundacion",
+        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
+        items: fundacion
+      }] : []
+    }
     
     const fundacion = data.filter(item => item.type === "fundacion")
     const temporal = data.filter(item => item.type === "temporal")
@@ -91,34 +113,30 @@ const SelectionModal = ({
       })
     }
     
-    console.log('🏷️ Grupos creados:', groups)
     return groups
-  }, [data, mode])
+  }, [data, mode, forceFoundationType])
+
+  // Establecer el tab inicial basado en el tipo de equipo
+  useEffect(() => {
+    if (isOpen && groupedData.length > 0 && initialTabType) {
+      const tabIndex = groupedData.findIndex(group => group.source === initialTabType)
+      if (tabIndex !== -1 && activeTab !== tabIndex) {
+        setActiveTab(tabIndex)
+      }
+    }
+  }, [isOpen, groupedData, initialTabType, activeTab])
 
   // ✅ CORRECTO: Usar solo los datos del tab actual
   const currentGroupData = useMemo(() => {
     const groupData = groupedData[activeTab]?.items || []
-    console.log('📑 Datos del grupo actual (tab', activeTab, '):', groupData)
     return groupData
   }, [groupedData, activeTab])
 
   const availableItems = useMemo(() => {
-    let filtered = currentGroupData  // ✅ SOLO datos del tab actual
-
-    if (currentTeamType) {
-      filtered = filtered.filter(item => item.type === currentTeamType)
-    }
-
-    if (currentTeamType === "fundacion" && currentCategoria) {
-      filtered = filtered.filter(item => {
-        if (item.type === "temporal") return false
-        return item.categoria === currentCategoria
-      })
-    }
-
-    console.log('✅ Items disponibles en el tab actual:', filtered)
-    return filtered
-  }, [currentGroupData, currentTeamType, currentCategoria])
+    // Mostrar todos los elementos del tab actual, sin filtrar por tipo
+    // La disponibilidad se maneja en isItemAvailable
+    return currentGroupData
+  }, [currentGroupData])
 
   const filteredItems = useMemo(() => {
     let filtered = availableItems
@@ -159,16 +177,29 @@ const SelectionModal = ({
   }
 
   const isItemAvailable = (item) => {
-    if (selectedItems.length === 0 && !currentTeamType) return true
+    // Si es el entrenador a excluir, no está disponible
+    if (excludeTrainerId && item.id === excludeTrainerId) return false
+    
+    // Si ya está seleccionado, está disponible
     if (selectedItems.some(s => s.id === item.id)) return true
+    
+    // Si no hay tipo de equipo definido y no hay selecciones, todo está disponible
+    if (selectedItems.length === 0 && !currentTeamType) return true
+    
+    // Si hay elementos seleccionados, solo permitir del mismo tipo
     if (selectedItems.length > 0) {
       const firstSelectedType = selectedItems[0].type
       if (item.type !== firstSelectedType) return false
     }
+    
+    // Si hay un tipo de equipo definido, solo permitir ese tipo
     if (currentTeamType && item.type !== currentTeamType) return false
+    
+    // Para deportistas de fundación, verificar categoría
     if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
       return item.categoria === currentCategoria
     }
+    
     return true
   }
 
@@ -198,7 +229,10 @@ const SelectionModal = ({
     onClose()
   }
 
-  const isSelected = (item) => selectedItems.some((s) => s.id === item.id)
+  const isSelected = (item) => {
+    // Solo mostrar como seleccionado si el item está en selectedItems Y es del mismo tipo
+    return selectedItems.some((s) => s.id === item.id && s.type === item.type)
+  }
 
   const handleTabChange = (index) => {
     setActiveTab(index)
@@ -260,22 +294,43 @@ const SelectionModal = ({
           {groupedData && groupedData.length > 1 && (
             <div className="border-b border-gray-200 bg-gray-50">
               <div className="flex">
-                {groupedData.map((group, index) => (
-                  <button
-                    key={group.source}
-                    onClick={() => handleTabChange(index)}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
-                      activeTab === index
-                        ? "bg-white text-primary-purple border-b-2 border-primary-purple"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                    }`}
-                  >
-                    {group.sourceLabel}
-                    <span className="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
-                      {group.items ? group.items.length : 0}
-                    </span>
-                  </button>
-                ))}
+                {groupedData.map((group, index) => {
+                  // Verificar si este tab debe estar deshabilitado
+                  const isTabDisabled = currentTeamType && group.source !== currentTeamType;
+                  
+                  return (
+                    <button
+                      key={group.source}
+                      onClick={() => !isTabDisabled && handleTabChange(index)}
+                      disabled={isTabDisabled}
+                      className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative group ${
+                        activeTab === index
+                          ? "bg-white text-primary-purple border-b-2 border-primary-purple"
+                          : isTabDisabled
+                          ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                      }`}
+                      title={isTabDisabled ? `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo` : ""}
+                    >
+                      {group.sourceLabel}
+                      <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                        isTabDisabled ? "bg-gray-300 text-gray-500" : "bg-gray-200"
+                      }`}>
+                        {group.items ? group.items.length : 0}
+                      </span>
+                      
+                      {/* Tooltip para tabs deshabilitados */}
+                      {isTabDisabled && (
+                        <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 z-50 hidden group-hover:block pointer-events-none">
+                          <div className="bg-gray-700 text-white text-[10px] rounded py-1 px-2 whitespace-nowrap shadow-lg">
+                            No se pueden seleccionar {mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-transparent border-b-gray-700"></div>
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -333,6 +388,7 @@ const SelectionModal = ({
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Seleccionar</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
                         <th className="text-left py-3 px-4 font-semibold text-gray-700">Identificación</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Teléfono</th>
                         {mode === "athletes" && (
                           <th className="text-left py-3 px-4 font-semibold text-gray-700">Categoría</th>
                         )}
@@ -348,17 +404,35 @@ const SelectionModal = ({
                             ? (item.categoria || "Sin categoría")
                             : "No aplica"
 
+                          const getUnavailableReason = () => {
+                            if (isAvailable) return null;
+                            if (currentTeamType && item.type !== currentTeamType) {
+                              return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
+                            }
+                            if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria !== currentCategoria) {
+                              return "Solo se pueden seleccionar deportistas de la misma categoría";
+                            }
+                            return "No disponible";
+                          };
+
                           return (
                             <tr
                               key={item.id}
-                              className={`border-b border-gray-100 transition-colors ${
+                              className={`border-b border-gray-100 transition-colors relative group ${
                                 selected
                                   ? "bg-purple-50 cursor-pointer"
                                   : !isAvailable
-                                    ? "bg-gray-50 cursor-not-allowed opacity-50"
+                                    ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
                                     : "hover:bg-gray-50 cursor-pointer"
                               }`}
-                              onClick={() => isAvailable && handleSelect(item)}
+                              onClick={(e) => {
+                                if (!isAvailable) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  return false;
+                                }
+                                handleSelect(item);
+                              }}
                             >
                               <td className="py-3 px-4">
                                 <div className="flex items-center">
@@ -390,20 +464,32 @@ const SelectionModal = ({
                                   )}
                                 </div>
                               </td>
-                              <td className="py-3 px-4">
+                              <td className="py-3 px-4 relative">
                                 <div className="flex items-center gap-2">
                                   <span className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`}>
                                     {item.name}
                                   </span>
                                   {!isAvailable && (
-                                    <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                                    <span className="text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded font-medium">
                                       No disponible
                                     </span>
                                   )}
                                 </div>
+                                {/* Tooltip visible en toda la fila */}
+                                {!isAvailable && (
+                                  <div className="absolute left-0 top-full mt-1 z-50 hidden group-hover:block pointer-events-none">
+                                    <div className="bg-gray-700 text-white text-[10px] rounded py-1 px-2 whitespace-nowrap shadow-lg">
+                                      {getUnavailableReason()}
+                                      <div className="absolute bottom-full left-4 w-0 h-0 border-l-[4px] border-r-[4px] border-b-[4px] border-transparent border-b-gray-700"></div>
+                                    </div>
+                                  </div>
+                                )}
                               </td>
                               <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {item.identification || "N/A"}
+                              </td>
+                              <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
+                                {item.phoneNumber || "N/A"}
                               </td>
                               {mode === "athletes" && (
                                 <td className="py-3 px-4">
@@ -432,7 +518,7 @@ const SelectionModal = ({
                         })
                       ) : (
                         <tr>
-                          <td colSpan={mode === "athletes" ? "5" : "4"} className="py-12 text-center text-gray-500">
+                          <td colSpan={mode === "athletes" ? "6" : "5"} className="py-12 text-center text-gray-500">
                             <div className="text-4xl mb-4">🔍</div>
                             <p>
                               {searchTerm || selectedCategory

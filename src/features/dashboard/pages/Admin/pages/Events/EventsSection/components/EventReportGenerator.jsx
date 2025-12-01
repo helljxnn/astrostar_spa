@@ -9,7 +9,7 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 
-const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns }) => {
+const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns, calendarRef }) => {
   const [open, setOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
@@ -26,10 +26,24 @@ const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns
     { key: "estado", label: "Estado" }
   ];
 
-  const generatePDF = () => {
+  const generatePDF = async () => {
     setOpen(false);
     
     try {
+      // Obtener fecha seleccionada
+      const [year, month] = selectedMonth.split('-').map(num => parseInt(num, 10));
+      const selectedDate = new Date(year, month - 1, 1);
+      const monthName = selectedDate.toLocaleString('es', { month: 'long' });
+      const selectedYear = selectedDate.getFullYear();
+      
+      // Cambiar el calendario al mes seleccionado usando el ref
+      if (calendarRef && calendarRef.current) {
+        calendarRef.current.changeMonth(selectedDate);
+        
+        // Esperar un momento para que el calendario se actualice
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+      
       // Obtener el elemento del calendario
       const calendarElement = document.querySelector('.rbc-calendar');
       
@@ -37,15 +51,6 @@ const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns
         showErrorAlert("Error", "No se pudo encontrar el calendario para capturar");
         return;
       }
-      
-      // Eliminamos la alerta de procesamiento para evitar interrupciones
-      
-      // Obtener fecha seleccionada para el nombre del archivo
-      // Asegurarnos de que la fecha se procese correctamente
-      const [year, month] = selectedMonth.split('-').map(num => parseInt(num, 10));
-      const selectedDate = new Date(year, month - 1); // Restamos 1 porque los meses en JS van de 0-11
-      const monthName = selectedDate.toLocaleString('es', { month: 'long' });
-      const selectedYear = selectedDate.getFullYear();
       
       // Ocultar temporalmente los iconos de los botones y ajustar el estilo del estado
       const actionButtons = document.querySelectorAll('.event-action-buttons, .rbc-event-content button, .rbc-event button');
