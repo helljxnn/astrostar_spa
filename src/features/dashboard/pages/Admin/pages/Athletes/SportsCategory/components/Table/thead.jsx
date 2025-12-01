@@ -6,7 +6,7 @@ const Thead = ({ options }) => {
 
   return (
     <thead>
-      <tr className="bg-gradient-to-r from-[#b5b9ff] via-[#a7b8ff] to-[#94a6ff] text-white">
+      <tr className="bg-gradient-to-r from-[#b491ff] via-[#9fb3ff] to-[#74d5f4] text-white">
         {titles.map((title, index) => (
           <th
             key={index}
