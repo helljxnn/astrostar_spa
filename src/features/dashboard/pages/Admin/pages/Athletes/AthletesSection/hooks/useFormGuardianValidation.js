@@ -43,38 +43,65 @@ const validatePhone = (value) => {
   return "Formato de teléfono inválido";
 };
 
-// Validación de documento de identidad
-const validateDocument = (value, tipoDocumento) => {
-  if (!value?.trim()) return "El número de documento es obligatorio";
-
-  const doc = value.trim().replace(/[\s.-]/g, "");
-
-  switch (tipoDocumento) {
-    case "CC":
-      if (!/^\d{6,10}$/.test(doc))
-        return "La cédula debe tener entre 6 y 10 dígitos";
-      break;
-    case "TI":
-      if (!/^\d{10,11}$/.test(doc))
-        return "La tarjeta de identidad debe tener 10 u 11 dígitos";
-      break;
-    case "CE":
-      if (!/^\d{6,12}$/.test(doc))
-        return "La cédula de extranjería debe tener entre 6 y 12 dígitos";
-      break;
-    case "PA":
-      if (!/^[A-Z0-9]{6,9}$/.test(doc.toUpperCase()))
-        return "El pasaporte debe tener entre 6 y 9 caracteres alfanuméricos";
-      break;
-    default:
-      if (!/^[A-Z0-9]{6,12}$/i.test(doc))
-        return "Formato de documento inválido";
+// Validación de documento de identidad (igual que proveedores y empleados)
+const getDocumentValidation = (documentTypeName, value) => {
+  if (!documentTypeName || !value?.trim()) return '';
+  
+  const docName = documentTypeName.toLowerCase();
+  
+  // Cédula de Ciudadanía
+  if (docName.includes('cédula') || docName.includes('cedula') || docName.includes('ciudadanía')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 10) {
+      return "La cédula debe tener entre 6 y 10 dígitos.";
+    }
+    return '';
   }
-
-  return "";
+  
+  // Cédula de Extranjería
+  if (docName.includes('extranjería') || docName.includes('extranjeria')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula de extranjería solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 12) {
+      return "La cédula de extranjería debe tener entre 6 y 12 dígitos.";
+    }
+    return '';
+  }
+  
+  // Pasaporte
+  if (docName.includes('pasaporte')) {
+    if (!/^[A-Za-z0-9]+$/.test(value)) {
+      return "El pasaporte solo puede contener letras y números.";
+    }
+    if (value.length < 6 || value.length > 15) {
+      return "El pasaporte debe tener entre 6 y 15 caracteres.";
+    }
+    return '';
+  }
+  
+  // Tarjeta de Identidad
+  if (docName.includes('tarjeta') && docName.includes('identidad')) {
+    if (!/^\d+$/.test(value)) {
+      return "La tarjeta de identidad solo puede contener números.";
+    }
+    if (value.length < 8 || value.length > 11) {
+      return "La tarjeta de identidad debe tener entre 8 y 11 dígitos.";
+    }
+    return '';
+  }
+  
+  // Validación genérica para otros tipos
+  if (value.length > 20) {
+    return "El documento no puede exceder los 20 caracteres.";
+  }
+  
+  return '';
 };
 
-// Reglas de validación específicas para acudientes
+// Reglas de validación específicas para acudientes (EXACTAMENTE IGUALES A EMPLEADOS)
 export const guardianValidationRules = {
   nombreCompleto: [
     (v) => (!v?.trim() ? "El nombre completo es obligatorio" : ""),
@@ -88,26 +115,30 @@ export const guardianValidationRules = {
         : "",
     (v) => (hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""),
   ],
-  tipoDocumento: [(v) => (!v ? "Debe seleccionar un tipo de documento" : "")],
-  identificacion: [(v, values) => validateDocument(v, values?.tipoDocumento)],
-  correo: [
-    (v) => (!v?.trim() ? "El correo es obligatorio" : ""),
-    (v) =>
-      !isValidEmail(v?.trim() || "")
-        ? "El correo electrónico no es válido"
-        : "",
-    (v) =>
-      (v?.trim() || "").length > 100
-        ? "El correo no puede exceder 100 caracteres"
-        : "",
+  documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  identification: [
+    (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
+    (value) => value?.length < 6 ? "La identificación debe tener al menos 6 caracteres" : "",
+    (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
-  telefono: [
-    (value) => (!value?.trim() ? "El teléfono es obligatorio" : ""),
-    (value) => (!/^\d+$/.test(value || "") ? "Solo se permiten números" : ""),
+  email: [
+    (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
     (value) =>
-      value?.length < 7 || value?.length > 15
-        ? "El teléfono debe tener entre 7 y 15 dígitos"
-        : "",
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
+  ],
+  phoneNumber: [
+    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
+    (value) => {
+      if (!value) return "";
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      
+      if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+        return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
+      }
+      return "";
+    },
   ],
   fechaNacimiento: [
     (v) => (!v ? "La fecha de nacimiento es obligatoria" : ""),

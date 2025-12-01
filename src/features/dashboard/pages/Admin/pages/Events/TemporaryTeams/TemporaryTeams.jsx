@@ -303,7 +303,7 @@ const TemporaryTeams = () => {
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Equipos Temporales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Equipos</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -388,9 +388,9 @@ const TemporaryTeams = () => {
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
-            <p>No se encontraron equipos temporales que coincidan con "{searchTerm}"</p>
+            <p>No se encontraron equipos que coincidan con "{searchTerm}"</p>
           ) : (
-            <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
+            <p>No hay equipos registrados. ¡Crea el primero!</p>
           )}
         </div>
       )}

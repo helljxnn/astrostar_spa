@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes, FaInfoCircle, FaExclamationCircle } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -11,18 +12,7 @@ import {
   athleteValidationRules,
 } from "../hooks/useFormAthleteValidation";
 
-const documentTypes = [
-  { value: "cedula", label: "Cédula de Ciudadanía" },
-  { value: "tarjeta_identidad", label: "Tarjeta de Identidad" },
-  { value: "cedula_extranjeria", label: "Cédula de Extranjería" },
-  { value: "pasaporte", label: "Pasaporte" },
-];
-
-const categories = [
-  { value: "Infantil", label: "Infantil" },
-  { value: "Sub 15", label: "Sub-15" },
-  { value: "Juvenil", label: "Juvenil" },
-];
+// Los tipos de documento y categorías ahora se reciben desde props (cargados desde la API)
 
 const states = [
   { value: "Activo", label: "Activo" },
@@ -42,16 +32,23 @@ const parentescoOptions = [
   { value: "Otro", label: "Otro (especificar)" },
 ];
 
+// Función para calcular la edad (igual que empleados)
 const calculateAge = (birthDate) => {
-  if (!birthDate) return null;
+  if (!birthDate) return "";
+
   const today = new Date();
-  const b = new Date(birthDate);
-  let age = today.getFullYear() - b.getFullYear();
-  const m = today.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) {
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birth.getDate())
+  ) {
     age--;
   }
-  return age;
+
+  return age >= 0 ? age.toString() : "";
 };
 
 const AthleteModal = ({
@@ -65,6 +62,7 @@ const AthleteModal = ({
   onCreateGuardian,
   onViewGuardian,
   newlyCreatedGuardianId = null,
+  referenceData = { documentTypes: [] },
 }) => {
   const isEditing = mode === "edit" || athleteToEdit !== null;
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
@@ -85,13 +83,16 @@ const AthleteModal = ({
     setValues,
   } = useFormAthleteValidation(
     {
-      nombres: "",
-      apellidos: "",
-      tipoDocumento: "",
-      numeroDocumento: "",
-      correo: "",
-      telefono: "",
-      fechaNacimiento: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      documentTypeId: "",
+      identification: "",
+      email: "",
+      phoneNumber: "",
+      birthDate: "",
+      age: "",
       categoria: "",
       estado: "Activo",
       acudiente: "",
@@ -100,16 +101,39 @@ const AthleteModal = ({
     athleteValidationRules
   );
 
+  // Debug: Ver qué tipos de documento se están recibiendo
   useEffect(() => {
-    if (values.fechaNacimiento) {
-      const age = calculateAge(values.fechaNacimiento);
-      setCurrentAge(age);
+    if (isOpen && referenceData.documentTypes) {
+      console.log('🔍 AthleteModal - Tipos de documento recibidos:', referenceData.documentTypes);
+      console.log('📊 Total:', referenceData.documentTypes.length);
+      console.log('📋 Nombres:', referenceData.documentTypes.map(dt => dt.name));
+    }
+  }, [isOpen, referenceData.documentTypes]);
+
+  // Función personalizada para manejar cambios (igual que empleados)
+  const handleCustomChange = (name, value) => {
+    if (name === "birthDate") {
+      const age = calculateAge(value);
+      setValues((prev) => ({
+        ...prev,
+        [name]: value,
+        age: age,
+      }));
+    } else {
+      handleChange({ target: { name, value } });
+    }
+  };
+
+  useEffect(() => {
+    if (values.birthDate) {
+      const age = calculateAge(values.birthDate);
+      setCurrentAge(parseInt(age) || null);
       setHasDateOfBirth(true);
     } else {
       setCurrentAge(null);
       setHasDateOfBirth(false);
     }
-  }, [values.fechaNacimiento]);
+  }, [values.birthDate]);
 
   useEffect(() => {
     if (newlyCreatedGuardianId && guardians.length > 0 && !isEditing) {
@@ -127,36 +151,42 @@ const AthleteModal = ({
 
   useEffect(() => {
     if (isOpen && isEditing && athleteToEdit) {
-      const fechaNacimiento = athleteToEdit.fechaNacimiento || "";
+      const birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
       
       setValues({
-        nombres: athleteToEdit.nombres || "",
-        apellidos: athleteToEdit.apellidos || "",
-        tipoDocumento: athleteToEdit.tipoDocumento || "",
-        numeroDocumento: athleteToEdit.numeroDocumento || "",
-        correo: athleteToEdit.correo || "",
-        telefono: athleteToEdit.telefono || "",
-        fechaNacimiento: fechaNacimiento,
+        firstName: athleteToEdit.firstName || athleteToEdit.nombres || "",
+        middleName: athleteToEdit.middleName || "",
+        lastName: athleteToEdit.lastName || athleteToEdit.apellidos || "",
+        secondLastName: athleteToEdit.secondLastName || "",
+        documentTypeId: athleteToEdit.documentTypeId || athleteToEdit.tipoDocumento || "",
+        identification: athleteToEdit.identification || athleteToEdit.numeroDocumento || "",
+        email: athleteToEdit.email || athleteToEdit.correo || "",
+        phoneNumber: athleteToEdit.phoneNumber || athleteToEdit.telefono || "",
+        birthDate: birthDate,
+        age: calculateAge(birthDate),
         categoria: athleteToEdit.categoria || "",
         estado: athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
         parentesco: athleteToEdit.parentesco || "",
       });
       
-      setHasDateOfBirth(!!fechaNacimiento);
+      setHasDateOfBirth(!!birthDate);
       
       if (athleteToEdit.parentesco && !parentescoOptions.some(opt => opt.value === athleteToEdit.parentesco)) {
         setOtroParentesco(athleteToEdit.parentesco);
       }
     } else if (isOpen && !isEditing) {
       setValues({
-        nombres: "",
-        apellidos: "",
-        tipoDocumento: "",
-        numeroDocumento: "",
-        correo: "",
-        telefono: "",
-        fechaNacimiento: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        secondLastName: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
+        birthDate: "",
+        age: "",
         categoria: "",
         estado: "Activo",
         acudiente: "",
@@ -177,29 +207,9 @@ const AthleteModal = ({
     }
   };
 
-  const handleFechaNacimientoChange = (e) => {
-    handleChange(e);
-    handleBlur(e);
-  };
 
-  useEffect(() => {
-    if (values.fechaNacimiento && !isEditing) {
-      const age = calculateAge(values.fechaNacimiento);
-      let newCategory = "";
 
-      if (age >= 5 && age <= 12) {
-        newCategory = "Infantil";
-      } else if (age >= 13 && age <= 15) {
-        newCategory = "Sub 15";
-      } else if (age >= 16 && age <= 18) {
-        newCategory = "Juvenil";
-      }
 
-      if (newCategory && newCategory !== values.categoria) {
-        handleChange({ target: { name: "categoria", value: newCategory } });
-      }
-    }
-  }, [values.fechaNacimiento, handleChange, values.categoria, isEditing]);
 
   const filteredGuardians = guardians.filter(
     (guardian) =>
@@ -281,13 +291,15 @@ const AthleteModal = ({
       const finalParentesco = getFinalParentesco();
       
       const athleteData = {
-        nombres: values.nombres.trim(),
-        apellidos: values.apellidos.trim(),
-        tipoDocumento: values.tipoDocumento,
-        numeroDocumento: values.numeroDocumento.trim(),
-        correo: values.correo.trim(),
-        telefono: values.telefono,
-        fechaNacimiento: values.fechaNacimiento,
+        firstName: values.firstName.trim(),
+        middleName: values.middleName?.trim() || "",
+        lastName: values.lastName.trim(),
+        secondLastName: values.secondLastName?.trim() || "",
+        documentTypeId: values.documentTypeId,
+        identification: values.identification.trim(),
+        email: values.email.trim(),
+        phoneNumber: values.phoneNumber,
+        birthDate: values.birthDate,
         categoria: values.categoria,
         estado: values.estado,
         acudiente: values.acudiente || null,
@@ -413,50 +425,53 @@ const AthleteModal = ({
               Información Personal
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div>
-                <FormField
-                  label="Tipo de Documento"
-                  name="tipoDocumento"
-                  type="select"
-                  placeholder="Selecciona el tipo de documento"
-                  options={documentTypes}
-                  value={values.tipoDocumento}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.tipoDocumento}
-                  touched={touched.tipoDocumento}
-                  required
-                  delay={0.1}
-                />
-              </div>
+              {/* Tipo Documento */}
+              <FormField
+                label="Tipo de Documento"
+                name="documentTypeId"
+                type="select"
+                placeholder="Seleccionar tipo de documento"
+                required
+                options={referenceData.documentTypes.map((type) => ({
+                  value: type.id,
+                  label: type.name,
+                }))}
+                value={values.documentTypeId}
+                error={errors.documentTypeId}
+                touched={touched.documentTypeId}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                delay={0.1}
+              />
+
+              {/* Identificación con validación por tipo de documento */}
+              <DocumentField
+                documentType={
+                  referenceData.documentTypes.find(
+                    (dt) => dt.id === parseInt(values.documentTypeId)
+                  )?.name
+                }
+                value={values.identification}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.identification}
+                touched={touched.identification}
+                required
+                label="Número de Documento"
+                name="identification"
+              />
 
               <div>
                 <FormField
-                  label="Número de Documento"
-                  name="numeroDocumento"
+                  label="Primer Nombre"
+                  name="firstName"
                   type="text"
-                  placeholder="Número de identificación"
-                  value={values.numeroDocumento}
+                  placeholder="Primer nombre de la deportista"
+                  value={values.firstName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={errors.numeroDocumento}
-                  touched={touched.numeroDocumento}
-                  required
-                  delay={0.2}
-                />
-              </div>
-
-              <div>
-                <FormField
-                  label="Nombres"
-                  name="nombres"
-                  type="text"
-                  placeholder="Nombres de la deportista"
-                  value={values.nombres}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.nombres}
-                  touched={touched.nombres}
+                  error={errors.firstName}
+                  touched={touched.firstName}
                   required
                   delay={0.3}
                 />
@@ -464,15 +479,31 @@ const AthleteModal = ({
 
               <div>
                 <FormField
-                  label="Apellidos"
-                  name="apellidos"
+                  label="Segundo Nombre"
+                  name="middleName"
                   type="text"
-                  placeholder="Apellidos de la deportista"
-                  value={values.apellidos}
+                  placeholder="Segundo nombre (opcional)"
+                  value={values.middleName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={errors.apellidos}
-                  touched={touched.apellidos}
+                  error={errors.middleName}
+                  touched={touched.middleName}
+                  required={false}
+                  delay={0.35}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Primer Apellido"
+                  name="lastName"
+                  type="text"
+                  placeholder="Primer apellido de la deportista"
+                  value={values.lastName}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.lastName}
+                  touched={touched.lastName}
                   required
                   delay={0.4}
                 />
@@ -480,15 +511,31 @@ const AthleteModal = ({
 
               <div>
                 <FormField
-                  label="Correo Electrónico"
-                  name="correo"
-                  type="email"
-                  placeholder="correo@ejemplo.com"
-                  value={values.correo}
+                  label="Segundo Apellido"
+                  name="secondLastName"
+                  type="text"
+                  placeholder="Segundo apellido (opcional)"
+                  value={values.secondLastName}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={errors.correo}
-                  touched={touched.correo}
+                  error={errors.secondLastName}
+                  touched={touched.secondLastName}
+                  required={false}
+                  delay={0.45}
+                />
+              </div>
+
+              <div>
+                <FormField
+                  label="Correo Electrónico"
+                  name="email"
+                  type="email"
+                  placeholder="correo@ejemplo.com"
+                  value={values.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.email}
+                  touched={touched.email}
                   required
                   delay={0.5}
                 />
@@ -497,14 +544,14 @@ const AthleteModal = ({
               <div>
                 <FormField
                   label="Número Telefónico"
-                  name="telefono"
+                  name="phoneNumber"
                   type="text"
                   placeholder="Número de Teléfono"
-                  value={values.telefono}
+                  value={values.phoneNumber}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={errors.telefono}
-                  touched={touched.telefono}
+                  error={errors.phoneNumber}
+                  touched={touched.phoneNumber}
                   required
                   delay={0.6}
                 />
@@ -513,14 +560,14 @@ const AthleteModal = ({
               <div>
                 <FormField
                   label="Fecha de Nacimiento"
-                  name="fechaNacimiento"
+                  name="birthDate"
                   type="date"
                   placeholder="Selecciona la fecha"
-                  value={values.fechaNacimiento}
-                  onChange={handleFechaNacimientoChange}
+                  value={values.birthDate}
+                  onChange={handleCustomChange}
                   onBlur={handleBlur}
-                  error={errors.fechaNacimiento}
-                  touched={touched.fechaNacimiento}
+                  error={errors.birthDate}
+                  touched={touched.birthDate}
                   required
                   helperText={
                     currentAge !== null
@@ -531,45 +578,64 @@ const AthleteModal = ({
                 />
               </div>
 
+              {/* Edad (calculada automáticamente) - Igual que empleados */}
+              <div>
+                <FormField
+                  label="Edad"
+                  name="age"
+                  type="text"
+                  placeholder="Se calcula automáticamente"
+                  required={false}
+                  disabled={true}
+                  value={values.age ? `${values.age} años` : ""}
+                  delay={0.72}
+                />
+              </div>
+
               <div>
                 <FormField
                   label="Categoría"
                   name="categoria"
                   type="select"
                   placeholder="Selecciona la categoría"
-                  options={categories}
+                  options={referenceData.sportsCategories.map(cat => ({
+                    value: cat.name,
+                    label: cat.name
+                  }))}
                   value={values.categoria}
                   onChange={handleChange}
                   onBlur={handleBlur}
                   error={errors.categoria}
                   touched={touched.categoria}
                   required
-                  helperText={!isEditing ? "Se calcula automáticamente según la edad" : ""}
+                  helperText=""
                   delay={0.8}
                 />
               </div>
 
-              <div>
-                <FormField
-                  label="Estado de la Deportista"
-                  name="estado"
-                  type="select"
-                  placeholder="Selecciona el estado"
-                  options={states}
-                  value={values.estado}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.estado}
-                  touched={touched.estado}
-                  required
-                  helperText={
-                    values.estado === "Activo"
-                      ? "Participa normalmente en actividades"
-                      : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá"
-                  }
-                  delay={0.9}
-                />
-              </div>
+              {isEditing && (
+                <div>
+                  <FormField
+                    label="Estado de la Deportista"
+                    name="estado"
+                    type="select"
+                    placeholder="Selecciona el estado"
+                    options={states}
+                    value={values.estado}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.estado}
+                    touched={touched.estado}
+                    required
+                    helperText={
+                      values.estado === "Activo"
+                        ? "Participa normalmente en actividades"
+                        : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá"
+                    }
+                    delay={0.9}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -826,7 +892,7 @@ const AthleteModal = ({
                 animate={{ opacity: 1 }}
                 className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800"
               >
-                Este deportista es mayor de edad. El acudiente es opcional pero puede ser asignado si es necesario.
+                Esta deportista es mayor de edad. El acudiente es opcional pero puede ser asignado si es necesario.
               </motion.div>
             )}
           </motion.div>
@@ -857,9 +923,8 @@ const AthleteModal = ({
                     Inscripción automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la deportista, se generará automáticamente una
-                    inscripción inicial con estado "Vigente". Si seleccionas "Inactivo", la inscripción se
-                    creará con estado "Suspendida".
+                    Al crear la deportista, se generará automáticamente con estado "Activo" y una
+                    inscripción inicial con estado "Vigente".
                   </p>
                 </div>
               </div>
