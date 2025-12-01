@@ -31,8 +31,81 @@ const TemporaryTeams = () => {
     hasNext: false,
     hasPrev: false
   })
+  const [eventAssignmentsCheck, setEventAssignmentsCheck] = useState({})
 
   const rowsPerPage = 5
+
+  // Generar mensaje dinámico para el tooltip
+  const generateTooltipMessage = (teamId) => {
+    const assignment = eventAssignmentsCheck[teamId];
+    if (!assignment || !assignment.isAssigned) {
+      return "Eliminar equipo";
+    }
+
+    const events = assignment.events || [];
+    const count = assignment.count || events.length;
+
+    if (count === 0) {
+      return "Eliminar equipo";
+    }
+
+    // Agrupar eventos por estado
+    const statusGroups = {};
+    events.forEach(event => {
+      const status = event.status || 'Desconocido';
+      if (!statusGroups[status]) {
+        statusGroups[status] = 0;
+      }
+      statusGroups[status]++;
+    });
+
+    // Crear mensaje natural
+    const statusList = Object.keys(statusGroups);
+    
+    if (count === 1) {
+      // "Asignado a un evento con estado Programado"
+      return `Asignado a un evento con estado ${statusList[0]}`;
+    } else if (statusList.length === 1) {
+      // "Asignado a 3 eventos con estado Programado"
+      return `Asignado a ${count} eventos con estado ${statusList[0]}`;
+    } else {
+      // "Asignado a 3 eventos con estado Programado y En_pausa"
+      const lastStatus = statusList.pop();
+      return `Asignado a ${count} eventos con estado ${statusList.join(', ')} y ${lastStatus}`;
+    }
+  };
+
+  // Verificar asignaciones a eventos para todos los equipos
+  const checkEventAssignmentsForTeams = async (teams) => {
+    const assignmentsCheck = {}
+
+    const promises = teams.map(async (team) => {
+      try {
+        const response = await TeamsService.checkEventAssignments(team.id)
+        return {
+          id: team.id,
+          isAssigned: response.isAssigned,
+          count: response.count || 0,
+          events: response.events || [],
+          message: response.message
+        }
+      } catch (error) {
+        return { id: team.id, isAssigned: false, count: 0, events: [], message: '' }
+      }
+    })
+
+    const results = await Promise.all(promises)
+    results.forEach((result) => {
+      assignmentsCheck[result.id] = {
+        isAssigned: result.isAssigned,
+        count: result.count,
+        events: result.events,
+        message: result.message
+      }
+    })
+
+    setEventAssignmentsCheck(assignmentsCheck)
+  }
 
   // Cargar equipos TEMPORALES
   const loadTeams = async () => {
@@ -56,6 +129,7 @@ const TemporaryTeams = () => {
           hasNext: false, 
           hasPrev: false
         });
+        checkEventAssignmentsForTeams(teamsData);
       } else {
         setData([]);
         if (result.error) {
@@ -173,10 +247,26 @@ const TemporaryTeams = () => {
       return;
     }
     
-    // Validar que el equipo esté inactivo
-    if (team.estado === 'Activo') {
-      showErrorAlert('Acción no permitida', 'Solo se pueden eliminar equipos con estado "Inactivo"');
-      return;
+    if (!team || !team.id) {
+      return showErrorAlert("Error", "Equipo no válido");
+    }
+    
+    if (eventAssignmentsCheck[team.id]?.isAssigned) {
+      const assignment = eventAssignmentsCheck[team.id];
+      const events = assignment.events || [];
+      const count = assignment.count || events.length;
+      
+      let eventDetails = '';
+      if (count === 1 && events.length > 0) {
+        eventDetails = ` (${events[0].name} - ${events[0].status})`;
+      } else if (count > 1) {
+        eventDetails = ` a ${count} eventos activos`;
+      }
+      
+      return showErrorAlert(
+        "No se puede eliminar",
+        `El equipo "${team.nombre}" está asignado${eventDetails}.`
+      );
     }
     
     const confirmResult = await showDeleteAlert(
@@ -213,7 +303,7 @@ const TemporaryTeams = () => {
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Equipos Temporales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Equipos</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -266,12 +356,21 @@ const TemporaryTeams = () => {
             onDelete={hasPermission('temporaryTeams', 'Eliminar') ? handleDelete : null}
             onView={hasPermission('temporaryTeams', 'Ver') ? handleView : null}
             buttonConfig={{
-              edit: (item) => ({ show: hasPermission('temporaryTeams', 'Editar') }),
+              edit: (item) => ({ 
+                show: hasPermission('temporaryTeams', 'Editar'),
+                disabled: false,
+                title: "Editar equipo"
+              }),
               delete: (item) => ({ 
                 show: hasPermission('temporaryTeams', 'Eliminar'),
-                disabled: item.estado === 'Activo'
+                disabled: eventAssignmentsCheck[item.id]?.isAssigned,
+                title: generateTooltipMessage(item.id)
               }),
-              view: (item) => ({ show: hasPermission('temporaryTeams', 'Ver') }),
+              view: (item) => ({ 
+                show: hasPermission('temporaryTeams', 'Ver'),
+                disabled: false,
+                title: "Ver detalles"
+              }),
             }}
           />
 
@@ -289,9 +388,9 @@ const TemporaryTeams = () => {
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
-            <p>No se encontraron equipos temporales que coincidan con "{searchTerm}"</p>
+            <p>No se encontraron equipos que coincidan con "{searchTerm}"</p>
           ) : (
-            <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
+            <p>No hay equipos registrados. ¡Crea el primero!</p>
           )}
         </div>
       )}

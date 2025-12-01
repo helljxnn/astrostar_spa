@@ -28,30 +28,62 @@ const validatePhone = (value) => {
   return "Formato de teléfono inválido";
 };
 
-// Validación de documento de identidad
-const validateDocument = (value, tipoDocumento) => {
-  if (!value?.trim()) return "El número de documento es obligatorio";
+// Validación de documento de identidad (igual que proveedores y empleados)
+const getDocumentValidation = (documentTypeName, value) => {
+  if (!documentTypeName || !value?.trim()) return '';
   
-  const doc = value.trim().replace(/[\s.-]/g, '');
+  const docName = documentTypeName.toLowerCase();
   
-  switch (tipoDocumento) {
-    case 'cedula':
-      if (!/^\d{6,10}$/.test(doc)) return "La cédula debe tener entre 6 y 10 dígitos";
-      break;
-    case 'tarjeta_identidad':
-      if (!/^\d{10,11}$/.test(doc)) return "La tarjeta de identidad debe tener 10 u 11 dígitos";
-      break;
-    case 'cedula_extranjeria':
-      if (!/^\d{6,12}$/.test(doc)) return "La cédula de extranjería debe tener entre 6 y 12 dígitos";
-      break;
-    case 'pasaporte':
-      if (!/^[A-Z0-9]{6,9}$/.test(doc.toUpperCase())) return "El pasaporte debe tener entre 6 y 9 caracteres alfanuméricos";
-      break;
-    default:
-      if (!/^[A-Z0-9]{6,12}$/i.test(doc)) return "Formato de documento inválido";
+  // Cédula de Ciudadanía
+  if (docName.includes('cédula') || docName.includes('cedula') || docName.includes('ciudadanía')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 10) {
+      return "La cédula debe tener entre 6 y 10 dígitos.";
+    }
+    return '';
   }
   
-  return "";
+  // Cédula de Extranjería
+  if (docName.includes('extranjería') || docName.includes('extranjeria')) {
+    if (!/^\d+$/.test(value)) {
+      return "La cédula de extranjería solo puede contener números.";
+    }
+    if (value.length < 6 || value.length > 12) {
+      return "La cédula de extranjería debe tener entre 6 y 12 dígitos.";
+    }
+    return '';
+  }
+  
+  // Pasaporte
+  if (docName.includes('pasaporte')) {
+    if (!/^[A-Za-z0-9]+$/.test(value)) {
+      return "El pasaporte solo puede contener letras y números.";
+    }
+    if (value.length < 6 || value.length > 15) {
+      return "El pasaporte debe tener entre 6 y 15 caracteres.";
+    }
+    return '';
+  }
+  
+  // Tarjeta de Identidad
+  if (docName.includes('tarjeta') && docName.includes('identidad')) {
+    if (!/^\d+$/.test(value)) {
+      return "La tarjeta de identidad solo puede contener números.";
+    }
+    if (value.length < 8 || value.length > 11) {
+      return "La tarjeta de identidad debe tener entre 8 y 11 dígitos.";
+    }
+    return '';
+  }
+  
+  // Validación genérica para otros tipos
+  if (value.length > 20) {
+    return "El documento no puede exceder los 20 caracteres.";
+  }
+  
+  return '';
 };
 
 // Validación de categoría
@@ -151,59 +183,71 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
   };
 };
 
-// Reglas de validación específicas para atletas
+// Reglas de validación específicas para atletas (EXACTAMENTE IGUALES A EMPLEADOS)
 export const athleteValidationRules = {
-  nombres: [
-    (v) => !v?.trim() ? "El nombre es obligatorio" : "",
-    (v) => v?.trim().length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
-    (v) => v?.trim().length > 80 ? "El nombre no puede exceder 80 caracteres" : "",
-    (v) => !isOnlyLetters(v?.trim()) ? "El nombre solo puede contener letras y espacios" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+  firstName: [
+    (value) => (!value?.trim() ? "El nombre es obligatorio" : ""),
+    (value) => value?.length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
+    (value) =>
+      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  apellidos: [
-    (v) => !v?.trim() ? "Los apellidos son obligatorios" : "",
-    (v) => v?.trim().length < 2 ? "Los apellidos deben tener al menos 2 caracteres" : "",
-    (v) => v?.trim().length > 80 ? "Los apellidos no pueden exceder 80 caracteres" : "",
-    (v) => !isOnlyLetters(v?.trim()) ? "Los apellidos solo pueden contener letras y espacios" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+  middleName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
   ],
-  tipoDocumento: [
-    (v) => !v ? "Debe seleccionar un tipo de documento" : ""
+  lastName: [
+    (value) => (!value?.trim() ? "El apellido es obligatorio" : ""),
+    (value) => value?.length < 2 ? "El apellido debe tener al menos 2 caracteres" : "",
+    (value) =>
+      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "") ? "Solo se permiten letras" : "",
   ],
-  numeroDocumento: [
-    (v, values) => validateDocument(v, values?.tipoDocumento)
+  secondLastName: [
+    (value) => {
+      if (!value) return ""; // Campo opcional
+      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value) ? "Solo se permiten letras" : "";
+    },
   ],
-  correo: [
-    (v) => !v?.trim() ? "El correo es obligatorio" : "",
-    (v) => !isValidEmail(v?.trim() || "") ? "El correo electrónico no es válido" : "",
-    (v) => (v?.trim() || "").length > 100 ? "El correo no puede exceder 100 caracteres" : ""
+  documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  identification: [
+    (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
+    (value) => value?.length < 6 ? "La identificación debe tener al menos 6 caracteres" : "",
+    (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
   ],
-  telefono: [
-    (v) => !v?.trim() ? "El número telefónico es obligatorio" : "",
-    (v) => {
-      if (!v?.trim()) return "";
-      const phone = v.replace(/[\s\-\(\)]/g, '');
-      if (phone.startsWith('+57') || phone.startsWith('57')) {
-        const local = phone.replace(/^(\+57|57)/, '');
-        if ((local.length === 10 && /^3/.test(local)) || (local.length === 7 && /^[2-8]/.test(local))) return "";
-        return "Número inválido. Celular: 3XXXXXXXXX, Fijo: 2XXXXXXX-8XXXXXXX";
+  email: [
+    (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
+    (value) =>
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
+  ],
+  phoneNumber: [
+    (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
+    (value) => {
+      if (!value) return "";
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
+      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      
+      if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
+        return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
       }
-      if (!/^\d+$/.test(phone)) return "El teléfono solo puede contener números";
-      if ((phone.length === 10 && /^3/.test(phone)) || (phone.length === 7 && /^[2-8]/.test(phone))) return "";
-      if (phone.length < 7) return "El número debe tener al menos 7 dígitos";
-      if (phone.length > 10) return "Número demasiado largo. Máximo 10 dígitos para celular";
-      return "Formato de teléfono inválido";
-    }
-  ],
-  fechaNacimiento: [
-    (v) => !v ? "La fecha de nacimiento es obligatoria" : "",
-    (v) => {
-      if (!v) return "";
-      const birthDate = new Date(v);
-      const today = new Date();
-      if (birthDate > today) return "La fecha de nacimiento no puede ser futura";
       return "";
-    }
+    },
+  ],
+  birthDate: [
+    (value) => (!value ? "La fecha de nacimiento es obligatoria" : ""),
+    (value) => {
+      if (!value) return "";
+      const birthDate = new Date(value);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      // Para deportistas, validar edad mínima de 5 años
+      return age < 5 ? "Debe tener al menos 5 años" : "";
+    },
   ],
   categoria: [
     (v) => !v?.trim() ? "La categoría es obligatoria" : "",

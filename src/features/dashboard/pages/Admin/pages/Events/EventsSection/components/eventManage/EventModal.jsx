@@ -57,17 +57,17 @@ export const EventModal = ({
   // Función para formatear fecha a YYYY-MM-DD sin problemas de zona horaria
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
-    
+
     // Si ya está en formato correcto YYYY-MM-DD, devolverlo directamente
     if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       return dateString;
     }
-    
+
     // Si es un string que contiene 'T' (ISO string), extraer solo la fecha
     if (typeof dateString === 'string' && dateString.includes('T')) {
       return dateString.split('T')[0];
     }
-    
+
     // Si es un objeto Date
     if (dateString instanceof Date) {
       const year = dateString.getFullYear();
@@ -75,7 +75,7 @@ export const EventModal = ({
       const day = String(dateString.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
-    
+
     // Para cualquier otro caso, intentar convertir sin zona horaria
     if (typeof dateString === 'string') {
       // Si contiene '/', convertir a formato ISO (MM/DD/YYYY)
@@ -89,7 +89,7 @@ export const EventModal = ({
         }
       }
     }
-    
+
     return dateString;
   };
 
@@ -137,7 +137,7 @@ export const EventModal = ({
     try {
       touchAllFields({ ...form, tipoEvento });
       const isValid = validate({ ...form, tipoEvento });
-      
+
       if (!isValid) {
         showErrorAlert(
           "Formulario incompleto",
@@ -157,13 +157,13 @@ export const EventModal = ({
       // Encontrar el ID del tipo
       const selectedType = referenceData.types.find(t => t.name === tipoEvento);
 
-      const eventData = { 
-        ...form, 
+      const eventData = {
+        ...form,
         tipo: tipoEvento,
         tipoId: selectedType?.id || form.tipoId,
         id: event?.id
       };
-      
+
       await onSave(eventData);
 
       showSuccessAlert(
@@ -198,8 +198,8 @@ export const EventModal = ({
             {mode === "view"
               ? "Ver Evento"
               : isNew
-              ? "Crear Evento"
-              : "Editar Evento"}
+                ? "Crear Evento"
+                : "Editar Evento"}
           </h2>
           <button
             onClick={onClose}
@@ -241,11 +241,10 @@ export const EventModal = ({
                       </svg>
                       <span className="text-xs font-medium text-gray-700">Inscripción:</span>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
-                      getParticipantType() === 'Equipos' 
-                        ? 'bg-blue-500 text-white' 
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${getParticipantType() === 'Equipos'
+                        ? 'bg-blue-500 text-white'
                         : 'bg-green-500 text-white'
-                    }`}>
+                      }`}>
                       {getParticipantType()}
                     </span>
                   </div>

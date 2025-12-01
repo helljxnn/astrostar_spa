@@ -1,15 +1,9 @@
 import React, { useEffect } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
 import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation";
-
-const documentTypes = [
-  { value: "CC", label: "Cédula de Ciudadanía" },
-  { value: "TI", label: "Tarjeta de Identidad" },
-  { value: "CE", label: "Cédula de Extranjería" },
-  { value: "PA", label: "Pasaporte" },
-];
 
 const states = [
   { value: "Activo", label: "Activo" },
@@ -23,6 +17,7 @@ const GuardianModal = ({
   onUpdate,
   guardianToEdit = null,
   mode = guardianToEdit ? "edit" : "create",
+  referenceData = { documentTypes: [] },
 }) => {
   const isEditing = mode === "edit" || guardianToEdit !== null;
   
@@ -30,10 +25,10 @@ const GuardianModal = ({
     useFormGuardianValidation(
       {
         nombreCompleto: "",
-        tipoDocumento: "",
-        identificacion: "",
-        correo: "",
-        telefono: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
         fechaNacimiento: "",
         estado: "Activo",
       },
@@ -44,12 +39,22 @@ const GuardianModal = ({
     if (isOpen && isEditing && guardianToEdit) {
       setValues({
         nombreCompleto: guardianToEdit.nombreCompleto || "",
-        tipoDocumento: guardianToEdit.tipoDocumento || "",
-        identificacion: guardianToEdit.identificacion || "",
-        correo: guardianToEdit.correo || "",
-        telefono: guardianToEdit.telefono || "",
+        documentTypeId: guardianToEdit.documentTypeId || guardianToEdit.tipoDocumento || "",
+        identification: guardianToEdit.identification || guardianToEdit.identificacion || "",
+        email: guardianToEdit.email || guardianToEdit.correo || "",
+        phoneNumber: guardianToEdit.phoneNumber || guardianToEdit.telefono || "",
         fechaNacimiento: guardianToEdit.fechaNacimiento || "",
         estado: guardianToEdit.estado || "Activo",
+      });
+    } else if (isOpen && !isEditing) {
+      setValues({
+        nombreCompleto: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
+        fechaNacimiento: "",
+        estado: "Activo",
       });
     }
   }, [isOpen, isEditing, guardianToEdit, setValues]);
@@ -74,22 +79,35 @@ const GuardianModal = ({
 
     try {
       const dataToSend = {
-        ...values,
         nombreCompleto: values.nombreCompleto.trim(),
-        identificacion: values.identificacion.trim(),
+        documentTypeId: values.documentTypeId,
+        identification: values.identification.trim(),
+        email: values.email.trim(),
+        phoneNumber: values.phoneNumber,
+        birthDate: values.fechaNacimiento, // El backend espera 'birthDate'
+        estado: values.estado,
       };
+      
+      console.log('📤 Datos a enviar:', JSON.stringify(dataToSend, null, 2));
+      console.log('📅 Fecha de nacimiento:', values.fechaNacimiento);
+      console.log('📋 Todos los valores:', JSON.stringify(values, null, 2));
 
       if (isEditing) {
-        await onUpdate({ ...dataToSend, id: guardianToEdit.id });
-        showSuccessAlert("Actualizado", "Acudiente actualizado exitosamente.");
+        const updated = await onUpdate({ ...dataToSend, id: guardianToEdit.id });
+        if (updated) {
+          showSuccessAlert("Actualizado", "Acudiente actualizado exitosamente.");
+          resetForm();
+          onClose();
+        }
       } else {
         const saved = await onSave(dataToSend);
-        showSuccessAlert("Creado", "Acudiente creado correctamente.");
-        return saved;
+        if (saved) {
+          showSuccessAlert("Creado", "Acudiente creado correctamente.");
+          resetForm();
+          onClose();
+          return saved;
+        }
       }
-      
-      resetForm();
-      onClose();
     } catch (err) {
       console.error(err);
       showErrorAlert("Error", "Ocurrió un error al guardar el acudiente.");
@@ -141,6 +159,42 @@ const GuardianModal = ({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-3">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {/* Tipo Documento */}
+            <FormField
+              label="Tipo de Documento"
+              name="documentTypeId"
+              type="select"
+              placeholder="Seleccionar tipo de documento"
+              required
+              options={referenceData.documentTypes.map((type) => ({
+                value: type.id,
+                label: type.name,
+              }))}
+              value={values.documentTypeId}
+              error={errors.documentTypeId}
+              touched={touched.documentTypeId}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              delay={0.1}
+            />
+
+            {/* Identificación con validación por tipo de documento */}
+            <DocumentField
+              documentType={
+                referenceData.documentTypes.find(
+                  (dt) => dt.id === parseInt(values.documentTypeId)
+                )?.name
+              }
+              value={values.identification}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.identification}
+              touched={touched.identification}
+              required
+              label="Número de Documento"
+              name="identification"
+            />
+            
             <FormField
               label="Nombre Completo"
               name="nombreCompleto"
@@ -152,62 +206,33 @@ const GuardianModal = ({
               error={errors.nombreCompleto}
               touched={touched.nombreCompleto}
               required
-              delay={0.1}
-            />
-            
-            <FormField
-              label="Tipo de Documento"
-              name="tipoDocumento"
-              type="select"
-              placeholder="Selecciona el tipo de documento"
-              options={documentTypes}
-              value={values.tipoDocumento}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.tipoDocumento}
-              touched={touched.tipoDocumento}
-              required
-              delay={0.2}
-            />
-            
-            <FormField
-              label="Número de Documento"
-              name="identificacion"
-              type="text"
-              placeholder="Número de identificación"
-              value={values.identificacion}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.identificacion}
-              touched={touched.identificacion}
-              required
               delay={0.3}
             />
             
             <FormField
               label="Correo Electrónico"
-              name="correo"
+              name="email"
               type="email"
               placeholder="correo@ejemplo.com"
-              value={values.correo}
+              value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.correo}
-              touched={touched.correo}
+              error={errors.email}
+              touched={touched.email}
               required
               delay={0.4}
             />
             
             <FormField
               label="Número Telefónico"
-              name="telefono"
+              name="phoneNumber"
               type="text"
               placeholder="Número de teléfono"
-              value={values.telefono}
+              value={values.phoneNumber}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.telefono}
-              touched={touched.telefono}
+              error={errors.phoneNumber}
+              touched={touched.phoneNumber}
               required
               delay={0.5}
             />
@@ -226,20 +251,23 @@ const GuardianModal = ({
               delay={0.6}
             />
             
-            <FormField
-              label="Estado"
-              name="estado"
-              type="select"
-              placeholder="Selecciona el estado"
-              options={states}
-              value={values.estado}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.estado}
-              touched={touched.estado}
-              required
-              delay={0.7}
-            />
+            {/* Estado - Solo visible en modo editar */}
+            {isEditing && (
+              <FormField
+                label="Estado"
+                name="estado"
+                type="select"
+                placeholder="Selecciona el estado"
+                options={states}
+                value={values.estado}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.estado}
+                touched={touched.estado}
+                required
+                delay={0.7}
+              />
+            )}
           </div>
         </div>
 

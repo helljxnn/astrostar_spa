@@ -37,9 +37,9 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 const messages = {
   month: "Mes",
   week: "Semana",
-  day: "Día",
+  day: "Dia",
   today: "Hoy",
-  previous: "Atrás",
+  previous: "Atras",
   next: "Siguiente",
   noEventsInRange: "No hay horarios en este rango.",
 };
@@ -143,7 +143,6 @@ export default function EmployeesScheduleCalendar({
   onViewEvent,
   onDeleteEvent,
   onCancelEvent,
-  onSaveNewEvent,
 }) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date());
@@ -241,7 +240,7 @@ export default function EmployeesScheduleCalendar({
      🔹 RENDER PRINCIPAL
   ============================================================ */
   return (
-    <div ref={calendarRef} className="relative">
+    <div ref={calendarRef} className="relative employees-schedule-calendar">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -353,7 +352,7 @@ export default function EmployeesScheduleCalendar({
                 <button
                   onClick={() => {
                     closePopover();
-                    onCancelEvent?.(popover.event.id);
+                    onCancelEvent?.(popover.event);
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
                 >
@@ -363,7 +362,9 @@ export default function EmployeesScheduleCalendar({
                 <button
                   onClick={() => {
                     closePopover();
-                    onDeleteEvent?.(popover.event.id);
+                    onDeleteEvent?.(
+                      popover.event.scheduleId || popover.event.id
+                    );
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50 text-red-600"
                 >

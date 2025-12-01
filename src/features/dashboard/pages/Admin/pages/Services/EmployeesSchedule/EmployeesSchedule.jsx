@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaCalendarAlt, FaBriefcase } from "react-icons/fa";
 import { format } from "date-fns";
@@ -10,6 +10,7 @@ import EmployeeScheduleSearchBar from "./components/EmployeeScheduleSearchBar";
 import EmployeeScheduleReportGenerator from "./components/EmployeeScheduleReportGenerator";
 import ScheduleDetailsModal from "./components/ScheduleDetailsModal";
 import CancelScheduleModal from "./components/CancelScheduleModal";
+import { useEmployeeSchedules } from "./hooks/useEmployeeSchedules";
 
 // Importaciones para permisos
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
@@ -17,52 +18,51 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const { hasPermission } = usePermissions();
-  const [schedules, setSchedules] = useState(
-    initialSchedules.length > 0
-      ? initialSchedules.map((s) => ({
-          ...s,
-          start: s.start instanceof Date ? s.start : new Date(s.start),
-          end: s.end instanceof Date ? s.end : new Date(s.end),
-        }))
-      : [
-          {
-            id: 1,
-            empleado: "Juan Pérez",
-            cargo: "Supervisor",
-            fecha: "2025-10-12",
-            horaInicio: "08:00",
-            horaFin: "12:00",
-            estado: "Programado",
-            color: "bg-[#c084fc]",
-            title: "Turno - Juan Pérez",
-            start: new Date("2025-10-12T08:00:00"),
-            end: new Date("2025-10-12T12:00:00"),
-          },
-          {
-            id: 2,
-            empleado: "María López",
-            cargo: "Analista",
-            fecha: "2025-10-13",
-            horaInicio: "13:00",
-            horaFin: "18:00",
-            estado: "Programado",
-            color: "bg-[#60a5fa]",
-            title: "Turno - María López",
-            start: new Date("2025-10-13T13:00:00"),
-            end: new Date("2025-10-13T18:00:00"),
-          },
-        ]
-  );
+  const {
+    schedules,
+    employees,
+    loading,
+    loadingEmployees,
+    loadSchedules,
+    loadEmployees,
+    createSchedule,
+    updateSchedule,
+    deleteSchedule: removeSchedule,
+    cancelSchedule,
+  } = useEmployeeSchedules();
 
-  const [filteredSchedules, setFilteredSchedules] = useState(schedules);
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isNew, setIsNew] = useState(true);
   const containerRef = useRef(null);
+  const isLoading = loading || loadingEmployees;
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedScheduleForAction, setSelectedScheduleForAction] = useState(null);
+
+  const disabledSchedules = useMemo(
+    () =>
+      initialSchedules.map((s) => ({
+        ...s,
+        start: s.start instanceof Date ? s.start : new Date(s.start),
+        end: s.end instanceof Date ? s.end : new Date(s.end),
+      })),
+    [initialSchedules]
+  );
+
+  useEffect(() => {
+    if (disabled) return;
+    if (hasPermission("employeesSchedule", "Ver")) {
+      loadSchedules();
+    }
+    loadEmployees();
+  }, [disabled, hasPermission, loadEmployees, loadSchedules]);
+
+  useEffect(() => {
+    setFilteredSchedules(schedules);
+  }, [schedules]);
 
   const createDefaultSchedule = ({ start, end } = {}) => {
     const now = start ? new Date(start) : new Date();
@@ -70,6 +70,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const defaultEnd = end || new Date(now.getTime() + 60 * 60 * 1000);
 
     return {
+      empleadoId: "",
       empleado: "",
       cargo: "",
       fecha: format(defaultStart, "yyyy-MM-dd"),
@@ -77,6 +78,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       horaFin: format(defaultEnd, "HH:mm"),
       area: "",
       estado: "Programado",
+      repeticion: "no",
+      customRecurrence: null,
+      descripcion: "",
       observaciones: "",
       motivoCancelacion: "",
       id: null,
@@ -90,17 +94,32 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   };
 
   const openModalForEvent = (event, { readOnly = false } = {}) => {
+    const startDate = event.start
+      ? new Date(event.start)
+      : event.fecha
+      ? new Date(`${event.fecha}T${event.horaInicio || "00:00"}`)
+      : new Date();
+    const endDate = event.end
+      ? new Date(event.end)
+      : event.fecha
+      ? new Date(`${event.fecha}T${event.horaFin || event.horaInicio || "00:00"}`)
+      : startDate;
+
     const payload = {
+      id: event.scheduleId || event.id,
+      empleadoId: event.empleadoId || event.employeeId || "",
       empleado: (event.empleado || event.title || "").replace(/^Turno\s*-\s*/i, ""),
       cargo: event.cargo || "",
-      fecha: format(event.start, "yyyy-MM-dd"),
-      horaInicio: format(event.start, "HH:mm"),
-      horaFin: format(event.end, "HH:mm"),
+      fecha: format(startDate, "yyyy-MM-dd"),
+      horaInicio: format(startDate, "HH:mm"),
+      horaFin: format(endDate, "HH:mm"),
       area: event.area || "",
       estado: event.estado || "Programado",
-      observaciones: event.observaciones || "",
+      observaciones: event.observaciones || event.descripcion || "",
+      descripcion: event.descripcion || event.observaciones || "",
+      repeticion: event.repeticion || "no",
+      customRecurrence: event.customRecurrence || null,
       motivoCancelacion: event.motivoCancelacion || "",
-      id: event.id,
       _isReadOnly: readOnly,
     };
     setSelectedSchedule(payload);
@@ -109,61 +128,52 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   };
 
   const openDetailsModal = (schedule) => {
+    if (!schedule) return;
     const scheduleData = {
       ...schedule,
-      hora: `${schedule.horaInicio} - ${schedule.horaFin}`,
+      scheduleId: schedule.scheduleId || schedule.id,
+      hora: `${schedule.horaInicio || format(schedule.start, "HH:mm")} - ${
+        schedule.horaFin || format(schedule.end, "HH:mm")
+      }`,
     };
     setSelectedScheduleForAction(scheduleData);
     setShowDetailsModal(true);
   };
 
   const openCancelModal = (schedule) => {
+    const scheduleObj =
+      typeof schedule === "string" || typeof schedule === "number"
+        ? schedules.find((s) => (s.scheduleId || s.id) === schedule)
+        : schedule;
+    if (!scheduleObj) return;
     const scheduleData = {
-      ...schedule,
-      hora: `${schedule.horaInicio} - ${schedule.horaFin}`,
+      ...scheduleObj,
+      scheduleId: scheduleObj.scheduleId || scheduleObj.id,
+      hora: `${scheduleObj.horaInicio || format(scheduleObj.start, "HH:mm")} - ${
+        scheduleObj.horaFin || format(scheduleObj.end, "HH:mm")
+      }`,
     };
     setSelectedScheduleForAction(scheduleData);
     setShowCancelModal(true);
   };
 
-  const handleSaveFromModal = (form) => {
-    const start = new Date(`${form.fecha}T${form.horaInicio}`);
-    const end = new Date(`${form.fecha}T${form.horaFin}`);
-
-    // Asignar colores según el estado
-    const color =
-      form.estado === "Cancelado"
-        ? "bg-gray-400"
-        : form.estado === "Completado"
-        ? "bg-green-500"
-        : "bg-[#c084fc]";
-
-    const eventObj = {
-      id: form.id || Date.now(),
-      title: `Turno - ${form.empleado}${form.estado === "Cancelado" ? " (Cancelado)" : ""}`,
-      start,
-      end,
-      color,
-      empleado: form.empleado,
-      cargo: form.cargo || "",
-      fecha: form.fecha,
-      horaInicio: form.horaInicio,
-      horaFin: form.horaFin,
-      area: form.area || "",
-      estado: form.estado || "Programado",
-      observaciones: form.observaciones || "",
-      motivoCancelacion: form.motivoCancelacion || "",
+  const handleSaveFromModal = async (form) => {
+    const payload = {
+      ...form,
+      descripcion: form.descripcion || form.observaciones || "",
+      observaciones: form.descripcion || form.observaciones || "",
     };
 
-    setSchedules((prev) => {
-      const exists = prev.some((s) => s.id === eventObj.id);
-      const updated = exists
-        ? prev.map((s) => (s.id === eventObj.id ? eventObj : s))
-        : [...prev, eventObj];
-      return updated;
-    });
-
-    closeModal();
+    try {
+      if (isNew) {
+        await createSchedule(payload);
+      } else if (form.id) {
+        await updateSchedule(form.id, payload);
+      }
+      closeModal();
+    } catch (error) {
+      // Los mensajes de error se manejan en el hook
+    }
   };
 
   const closeModal = () => {
@@ -171,26 +181,28 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     setSelectedSchedule(null);
   };
 
-  const deleteSchedule = (id) => {
-    setSchedules((prev) => prev.filter((s) => s.id !== id));
+  const handleDeleteSchedule = async (id) => {
+    if (!id) return;
+    try {
+      await removeSchedule(id);
+      closeModal();
+    } catch (error) {
+      // Alertas gestionadas en el hook
+    }
   };
 
-  const handleCancelConfirm = (scheduleWithReason) => {
-    setSchedules((prev) =>
-      prev.map((s) =>
-        s.id === scheduleWithReason.id
-          ? {
-              ...s,
-              estado: "Cancelado",
-              color: "bg-gray-400",
-              motivoCancelacion: scheduleWithReason.motivoCancelacion || "",
-              title: `Turno - ${s.empleado} (Cancelado)`,
-            }
-          : s
-      )
-    );
-
-    setShowCancelModal(false);
+  const handleCancelConfirm = async (scheduleWithReason) => {
+    if (!scheduleWithReason) return;
+    try {
+      await cancelSchedule(
+        scheduleWithReason.scheduleId || scheduleWithReason.id,
+        scheduleWithReason.motivoCancelacion || ""
+      );
+      setShowCancelModal(false);
+      setSelectedScheduleForAction(null);
+    } catch (error) {
+      // Alertas gestionadas en el hook
+    }
   };
 
   useEffect(() => {
@@ -220,9 +232,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     setFilteredSchedules(filtered);
   };
 
-  useEffect(() => {
-    setFilteredSchedules(schedules);
-  }, [schedules]);
+  const disabledList =
+    disabledSchedules.length > 0 ? disabledSchedules : schedules;
 
   if (disabled) {
     return (
@@ -232,9 +243,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
             Horario de Empleados
           </label>
           <div className="p-4 bg-gray-100 rounded-lg">
-            {schedules.length > 0 ? (
+            {disabledList.length > 0 ? (
               <div className="space-y-3">
-                {schedules.map((schedule) => (
+                {disabledList.map((schedule) => (
                   <motion.div
                     key={schedule.id}
                     layout
@@ -286,6 +297,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         </h1>
         <div className="flex items-center gap-3">
           <EmployeeScheduleSearchBar onSearch={handleSearch} />
+          {isLoading && (
+            <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full border border-gray-200">
+              Cargando...
+            </span>
+          )}
           
           <PermissionGuard module="employeesSchedule" action="Crear">
             <motion.button
@@ -300,10 +316,27 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           </PermissionGuard>
           
           <PermissionGuard module="employeesSchedule" action="Ver">
-            <EmployeeScheduleReportGenerator schedules={filteredSchedules} />
+            <EmployeeScheduleReportGenerator
+              data={filteredSchedules}
+              columns={[
+                { key: "empleado", label: "Empleado" },
+                { key: "cargo", label: "Cargo" },
+                { key: "fecha", label: "Fecha" },
+                { key: "horaInicio", label: "Hora inicio" },
+                { key: "horaFin", label: "Hora fin" },
+                { key: "estado", label: "Estado" },
+              ]}
+            />
           </PermissionGuard>
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
+          <span className="w-3 h-3 border-2 border-gray-300 border-t-[#c084fc] rounded-full animate-spin" />
+          <span>Cargando horarios y empleados...</span>
+        </div>
+      )}
 
       <div className="flex gap-6">
         <motion.div
@@ -398,16 +431,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
             onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
             onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}
             onViewEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openDetailsModal(event) : null}
-            onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? deleteSchedule : null}
+            onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? handleDeleteSchedule : null}
             onCancelEvent={hasPermission('employeesSchedule', 'Editar') ? openCancelModal : null}
-            onSaveNewEvent={(ev) => {
-              if (hasPermission('employeesSchedule', 'Crear')) {
-                setSchedules((prev) => {
-                  const exists = prev.some((s) => s.id === ev.id);
-                  return exists ? prev : [...prev, ev];
-                });
-              }
-            }}
           />
         </div>
       </div>
@@ -439,7 +464,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                 isReadOnly={selectedSchedule?._isReadOnly}
                 onClose={closeModal}
                 onSave={handleSaveFromModal}
-                onDelete={deleteSchedule}
+                employeesOptions={employees}
+                isLoadingEmployees={loadingEmployees}
               />
             </motion.div>
           </motion.div>
@@ -454,7 +480,10 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
       <CancelScheduleModal
         isOpen={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
+        onClose={() => {
+          setShowCancelModal(false);
+          setSelectedScheduleForAction(null);
+        }}
         onConfirm={handleCancelConfirm}
         employee={selectedScheduleForAction}
       />
