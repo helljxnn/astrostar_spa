@@ -193,13 +193,22 @@ class TeamsService {
 
   async checkNameAvailability(name, excludeId = null) {
     try {
-      const params = { name };
+      const params = new URLSearchParams({ name: name.toString() });
       if (excludeId) {
-        params.excludeId = excludeId;
+        params.append('excludeId', excludeId.toString());
       }
-      const response = await apiClient.get(`${this.endpoint}/check-name`, { params });
       
-      if (response && response.success) {
+      const url = `${this.endpoint}/check-name?${params}`;
+      console.log('🌐 Verificando disponibilidad de nombre');
+      console.log('   URL:', url);
+      console.log('   name:', name);
+      console.log('   excludeId:', excludeId);
+      
+      const response = await apiClient.get(url);
+      
+      console.log('📡 Respuesta disponibilidad nombre:', response);
+      
+      if (response && response.success !== undefined) {
         return {
           success: true,
           available: response.available,
@@ -209,12 +218,15 @@ class TeamsService {
       
       return {
         success: false,
+        available: true,
         error: response?.message || 'Error verificando nombre'
       };
     } catch (error) {
-      console.error('Error verificando disponibilidad:', error);
+      console.error('❌ Error verificando disponibilidad:', error);
+      console.error('   Error completo:', error.response?.data || error.message);
       return {
         success: false,
+        available: true,
         error: error.message
       };
     }
@@ -434,6 +446,86 @@ class TeamsService {
       athleteIds, 
       excludeId 
     });
+  }
+
+  async checkTemporalPersonAvailability(personId, excludeTeamId = null) {
+    try {
+      const params = new URLSearchParams({ 
+        personId: personId.toString() 
+      });
+      
+      if (excludeTeamId) {
+        params.append('excludeTeamId', excludeTeamId.toString());
+      }
+      
+      const url = `${this.endpoint}/check-temporal-person-availability?${params}`;
+      console.log('🌐 Verificando disponibilidad de persona temporal');
+      console.log('   URL:', url);
+      console.log('   personId:', personId);
+      console.log('   excludeTeamId:', excludeTeamId);
+      
+      const response = await apiClient.get(url);
+      
+      console.log('📡 Respuesta disponibilidad completa:', response);
+      console.log('   available:', response.available);
+      console.log('   message:', response.message);
+      console.log('   success:', response.success);
+      
+      if (response && response.success !== undefined) {
+        return {
+          success: true,
+          available: response.available,
+          message: response.message
+        };
+      }
+      
+      return {
+        success: false,
+        available: true,
+        error: response?.message || 'Error verificando disponibilidad'
+      };
+    } catch (error) {
+      console.error('❌ Error verificando disponibilidad:', error);
+      console.error('   Error completo:', error.response?.data || error.message);
+      return {
+        success: false,
+        available: true,
+        error: error.message
+      };
+    }
+  }
+
+  async checkEventAssignments(teamId) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/${teamId}/check-event-assignments`);
+      
+      if (response && response.success !== undefined) {
+        return {
+          success: true,
+          isAssigned: response.isAssigned || false,
+          count: response.count || 0,
+          events: response.events || [],
+          message: response.message || ''
+        };
+      }
+      
+      return {
+        success: false,
+        isAssigned: false,
+        count: 0,
+        events: [],
+        error: response?.message || 'Error verificando asignación a eventos'
+      };
+    } catch (error) {
+      console.error('Error verificando asignación a eventos:', error);
+      return {
+        success: false,
+        isAssigned: false,
+        count: 0,
+        events: [],
+        error: error.message
+      };
+    }
   }
 }
 
