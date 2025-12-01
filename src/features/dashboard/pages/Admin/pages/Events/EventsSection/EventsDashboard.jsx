@@ -1,12 +1,12 @@
 import { useState, useMemo, useRef } from "react";
-import { EventModal } from "./components/EventModal";
+import { EventModal } from "./components/eventManage/EventModal";
 import { FaPlus } from "react-icons/fa";
-import EventsCalendar from "./components/EventsCalendar";
-import EventReportGenerator from "./components/EventReportGenerator";
-import EventSearchBar from "./components/EventSearchBar";
-import EventSearchList from "./components/EventSearchList";
-import EventInscriptionModal from "./components/EventInscriptionModal";
-import EventRegistrationFormModal from "./components/EventRegistrationFormModal";
+import EventsCalendar from "./components/eventManage/EventsCalendar";
+import EventReportGenerator from "./components/eventManage/EventReportGenerator";
+import EventSearchBar from "./components/eventManage/EventSearchBar";
+import EventSearchList from "./components/eventManage/EventSearchList";
+import EventRegistrationFormModal from "./components/registration/EventRegistrationFormModal";
+import ViewRegistrationsModal from "./components/registration/ViewRegistrationsModal";
 import { showDeleteAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import { useEvents } from "./hooks/useEvents";
 
@@ -16,7 +16,7 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 const Event = () => {
   const { hasPermission } = usePermissions();
-  const { events, loading, referenceData, createEvent, updateEvent, deleteEvent } = useEvents();
+  const { events, loading, referenceData, createEvent, updateEvent, deleteEvent, loadEvents } = useEvents();
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
@@ -34,13 +34,16 @@ const Event = () => {
     isOpen: false, 
     eventName: "", 
     participantType: "", 
-    action: "register" 
+    action: "register",
+    eventId: null
   });
   const [registrationFormModal, setRegistrationFormModal] = useState({
     isOpen: false,
     eventName: "",
     participantType: "",
     eventType: "",
+    mode: "register",
+    eventId: null,
   });
 
   const handleSave = async (eventData) => {
@@ -166,7 +169,7 @@ const Event = () => {
           ubicacion: event.ubicacion || "",
           telefono: event.telefono || "",
           categoria: event.categoria || "",
-          categoriaId: event.categoriaId,
+          categoryIds: event.categoryIds || [],
           estado: event.estadoOriginal || event.estado || "Programado",
           estadoOriginal: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
@@ -211,6 +214,7 @@ const Event = () => {
           ubicacion: event.ubicacion || "",
           telefono: event.telefono || "",
           categoria: event.categoria || "",
+          categoryIds: event.categoryIds || [],
           estado: event.estado || "",
           publicar: event.publicar || false,
           patrocinador: event.patrocinador || [],
@@ -227,22 +231,43 @@ const Event = () => {
 
   // Manejar acciones de inscripción (igual que en EventsCalendar)
   const handleRegistrationAction = (action, participantType, event) => {
+    // Validar estado del evento antes de permitir inscripciones
+    const estadoEvento = event.estadoOriginal || event.estado || "";
     
-    if (action === "register") {
-      // Usar el modal de inscripción con formulario
+    if (action === "register" || action === "editRegistrations") {
+      // No permitir inscribir o editar inscripciones si el evento está finalizado o cancelado
+      if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
+        showErrorAlert(
+          'Evento Finalizado', 
+          'No se pueden realizar inscripciones en un evento finalizado.'
+        );
+        return;
+      }
+      
+      if (estadoEvento === "Cancelado" || estadoEvento === "cancelado") {
+        showErrorAlert(
+          'Evento Cancelado', 
+          'No se pueden realizar inscripciones en un evento cancelado.'
+        );
+        return;
+      }
+      
       setRegistrationFormModal({
         isOpen: true,
         eventName: event.title || event.nombre,
         participantType: participantType,
         eventType: event.tipo,
+        mode: action === "editRegistrations" ? "edit" : "register",
+        eventId: event.id,
       });
-    } else {
-      // Usar el modal anterior para editar y ver
+    } else if (action === "viewRegistrations") {
+      // Permitir ver inscripciones sin importar el estado
       setInscriptionModal({
         isOpen: true,
         eventName: event.title || event.nombre,
         participantType: participantType,
         action: action,
+        eventId: event.id,
       });
     }
   };
@@ -251,8 +276,8 @@ const Event = () => {
 
   // Cerrar modales
   const closeAllModals = () => {
-    setInscriptionModal({ isOpen: false, eventName: "", participantType: "", action: "register" });
-    setRegistrationFormModal({ isOpen: false, eventName: "", participantType: "", eventType: "" });
+    setInscriptionModal({ isOpen: false, eventName: "", participantType: "", action: "register", eventId: null });
+    setRegistrationFormModal({ isOpen: false, eventName: "", participantType: "", eventType: "", mode: "register", eventId: null });
   };
 
   // Columnas para el reporte 
@@ -345,18 +370,19 @@ const Event = () => {
             onCreateEvent={createEvent}
             onUpdateEvent={updateEvent}
             onDeleteEvent={deleteEvent}
+            onRefresh={loadEvents}
           />
         )}
       </div>
 
       {/* Modales de inscripción */}
-      {inscriptionModal.isOpen && (
-        <EventInscriptionModal
+      {inscriptionModal.isOpen && inscriptionModal.action === "viewRegistrations" && (
+        <ViewRegistrationsModal
           isOpen={inscriptionModal.isOpen}
           onClose={closeAllModals}
           eventName={inscriptionModal.eventName}
           participantType={inscriptionModal.participantType}
-          action={inscriptionModal.action}
+          eventId={inscriptionModal.eventId}
         />
       )}
 
@@ -367,6 +393,9 @@ const Event = () => {
           eventName={registrationFormModal.eventName}
           participantType={registrationFormModal.participantType}
           eventType={registrationFormModal.eventType}
+          mode={registrationFormModal.mode}
+          eventId={registrationFormModal.eventId}
+          onSuccess={loadEvents}
         />
       )}
     </div>

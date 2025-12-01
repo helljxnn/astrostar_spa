@@ -5,6 +5,7 @@ import { FormField } from "../../../shared/components/FormField";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../shared/utils/alerts";
 import ChangePasswordModal from "./ChangePasswordModal";
 import EmailVerificationModal from "./EmailVerificationModal";
+import apiClient from "../../../shared/services/apiClient";
 
 const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
     const [formData, setFormData] = useState({
@@ -83,22 +84,10 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 
     const handleRequestEmailChange = async (newEmail) => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-            const token = localStorage.getItem('authToken');
-            
-            const response = await fetch(`${API_BASE_URL}/auth/request-email-change`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ newEmail })
-            });
+            const response = await apiClient.post('/auth/request-email-change', { newEmail });
 
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                showErrorAlert('Error', data.message || 'No se pudo enviar el código de verificación.');
+            if (!response.success) {
+                showErrorAlert('Error', response.message || 'No se pudo enviar el código de verificación.');
                 return false;
             }
 
@@ -109,34 +98,22 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 
         } catch (error) {
             console.error('Error solicitando cambio de email:', error);
-            showErrorAlert('Error', 'No se pudo enviar el código. Inténtalo de nuevo.');
+            showErrorAlert('Error', error.message || 'No se pudo enviar el código. Inténtalo de nuevo.');
             return false;
         }
     };
 
     const handleVerifyEmailCode = async (code) => {
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-            const token = localStorage.getItem('authToken');
-            
-            const verifyResponse = await fetch(`${API_BASE_URL}/auth/verify-email-change`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ token: code })
-            });
+            const verifyResponse = await apiClient.post('/auth/verify-email-change', { token: code });
 
-            const verifyData = await verifyResponse.json();
-
-            if (!verifyResponse.ok || !verifyData.success) {
-                throw new Error(verifyData.message || 'Código inválido o expirado');
+            if (!verifyResponse.success) {
+                throw new Error(verifyResponse.message || 'Código inválido o expirado');
             }
 
             // Actualizar usuario en el contexto
-            if (verifyData.data) {
-                await onSave(verifyData.data);
+            if (verifyResponse.data) {
+                await onSave(verifyResponse.data);
             }
 
             // Cerrar modal de verificación
@@ -144,16 +121,9 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
             
             // Actualizar teléfono y dirección si es necesario
             try {
-                await fetch(`${API_BASE_URL}/auth/profile`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        phoneNumber: formData.telefono,
-                        address: formData.direccion || null
-                    })
+                await apiClient.put('/auth/profile', {
+                    phoneNumber: formData.telefono,
+                    address: formData.direccion || null
                 });
             } catch (error) {
                 console.error('Error actualizando otros campos:', error);
@@ -194,33 +164,21 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 
             if (confirmResult.isConfirmed) {
                 try {
-                    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-                    const token = localStorage.getItem('authToken');
-                    
-                    const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            phoneNumber: formData.telefono,
-                            address: formData.direccion || null
-                        })
+                    const response = await apiClient.put('/auth/profile', {
+                        phoneNumber: formData.telefono,
+                        address: formData.direccion || null
                     });
 
-                    const data = await response.json();
-
-                    if (response.ok && data.success) {
-                        await onSave(data.data);
+                    if (response.success) {
+                        await onSave(response.data);
                         showSuccessAlert("¡Perfil Actualizado!", "Tu información ha sido guardada correctamente.");
                         handleClose();
                     } else {
-                        showErrorAlert("Error", data.message || "No se pudo actualizar tu perfil.");
+                        showErrorAlert("Error", response.message || "No se pudo actualizar tu perfil.");
                     }
                 } catch (error) {
                     console.error("Error al actualizar el perfil:", error);
-                    showErrorAlert("Error", "No se pudo actualizar tu perfil. Inténtalo de nuevo.");
+                    showErrorAlert("Error", error.message || "No se pudo actualizar tu perfil. Inténtalo de nuevo.");
                 }
             }
         }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import { FiLock, FiEye, FiEyeOff, FiCheck, FiX } from 'react-icons/fi';
 import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
+import apiClient from '../../../shared/services/apiClient';
 
 const ChangePasswordModal = ({ isOpen, onClose, email }) => {
     const [currentPassword, setCurrentPassword] = useState('');
@@ -94,39 +95,27 @@ const ChangePasswordModal = ({ isOpen, onClose, email }) => {
         setIsLoading(true);
 
         try {
-            // Usar fetch directamente para evitar la redirección automática del apiClient en caso de error 401
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-            const token = localStorage.getItem('authToken');
-            
-            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    currentPassword,
-                    newPassword
-                })
+            const response = await apiClient.post('/auth/change-password', {
+                currentPassword,
+                newPassword
             });
 
-            const data = await response.json();
             setIsLoading(false);
             
-            if (response.ok && data.success) {
+            if (response.success) {
                 showSuccessAlert('¡Contraseña Cambiada!', 'Tu contraseña ha sido cambiada exitosamente.');
                 handleClose();
             } else {
-                // Manejar errores específicos sin redirigir
-                if (response.status === 401) {
-                    showErrorAlert('Error', 'La contraseña actual es incorrecta.');
-                } else {
-                    showErrorAlert('Error', data.message || 'No se pudo cambiar la contraseña.');
-                }
+                showErrorAlert('Error', response.message || 'No se pudo cambiar la contraseña.');
             }
         } catch (error) {
             setIsLoading(false);
-            showErrorAlert('Error', 'No se pudo conectar con el servidor. Inténtalo de nuevo.');
+            // Manejar errores específicos
+            if (error.message.includes('incorrecta') || error.message.includes('actual')) {
+                showErrorAlert('Error', 'La contraseña actual es incorrecta.');
+            } else {
+                showErrorAlert('Error', error.message || 'No se pudo cambiar la contraseña. Inténtalo de nuevo.');
+            }
         }
     };
 

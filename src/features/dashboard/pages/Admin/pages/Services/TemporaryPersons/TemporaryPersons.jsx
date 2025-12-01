@@ -291,11 +291,6 @@ const TemporaryPersons = () => {
   const validatePersonForDeletion = (person) => {
     const errors = [];
 
-    // Verificar si la persona está activa
-    if (person.status === "Active") {
-      errors.push('No se puede eliminar una persona temporal con estado "Activo". Primero cambie el estado a "Inactivo"');
-    }
-
     // Verificar si tiene datos críticos que impidan la eliminación
     if (person.teamMembers && person.teamMembers.length > 0) {
       errors.push('Esta persona está asignada a equipos y no puede ser eliminada');
@@ -398,11 +393,8 @@ const TemporaryPersons = () => {
               }),
               delete: (person) => ({
                 show: hasPermission("temporaryWorkers", "Eliminar"),
-                disabled: person.status === "Active",
-                title:
-                  person.status === "Active"
-                    ? "No se puede eliminar una persona temporal activa"
-                    : "Eliminar persona temporal",
+                disabled: false,
+                title: "Eliminar persona temporal",
               }),
               view: () => ({
                 show: hasPermission("temporaryWorkers", "Ver"),
