@@ -30,7 +30,7 @@ export const useTemporaryPersonValidation = () => {
     
     personType: (value) => {
       if (!value) return "El tipo de persona es requerido";
-      const validTypes = ['Deportista', 'Entrenador', 'Participante'];
+      const validTypes = ['Deportista', 'Entrenador'];
       if (!validTypes.includes(value)) return "Tipo de persona no válido";
       return "";
     },

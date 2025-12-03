@@ -77,6 +77,134 @@ class RegistrationsService {
       };
     }
   }
+
+  // ========== MÉTODOS PARA DEPORTISTAS INDIVIDUALES ==========
+
+  /**
+   * Obtener deportistas disponibles para inscripción
+   */
+  async getAvailableAthletes(sportsCategoryId = null) {
+    try {
+      const params = {};
+      if (sportsCategoryId) {
+        params.sportsCategoryId = sportsCategoryId;
+      }
+
+      const response = await apiClient.get(`${this.endpoint}/athletes/available`, params);
+
+      return {
+        success: response.success || false,
+        data: response.data || { athletes: [], total: 0 },
+      };
+    } catch (error) {
+      console.error('Error getting available athletes:', error);
+      return {
+        success: false,
+        data: { athletes: [], total: 0 },
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Inscribir deportista individual a un evento
+   */
+  async registerAthlete(data) {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/athlete`, data);
+
+      return {
+        success: response.success || false,
+        data: response.data,
+        message: response.message,
+      };
+    } catch (error) {
+      console.error('Error registering athlete:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: error.message,
+      };
+    }
+  }
+
+  /**
+   * Inscribir múltiples deportistas a un evento
+   */
+  async registerAthletesBulk(data) {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/athletes/bulk`, data);
+
+      return {
+        success: response.success || false,
+        data: response.data,
+        message: response.message,
+      };
+    } catch (error) {
+      console.error('Error registering athletes bulk:', error);
+      return {
+        success: false,
+        error: error.message,
+        message: error.message,
+      };
+    }
+  }
+
+  /**
+   * Obtener inscripciones individuales de un evento
+   */
+  async getEventAthleteRegistrations(serviceId, status = '') {
+    try {
+      const params = {};
+      if (status) {
+        params.status = status;
+      }
+
+      const response = await apiClient.get(`${this.endpoint}/event/${serviceId}/athletes`, params);
+
+      return {
+        success: response.success || false,
+        data: response.data?.registrations || [],
+        event: response.data?.event,
+        total: response.data?.total || 0,
+      };
+    } catch (error) {
+      console.error('Error getting event athlete registrations:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Obtener inscripciones de un deportista específico
+   */
+  async getAthleteRegistrations(athleteId, status = '') {
+    try {
+      const params = {};
+      if (status) {
+        params.status = status;
+      }
+
+      const response = await apiClient.get(`${this.endpoint}/athlete/${athleteId}`, params);
+
+      return {
+        success: response.success || false,
+        data: response.data?.registrations || [],
+        athlete: response.data?.athlete,
+        total: response.data?.total || 0,
+      };
+    } catch (error) {
+      console.error('Error getting athlete registrations:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+      };
+    }
+  }
 }
 
 export default new RegistrationsService();

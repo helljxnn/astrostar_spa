@@ -9,7 +9,7 @@ import "../../Styles/calendarCustomevents.css";
 import { EventModal } from "./EventModal";
 import EventActionModal from "./EventActionModal";
 import EventRegistrationOptionsModal from "../registration/EventRegistrationOptionsModal";
-import EventRegistrationFormModal from "../registration/EventRegistrationFormModal";
+import { TeamRegistrationFormModal } from "../registration";
 import ViewRegistrationsModal from "../registration/ViewRegistrationsModal";
 import EnglishRegistrationModal from "../english/EnglishRegistrationModal";
 import EnglishRegistrationFormModal from "../english/EnglishRegistrationFormModal";
@@ -884,7 +884,7 @@ const EventsCalendar = forwardRef(function EventsCalendar({
       {/* Modal de inscripción con formulario */}
       <AnimatePresence>
         {registrationFormModal.isOpen && (
-          <EventRegistrationFormModal
+          <TeamRegistrationFormModal
             isOpen={registrationFormModal.isOpen}
             onClose={closeAllModals}
             eventName={registrationFormModal.eventName}

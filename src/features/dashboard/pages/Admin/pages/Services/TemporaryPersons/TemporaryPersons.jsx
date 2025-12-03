@@ -59,7 +59,6 @@ const TemporaryPersons = () => {
     const typeMap = {
       Deportista: "Deportista",
       Entrenador: "Entrenador",
-      Participante: "Participante",
     };
     return typeMap[personType] || personType;
   };

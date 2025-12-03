@@ -1,4 +1,6 @@
-// Registration Components
-export { default as EventRegistrationFormModal } from './EventRegistrationFormModal';
+// Registration Events Components
+export { default as TeamRegistrationFormModal } from './TeamRegistrationFormModal';
 export { default as EventRegistrationOptionsModal } from './EventRegistrationOptionsModal';
 export { default as ViewRegistrationsModal } from './ViewRegistrationsModal';
+export { default as AthleteRegistrationFormModal } from './AthleteRegistrationFormModal';
+export { default as ViewAthletesModal } from './ViewAthletesModal';
