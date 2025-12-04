@@ -6,8 +6,39 @@ import {
   FaTimes, FaUserShield
 } from "react-icons/fa";
 
-const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
+const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = { documentTypes: [] } }) => {
   if (!isOpen || !athlete) return null;
+
+  // Mapear campos del backend al frontend
+  const firstName = athlete.firstName || athlete.nombres || "";
+  const lastName = athlete.lastName || athlete.apellidos || "";
+  const documento = athlete.identification || athlete.numeroDocumento || "N/A";
+  const correo = athlete.email || athlete.correo || "N/A";
+  const telefono = athlete.phoneNumber || athlete.telefono || "N/A";
+  const fechaNacimiento = athlete.birthDate || athlete.fechaNacimiento || "";
+  const categoria = athlete.categoria || "N/A";
+  const estado = athlete.estado || "N/A";
+  
+  // Obtener el nombre del tipo de documento
+  let tipoDocumento = "N/A";
+  const documentTypeId = athlete.documentTypeId || athlete.tipoDocumento;
+  
+  if (documentTypeId && referenceData.documentTypes) {
+    // Si es un ID numérico, buscar por ID
+    if (!isNaN(documentTypeId)) {
+      const docType = referenceData.documentTypes.find(dt => dt.id === parseInt(documentTypeId));
+      if (docType) {
+        tipoDocumento = docType.name || docType.label;
+      }
+    } else {
+      // Si es un string, usarlo directamente o buscar por nombre
+      const docType = referenceData.documentTypes.find(
+        dt => dt.name?.toLowerCase() === documentTypeId.toLowerCase() ||
+              dt.label?.toLowerCase() === documentTypeId.toLowerCase()
+      );
+      tipoDocumento = docType ? (docType.name || docType.label) : documentTypeId;
+    }
+  }
 
   const calculateAge = (birthDate) => {
     if (!birthDate) return "N/A";
@@ -60,7 +91,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
               <p className="text-center text-gray-600 mt-2">
                 Información completa de:{" "}
                 <span className="font-semibold text-primary-purple">
-                  {athlete.nombres} {athlete.apellidos}
+                  {firstName} {lastName}
                 </span>
               </p>
             </div>
@@ -79,7 +110,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Nombres
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.nombres || "N/A"}
+                    {firstName || "N/A"}
                   </p>
                 </motion.div>
 
@@ -94,7 +125,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Apellidos
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.apellidos || "N/A"}
+                    {lastName || "N/A"}
                   </p>
                 </motion.div>
 
@@ -109,12 +140,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Tipo de Documento
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.tipoDocumento ? 
-                      athlete.tipoDocumento === "cedula" ? "Cédula de Ciudadanía" :
-                      athlete.tipoDocumento === "tarjeta_identidad" ? "Tarjeta de Identidad" :
-                      athlete.tipoDocumento === "cedula_extranjeria" ? "Cédula de Extranjería" :
-                      athlete.tipoDocumento === "pasaporte" ? "Pasaporte" :
-                      athlete.tipoDocumento : "N/A"}
+                    {tipoDocumento}
                   </p>
                 </motion.div>
 
@@ -129,7 +155,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Número de Documento
                   </label>
                   <p className="text-gray-900 font-mono p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.numeroDocumento || "N/A"}
+                    {documento}
                   </p>
                 </motion.div>
 
@@ -144,7 +170,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Correo Electrónico
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px] break-all">
-                    {athlete.correo || "N/A"}
+                    {correo}
                   </p>
                 </motion.div>
 
@@ -159,7 +185,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Teléfono
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.telefono || "N/A"}
+                    {telefono}
                   </p>
                 </motion.div>
 
@@ -174,7 +200,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Fecha de Nacimiento
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {formatDate(athlete.fechaNacimiento)}
+                    {formatDate(fechaNacimiento)}
                   </p>
                 </motion.div>
 
@@ -189,7 +215,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Edad
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {calculateAge(athlete.fechaNacimiento)}
+                    {calculateAge(fechaNacimiento)}
                   </p>
                 </motion.div>
 
@@ -204,7 +230,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Categoría
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.categoria || "N/A"}
+                    {categoria}
                   </p>
                 </motion.div>
 
@@ -219,132 +245,11 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian }) => {
                     Estado del Deportista
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athlete.estado || "N/A"}
+                    {estado}
                   </p>
                 </motion.div>
 
-                {/* Información del Acudiente */}
-                <motion.div
-                  className="md:col-span-2 lg:col-span-3 space-y-2 mt-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1, duration: 0.4 }}
-                >
-                  <label className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                    <FaUserShield className="text-primary-purple" />
-                    Información del Acudiente
-                  </label>
-                  
-                  {guardian ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {/* Nombre Completo del Acudiente */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.1, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Nombre Completo
-                        </label>
-                        <p className="text-gray-900 p-2 bg-white rounded-lg border border-gray-200 min-h-[42px]">
-                          {guardian.nombreCompleto}
-                        </p>
-                      </motion.div>
 
-                      {/* Tipo de Documento del Acudiente */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.2, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Tipo de Documento
-                        </label>
-                        <p className="text-gray-900 p-2 bg-white rounded-lg border border-gray-200 min-h-[42px]">
-                          {guardian.tipoDocumento ? 
-                            guardian.tipoDocumento === "cedula" ? "Cédula de Ciudadanía" :
-                            guardian.tipoDocumento === "tarjeta_identidad" ? "Tarjeta de Identidad" :
-                            guardian.tipoDocumento === "cedula_extranjeria" ? "Cédula de Extranjería" :
-                            guardian.tipoDocumento === "pasaporte" ? "Pasaporte" :
-                            guardian.tipoDocumento : "N/A"}
-                        </p>
-                      </motion.div>
-
-                      {/* Número de Documento del Acudiente */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.3, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Número de Documento
-                        </label>
-                        <p className="text-gray-900 font-mono p-2 bg-white rounded-lg border border-gray-200 min-h-[42px]">
-                          {guardian.identificacion || "N/A"}
-                        </p>
-                      </motion.div>
-
-                      {/* Teléfono del Acudiente */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.4, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Teléfono
-                        </label>
-                        <p className="text-gray-900 p-2 bg-white rounded-lg border border-gray-200 min-h-[42px]">
-                          {guardian.telefono || "N/A"}
-                        </p>
-                      </motion.div>
-
-                      {/* Correo del Acudiente */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.5, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Correo Electrónico
-                        </label>
-                        <p className="text-gray-900 p-2 bg-white rounded-lg border border-gray-200 min-h-[42px] break-all">
-                          {guardian.correo || "N/A"}
-                        </p>
-                      </motion.div>
-
-                      {/* Parentesco - ESTE ES EL CAMPO NUEVO/ARREGLADO */}
-                      <motion.div
-                        className="space-y-2"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 1.6, duration: 0.4 }}
-                      >
-                        <label className="text-xs font-medium text-gray-600">
-                          Parentesco con el Deportista
-                        </label>
-                        <p className="text-gray-900 p-2 bg-white rounded-lg border border-gray-200 min-h-[42px] font-medium text-primary-purple">
-                          {/* Mostrar el parentesco del deportista, no del acudiente */}
-                          {athlete.parentesco || "N/A"}
-                        </p>
-                      </motion.div>
-                    </div>
-                  ) : (
-                    <motion.div
-                      className="text-center py-4 p-2 bg-gray-50 rounded-lg border border-gray-200"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 1.1, duration: 0.4 }}
-                    >
-                      <FaUserShield className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-xs text-gray-500">Sin acudiente asignado</p>
-                    </motion.div>
-                  )}
-                </motion.div>
               </div>
             </div>
 

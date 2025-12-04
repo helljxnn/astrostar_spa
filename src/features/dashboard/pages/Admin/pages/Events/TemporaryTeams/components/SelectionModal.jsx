@@ -329,9 +329,6 @@ const SelectionModal = ({
                 {icon}
                 <div>
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
-                  <p className="text-sm opacity-80">
-                    {data.length} elementos cargados • {filteredItems.length} filtrados
-                  </p>
                 </div>
               </div>
               <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">

@@ -37,19 +37,24 @@ export const useAthletes = () => {
     setError(null);
     
     try {
+      console.log('🔄 [useAthletes] Cargando deportistas con params:', params);
       const response = await AthletesService.getAthletes({
         page: pagination.page,
         limit: pagination.limit,
         ...params
       });
+      console.log('🔄 [useAthletes] Respuesta de getAthletes:', response);
 
       if (response.success) {
+        console.log('✅ [useAthletes] Deportistas cargados:', response.data.length);
         setAthletes(response.data);
         setPagination(response.pagination);
       } else {
+        console.error('❌ [useAthletes] Error en respuesta:', response.error);
         throw new Error(response.error || 'Error cargando deportistas');
       }
     } catch (err) {
+      console.error('❌ [useAthletes] Excepción al cargar deportistas:', err);
       setError(err.message);
       showErrorAlert('Error', 'No se pudieron cargar los deportistas');
     } finally {
@@ -201,7 +206,9 @@ export const useAthletes = () => {
     setLoading(true);
     
     try {
+      console.log('🔵 [useAthletes] Creando deportista con datos:', athleteData);
       const response = await AthletesService.createAthlete(athleteData);
+      console.log('🔵 [useAthletes] Respuesta del servicio:', response);
       
       if (response.success) {
         showSuccessAlert(
@@ -213,9 +220,11 @@ export const useAthletes = () => {
         await loadAthletes();
         return true;
       } else {
+        console.error('❌ [useAthletes] Error en respuesta:', response.error);
         throw new Error(response.error || 'Error creando deportista');
       }
     } catch (err) {
+      console.error('❌ [useAthletes] Excepción capturada:', err);
       showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
       return false;
     } finally {

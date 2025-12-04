@@ -32,6 +32,34 @@ const parentescoOptions = [
   { value: "Otro", label: "Otro (especificar)" },
 ];
 
+// Mapeo de parentesco del backend (inglés) al frontend (español)
+const parentescoBackendToFrontend = {
+  'Mother': 'Madre',
+  'Father': 'Padre',
+  'Grandparent': 'Abuelo/a',
+  'Uncle_Aunt': 'Tío/a',
+  'Sibling': 'Hermano/a',
+  'Cousin': 'Primo/a',
+  'Legal_Guardian': 'Tutor/a Legal',
+  'Neighbor': 'Vecino/a',
+  'Family_Friend': 'Amigo/a de la familia',
+  'Other': 'Otro'
+};
+
+// Mapeo inverso: del frontend (español) al backend (inglés)
+const parentescoFrontendToBackend = {
+  'Madre': 'Mother',
+  'Padre': 'Father',
+  'Abuelo/a': 'Grandparent',
+  'Tío/a': 'Uncle_Aunt',
+  'Hermano/a': 'Sibling',
+  'Primo/a': 'Cousin',
+  'Tutor/a Legal': 'Legal_Guardian',
+  'Vecino/a': 'Neighbor',
+  'Amigo/a de la familia': 'Family_Friend',
+  'Otro': 'Other'
+};
+
 // Función para calcular la edad (igual que empleados)
 const calculateAge = (birthDate) => {
   if (!birthDate) return "";
@@ -151,7 +179,18 @@ const AthleteModal = ({
 
   useEffect(() => {
     if (isOpen && isEditing && athleteToEdit) {
+      console.log('🔵 [AthleteModal] Cargando datos para editar:', athleteToEdit);
+      console.log('🔵 [AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
+      
       const birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
+      
+      // Convertir parentesco del backend (inglés) al frontend (español)
+      let parentescoFrontend = athleteToEdit.parentesco || "";
+      if (parentescoFrontend && parentescoBackendToFrontend[parentescoFrontend]) {
+        parentescoFrontend = parentescoBackendToFrontend[parentescoFrontend];
+      }
+      
+      console.log('🔵 [AthleteModal] Parentesco convertido a español:', parentescoFrontend);
       
       setValues({
         firstName: athleteToEdit.firstName || athleteToEdit.nombres || "",
@@ -167,13 +206,15 @@ const AthleteModal = ({
         categoria: athleteToEdit.categoria || "",
         estado: athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
-        parentesco: athleteToEdit.parentesco || "",
+        parentesco: parentescoFrontend,
       });
       
       setHasDateOfBirth(!!birthDate);
       
-      if (athleteToEdit.parentesco && !parentescoOptions.some(opt => opt.value === athleteToEdit.parentesco)) {
-        setOtroParentesco(athleteToEdit.parentesco);
+      // Si el parentesco no está en las opciones, es un "Otro" personalizado
+      if (parentescoFrontend && !parentescoOptions.some(opt => opt.value === parentescoFrontend)) {
+        setOtroParentesco(parentescoFrontend);
+        setValues(prev => ({ ...prev, parentesco: "Otro" }));
       }
     } else if (isOpen && !isEditing) {
       setValues({
@@ -254,32 +295,26 @@ const AthleteModal = ({
       e.preventDefault();
     }
 
+    console.log('🔵 [AthleteModal] handleSubmit iniciado');
+    console.log('🔵 [AthleteModal] Valores actuales:', values);
+
     // Marcar todos los campos como tocados para mostrar errores
     const allTouched = {};
     Object.keys(athleteValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
 
-    if (!validateAllFields()) {
+    console.log('🔵 [AthleteModal] Validando todos los campos...');
+    const isValid = validateAllFields();
+    console.log('🔵 [AthleteModal] Resultado de validación:', isValid);
+
+    if (!isValid) {
+      console.log('❌ [AthleteModal] Validación falló, errores:', errors);
       return;
     }
 
-    if (isAcudienteRequired && !values.acudiente) {
-      showErrorAlert(
-        "Acudiente requerido",
-        "Los menores de edad deben tener un acudiente asignado."
-      );
-      return;
-    }
-
-    if (values.acudiente && !values.parentesco) {
-      showErrorAlert(
-        "Parentesco requerido",
-        "Debes especificar el parentesco con el acudiente."
-      );
-      return;
-    }
-
+    // Validación especial para "Otro" parentesco
     if (values.acudiente && values.parentesco === "Otro" && !otroParentesco.trim()) {
+      console.log('❌ [AthleteModal] Falta especificar "Otro" parentesco');
       showErrorAlert(
         "Parentesco requerido",
         "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'."
@@ -287,8 +322,19 @@ const AthleteModal = ({
       return;
     }
 
+    console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
+
     try {
       const finalParentesco = getFinalParentesco();
+      
+      // Convertir parentesco del frontend (español) al backend (inglés)
+      let parentescoBackend = finalParentesco;
+      if (parentescoBackend && parentescoFrontendToBackend[parentescoBackend]) {
+        parentescoBackend = parentescoFrontendToBackend[parentescoBackend];
+      }
+      
+      console.log('🔵 [AthleteModal] Parentesco español:', finalParentesco);
+      console.log('🔵 [AthleteModal] Parentesco convertido a inglés:', parentescoBackend);
       
       const athleteData = {
         firstName: values.firstName.trim(),
@@ -303,10 +349,13 @@ const AthleteModal = ({
         categoria: values.categoria,
         estado: values.estado,
         acudiente: values.acudiente || null,
-        parentesco: values.acudiente ? finalParentesco : null,
+        parentesco: values.acudiente ? parentescoBackend : null,
       };
 
+      console.log('🔵 [AthleteModal] Datos del deportista preparados:', athleteData);
+
       if (isEditing) {
+        console.log('🔵 [AthleteModal] Modo edición, llamando onUpdate...');
         const updateData = {
           ...athleteData,
           id: athleteToEdit.id,
@@ -316,15 +365,17 @@ const AthleteModal = ({
         };
         await onUpdate(updateData);
       } else {
+        console.log('🔵 [AthleteModal] Modo creación, llamando onSave...');
         await onSave(athleteData);
       }
 
+      console.log('✅ [AthleteModal] Guardado exitoso, cerrando modal...');
       resetForm();
       setOtroParentesco("");
       setHasDateOfBirth(false);
       onClose();
     } catch (error) {
-      console.error("❌ Error en submit:", error);
+      console.error("❌ [AthleteModal] Error en submit:", error);
       showErrorAlert("Error", error.message);
     }
   };
@@ -396,30 +447,6 @@ const AthleteModal = ({
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
-          {hasDateOfBirth && currentAge !== null && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mb-3 p-3 rounded-lg border ${
-                isMinor
-                  ? "bg-blue-50 border-blue-200"
-                  : "bg-green-50 border-green-200"
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <FaInfoCircle
-                  className={isMinor ? "text-blue-600" : "text-green-600"}
-                  size={18}
-                />
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    Edad: {currentAge} años - {isMinor ? "Menor de edad" : "Mayor de edad"}
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           <div className="mb-3">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
               Información Personal
@@ -794,16 +821,6 @@ const AthleteModal = ({
                       required
                       helperText="Relación del acudiente con el deportista"
                     />
-                    {errors.parentesco && touched.parentesco && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-1 flex items-start gap-1 p-2 bg-red-50 border border-red-200 rounded"
-                      >
-                        <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0" size={12} />
-                        <p className="text-red-600 text-xs">{errors.parentesco}</p>
-                      </motion.div>
-                    )}
                   </div>
 
                   {values.parentesco === "Otro" && (
@@ -867,7 +884,7 @@ const AthleteModal = ({
                       {values.parentesco && (
                         <div>
                           <strong>Parentesco:</strong>{" "}
-                          <span className="text-primary-purple font-semibold">
+                          <span>
                             {getFinalParentesco()}
                           </span>
                         </div>

@@ -278,19 +278,14 @@ export const athleteValidationRules = {
       return "";
     }
   ],
-  conceptoInscripcion: [
-    (v) => !v?.trim() ? "El concepto de estado es obligatorio" : "",
-    (v) => v?.trim().length < 3 ? "El concepto debe tener al menos 3 caracteres" : "",
-    (v) => v?.trim().length > 100 ? "El concepto no puede exceder 100 caracteres" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+  parentesco: [
+    (v, values) => {
+      // Si hay acudiente seleccionado, el parentesco es obligatorio
+      if (values?.acudiente && !v?.trim()) {
+        return "El parentesco es obligatorio cuando hay un acudiente asignado";
+      }
+      return "";
+    }
   ],
-  fechaInscripcion: [
-    (v) => !v ? "La fecha de inscripción es obligatoria" : ""
-  ],
-  estadoInscripcion: [
-    (v) => !v ? "Debes seleccionar un estado de inscripción" : ""
-  ],
-  fechaConcepto: [
-    (v) => !v ? "La fecha de concepto es obligatoria" : ""
-  ],
+
 };

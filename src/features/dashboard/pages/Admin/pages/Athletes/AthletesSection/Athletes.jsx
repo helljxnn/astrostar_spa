@@ -1,10 +1,9 @@
 import { useState, useMemo } from "react";
-import { FaUsers, FaPlus, FaClipboardList, FaHistory } from "react-icons/fa";
+import { FaPlus, FaClipboardList, FaHistory, FaUserShield } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
-import GuardiansListModal from "./components/GuardiansListModal.jsx";
 import InscriptionManagementModal from "./components/InscriptionManagementModal.jsx";
 import InscriptionHistoryModal from "../AthletesSection/components/AthleteInscriptionHistoryModal.jsx";
 
@@ -12,8 +11,11 @@ import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 import AthletesService from "./services/AthletesService.js";
+import GuardiansService from "./services/GuardiansService.js";
 
 import {
   showSuccessAlert,
@@ -25,6 +27,9 @@ import {
 import { useAthletes } from "./hooks/useAthletes.js";
 
 const Athletes = () => {
+  // Hook de permisos
+  const { hasPermission } = usePermissions();
+  
   // Usar el hook personalizado
   const {
     athletes,
@@ -52,7 +57,6 @@ const Athletes = () => {
   // Estados de acudientes
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
   const [isGuardianViewOpen, setIsGuardianViewOpen] = useState(false);
-  const [isGuardiansListOpen, setIsGuardiansListOpen] = useState(false);
   const [guardianToEdit, setGuardianToEdit] = useState(null);
   const [guardianToView, setGuardianToView] = useState(null);
   const [guardianModalMode, setGuardianModalMode] = useState("create");
@@ -130,6 +134,10 @@ const Athletes = () => {
   };
 
   const handleEdit = (athlete) => {
+    if (!hasPermission('athletesSection', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para editar deportistas');
+      return;
+    }
     if (!athlete || athlete.target) return;
     setAthleteToEdit(athlete);
     setModalMode("edit");
@@ -145,6 +153,10 @@ const Athletes = () => {
   };
 
   const handleDelete = async (athlete) => {
+    if (!hasPermission('athletesSection', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar deportistas');
+      return;
+    }
     if (!athlete || !athlete.id)
       return showErrorAlert("Error", "Deportista no válido");
 
@@ -191,35 +203,40 @@ const Athletes = () => {
     }
   };
 
-  const handleEditGuardian = (guardian) => {
-    if (!guardian || guardian.target) return;
-    setGuardianToEdit(guardian);
-    setGuardianModalMode("edit");
-    setIsGuardianModalOpen(true);
-  };
-
-  const handleViewGuardian = (guardian) => {
-    if (!guardian || guardian.target) return;
-    // Obtener los datos más recientes del acudiente
-    const currentGuardian = guardians.find(g => g.id === guardian.id) || guardian;
-    setGuardianToView(currentGuardian);
-    setIsGuardianViewOpen(true);
+  const handleEditGuardian = async (updatedGuardian) => {
+    if (!updatedGuardian || !updatedGuardian.id) return;
+    
+    const { id, ...guardianData } = updatedGuardian;
+    const success = await updateGuardian(id, guardianData);
+    
+    if (success) {
+      // Actualizar la vista del acudiente
+      if (guardianToView && guardianToView.id === id) {
+        const updatedGuardianData = await GuardiansService.getGuardianById(id);
+        if (updatedGuardianData.success) {
+          setGuardianToView(updatedGuardianData.data);
+        }
+      }
+      
+      // Refrescar deportistas para que se vean los cambios del acudiente
+      await refresh();
+    }
   };
 
   const handleDeleteGuardian = async (guardian) => {
-    if (!guardian || !guardian.id)
+    if (!guardian || !guardian.id) {
       return showErrorAlert("Error", "Acudiente no válido");
+    }
 
-    const confirmResult = await showDeleteAlert(
-      "¿Estás seguro?",
-      `Se eliminará al acudiente ${guardian.nombreCompleto}.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
-    );
-
-    if (!confirmResult.isConfirmed) return;
-
-    await deleteGuardian(guardian.id);
+    const success = await deleteGuardian(guardian.id);
+    
+    if (success) {
+      setIsGuardianViewOpen(false);
+      setGuardianToView(null);
+    }
   };
+
+
 
   const handleViewInscriptionHistory = (athlete) => {
     if (!athlete || athlete.target) return;
@@ -256,6 +273,24 @@ const Athletes = () => {
     }
   };
 
+  // Nuevo: Gestionar acudiente desde la fila del deportista
+  const handleManageGuardian = (athlete) => {
+    if (!athlete || athlete.target) return;
+    
+    // Si el deportista tiene acudiente, mostrarlo
+    if (athlete.acudiente) {
+      const guardian = getGuardianById(athlete.acudiente);
+      if (guardian) {
+        setGuardianToView(guardian);
+        setIsGuardianViewOpen(true);
+      } else {
+        showErrorAlert("Error", "No se encontró el acudiente asignado");
+      }
+    } else {
+      showErrorAlert("Sin Acudiente", "Este deportista no tiene un acudiente asignado");
+    }
+  };
+
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -274,8 +309,9 @@ const Athletes = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <ReportButton
-              data={athletes.map((athlete) => {
+            <PermissionGuard module="athletesSection" action="Ver">
+              <ReportButton
+                data={athletes.map((athlete) => {
                 const guardian = getGuardianById(athlete.acudiente);
                 return {
                   nombres: athlete.nombres || "",
@@ -308,11 +344,11 @@ const Athletes = () => {
                 };
               })}
               fileName="Deportistas"
-              columns={[
-                { header: "Nombres", accessor: "nombres" },
-                { header: "Apellidos", accessor: "apellidos" },
-                { header: "Tipo Documento", accessor: "tipoDocumento" },
-                { header: "Número Documento", accessor: "numeroDocumento" },
+                columns={[
+                  { header: "Nombres", accessor: "nombres" },
+                  { header: "Apellidos", accessor: "apellidos" },
+                  { header: "Tipo Documento", accessor: "tipoDocumento" },
+                  { header: "Número Documento", accessor: "numeroDocumento" },
                 { header: "Correo", accessor: "correo" },
                 { header: "Teléfono", accessor: "telefono" },
                 { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
@@ -320,28 +356,24 @@ const Athletes = () => {
                 { header: "Estado", accessor: "estado" },
                 { header: "Estado Inscripción", accessor: "estadoInscripcion" },
                 { header: "Acudiente", accessor: "acudienteNombre" },
-                { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
-              ]}
-            />
+                  { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
+                ]}
+              />
+            </PermissionGuard>
 
-            <button
-              onClick={() => setIsGuardiansListOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap"
-            >
-              <FaUsers /> Ver Acudientes
-            </button>
-
-            <button
+            <PermissionGuard module="athletesSection" action="Crear">
+              <button
               onClick={() => {
                 setModalMode("create");
                 setAthleteToEdit(null);
                 setNewlyCreatedGuardianId(null);
                 setIsModalOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-            >
-              <FaPlus /> Crear Deportista
-            </button>
+                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus /> Crear Deportista
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -372,10 +404,15 @@ const Athletes = () => {
               tbody={{
                 data: paginatedData.map((a) => {
                   const guardian = getGuardianById(a.acudiente);
+                  
+                  // Mapear campos del backend al frontend
+                  const firstName = a.firstName || a.nombres || "";
+                  const lastName = a.lastName || a.apellidos || "";
 
                   return {
                     ...a,
-                    nombreCompleto: `${a.nombres} ${a.apellidos}`,
+                    nombreCompleto: `${firstName} ${lastName}`.trim() || "Sin nombre",
+                    telefono: a.phoneNumber || a.telefono || "Sin teléfono",
                     acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
                     estadoInscripcion: a.estadoInscripcion || "",
                   };
@@ -393,22 +430,47 @@ const Athletes = () => {
                   Suspendida: "bg-orange-100 text-orange-800",
                   Vencida: "bg-yellow-100 text-yellow-800",
                 },
+                customRenderers: {
+                  estadoInscripcion: (value) => {
+                    return (
+                      <div className="text-center">
+                        <span className="text-gray-700">
+                          {value || "Sin estado"}
+                        </span>
+                      </div>
+                    );
+                  },
+                },
               }}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
+              onEdit={hasPermission('athletesSection', 'Editar') ? handleEdit : null}
+              onDelete={hasPermission('athletesSection', 'Eliminar') ? handleDelete : null}
+              onView={hasPermission('athletesSection', 'Ver') ? handleView : null}
+              buttonConfig={{
+                edit: (item) => ({ show: hasPermission('athletesSection', 'Editar') }),
+                delete: (item) => ({ show: hasPermission('athletesSection', 'Eliminar') }),
+                view: (item) => ({ show: hasPermission('athletesSection', 'Ver') }),
+              }}
               customActions={[
+                {
+                  onClick: (athlete) => handleManageGuardian(athlete),
+                  label: <FaUserShield className="w-4 h-4" />,
+                  className:
+                    "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
+                  title: "Gestionar Acudiente"
+                },
                 {
                   onClick: (athlete) => handleOpenInscriptionManagement(athlete),
                   label: <FaClipboardList className="w-4 h-4" />,
                   className:
                     "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors",
+                  title: "Gestionar Inscripción"
                 },
                 {
                   onClick: (athlete) => handleViewInscriptionHistory(athlete),
                   label: <FaHistory className="w-4 h-4" />,
                   className:
                     "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors",
+                  title: "Historial de Inscripciones"
                 },
               ]}
             />
@@ -466,21 +528,7 @@ const Athletes = () => {
             ? getGuardianById(athleteToView.acudiente)
             : null
         }
-      />
-
-      <GuardiansListModal
-        isOpen={isGuardiansListOpen}
-        onClose={() => setIsGuardiansListOpen(false)}
-        guardians={guardians}
-        athletes={athletes}
-        onCreateGuardian={() => {
-          setGuardianToEdit(null);
-          setGuardianModalMode("create");
-          setIsGuardianModalOpen(true);
-        }}
-        onEditGuardian={handleEditGuardian}
-        onViewGuardian={handleViewGuardian}
-        onDeleteGuardian={handleDeleteGuardian}
+        referenceData={referenceData}
       />
 
       <GuardianModal
@@ -500,6 +548,9 @@ const Athletes = () => {
         onClose={() => setIsGuardianViewOpen(false)}
         guardian={guardianToView}
         athletes={athletes.filter((a) => String(a.acudiente) === String(guardianToView?.id))}
+        onEdit={handleEditGuardian}
+        onDelete={handleDeleteGuardian}
+        referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
       />
 
       <InscriptionManagementModal

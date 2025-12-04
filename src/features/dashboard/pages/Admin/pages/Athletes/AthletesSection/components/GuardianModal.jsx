@@ -5,11 +5,6 @@ import { DocumentField } from "../../../../../../../../shared/components/Documen
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
 import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation";
 
-const states = [
-  { value: "Activo", label: "Activo" },
-  { value: "Inactivo", label: "Inactivo" },
-];
-
 const GuardianModal = ({
   isOpen,
   onClose,
@@ -30,34 +25,40 @@ const GuardianModal = ({
         email: "",
         phoneNumber: "",
         fechaNacimiento: "",
-        estado: "Activo",
       },
       guardianValidationRules
     );
 
+
+
   useEffect(() => {
-    if (isOpen && isEditing && guardianToEdit) {
-      setValues({
-        nombreCompleto: guardianToEdit.nombreCompleto || "",
-        documentTypeId: guardianToEdit.documentTypeId || guardianToEdit.tipoDocumento || "",
-        identification: guardianToEdit.identification || guardianToEdit.identificacion || "",
-        email: guardianToEdit.email || guardianToEdit.correo || "",
-        phoneNumber: guardianToEdit.phoneNumber || guardianToEdit.telefono || "",
-        fechaNacimiento: guardianToEdit.fechaNacimiento || "",
-        estado: guardianToEdit.estado || "Activo",
-      });
-    } else if (isOpen && !isEditing) {
-      setValues({
-        nombreCompleto: "",
-        documentTypeId: "",
-        identification: "",
-        email: "",
-        phoneNumber: "",
-        fechaNacimiento: "",
-        estado: "Activo",
-      });
-    }
-  }, [isOpen, isEditing, guardianToEdit, setValues]);
+  if (isOpen && isEditing && guardianToEdit) {
+    console.log('📝 Editando acudiente:', guardianToEdit);
+    
+    setValues({
+      nombreCompleto: guardianToEdit.nombreCompleto || "",
+      documentTypeId: guardianToEdit.documentTypeId || "",
+      identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
+      email: guardianToEdit.correo || guardianToEdit.email || "",
+      phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
+      fechaNacimiento: guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
+    });
+    
+    console.log('✅ Valores cargados:', {
+      documentTypeId: guardianToEdit.documentTypeId,
+      fechaNacimiento: guardianToEdit.fechaNacimiento
+    });
+  } else if (isOpen && !isEditing) {
+    setValues({
+      nombreCompleto: "",
+      documentTypeId: "",
+      identification: "",
+      email: "",
+      phoneNumber: "",
+      fechaNacimiento: "",
+    });
+  }
+}, [isOpen, isEditing, guardianToEdit, setValues]);
 
   const handleSubmit = async () => {
     const allTouched = {};
@@ -80,12 +81,11 @@ const GuardianModal = ({
     try {
       const dataToSend = {
         nombreCompleto: values.nombreCompleto.trim(),
-        documentTypeId: values.documentTypeId,
-        identification: values.identification.trim(),
-        email: values.email.trim(),
-        phoneNumber: values.phoneNumber,
-        birthDate: values.fechaNacimiento, // El backend espera 'birthDate'
-        estado: values.estado,
+        documentTypeId: parseInt(values.documentTypeId), // Enviar el ID como número
+        identification: values.identification.trim(), // ✅ En inglés
+        email: values.email.trim(), // ✅ En inglés
+        phoneNumber: values.phoneNumber, // ✅ En inglés
+        birthDate: values.fechaNacimiento, // ✅ En inglés
       };
       
       console.log('📤 Datos a enviar:', JSON.stringify(dataToSend, null, 2));
@@ -166,7 +166,7 @@ const GuardianModal = ({
               type="select"
               placeholder="Seleccionar tipo de documento"
               required
-              options={referenceData.documentTypes.map((type) => ({
+              options={(referenceData?.documentTypes || []).map((type) => ({
                 value: type.id,
                 label: type.name,
               }))}
@@ -181,7 +181,7 @@ const GuardianModal = ({
             {/* Identificación con validación por tipo de documento */}
             <DocumentField
               documentType={
-                referenceData.documentTypes.find(
+                (referenceData?.documentTypes || []).find(
                   (dt) => dt.id === parseInt(values.documentTypeId)
                 )?.name
               }
