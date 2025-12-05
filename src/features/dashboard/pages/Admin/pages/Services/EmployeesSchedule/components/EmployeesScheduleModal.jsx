@@ -1,25 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
-import {
-  showSuccessAlert,
-  showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
 
-/* ============================================================
-   🔹 MOCK TEMPORAL DE EMPLEADOS
-============================================================ */
-const empleadosMock = [
-  { id: 1, nombre: "Juan Pérez", cargo: "Entrenador" },
-  { id: 2, nombre: "Ana Gómez", cargo: "Nutricionista" },
-];
-
-/* ============================================================
-   🔹 COMPONENTE PRINCIPAL: ScheduleModal
-============================================================ */
-export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
+export default function ScheduleModal({
+  onClose,
+  onSave,
+  schedule,
+  isNew,
+  employeesOptions = [],
+  isReadOnly = false,
+  isLoadingEmployees = false,
+}) {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [form, setForm] = useState({
     empleadoId: "",
@@ -38,45 +32,74 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
   const { errors, touched, validate, handleBlur, touchAllFields, hasChanges } =
     useFormScheduleValidation();
 
+  const employeesMap = useMemo(() => {
+    const map = {};
+    employeesOptions.forEach((emp) => {
+      map[emp.value] = emp;
+    });
+    return map;
+  }, [employeesOptions]);
+
   useEffect(() => {
-    if (!isNew && schedule) {
-      const filledForm = {
-        empleadoId: schedule.empleadoId || "",
-        empleado: schedule.empleado || "",
-        cargo: schedule.cargo || "",
-        fecha: schedule.fecha || "",
-        horaInicio: schedule.horaInicio || "",
-        horaFin: schedule.horaFin || "",
-        repeticion: schedule.repeticion || "no",
-        customRecurrence: schedule.customRecurrence || null,
-        descripcion:
-          schedule.descripcion ||
-          schedule.observaciones ||
-          schedule.detalle ||
-          schedule.motivo ||
-          "",
-        estado: schedule.estado || "Programado",
-      };
-      setForm(filledForm);
-      setOriginalForm(filledForm);
-    }
+    if (!schedule) return;
+    const filledForm = {
+      empleadoId: schedule.empleadoId || "",
+      empleado: schedule.empleado || "",
+      cargo: schedule.cargo || "",
+      fecha: schedule.fecha || "",
+      horaInicio: schedule.horaInicio || "",
+      horaFin: schedule.horaFin || "",
+      repeticion: schedule.repeticion || "no",
+      customRecurrence: schedule.customRecurrence || null,
+      descripcion:
+        schedule.descripcion ||
+        schedule.observaciones ||
+        schedule.detalle ||
+        schedule.motivo ||
+        "",
+      estado: schedule.estado || "Programado",
+      id: schedule.id || null,
+    };
+    setForm(filledForm);
+    if (!isNew) setOriginalForm(filledForm);
   }, [schedule, isNew]);
 
   const handleChange = (name, value) => {
-    if (name === "repeticion" && value === "personalizado") {
-      setShowCustomModal(true);
-    } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+    if (isReadOnly) return;
+    if (name === "repeticion") {
+      if (value === "personalizado") {
+        setShowCustomModal(true);
+      }
+      setForm((prev) => ({
+        ...prev,
+        repeticion: value,
+        customRecurrence: value === "personalizado" ? prev.customRecurrence : null,
+      }));
+      return;
     }
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleEmployeeChange = (value) => {
+    if (isReadOnly) return;
+    const parsedValue = value || "";
+    const emp = employeesMap[parsedValue] || employeesMap[Number(parsedValue)];
+    setForm((prev) => ({
+      ...prev,
+      empleadoId: parsedValue,
+      empleado: emp?.label || "",
+      cargo: emp?.cargo || "",
+    }));
+  };
+
+  const handleSubmit = async () => {
+    if (isReadOnly) return;
     touchAllFields(form);
 
     if (!validate(form)) return;
 
-    if (!form.descripcion.trim()) {
-      showErrorAlert("La descripción es obligatoria.");
+    if (!form.descripcion?.trim()) {
+      showErrorAlert("La descripcion es obligatoria.");
       return;
     }
 
@@ -89,23 +112,24 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
       ...form,
       observaciones: form.descripcion,
       descripcion: form.descripcion,
-      id: schedule?.id || Date.now(),
+      id: schedule?.id || form.id || Date.now(),
     };
 
-    onSave(horarioFinal);
-
-    showSuccessAlert(
-      isNew
-        ? "Horario de empleado creado exitosamente"
-        : "Horario de empleado actualizado exitosamente"
-    );
-
-    onClose();
+    try {
+      await onSave(horarioFinal);
+      onClose();
+    } catch (error) {
+      // Errores manejados por el padre
+    }
   };
 
-  /* ============================================================
-     🔹 RENDER
-  ============================================================ */
+  const recurrenceLabel =
+    form.repeticion === "personalizado" && form.customRecurrence
+      ? form.customRecurrence.label
+      : "";
+
+  const disabledFields = isReadOnly;
+
   return (
     <>
       <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
@@ -116,50 +140,46 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
           transition={{ duration: 0.3 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh]"
         >
-          {/* ---------------- Header ---------------- */}
           <div className="px-8 py-6 border-b border-gray-200 text-center">
             <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#7B61FF] to-[#9BE9FF]">
-              {isNew ? "Crear Horario" : "Editar Horario"}
+              {isNew ? "Crear Horario" : isReadOnly ? "Detalle del Horario" : "Editar Horario"}
             </h2>
+            {isReadOnly && (
+              <p className="text-sm text-gray-500 mt-1">
+                Solo lectura. No tienes permisos para editar este registro.
+              </p>
+            )}
           </div>
 
-          {/* ---------------- Formulario ---------------- */}
           <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
-            {/* Empleado */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Empleado *
               </label>
               <select
                 value={form.empleadoId}
-                onChange={(e) => {
-                  const emp = empleadosMock.find(
-                    (x) => x.id === Number(e.target.value)
-                  );
-                  setForm((prev) => ({
-                    ...prev,
-                    empleadoId: emp?.id || "",
-                    empleado: emp?.nombre || "",
-                    cargo: emp?.cargo || "",
-                  }));
-                }}
+                onChange={(e) => handleEmployeeChange(e.target.value)}
                 onBlur={() => handleBlur("empleado", form.empleado, form)}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9BE9FF] outline-none"
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9BE9FF] outline-none disabled:bg-gray-100"
                 required
+                disabled={disabledFields || isLoadingEmployees}
               >
                 <option value="">-- Selecciona un empleado --</option>
-                {empleadosMock.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.nombre}
+                {employeesOptions.map((emp) => (
+                  <option key={emp.value} value={emp.value}>
+                    {emp.label}
+                    {emp.cargo ? ` - ${emp.cargo}` : ""}
                   </option>
                 ))}
               </select>
+              {isLoadingEmployees && (
+                <p className="text-xs text-gray-500 mt-1">Cargando empleados...</p>
+              )}
               {errors.empleado && touched.empleado && (
                 <p className="text-red-500 text-sm mt-1">{errors.empleado}</p>
               )}
             </div>
 
-            {/* Cargo */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cargo
@@ -173,7 +193,6 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               />
             </div>
 
-            {/* Fecha */}
             <FormField
               label="Fecha *"
               name="fecha"
@@ -184,9 +203,9 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               error={errors.fecha}
               touched={touched.fecha}
               required
+              disabled={disabledFields}
             />
 
-            {/* Hora inicio */}
             <FormField
               label="Hora inicio *"
               name="horaInicio"
@@ -197,9 +216,9 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               error={errors.horaInicio}
               touched={touched.horaInicio}
               required
+              disabled={disabledFields}
             />
 
-            {/* Hora fin */}
             <FormField
               label="Hora fin *"
               name="horaFin"
@@ -210,35 +229,35 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               error={errors.horaFin}
               touched={touched.horaFin}
               required
+              disabled={disabledFields}
             />
 
-            {/* Repetición */}
             <FormField
-              label="Repetición"
+              label="Repeticion"
               name="repeticion"
               type="select"
               value={form.repeticion}
               onChange={handleChange}
+              disabled={disabledFields}
               options={[
                 { value: "no", label: "No se repite" },
-                { value: "dia", label: "Cada día" },
+                { value: "dia", label: "Cada dia" },
                 { value: "semana", label: "Cada semana" },
                 { value: "mes", label: "Cada mes" },
-                { value: "anio", label: "Cada año" },
-                { value: "laboral", label: "Días laborales" },
+                { value: "anio", label: "Cada ano" },
+                { value: "laboral", label: "Dias laborales" },
                 { value: "personalizado", label: "Personalizar..." },
               ]}
             />
 
-            {form.repeticion === "personalizado" && form.customRecurrence && (
-              <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
-                📅 {form.customRecurrence.label}
+            {recurrenceLabel && (
+              <div className="col-span-2 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200">
+                {recurrenceLabel}
               </div>
             )}
 
-            {/* Descripción */}
             <FormField
-              label="Descripción *"
+              label="Descripcion *"
               name="descripcion"
               type="textarea"
               value={form.descripcion}
@@ -248,45 +267,44 @@ export default function ScheduleModal({ onClose, onSave, schedule, isNew }) {
               error={errors.descripcion}
               touched={touched.descripcion}
               required
+              readOnly={disabledFields}
             />
 
-            {/* Estado */}
-            {!isNew && (
-              <FormField
-                label="Estado"
-                name="estado"
-                type="select"
-                value={form.estado}
-                onChange={handleChange}
-                options={[
-                  { value: "Programado", label: "Programado" },
-                  { value: "En curso", label: "En curso" },
-                  { value: "Completado", label: "Completado" },
-                ]}
-              />
-            )}
+            <FormField
+              label="Estado"
+              name="estado"
+              type="select"
+              value={form.estado}
+              onChange={handleChange}
+              disabled={disabledFields}
+              options={[
+                { value: "Programado", label: "Programado" },
+                { value: "Completado", label: "Completado" },
+                { value: "Cancelado", label: "Cancelado" },
+              ]}
+            />
           </div>
 
-          {/* ---------------- Botones ---------------- */}
           <div className="flex justify-end gap-4 px-8 pb-8 border-t border-gray-100 pt-6">
             <button
               onClick={onClose}
               className="px-6 py-2.5 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition"
             >
-              Cancelar
+              {isReadOnly ? "Cerrar" : "Cancelar"}
             </button>
-            <button
-              onClick={handleSubmit}
-              className="px-6 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] hover:opacity-90 transition"
-            >
-              {isNew ? "Crear Horario" : "Actualizar Horario"}
-            </button>
+            {!disabledFields && (
+              <button
+                onClick={handleSubmit}
+                className="px-6 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] hover:opacity-90 transition"
+              >
+                {isNew ? "Crear Horario" : "Actualizar Horario"}
+              </button>
+            )}
           </div>
         </motion.div>
       </div>
 
-      {/* Modal de repetición personalizada */}
-      {showCustomModal && (
+      {showCustomModal && !disabledFields && (
         <CustomRecurrenceModal
           onClose={() => setShowCustomModal(false)}
           onSave={(customData) => {

@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaFilter } from "react-icons/fa";
-import SearchInput from "../../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../../shared/components/Table/Pagination.jsx";
+import SearchInput from "../../../../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../../../../shared/components/Table/Pagination.jsx";
 import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 
 // Datos quemados para deportistas de inglés
 const mockEnglishPlayers = [

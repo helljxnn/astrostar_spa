@@ -24,9 +24,9 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
 
         const estadoColorClass =
           estadoNormalizado === "activo" || estadoNormalizado === "registrado"
-            ? "text-[#b5a8ff]"
+            ? "text-[#a88bff]" // morado pastel usado en otras tablas
             : estadoNormalizado === "inactivo" || estadoNormalizado === "anulado"
-            ? "text-[#9eeaff]"
+            ? "text-[#74D5F4]" // azul pastel usado en otras tablas
             : "text-gray-400";
 
         return (
@@ -53,7 +53,7 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
                 {onEdit && (
                   <button
                     onClick={() => onEdit(item)}
-                    className="bg-[#e7f9ff] text-[#7ad7ff] p-2 rounded-full hover:scale-105 transition"
+                    className="bg-[#e7f9ff] text-[#7ad7ff] p-2 rounded-full transition hover:bg-[#d7f1ff] hover:text-[#3cb7f0] hover:scale-105"
                     title="Editar"
                   >
                     <FaEdit />
@@ -62,7 +62,7 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
                 {onDelete && (
                   <button
                     onClick={() => onDelete(item)}
-                    className="bg-[#ffeaea] text-[#ff8b8b] p-2 rounded-full hover:scale-105 transition"
+                    className="bg-[#ffeaea] text-[#ff8b8b] p-2 rounded-full transition hover:bg-[#ffdada] hover:text-[#ff5c5c] hover:scale-105"
                     title="Eliminar"
                   >
                     <FaTrash />
@@ -71,7 +71,7 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
                 {onView && (
                   <button
                     onClick={() => onView(item)}
-                    className="bg-[#f7edff] text-[#bdaaff] p-2 rounded-full hover:scale-105 transition"
+                    className="bg-[#f7edff] text-[#bdaaff] p-2 rounded-full transition hover:bg-[#ecddff] hover:text-[#a78bfa] hover:scale-105"
                     title="Ver"
                   >
                     <FaEye />
@@ -80,7 +80,7 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
                 {onList && (
                   <button
                     onClick={() => onList(item)}
-                    className="bg-[#f1f5f9] text-[#9aa9b6] p-2 rounded-full hover:scale-105 transition"
+                    className="bg-[#f1f5f9] text-[#9aa9b6] p-2 rounded-full transition hover:bg-[#e2e8f0] hover:text-[#64748b] hover:scale-105"
                     title="Listar Detallado"
                   >
                     <FaListUl />

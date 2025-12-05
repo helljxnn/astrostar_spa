@@ -46,10 +46,15 @@ export const useEvents = () => {
     const estadoParaModal = event.status; // Mantener "Pausado", "Programado", etc.
     const estadoParaLista = event.status === 'Pausado' ? 'pausado' : event.status.toLowerCase();
     
+    // Extraer categorías del evento
+    const categories = event.ServiceCategory || [];
+    const categoryIds = categories.map(sc => sc.categoryId);
+    const categoryNames = categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean);
+    
     return {
       id: event.id,
       nombre: event.name,
-      tipo: event.type?.name || '',
+      tipo: event.ServiceType?.name || '',
       tipoId: event.typeId,
       descripcion: event.description || '',
       fechaInicio: startDate,
@@ -58,14 +63,15 @@ export const useEvents = () => {
       horaFin: event.endTime,
       ubicacion: event.location,
       telefono: event.phone,
-      categoria: event.category?.name || '',
-      categoriaId: event.categoryId,
+      categoria: categoryNames.join(', ') || '', // Para mostrar en lista
+      categoryIds: categoryIds, // Para el formulario
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
-      patrocinador: event.sponsors?.map(s => s.sponsor.name) || [],
+      patrocinador: event.ServiceSponsor?.map(s => s.Sponsor.name) || [],
+      hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
       // Para el calendario
       start: new Date(startDate + 'T' + event.startTime),
       end: new Date(endDate + 'T' + event.endTime),
@@ -98,7 +104,8 @@ export const useEvents = () => {
       imageUrl: event.imagen || null,
       scheduleFile: event.cronograma || null,
       publish: event.publicar || false,
-      categoryId: event.categoriaId,
+      categoryIds: event.categoryIds || [],
+      sponsorNames: event.patrocinador || [],
       typeId: event.tipoId
     };
   };

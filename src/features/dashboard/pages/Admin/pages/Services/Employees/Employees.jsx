@@ -151,17 +151,6 @@ const Employees = () => {
         }
 
         const result = await createEmployee(employeeData);
-
-        // Mostrar modal de credenciales
-        setCreatedEmployeeData({
-          employee: result.data,
-          credentials: {
-            email: result.data.user.email,
-            temporaryPassword: result.temporaryPassword,
-          },
-          emailSent: result.emailSent,
-        });
-        setShowCredentials(true);
       }
 
       setEditingEmployee(null);
@@ -219,15 +208,6 @@ const Employees = () => {
       showErrorAlert(
         "No se puede eliminar",
         "No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema."
-      );
-      return;
-    }
-
-    // Verificar si el empleado está activo
-    if (employee.status === "Activo") {
-      showErrorAlert(
-        "No se puede eliminar",
-        'No se puede eliminar un empleado con estado "Activo". Primero cambie el estado a "Desvinculado", "Licencia" o "Fallecido" y luego inténtelo de nuevo.'
       );
       return;
     }
@@ -339,14 +319,10 @@ const Employees = () => {
               }),
               delete: (employee) => ({
                 show: hasPermission("employees", "Eliminar"),
-                disabled:
-                  employee.status === "Activo" ||
-                  employee.user?.email === "astrostar.java@gmail.com",
+                disabled: employee.user?.email === "astrostar.java@gmail.com",
                 title:
                   employee.user?.email === "astrostar.java@gmail.com"
                     ? "No se puede eliminar el usuario por defecto del sistema"
-                    : employee.status === "Activo"
-                    ? "No se puede eliminar un empleado activo"
                     : "Eliminar empleado",
               }),
               view: () => ({

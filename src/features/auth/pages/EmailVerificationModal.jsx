@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaEnvelope } from 'react-icons/fa';
 import { FiMail } from 'react-icons/fi';
 import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
+import apiClient from '../../../shared/services/apiClient';
 
 const EmailVerificationModal = ({ isOpen, onClose, newEmail, onVerify }) => {
     const [code, setCode] = useState(['', '', '', '', '', '']);
@@ -127,22 +128,10 @@ const EmailVerificationModal = ({ isOpen, onClose, newEmail, onVerify }) => {
         if (!canResend) return;
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
-            const token = localStorage.getItem('authToken');
-            
-            const response = await fetch(`${API_BASE_URL}/auth/request-email-change`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ newEmail })
-            });
+            const response = await apiClient.post('/auth/request-email-change', { newEmail });
 
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                showErrorAlert('Error', data.message || 'No se pudo reenviar el código.');
+            if (!response.success) {
+                showErrorAlert('Error', response.message || 'No se pudo reenviar el código.');
                 return;
             }
 
@@ -154,7 +143,7 @@ const EmailVerificationModal = ({ isOpen, onClose, newEmail, onVerify }) => {
 
         } catch (error) {
             console.error('Error reenviando código:', error);
-            showErrorAlert('Error', 'No se pudo reenviar el código. Inténtalo de nuevo.');
+            showErrorAlert('Error', error.message || 'No se pudo reenviar el código. Inténtalo de nuevo.');
         }
     };
 

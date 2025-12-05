@@ -7,7 +7,7 @@ import ExcelJS from 'exceljs';
 import { saveAs } from "file-saver";
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
 
 const EventReportGenerator = ({ data = [], fileName = "Reporte_Eventos", columns, calendarRef }) => {
   const [open, setOpen] = useState(false);

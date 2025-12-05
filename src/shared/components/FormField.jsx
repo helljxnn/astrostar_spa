@@ -17,6 +17,7 @@ export const FormField = ({
   onBlur,
   delay = 0,
   disabled = false,
+  helperText, // Capturar helperText para que no se pase al DOM
   ...props
 }) => {
   const hasError = touched && error;
