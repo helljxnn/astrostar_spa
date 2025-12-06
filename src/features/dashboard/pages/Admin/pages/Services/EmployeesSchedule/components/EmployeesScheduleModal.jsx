@@ -29,7 +29,7 @@ export default function ScheduleModal({
   });
   const [originalForm, setOriginalForm] = useState(null);
 
-  const { errors, touched, validate, handleBlur, touchAllFields, hasChanges } =
+  const { errors, touched, validate, handleBlur, handleChangeValidation, touchAllFields, hasChanges } =
     useFormScheduleValidation();
 
   const employeesMap = useMemo(() => {
@@ -75,9 +75,12 @@ export default function ScheduleModal({
         repeticion: value,
         customRecurrence: value === "personalizado" ? prev.customRecurrence : null,
       }));
+      handleChangeValidation(name, value, { ...form, repeticion: value });
       return;
     }
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const nextForm = { ...form, [name]: value };
+    setForm(nextForm);
+    handleChangeValidation(name, value, nextForm);
   };
 
   const handleEmployeeChange = (value) => {
@@ -90,11 +93,17 @@ export default function ScheduleModal({
       empleado: emp?.label || "",
       cargo: emp?.cargo || "",
     }));
+    handleChangeValidation("empleadoId", parsedValue, { ...form, empleadoId: parsedValue });
   };
 
   const handleSubmit = async () => {
     if (isReadOnly) return;
     touchAllFields(form);
+
+    if (!form.empleadoId) {
+      showErrorAlert("Error", "Debes seleccionar un empleado.");
+      return;
+    }
 
     if (!validate(form)) return;
 
@@ -138,10 +147,10 @@ export default function ScheduleModal({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -60 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-y-auto max-h-[90vh]"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-y-auto max-h-[90vh] border border-gray-100"
         >
           <div className="px-8 py-6 border-b border-gray-200 text-center">
-            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#7B61FF] to-[#9BE9FF]">
+            <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#6C7EFF] to-[#8AD7FF]">
               {isNew ? "Crear Horario" : isReadOnly ? "Detalle del Horario" : "Editar Horario"}
             </h2>
             {isReadOnly && (
@@ -151,7 +160,7 @@ export default function ScheduleModal({
             )}
           </div>
 
-          <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div className="px-8 pb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Empleado *
@@ -159,8 +168,8 @@ export default function ScheduleModal({
               <select
                 value={form.empleadoId}
                 onChange={(e) => handleEmployeeChange(e.target.value)}
-                onBlur={() => handleBlur("empleado", form.empleado, form)}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#9BE9FF] outline-none disabled:bg-gray-100"
+                onBlur={() => handleBlur("empleadoId", form.empleadoId, form)}
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#7B61FF] outline-none disabled:bg-gray-100 bg-white"
                 required
                 disabled={disabledFields || isLoadingEmployees}
               >
@@ -175,8 +184,8 @@ export default function ScheduleModal({
               {isLoadingEmployees && (
                 <p className="text-xs text-gray-500 mt-1">Cargando empleados...</p>
               )}
-              {errors.empleado && touched.empleado && (
-                <p className="text-red-500 text-sm mt-1">{errors.empleado}</p>
+              {errors.empleadoId && touched.empleadoId && (
+                <p className="text-red-500 text-sm mt-1">{errors.empleadoId}</p>
               )}
             </div>
 
@@ -285,17 +294,17 @@ export default function ScheduleModal({
             />
           </div>
 
-          <div className="flex justify-end gap-4 px-8 pb-8 border-t border-gray-100 pt-6">
+          <div className="flex justify-end gap-4 px-8 pb-8 border-t border-gray-100 pt-6 bg-gray-50 rounded-b-2xl">
             <button
               onClick={onClose}
-              className="px-6 py-2.5 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition"
+              className="px-6 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-700 font-semibold hover:bg-gray-100 transition shadow-sm"
             >
               {isReadOnly ? "Cerrar" : "Cancelar"}
             </button>
             {!disabledFields && (
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] hover:opacity-90 transition"
+                className="px-6 py-2.5 rounded-lg text-white font-semibold bg-gradient-to-r from-[#6C7EFF] to-[#5B8DEF] hover:opacity-90 transition shadow-md"
               >
                 {isNew ? "Crear Horario" : "Actualizar Horario"}
               </button>

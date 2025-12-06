@@ -8,17 +8,19 @@ export const sportsCategoryValidationRules = {
   },
   descripcion: {
     required: true,
-    message: "La descripción es obligatoria",
+    message: "La descripcion es obligatoria",
+    maxLength: 200,
+    maxLengthMessage: "Maximo 200 caracteres",
   },
   edadMinima: {
     required: true,
     isNumber: true,
-    message: "Edad mínima obligatoria y numérica",
+    message: "Edad minima obligatoria y numerica",
   },
   edadMaxima: {
     required: true,
     isNumber: true,
-    message: "Edad máxima obligatoria y numérica",
+    message: "Edad maxima obligatoria y numerica",
   },
   archivo: {
     required: true,
@@ -35,15 +37,11 @@ export const useFormSportsCategoryValidation = (
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /* ----------------------------------------------------------
-     Validate single field
-  ---------------------------------------------------------- */
   const validateField = (name, value) => {
     const rule = validationRules[name];
     if (!rule) return "";
 
     if (rule.required) {
-      // For file, explicitly check File instance or truthy
       if (name === "archivo") {
         if (!value) return rule.message || "Campo obligatorio";
       } else if (value === undefined || value === null || String(value).trim() === "") {
@@ -52,15 +50,19 @@ export const useFormSportsCategoryValidation = (
     }
 
     if (rule.isNumber && value !== "" && isNaN(Number(value))) {
-      return "Debe ser numérico";
+      return "Debe ser numerico";
+    }
+
+    if (rule.maxLength) {
+      const strVal = String(value || "");
+      if (strVal.length > rule.maxLength) {
+        return rule.maxLengthMessage || `Maximo ${rule.maxLength} caracteres`;
+      }
     }
 
     return "";
   };
 
-  /* ----------------------------------------------------------
-     Validate entire form -> returns errors object
-  ---------------------------------------------------------- */
   const validateForm = () => {
     const newErrors = {};
     for (const field in validationRules) {
@@ -71,30 +73,18 @@ export const useFormSportsCategoryValidation = (
     return newErrors;
   };
 
-  /* ----------------------------------------------------------
-     Touch all fields (mark as visited)
-  ---------------------------------------------------------- */
-  const touchAllFields = (optionalValues) => {
+  const touchAllFields = () => {
     const all = {};
     for (const field in validationRules) all[field] = true;
     setTouched(all);
   };
 
-  /* ----------------------------------------------------------
-     Clear validations
-  ---------------------------------------------------------- */
   const clearValidation = () => {
     setErrors({});
     setTouched({});
   };
 
-  /* ----------------------------------------------------------
-     handleChange flexible:
-       - handleChange(event)
-       - handleChange(name, value)
-  ---------------------------------------------------------- */
   const handleChange = (...args) => {
-    // event form
     if (args.length === 1 && args[0] && args[0].target) {
       const e = args[0];
       const { name, type } = e.target;
@@ -113,7 +103,6 @@ export const useFormSportsCategoryValidation = (
       return;
     }
 
-    // name, value form
     if (args.length >= 2) {
       const name = args[0];
       const value = args[1];
@@ -123,15 +112,9 @@ export const useFormSportsCategoryValidation = (
         const err = validateField(name, value);
         setErrors((prev) => ({ ...prev, [name]: err }));
       }
-      return;
     }
   };
 
-  /* ----------------------------------------------------------
-     handleBlur flexible:
-       - handleBlur(event)
-       - handleBlur(name)
-  ---------------------------------------------------------- */
   const handleBlur = (arg) => {
     let name;
     if (arg && arg.target) {
@@ -160,4 +143,5 @@ export const useFormSportsCategoryValidation = (
     setIsSubmitting,
   };
 };
+
 export default useFormSportsCategoryValidation;

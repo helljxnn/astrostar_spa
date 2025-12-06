@@ -150,15 +150,13 @@ export default function EmployeesScheduleCalendar({
   const [popover, setPopover] = useState({ open: false, style: {}, event: null });
 
   /* ---------- Normalizar eventos ---------- */
-  const events = useMemo(
-    () =>
-      (schedules || []).map((ev) => ({
-        ...ev,
-        start: ev.start instanceof Date ? ev.start : new Date(ev.start),
-        end: ev.end instanceof Date ? ev.end : new Date(ev.end),
-      })),
-    [schedules]
-  );
+  const events = useMemo(() => {
+    return (schedules || []).map((ev) => ({
+      ...ev,
+      start: ev.start instanceof Date ? ev.start : new Date(ev.start),
+      end: ev.end instanceof Date ? ev.end : new Date(ev.end),
+    }));
+  }, [schedules]);
 
   /* ---------- Abrir popover al presionar engranaje ---------- */
   const openPopoverAt = (event, element) => {
@@ -189,25 +187,57 @@ export default function EmployeesScheduleCalendar({
       e.stopPropagation();
       openPopoverAt(event, ref.current);
     };
+
+    const palettes = {
+      Programado: ["#8ea6ff", "#bbd9ff"],
+      Completado: ["#7ad8a8", "#b6f3d5"],
+      Cancelado: ["#d6d8e0", "#f1f3f8"],
+    };
+    const [from, to] = palettes[event.estado] || ["#8ea6ff", "#bbd9ff"];
+
+    const rawName =
+      event.empleado ||
+      (event.title || "").replace(/^Turno\s*-\s*/i, "") ||
+      event.title;
+
+    const shortenName = (name = "") => {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return `${parts[0]} ${parts[1]}`;
+      return parts[0] || "";
+    };
+
+    const displayName = shortenName(rawName);
+    const cargoText = event.cargo ? ` · ${event.cargo}` : "";
+
     return (
       <div
         ref={ref}
-        className="flex items-center justify-between gap-2 text-xs font-medium truncate"
+        className="schedule-event-pill"
+        style={{
+          background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
+        }}
       >
-        <div className="flex items-center gap-2 truncate">
+        <div className="schedule-event-pill__left">
           <span
-            className={`w-2 h-2 rounded-full ${
+            className={`dot ${
               event.estado === "Cancelado"
-                ? "bg-gray-400"
-                : event.color || "bg-primary-purple"
+                ? "dot-gray"
+                : event.estado === "Completado"
+                ? "dot-green"
+                : "dot-indigo"
             }`}
           />
-          <span className="truncate">{event.title}</span>
+          <span
+            className="schedule-event-pill__title"
+            title={`${rawName}${cargoText}`}
+          >
+            {displayName}
+            {event.cargo && (
+              <span className="schedule-event-pill__subtitle">{cargoText}</span>
+            )}
+          </span>
         </div>
-        <button
-          onClick={handleCogClick}
-          className="text-gray-500 hover:text-gray-700 p-1 rounded transition"
-        >
+        <button onClick={handleCogClick} className="schedule-event-pill__action" aria-label="Acciones">
           <FaCog className="w-4 h-4" />
         </button>
       </div>
@@ -282,7 +312,7 @@ export default function EmployeesScheduleCalendar({
       </div>
 
       {/* Calendario */}
-      <div className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white">
+      <div className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white h-[45vh] max-h-[520px] min-h-[360px] calendar-shell">
         <Calendar
           selectable
           culture="es"
@@ -304,7 +334,12 @@ export default function EmployeesScheduleCalendar({
           views={["month", "week", "day"]}
           messages={messages}
           popup
-          style={{ height: "70vh" }}
+          style={{
+            height: "100%",
+          }}
+          eventPropGetter={() => ({
+            style: { border: "none", background: "transparent", padding: "2px 0" },
+          })}
           onSelectSlot={(slot) => onOpenModalForSlot?.({ start: slot.start, end: slot.end })}
           onSelectEvent={(ev) => onOpenModalForEvent?.(ev)}
         />
