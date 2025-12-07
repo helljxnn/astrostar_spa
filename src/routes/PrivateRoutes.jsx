@@ -21,6 +21,7 @@ import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/Spo
 import TemporaryPersons from "../features/dashboard/pages/Admin/pages/Services/TemporaryPersons/TemporaryPersons.jsx";
 import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
 import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
+import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enrollments/Enrollments.jsx";
 
 
 /* --- Usuarios y Roles --- */
@@ -114,6 +115,16 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute module="athletesAssistance" action="Ver">
               <AttendanceHistory />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Matrículas --- */}
+        <Route
+          path="enrollments"
+          element={
+            <PrivateRoute module="enrollments" action="Ver">
+              <Enrollments />
             </PrivateRoute>
           }
         />

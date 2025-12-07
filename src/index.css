@@ -10,7 +10,8 @@
 html {
   overflow-x: hidden;
   overflow-y: auto;
-    font-size: 14px; 
+  font-size: 14px;
+  scroll-behavior: smooth;
 }
 
 body {

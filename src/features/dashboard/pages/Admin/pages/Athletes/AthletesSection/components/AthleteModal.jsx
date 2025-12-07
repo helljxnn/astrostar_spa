@@ -91,8 +91,9 @@ const AthleteModal = ({
   onViewGuardian,
   newlyCreatedGuardianId = null,
   referenceData = { documentTypes: [] },
+  isEnrollmentMode = false,
 }) => {
-  const isEditing = mode === "edit" || athleteToEdit !== null;
+  const isEditing = (mode === "edit" || athleteToEdit !== null) && !isEnrollmentMode;
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
   const [currentAge, setCurrentAge] = useState(null);
@@ -178,11 +179,58 @@ const AthleteModal = ({
   }, [newlyCreatedGuardianId, guardians, isEditing]);
 
   useEffect(() => {
-    if (isOpen && isEditing && athleteToEdit) {
-      console.log('🔵 [AthleteModal] Cargando datos para editar:', athleteToEdit);
+    if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
+      console.log('🔵 [AthleteModal] Cargando datos:', isEnrollmentMode ? 'para matrícula' : 'para editar', athleteToEdit);
       console.log('🔵 [AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
       
-      const birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
+      // Convertir fecha ISO a formato YYYY-MM-DD
+      let birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
+      console.log('🔵 [AthleteModal] Fecha de nacimiento original:', birthDate, 'Tipo:', typeof birthDate);
+      
+      if (birthDate) {
+        try {
+          // Si ya está en formato YYYY-MM-DD, usarla directamente
+          if (typeof birthDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+            console.log('🔵 [AthleteModal] Fecha ya está en formato correcto');
+          } 
+          // Si viene en formato DD/MM/YYYY o D/M/YYYY (del landing)
+          else if (typeof birthDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(birthDate)) {
+            console.log('🔵 [AthleteModal] Fecha en formato DD/MM/YYYY, convirtiendo...');
+            const [day, month, year] = birthDate.split('/');
+            // Agregar ceros iniciales si es necesario
+            const dayPadded = day.padStart(2, '0');
+            const monthPadded = month.padStart(2, '0');
+            birthDate = `${year}-${monthPadded}-${dayPadded}`;
+            console.log('🔵 [AthleteModal] Fecha convertida a:', birthDate);
+          }
+          // Si viene en formato ISO (YYYY-MM-DDTHH:mm:ss.sssZ), extraer solo la fecha
+          else if (typeof birthDate === 'string' && birthDate.includes('T')) {
+            console.log('🔵 [AthleteModal] Fecha en formato ISO con hora, extrayendo solo fecha...');
+            birthDate = birthDate.split('T')[0];
+            console.log('🔵 [AthleteModal] Fecha extraída:', birthDate);
+          }
+          // Si viene en otro formato, intentar convertir
+          else {
+            const date = new Date(birthDate);
+            if (!isNaN(date.getTime())) {
+              // Usar la fecha local sin conversión UTC para evitar cambios de día
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              birthDate = `${year}-${month}-${day}`;
+              console.log('🔵 [AthleteModal] Fecha convertida desde Date a:', birthDate);
+            } else {
+              console.error('🔴 [AthleteModal] Fecha inválida, no se puede convertir');
+              birthDate = "";
+            }
+          }
+        } catch (error) {
+          console.error('🔴 [AthleteModal] Error procesando fecha:', error);
+          birthDate = "";
+        }
+      }
+      
+      console.log('🔵 [AthleteModal] Fecha de nacimiento final:', birthDate);
       
       // Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
@@ -192,11 +240,32 @@ const AthleteModal = ({
       
       console.log('🔵 [AthleteModal] Parentesco convertido a español:', parentescoFrontend);
       
+      // Separar nombres y apellidos si vienen del landing (formato: "Nombre1 Nombre2" y "Apellido1 Apellido2")
+      let firstName = athleteToEdit.firstName || "";
+      let middleName = athleteToEdit.middleName || "";
+      let lastName = athleteToEdit.lastName || "";
+      let secondLastName = athleteToEdit.secondLastName || "";
+      
+      // Si viene del landing (tiene "nombres" y "apellidos" en lugar de firstName/lastName)
+      if (athleteToEdit.nombres && !athleteToEdit.firstName) {
+        const nombres = athleteToEdit.nombres.trim().split(/\s+/);
+        firstName = nombres[0] || "";
+        middleName = nombres.slice(1).join(" ") || "";
+      }
+      
+      if (athleteToEdit.apellidos && !athleteToEdit.lastName) {
+        const apellidos = athleteToEdit.apellidos.trim().split(/\s+/);
+        lastName = apellidos[0] || "";
+        secondLastName = apellidos.slice(1).join(" ") || "";
+      }
+      
+      console.log('🔵 [AthleteModal] Nombres procesados:', { firstName, middleName, lastName, secondLastName });
+      
       setValues({
-        firstName: athleteToEdit.firstName || athleteToEdit.nombres || "",
-        middleName: athleteToEdit.middleName || "",
-        lastName: athleteToEdit.lastName || athleteToEdit.apellidos || "",
-        secondLastName: athleteToEdit.secondLastName || "",
+        firstName: firstName,
+        middleName: middleName,
+        lastName: lastName,
+        secondLastName: secondLastName,
         documentTypeId: athleteToEdit.documentTypeId || athleteToEdit.tipoDocumento || "",
         identification: athleteToEdit.identification || athleteToEdit.numeroDocumento || "",
         email: athleteToEdit.email || athleteToEdit.correo || "",
@@ -216,7 +285,7 @@ const AthleteModal = ({
         setOtroParentesco(parentescoFrontend);
         setValues(prev => ({ ...prev, parentesco: "Otro" }));
       }
-    } else if (isOpen && !isEditing) {
+    } else if (isOpen && !isEditing && !isEnrollmentMode) {
       setValues({
         firstName: "",
         middleName: "",
@@ -236,7 +305,7 @@ const AthleteModal = ({
       setOtroParentesco("");
       setHasDateOfBirth(false);
     }
-  }, [isOpen, isEditing, athleteToEdit, setValues]);
+  }, [isOpen, isEditing, isEnrollmentMode, athleteToEdit, setValues]);
 
   const handleParentescoChange = (e) => {
     const { value } = e.target;
@@ -434,7 +503,11 @@ const AthleteModal = ({
             <FaTimes size={16} />
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {isEditing ? "Editar Deportista" : "Crear Deportista"}
+            {isEditing 
+              ? "Editar Deportista" 
+              : isEnrollmentMode 
+                ? "Crear Matrícula" 
+                : "Crear Deportista"}
           </h2>
           {isEditing && (
             <p className="text-center text-gray-600 mt-2">
@@ -963,7 +1036,11 @@ const AthleteModal = ({
               onClick={(event) => handleSubmit(event)}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
-              {isEditing ? "Actualizar Deportista" : "Crear Deportista"}
+              {isEditing 
+                ? "Actualizar Deportista" 
+                : isEnrollmentMode 
+                  ? "Crear Matrícula" 
+                  : "Crear Deportista"}
             </button>
           </div>
         </div>

@@ -228,6 +228,51 @@ class GuardiansService {
   async getActiveGuardians() {
     return this.getGuardians({ status: 'Activo' });
   }
+
+  /**
+   * Obtener todos los acudientes sin paginación
+   * Hace múltiples peticiones automáticas si hay más de 100 registros
+   */
+  async getAll() {
+    try {
+      let allGuardians = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const limit = 100; // Límite máximo permitido por el backend
+
+      // Hacer peticiones hasta obtener todos los registros
+      while (hasMorePages) {
+        const response = await apiClient.get(this.endpoint, {
+          page: currentPage,
+          limit: limit,
+        });
+
+        if (response && response.success) {
+          const guardians = response.data || [];
+          allGuardians = [...allGuardians, ...guardians];
+
+          // Si recibimos menos registros que el límite, ya no hay más páginas
+          hasMorePages = guardians.length === limit;
+          currentPage++;
+        } else {
+          // Si hay un error, detenemos el loop
+          hasMorePages = false;
+        }
+      }
+
+      return {
+        success: true,
+        data: allGuardians,
+      };
+    } catch (error) {
+      console.error('Error al obtener todos los acudientes:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message
+      };
+    }
+  }
 }
 
 export default new GuardiansService();

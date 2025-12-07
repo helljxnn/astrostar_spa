@@ -282,7 +282,7 @@ export const athleteValidationRules = {
     (v, values) => {
       // Si hay acudiente seleccionado, el parentesco es obligatorio
       if (values?.acudiente && !v?.trim()) {
-        return "El parentesco es obligatorio cuando hay un acudiente asignado";
+        return "El parentesco es obligatorio ";
       }
       return "";
     }

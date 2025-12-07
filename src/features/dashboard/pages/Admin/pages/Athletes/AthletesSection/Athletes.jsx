@@ -1,11 +1,9 @@
 import { useState, useMemo } from "react";
-import { FaPlus, FaClipboardList, FaHistory, FaUserShield } from "react-icons/fa";
+import { FaPlus, FaUserShield } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
-import InscriptionManagementModal from "./components/InscriptionManagementModal.jsx";
-import InscriptionHistoryModal from "../AthletesSection/components/AthleteInscriptionHistoryModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
@@ -62,10 +60,7 @@ const Athletes = () => {
   const [guardianModalMode, setGuardianModalMode] = useState("create");
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
 
-  // Estados de inscripciones
-  const [isInscriptionHistoryModalOpen, setIsInscriptionHistoryModalOpen] = useState(false);
-  const [athleteForInscription, setAthleteForInscription] = useState(null);
-  const [isInscriptionManagementOpen, setIsInscriptionManagementOpen] = useState(false);
+
 
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
@@ -238,40 +233,7 @@ const Athletes = () => {
 
 
 
-  const handleViewInscriptionHistory = (athlete) => {
-    if (!athlete || athlete.target) return;
-    const currentAthlete = athletes.find(a => a.id === athlete.id) || athlete;
-    setAthleteForInscription(currentAthlete);
-    setIsInscriptionHistoryModalOpen(true);
-  };
 
-  const handleOpenInscriptionManagement = (athlete) => {
-    if (!athlete || athlete.target) return;
-    const currentAthlete = athletes.find(a => a.id === athlete.id) || athlete;
-    setAthleteForInscription(currentAthlete);
-    setIsInscriptionManagementOpen(true);
-  };
-
-  const handleUpdateAthleteFromManagement = async (updatedAthlete) => {
-    try {
-      await refresh();
-      
-      // Actualizar la vista si estaba abierta
-      if (athleteForInscription && athleteForInscription.id === updatedAthlete.id) {
-        const updatedAthleteData = await AthletesService.getAthleteById(updatedAthlete.id);
-        if (updatedAthleteData.success) {
-          setAthleteForInscription(updatedAthleteData.data);
-        }
-      }
-      
-      // Actualizar GuardianViewModal si estaba abierto
-      if (guardianToView && guardianToView.id) {
-        setGuardianToView({ ...guardianToView });
-      }
-    } catch (error) {
-      console.error("Error actualizando deportista:", error);
-    }
-  };
 
   // Nuevo: Gestionar acudiente desde la fila del deportista
   const handleManageGuardian = (athlete) => {
@@ -458,20 +420,6 @@ const Athletes = () => {
                     "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
                   title: "Gestionar Acudiente"
                 },
-                {
-                  onClick: (athlete) => handleOpenInscriptionManagement(athlete),
-                  label: <FaClipboardList className="w-4 h-4" />,
-                  className:
-                    "p-2 text-[#FF9BF8] hover:text-[#E08CE0] rounded transition-colors",
-                  title: "Gestionar Inscripción"
-                },
-                {
-                  onClick: (athlete) => handleViewInscriptionHistory(athlete),
-                  label: <FaHistory className="w-4 h-4" />,
-                  className:
-                    "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors",
-                  title: "Historial de Inscripciones"
-                },
               ]}
             />
           </div>
@@ -553,25 +501,6 @@ const Athletes = () => {
         referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
       />
 
-      <InscriptionManagementModal
-        isOpen={isInscriptionManagementOpen}
-        onClose={() => setIsInscriptionManagementOpen(false)}
-        athlete={athleteForInscription}
-        guardians={guardians}
-        onUpdateAthlete={handleUpdateAthleteFromManagement}
-      />
-
-      {isInscriptionHistoryModalOpen && athleteForInscription && (
-        <InscriptionHistoryModal
-          isOpen={isInscriptionHistoryModalOpen}
-          onClose={() => setIsInscriptionHistoryModalOpen(false)}
-          athlete={athleteForInscription}
-          guardians={guardians}
-          onUpdateInscription={async (athleteId, updatedArray) => {
-            await refresh();
-          }}
-        />
-      )}
     </div>
   );
 };
