@@ -44,7 +44,12 @@ export const usePermissions = () => {
         }
       }
     } catch (error) {
-      console.error('Error al refrescar permisos:', error);
+      // Si el error es 403 (token expirado/inválido), el apiClient ya intentará refrescar
+      // Si falla el refresh, redirigirá al login automáticamente
+      // Solo logueamos errores que no sean de autenticación
+      if (!error.message?.includes('Token') && !error.message?.includes('401') && !error.message?.includes('403')) {
+        console.error('Error al refrescar permisos:', error);
+      }
     }
   }, [isAuthenticated, user, updateUser]);
 

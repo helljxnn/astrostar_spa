@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import RegistrationsService from "../../services/RegistrationsService";
@@ -20,69 +20,10 @@ const AthleteRegistrationFormModal = ({
   const [error, setError] = useState(null);
   const searchTimeoutRef = useRef(null);
   const hasLoadedRef = useRef(false); // Para evitar cargas múltiples
+  const lastEventIdRef = useRef(null); // Para rastrear cambios de evento
 
-  useEffect(() => {
-    if (isOpen && event) {
-      setSearchTerm('');
-      setSearchResults([]);
-      
-      if (mode === 'edit' && !hasLoadedRef.current) {
-        hasLoadedRef.current = true;
-        loadRegisteredAthletes();
-      } else if (mode === 'register') {
-        setSelectedAthletes([]);
-        hasLoadedRef.current = false;
-      }
-    } else {
-      // Reset cuando se cierra el modal
-      hasLoadedRef.current = false;
-    }
-  }, [isOpen, event, mode]);
-
-  useEffect(() => {
-    // Búsqueda con debounce
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      searchAthletes(searchTerm);
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchTerm]);
-
-  const loadRegisteredAthletes = async () => {
-    if (!event?.id || mode !== 'edit') return;
-    
-    setLoading(true);
-    try {
-      const response = await RegistrationsService.getEventAthleteRegistrations(event.id);
-      
-      if (response.success && response.data) {
-        const registeredAthletes = response.data
-          .filter(reg => reg.athlete)
-          .map(reg => ({
-            ...reg.athlete,
-            registrationId: reg.id,
-          }));
-        
-        setSelectedAthletes(registeredAthletes);
-        setInitialAthletes(registeredAthletes);
-      }
-    } catch (error) {
-      console.error('Error cargando deportistas inscritos:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los deportistas inscritos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchAthletes = async (term) => {
+  // Declarar searchAthletes antes de los useEffect que lo usan
+  const searchAthletes = useCallback(async (term) => {
     if (!term || term.trim().length < 2) {
       setSearchResults([]);
       return;
@@ -125,7 +66,78 @@ const AthleteRegistrationFormModal = ({
     } finally {
       setSearching(false);
     }
-  };
+  }, [selectedAthletes]);
+
+  const loadRegisteredAthletes = useCallback(async () => {
+    if (!event?.id || mode !== 'edit') return;
+    
+    setLoading(true);
+    try {
+      const response = await RegistrationsService.getEventAthleteRegistrations(event.id);
+      
+      if (response.success && response.data) {
+        const registeredAthletes = response.data
+          .filter(reg => reg.athlete)
+          .map(reg => ({
+            ...reg.athlete,
+            registrationId: reg.id,
+          }));
+        
+        setSelectedAthletes(registeredAthletes);
+        setInitialAthletes(registeredAthletes);
+      }
+    } catch (error) {
+      console.error('Error cargando deportistas inscritos:', error);
+      showErrorAlert('Error', 'No se pudieron cargar los deportistas inscritos');
+    } finally {
+      setLoading(false);
+    }
+  }, [event?.id, mode]);
+
+  useEffect(() => {
+    // Detectar si el evento cambió
+    const eventChanged = event?.id !== lastEventIdRef.current;
+    
+    if (isOpen && event) {
+      // Solo resetear si es un evento diferente o es la primera vez que se abre
+      if (eventChanged || !hasLoadedRef.current) {
+        setSearchTerm('');
+        setSearchResults([]);
+        lastEventIdRef.current = event.id;
+        
+        if (mode === 'edit') {
+          hasLoadedRef.current = true;
+          loadRegisteredAthletes();
+        } else if (mode === 'register') {
+          setSelectedAthletes([]);
+          hasLoadedRef.current = true;
+        }
+      }
+    }
+    
+    // Reset cuando se cierra el modal
+    if (!isOpen) {
+      hasLoadedRef.current = false;
+      lastEventIdRef.current = null;
+    }
+  }, [isOpen, event?.id, mode, loadRegisteredAthletes]);
+
+  useEffect(() => {
+    // Búsqueda con debounce
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      searchAthletes(searchTerm);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, searchAthletes]);
 
   const handleSelectAthlete = (athlete) => {
     // Verificar que el deportista no esté ya seleccionado
