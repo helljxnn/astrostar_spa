@@ -1,51 +1,40 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import { showSuccessAlert, showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../shared/utils/alerts";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import donorsSponsorsData from "../../../../../../../shared/models/DonorsSponsorsData";
 import DonorSponsorModal from "./components/DonorSponsorModal";
 import DonorSponsorViewModal from "./components/DonorSponsorViewModal";
-
-const LOCAL_STORAGE_KEY = "donorsSponsorsData";
+import useDonorsSponsors from "./hooks/useDonorsSponsors";
 
 function DonorsSponsors() {
-  const [donorsList, setDonorsList] = useState(() => {
-    try {
-      const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const parsedData = storedData ? JSON.parse(storedData) : [];
-      return parsedData.length > 0 ? parsedData : donorsSponsorsData;
-    } catch (error) {
-      console.error("Error al leer desde localStorage:", error);
-      return donorsSponsorsData;
-    }
-  });
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const {
+    donorsSponsors,
+    loading,
+    pagination,
+    loadDonorsSponsors,
+    createDonorSponsor,
+    updateDonorSponsor,
+    deleteDonorSponsor,
+    referenceData,
+    checkEmailAvailability,
+    checkIdentificationAvailability,
+  } = useDonorsSponsors();
+
   useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(donorsList));
-    } catch (error) {
-      console.error("Error al guardar en localStorage:", error);
-    }
-  }, [donorsList]);
+    const timeout = setTimeout(() => {
+      loadDonorsSponsors({ search: searchTerm, page: 1 });
+    }, 300);
 
-  const filteredDonors = useMemo(() => {
-    const term = searchTerm.toLowerCase();
-    if (!term) return donorsList;
-
-    return donorsList.filter((item) =>
-      Object.values(item).some((value) =>
-        String(value).toLowerCase().includes(term)
-      )
-    );
-  }, [donorsList, searchTerm]);
+    return () => clearTimeout(timeout);
+  }, [searchTerm, loadDonorsSponsors]);
 
   const handleOpenCreateModal = () => {
     setSelectedDonor(null);
@@ -65,23 +54,17 @@ function DonorsSponsors() {
     setModalMode("create");
   };
 
-  const handleSave = (formData) => {
-    if (modalMode === "edit" && selectedDonor) {
-      setDonorsList((prevList) =>
-        prevList.map((item) =>
-          item.id === selectedDonor.id ? { ...item, ...formData } : item
-        )
-      );
-      showSuccessAlert("Actualizado", "Los datos se han actualizado correctamente.");
-    } else {
-      const newDonor = { id: Date.now(), ...formData };
-      setDonorsList((prevList) => [newDonor, ...prevList]);
-      showSuccessAlert(
-        "Creado",
-        "El nuevo donante/patrocinador se registro correctamente."
-      );
+  const handleSave = async (formData) => {
+    try {
+      if (modalMode === "edit" && selectedDonor) {
+        await updateDonorSponsor(selectedDonor.id, formData);
+      } else {
+        await createDonorSponsor(formData);
+      }
+      handleCloseModal();
+    } catch (error) {
+      // Los mensajes de error ya se muestran en el hook
     }
-    handleCloseModal();
   };
 
   const handleDelete = async (itemToDelete) => {
@@ -92,8 +75,11 @@ function DonorsSponsors() {
     );
 
     if (result.isConfirmed) {
-      setDonorsList((prevList) => prevList.filter((item) => item.id !== itemToDelete.id));
-      showSuccessAlert("Eliminado", `"${itemToDelete.nombre}" ha sido eliminado.`);
+      try {
+        await deleteDonorSponsor(itemToDelete.id);
+      } catch (error) {
+        // Los errores ya se notifican en el hook
+      }
     }
   };
 
@@ -108,7 +94,7 @@ function DonorsSponsors() {
   };
 
   const reportData = useMemo(() => {
-    return filteredDonors.map((donor) => ({
+    return (donorsSponsors || []).map((donor) => ({
       identificacion: donor.identificacion || "",
       nombre: donor.nombre || "",
       tipo: donor.tipo || "",
@@ -118,7 +104,7 @@ function DonorsSponsors() {
       direccion: donor.direccion || "",
       estado: donor.estado || "",
     }));
-  }, [filteredDonors]);
+  }, [donorsSponsors]);
 
   return (
     <div className="p-6 font-questrial space-y-6">
@@ -161,20 +147,21 @@ function DonorsSponsors() {
 
       <div className="overflow-x-auto">
         <Table
-          rowsPerPage={5}
+          rowsPerPage={pagination.limit || 5}
           thead={{
             titles: ["Identificacion", "Nombre", "Tipo", "Telefono"],
             state: true,
             actions: true,
           }}
           tbody={{
-            data: filteredDonors,
+            data: donorsSponsors,
             dataPropertys: ["identificacion", "nombre", "tipo", "telefono"],
             state: true,
           }}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onView={handleView}
+          loading={loading}
         />
       </div>
 
@@ -184,6 +171,9 @@ function DonorsSponsors() {
         onSave={handleSave}
         donorData={selectedDonor}
         mode={modalMode}
+        referenceData={referenceData}
+        checkEmailAvailability={checkEmailAvailability}
+        checkIdentificationAvailability={checkIdentificationAvailability}
       />
       <DonorSponsorViewModal
         isOpen={isViewModalOpen}

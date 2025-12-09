@@ -230,27 +230,27 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     checking: "border-primary-purple ring-2 ring-primary-purple/20 bg-purple-50",
     error: "border-red-400 ring-2 ring-red-100 bg-red-50",
     success: "border-green-500 ring-2 ring-green-100 bg-green-50",
-    neutral: "border-gray-300 focus:border-primary-purple focus:ring-2 focus:ring-primary-blue/30 bg-white",
+    neutral: "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30 bg-gray-50",
   };
   const nameInputClass = nameInputStates[nameStatus] || nameInputStates.neutral;
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-3">
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="bg-white rounded-[18px] shadow-xl p-8 w-full max-w-5xl overflow-y-auto max-h-[90vh]"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
       >
-        <div className="flex justify-between items-center mb-7">
-          <h2 className="text-[32px] font-bold text-[#9BE9FF]">
+        <div className="relative px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-[#dbe2ff] via-[#e9f4ff] to-[#d5f1ff]">
+          <h2 className="text-2xl font-semibold text-[#8aa9ff] text-center">
             {isNew ? "Crear Categoria Deportiva" : "Editar Categoria Deportiva"}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-2xl font-bold transition"
             aria-label="Cerrar"
             type="button"
           >
@@ -258,10 +258,10 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+        <form onSubmit={handleSubmit} className="px-6 py-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="lg:col-span-2 space-y-2">
+              <label className="text-sm font-semibold text-gray-700 block">
                 Nombre categoria *
               </label>
               <div className="relative">
@@ -271,19 +271,19 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                   onChange={(e) => handleNameChange(e.target.value)}
                   onBlur={() => handleBlur("nombre")}
                   placeholder="Ej: Infantil A"
-                  className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border ${nameInputClass}`}
+                  className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border bg-gray-50 ${nameInputClass}`}
                 />
                 {nameValidation.isChecking && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
                 )}
                 {nameValidation.isDuplicate && !isNameTooShort && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg font-semibold">✕</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg font-semibold">Ɵ?</span>
                 )}
                 {!nameValidation.isDuplicate && nameValidation.isAvailable && currentTrimmedName.length >= 3 && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-lg font-semibold">✓</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-lg font-semibold">Ɵ?"</span>
                 )}
               </div>
-              <div className="mt-2 space-y-1 text-xs">
+              <div className="space-y-1 text-xs mt-1">
                 {nameValidation.isChecking && (
                   <p className="flex items-center gap-2 text-primary-purple font-medium">
                     <span className="w-3 h-3 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
@@ -299,29 +299,29 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 {errors.nombre && <p className="text-red-500">Aviso: {errors.nombre}</p>}
                 {nameValidation.isDuplicate && !isNameTooShort && (
                   <p className="flex items-center gap-2 text-red-600 font-semibold">
-                    <span className="text-lg leading-none">✕</span>
+                    <span className="text-lg leading-none">Ɵ?</span>
                     {nameValidation.message || "Nombre no disponible"}
                   </p>
                 )}
                 {!nameValidation.isDuplicate && nameValidation.isAvailable && currentTrimmedName.length >= 3 && (
                   <p className="flex items-center gap-2 text-green-600 font-semibold">
-                    <span className="text-lg leading-none">✓</span>
+                    <span className="text-lg leading-none">Ɵ?"</span>
                     {nameValidation.message || "Nombre disponible"}
                   </p>
                 )}
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1 block">Edad minima *</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 block">Edad minima *</label>
               <input
                 type="number"
                 value={values.edadMinima}
                 onChange={(e) => handleChange("edadMinima", e.target.value)}
                 onBlur={() => handleBlur("edadMinima")}
                 placeholder="Ej: 10"
-                className={`w-full border rounded-xl px-4 py-3 text-sm ${
-                  errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300"
+                className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
+                  errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
               {values.edadMinima &&
@@ -333,16 +333,16 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 )}
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1 block">Edad maxima *</label>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700 block">Edad maxima *</label>
               <input
                 type="number"
                 value={values.edadMaxima}
                 onChange={(e) => handleChange("edadMaxima", e.target.value)}
                 onBlur={() => handleBlur("edadMaxima")}
                 placeholder="Ej: 15"
-                className={`w-full border rounded-xl px-4 py-3 text-sm ${
-                  errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300"
+                className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
+                  errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
               {values.edadMinima &&
@@ -354,8 +354,8 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 )}
             </div>
 
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+            <div className="md:col-span-2 lg:col-span-3 space-y-2">
+              <label className="text-sm font-semibold text-gray-700 block">
                 Descripcion *
               </label>
               <textarea
@@ -364,55 +364,59 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 onBlur={() => handleBlur("descripcion")}
                 placeholder="Breve descripcion..."
                 maxLength={200}
-                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none ${
-                  errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300"
+                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
+                  errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
-              <div className="flex justify-between text-xs mt-1 text-gray-600">
+              <div className="flex justify-between text-xs text-gray-600">
                 <span>Maximo 200 caracteres</span>
                 <span>{descripcionLength}/200</span>
               </div>
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-sm font-semibold text-gray-700 mb-2">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">
                 Subir imagen {shouldRequireFile ? "*" : "(opcional en edicion)"}
               </label>
-              <label className="cursor-pointer bg-[#74D5F4] text-white px-5 py-2.5 rounded-lg text-sm w-fit">
-                Elegir archivo
-                <input
-                  type="file"
-                  name="archivo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              <span className="text-xs mt-2 text-gray-600 truncate">{fileName}</span>
-              <span className="text-xs text-gray-500 mt-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="cursor-pointer bg-[#74D5F4] text-white px-4 py-2 rounded-lg text-sm shadow-sm hover:bg-[#5fc4e3] transition">
+                  Elegir archivo
+                  <input
+                    type="file"
+                    name="archivo"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-xs text-gray-600 truncate">{fileName}</span>
+              </div>
+              <span className="text-xs text-gray-500">
                 Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se mantiene la actual.
               </span>
               {previewUrl && (
-                <img
-                  src={previewUrl}
-                  alt="Vista previa"
-                  className="mt-2 w-32 h-32 object-cover rounded-lg border"
-                />
+                <div className="w-full h-32 rounded-lg border overflow-hidden">
+                  <img
+                    src={previewUrl}
+                    alt="Vista previa"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               )}
               {values.archivo && values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
-                <p className="text-red-500 text-xs mt-1">
+                <p className="text-red-500 text-xs">
                   Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
                 </p>
               )}
             </div>
 
             {!isNew && (
-              <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1 block">Estado *</label>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">Estado *</label>
                 <select
                   value={values.estado}
                   onChange={(e) => handleChange("estado", e.target.value)}
-                  className="w-full border rounded-xl px-4 py-3 text-sm"
+                  className="w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 >
                   <option value="Activo">Activo</option>
                   <option value="Inactivo">Inactivo</option>
@@ -422,33 +426,38 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
           </div>
 
           <div
-            className={`flex items-center gap-3 mt-6 p-4 rounded-lg ${
-              values.publicar ? "bg-green-50 border border-green-200" : "bg-gray-50"
+            className={`mt-3 p-4 rounded-lg border flex items-start gap-3 ${
+              values.publicar ? "bg-green-50 border-green-200" : "bg-gray-50"
             }`}
           >
             <input
               type="checkbox"
               checked={values.publicar}
               onChange={(e) => handleChange("publicar", e.target.checked)}
-              className="w-4 h-4"
+              className="mt-1 w-4 h-4"
             />
-            <label className="text-sm">
-              {values.publicar ? "PUBLICADA EN LANDING" : "Publicar categoria inmediatamente"}
-            </label>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-800">
+                {values.publicar ? "Publicada en landing" : "Publicar categoria inmediatamente"}
+              </p>
+              <p className="text-xs text-gray-600">
+                Al activarlo la categoria se mostrara en la landing.
+              </p>
+            </div>
           </div>
 
-          <div className="flex justify-end gap-4 mt-10">
+          <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300"
+              className="px-6 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold border border-gray-300 shadow-sm transition"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70"
+              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70 shadow-sm"
             >
               {isSubmitting ? "Guardando..." : isNew ? "Crear Categoria" : "Actualizar Categoria"}
             </button>

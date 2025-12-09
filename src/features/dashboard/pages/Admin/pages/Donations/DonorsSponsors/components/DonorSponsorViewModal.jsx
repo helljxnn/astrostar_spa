@@ -23,8 +23,26 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
   const isJuridica = donorData.tipoPersona === "Juridica";
   const isSponsor = donorData.tipo === "Patrocinador";
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "No especificado";
+    const date = new Date(dateString);
+    if (isNaN(date)) return "No especificado";
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   const baseNombre = isJuridica ? donorData.razonSocial || donorData.nombre : donorData.nombreCompleto || donorData.nombre;
   const baseIdent = isJuridica ? donorData.nit || donorData.identificacion : donorData.numeroDocumento || donorData.identificacion;
+  const creationDate = donorData.createdAt;
+  const updateDate = donorData.updatedAt;
+  const statusDate =
+    donorData.statusAssignedAt ||
+    donorData.estadoAsignado ||
+    donorData.updatedAt ||
+    donorData.createdAt;
 
   const fields = [
     { label: "Tipo", value: donorData.tipo },
@@ -92,6 +110,29 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
                   />
                 ))}
               </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-6 p-5 bg-gray-50 rounded-xl border border-gray-100"
+              >
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Informacion del Sistema</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Fecha de Creacion:</span>
+                    <p className="text-gray-800">{formatDate(creationDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Ultima Actualizacion:</span>
+                    <p className="text-gray-800">{formatDate(updateDate)}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Estado Asignado:</span>
+                    <p className="text-gray-800">{formatDate(statusDate)}</p>
+                  </div>
+                </div>
+              </motion.div>
             </div>
 
             {/* Footer */}
