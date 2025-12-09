@@ -3,16 +3,14 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import es from "date-fns/locale/es";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaLanguage, FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
+import { FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../../Styles/calendarCustomevents.css";
 import { EventModal } from "./EventModal";
 import EventActionModal from "./EventActionModal";
 import EventRegistrationOptionsModal from "../registration/EventRegistrationOptionsModal";
-import EventRegistrationFormModal from "../registration/EventRegistrationFormModal";
+import { TeamRegistrationFormModal } from "../registration";
 import ViewRegistrationsModal from "../registration/ViewRegistrationsModal";
-import EnglishRegistrationModal from "../english/EnglishRegistrationModal";
-import EnglishRegistrationFormModal from "../english/EnglishRegistrationFormModal";
 
 import DayEventsModal from "./DayEventsModal";
 import {
@@ -122,28 +120,35 @@ const EventsCalendar = forwardRef(function EventsCalendar({
 
   // Manejar click en acciones de evento
   const handleEventActionClick = (e, actionType, event) => {
+    // Verificar que el elemento existe antes de obtener su posición
+    if (!e.currentTarget) {
+      console.error('El elemento currentTarget es null');
+      return;
+    }
+    
     const rect = e.currentTarget.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const modalWidth = 220;
     const modalHeight = 150;
 
-    // Determinar si estamos en la penúltima fila del calendario
-    const calendarRect = document
-      .querySelector(".rbc-month-view")
-      .getBoundingClientRect();
-    const rowHeight = calendarRect.height / 6; // Aproximadamente 6 filas en vista mensual
-    const isInPenultimateRow =
-      rect.top > calendarRect.top + rowHeight * 4 &&
-      rect.top < calendarRect.top + rowHeight * 5;
-
     // Posición predeterminada (abajo del botón)
     let top = rect.bottom + 5;
     let left = rect.left;
 
-    // Si estamos en la penúltima fila, mostrar el modal arriba
-    if (isInPenultimateRow) {
-      top = rect.top - modalHeight - 5;
+    // Determinar si estamos en la penúltima fila del calendario (solo para vista mensual)
+    const calendarMonthView = document.querySelector(".rbc-month-view");
+    if (calendarMonthView) {
+      const calendarRect = calendarMonthView.getBoundingClientRect();
+      const rowHeight = calendarRect.height / 6; // Aproximadamente 6 filas en vista mensual
+      const isInPenultimateRow =
+        rect.top > calendarRect.top + rowHeight * 4 &&
+        rect.top < calendarRect.top + rowHeight * 5;
+
+      // Si estamos en la penúltima fila, mostrar el modal arriba
+      if (isInPenultimateRow) {
+        top = rect.top - modalHeight - 5;
+      }
     }
 
     // Ajustar posición para evitar que se corte
@@ -171,8 +176,21 @@ const EventsCalendar = forwardRef(function EventsCalendar({
   // Componente de evento con botones mejorados
   const CustomEvent = ({ event }) => {
     const handleActionClick = (e, actionType) => {
+      // Detener la propagación inmediatamente
       e.stopPropagation();
-      handleEventActionClick(e, actionType, event);
+      e.preventDefault();
+      
+      // Guardar la referencia del elemento antes de que pueda ser null
+      const target = e.currentTarget;
+      if (!target) return;
+      
+      // Crear un nuevo evento sintético con el target guardado
+      const syntheticEvent = {
+        ...e,
+        currentTarget: target,
+      };
+      
+      handleEventActionClick(syntheticEvent, actionType, event);
     };
 
     const isMonthView = view === "month";
@@ -575,15 +593,7 @@ const EventsCalendar = forwardRef(function EventsCalendar({
     mode: "register",
   });
 
-  // Estados para modales de inglés
-  const [englishModal, setEnglishModal] = useState({
-    isOpen: false,
-    position: null,
-  });
-  const [englishFormModal, setEnglishFormModal] = useState({
-    isOpen: false,
-    action: "register",
-  });
+
 
   // Estado para modal de "ver más eventos"
   const [dayEventsModal, setDayEventsModal] = useState({
@@ -642,43 +652,7 @@ const EventsCalendar = forwardRef(function EventsCalendar({
     }
   };
 
-  // Manejar click del botón inglés
-  const handleEnglishClick = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const modalWidth = 220;
-    const modalHeight = 150;
 
-    let top = rect.bottom + 5;
-    let left = rect.left;
-
-    // Ajustar posición para evitar que se corte
-    if (left + modalWidth > viewportWidth) {
-      left = rect.right - modalWidth;
-    }
-
-    if (top + modalHeight > viewportHeight) {
-      top = rect.top - modalHeight - 5;
-    }
-
-    if (left < 10) left = 10;
-    if (top < 10) top = rect.bottom + 5;
-
-    setEnglishModal({ isOpen: true, position: { top, left } });
-  };
-
-  // Manejar acciones del modal de inglés
-  const handleEnglishAction = (action) => {
-    setEnglishModal({ isOpen: false, position: null });
-
-    setTimeout(() => {
-      setEnglishFormModal({
-        isOpen: true,
-        action: action,
-      });
-    }, 100);
-  };
 
   // Cerrar modales
   const closeAllModals = () => {
@@ -699,8 +673,6 @@ const EventsCalendar = forwardRef(function EventsCalendar({
       eventId: null,
       mode: "register",
     });
-    setEnglishModal({ isOpen: false, position: null });
-    setEnglishFormModal({ isOpen: false, action: "register" });
     setDayEventsModal({ isOpen: false, date: null, events: [] });
   };
 
@@ -719,20 +691,8 @@ const EventsCalendar = forwardRef(function EventsCalendar({
         
         {/* Controls Container - Responsive en múltiples breakpoints */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full xl:w-auto">
-          {/* Primera línea en móvil: Inglés + Navegación */}
+          {/* Botones de navegación */}
           <div className="flex items-center gap-2 w-full md:w-auto">
-            {/* Botón Inglés */}
-            <motion.button
-              onClick={handleEnglishClick}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.98 }}
-              className="bg-primary-blue px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-purple transition-colors flex-shrink-0"
-            >
-              <FaLanguage className="text-sm sm:text-base text-white" />
-              <span className="text-white font-medium text-xs sm:text-sm">Inglés</span>
-            </motion.button>
-
-            {/* Botones de navegación */}
             <div className="flex items-center justify-center flex-1 md:flex-initial">
               <motion.button
                 onClick={handleToday}
@@ -884,7 +844,7 @@ const EventsCalendar = forwardRef(function EventsCalendar({
       {/* Modal de inscripción con formulario */}
       <AnimatePresence>
         {registrationFormModal.isOpen && (
-          <EventRegistrationFormModal
+          <TeamRegistrationFormModal
             isOpen={registrationFormModal.isOpen}
             onClose={closeAllModals}
             eventName={registrationFormModal.eventName}
@@ -895,28 +855,6 @@ const EventsCalendar = forwardRef(function EventsCalendar({
             onSuccess={() => {
               if (onRefresh) onRefresh();
             }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Modales de Inglés */}
-      <AnimatePresence>
-        {englishModal.isOpen && (
-          <EnglishRegistrationModal
-            isOpen={englishModal.isOpen}
-            onClose={closeAllModals}
-            onAction={handleEnglishAction}
-            position={englishModal.position}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {englishFormModal.isOpen && (
-          <EnglishRegistrationFormModal
-            isOpen={englishFormModal.isOpen}
-            onClose={closeAllModals}
-            action={englishFormModal.action}
           />
         )}
       </AnimatePresence>

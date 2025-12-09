@@ -5,7 +5,7 @@ import EventsCalendar from "./components/eventManage/EventsCalendar";
 import EventReportGenerator from "./components/eventManage/EventReportGenerator";
 import EventSearchBar from "./components/eventManage/EventSearchBar";
 import EventSearchList from "./components/eventManage/EventSearchList";
-import EventRegistrationFormModal from "./components/registration/EventRegistrationFormModal";
+import { TeamRegistrationFormModal } from "./components/registration";
 import ViewRegistrationsModal from "./components/registration/ViewRegistrationsModal";
 import { showDeleteAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 import { useEvents } from "./hooks/useEvents";
@@ -387,7 +387,7 @@ const Event = () => {
       )}
 
       {registrationFormModal.isOpen && (
-        <EventRegistrationFormModal
+        <TeamRegistrationFormModal
           isOpen={registrationFormModal.isOpen}
           onClose={closeAllModals}
           eventName={registrationFormModal.eventName}

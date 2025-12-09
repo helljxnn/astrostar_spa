@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import RegistrationsService from "../../services/RegistrationsService";
 import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
+import ViewAthletesModal from "./ViewAthletesModal";
 
 const ViewRegistrationsModal = ({ 
   isOpen, 
@@ -27,7 +28,7 @@ const ViewRegistrationsModal = ({
 
   // Cargar inscripciones cuando se abre el modal
   useEffect(() => {
-    if (isOpen && eventId && isTeamType) {
+    if (isOpen && eventId) {
       loadRegistrations();
     }
   }, [isOpen, eventId, isTeamType]);
@@ -35,7 +36,12 @@ const ViewRegistrationsModal = ({
   const loadRegistrations = async () => {
     setLoading(true);
     try {
-      const response = await RegistrationsService.getEventRegistrations(eventId);
+      let response;
+      if (isTeamType) {
+        response = await RegistrationsService.getEventRegistrations(eventId);
+      } else {
+        response = await RegistrationsService.getEventAthleteRegistrations(eventId);
+      }
       
       if (response.success && response.data) {
         setRegistrations(response.data);
@@ -50,6 +56,18 @@ const ViewRegistrationsModal = ({
 
   if (!isOpen) return null;
   
+  // Si no es tipo Equipos, mostrar el modal de deportistas
+  if (!isTeamType) {
+    return (
+      <ViewAthletesModal
+        isOpen={isOpen}
+        onClose={onClose}
+        eventName={eventName}
+        eventId={eventId}
+      />
+    );
+  }
+  
   // Transformar inscripciones a formato del componente
   const allItems = isTeamType 
     ? registrations
@@ -63,25 +81,44 @@ const ViewRegistrationsModal = ({
           registrationId: reg.id,
           status: reg.status,
         }))
-    : []; // Por ahora solo soportamos equipos
+    : registrations
+        .filter(reg => reg.athlete)
+        .map(reg => ({
+          id: reg.athlete.id,
+          nombre: `${reg.athlete.user?.firstName || ''} ${reg.athlete.user?.lastName || ''}`.trim() || 'Sin nombre',
+          identificacion: reg.athlete.user?.identification || 'N/A',
+          edad: reg.athlete.user?.age || 'N/A',
+          categorias: reg.athlete.inscriptions?.map(i => i.sportsCategory?.nombre).filter(Boolean) || [],
+          registrationId: reg.id,
+          status: reg.status,
+        }));
 
-  // Filtrar por sección (fundación o temporal)
+  // Filtrar por sección (fundación o temporal para equipos, todos para deportistas)
   const filteredBySection = isTeamType
     ? allItems.filter(item => 
         selectedSection === "fundacion" 
           ? item.teamType === "Fundacion" 
           : item.teamType === "Temporal"
       )
-    : allItems;
+    : allItems; // Para deportistas, mostrar todos
 
   // Filtrar por búsqueda
   const filteredItems = useMemo(() => {
     if (!searchTerm) return filteredBySection;
-    return filteredBySection.filter(item =>
-      item.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.categoria.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [filteredBySection, searchTerm]);
+    return filteredBySection.filter(item => {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesName = item.nombre.toLowerCase().includes(searchLower);
+      
+      if (isTeamType) {
+        const matchesCategory = item.categoria?.toLowerCase().includes(searchLower);
+        return matchesName || matchesCategory;
+      } else {
+        const matchesId = item.identificacion?.toLowerCase().includes(searchLower);
+        const matchesCategory = item.categorias?.some(cat => cat.toLowerCase().includes(searchLower));
+        return matchesName || matchesId || matchesCategory;
+      }
+    });
+  }, [filteredBySection, searchTerm, isTeamType]);
 
   // Estadísticas
   const stats = {
@@ -256,32 +293,83 @@ const ViewRegistrationsModal = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow"
+                  className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-purple/30 transition-all"
                 >
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                        <h3 className="font-semibold text-gray-900 text-lg mb-2">
                           {item.nombre}
                         </h3>
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
-                          {item.categoria}
-                        </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isTeamType ? (
+                            <>
+                              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                item.teamType === 'Fundacion' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : 'bg-orange-100 text-orange-700'
+                              }`}>
+                                {item.teamType === 'Fundacion' ? 'Fundación' : 'Temporal'}
+                              </span>
+                              {item.categoria && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
+                                  {item.categoria}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {item.categorias && item.categorias.length > 0 && (
+                                <>
+                                  <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
+                                    {item.categorias[0]}
+                                  </span>
+                                  {item.categorias.length > 1 && (
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">
+                                      +{item.categorias.length - 1}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      {isTeamType && item.teamType === "Temporal" && selectedSection === "fundacion" && (
-                        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                          Temporal
-                        </span>
-                      )}
                     </div>
 
                     {isTeamType ? (
-                      <div className="flex items-center gap-2 text-gray-600 mt-3">
-                        <FaUserFriends className="w-4 h-4" />
-                        <span className="text-sm">{item.miembros} miembros</span>
+                      <div className="flex items-center gap-2 text-gray-600 mt-3 pt-3 border-t border-gray-100">
+                        <FaUserFriends className="w-4 h-4 text-indigo-600" />
+                        <span className="text-sm">
+                          <span className="font-semibold text-indigo-600">{item.miembros}</span> miembros
+                        </span>
                       </div>
                     ) : (
-                      <div className="text-gray-600 text-sm mt-2">
-                        {item.edad} años
+                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                        <div className="flex items-center gap-2 text-gray-600 text-sm">
+                          <span className="font-medium">ID:</span>
+                          <span>{item.identificacion}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600 text-sm">
+                          <span className="font-medium">Edad:</span>
+                          <span>{item.edad} años</span>
+                        </div>
+                        {item.categorias && item.categorias.length > 0 && (
+                          <div className="flex gap-1 flex-wrap mt-2">
+                            {item.categorias.slice(0, 2).map((cat, idx) => (
+                              <span 
+                                key={idx}
+                                className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                            {item.categorias.length > 2 && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                +{item.categorias.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </motion.div>

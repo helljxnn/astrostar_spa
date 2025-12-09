@@ -45,13 +45,10 @@ function hideTooltip() {
 }
 
 export function initInstantTooltips() {
-  console.log('🎯 Tooltips instantáneos inicializados');
-
   const handleMouseOver = (e) => {
     const button = e.target.closest('button[disabled][title]');
     if (button && button.hasAttribute('title')) {
       const title = button.getAttribute('title');
-      console.log('✅ Tooltip detectado:', title);
       if (title) {
         button.setAttribute('data-original-title', title);
         button.removeAttribute('title');
@@ -73,11 +70,8 @@ export function initInstantTooltips() {
   document.addEventListener('mouseover', handleMouseOver);
   document.addEventListener('mouseout', handleMouseOut);
 
-  console.log('📌 Event listeners agregados');
-
   // Retornar función de limpieza
   return () => {
-    console.log('🧹 Limpiando tooltips');
     document.removeEventListener('mouseover', handleMouseOver);
     document.removeEventListener('mouseout', handleMouseOut);
     if (tooltipElement && tooltipElement.parentNode) {

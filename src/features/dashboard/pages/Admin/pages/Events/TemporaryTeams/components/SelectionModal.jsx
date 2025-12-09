@@ -56,293 +56,201 @@ const SelectionModal = ({
         response = await TeamsService.getAthletes()
       }
       
-      console.log('📥 Respuesta del servicio:', response)
-      
       // FIX CRÍTICO: Asegurar que siempre tengamos un array
       if (response && response.success && Array.isArray(response.data)) {
-        console.log('✅ Datos cargados:', response.data.length, 'elementos')
         setData(response.data)
       } else {
-        console.warn('⚠️ Respuesta inválida o sin datos:', response)
         setData([])
       }
     } catch (error) {
-      console.error('❌ Error cargando datos:', error)
       setData([])
     } finally {
       setLoading(false)
     }
   }
 
+  // Determinar el tipo de equipo actual basado en el contexto
   const currentTeamType = useMemo(() => {
     if (forceFoundationType) return "fundacion"
     if (teamType) return teamType
-    if (selectedItems.length > 0) return selectedItems[0]?.type
     return null
-  }, [teamType, selectedItems, forceFoundationType])
+  }, [forceFoundationType, teamType])
 
+  // Agrupar datos por tipo (fundación o temporal)
   const groupedData = useMemo(() => {
     if (!data || data.length === 0) return []
-    
-    // Si forceFoundationType está activo, solo mostrar fundación
-    if (forceFoundationType) {
-      const fundacion = data.filter(item => item.type === "fundacion")
-      return fundacion.length > 0 ? [{
-        source: "fundacion",
-        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
-        items: fundacion
-      }] : []
-    }
-    
-    const fundacion = data.filter(item => item.type === "fundacion")
-    const temporal = data.filter(item => item.type === "temporal")
-    
-    const groups = []
-    
-    if (fundacion.length > 0) {
-      groups.push({
-        source: "fundacion",
-        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
-        items: fundacion
-      })
-    }
-    
-    if (temporal.length > 0) {
-      groups.push({
-        source: "temporal", 
-        sourceLabel: mode === "trainer" ? "Entrenadores Temporales" : "Deportistas Temporales",
-        items: temporal
-      })
-    }
-    
-    return groups
-  }, [data, mode, forceFoundationType])
 
-  // Establecer el tab inicial basado en el tipo de equipo
+    const groups = [
+      {
+        source: "fundacion",
+        sourceLabel: mode === "trainer" ? "Entrenadores de Fundación" : "Deportistas de Fundación",
+        items: data.filter((item) => item.type === "fundacion"),
+      },
+      {
+        source: "temporal",
+        sourceLabel: mode === "trainer" ? "Entrenadores Temporales" : "Deportistas Temporales",
+        items: data.filter((item) => item.type === "temporal"),
+      },
+    ]
+
+    return groups
+  }, [data, mode])
+
+  // Establecer el tab activo inicial basado en initialTabType
   useEffect(() => {
-    if (isOpen && groupedData.length > 0 && initialTabType) {
-      const tabIndex = groupedData.findIndex(group => group.source === initialTabType)
-      if (tabIndex !== -1 && activeTab !== tabIndex) {
+    if (isOpen && initialTabType && groupedData.length > 0) {
+      const tabIndex = groupedData.findIndex(g => g.source === initialTabType)
+      if (tabIndex !== -1) {
         setActiveTab(tabIndex)
       }
     }
-  }, [isOpen, groupedData, initialTabType, activeTab])
+  }, [isOpen, initialTabType, groupedData])
 
-  // Detectar la categoría seleccionada automáticamente
-  const autoSelectedCategory = useMemo(() => {
-    if (mode !== "athletes") return null
-    if (selectedItems.length === 0) return null
-    
-    // Buscar el primer deportista de fundación seleccionado
-    const firstFoundationAthlete = selectedItems.find(item => item.type === "fundacion" && item.categoria)
-    return firstFoundationAthlete?.categoria || null
-  }, [selectedItems, mode])
+  // Obtener categorías únicas para el filtro
+  const categories = useMemo(() => {
+    if (mode !== "athletes") return []
+    const activeGroup = groupedData[activeTab]
+    if (!activeGroup || !activeGroup.items) return []
 
-  // Actualizar el filtro de categoría cuando se detecta una categoría seleccionada
-  useEffect(() => {
-    if (autoSelectedCategory && selectedCategory !== autoSelectedCategory) {
-      setSelectedCategory(autoSelectedCategory)
-    } else if (!autoSelectedCategory && selectedCategory !== "") {
-      // Si no hay categoría seleccionada, limpiar el filtro
-      setSelectedCategory("")
-    }
-  }, [autoSelectedCategory])
+    const cats = activeGroup.items
+      .filter((item) => item.type === "fundacion" && item.categoria)
+      .map((item) => item.categoria)
+    return [...new Set(cats)].sort()
+  }, [groupedData, activeTab, mode])
 
-  // ✅ CORRECTO: Usar solo los datos del tab actual
-  const currentGroupData = useMemo(() => {
-    const groupData = groupedData[activeTab]?.items || []
-    return groupData
-  }, [groupedData, activeTab])
-
-  const availableItems = useMemo(() => {
-    let items = currentGroupData
-    
-    // Solo filtrar si hay deportistas de fundación seleccionados con categoría
-    const hasFoundationAthletesSelected = selectedItems.some(item => item.type === "fundacion" && item.categoria)
-    
-    if (mode === "athletes" && autoSelectedCategory && hasFoundationAthletesSelected && groupedData[activeTab]?.source === "fundacion") {
-      items = items.filter(item => {
-        // Mantener los ya seleccionados
-        if (selectedItems.some(s => s.id === item.id)) return true
-        // Solo mostrar deportistas de la misma categoría
-        return item.categoria === autoSelectedCategory
-      })
-    }
-    
-    return items
-  }, [currentGroupData, mode, autoSelectedCategory, groupedData, activeTab, selectedItems])
-
+  // Filtrar datos según búsqueda y categoría
   const filteredItems = useMemo(() => {
-    let filtered = availableItems
+    const activeGroup = groupedData[activeTab]
+    if (!activeGroup || !activeGroup.items) return []
 
+    let filtered = activeGroup.items
+
+    // Filtro de búsqueda
     if (searchTerm) {
-      const query = searchTerm.toLowerCase()
-      filtered = filtered.filter(item => 
-        item.name?.toLowerCase().includes(query) ||
-        item.identification?.toLowerCase().includes(query) ||
-        (item.categoria && item.categoria.toLowerCase().includes(query))
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(search) ||
+          item.identification?.toLowerCase().includes(search) ||
+          (mode === "athletes" && item.categoria?.toLowerCase().includes(search))
       )
     }
 
-    if (mode === "athletes" && selectedCategory) {
-      filtered = filtered.filter((item) => {
-        if (item.type === "temporal") return true
-        return item.categoria === selectedCategory
-      })
+    // Filtro de categoría (solo para deportistas de fundación)
+    if (selectedCategory && mode === "athletes") {
+      filtered = filtered.filter((item) => item.categoria === selectedCategory)
     }
 
-    console.log('🔍 Elementos filtrados:', filtered)
+    // Excluir entrenador si se proporciona excludeTrainerId
+    if (mode === "trainer" && excludeTrainerId) {
+      filtered = filtered.filter((item) => item.id !== excludeTrainerId)
+    }
+
     return filtered
-  }, [availableItems, searchTerm, selectedCategory, mode])
+  }, [groupedData, activeTab, searchTerm, selectedCategory, mode, excludeTrainerId])
 
-  const totalRows = filteredItems.length
-  const totalPages = Math.ceil(totalRows / rowsPerPage)
-  const startIndex = (currentPage - 1) * rowsPerPage
-  const paginatedData = filteredItems.slice(startIndex, startIndex + rowsPerPage)
+  // Paginación
+  const paginatedData = useMemo(() => {
+    const startIndex = (currentPage - 1) * rowsPerPage
+    const endIndex = startIndex + rowsPerPage
+    return filteredItems.slice(startIndex, endIndex)
+  }, [filteredItems, currentPage, rowsPerPage])
 
-  const prepareItemData = (item) => {
-    if (mode === "athletes" && item.type === "temporal") {
-      return {
-        ...item,
-        categoria: undefined
-      }
-    }
-    return item
+  const totalPages = Math.ceil(filteredItems.length / rowsPerPage)
+
+  // Verificar si un item está seleccionado
+  const isSelected = (item) => {
+    return selectedItems.some((selected) => selected.id === item.id)
   }
 
+  // Verificar si un item está disponible para selección
   const isItemAvailable = (item) => {
-    // Si es el entrenador a excluir, no está disponible
-    if (excludeTrainerId && item.id === excludeTrainerId) return false
-    
-    // Si ya está seleccionado, está disponible
-    if (selectedItems.some(s => s.id === item.id)) return true
-    
-    // Si hay un tipo de equipo definido desde props, solo permitir ese tipo
-    if (currentTeamType && item.type !== currentTeamType) return false
-    
-    // Si no hay selecciones, todo está disponible
-    if (selectedItems.length === 0) {
-      // EXCEPCIÓN: Si viene currentCategoria de props (editando equipo), aplicar restricción
-      if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
-        return item.categoria === currentCategoria
-      }
-      return true
+    // Si no hay restricción de tipo, todos están disponibles
+    if (!currentTeamType) return true
+
+    // Si hay restricción de tipo, solo permitir items del mismo tipo
+    if (item.type !== currentTeamType) return false
+
+    // Para deportistas de fundación, verificar categoría
+    if (mode === "athletes" && item.type === "fundacion" && currentCategoria) {
+      return item.categoria === currentCategoria
     }
-    
-    // Si hay elementos seleccionados, solo permitir del mismo tipo
-    const firstSelectedType = selectedItems[0].type
-    if (item.type !== firstSelectedType) return false
-    
-    // Para deportistas de fundación, verificar categoría solo si hay deportistas de fundación seleccionados
-    if (mode === "athletes" && item.type === "fundacion") {
-      const hasFoundationAthletesSelected = selectedItems.some(s => s.type === "fundacion" && s.categoria)
-      if (hasFoundationAthletesSelected && autoSelectedCategory && item.categoria) {
-        return item.categoria === autoSelectedCategory
-      }
-    }
-    
+
     return true
   }
 
   const handleSelect = (item) => {
-    if (!isItemAvailable(item)) return
-
-    const preparedItem = prepareItemData(item)
-
     if (isMultiSelect) {
-      const isSelected = selectedItems.some((s) => s.id === preparedItem.id)
+      const isCurrentlySelected = isSelected(item)
       let newSelection
 
-      if (isSelected) {
-        newSelection = selectedItems.filter((s) => s.id !== preparedItem.id)
+      if (isCurrentlySelected) {
+        newSelection = selectedItems.filter((selected) => selected.id !== item.id)
       } else {
-        newSelection = [...selectedItems, preparedItem]
+        newSelection = [...selectedItems, item]
       }
 
       onSelect(newSelection)
     } else {
-      // Para selección única (entrenadores)
-      const isAlreadySelected = selectedItems.some((s) => s.id === preparedItem.id)
-      
-      if (isAlreadySelected) {
-        // Si ya está seleccionado, deseleccionar (enviar null)
-        onSelect(null)
-      } else {
-        // Si no está seleccionado, seleccionar
-        onSelect(preparedItem)
-      }
+      onSelect([item])
       onClose()
     }
   }
 
-  const handleConfirm = () => {
-    onClose()
-  }
-
-  const isSelected = (item) => {
-    // Solo mostrar como seleccionado si el item está en selectedItems Y es del mismo tipo
-    return selectedItems.some((s) => s.id === item.id && s.type === item.type)
-  }
-
   const handleTabChange = (index) => {
     setActiveTab(index)
+    setCurrentPage(1)
     setSearchTerm("")
     setSelectedCategory("")
-    setCurrentPage(1)
   }
 
-  const getCurrentTeamInfo = () => {
-    if (!currentTeamType) return { type: null, category: null }
-    
-    const type = currentTeamType === "fundacion" ? "Fundación" : "Temporales"
-    const category = currentCategoria || null
-    return { type, category }
-  }
-
-  const getAvailabilityStats = () => {
-    const totalInCurrentTab = currentGroupData.length
-    const availableCount = availableItems.length
-    const unavailableCount = totalInCurrentTab - availableCount
-
-    return { totalInCurrentTab, availableCount, unavailableCount }
+  const handleConfirm = () => {
+    onSelect(selectedItems)
+    onClose()
   }
 
   if (!isOpen) return null
 
-  const teamInfo = getCurrentTeamInfo()
-  const availabilityStats = getAvailabilityStats()
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        onClick={onClose}
+      >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
+          <div className="bg-gradient-to-r from-primary-purple to-purple-600 text-white p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {icon}
-                <div>
-                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
-                  <p className="text-sm opacity-80">
-                    {data.length} elementos cargados • {filteredItems.length} filtrados
-                  </p>
-                </div>
+                <h2 className="text-2xl font-bold">{title}</h2>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
-                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              >
+                <X className="w-6 h-6" />
               </button>
             </div>
+            {isMultiSelect && (
+              <p className="mt-2 text-purple-100">
+                {selectedItems.length} seleccionado{selectedItems.length !== 1 ? "s" : ""}
+              </p>
+            )}
           </div>
 
-          {/* Tabs de fuentes */}
-          {groupedData && groupedData.length > 1 && (
-            <div className="border-b border-gray-200 bg-gray-50">
+          {/* Tabs */}
+          {groupedData.length > 1 && (
+            <div className="border-b border-gray-200">
               <div className="flex">
                 {groupedData.map((group, index) => {
                   // Verificar si este tab debe estar deshabilitado
@@ -645,7 +553,7 @@ const SelectionModal = ({
             </div>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </AnimatePresence>
   )
 }

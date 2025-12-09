@@ -102,7 +102,7 @@ const temporaryPersonValidationRules = {
   },
   personType: (value) => {
     if (!value) return "El tipo de persona es requerido";
-    const validTypes = ['Deportista', 'Entrenador', 'Participante'];
+    const validTypes = ['Deportista', 'Entrenador'];
     if (!validTypes.includes(value)) return "Tipo de persona no válido";
     return "";
   },
@@ -223,7 +223,7 @@ const TemporaryPersonModal = ({
       team: "",
       category: "",
       documentTypeId: "",
-      personType: "Participante",
+      personType: "Deportista",
       status: "Active",
       age: ""
     },
@@ -257,12 +257,8 @@ const TemporaryPersonModal = ({
       handleChange(name, value);
       handleChange("age", age);
     } else if (name === "personType") {
-      // Al cambiar el tipo de persona, limpiar equipo y categoría si no aplican
+      // Al cambiar el tipo de persona, solo actualizar el valor
       handleChange(name, value);
-      if (value === 'Participante') {
-        handleChange("team", '');
-        handleChange("category", '');
-      }
     } else {
       handleChange(name, value);
     }
@@ -321,7 +317,7 @@ const TemporaryPersonModal = ({
         team: person.team || "",
         category: person.category || "",
         documentTypeId: person.documentTypeId?.toString() || "",
-        personType: person.personType || "Participante",
+        personType: person.personType || "Deportista",
         status: person.status || "Active",
         age: calculateAge(birthDate)
       });
@@ -440,7 +436,7 @@ const TemporaryPersonModal = ({
       team: "",
       category: "",
       documentTypeId: "",
-      personType: "Participante",
+      personType: "Deportista",
       status: "Active",
       age: ""
     });
@@ -705,7 +701,6 @@ const TemporaryPersonModal = ({
               placeholder="Seleccionar tipo"
               required={true}
               options={[
-                { value: "Participante", label: "Participante" },
                 { value: "Deportista", label: "Deportista" },
                 { value: "Entrenador", label: "Entrenador" },
               ]}
