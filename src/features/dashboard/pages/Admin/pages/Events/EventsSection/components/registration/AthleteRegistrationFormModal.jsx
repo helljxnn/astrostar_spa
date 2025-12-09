@@ -69,13 +69,13 @@ const AthleteRegistrationFormModal = ({
   }, [selectedAthletes]);
 
   const loadRegisteredAthletes = useCallback(async () => {
-    if (!event?.id || mode !== 'edit') return;
+    if (!event?.id) return;
     
     setLoading(true);
     try {
       const response = await RegistrationsService.getEventAthleteRegistrations(event.id);
       
-      if (response.success && response.data) {
+      if (response.success && Array.isArray(response.data)) {
         const registeredAthletes = response.data
           .filter(reg => reg.athlete)
           .map(reg => ({
@@ -88,11 +88,11 @@ const AthleteRegistrationFormModal = ({
       }
     } catch (error) {
       console.error('Error cargando deportistas inscritos:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los deportistas inscritos');
+      // No mostrar error si no hay deportistas inscritos, es normal
     } finally {
       setLoading(false);
     }
-  }, [event?.id, mode]);
+  }, [event?.id]);
 
   useEffect(() => {
     // Detectar si el evento cambió
@@ -105,13 +105,9 @@ const AthleteRegistrationFormModal = ({
         setSearchResults([]);
         lastEventIdRef.current = event.id;
         
-        if (mode === 'edit') {
-          hasLoadedRef.current = true;
-          loadRegisteredAthletes();
-        } else if (mode === 'register') {
-          setSelectedAthletes([]);
-          hasLoadedRef.current = true;
-        }
+        // Modo unificado: siempre cargar deportistas inscritos
+        hasLoadedRef.current = true;
+        loadRegisteredAthletes();
       }
     }
     
@@ -120,7 +116,7 @@ const AthleteRegistrationFormModal = ({
       hasLoadedRef.current = false;
       lastEventIdRef.current = null;
     }
-  }, [isOpen, event?.id, mode, loadRegisteredAthletes]);
+  }, [isOpen, event?.id, loadRegisteredAthletes]);
 
   useEffect(() => {
     // Búsqueda con debounce
@@ -169,128 +165,65 @@ const AthleteRegistrationFormModal = ({
       setLoading(true);
       setError(null);
 
-      if (mode === 'edit') {
-        // En modo editar: detectar cambios
-        const initialIds = initialAthletes.map(a => a.id);
-        const currentIds = selectedAthletes.map(a => a.id);
-        
-        // Deportistas nuevos a inscribir
-        const athletesToAdd = selectedAthletes.filter(a => !initialIds.includes(a.id));
-        
-        // Deportistas a quitar (cancelar inscripción)
-        const athletesToRemove = initialAthletes.filter(a => !currentIds.includes(a.id));
+      // Modo unificado: siempre detectar cambios
+      const initialIds = initialAthletes.map(a => a.id);
+      const currentIds = selectedAthletes.map(a => a.id);
+      
+      // Deportistas nuevos a inscribir
+      const athletesToAdd = selectedAthletes.filter(a => !initialIds.includes(a.id));
+      
+      // Deportistas a quitar (cancelar inscripción)
+      const athletesToRemove = initialAthletes.filter(a => !currentIds.includes(a.id));
 
-        // Cancelar inscripciones de deportistas quitados
-        if (athletesToRemove.length > 0) {
-          for (const athlete of athletesToRemove) {
-            if (athlete.registrationId) {
-              await RegistrationsService.cancelRegistration(athlete.registrationId);
-            }
+      // Cancelar inscripciones de deportistas quitados
+      if (athletesToRemove.length > 0) {
+        for (const athlete of athletesToRemove) {
+          if (athlete.registrationId) {
+            await RegistrationsService.cancelRegistration(athlete.registrationId);
           }
         }
-
-        // Inscribir deportistas nuevos
-        let response = { success: true };
-        if (athletesToAdd.length > 0) {
-          const athleteIdsToAdd = athletesToAdd.map(a => a.id);
-          
-          if (athleteIdsToAdd.length === 1) {
-            response = await RegistrationsService.registerAthlete({
-              serviceId: event.id,
-              athleteId: athleteIdsToAdd[0]
-            });
-          } else {
-            response = await RegistrationsService.registerAthletesBulk({
-              serviceId: event.id,
-              athleteIds: athleteIdsToAdd
-            });
-          }
-        }
-
-        if (response.success) {
-          showSuccessAlert(
-            'Cambios guardados', 
-            `Se actualizó la inscripción: ${athletesToAdd.length} agregados, ${athletesToRemove.length} removidos`
-          );
-          
-          if (onSuccess) onSuccess();
-          onClose();
-        }
-        
-        return;
       }
 
-      // Modo inscribir: inscribir todos los seleccionados
-      const athleteIds = selectedAthletes.map(a => a.id);
-      let response;
-      
-      if (athleteIds.length === 1) {
-        // Inscripción individual
-        response = await RegistrationsService.registerAthlete({
-          serviceId: event.id,
-          athleteId: athleteIds[0]
-        });
-      } else {
-        // Inscripción masiva
-        response = await RegistrationsService.registerAthletesBulk({
-          serviceId: event.id,
-          athleteIds: athleteIds
-        });
+      // Inscribir deportistas nuevos
+      let response = { success: true };
+      if (athletesToAdd.length > 0) {
+        const athleteIdsToAdd = athletesToAdd.map(a => a.id);
+        
+        if (athleteIdsToAdd.length === 1) {
+          response = await RegistrationsService.registerAthlete({
+            serviceId: event.id,
+            athleteId: athleteIdsToAdd[0]
+          });
+        } else {
+          response = await RegistrationsService.registerAthletesBulk({
+            serviceId: event.id,
+            athleteIds: athleteIdsToAdd
+          });
+        }
       }
 
       if (response.success) {
         // Verificar si hubo errores en la inscripción masiva
         const hasErrors = response.data?.errors && response.data.errors.length > 0;
-        const successful = response.data?.successful || 0;
+        const successful = response.data?.successful || athletesToAdd.length;
         const failed = response.data?.failed || 0;
 
         if (hasErrors && successful === 0) {
           // Todos fallaron
-          const errorMessages = response.data.errors.map(err => 
-            `${err.athleteName || `Deportista ${err.athleteId}`}: ${err.error}`
-          ).join('\n');
-          
-          setError(`No se pudo inscribir ningún deportista:\n${errorMessages}`);
+          setError(`No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`);
           showErrorAlert('Error', `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`);
-        } else if (hasErrors && successful > 0) {
-          // Algunos fallaron
-          const errorMessages = response.data.errors.map(err => 
-            `${err.athleteName || `Deportista ${err.athleteId}`}: ${err.error}`
-          ).join('\n');
-          
-          showSuccessAlert(
-            'Inscripción parcial',
-            `Se inscribieron ${successful} de ${successful + failed} deportistas. ${failed} fallaron.`
-          );
-          
-          // Resetear formulario
-          setSelectedAthletes([]);
-          setSearchTerm("");
-          
-          // Notificar éxito
-          if (onSuccess) {
-            onSuccess(response.data);
-          }
-          
-          // Cerrar modal
-          onClose();
         } else {
-          // Todos exitosos
-          showSuccessAlert(
-            'Deportistas inscritos',
-            response.message || `Se inscribieron ${selectedAthletes.length} deportista(s) exitosamente`
-          );
-          
-          // Resetear formulario
-          setSelectedAthletes([]);
-          setSearchTerm("");
-          
-          // Notificar éxito
-          if (onSuccess) {
-            onSuccess(response.data);
+          // Mensaje según los cambios realizados
+          if (athletesToAdd.length > 0 || athletesToRemove.length > 0) {
+            showSuccessAlert(
+              'Cambios guardados',
+              `Se actualizó la inscripción: ${athletesToAdd.length} agregados, ${athletesToRemove.length} removidos`
+            );
+          } else {
+            showSuccessAlert('Sin cambios', 'No se realizaron cambios en las inscripciones');
           }
           
-          // Cerrar modal
+          if (onSuccess) onSuccess(response.data);
           onClose();
         }
       } else {
@@ -346,7 +279,7 @@ const AthleteRegistrationFormModal = ({
             </button>
             <div>
               <h2 className="text-2xl font-bold">
-                {mode === 'edit' ? 'Editar' : 'Inscribir'} Deportistas
+                Gestionar Deportistas
               </h2>
               <p className="text-blue-100 mt-1">Evento: {event?.name}</p>
             </div>
@@ -632,13 +565,9 @@ const AthleteRegistrationFormModal = ({
                 ) : (
                   <>
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      {mode === 'edit' ? (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      ) : (
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      )}
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    {mode === 'edit' ? 'Guardar Cambios' : 'Inscribir'} {selectedAthletes.length > 0 && `(${selectedAthletes.length})`}
+                    Guardar {selectedAthletes.length > 0 && `(${selectedAthletes.length})`}
                   </>
                 )}
               </button>

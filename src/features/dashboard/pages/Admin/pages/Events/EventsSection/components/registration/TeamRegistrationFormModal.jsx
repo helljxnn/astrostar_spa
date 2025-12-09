@@ -53,13 +53,15 @@ const TeamRegistrationFormModal = ({
   };
 
   const loadRegisteredTeams = async () => {
-    if (!eventId || mode !== 'edit') return;
+    if (!eventId) {
+      return;
+    }
     
     setLoading(true);
     try {
       const response = await RegistrationsService.getEventRegistrations(eventId);
       
-      if (response.success && response.data) {
+      if (response.success && Array.isArray(response.data)) {
         const registeredTeams = response.data
           .filter(reg => reg.team)
           .map(reg => ({
@@ -72,7 +74,7 @@ const TeamRegistrationFormModal = ({
       }
     } catch (error) {
       console.error('Error cargando equipos inscritos:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los equipos inscritos');
+      // No mostrar error si no hay equipos inscritos, es normal
     } finally {
       setLoading(false);
     }
@@ -104,12 +106,13 @@ const TeamRegistrationFormModal = ({
   }, [searchTerm]);
 
   useEffect(() => {
-    if (isOpen && mode === 'edit' && eventId && isTeamType) {
+    // Modo unificado: siempre cargar equipos inscritos cuando se abre el modal
+    if (isOpen && eventId && isTeamType) {
       setTimeout(() => {
         loadRegisteredTeams();
       }, 200);
     }
-  }, [isOpen, mode, eventId, isTeamType]);
+  }, [isOpen, eventId, isTeamType]);
 
   if (!isOpen) return null;
   
@@ -157,51 +160,43 @@ const TeamRegistrationFormModal = ({
 
     setLoading(true);
     try {
-      if (mode === 'edit') {
-        // En modo editar: detectar cambios
-        const initialIds = initialTeams.map(t => t.id);
-        const currentIds = selectedTeams.map(t => t.id);
-        
-        // Equipos nuevos a inscribir
-        const teamsToAdd = selectedTeams.filter(t => !initialIds.includes(t.id));
-        
-        // Equipos a quitar (cancelar inscripción)
-        const teamsToRemove = initialTeams.filter(t => !currentIds.includes(t.id));
+      // Modo unificado: siempre detectar cambios
+      const initialIds = initialTeams.map(t => t.id);
+      const currentIds = selectedTeams.map(t => t.id);
+      
+      // Equipos nuevos a inscribir
+      const teamsToAdd = selectedTeams.filter(t => !initialIds.includes(t.id));
+      
+      // Equipos a quitar (cancelar inscripción)
+      const teamsToRemove = initialTeams.filter(t => !currentIds.includes(t.id));
 
-        // Cancelar inscripciones de equipos quitados
-        if (teamsToRemove.length > 0) {
-          for (const team of teamsToRemove) {
-            if (team.registrationId) {
-              await RegistrationsService.cancelRegistration(team.registrationId);
-            }
+      // Cancelar inscripciones de equipos quitados
+      if (teamsToRemove.length > 0) {
+        for (const team of teamsToRemove) {
+          if (team.registrationId) {
+            await RegistrationsService.cancelRegistration(team.registrationId);
           }
         }
+      }
 
-        // Inscribir equipos nuevos
-        if (teamsToAdd.length > 0) {
-          const teamIdsToAdd = teamsToAdd.map(t => t.id);
-          await RegistrationsService.registerMultipleTeams(eventId, teamIdsToAdd);
-        }
+      // Inscribir equipos nuevos
+      if (teamsToAdd.length > 0) {
+        const teamIdsToAdd = teamsToAdd.map(t => t.id);
+        await RegistrationsService.registerMultipleTeams(eventId, teamIdsToAdd);
+      }
 
+      // Mensaje según los cambios realizados
+      if (teamsToAdd.length > 0 || teamsToRemove.length > 0) {
         showSuccessAlert(
           'Cambios guardados', 
           `Se actualizó la inscripción: ${teamsToAdd.length} agregados, ${teamsToRemove.length} removidos`
         );
-        if (onSuccess) onSuccess();
-        onClose();
       } else {
-        // Modo inscribir: inscribir todos los seleccionados
-        const teamIds = selectedTeams.map(team => team.id);
-        const result = await RegistrationsService.registerMultipleTeams(eventId, teamIds);
-
-        if (result.success) {
-          showSuccessAlert('Equipos inscritos', result.message || `Se inscribieron ${selectedTeams.length} equipos exitosamente`);
-          if (onSuccess) onSuccess();
-          onClose();
-        } else {
-          showErrorAlert('Error', result.error || 'No se pudieron inscribir los equipos');
-        }
+        showSuccessAlert('Sin cambios', 'No se realizaron cambios en las inscripciones');
       }
+      
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (error) {
       console.error('Error al guardar inscripciones:', error);
       showErrorAlert('Error', 'Ocurrió un error al guardar las inscripciones');
@@ -237,7 +232,7 @@ const TeamRegistrationFormModal = ({
             </button>
             <div>
               <h2 className="text-2xl font-bold">
-                {mode === 'edit' ? 'Editar' : 'Inscribir'} {participantType}
+                Gestionar {participantType}
               </h2>
               <p className="text-blue-100 mt-1">Evento: {eventName}</p>
             </div>
@@ -468,13 +463,9 @@ const TeamRegistrationFormModal = ({
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  {mode === 'edit' ? (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  ) : (
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  )}
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                {mode === 'edit' ? 'Guardar Cambios' : 'Inscribir'} {selectedTeams.length > 0 && `(${selectedTeams.length})`}
+                Guardar {selectedTeams.length > 0 && `(${selectedTeams.length})`}
               </button>
             </div>
           </div>

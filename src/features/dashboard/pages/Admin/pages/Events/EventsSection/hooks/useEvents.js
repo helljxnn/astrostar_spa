@@ -51,9 +51,14 @@ export const useEvents = () => {
     const estadoParaLista = estadoParaModal.toLowerCase(); // Para la visualización en la lista
     
     // Extraer categorías del evento
+    // Priorizar ServiceCategory (múltiples categorías) sobre category (una sola)
     const categories = event.ServiceCategory || [];
-    const categoryIds = categories.map(sc => sc.categoryId);
-    const categoryNames = categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean);
+    const categoryIds = categories.length > 0 
+      ? categories.map(sc => sc.categoryId) 
+      : (event.categoryId ? [event.categoryId] : []);
+    const categoryNames = categories.length > 0
+      ? categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean)
+      : (event.category?.name ? [event.category.name] : []);
     
     // Crear fechas para el calendario asegurando que no haya problemas de zona horaria
     // Usar la fecha y hora directamente sin conversión de zona horaria
@@ -67,7 +72,7 @@ export const useEvents = () => {
     return {
       id: event.id,
       nombre: event.name,
-      tipo: event.ServiceType?.name || '',
+      tipo: event.type?.name || event.ServiceType?.name || '',
       tipoId: event.typeId,
       descripcion: event.description || '',
       fechaInicio: startDate,
