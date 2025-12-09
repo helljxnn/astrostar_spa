@@ -20,6 +20,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const { hasPermission } = usePermissions();
   const {
     schedules,
+    rawSchedules,
     employees,
     loading,
     loadingEmployees,
@@ -31,7 +32,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     cancelSchedule,
   } = useEmployeeSchedules();
 
-  const [filteredSchedules, setFilteredSchedules] = useState([]);
+  const [filteredListSchedules, setFilteredListSchedules] = useState([]);
+  const [filteredCalendarSchedules, setFilteredCalendarSchedules] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isNew, setIsNew] = useState(true);
@@ -41,6 +43,10 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedScheduleForAction, setSelectedScheduleForAction] = useState(null);
+  const canViewSchedules = useMemo(
+    () => hasPermission("employeesSchedule", "Ver"),
+    [hasPermission]
+  );
 
   const disabledSchedules = useMemo(
     () =>
@@ -54,15 +60,13 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   useEffect(() => {
     if (disabled) return;
-    if (hasPermission("employeesSchedule", "Ver")) {
-      loadSchedules();
-    }
     loadEmployees();
-  }, [disabled, hasPermission, loadEmployees, loadSchedules]);
+  }, [disabled, loadEmployees]);
 
   useEffect(() => {
-    setFilteredSchedules(schedules);
-  }, [schedules]);
+    if (disabled || !canViewSchedules) return;
+    loadSchedules({ page: 1 });
+  }, [disabled, canViewSchedules, loadSchedules]);
 
   const createDefaultSchedule = ({ start, end } = {}) => {
     const now = start ? new Date(start) : new Date();
@@ -135,6 +139,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       hora: `${schedule.horaInicio || format(schedule.start, "HH:mm")} - ${
         schedule.horaFin || format(schedule.end, "HH:mm")
       }`,
+      recurrenceLabel: buildRecurrenceLabel(schedule),
     };
     setSelectedScheduleForAction(scheduleData);
     setShowDetailsModal(true);
@@ -205,6 +210,29 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     }
   };
 
+  const buildRecurrenceLabel = (item) => {
+    const rep = item?.repeticion || "no";
+    const interval = item?.intervalo || item?.customRecurrence?.interval || 1;
+    const endDate =
+      item?.customRecurrence?.endDate || item?.customRecurrence?.afterDate || "";
+
+    const base = {
+      no: "No se repite",
+      dia: interval > 1 ? `Cada ${interval} dias` : "Cada dia",
+      semana: interval > 1 ? `Cada ${interval} semanas` : "Cada semana",
+      mes: interval > 1 ? `Cada ${interval} meses` : "Cada mes",
+      anio: interval > 1 ? `Cada ${interval} años` : "Cada año",
+      laboral: "Lunes a viernes",
+      personalizado:
+        item?.customRecurrence?.label ||
+        (interval > 1
+          ? `Recurrencia personalizada (cada ${interval} intervalos)`
+          : "Recurrencia personalizada"),
+    }[rep] || "No se repite";
+
+    return endDate ? `${base} · hasta ${endDate}` : base;
+  };
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (containerRef.current && !containerRef.current.contains(event.target)) {
@@ -217,23 +245,71 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   const handleSearch = (term) => {
     if (!term) {
-      setFilteredSchedules(schedules);
+      setFilteredListSchedules(rawSchedules);
+      setFilteredCalendarSchedules(schedules);
       return;
     }
 
     const lower = term.toLowerCase();
-    const filtered = schedules.filter(
+    const filtered = rawSchedules.filter(
       (s) =>
         (s.empleado || "").toLowerCase().includes(lower) ||
         (s.fecha || "").toLowerCase().includes(lower) ||
         (s.cargo || "").toLowerCase().includes(lower) ||
         (s.area || "").toLowerCase().includes(lower)
     );
-    setFilteredSchedules(filtered);
+
+    const allowedIds = new Set(filtered.map((s) => s.scheduleId || s.id));
+    const calendarFiltered = schedules.filter((ev) =>
+      allowedIds.has(ev.scheduleId || ev.id)
+    );
+
+    setFilteredListSchedules(filtered);
+    setFilteredCalendarSchedules(calendarFiltered);
   };
 
   const disabledList =
     disabledSchedules.length > 0 ? disabledSchedules : schedules;
+
+  useEffect(() => {
+    setFilteredListSchedules(rawSchedules);
+    setFilteredCalendarSchedules(schedules);
+  }, [rawSchedules, schedules]);
+
+  const listSchedules = useMemo(() => {
+    const map = new Map();
+
+    const getDateValue = (item) => {
+      const dateRef = item?.fecha || item?.start || item?.scheduleDate || 0;
+      const dateObj = new Date(dateRef);
+      const value = dateObj.getTime();
+      return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+    };
+
+    filteredListSchedules.forEach((s) => {
+      const key =
+        s?.recurrenceGroup ||
+        s?.parentId ||
+        s?.scheduleId ||
+        s?.id ||
+        `${s?.empleadoId || s?.empleado}-${s?.horaInicio || ""}-${s?.horaFin || ""}-${s?.area || ""}-${s?.repeticion || "no"}`;
+
+      if (!map.has(key)) {
+        map.set(key, s);
+        return;
+      }
+
+      const currentValue = getDateValue(s);
+      const existing = map.get(key);
+      const existingValue = getDateValue(existing);
+
+      if (currentValue < existingValue) {
+        map.set(key, s);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [filteredListSchedules]);
 
   if (disabled) {
     return (
@@ -247,7 +323,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
               <div className="space-y-3">
                 {disabledList.map((schedule) => (
                   <motion.div
-                    key={schedule.id}
+                    key={schedule.scheduleId || schedule.id || `${schedule.empleado}-${schedule.fecha}-${schedule.horaInicio}`}
                     layout
                     className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm"
                   >
@@ -317,7 +393,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           
           <PermissionGuard module="employeesSchedule" action="Ver">
             <EmployeeScheduleReportGenerator
-              data={filteredSchedules}
+              data={listSchedules}
               columns={[
                 { key: "empleado", label: "Empleado" },
                 { key: "cargo", label: "Cargo" },
@@ -347,21 +423,29 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           <h2 className="text-lg font-semibold text-[#c084fc] mb-3 text-center">
             Actividades Programadas
           </h2>
-          {filteredSchedules.length > 0 ? (
+          {listSchedules.length > 0 ? (
             <ul className="space-y-2">
-              {filteredSchedules.map((schedule) => {
+              {listSchedules.map((schedule) => {
                 const colors = [
                   "from-[#e9d5ff] to-[#c084fc]",
                   "from-[#ddd6fe] to-[#a78bfa]",
                   "from-[#bfdbfe] to-[#60a5fa]",
                   "from-[#c7d2fe] to-[#818cf8]",
                 ];
-                const colorIndex = schedule.id % colors.length;
+                const colorIndexBase = Number(schedule.scheduleId ?? schedule.id ?? 0);
+                const colorIndex = Number.isFinite(colorIndexBase)
+                  ? Math.abs(colorIndexBase) % colors.length
+                  : 0;
                 const gradient = colors[colorIndex];
+                const recurrenceLabel = buildRecurrenceLabel(schedule);
 
                 return (
                   <motion.li
-                    key={schedule.id}
+                    key={
+                      schedule.scheduleId ||
+                      schedule.id ||
+                      `${schedule.empleado}-${schedule.fecha}-${schedule.horaInicio}`
+                    }
                     whileHover={{ scale: 1.02 }}
                     className={`bg-gradient-to-br ${gradient} rounded-lg p-3 shadow-sm hover:shadow-md transition cursor-pointer`}
                     onClick={() => openDetailsModal(schedule)}
@@ -398,6 +482,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                       <p className="flex items-center gap-1">
                         ⏰ {schedule.horaInicio} - {schedule.horaFin}
                       </p>
+                      <p className="text-[11px] text-gray-800">
+                        Repite: {recurrenceLabel}
+                      </p>
                     </div>
 
                     {schedule.area && (
@@ -426,7 +513,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
         <div className="flex-1 bg-white rounded-2xl shadow-lg p-4 border border-gray-200">
           <EmployeesScheduleCalendar
-            schedules={filteredSchedules}
+            schedules={filteredCalendarSchedules}
             onOpenModalForSlot={hasPermission('employeesSchedule', 'Crear') ? openModalForSlot : null}
             onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
             onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}

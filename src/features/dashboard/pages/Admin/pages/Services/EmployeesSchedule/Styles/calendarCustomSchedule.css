@@ -40,6 +40,14 @@
   background: transparent; /* limpiamos fondo */
 }
 
+.employees-schedule-calendar .rbc-month-row {
+  min-height: 0;
+}
+
+.employees-schedule-calendar .rbc-row-segment {
+  padding: 0px 2px !important;
+}
+
 /* ----------------------------
    Eventos personalizados - Solo para calendario de empleados
    ---------------------------- */
@@ -49,25 +57,84 @@
   padding: 0 !important;
 }
 
-.employees-schedule-calendar .rbc-event-content {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.3;
-  padding: 4px 8px;
-  border-radius: 8px;
-  color: #1e293b; /* slate-800 */
-  background: linear-gradient(135deg, #b595ff 0%, #9be9ff 100%);
-  box-shadow: 0 2px 4px rgba(15,23,42,0.12);
+.employees-schedule-calendar .rbc-row-segment {
+  padding: 2px 6px !important;
+}
+
+.schedule-event-pill {
+  width: 100%;
+  padding: 3px 7px;
+  border-radius: 10px;
+  color: #0f172a; /* slate-900 */
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  border: 1px solid #d9e3ff;
+  max-width: 100%;
+}
+
+.schedule-event-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px rgba(15, 23, 42, 0.16);
+}
+
+.schedule-event-pill__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.schedule-event-pill__title {
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.employees-schedule-calendar .rbc-event-content:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(15,23,42,0.18);
+.schedule-event-pill__subtitle {
+  font-size: 10px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.schedule-event-pill__action {
+  color: #4b5563;
+  padding: 2px;
+  border-radius: 6px;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.schedule-event-pill__action:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #111827;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+
+.dot-indigo {
+  background-color: #4f46e5;
+}
+
+.dot-green {
+  background-color: #16a34a;
+}
+
+.dot-gray {
+  background-color: #9ca3af;
 }
 
 .rbc-event-label {
@@ -99,4 +166,79 @@
   .employees-schedule-calendar .rbc-month-row .rbc-header {
     padding: 6px 4px;
   }
+}
+
+
+/* Layout fijo y consistencia en vistas Semana/Dia */
+.employees-schedule-calendar .calendar-shell {
+  height: 520px !important;
+  min-height: 520px !important;
+  max-height: 520px !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+
+.employees-schedule-calendar .rbc-calendar,
+.employees-schedule-calendar .rbc-month-view,
+.employees-schedule-calendar .rbc-time-view {
+  height: 100% !important;
+}
+
+.employees-schedule-calendar .rbc-month-view {
+  overflow: hidden;
+}
+
+.employees-schedule-calendar .rbc-month-row {
+  height: calc(100% / 6);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.employees-schedule-calendar .rbc-row-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.employees-schedule-calendar .rbc-row-segment {
+  margin: 1px 0 !important;
+}
+
+.employees-schedule-calendar .rbc-month-view .schedule-event-pill {
+  min-height: 18px;
+  padding: 2px 6px;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.employees-schedule-calendar .rbc-month-view .schedule-event-pill__title {
+  font-size: 10px;
+}
+
+.employees-schedule-calendar .rbc-time-view,
+.employees-schedule-calendar .rbc-time-content {
+  height: 100%;
+}
+
+.employees-schedule-calendar .rbc-time-content {
+  overflow-y: auto;
+}
+
+.employees-schedule-calendar .rbc-time-view .rbc-event {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.employees-schedule-calendar .rbc-time-view .schedule-event-pill {
+  height: 28px;
+  min-height: 28px;
+  max-height: 28px;
+  display: flex;
+  align-items: center;
+}
+
+.employees-schedule-calendar .rbc-time-slot {
+  min-height: 18px;
 }

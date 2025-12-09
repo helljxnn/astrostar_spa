@@ -226,7 +226,7 @@ const EmployeeScheduleReportGenerator = ({
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] text-white rounded-lg shadow hover:opacity-90 transition"
+        className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#7B61FF] to-[#5B8DEF] text-white rounded-lg shadow-md hover:shadow-lg hover:opacity-95 transition"
       >
         <FiFileText className="text-white" />
         <span className="text-sm font-semibold">Reportes</span>

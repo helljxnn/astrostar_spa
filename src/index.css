@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SOLUCIÓN FINAL - Sin diagnóstico */
+
 * {
   box-sizing: border-box;
 }
