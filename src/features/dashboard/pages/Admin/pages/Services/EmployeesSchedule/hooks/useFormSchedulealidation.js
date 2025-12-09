@@ -9,9 +9,12 @@ export const useFormScheduleValidation = () => {
     let error = "";
 
     switch (name) {
+      case "empleadoId":
+        if (!value && value !== 0) error = "El empleado es obligatorio.";
+        break;
+
       case "empleado":
-        if (!value?.trim()) error = "El nombre del empleado es obligatorio.";
-        else if (value.length < 3)
+        if (value && value.length < 3)
           error = "El nombre debe tener al menos 3 caracteres.";
         break;
 
@@ -66,6 +69,12 @@ export const useFormScheduleValidation = () => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
+  const handleChangeValidation = (name, value, formData) => {
+    const error = validateField(name, value, formData);
+    setErrors((prev) => ({ ...prev, [name]: error }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
+  };
+
   const touchAllFields = (formData) => {
     const allTouched = {};
     Object.keys(formData).forEach((name) => {
@@ -78,5 +87,5 @@ export const useFormScheduleValidation = () => {
     return Object.keys(current).some((key) => current[key] !== original[key]);
   };
 
-  return { errors, touched, validate, handleBlur, touchAllFields, hasChanges };
+  return { errors, touched, validate, handleBlur, handleChangeValidation, touchAllFields, hasChanges };
 };
