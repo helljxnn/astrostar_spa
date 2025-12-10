@@ -44,7 +44,12 @@ export const usePermissions = () => {
         }
       }
     } catch (error) {
-      console.error('Error al refrescar permisos:', error);
+      // Si el error es 403 (token expirado/inválido), el apiClient ya intentará refrescar
+      // Si falla el refresh, redirigirá al login automáticamente
+      // Solo logueamos errores que no sean de autenticación
+      if (!error.message?.includes('Token') && !error.message?.includes('401') && !error.message?.includes('403')) {
+        console.error('Error al refrescar permisos:', error);
+      }
     }
   }, [isAuthenticated, user, updateUser]);
 
@@ -87,44 +92,50 @@ export const usePermissions = () => {
   /**
    * Verificar si tiene un permiso específico
    */
-  const hasPermission = (module, action) => {
-    return permissionsService.hasPermission(module, action);
-  };
+  const hasPermission = useCallback(
+    (module, action) => permissionsService.hasPermission(module, action),
+    [permissions]
+  );
 
   /**
    * Verificar si tiene acceso a un módulo
    */
-  const hasModuleAccess = (module) => {
-    return permissionsService.hasModuleAccess(module);
-  };
+  const hasModuleAccess = useCallback(
+    (module) => permissionsService.hasModuleAccess(module),
+    [permissions]
+  );
 
   /**
    * Obtener módulos accesibles
    */
-  const getAccessibleModules = () => {
-    return permissionsService.getAccessibleModules();
-  };
+  const getAccessibleModules = useCallback(
+    () => permissionsService.getAccessibleModules(),
+    [permissions]
+  );
 
   /**
    * Obtener permisos de un módulo específico
    */
-  const getModulePermissions = (module) => {
-    return permissionsService.getModulePermissions(module);
-  };
+  const getModulePermissions = useCallback(
+    (module) => permissionsService.getModulePermissions(module),
+    [permissions]
+  );
 
   /**
    * Verificar múltiples permisos
    */
-  const hasAllPermissions = (permissionChecks) => {
-    return permissionsService.hasAllPermissions(permissionChecks);
-  };
+  const hasAllPermissions = useCallback(
+    (permissionChecks) => permissionsService.hasAllPermissions(permissionChecks),
+    [permissions]
+  );
 
   /**
    * Verificar si tiene al menos uno de los permisos
    */
-  const hasAnyPermission = (permissionChecks) => {
-    return permissionsService.hasAnyPermission(permissionChecks);
-  };
+  const hasAnyPermission = useCallback(
+    (permissionChecks) => permissionsService.hasAnyPermission(permissionChecks),
+    [permissions]
+  );
 
   return {
     permissions,

@@ -16,6 +16,7 @@ const EmployeeScheduleReportGenerator = ({
   data = [],
   fileName = "Reporte_Horarios_Empleados",
   columns,
+  className = "",
 }) => {
   const [open, setOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(
@@ -226,7 +227,7 @@ const EmployeeScheduleReportGenerator = ({
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] text-white rounded-lg shadow hover:opacity-90 transition"
+        className={`flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors font-medium text-sm ${className}`}
       >
         <FiFileText className="text-white" />
         <span className="text-sm font-semibold">Reportes</span>

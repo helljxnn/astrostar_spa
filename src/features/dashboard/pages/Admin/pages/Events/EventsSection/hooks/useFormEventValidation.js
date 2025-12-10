@@ -76,14 +76,16 @@ export const useFormEventValidation = () => {
         if (!value) {
           error = "La fecha de inicio es obligatoria.";
         } else if (!formData.id) {
-          // Solo validar al crear eventos nuevos - la fecha de inicio debe ser futura
+          // Solo validar al crear eventos nuevos - la fecha de inicio no puede ser hoy
           const now = new Date();
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const selectedDate = new Date(value);
-          const selectedDateOnly = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+          
+          // Parsear la fecha seleccionada correctamente (formato YYYY-MM-DD)
+          const [year, month, day] = value.split('-').map(Number);
+          const selectedDateOnly = new Date(year, month - 1, day);
           
           if (selectedDateOnly <= today) {
-            error = "Selecciona una fecha próxima para el evento.";
+            error = "Los eventos deben crearse con al menos un día de anticipación. Por favor, selecciona una fecha válida.";
           }
         }
         break;
@@ -203,7 +205,8 @@ export const useFormEventValidation = () => {
         break;
 
       case "tipoEvento":
-        if (!value?.trim()) error = "Debe seleccionar un tipo de evento.";
+        // tipoEvento ahora es un número (ID), no un string
+        if (!value && value !== 0) error = "Debe seleccionar un tipo de evento.";
         break;
 
       default:

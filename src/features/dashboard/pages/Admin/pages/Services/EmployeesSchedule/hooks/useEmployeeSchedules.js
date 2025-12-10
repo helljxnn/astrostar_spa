@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import {
   addDays,
   addWeeks,
@@ -11,7 +11,6 @@ import {
 } from "date-fns";
 
 import scheduleService from "../services/employeeScheduleService";
-import employeeService from "../../Employees/services/employeeService";
 import {
   showErrorAlert,
   showSuccessAlert,
@@ -43,7 +42,7 @@ const parseCustomRecurrence = (raw) => {
 /* -------------------------------------------------------
  * NORMALIZACIÓN DE DATOS
  * -----------------------------------------------------*/
-const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
+  const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
   const employeeData = apiSchedule.employee || {};
   const user = employeeData.user || {};
 
@@ -72,30 +71,36 @@ const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
   const start = fecha ? new Date(`${fecha}T${horaInicio}`) : null;
   const end = fecha ? new Date(`${fecha}T${horaFin}`) : null;
 
-  const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
-  const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
-    ? estadoRaw
-    : "Programado";
+    const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
+    const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
+      ? estadoRaw
+      : "Programado";
 
-  return {
-    id: apiSchedule.id,
-    scheduleId: apiSchedule.id,
-    empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
-    empleado: name,
-    cargo,
-    fecha,
-    horaInicio,
-    horaFin,
-    repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
-    customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
-    descripcion: apiSchedule.description || apiSchedule.descripcion || "",
-    observaciones: apiSchedule.description || apiSchedule.descripcion || "",
-    estado,
-    motivoCancelacion:
-      apiSchedule.cancellationReason || apiSchedule.motivoCancelacion || "",
-    start,
-    end,
-    title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
+    return {
+      id: apiSchedule.id,
+      scheduleId: apiSchedule.id,
+      empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
+      empleado: name,
+      cargo,
+      fecha,
+      horaInicio,
+      horaFin,
+      repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
+      customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
+      descripcion: apiSchedule.description || apiSchedule.descripcion || "",
+      observaciones: apiSchedule.description || apiSchedule.descripcion || "",
+      novedad:
+        apiSchedule.novedad ||
+        apiSchedule.novedades ||
+        apiSchedule.news ||
+        "",
+      novedades: apiSchedule.novedades || apiSchedule.novedad || [],
+      estado,
+      motivoCancelacion:
+        apiSchedule.cancellationReason || apiSchedule.motivoCancelacion || "",
+      start,
+      end,
+      title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
     color: STATUS_COLOR[estado] || STATUS_COLOR.Programado,
   };
 };
@@ -120,6 +125,8 @@ const buildOccurrence = (schedule, date, occurrenceIndex) => {
       schedule.estado === "Cancelado" ? " (Cancelado)" : ""
     }`,
     color: STATUS_COLOR[schedule.estado] || STATUS_COLOR.Programado,
+    novedad: schedule.novedad,
+    novedades: schedule.novedades,
   };
 };
 
@@ -257,12 +264,14 @@ export const useEmployeeSchedules = () => {
   const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
 
-  const [pagination, setPagination] = useState({
+  const paginationRef = useRef({
     page: 1,
     limit: 10,
     total: 0,
     pages: 0,
   });
+
+  const [pagination, setPagination] = useState(paginationRef.current);
 
   /* ---------- Memo: Mapa de empleados ---------- */
   const employeeMap = useMemo(() => {
@@ -289,25 +298,29 @@ export const useEmployeeSchedules = () => {
     [employeeMap]
   );
 
-  /* ---------- Expandir automáticamente eventos ---------- */
+  /* ---------- Expandir eventos con recurrencia ---------- */
   useEffect(() => {
     const expanded = rawSchedules.flatMap((schedule) =>
       expandScheduleOccurrences(mergeEmployeeData(schedule))
     );
-    setSchedules(expanded);
+
+    // Deduplicar por horario/fecha/hora para evitar repeticiones exactas
+    const unique = new Map();
+    expanded.forEach((ev) => {
+      const key = `${ev.scheduleId || ev.id}-${ev.fecha}-${ev.horaInicio || ""}-${ev.horaFin || ""}`;
+      if (!unique.has(key)) unique.set(key, ev);
+    });
+
+    setSchedules(Array.from(unique.values()));
   }, [rawSchedules, mergeEmployeeData]);
 
-  /* -------------------------------------------------------
+/* -------------------------------------------------------
    * CARGA DE EMPLEADOS
    * -----------------------------------------------------*/
   const loadEmployees = useCallback(async () => {
     setLoadingEmployees(true);
     try {
-      const response = await employeeService.getAll({
-        page: 1,
-        limit: 200,
-        status: "Active",
-      });
+      const response = await scheduleService.getActiveEmployees();
 
       const rawList =
         response?.data ||
@@ -318,17 +331,12 @@ export const useEmployeeSchedules = () => {
       const list = rawList.filter(Boolean);
 
       const formatted = list.map((emp) => {
-        const user = emp.user || {};
-        const fullName = `${user.firstName || ""} ${user.middleName || ""} ${
-          user.lastName || ""
-        } ${user.secondLastName || ""}`
-          .replace(/\s+/g, " ")
-          .trim();
-
+        const fullName = emp.nombre || emp.label || emp.name || "Empleado sin nombre";
+        const cargo = emp.cargo || "Empleado";
         return {
-          value: emp.id,
-          label: fullName || "Empleado sin nombre",
-          cargo: user.role?.name || "Empleado",
+          value: emp.empleadoId || emp.id,
+          label: fullName,
+          cargo,
         };
       });
 
@@ -348,9 +356,12 @@ export const useEmployeeSchedules = () => {
     async (params = {}) => {
       setLoading(true);
       try {
+        const page = params.page ?? paginationRef.current.page;
+        const limit = params.limit ?? paginationRef.current.limit;
+
         const response = await scheduleService.getAll({
-          page: pagination.page,
-          limit: pagination.limit,
+          page,
+          limit,
           ...params,
         });
 
@@ -366,13 +377,20 @@ export const useEmployeeSchedules = () => {
 
         setRawSchedules(buildFromApi(items));
 
-        setPagination(
-          response.pagination ||
+        setPagination((prev) => {
+          const next =
+            response.pagination ||
             response?.data?.pagination || {
-              ...pagination,
-              total: items.length ?? pagination.total,
-            }
-        );
+              ...prev,
+              page,
+              limit,
+              total: items.length ?? prev.total,
+              pages: Math.ceil((items.length ?? prev.total) / limit) || prev.pages,
+            };
+
+          paginationRef.current = next;
+          return next;
+        });
       } catch (error) {
         console.error(error);
         showErrorAlert("Error", error.message || "No se pudieron cargar horarios");
@@ -380,27 +398,27 @@ export const useEmployeeSchedules = () => {
         setLoading(false);
       }
     },
-    [buildFromApi, pagination]
+    [buildFromApi]
   );
 
   /* -------------------------------------------------------
    * SERIALIZACIÓN PARA API
    * -----------------------------------------------------*/
   const serializePayload = (data) => {
-    const employeeId =
+    const empleadoId =
       data.empleadoId !== undefined && data.empleadoId !== null && data.empleadoId !== ""
         ? Number(data.empleadoId)
         : data.empleado?.id || data.empleado;
 
     return {
-      employeeId,
-      scheduleDate: data.fecha,
-      startTime: data.horaInicio,
-      endTime: data.horaFin,
-      recurrence: data.repeticion || "no",
+      empleadoId,
+      fecha: data.fecha,
+      horaInicio: data.horaInicio,
+      horaFin: data.horaFin,
+      repeticion: data.repeticion || "no",
       customRecurrence: data.customRecurrence || null,
-      description: data.descripcion || data.observaciones || "",
-      status: data.estado || "Programado",
+      descripcion: data.descripcion || data.observaciones || "",
+      estado: data.estado || "Programado",
     };
   };
 

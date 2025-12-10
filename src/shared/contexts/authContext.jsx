@@ -16,7 +16,8 @@ export const AuthProvider = ({ children }) => {
       if (storedUser) {
         try {
           // Intentar obtener un nuevo access token usando el refresh token (cookie)
-          const response = await fetch('http://localhost:4000/api/auth/refresh', {
+          const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+          const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include', // Enviar cookies
             headers: {
@@ -51,7 +52,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (loginData) => {
     try {
-      const response = await fetch('http://localhost:4000/api/auth/login', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         credentials: 'include', // Importante: recibir cookies
         headers: {
@@ -118,7 +120,8 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Cerrar sesión en el servidor (limpia cookie HttpOnly)
-      await fetch('http://localhost:4000/api/auth/logout', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         credentials: 'include', // Enviar cookies
         headers: {

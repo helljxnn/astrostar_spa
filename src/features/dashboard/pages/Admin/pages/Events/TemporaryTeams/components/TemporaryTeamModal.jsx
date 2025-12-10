@@ -61,13 +61,6 @@ const TemporaryTeamModal = ({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [unavailableAthleteIds, setUnavailableAthleteIds] = useState([]);
 
-  // Debug: Mostrar el estado de duplicateWarnings
-  useEffect(() => {
-    console.log('🔔 Estado duplicateWarnings actualizado:', duplicateWarnings);
-    console.log('   - trainer:', duplicateWarnings.trainer);
-    console.log('   - athletes:', duplicateWarnings.athletes);
-  }, [duplicateWarnings]);
-
   useEffect(() => {
     if (isOpen && isEditing && teamToEdit) {
       setIsInitialLoad(true); // Marcar como carga inicial
@@ -149,48 +142,31 @@ const TemporaryTeamModal = ({
 
   // Validar disponibilidad de entrenador temporal en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect entrenador ejecutado:', {
-      entrenador: selectedTrainer?.name,
-      tipo: selectedTrainer?.type,
-      id: selectedTrainer?.id,
-      teamId: teamToEdit?.id,
-      isInitialLoad
-    });
-
     // Si es carga inicial y estamos editando, no validar
     if (isInitialLoad && teamToEdit) {
-      console.log('⏭️ Saltando validación - carga inicial de edición');
       return;
     }
 
     if (!selectedTrainer || selectedTrainer.type !== 'temporal' || !selectedTrainer.id) {
-      console.log('🧹 Limpiando warning de entrenador (no temporal o vacío)');
       setDuplicateWarnings(prev => ({ ...prev, trainer: null }));
       return;
     }
 
     const validateTrainer = async () => {
       try {
-        console.log('🔍 Validando entrenador temporal:', selectedTrainer.name);
         const result = await TeamsService.checkTemporalPersonAvailability(
           selectedTrainer.id,
           teamToEdit?.id
         );
-        
-        console.log('📋 Resultado validación entrenador:', result);
-        
         if (!result.available) {
-          console.log('⚠️ Entrenador NO disponible - MOSTRANDO WARNING');
           setDuplicateWarnings(prev => ({
             ...prev,
             trainer: result.message || "Entrenador ya está registrado en otro equipo"
           }));
         } else {
-          console.log('✅ Entrenador disponible - LIMPIANDO WARNING');
           setDuplicateWarnings(prev => ({ ...prev, trainer: null }));
         }
       } catch (error) {
-        console.error('❌ Error validando entrenador:', error);
       }
     };
 
@@ -199,17 +175,9 @@ const TemporaryTeamModal = ({
 
   // Validar nombre del equipo en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect nombre ejecutado:', {
-      nombre: formData.nombre,
-      touched: touched.nombre,
-      isInitialLoad,
-      teamToEditId: teamToEdit?.id
-    });
-
     const validateName = async () => {
       // No validar si el campo está vacío
       if (!formData.nombre?.trim()) {
-        console.log('⏭️ Saltando validación - campo vacío');
         // Limpiar error si el campo está vacío
         setErrors(prev => {
           const newErrors = { ...prev };
@@ -221,28 +189,19 @@ const TemporaryTeamModal = ({
 
       // Solo validar si el campo ha sido tocado al menos una vez
       if (!touched.nombre) {
-        console.log('⏭️ Saltando validación - campo no tocado');
         return;
       }
 
       // Si es carga inicial y estamos editando, no validar
       if (isInitialLoad && teamToEdit) {
-        console.log('⏭️ Saltando validación - carga inicial de edición');
         return;
       }
-
-      console.log('🔍 Validando nombre:', formData.nombre);
-
       try {
         const result = await TeamsService.checkNameAvailability(
           formData.nombre,
           teamToEdit?.id
         );
-
-        console.log('📋 Resultado validación nombre:', result);
-
         if (result.success && !result.available) {
-          console.log('⚠️ Nombre NO disponible - MOSTRANDO ERROR');
           setErrors(prev => ({
             ...prev,
             nombre: "Este nombre ya está registrado"
@@ -253,7 +212,6 @@ const TemporaryTeamModal = ({
             nombre: true
           }));
         } else if (result.success && result.available) {
-          console.log('✅ Nombre disponible - LIMPIANDO ERROR');
           setErrors(prev => {
             const newErrors = { ...prev };
             delete newErrors.nombre;
@@ -261,7 +219,6 @@ const TemporaryTeamModal = ({
           });
         }
       } catch (error) {
-        console.error('❌ Error validando nombre:', error);
       }
     };
 
@@ -296,20 +253,12 @@ const TemporaryTeamModal = ({
 
   // Validar disponibilidad de deportistas temporales en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect deportistas ejecutado:', {
-      cantidad: selectedAthletes.length,
-      teamId: teamToEdit?.id,
-      isInitialLoad
-    });
-
     // Si es carga inicial y estamos editando, no validar
     if (isInitialLoad && teamToEdit) {
-      console.log('⏭️ Saltando validación - carga inicial de edición');
       return;
     }
 
     if (!selectedAthletes || selectedAthletes.length === 0) {
-      console.log('🧹 Limpiando warning de deportistas (vacío)');
       setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
       return;
     }
@@ -317,14 +266,12 @@ const TemporaryTeamModal = ({
     const temporalAthletes = selectedAthletes.filter(d => d.type === 'temporal' && d.id);
     
     if (temporalAthletes.length === 0) {
-      console.log('🧹 Limpiando warning de deportistas (no temporales)');
       setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
       return;
     }
 
     const validateAthletes = async () => {
       try {
-        console.log('🔍 Validando deportistas temporales:', temporalAthletes.length);
         const unavailableAthletes = [];
 
         for (const athlete of temporalAthletes) {
@@ -340,9 +287,6 @@ const TemporaryTeamModal = ({
             });
           }
         }
-
-        console.log('📋 Deportistas no disponibles:', unavailableAthletes);
-
         if (unavailableAthletes.length > 0) {
           const message = unavailableAthletes.length === 1
             ? unavailableAthletes[0].message
@@ -352,22 +296,16 @@ const TemporaryTeamModal = ({
           const unavailableIds = temporalAthletes
             .filter(athlete => unavailableAthletes.some(ua => ua.name === athlete.name))
             .map(athlete => athlete.id);
-          
-          console.log('⚠️ Deportistas NO disponibles - MOSTRANDO WARNING');
-          console.log('   IDs no disponibles:', unavailableIds);
-          
           setUnavailableAthleteIds(unavailableIds);
           setDuplicateWarnings(prev => ({
             ...prev,
             athletes: message
           }));
         } else {
-          console.log('✅ Deportistas disponibles - LIMPIANDO WARNING');
           setUnavailableAthleteIds([]);
           setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
         }
       } catch (error) {
-        console.error('❌ Error validando deportistas:', error);
       }
     };
 
@@ -387,10 +325,8 @@ const TemporaryTeamModal = ({
           if (result.success) {
             setCategories(result.data || []);
           } else {
-            console.error('Error loading categories:', result.error);
           }
         } catch (error) {
-          console.error('Error loading categories:', error);
         } finally {
           setLoadingCategories(false);
         }
@@ -733,20 +669,15 @@ const TemporaryTeamModal = ({
         teamData.segundoEntrenadorData = selectedSecondTrainer;
       }
 
-      console.log('� Datots del equipo a enviar:', JSON.stringify(teamData, null, 2));
-
       if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
-        console.log('📝 Actualizando equipo:', updatedTeamData);
         await onUpdate(updatedTeamData);
       } else {
-        console.log('➕ Creando nuevo equipo:', teamData);
         await onSave(teamData);
       }
 
       onClose();
     } catch (error) {
-      console.error("❌ Error al guardar equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };
@@ -792,8 +723,9 @@ const TemporaryTeamModal = ({
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
-          {/* Header */}
-          <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
+          <form onSubmit={handleSubmit}>
+            {/* Header */}
+            <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
             <button
               className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full"
               onClick={handleClose}
@@ -997,104 +929,21 @@ const TemporaryTeamModal = ({
               )}
               
               {duplicateWarnings.trainer && (
-                <>
-                  {console.log('🎨 Renderizando warning de entrenador:', duplicateWarnings.trainer)}
-                  <motion.div 
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-red-500 text-xs flex items-center gap-1 mt-1"
-                  >
-                    <span>⚠️</span>
-                    <span>{duplicateWarnings.trainer}</span>
-                  </motion.div>
-                </>
+                <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 text-lg">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-sm text-amber-800 font-medium">
+                        Advertencia de Duplicado
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        {duplicateWarnings.trainer}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </motion.div>
-
-            {/* Segundo Entrenador - Solo para equipos de fundación */}
-            {shouldShowSecondTrainer && (
-              <motion.div
-                className="space-y-3 mb-3"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45, duration: 0.4 }}
-              >
-                <label className="block text-sm font-medium text-gray-700">
-                  Segundo Entrenador (Opcional)
-                </label>
-
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsSecondTrainerModalOpen(true)}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
-                      selectedSecondTrainer
-                        ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
-                        : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          selectedSecondTrainer
-                            ? "bg-primary-purple text-white"
-                            : "bg-gray-100 text-gray-400 group-hover:bg-primary-purple/10 group-hover:text-primary-purple"
-                        }`}
-                      >
-                        <UserCheck className="w-4 h-4" />
-                      </div>
-                      <div className="text-left">
-                        {selectedSecondTrainer ? (
-                          <div>
-                            <p className="font-semibold text-gray-900 text-sm">
-                              {selectedSecondTrainer.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <span className="text-xs text-gray-600">
-                                {selectedSecondTrainer.identification}
-                              </span>
-                              {selectedSecondTrainer.phoneNumber && (
-                                <>
-                                  <span className="text-xs text-gray-400">•</span>
-                                  <span className="text-xs text-gray-600">
-                                    {selectedSecondTrainer.phoneNumber}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-gray-500 group-hover:text-gray-700 text-sm">
-                            Seleccionar segundo entrenador
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronDown
-                      className={`w-4 h-4 text-gray-400 transition-transform ${
-                        selectedSecondTrainer
-                          ? "text-primary-purple"
-                          : "group-hover:text-primary-purple"
-                      }`}
-                    />
-                  </button>
-
-                  {selectedSecondTrainer && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSecondTrainer(null);
-                        handleChange("segundoEntrenador", "");
-                      }}
-                      className="absolute right-10 top-1/2 transform -translate-y-1/2 p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                    >
-                      <XIcon className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            )}
 
             {/* Selección de Deportistas */}
             <motion.div
@@ -1189,189 +1038,53 @@ const TemporaryTeamModal = ({
                 )}
                 
                 {duplicateWarnings.athletes && (
-                  <>
-                    {console.log('🎨 Renderizando warning de deportistas:', duplicateWarnings.athletes)}
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-red-500 text-xs flex items-center gap-1 mt-2"
-                    >
-                      <span>⚠️</span>
-                      <span>{duplicateWarnings.athletes}</span>
-                    </motion.div>
-                  </>
-                )}
-
-                {/* Campo de categoría para equipos temporales */}
-                {shouldShowCategoryField && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.55, duration: 0.4 }}
-                  >
-                    {loadingCategories ? (
-                      <div className="flex items-center gap-2 text-gray-500 text-sm p-3 bg-gray-50 rounded-lg">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-blue"></div>
-                        Cargando categorías...
+                  <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-600 text-lg">⚠️</span>
+                      <div className="flex-1">
+                        <p className="text-sm text-amber-800 font-medium">
+                          Advertencia de Duplicados
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          {duplicateWarnings.athletes}
+                        </p>
                       </div>
-                    ) : (
-                      <FormField
-                        label="Categoría del Equipo Temporal"
-                        name="categoria"
-                        type="select"
-                        placeholder="Seleccione una categoría"
-                        options={categories.map(cat => ({
-                          value: cat.name,
-                          label: cat.name
-                        }))}
-                        value={formData.categoria}
-                        onChange={(name, value) => handleChange("categoria", value)}
-                        onBlur={() => handleBlur("categoria")}
-                        error={getCombinedError("categoria")}
-                        touched={isFieldTouched("categoria")}
-                        required
-                      />
-                    )}
-                  </motion.div>
-                )}
-
-                {/* Lista de deportistas seleccionadas */}
-                {selectedAthletes.length > 0 && (
-                  <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Deportistas seleccionadas
-                      </span>
-                      <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded-full">
-                        {selectedAthletes.length} deportistas
-                      </span>
                     </div>
-                    {selectedAthletes.map((athlete, index) => (
-                      <motion.div
-                        key={athlete.id}
-                        className="flex items-center gap-3 p-2 bg-white rounded border border-gray-200 hover:border-primary-purple/30 hover:shadow-sm transition-all group"
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.6 + index * 0.05, duration: 0.3 }}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900 text-sm truncate">
-                              {athlete.name}
-                            </p>
-                            <span
-                              className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800"
-                            >
-                              {athlete.type === "fundacion" ? "Fundación" : "Temporal"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 flex-wrap">
-                            {athlete.categoria && (
-                              <span className="bg-gray-200 px-1.5 py-0.5 rounded-full text-gray-700">
-                                {athlete.categoria}
-                              </span>
-                            )}
-                            {athlete.identification && <span>{athlete.identification}</span>}
-                            {athlete.phoneNumber && (
-                              <>
-                                <span className="text-gray-400">•</span>
-                                <span>{athlete.phoneNumber}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAthlete(athlete.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all opacity-0 group-hover:opacity-100"
-                          title="Eliminar deportista"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </motion.div>
-                    ))}
                   </div>
                 )}
               </div>
             </motion.div>
-
-            {/* Descripción */}
-            <motion.div
-              className="mb-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.65, duration: 0.4 }}
-            >
-              <FormField
-                label="Descripción"
-                name="descripcion"
-                type="textarea"
-                placeholder="Información del equipo..."
-                value={formData.descripcion}
-                onChange={(e) => handleChange("descripcion", e.target.value)}
-                rows={3}
-              />
-            </motion.div>
           </div>
 
-          {/* Footer */}
-          <div className="flex-shrink-0 border-t border-gray-200 p-3">
-            <div className="flex justify-between">
+          {/* Botones de acción */}
+          <div className="p-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={handleClose}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                onClick={handleCancel}
+                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Cancelar
               </button>
-
               <button
-                onClick={handleSubmit}
-                className="px-6 py-2 text-white rounded-lg transition-all duration-200 font-medium shadow-lg bg-primary-blue hover:bg-primary-purple"
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 bg-primary-purple text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {isEditing ? "Actualizar Equipo" : "Crear Equipo"}
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <span>{isEditing ? "Actualizar Equipo" : "Crear Equipo"}</span>
+                )}
               </button>
             </div>
           </div>
+          </form>
         </motion.div>
       </motion.div>
-
-      {/* Modales de selección */}
-      <SelectionModal
-        isOpen={isTrainerModalOpen}
-        onClose={() => setIsTrainerModalOpen(false)}
-        mode="trainer"
-        onSelect={handleTrainerSelect}
-        selectedItems={selectedTrainer ? [selectedTrainer] : []}
-        teamType={teamType}
-        initialTabType={teamType}
-      />
-
-      <SelectionModal
-        isOpen={isAthletesModalOpen}
-        onClose={() => setIsAthletesModalOpen(false)}
-        mode="athletes"
-        onSelect={handleAthletesSelect}
-        selectedItems={selectedAthletes}
-        currentCategoria={teamType === "fundacion" ? currentCategoria : null}
-        teamType={teamType}
-        initialTabType={teamType}
-        unavailableAthleteIds={unavailableAthleteIds}
-        excludeTeamId={teamToEdit?.id}
-      />
-
-      <SelectionModal
-        isOpen={isSecondTrainerModalOpen}
-        onClose={() => setIsSecondTrainerModalOpen(false)}
-        mode="trainer"
-        onSelect={handleSecondTrainerSelect}
-        selectedItems={selectedSecondTrainer ? [selectedSecondTrainer] : []}
-        teamType="fundacion"
-        forceFoundationType={true}
-        excludeTrainerId={selectedTrainer?.id}
-        initialTabType="fundacion"
-      />
     </>
   );
 };

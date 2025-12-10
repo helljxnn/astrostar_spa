@@ -1,12 +1,8 @@
-// DonationViewModal.jsx
 import React from "react";
 
 const DonationViewModal = ({ donation, onClose }) => {
   if (!donation) return null;
 
-  console.log("📌 Datos recibidos en modal:", donation);
-
-  // ⚡ Usar siempre items (normalizados en Donations.jsx)
   const donationTypes =
     donation.items && donation.items.length > 0
       ? donation.items
@@ -20,40 +16,41 @@ const DonationViewModal = ({ donation, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl relative">
-        {/* Botón cerrar */}
+        {/* Boton cerrar */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition text-xl"
+          aria-label="Cerrar"
         >
-          ✕
+          ×
         </button>
 
         {/* Encabezado */}
         <div className="text-center px-8 py-6 border-b">
           <h2 className="text-2xl font-bold text-gray-700">
-            Detalles de la Donación
+            Detalles de la Donacion
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Información completa de{" "}
+            Informacion completa de{" "}
             <span className="text-blue-600 font-semibold hover:underline cursor-pointer">
               {donation.donorName}
             </span>
           </p>
         </div>
 
-        {/* Información general */}
+        {/* Informacion general */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 px-8 py-6">
           {/* Columna 1 */}
           <div>
             <h3 className="font-semibold text-gray-700 mb-3 border-b pb-1">
-              Información Empresarial
+              Informacion Empresarial
             </h3>
             <p className="mb-2">
               <span className="font-medium">Donante:</span>{" "}
               {donation.donorName}
             </p>
             <p className="mb-2">
-              <span className="font-medium">Descripción:</span>{" "}
+              <span className="font-medium">Descripcion:</span>{" "}
               {donation.descripcion || "N/A"}
             </p>
             <p className="mb-2">
@@ -73,10 +70,10 @@ const DonationViewModal = ({ donation, onClose }) => {
           {/* Columna 2 */}
           <div>
             <h3 className="font-semibold text-gray-700 mb-3 border-b pb-1">
-              Información de Registro
+              Informacion de Registro
             </h3>
             <p className="mb-2">
-              <span className="font-medium">Fecha de Donación:</span>{" "}
+              <span className="font-medium">Fecha de Donacion:</span>{" "}
               {donation.donationDate}
             </p>
             <p className="mb-2">
@@ -86,17 +83,17 @@ const DonationViewModal = ({ donation, onClose }) => {
           </div>
         </div>
 
-        {/* Tipos de Donación en tabla */}
+        {/* Tipos de Donacion en tabla */}
         <div className="px-8 pb-6">
           <h3 className="font-semibold text-gray-700 mb-3 border-b pb-1">
-            Tipos de Donación
+            Tipos de Donacion
           </h3>
 
           <div className="overflow-x-auto">
             <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
               <thead>
                 <tr className="bg-gray-100 text-gray-700">
-                  <th className="border px-4 py-2 text-left">Tipo de Donación</th>
+                  <th className="border px-4 py-2 text-left">Tipo de Donacion</th>
                   <th className="border px-4 py-2 text-left">Cantidad</th>
                 </tr>
               </thead>

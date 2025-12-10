@@ -101,9 +101,11 @@ class ApiClient {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
-        // Si es 401 o 403 y el mensaje indica token expirado, intentar refresh
+        // Si es 401 o 403 y el mensaje indica problema con el token, intentar refresh
         if ((response.status === 401 || response.status === 403) && 
-            (errorData.message === "Token expirado" || errorData.message === "Token de acceso requerido")) {
+            (errorData.message === "Token expirado" || 
+             errorData.message === "Token de acceso requerido" ||
+             errorData.message === "Token inválido")) {
           
           if (this.isRefreshing) {
             // Si ya estamos refrescando, agregar a la cola
