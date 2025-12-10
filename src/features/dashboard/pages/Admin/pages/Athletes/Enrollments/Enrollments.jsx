@@ -303,19 +303,81 @@ const Enrollments = () => {
               <ReportButton
                 data={athletes.map((athlete) => {
                   const guardian = getGuardianById(athlete.acudiente);
+                  const firstName = athlete.firstName || athlete.nombres || "";
+                  const lastName = athlete.lastName || athlete.apellidos || "";
+                  const email = athlete.email || athlete.correo || "";
+                  const phone = athlete.phoneNumber || athlete.telefono || "";
+                  const identification = athlete.identification || athlete.numeroDocumento || "";
+                  
+                  // Obtener tipo de documento del deportista
+                  let tipoDocumento = "No especificado";
+                  const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
+                  if (docTypeId && referenceData?.documentTypes) {
+                    const docType = referenceData.documentTypes.find(dt => dt.id === docTypeId);
+                    if (docType) {
+                      tipoDocumento = docType.name || docType.label;
+                    }
+                  }
+                  
+                  // Obtener tipo de documento del acudiente
+                  let tipoDocumentoAcudiente = "";
+                  if (guardian) {
+                    const guardianDocTypeId = guardian.documentTypeId;
+                    if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
+                      const docType = referenceData.guardianDocumentTypes.find(dt => dt.id === guardianDocTypeId);
+                      if (docType) {
+                        tipoDocumentoAcudiente = docType.name || docType.label;
+                      }
+                    }
+                  }
+                  
+                  // Obtener la matrícula más reciente
+                  const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+                  
+                  // Formatear fechas
+                  let fechaMatricula = "";
+                  if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+                    const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                    if (!isNaN(fecha.getTime())) {
+                      fechaMatricula = fecha.toLocaleDateString("es-ES");
+                    }
+                  }
+                  
+                  let fechaVencimiento = "";
+                  if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
+                    const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+                    if (!isNaN(fecha.getTime())) {
+                      fechaVencimiento = fecha.toLocaleDateString("es-ES");
+                    }
+                  } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+                    const fechaInsc = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                    if (!isNaN(fechaInsc.getTime())) {
+                      const fechaVenc = new Date(fechaInsc);
+                      fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
+                      fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
+                    }
+                  }
+                  
+                  const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
+                  
                   return {
-                    nombres: athlete.nombres || "",
-                    apellidos: athlete.apellidos || "",
-                    nombreCompleto: `${athlete.nombres} ${athlete.apellidos}`,
-                    tipoDocumento: athlete.tipoDocumento || "",
-                    numeroDocumento: athlete.numeroDocumento || "",
-                    correo: athlete.correo || "",
-                    telefono: athlete.telefono || "",
+                    nombres: firstName,
+                    apellidos: lastName,
+                    nombreCompleto: `${firstName} ${lastName}`.trim(),
+                    tipoDocumento,
+                    numeroDocumento: identification,
+                    correo: email,
+                    telefono: phone,
                     categoria: athlete.categoria || "",
-                    estado: athlete.estado || "",
-                    estadoMatricula: athlete.estadoInscripcion || "",
-                    acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
-                    acudienteTelefono: guardian?.telefono || "",
+                    estado: athlete.status || athlete.estado || "",
+                    fechaMatricula,
+                    fechaVencimiento,
+                    estadoMatricula,
+                    acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+                    acudienteTipoDocumento: tipoDocumentoAcudiente,
+                    acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
+                    acudienteTelefono: guardian?.phone || guardian?.telefono || "",
+                    acudienteCorreo: guardian?.email || guardian?.correo || "",
                   };
                 })}
                 fileName="Matriculas"
@@ -324,9 +386,18 @@ const Enrollments = () => {
                   { header: "Apellidos", accessor: "apellidos" },
                   { header: "Tipo Documento", accessor: "tipoDocumento" },
                   { header: "Número Documento", accessor: "numeroDocumento" },
+                  { header: "Correo", accessor: "correo" },
+                  { header: "Teléfono", accessor: "telefono" },
                   { header: "Categoría", accessor: "categoria" },
+                  { header: "Estado Deportista", accessor: "estado" },
+                  { header: "Fecha Matrícula", accessor: "fechaMatricula" },
+                  { header: "Fecha Vencimiento", accessor: "fechaVencimiento" },
                   { header: "Estado Matrícula", accessor: "estadoMatricula" },
                   { header: "Acudiente", accessor: "acudienteNombre" },
+                  { header: "Tipo Doc. Acudiente", accessor: "acudienteTipoDocumento" },
+                  { header: "Doc. Acudiente", accessor: "acudienteDocumento" },
+                  { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
+                  { header: "Correo Acudiente", accessor: "acudienteCorreo" },
                 ]}
               />
             </PermissionGuard>
@@ -602,6 +673,7 @@ const Enrollments = () => {
                   className:
                     "p-2 text-primary-purple hover:text-primary-blue hover:bg-purple-50 rounded transition-colors",
                   tooltip: "Renovar Matrícula",
+                  show: (athlete) => athlete.isVencida, // Solo mostrar si está vencida
                 },
                 {
                   onClick: (athlete) => handleOpenHistory(athlete),

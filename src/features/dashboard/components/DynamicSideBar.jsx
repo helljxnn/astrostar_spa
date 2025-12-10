@@ -915,11 +915,30 @@ function DynamicSideBar({
                             </Link>
                           </motion.div>
 
-                          {/* Asistencia Deportistas */}
+                          {/* Matrículas */}
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 }}
+                          >
+                            <Link
+                              to="/dashboard/enrollments"
+                              onClick={() => setIsOpen(false)}
+                              className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                                isActive("/dashboard/enrollments")
+                                  ? "bg-indigo-100 text-primary-purple shadow-sm"
+                                  : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                              }`}
+                            >
+                              Matrículas
+                            </Link>
+                          </motion.div>
+
+                          {/* Asistencia Deportistas */}
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.25 }}
                           >
                             <Link
                               to="/dashboard/athletes-assistance"
