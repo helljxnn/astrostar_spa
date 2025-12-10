@@ -18,7 +18,7 @@ export const EventModal = ({
   mode = "create",
   referenceData = { categories: [], types: [] }
 }) => {
-  const [tipoEvento, setTipoEvento] = useState("");
+  const [tipoEvento, setTipoEvento] = useState(""); // Ahora almacena el ID del tipo
   const [form, setForm] = useState({
     id: null, // ID del evento (para edición)
     nombre: "",
@@ -46,9 +46,16 @@ export const EventModal = ({
     'Taller': 'Deportistas'
   };
 
+  // Obtener el nombre del tipo de evento seleccionado
+  const getSelectedTypeName = () => {
+    const selectedType = referenceData.types.find(t => t.id === tipoEvento);
+    return selectedType?.name || '';
+  };
+
   // Obtener el tipo de participante según el tipo de evento
   const getParticipantType = () => {
-    return eventTypeParticipantMap[tipoEvento] || 'Deportistas';
+    const typeName = getSelectedTypeName();
+    return eventTypeParticipantMap[typeName] || 'Deportistas';
   };
 
   const { errors, touched, validate, handleBlur, touchAllFields, isCheckingName } =
@@ -106,7 +113,9 @@ export const EventModal = ({
         }));
       } else {
         // Cuando es edición, cargar todos los datos del evento
-        setTipoEvento(event.tipo || "");
+        // Buscar el ID del tipo basado en el nombre (para compatibilidad con datos existentes)
+        const typeId = event.tipoId || referenceData.types.find(t => t.name === event.tipo)?.id || "";
+        setTipoEvento(typeId);
         setForm({
           id: event.id || null,
           nombre: event.nombre || "",
@@ -121,7 +130,7 @@ export const EventModal = ({
           cronograma: event.cronograma || null,
           patrocinador: event.patrocinador || [],
           categoryIds: event.categoryIds || [],
-          tipoId: event.tipoId || null,
+          tipoId: typeId,
           estado: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
         });
@@ -154,15 +163,20 @@ export const EventModal = ({
         if (!result.isConfirmed) return;
       }
 
-      // Encontrar el ID del tipo
-      const selectedType = referenceData.types.find(t => t.name === tipoEvento);
+      // Obtener el nombre del tipo para guardarlo
+      const selectedType = referenceData.types.find(t => t.id === tipoEvento);
 
       const eventData = {
         ...form,
-        tipo: tipoEvento,
-        tipoId: selectedType?.id || form.tipoId,
+        tipo: selectedType?.name || '',
+        tipoId: tipoEvento,
         id: event?.id
       };
+
+      // Si el evento está finalizado, no enviar el campo estado para evitar errores de validación
+      if (form.estado === "Finalizado" || form.estado === "finalizado") {
+        delete eventData.estado;
+      }
 
       await onSave(eventData);
 
@@ -227,7 +241,7 @@ export const EventModal = ({
                   touched={touched.tipoEvento}
                   placeholder="Seleccione tipo"
                   options={referenceData.types.map(type => ({
-                    value: type.name,
+                    value: type.id,
                     label: type.name
                   }))}
                   required={mode !== "view"}
@@ -258,7 +272,7 @@ export const EventModal = ({
                   value={form.nombre}
                   onChange={handleChange}
                   onBlur={() => handleBlur("nombre", form.nombre, form)}
-                  placeholder={`Nombre del ${tipoEvento ? tipoEvento.toLowerCase() : 'evento'}`}
+                  placeholder={`Nombre del ${tipoEvento ? getSelectedTypeName().toLowerCase() : 'evento'}`}
                   error={errors.nombre}
                   touched={touched.nombre}
                   required={mode !== "view"}
@@ -373,6 +387,11 @@ export const EventModal = ({
                 touched={touched.fechaInicio}
                 required={mode !== "view"}
                 disabled={mode === "view"}
+                min={isNew ? (() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  return tomorrow.toISOString().split('T')[0];
+                })() : undefined}
               />
 
               <FormField

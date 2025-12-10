@@ -428,6 +428,8 @@
   justify-content: space-between;
   width: 100%;
   gap: 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .event-info {
@@ -448,4 +450,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Estilos específicos para vista de semana y día */
+.rbc-time-slot .rbc-event,
+.rbc-day-slot .rbc-event {
+  pointer-events: auto !important;
+  z-index: 2 !important;
+}
+
+.rbc-time-slot .event-btn,
+.rbc-day-slot .event-btn {
+  pointer-events: auto !important;
+  z-index: 3 !important;
+  position: relative !important;
+}
+
+/* Asegurar que los eventos en vista de semana/día sean clickeables */
+.rbc-event-content {
+  pointer-events: auto !important;
+  z-index: 2 !important;
+}
+
+/* Asegurar que el contenedor de acciones esté por encima */
+.rbc-event .event-actions {
+  pointer-events: auto !important;
+  z-index: 4 !important;
+  position: relative !important;
 }

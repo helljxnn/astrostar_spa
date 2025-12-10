@@ -1,0 +1,415 @@
+// SportsCategoryModal.jsx
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import {
+  useFormSportsCategoryValidation,
+  sportsCategoryValidationRules,
+} from "../hooks/useFormSportsCategoryValidation";
+import useSportsCategoryNameValidation from "../hooks/useSportsCategoryNameValidation";
+import { useSportsCategories } from "../hooks/useSportsCategories";
+import {
+  showErrorAlert,
+  showSuccessAlert,
+} from "../../../../../../../../shared/utils/Alerts";
+
+const MAX_FILE_SIZE_MB = 5;
+
+const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true }) => {
+  const initialForm = {
+    nombre: "",
+    edadMinima: "",
+    edadMaxima: "",
+    descripcion: "",
+    archivo: null,
+    estado: "Activo",
+    publicar: false,
+  };
+
+  const [fileName, setFileName] = useState("No se ha seleccionado ningun archivo");
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [initialName, setInitialName] = useState("");
+  const [persistedImageUrl, setPersistedImageUrl] = useState("");
+  const debounceRef = useRef(null);
+
+  const shouldRequireFile = isNew || !persistedImageUrl;
+  const validationRules = {
+    ...sportsCategoryValidationRules,
+    archivo: {
+      ...sportsCategoryValidationRules.archivo,
+      required: shouldRequireFile,
+    },
+  };
+
+  const {
+    values,
+    setValues,
+    errors,
+    setErrors,
+    handleChange,
+    handleBlur,
+    validateForm,
+    clearValidation,
+    isSubmitting,
+    setIsSubmitting,
+  } = useFormSportsCategoryValidation(initialForm, validationRules);
+
+  const { nameValidation, validateCategoryName, validateCategoryNameSync, resetNameValidation } =
+    useSportsCategoryNameValidation(category?.id || null);
+
+  const { createSportsCategory, updateSportsCategory } = useSportsCategories();
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    clearValidation();
+    resetNameValidation();
+    setErrors({});
+    setIsSubmitting(false);
+
+    if (category && !isNew) {
+      const existingImage = category.fileUrl ?? category.imageUrl ?? category.archivo ?? "";
+      const incomingName = category.name ?? category.nombre ?? "";
+
+      setValues({
+        nombre: incomingName,
+        edadMinima: String(category.minAge ?? category.edadMinima ?? ""),
+        edadMaxima: String(category.maxAge ?? category.edadMaxima ?? ""),
+        descripcion: category.description ?? category.descripcion ?? "",
+        archivo: null,
+        estado: category.status ?? "Activo",
+        publicar: Boolean(category.publish ?? category.publicar),
+      });
+
+      setInitialName(incomingName);
+      setPersistedImageUrl(existingImage);
+      setFileName(
+        category.fileName ?? (existingImage ? "Imagen actual" : "No se ha seleccionado ningun archivo")
+      );
+      setPreviewUrl(existingImage);
+    } else {
+      setValues(initialForm);
+      setInitialName("");
+      setPersistedImageUrl("");
+      setFileName("No se ha seleccionado ningun archivo");
+      setPreviewUrl("");
+    }
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, category, isNew]);
+
+  const handleNameChange = (val) => {
+    handleChange("nombre", val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const trimmed = String(val || "").trim();
+      const currentInitial = (initialName || "").trim().toLowerCase();
+
+      if (!isNew && trimmed.toLowerCase() === currentInitial) {
+        resetNameValidation();
+        return;
+      }
+
+      if (trimmed.length > 2) validateCategoryName(trimmed);
+      else resetNameValidation();
+    }, 450);
+  };
+
+  const handleFileChange = (e) => {
+    const f = e.target.files?.[0] ?? null;
+    if (f) {
+      if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
+        showErrorAlert("Archivo muy pesado", `La imagen supera ${MAX_FILE_SIZE_MB}MB.`);
+        e.target.value = "";
+        setFileName("No se ha seleccionado ningun archivo");
+        handleChange("archivo", null);
+        setPreviewUrl("");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setPreviewUrl(reader.result);
+      reader.readAsDataURL(f);
+    }
+    handleChange("archivo", f);
+    setFileName(f ? f.name : "No se ha seleccionado ningun archivo");
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const trimmedName = (values.nombre || "").trim();
+    const newErrors = validateForm();
+    if (Object.keys(newErrors).length > 0) {
+      showErrorAlert("Formulario incompleto", "Revisa los campos obligatorios.");
+      return;
+    }
+
+    if (!trimmedName) {
+      showErrorAlert("Nombre requerido", "El nombre de la categoria es obligatorio.");
+      return;
+    }
+
+    if (nameValidation.isDuplicate) {
+      showErrorAlert("Nombre duplicado", "Este nombre ya existe.");
+      return;
+    }
+
+    const minA = parseInt(values.edadMinima, 10);
+    const maxA = parseInt(values.edadMaxima, 10);
+    if (Number.isNaN(minA) || Number.isNaN(maxA) || minA >= maxA) {
+      showErrorAlert("Error en edades", "Edad maxima debe ser mayor que la minima.");
+      return;
+    }
+
+    const shouldValidateNameRemotely =
+      isNew || trimmedName.toLowerCase() !== (initialName || "").trim().toLowerCase();
+
+    if (shouldValidateNameRemotely) {
+      try {
+        const sync = await validateCategoryNameSync(trimmedName);
+        if (!sync.available) {
+          showErrorAlert("Nombre duplicado", sync.message || "Nombre en uso");
+          return;
+        }
+      } catch (validationError) {
+        console.warn("Name validation skipped due to error:", validationError);
+      }
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("name", trimmedName);
+      formData.append("description", (values.descripcion || "").trim());
+      formData.append("minAge", minA);
+      formData.append("maxAge", maxA);
+      formData.append("status", values.estado || "Activo");
+      formData.append("publicar", values.publicar ? "true" : "false");
+
+      if (values.archivo instanceof File) {
+        formData.append("file", values.archivo);
+      }
+
+      if (isNew) {
+        await createSportsCategory(formData, { page: 1, limit: 10 });
+      } else {
+        await updateSportsCategory(category.id, formData, { page: 1, limit: 10 });
+      }
+
+      showSuccessAlert(
+        isNew ? "Categoria creada" : "Categoria actualizada",
+        "Ahora se vera en la landing si esta publicada."
+      );
+      onClose();
+    } catch (err) {
+      console.error("handleSubmit error:", err);
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        err?.message ||
+        "No se pudo guardar la categoria. Revisa los campos.";
+      showErrorAlert("Error al guardar", message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: -60 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className="bg-white rounded-[18px] shadow-xl p-8 w-full max-w-5xl overflow-y-auto max-h-[90vh]"
+      >
+        <div className="flex justify-between items-center mb-7">
+          <h2 className="text-[32px] font-bold text-[#9BE9FF]">
+            {isNew ? "Crear Categoria Deportiva" : "Editar Categoria Deportiva"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-[#9c7df5] hover:text-[#7a5be9] text-3xl font-bold"
+            aria-label="Cerrar"
+            type="button"
+          >
+            &times;
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Nombre categoria *
+              </label>
+              <input
+                type="text"
+                value={values.nombre}
+                onChange={(e) => handleNameChange(e.target.value)}
+                onBlur={() => handleBlur("nombre")}
+                placeholder="Ej: Infantil A"
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
+                  errors.nombre ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+              {errors.nombre && <p className="text-red-500 text-xs mt-1">Aviso: {errors.nombre}</p>}
+              {values.nombre && values.nombre.trim().length > 0 && values.nombre.trim().length < 3 && (
+                <p className="text-yellow-500 text-xs mt-1">Aviso: Minimo 3 caracteres</p>
+              )}
+              {nameValidation.isChecking && (
+                <p className="text-gray-500 text-xs mt-1">Comprobando nombre...</p>
+              )}
+              {nameValidation.isDuplicate && (
+                <p className="text-red-500 text-xs mt-1">Aviso: Este nombre ya existe</p>
+              )}
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">Edad minima *</label>
+              <input
+                type="number"
+                value={values.edadMinima}
+                onChange={(e) => handleChange("edadMinima", e.target.value)}
+                onBlur={() => handleBlur("edadMinima")}
+                placeholder="Ej: 10"
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
+                  errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+              {values.edadMinima &&
+                values.edadMaxima &&
+                parseInt(values.edadMinima, 10) >= parseInt(values.edadMaxima, 10) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Aviso: Edad maxima debe ser mayor que minima
+                  </p>
+                )}
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">Edad maxima *</label>
+              <input
+                type="number"
+                value={values.edadMaxima}
+                onChange={(e) => handleChange("edadMaxima", e.target.value)}
+                onBlur={() => handleBlur("edadMaxima")}
+                placeholder="Ej: 15"
+                className={`w-full border rounded-xl px-4 py-3 text-sm ${
+                  errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+              {values.edadMinima &&
+                values.edadMaxima &&
+                parseInt(values.edadMinima, 10) >= parseInt(values.edadMaxima, 10) && (
+                  <p className="text-red-500 text-xs mt-1">
+                    Aviso: Edad maxima debe ser mayor que minima
+                  </p>
+                )}
+            </div>
+
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                Descripcion *
+              </label>
+              <textarea
+                value={values.descripcion}
+                onChange={(e) => handleChange("descripcion", e.target.value)}
+                onBlur={() => handleBlur("descripcion")}
+                placeholder="Breve descripcion..."
+                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none ${
+                  errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-sm font-semibold text-gray-700 mb-2">
+                Subir imagen {shouldRequireFile ? "*" : "(opcional en edicion)"}
+              </label>
+              <label className="cursor-pointer bg-[#74D5F4] text-white px-5 py-2.5 rounded-lg text-sm w-fit">
+                Elegir archivo
+                <input
+                  type="file"
+                  name="archivo"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              <span className="text-xs mt-2 text-gray-600 truncate">{fileName}</span>
+              <span className="text-xs text-gray-500 mt-1">
+                Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se mantiene la actual.
+              </span>
+              {previewUrl && (
+                <img
+                  src={previewUrl}
+                  alt="Vista previa"
+                  className="mt-2 w-32 h-32 object-cover rounded-lg border"
+                />
+              )}
+              {values.archivo && values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
+                <p className="text-red-500 text-xs mt-1">
+                  Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
+                </p>
+              )}
+            </div>
+
+            {!isNew && (
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-1 block">Estado *</label>
+                <select
+                  value={values.estado}
+                  onChange={(e) => handleChange("estado", e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3 text-sm"
+                >
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div
+            className={`flex items-center gap-3 mt-6 p-4 rounded-lg ${
+              values.publicar ? "bg-green-50 border border-green-200" : "bg-gray-50"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={values.publicar}
+              onChange={(e) => handleChange("publicar", e.target.checked)}
+              className="w-4 h-4"
+            />
+            <label className="text-sm">
+              {values.publicar ? "PUBLICADA EN LANDING" : "Publicar categoria inmediatamente"}
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-4 mt-10">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70"
+            >
+              {isSubmitting ? "Guardando..." : isNew ? "Crear Categoria" : "Actualizar Categoria"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+export default SportsCategoryModal;
+

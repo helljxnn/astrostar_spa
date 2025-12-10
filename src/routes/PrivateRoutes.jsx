@@ -1,4 +1,4 @@
-// ================================ 
+// ================================
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
@@ -14,6 +14,7 @@ import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics
 import AppointmentManagement from "../features/dashboard/pages/Admin/pages/Services/AppointmentManagement/Appointments.jsx";
 import Employees from "../features/dashboard/pages/Admin/pages/Services/Employees/Employees.jsx";
 import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/EmployeesSchedule/EmployeesSchedule.jsx";
+import Classes from "../features/dashboard/pages/Admin/pages/Classes/ClassesPage.jsx";
 
 /* --- Deportistas --- */
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
@@ -22,7 +23,6 @@ import TemporaryPersons from "../features/dashboard/pages/Admin/pages/Services/T
 import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
 import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
 import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enrollments/Enrollments.jsx";
-
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -143,6 +143,16 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute module="employeesSchedule" action="Ver">
               <EmployeesSchedule />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Clases --- */}
+        <Route
+          path="classes"
+          element={
+            <PrivateRoute module="classes" action="Ver">
+              <Classes />
             </PrivateRoute>
           }
         />

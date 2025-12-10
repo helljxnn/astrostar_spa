@@ -10,12 +10,16 @@ import SportsCategoryModal from "./components/SportsCategoryModal";
 import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 import { useSportsCategories } from "./hooks/useSportsCategories";
 import { showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/Alerts";
 import { useMemo } from "react";
+
+const MODULE_NAME = "sportsCategory";
 
 const SportsCategory = () => {
+  const { hasPermission } = usePermissions();
   const {
     sportsCategories,
     loading,

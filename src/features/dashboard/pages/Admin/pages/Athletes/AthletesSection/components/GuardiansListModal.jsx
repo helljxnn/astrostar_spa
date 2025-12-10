@@ -159,8 +159,6 @@ const GuardiansListModal = ({
                           (a) => String(a.acudiente) === String(guardian.id)
                         );
                         
-                        console.log(`✅ Acudiente: ${guardian.nombreCompleto} (ID: ${guardian.id}) - Deportistas: ${deportistasAsociados.length}`);
-                        
                         return {
                           ...guardian,
                           deportistasCount: deportistasAsociados.length,
