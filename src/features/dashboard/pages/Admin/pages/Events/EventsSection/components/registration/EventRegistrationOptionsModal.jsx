@@ -35,7 +35,7 @@ const EventRegistrationOptionsModal = ({
     eventStatus === "Cancelado" || 
     eventStatus === "cancelado";
 
-  // Definir acciones según si hay inscripciones o no
+  // Definir acciones según el estado del evento
   let actions = [];
   
   if (isEventFinishedOrCancelled) {
@@ -49,26 +49,8 @@ const EventRegistrationOptionsModal = ({
         hoverColor: "hover:bg-gray-50",
       },
     ];
-  } else if (hasRegistrations) {
-    // Si hay inscripciones y el evento está activo: Editar + Ver
-    actions = [
-      {
-        id: "editRegistrations",
-        label: "Editar inscritos",
-        icon: <FaEdit className="w-4 h-4" />,
-        color: "text-blue-600",
-        hoverColor: "hover:bg-blue-50",
-      },
-      {
-        id: "viewRegistrations",
-        label: "Ver inscritos",
-        icon: <FaEye className="w-4 h-4" />,
-        color: "text-gray-600",
-        hoverColor: "hover:bg-gray-50",
-      },
-    ];
   } else {
-    // Si NO hay inscripciones y el evento está activo: Inscribir + Ver
+    // Si el evento está activo: Inscribir (modo unificado) + Ver
     actions = [
       {
         id: "register",

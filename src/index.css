@@ -2,10 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Importar estilos de tooltip personalizado
-@import './shared/styles/tooltip.css'; */
 
-/* SOLUCION FINAL - Sin diagnostico */
 * {
   box-sizing: border-box;
 }

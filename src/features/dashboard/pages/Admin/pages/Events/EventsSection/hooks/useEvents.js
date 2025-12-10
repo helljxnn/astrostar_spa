@@ -41,20 +41,38 @@ export const useEvents = () => {
     const startDate = extractDate(event.startDate);
     const endDate = extractDate(event.endDate);
     
-    // Mantener el estado tal como viene del backend para el modal de edición
-    // Solo normalizar para la visualización en la lista
-    const estadoParaModal = event.status; // Mantener "Pausado", "Programado", etc.
-    const estadoParaLista = event.status === 'Pausado' ? 'pausado' : event.status.toLowerCase();
+    // Convertir "En_pausa" del backend a "Pausado" para el frontend
+    const normalizeStatus = (status) => {
+      if (status === 'En_pausa') return 'Pausado';
+      return status;
+    };
+    
+    const estadoParaModal = normalizeStatus(event.status); // Para el modal de edición
+    const estadoParaLista = estadoParaModal.toLowerCase(); // Para la visualización en la lista
     
     // Extraer categorías del evento
+    // Priorizar ServiceCategory (múltiples categorías) sobre category (una sola)
     const categories = event.ServiceCategory || [];
-    const categoryIds = categories.map(sc => sc.categoryId);
-    const categoryNames = categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean);
+    const categoryIds = categories.length > 0 
+      ? categories.map(sc => sc.categoryId) 
+      : (event.categoryId ? [event.categoryId] : []);
+    const categoryNames = categories.length > 0
+      ? categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean)
+      : (event.category?.name ? [event.category.name] : []);
+    
+    // Crear fechas para el calendario asegurando que no haya problemas de zona horaria
+    // Usar la fecha y hora directamente sin conversión de zona horaria
+    const createLocalDate = (dateStr, timeStr) => {
+      if (!dateStr || !timeStr) return new Date();
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      return new Date(year, month - 1, day, hours, minutes);
+    };
     
     return {
       id: event.id,
       nombre: event.name,
-      tipo: event.ServiceType?.name || '',
+      tipo: event.type?.name || event.ServiceType?.name || '',
       tipoId: event.typeId,
       descripcion: event.description || '',
       fechaInicio: startDate,
@@ -72,9 +90,9 @@ export const useEvents = () => {
       cronograma: event.scheduleFile,
       patrocinador: event.ServiceSponsor?.map(s => s.Sponsor.name) || [],
       hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
-      // Para el calendario
-      start: new Date(startDate + 'T' + event.startTime),
-      end: new Date(endDate + 'T' + event.endTime),
+      // Para el calendario - usar createLocalDate para evitar problemas de zona horaria
+      start: createLocalDate(startDate, event.startTime),
+      end: createLocalDate(endDate, event.endTime),
       title: event.name
     };
   };
@@ -83,15 +101,7 @@ export const useEvents = () => {
    * Transformar evento del frontend al formato del backend
    */
   const transformEventToBackend = (event) => {
-    // Normalizar el estado para que coincida con el backend
-    let normalizedStatus = event.estado || 'Programado';
-    
-    // Convertir "pausado" o variantes a "Pausado"
-    if (normalizedStatus.toLowerCase().includes('pausa')) {
-      normalizedStatus = 'Pausado';
-    }
-    
-    return {
+    const backendData = {
       name: event.nombre,
       description: event.descripcion || null,
       startDate: event.fechaInicio,
@@ -100,7 +110,6 @@ export const useEvents = () => {
       endTime: event.horaFin,
       location: event.ubicacion,
       phone: event.telefono,
-      status: normalizedStatus,
       imageUrl: event.imagen || null,
       scheduleFile: event.cronograma || null,
       publish: event.publicar || false,
@@ -108,6 +117,21 @@ export const useEvents = () => {
       sponsorNames: event.patrocinador || [],
       typeId: event.tipoId
     };
+
+    // Solo incluir el estado si está presente (no para eventos finalizados)
+    if (event.estado !== undefined) {
+      // Normalizar el estado para que coincida con el backend
+      let normalizedStatus = event.estado || 'Programado';
+      
+      // Convertir "Pausado" a "En_pausa" para que coincida con el enum de Prisma
+      if (normalizedStatus.toLowerCase().includes('pausa')) {
+        normalizedStatus = 'En_pausa';
+      }
+      
+      backendData.status = normalizedStatus;
+    }
+    
+    return backendData;
   };
 
   /**

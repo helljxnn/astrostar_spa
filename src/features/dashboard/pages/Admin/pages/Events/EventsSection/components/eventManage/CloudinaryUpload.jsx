@@ -175,11 +175,84 @@ const CloudinaryUpload = ({
   const getFileName = () => {
     if (!archivo) return "";
     if (typeof archivo === 'string') {
-      // Extraer nombre del archivo de la URL
-      const parts = archivo.split('/');
-      return parts[parts.length - 1];
+      // Mostrar un nombre descriptivo en lugar del hash
+      return type === "image" ? "Imagen del evento" : "Cronograma del evento";
     }
     return archivo.name || "archivo";
+  };
+
+  const handleDownload = async (e) => {
+    e.stopPropagation();
+    if (!archivo || typeof archivo !== 'string') return;
+    
+    try {
+      // Determinar la extensión y nombre del archivo
+      let fileName = '';
+      
+      if (type === "image") {
+        const urlParts = archivo.split('.');
+        const urlExtension = urlParts[urlParts.length - 1].split('?')[0].toLowerCase();
+        const extension = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(urlExtension) 
+          ? urlExtension 
+          : 'jpg';
+        fileName = `imagen-evento.${extension}`;
+      } else {
+        fileName = 'cronograma-evento.pdf';
+      }
+      
+      // Descargar usando fetch para controlar el nombre del archivo
+      showSuccessAlert("Descargando...", "Por favor espera un momento");
+      
+      const response = await fetch(archivo);
+      if (!response.ok) throw new Error('Error al obtener el archivo');
+      
+      const blob = await response.blob();
+      
+      // Crear un blob con el tipo MIME correcto
+      const blobWithType = type === "schedule" 
+        ? new Blob([blob], { type: 'application/pdf' })
+        : blob;
+      
+      // Crear URL temporal del blob
+      const blobUrl = window.URL.createObjectURL(blobWithType);
+      
+      // Crear link temporal para descarga
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Limpiar después de un pequeño delay
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+      
+      showSuccessAlert("Descarga completada", `Archivo guardado como "${fileName}"`);
+    } catch (error) {
+      console.error("Error al descargar:", error);
+      
+      // Fallback: intentar descarga directa
+      try {
+        const link = document.createElement('a');
+        link.href = archivo;
+        link.download = type === "schedule" ? 'cronograma-evento.pdf' : 'imagen-evento';
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showErrorAlert(
+          "Descarga alternativa", 
+          "El archivo se abrirá en una nueva pestaña. Usa 'Guardar como' para elegir el nombre."
+        );
+      } catch (fallbackError) {
+        showErrorAlert("Error al descargar", "No se pudo descargar el archivo. Usa el botón 'Ver' para abrirlo.");
+      }
+    }
   };
 
   return (
@@ -252,25 +325,70 @@ const CloudinaryUpload = ({
 
       {archivo && (
         <div className={`archivo-cargado ${disabled ? "disabled" : ""}`}>
-          {type === "image" && preview && (
-            <img 
-              src={preview} 
-              alt="Preview" 
-              style={{ 
-                width: "50px", 
-                height: "50px", 
-                objectFit: "cover", 
-                borderRadius: "4px",
-                marginRight: "8px"
-              }} 
-            />
-          )}
-          <span className="file-name">{getFileName()}</span>
-          {!disabled && !uploading && (
-            <button className="btn-eliminar" onClick={eliminarArchivo}>
-              ✕
+          <div className="file-info">
+            {type === "image" && preview && (
+              <img 
+                src={preview} 
+                alt="Preview" 
+                style={{ 
+                  width: "50px", 
+                  height: "50px", 
+                  objectFit: "cover", 
+                  borderRadius: "4px",
+                  marginRight: "8px"
+                }} 
+              />
+            )}
+            {type === "schedule" && (
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="40" 
+                height="40" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="#a855f7" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                style={{ marginRight: "8px", flexShrink: 0 }}
+              >
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            )}
+            <span className="file-name">{getFileName()}</span>
+          </div>
+          <div className="file-actions">
+            <button 
+              className="btn-descargar" 
+              onClick={handleDownload}
+              title="Descargar archivo"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
             </button>
-          )}
+            {!disabled && !uploading && (
+              <button className="btn-eliminar" onClick={eliminarArchivo} title="Eliminar archivo">
+                ✕
+              </button>
+            )}
+          </div>
         </div>
       )}
     </ContenedorSubida>
@@ -378,6 +496,7 @@ const ContenedorSubida = styled.div`
     max-width: 280px;
     color: #4b0082;
     font-size: 12px;
+    gap: 8px;
   }
 
   .archivo-cargado.disabled {
@@ -385,11 +504,49 @@ const ContenedorSubida = styled.div`
     color: #6b7280;
   }
 
+  .file-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+  }
+
   .file-name {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .file-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .btn-descargar {
+    background: #a855f7;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .btn-descargar:hover {
+    background: #7c3aed;
+    transform: translateY(-1px);
+  }
+
+  .btn-descargar:active {
+    transform: translateY(0);
   }
 
   .btn-eliminar {
@@ -400,8 +557,12 @@ const ContenedorSubida = styled.div`
     cursor: pointer;
     transition: color 0.2s ease;
     padding: 0;
-    margin-left: 8px;
     flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .btn-eliminar:hover:not(:disabled) {
