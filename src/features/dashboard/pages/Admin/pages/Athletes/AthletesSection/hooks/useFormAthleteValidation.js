@@ -146,7 +146,17 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
 
     setValues(prev => ({ ...prev, [name]: val }));
 
-    if (touched[name]) {
+    // Campos que SIEMPRE se validan instantáneamente (sin esperar touched)
+    const alwaysValidateFields = ['phoneNumber', 'email', 'identification'];
+    
+    // Si es un campo de validación instantánea, validar SIEMPRE
+    if (alwaysValidateFields.includes(name)) {
+      const error = validateField(name, val);
+      setErrors(prev => ({ ...prev, [name]: error }));
+      setTouched(prev => ({ ...prev, [name]: true }));
+    }
+    // Para otros campos, solo validar si ya están touched
+    else if (touched[name]) {
       const error = validateField(name, val);
       setErrors(prev => ({ ...prev, [name]: error }));
     }
@@ -169,6 +179,18 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
     setTouched({});
   };
 
+  // Función para validar campos específicos manualmente
+  const validateFields = (fieldsToValidate, customValues = null) => {
+    const valuesToUse = customValues || values;
+    const newErrors = {};
+    fieldsToValidate.forEach(name => {
+      const error = validateField(name, valuesToUse[name], valuesToUse);
+      if (error) newErrors[name] = error;
+    });
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
+  };
+
   return { 
     values, 
     errors, 
@@ -176,6 +198,7 @@ export const useFormAthleteValidation = (initialValues, validationRules) => {
     handleChange, 
     handleBlur, 
     validateAllFields, 
+    validateFields,
     setValues, 
     setErrors, 
     setTouched, 
@@ -217,16 +240,20 @@ export const athleteValidationRules = {
   ],
   email: [
     (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
-    (value) =>
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
+    (value) => {
+      // Validación más estricta: solo letras, números, puntos, guiones y guiones bajos
+      // Formato: usuario@dominio.extension
+      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      return !emailRegex.test(value || "") ? "Formato de correo inválido" : "";
+    },
   ],
   phoneNumber: [
     (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
     (value) => {
       if (!value) return "";
-      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
+      // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos que empiecen con 3
       const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
-      const phoneWithoutCode = /^\d{10}$/; // 3226758060
+      const phoneWithoutCode = /^3\d{9}$/; // 3226758060 (debe empezar con 3)
       
       if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
         return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
@@ -256,6 +283,11 @@ export const athleteValidationRules = {
     (v) => !isValidCategory(v?.trim()) ? "La categoría solo puede contener letras, números, espacios, guiones y paréntesis" : "",
     (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
   ],
+  address: [
+    (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
+    (value) => value?.length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
+    (value) => value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
+  ],
   estado: [
     (v) => !v ? "Debe seleccionar un estado" : ""
   ],
@@ -278,19 +310,14 @@ export const athleteValidationRules = {
       return "";
     }
   ],
-  conceptoInscripcion: [
-    (v) => !v?.trim() ? "El concepto de estado es obligatorio" : "",
-    (v) => v?.trim().length < 3 ? "El concepto debe tener al menos 3 caracteres" : "",
-    (v) => v?.trim().length > 100 ? "El concepto no puede exceder 100 caracteres" : "",
-    (v) => hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""
+  parentesco: [
+    (v, values) => {
+      // Si hay acudiente seleccionado, el parentesco es obligatorio
+      if (values?.acudiente && !v) {
+        return "El parentesco es obligatorio";
+      }
+      return "";
+    }
   ],
-  fechaInscripcion: [
-    (v) => !v ? "La fecha de inscripción es obligatoria" : ""
-  ],
-  estadoInscripcion: [
-    (v) => !v ? "Debes seleccionar un estado de inscripción" : ""
-  ],
-  fechaConcepto: [
-    (v) => !v ? "La fecha de concepto es obligatoria" : ""
-  ],
+
 };

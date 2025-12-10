@@ -1,14 +1,15 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import {
-  EffectCoverflow,
+  EffectFade,
   Autoplay,
   Pagination,
   Navigation,
 } from "swiper/modules";
 import "swiper/css";
-import "swiper/css/effect-coverflow";
+import "swiper/css/effect-fade";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
+import "swiper/css/autoplay";
 import "../styles/home.css";
 
 // ✅ Importa imágenes
@@ -26,66 +27,101 @@ export default function HeroCarousel() {
       img: img1,
       title: "Fundación Manuela Vanegas",
       subtitle: "Apoyamos el desarrollo integral de niñas y jóvenes",
+      accent: "💜",
     },
     {
       img: img2,
       title: "Deporte",
-      subtitle: "El fútbol como motor de sueños y disciplina ⚽",
+      subtitle: "El fútbol como motor de sueños y disciplina",
+      accent: "⚽",
     },
     {
       img: img3,
       title: "Educación",
-      subtitle: "Formación académica y personal con valores 📚",
+      subtitle: "Formación académica y personal con valores",
+      accent: "📚",
     },
     {
       img: img4,
       title: "Inclusión Social",
-      subtitle: "Espacios de igualdad y oportunidades 💜",
+      subtitle: "Espacios de igualdad y oportunidades",
+      accent: "🤝",
     },
     {
       img: img5,
       title: "Trabajo en Equipo",
-      subtitle: "Unión y respeto dentro y fuera de la cancha 🤝",
+      subtitle: "Unión y respeto dentro y fuera de la cancha",
+      accent: "👥",
     },
     {
       img: img6,
       title: "Superación",
-      subtitle: "Cada reto es una oportunidad para crecer 🌟",
+      subtitle: "Cada reto es una oportunidad para crecer",
+      accent: "🌟",
     },
     {
       img: img7,
       title: "Pasión",
-      subtitle: "El amor por el fútbol que nos inspira 💪⚽",
+      subtitle: "El amor por el fútbol que nos inspira",
+      accent: "💪",
     },
   ];
 
   return (
     <div className="hero-carousel-container">
       <Swiper
-        effect="coverflow"
-        grabCursor
-        centeredSlides
-        slidesPerView="auto"
-        loop={true} // 🔥 Hace el carrusel circular
-        autoplay={{ delay: 4000, disableOnInteraction: false }}
-        coverflowEffect={{
-          rotate: 0,
-          stretch: 0,
-          depth: 200,
-          modifier: 2.5,
-          slideShadows: false,
+        modules={[EffectFade, Autoplay, Pagination, Navigation]}
+        effect="fade"
+        fadeEffect={{ crossFade: true }}
+        grabCursor={false}
+        allowTouchMove={true}
+        loop={true}
+        speed={800}
+        autoplay={{
+          delay: 4000,
+          disableOnInteraction: false,
+          pauseOnMouseEnter: false,
+          waitForTransition: false,
         }}
-        pagination={{ clickable: true }}
-        navigation
-        modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
+        pagination={{ 
+          clickable: true,
+          dynamicBullets: false,
+        }}
+        navigation={true}
         className="hero-swiper"
       >
         {slides.map((slide, i) => (
           <SwiperSlide key={i} className="hero-slide">
-            <img src={slide.img} alt={slide.title} />
-            <div className="overlay">
-              <h2>{slide.title}</h2>
-              <p>{slide.subtitle}</p>
+            {/* Imagen sin animaciones */}
+            <img
+              src={slide.img}
+              alt={slide.title}
+              className="w-full h-full object-cover"
+            />
+
+            {/* Overlay simple solo abajo */}
+            <div className="slide-overlay"></div>
+
+            {/* Contenido minimalista */}
+            <div className="absolute inset-0 flex flex-col justify-end items-center px-6 sm:px-10 lg:px-16 pb-20 sm:pb-24 lg:pb-32">
+              
+              {/* Emoji flotante */}
+              <div className="floating-emoji">
+                {slide.accent}
+              </div>
+
+              {/* Caja de contenido glassmorphism */}
+              <div className="hero-glass-card">
+                <h1 className="hero-title">
+                  {slide.title}
+                </h1>
+                
+                <div className="title-divider"></div>
+                
+                <p className="hero-subtitle">
+                  {slide.subtitle}
+                </p>
+              </div>
             </div>
           </SwiperSlide>
         ))}

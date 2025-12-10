@@ -29,6 +29,9 @@ class GuardiansService {
         status
       });
       
+      console.log('🟢 [GuardiansService] Respuesta del backend:', response);
+      console.log('🟢 [GuardiansService] Direcciones de acudientes:', response?.data?.map(g => ({ id: g.id, nombre: g.nombreCompleto, address: g.address, direccion: g.direccion })));
+      
       if (response && response.success) {
         return {
           success: true,
@@ -227,6 +230,101 @@ class GuardiansService {
    */
   async getActiveGuardians() {
     return this.getGuardians({ status: 'Activo' });
+  }
+
+  /**
+   * Obtener todos los acudientes sin paginación
+   * Hace múltiples peticiones automáticas si hay más de 100 registros
+   */
+  async getAll() {
+    try {
+      let allGuardians = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const limit = 100; // Límite máximo permitido por el backend
+
+      // Hacer peticiones hasta obtener todos los registros
+      while (hasMorePages) {
+        const response = await apiClient.get(this.endpoint, {
+          page: currentPage,
+          limit: limit,
+        });
+
+        if (response && response.success) {
+          const guardians = response.data || [];
+          allGuardians = [...allGuardians, ...guardians];
+
+          // Si recibimos menos registros que el límite, ya no hay más páginas
+          hasMorePages = guardians.length === limit;
+          currentPage++;
+        } else {
+          // Si hay un error, detenemos el loop
+          hasMorePages = false;
+        }
+      }
+
+      return {
+        success: true,
+        data: allGuardians,
+      };
+    } catch (error) {
+      console.error('Error al obtener todos los acudientes:', error);
+      return {
+        success: false,
+        data: [],
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verificar si un documento ya está registrado
+   */
+  async checkDocumentExists(identification, excludeId = null) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-document`, {
+        identification,
+        excludeId
+      });
+      
+      return {
+        success: true,
+        exists: response.exists || false,
+        guardian: response.guardian || null
+      };
+    } catch (error) {
+      console.error('Error verificando documento:', error);
+      return {
+        success: false,
+        exists: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verificar si un email ya está registrado
+   */
+  async checkEmailExists(email, excludeId = null) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-email`, {
+        email,
+        excludeId
+      });
+      
+      return {
+        success: true,
+        exists: response.exists || false,
+        guardian: response.guardian || null
+      };
+    } catch (error) {
+      console.error('Error verificando email:', error);
+      return {
+        success: false,
+        exists: false,
+        error: error.message
+      };
+    }
   }
 }
 

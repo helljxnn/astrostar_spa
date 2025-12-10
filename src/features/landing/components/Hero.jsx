@@ -1,6 +1,11 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { FaUserPlus } from "react-icons/fa";
+import PreRegistrationModal from "./PreRegistrationModal";
 
-export const Hero = ({ title, imageUrl, subtitle }) => {
+export const Hero = ({ title, imageUrl, subtitle, showInscriptionButton = false }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   if (!title && !subtitle) return null; 
 
   return (
@@ -40,12 +45,33 @@ export const Hero = ({ title, imageUrl, subtitle }) => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.6 }}
-            className="text-sm sm:text-base lg:text-lg text-gray-800 font-montserrat"
+            className="text-sm sm:text-base lg:text-lg text-gray-800 font-montserrat mb-6"
           >
             {subtitle}
           </motion.p>
         )}
+        
+        {showInscriptionButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-3 mx-auto px-8 py-4 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] text-white rounded-full shadow-lg hover:shadow-xl transition-all font-semibold text-lg"
+          >
+            <FaUserPlus size={24} />
+            ¡Inscríbete Aquí!
+          </motion.button>
+        )}
       </motion.div>
+
+      {/* Modal de Pre-inscripción */}
+      <PreRegistrationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </section>
   );
 };

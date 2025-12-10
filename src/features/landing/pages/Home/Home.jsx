@@ -30,6 +30,7 @@ import ponymalta from "./images/provedores/ponymalta.png";
 
 // Importa carrusel
 import HeroCarousel from "./components/HeroCarousel";
+import InscriptionSection from "./components/InscriptionSection";
 
 //
 import "./styles/home.css";
@@ -90,6 +91,9 @@ export default function Home() {
       <section className="hero-section">
         <HeroCarousel />
       </section>
+
+      {/* Sección de Inscripción */}
+      <InscriptionSection />
 
       {/* Fundadora */}
       <section className="bg-white py-24 relative overflow-hidden">

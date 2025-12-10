@@ -23,8 +23,8 @@ import {
   showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts";
 
-// Estados de inscripción
-const inscriptionStates = [
+// Estados de matrícula
+const enrollmentStates = [
   { value: "Vigente", label: "Vigente" },
   { value: "Suspendida", label: "Suspendida" },
   { value: "Vencida", label: "Vencida" },
@@ -116,7 +116,7 @@ const handleFormChange = (field, value, setFormFunction) => {
   }));
 };
 
-const InscriptionManagementModal = ({
+const EnrollmentManagementModal = ({
   isOpen,
   onClose,
   athlete,
@@ -318,7 +318,7 @@ const InscriptionManagementModal = ({
     if (currentInscription && currentInscription.estado !== "Vencida") {
       showErrorAlert(
         "No se puede renovar",
-        `Solo puede renovar cuando la inscripción actual esté Vencida. Estado actual: ${currentInscription.estado}`
+        `Solo puede renovar cuando la matrícula actual esté Vencida. Estado actual: ${currentInscription.estado}`
       );
       return;
     }
@@ -373,8 +373,8 @@ const InscriptionManagementModal = ({
       await onUpdateAthlete(updatedAthlete);
 
       showSuccessAlert(
-        "Inscripción renovada",
-        `Se creó una nueva inscripción vigente para ${athlete.nombres} ${athlete.apellidos}.`
+        "Matrícula renovada",
+        `Se creó una nueva matrícula vigente para ${athlete.nombres} ${athlete.apellidos}.`
       );
 
       // Limpiar formulario y comprobante
@@ -390,8 +390,8 @@ const InscriptionManagementModal = ({
     } catch (error) {
       console.error("Error creating inscription:", error);
       showErrorAlert(
-        "Error al crear inscripción",
-        error.message || "Ocurrió un error al crear la inscripción."
+        "Error al crear matrícula",
+        error.message || "Ocurrió un error al crear la matrícula."
       );
     } finally {
       setIsProcessing(false);
@@ -401,7 +401,7 @@ const InscriptionManagementModal = ({
   const handleSaveEdit = async (inscriptionId) => {
     try {
       if (!currentInscription) {
-        showErrorAlert("Error", "No se encontró la inscripción a editar");
+        showErrorAlert("Error", "No se encontró la matrícula a editar");
         return;
       }
 
@@ -417,7 +417,7 @@ const InscriptionManagementModal = ({
 
       const confirmResult = await showConfirmAlert(
         "¿Confirmar cambios?",
-        "¿Estás seguro de que quieres guardar los cambios en esta inscripción?"
+        "¿Estás seguro de que quieres guardar los cambios en esta matrícula?"
       );
 
       if (!confirmResult.isConfirmed) return;
@@ -486,7 +486,7 @@ const InscriptionManagementModal = ({
       console.error("Error updating inscription:", error);
       showErrorAlert(
         "Error al actualizar",
-        error.message || "Ocurrió un error al actualizar la inscripción."
+        error.message || "Ocurrió un error al actualizar la matrícula."
       );
     } finally {
       setIsProcessing(false);
@@ -529,7 +529,7 @@ const InscriptionManagementModal = ({
             <FaTimes size={18} />
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center mb-3">
-            Gestión de Inscripciones
+            Gestión de Matrículas
           </h2>
           <div className="flex items-center justify-center gap-2 text-gray-600">
             <FaUserCircle className="text-primary-purple" size={20} />
@@ -574,7 +574,7 @@ const InscriptionManagementModal = ({
               whileTap={{ scale: 0.98 }}
             >
               <FaPlus size={16} />
-              Renovar Inscripción
+              Renovar Matrícula
             </motion.button>
           </div>
         </div>
@@ -618,7 +618,7 @@ const InscriptionManagementModal = ({
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                       <FaCalendarAlt className="text-primary-purple" />
-                      Estado Actual de Inscripción
+                      Estado Actual de Matrícula
                     </h3>
                     {currentInscription &&
                       !editingInscription &&
@@ -664,7 +664,7 @@ const InscriptionManagementModal = ({
                             {currentInscription.estado === "Vencida" && (
                               <p>
                                 • No puede cambiar el estado. Use la pestaña
-                                'Renovar Inscripción'
+                                'Renovar Matrícula'
                               </p>
                             )}
                           </div>
@@ -672,7 +672,7 @@ const InscriptionManagementModal = ({
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <FormField
-                            label="Estado de Inscripción"
+                            label="Estado de Matrícula"
                             name="estado"
                             type="select"
                             options={getAvailableStateChanges(
@@ -797,7 +797,7 @@ const InscriptionManagementModal = ({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                               <div className="bg-white/50 rounded-lg p-3">
                                 <p className="text-sm font-semibold text-gray-700 mb-1">
-                                  Fecha de inscripción:
+                                  Fecha de matrícula:
                                 </p>
                                 <p className="text-gray-800 font-medium">
                                   {new Date(
@@ -859,8 +859,8 @@ const InscriptionManagementModal = ({
                         No hay inscripciones registradas
                       </p>
                       <p className="text-sm text-gray-500 mt-1">
-                        Crea una nueva inscripción desde la pestaña "Renovar
-                        Inscripción"
+                        Crea una nueva matrícula desde la pestaña "Renovar
+                        Matrícula"
                       </p>
                     </div>
                   )}
@@ -877,9 +877,9 @@ const InscriptionManagementModal = ({
                         Cambio automático de estado
                       </h4>
                       <p className="text-sm text-blue-700">
-                        Las inscripciones con estado "Vigente" o "Suspendida" se
+                        Las matrículas con estado "Vigente" o "Suspendida" se
                         cambiarán automáticamente a "Vencida" cuando pase más de
-                        un año desde la fecha de inscripción.
+                        un año desde la fecha de matrícula.
                       </p>
                     </div>
                   </div>
@@ -913,7 +913,7 @@ const InscriptionManagementModal = ({
                             No se puede renovar
                           </h4>
                           <p className="text-sm text-yellow-700">
-                            Solo puede renovar cuando la inscripción actual esté{" "}
+                            Solo puede renovar cuando la matrícula actual esté{" "}
                             <strong>Vencida</strong>. Estado actual:{" "}
                             <strong>{currentInscription.estado}</strong>
                           </p>
@@ -926,8 +926,8 @@ const InscriptionManagementModal = ({
                   <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2 border-b border-gray-200 pb-3">
                     <FaPlus className="text-primary-purple" />
                     {currentInscription?.estado === "Vencida"
-                      ? "Renovar Inscripción"
-                      : "Crear Nueva Inscripción"}
+                      ? "Renovar Matrícula"
+                      : "Crear Nueva Matrícula"}
                   </h3>
 
                   <div className="space-y-6">
@@ -955,7 +955,7 @@ const InscriptionManagementModal = ({
                       />
 
                       <FormField
-                        label="Fecha de Inscripción"
+                        label="Fecha de Matrícula"
                         name="fechaInscripcion"
                         type="date"
                         value={newInscriptionForm.fechaInscripcion}
@@ -1053,8 +1053,8 @@ const InscriptionManagementModal = ({
                           <>
                             <FaPlus size={16} />
                             {currentInscription?.estado === "Vencida"
-                              ? "Renovar Inscripción"
-                              : "Crear Inscripción"}
+                              ? "Renovar Matrícula"
+                              : "Crear Matrícula"}
                           </>
                         )}
                       </motion.button>
@@ -1085,4 +1085,4 @@ const InscriptionManagementModal = ({
   );
 };
 
-export default InscriptionManagementModal;
+export default EnrollmentManagementModal;

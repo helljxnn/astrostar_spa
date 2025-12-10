@@ -196,16 +196,22 @@ const Tbody = ({ options }) => {
                 {customActions && (
                   typeof customActions === 'function'
                     ? customActions(item)
-                    : customActions.map((action, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => action.onClick(item)}
-                          className={action.className}
-                          title={action.title}
-                        >
-                          {action.label}
-                        </button>
-                      ))
+                    : customActions.map((action, idx) => {
+                        // Verificar si la acción debe mostrarse
+                        const shouldShow = action.show ? action.show(item) : true;
+                        if (!shouldShow) return null;
+                        
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => action.onClick(item)}
+                            className={action.className}
+                            title={action.title}
+                          >
+                            {action.label}
+                          </button>
+                        );
+                      })
                 )}
               </td>
             )}

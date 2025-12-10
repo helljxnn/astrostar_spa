@@ -96,9 +96,6 @@ const GuardiansListModal = ({
                 <h2 className="text-2xl font-bold text-gray-800">
                   Lista de Acudientes
                 </h2>
-                <p className="text-gray-600">
-                  Administra todos los acudientes registrados
-                </p>
               </div>
             </div>
             <button

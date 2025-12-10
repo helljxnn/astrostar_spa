@@ -42,37 +42,7 @@ const TemporaryTeams = () => {
       return "Eliminar equipo";
     }
 
-    const events = assignment.events || [];
-    const count = assignment.count || events.length;
-
-    if (count === 0) {
-      return "Eliminar equipo";
-    }
-
-    // Agrupar eventos por estado
-    const statusGroups = {};
-    events.forEach(event => {
-      const status = event.status || 'Desconocido';
-      if (!statusGroups[status]) {
-        statusGroups[status] = 0;
-      }
-      statusGroups[status]++;
-    });
-
-    // Crear mensaje natural
-    const statusList = Object.keys(statusGroups);
-    
-    if (count === 1) {
-      // "Asignado a un evento con estado Programado"
-      return `Asignado a un evento con estado ${statusList[0]}`;
-    } else if (statusList.length === 1) {
-      // "Asignado a 3 eventos con estado Programado"
-      return `Asignado a ${count} eventos con estado ${statusList[0]}`;
-    } else {
-      // "Asignado a 3 eventos con estado Programado y En_pausa"
-      const lastStatus = statusList.pop();
-      return `Asignado a ${count} eventos con estado ${statusList.join(', ')} y ${lastStatus}`;
-    }
+    return "Equipo asignado a un evento";
   };
 
   // Verificar asignaciones a eventos para todos los equipos
@@ -107,7 +77,7 @@ const TemporaryTeams = () => {
     setEventAssignmentsCheck(assignmentsCheck)
   }
 
-  // Cargar equipos TEMPORALES
+  // Cargar TODOS los equipos (fundación y temporales)
   const loadTeams = async () => {
     setLoading(true)
     try {
@@ -115,7 +85,7 @@ const TemporaryTeams = () => {
         page: currentPage,
         limit: rowsPerPage,
         search: searchTerm,
-        teamType: "Temporal"
+        // No filtrar por teamType para mostrar todos los equipos
       })
       
       if (result.success) {
@@ -350,6 +320,23 @@ const TemporaryTeams = () => {
                 Activo: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
                 Inactivo: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
+              customRenderers: {
+                cantidadDeportistas: (value) => (
+                  <div className="pl-8 text-gray-700">
+                    {value}
+                  </div>
+                ),
+                categoria: (value) => (
+                  <div className="pl-4 text-gray-700">
+                    {value}
+                  </div>
+                ),
+                teamTypeForDisplay: (value) => (
+                  <div className="-ml-2 text-gray-700">
+                    {value}
+                  </div>
+                )
+              }
             }}
             rowsPerPage={1000}
             onEdit={hasPermission('temporaryTeams', 'Editar') ? handleEdit : null}

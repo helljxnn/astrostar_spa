@@ -49,20 +49,35 @@ const SelectionModal = ({
   const loadData = async () => {
     setLoading(true)
     try {
+      console.log(`🔄 [SelectionModal] Cargando datos para modo: ${mode}`)
       let response
       if (mode === "trainer") {
+        console.log('📞 [SelectionModal] Llamando a getTrainers()...')
         response = await TeamsService.getTrainers()
       } else {
+        console.log('📞 [SelectionModal] Llamando a getAthletes()...')
         response = await TeamsService.getAthletes()
       }
       
-      // FIX CRÍTICO: Asegurar que siempre tengamos un array
+      console.log('📥 [SelectionModal] Respuesta del servicio:', response)
+      console.log('   - success:', response?.success)
+      console.log('   - data:', response?.data)
+      console.log('   - data.length:', response?.data?.length)
+      
+      // Asegurar que siempre tengamos un array
       if (response && response.success && Array.isArray(response.data)) {
+        console.log(`✅ [SelectionModal] Datos cargados: ${response.data.length} elementos`)
+        console.log('   Primeros 3 elementos:', response.data.slice(0, 3))
         setData(response.data)
       } else {
+        console.warn('⚠️ [SelectionModal] Respuesta inválida o sin datos:', response)
+        console.warn('   - response.success:', response?.success)
+        console.warn('   - Array.isArray(response.data):', Array.isArray(response?.data))
         setData([])
       }
     } catch (error) {
+      console.error('❌ [SelectionModal] Error cargando datos:', error)
+      console.error('   Error completo:', error.message)
       setData([])
     } finally {
       setLoading(false)
@@ -232,7 +247,9 @@ const SelectionModal = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {icon}
-                <h2 className="text-2xl font-bold">{title}</h2>
+                <div>
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
+                </div>
               </div>
               <button
                 onClick={onClose}

@@ -121,7 +121,7 @@ const ComprobanteModal = ({ comprobante, onClose }) => {
   );
 };
 
-const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
+const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedComprobante, setSelectedComprobante] = useState(null);
@@ -264,7 +264,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
             <FaTimes size={18} />
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center mb-3">
-            Historial de Inscripciones
+            Historial de Matrículas
           </h2>
           <div className="flex items-center justify-center gap-2 text-gray-600">
             <FaUserCircle className="text-primary-purple" size={20} />
@@ -424,7 +424,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                                 )}
                                 {!isCambioEstado && !isRenovacion && (
                                   <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
-                                    Inscripción inicial
+                                    Matrícula inicial
                                   </span>
                                 )}
                                 
@@ -516,7 +516,7 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                               <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
                                   <FaCalendarAlt size={10} />
-                                  Fecha de inscripción:
+                                  Fecha de matrícula:
                                 </p>
                                 <p className="text-sm text-gray-900 font-medium">
                                   {formatDateTime(inscription.fechaInscripcion)}
@@ -642,4 +642,4 @@ const InscriptionHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
   );
 };
 
-export default InscriptionHistoryModal;
+export default EnrollmentHistoryModal;
