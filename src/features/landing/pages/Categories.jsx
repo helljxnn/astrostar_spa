@@ -1,116 +1,120 @@
-// src/components/Categories.jsx
-import { Hero } from "../components/Hero"; // Asegúrate que exista y reciba `title`, `subtitle`, `imageUrl`
+import { Hero } from "../components/Hero";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import apiClient from "../../../shared/services/apiClient"; // Ajusta la ruta según tu estructura
+import apiClient from "../../../shared/services/apiClient";
 
-// ✅ Tarjeta de categoría estandarizada (usa campos en inglés)
-function CategoryCard({ id, name, imageUrl, description, minAge, maxAge }) {
-  return (
-    <div className="relative w-full h-80 overflow-hidden rounded-2xl shadow-lg group flex">
-      {/* Imagen */}
-      <div className="w-3/5 h-full relative overflow-hidden bg-gray-200">
-        <motion.img
-          src={imageUrl || "/assets/images/placeholder-category.jpg"}
-          alt={name}
-          className="w-full h-full object-cover"
-          whileHover={{ scale: 1.05 }}
-          transition={{ duration: 0.3 }}
-          onError={(e) => {
-            e.target.src = `https://via.placeholder.com/400x300?text=${encodeURIComponent(
-              name
-            )}`;
-          }}
-        />
-        {/* Nombre superpuesto */}
-        <div className="absolute bottom-2 left-2 bg-black/60 text-white px-3 py-1 rounded-lg text-sm font-semibold">
-          {name}
+const placeholderImage = "/assets/images/placeholder-category.jpg";
+
+const normalizeCategories = (raw = []) =>
+  raw
+    .filter(Boolean)
+    .map((cat, index) => ({
+      id: cat.id ?? cat.Id ?? index,
+      name: cat.name ?? cat.nombre ?? "Categoria sin nombre",
+      description: cat.description ?? cat.descripcion ?? "",
+      minAge: cat.minAge ?? cat.edadMinima ?? null,
+      maxAge: cat.maxAge ?? cat.edadMaxima ?? null,
+      imageUrl:
+        cat.imageUrl ??
+        cat.fileUrl ??
+        cat.archivo ??
+        cat.image ??
+        cat.file ??
+        cat.imagen ??
+        null,
+    }));
+
+const LoadingGrid = () => (
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {Array.from({ length: 6 }).map((_, idx) => (
+      <div
+        key={idx}
+        className="h-80 rounded-2xl border border-slate-100 bg-white shadow-md overflow-hidden animate-pulse"
+      >
+        <div className="h-48 bg-slate-200" />
+        <div className="p-5 space-y-3">
+          <div className="h-4 w-2/3 bg-slate-200 rounded" />
+          <div className="h-4 w-full bg-slate-200 rounded" />
+          <div className="h-4 w-1/2 bg-slate-200 rounded" />
         </div>
       </div>
+    ))}
+  </div>
+);
 
-      {/* Panel lateral (aparece al hover) */}
-      <motion.div
-        className="w-2/5 h-full 
-                   bg-gradient-to-r from-purple-200 via-purple-100 to-blue-200 
-                   flex flex-col items-center justify-center text-center px-4 
-                   opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-      >
-        <h3 className="text-gray-800 text-xl font-bold mb-2">{name}</h3>
-        <p className="text-gray-700 text-sm px-2">
-          {description || "Categoría deportiva"}
+function CategoryCard({ name, imageUrl, description, minAge, maxAge }) {
+  const ageRange =
+    minAge !== null && maxAge !== null ? `${minAge} - ${maxAge} anos` : "Programa formativo";
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.4 }}
+      className="group relative h-full overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-lg flex flex-col"
+    >
+      <div className="relative h-52 w-full overflow-hidden">
+        <motion.img
+          src={imageUrl || placeholderImage}
+          alt={name}
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          whileHover={{ scale: 1.02 }}
+          onError={(e) => {
+            e.target.src = placeholderImage;
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent" />
+        <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2">
+          <motion.span
+            whileHover={{ y: -2 }}
+            className="px-3 py-1 text-[11px] uppercase tracking-[0.12em] text-white bg-white/10 border border-white/30 rounded-full backdrop-blur-md shadow-sm"
+          >
+            Categoria
+          </motion.span>
+          <motion.span
+            whileHover={{ y: -2 }}
+            className="px-3 py-1 text-[11px] font-semibold text-white bg-primary-purple rounded-full shadow-md"
+          >
+            {ageRange}
+          </motion.span>
+        </div>
+        <h3 className="absolute bottom-4 left-4 right-4 text-xl font-semibold text-white drop-shadow-md">
+          {name}
+        </h3>
+      </div>
+
+      <div className="flex flex-col gap-4 p-5 flex-1">
+        <p className="text-sm leading-relaxed text-slate-600">
+          {description || "Categoria deportiva publicada desde el dashboard."}
         </p>
-        <p className="text-gray-600 text-sm mt-3">
-          Edad: {minAge} — {maxAge} años
-        </p>
-      </motion.div>
-    </div>
+      </div>
+    </motion.article>
   );
 }
 
 export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchPublicCategories = async () => {
+      setLoading(true);
+      setError("");
       try {
-        setLoading(true);
-        setError(null);
-
         const response = await apiClient.get("/sports-categories/public");
+        const payload = Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.data?.data)
+          ? response.data.data
+          : [];
 
-        // Normalización robusta: maneja tanto {  [...] } como directamente [...]
-        let data = [];
-        if (Array.isArray(response.data)) {
-          data = response.data;
-        } else if (response.data?.data && Array.isArray(response.data.data)) {
-          data = response.data.data;
-        } else if (response.data && Array.isArray(response.data)) {
-          data = response.data;
-        }
-
-        // Mapeo seguro: asegura que cada categoría tenga los campos necesarios
-        const normalized = data.map((cat) => ({
-          id: cat.id,
-          name: cat.name || cat.nombre || "Sin nombre",
-          description: cat.description || cat.descripcion || "",
-          minAge: cat.minAge || cat.edadMinima || 0,
-          maxAge: cat.maxAge || cat.edadMaxima || 18,
-          imageUrl: cat.imageUrl || cat.archivo || null,
-        }));
-
-        setCategories(normalized);
+        setCategories(normalizeCategories(payload));
       } catch (err) {
         console.error("Error fetching categories:", err);
-        setError(err.message || "No se pudieron cargar las categorías");
-        // Fallback visual (opcional)
-        setCategories([
-          {
-            id: 1,
-            name: "Infantil",
-            description: "Para niñas de 5 a 10 años: primeros pasos en el fútbol.",
-            minAge: 5,
-            maxAge: 10,
-            imageUrl: "/assets/images/Infantil.jpg",
-          },
-          {
-            id: 2,
-            name: "Pre-Juvenil",
-            description: "Desarrollo técnico y táctico para jóvenes de 11 a 14 años.",
-            minAge: 11,
-            maxAge: 14,
-            imageUrl: "/assets/images/Pre-Juvenil.jpg",
-          },
-          {
-            id: 3,
-            name: "Juvenil",
-            description: "Enfoque competitivo para adolescentes de 15 a 17 años.",
-            minAge: 15,
-            maxAge: 17,
-            imageUrl: "/assets/images/Juvenil.jpg",
-          },
-        ]);
+        setError(err.message || "No se pudieron cargar las categorias.");
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -119,40 +123,39 @@ export default function Categories() {
     fetchPublicCategories();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
   return (
     <div>
       <Hero
-        title="Categorías"
-        subtitle="Programas diseñados para el desarrollo integral de cada etapa."
+        title="Categorias"
+        subtitle="Programas disenados para el desarrollo integral de cada etapa."
         imageUrl="/assets/images/CategoriasHero.jpg"
       />
 
-      <div className="bg-gray-50 px-4 sm:px-6 py-12 md:py-16">
+      <section className="bg-gradient-to-b from-slate-50 via-white to-slate-50 px-4 sm:px-6 py-12 md:py-16">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-extrabold text-center mb-3 bg-gradient-to-r from-purple-500 via-purple-400 to-blue-500 bg-clip-text text-transparent">
-            Categorías de Formación Integral
-          </h2>
-          <p className="text-gray-600 text-center max-w-2xl mx-auto mb-10">
-            Desde los primeros pasos hasta la proyección profesional.
-          </p>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent">
+              Categorias de formacion integral
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mt-3">
+              Desde los primeros pasos hasta la proyeccion profesional. Explora
+              las categorias publicadas
+            </p>
+          </div>
 
           {error && (
-            <div className="text-center mb-6">
-              <p className="text-red-500 font-medium">⚠️ {error}</p>
+            <div className="text-center mb-8">
+              <p className="inline-flex items-center justify-center rounded-full bg-red-50 px-4 py-2 text-red-600 border border-red-100">
+                {error}
+              </p>
             </div>
           )}
 
-          {categories.length === 0 ? (
+          {loading ? (
+            <LoadingGrid />
+          ) : categories.length === 0 ? (
             <p className="text-gray-500 text-center mt-10">
-              No hay categorías disponibles en este momento.
+              No hay categorias disponibles en este momento.
             </p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -162,7 +165,7 @@ export default function Categories() {
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

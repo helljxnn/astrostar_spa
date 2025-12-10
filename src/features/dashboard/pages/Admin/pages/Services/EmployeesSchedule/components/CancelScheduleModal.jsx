@@ -46,10 +46,10 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 overflow-hidden border border-gray-100"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#7B61FF] to-[#9BE9FF] text-white">
+            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#6C7EFF] to-[#8AD7FF] text-white">
               <div className="flex items-center gap-3">
                 <FaExclamationTriangle className="w-5 h-5" />
                 <div>
@@ -123,7 +123,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
               <button
                 onClick={handleSubmit}
                 disabled={!cancelReason.trim()}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#9BE9FF] to-[#7B61FF] text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+                className="px-5 py-2.5 bg-gradient-to-r from-[#6C7EFF] to-[#5B8DEF] text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
               >
                 Confirmar cancelacion
               </button>
