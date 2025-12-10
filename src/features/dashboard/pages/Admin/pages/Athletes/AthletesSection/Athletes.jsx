@@ -59,12 +59,18 @@ const Athletes = () => {
   const [guardianToView, setGuardianToView] = useState(null);
   const [guardianModalMode, setGuardianModalMode] = useState("create");
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
+  const [currentAthleteId, setCurrentAthleteId] = useState(null); // ID del deportista actual al ver acudiente
 
 
 
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
   const rowsPerPage = 10;
+
+  // Función auxiliar para obtener el acudiente (debe estar antes del useMemo)
+  const getGuardianById = (guardianId) => {
+    return guardians.find((g) => String(g.id) === String(guardianId));
+  };
 
   // Filtrar datos localmente si hay término de búsqueda
   const filteredData = useMemo(() => {
@@ -73,21 +79,42 @@ const Athletes = () => {
     const searchLower = searchTerm.toLowerCase().trim();
 
     return athletes.filter((athlete) => {
-      const textFields = [
+      // Obtener información del acudiente
+      const guardian = getGuardianById(athlete.acudiente);
+      
+      // Campos del deportista
+      const athleteFields = [
         athlete.firstName,
         athlete.lastName,
         athlete.email,
         athlete.identification,
         athlete.categoria,
+        athlete.phoneNumber,
+        athlete.address,
+        athlete.status,
+        athlete.currentInscriptionStatus,
       ];
 
-      return textFields.some(
+      // Campos del acudiente
+      const guardianFields = guardian ? [
+        guardian.firstName,
+        guardian.lastName,
+        guardian.email,
+        guardian.identification,
+        guardian.phone,
+        guardian.address,
+      ] : [];
+
+      // Combinar todos los campos
+      const allFields = [...athleteFields, ...guardianFields];
+
+      return allFields.some(
         (field) =>
           field &&
           String(field).toLowerCase().includes(searchLower)
       );
     });
-  }, [athletes, searchTerm]);
+  }, [athletes, searchTerm, guardians]);
 
   // Usar paginación del servidor cuando no hay búsqueda local
   const displayData = searchTerm ? filteredData : athletes;
@@ -97,11 +124,6 @@ const Athletes = () => {
   const paginatedData = searchTerm ? filteredData.slice(startIndex, startIndex + rowsPerPage) : athletes;
 
   const handlePageChange = (page) => changePage(page);
-
-  // Función auxiliar para obtener el acudiente
-  const getGuardianById = (guardianId) => {
-    return guardians.find((g) => String(g.id) === String(guardianId));
-  };
 
   const handleSave = async (newAthlete) => {
     const success = await createAthlete(newAthlete);
@@ -282,7 +304,7 @@ const Athletes = () => {
     }
   };
 
-  const handleDeleteGuardian = async (guardian) => {
+  const handleDeleteGuardian = async (guardian, needsNewGuardian = false) => {
     if (!guardian || !guardian.id) {
       return showErrorAlert("Error", "Acudiente no válido");
     }
@@ -292,6 +314,24 @@ const Athletes = () => {
     if (success) {
       setIsGuardianViewOpen(false);
       setGuardianToView(null);
+      
+      // Si necesita nuevo acudiente, abrir modal de deportista para editar
+      if (needsNewGuardian && currentAthleteId) {
+        const athlete = athletes.find(a => a.id === currentAthleteId);
+        if (athlete) {
+          setTimeout(() => {
+            setAthleteToEdit(athlete);
+            setModalMode("edit");
+            setIsModalOpen(true);
+            showSuccessAlert(
+              'Asignar nuevo acudiente',
+              'Por favor, asigne un nuevo acudiente a esta deportista menor de edad.'
+            );
+          }, 500);
+        }
+      }
+      
+      setCurrentAthleteId(null);
     }
   };
 
@@ -307,6 +347,7 @@ const Athletes = () => {
     if (athlete.acudiente) {
       const guardian = getGuardianById(athlete.acudiente);
       if (guardian) {
+        setCurrentAthleteId(athlete.id); // Guardar el ID del deportista actual
         setGuardianToView(guardian);
         setIsGuardianViewOpen(true);
       } else {
@@ -314,6 +355,56 @@ const Athletes = () => {
       }
     } else {
       showErrorAlert("Sin Acudiente", "Este deportista no tiene un acudiente asignado");
+    }
+  };
+
+  // Remover acudiente de un deportista específico
+  const handleRemoveGuardian = async (guardian, athleteId, needsNewGuardian) => {
+    if (!guardian || !athleteId) {
+      return showErrorAlert("Error", "Datos inválidos");
+    }
+
+    try {
+      const response = await GuardiansService.removeGuardianFromAthlete(athleteId);
+      
+      if (response.success) {
+        // Refrescar datos primero
+        await refresh();
+        
+        // Cerrar el modal del acudiente
+        setIsGuardianViewOpen(false);
+        setGuardianToView(null);
+        
+        // Si necesita nuevo acudiente, abrir modal de deportista para editar
+        if (needsNewGuardian) {
+          setTimeout(async () => {
+            const updatedAthletes = athletes;
+            const athlete = updatedAthletes.find(a => a.id === athleteId);
+            
+            if (athlete) {
+              setAthleteToEdit(athlete);
+              setModalMode("edit");
+              setIsModalOpen(true);
+              
+              setTimeout(() => {
+                showSuccessAlert(
+                  'Asignar nuevo acudiente',
+                  'El acudiente fue removido. Por favor, asigne un nuevo acudiente a esta deportista menor de edad.'
+                );
+              }, 300);
+            }
+          }, 400);
+        } else {
+          showSuccessAlert('Acudiente removido', 'El acudiente fue removido correctamente de esta deportista.');
+        }
+        
+        setCurrentAthleteId(null);
+      } else {
+        throw new Error(response.error || 'Error removiendo acudiente');
+      }
+    } catch (err) {
+      console.error('Error removiendo acudiente:', err);
+      showErrorAlert('Error', err.message || 'No se pudo remover el acudiente');
     }
   };
 
@@ -339,34 +430,74 @@ const Athletes = () => {
               <ReportButton
                 data={athletes.map((athlete) => {
                 const guardian = getGuardianById(athlete.acudiente);
+                const firstName = athlete.firstName || athlete.nombres || "";
+                const lastName = athlete.lastName || athlete.apellidos || "";
+                const email = athlete.email || athlete.correo || "";
+                const phone = athlete.phoneNumber || athlete.telefono || "";
+                const address = athlete.address || athlete.direccion || "";
+                const birthDate = athlete.birthDate || athlete.fechaNacimiento || "";
+                const identification = athlete.identification || athlete.numeroDocumento || "";
+                
+                // Obtener tipo de documento del deportista
+                let tipoDocumento = "";
+                const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
+                if (docTypeId && referenceData?.documentTypes) {
+                  const docType = referenceData.documentTypes.find(dt => dt.id === docTypeId);
+                  if (docType) {
+                    tipoDocumento = docType.name || docType.label;
+                  }
+                }
+                
+                // Obtener tipo de documento del acudiente
+                let tipoDocumentoAcudiente = "";
+                if (guardian) {
+                  const guardianDocTypeId = guardian.documentTypeId;
+                  if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
+                    const docType = referenceData.guardianDocumentTypes.find(dt => dt.id === guardianDocTypeId);
+                    if (docType) {
+                      tipoDocumentoAcudiente = docType.name || docType.label;
+                    }
+                  }
+                }
+                
+                // Convertir parentesco a español
+                const parentescoMap = {
+                  'Mother': 'Madre',
+                  'Father': 'Padre',
+                  'Grandparent': 'Abuelo/a',
+                  'Uncle_Aunt': 'Tío/a',
+                  'Sibling': 'Hermano/a',
+                  'Cousin': 'Primo/a',
+                  'Legal_Guardian': 'Tutor/a Legal',
+                  'Neighbor': 'Vecino/a',
+                  'Family_Friend': 'Amigo/a de la familia',
+                  'Other': 'Otro'
+                };
+                const parentescoRaw = athlete.relationship || athlete.parentesco || "";
+                const parentesco = parentescoMap[parentescoRaw] || parentescoRaw;
+                
                 return {
-                  nombres: athlete.nombres || "",
-                  apellidos: athlete.apellidos || "",
-                  nombreCompleto: `${athlete.nombres} ${athlete.apellidos}`,
-                  tipoDocumento: athlete.tipoDocumento || "",
-                  numeroDocumento: athlete.numeroDocumento || "",
-                  correo: athlete.correo || "",
-                  telefono: athlete.telefono || "",
-                  direccion: athlete.direccion || "",
-                  ciudad: athlete.ciudad || "",
-                  fechaNacimiento: athlete.fechaNacimiento || "",
-                  genero: athlete.genero || "",
+                  nombres: firstName,
+                  apellidos: lastName,
+                  nombreCompleto: `${firstName} ${lastName}`.trim(),
+                  tipoDocumento,
+                  numeroDocumento: identification,
+                  correo: email,
+                  telefono: phone,
+                  direccion: address,
+                  fechaNacimiento: birthDate,
                   categoria: athlete.categoria || "",
-                  estado: athlete.estado || "",
-                  estadoInscripcion: athlete.estadoInscripcion || "",
-                  acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
-                  acudienteTipoDoc: guardian?.tipoDocumento || "",
-                  acudienteDocumento: guardian?.identificacion || "",
-                  acudienteTelefono: guardian?.telefono || "",
-                  acudienteCorreo: guardian?.correo || "",
-                  acudienteDireccion: guardian?.direccion || "",
-                  acudienteParentesco: athlete.parentesco || "",
-                  fechaInscripcion:
-                    athlete.inscripciones?.[0]?.fechaInscripcion || "",
-                  categoriaInscripcion:
-                    athlete.inscripciones?.[0]?.categoria || "",
-                  conceptoInscripcion:
-                    athlete.inscripciones?.[0]?.concepto || "",
+                  estado: athlete.status || athlete.estado || "",
+                  estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
+                  acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+                  acudienteTipoDocumento: tipoDocumentoAcudiente,
+                  acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
+                  acudienteTelefono: guardian?.phone || guardian?.telefono || "",
+                  acudienteCorreo: guardian?.email || guardian?.correo || "",
+                  acudienteDireccion: guardian?.address || guardian?.direccion || "",
+                  acudienteParentesco: parentesco,
+                  fechaCreacion: athlete.createdAt ? new Date(athlete.createdAt).toLocaleDateString("es-ES") : "",
+                  ultimaActualizacion: athlete.updatedAt ? new Date(athlete.updatedAt).toLocaleDateString("es-ES") : "",
                 };
               })}
               fileName="Deportistas"
@@ -375,13 +506,22 @@ const Athletes = () => {
                   { header: "Apellidos", accessor: "apellidos" },
                   { header: "Tipo Documento", accessor: "tipoDocumento" },
                   { header: "Número Documento", accessor: "numeroDocumento" },
-                { header: "Correo", accessor: "correo" },
-                { header: "Teléfono", accessor: "telefono" },
-                { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
-                { header: "Categoría", accessor: "categoria" },
-                { header: "Estado", accessor: "estado" },
-                { header: "Acudiente", accessor: "acudienteNombre" },
+                  { header: "Correo", accessor: "correo" },
+                  { header: "Teléfono", accessor: "telefono" },
+                  { header: "Dirección", accessor: "direccion" },
+                  { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
+                  { header: "Categoría", accessor: "categoria" },
+                  { header: "Estado", accessor: "estado" },
+                  { header: "Estado Inscripción", accessor: "estadoInscripcion" },
+                  { header: "Acudiente", accessor: "acudienteNombre" },
+                  { header: "Tipo Doc. Acudiente", accessor: "acudienteTipoDocumento" },
+                  { header: "Doc. Acudiente", accessor: "acudienteDocumento" },
                   { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
+                  { header: "Correo Acudiente", accessor: "acudienteCorreo" },
+                  { header: "Dir. Acudiente", accessor: "acudienteDireccion" },
+                  { header: "Parentesco", accessor: "acudienteParentesco" },
+                  { header: "Fecha Creación", accessor: "fechaCreacion" },
+                  { header: "Última Actualización", accessor: "ultimaActualizacion" },
                 ]}
               />
             </PermissionGuard>
@@ -541,11 +681,16 @@ const Athletes = () => {
 
       <GuardianViewModal
         isOpen={isGuardianViewOpen}
-        onClose={() => setIsGuardianViewOpen(false)}
+        onClose={() => {
+          setIsGuardianViewOpen(false);
+          setCurrentAthleteId(null);
+        }}
         guardian={guardianToView}
         athletes={athletes.filter((a) => String(a.acudiente) === String(guardianToView?.id))}
+        currentAthleteId={currentAthleteId}
         onEdit={handleEditGuardian}
         onDelete={handleDeleteGuardian}
+        onRemove={handleRemoveGuardian}
         referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
       />
 

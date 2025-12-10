@@ -25,7 +25,7 @@ const convertirParentesco = (parentesco) => {
   return parentescoBackendToFrontend[parentesco] || parentesco;
 };
 
-const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDelete, referenceData = { documentTypes: [] } }) => {
+const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDelete, onRemove, currentAthleteId, referenceData = { documentTypes: [] } }) => {
   const [activeTab, setActiveTab] = useState("view")
   const [isProcessing, setIsProcessing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -36,6 +36,38 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     correo: "",
     direccion: ""
   })
+
+  // Calcular si el deportista actual es menor de edad
+  const isCurrentAthleteMinor = () => {
+    if (!currentAthleteId || !athletes) return false;
+    const currentAthlete = athletes.find(a => a.id === currentAthleteId);
+    if (!currentAthlete) return false;
+    
+    // Buscar la fecha de nacimiento en diferentes campos posibles
+    const birthDateStr = currentAthlete.birthDate || currentAthlete.fechaNacimiento;
+    if (!birthDateStr) return false;
+    
+    const today = new Date();
+    const birthDate = new Date(birthDateStr);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    console.log('🔍 [GuardianViewModal] Verificando edad:', {
+      athleteId: currentAthleteId,
+      birthDate: birthDateStr,
+      age,
+      isMinor: age < 18
+    });
+    
+    return age < 18;
+  };
+
+  // Determinar si mostrar "Eliminar" o "Remover"
+  const shouldShowRemove = athletes && athletes.length > 1;
+  const shouldShowDelete = athletes && athletes.length === 1;
 
   useEffect(() => {
     if (guardian && isOpen && referenceData.documentTypes) {
@@ -108,20 +140,84 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   }
 
   const handleDeleteGuardian = async () => {
-    const result = await showDeleteAlert(
-      "¿Eliminar acudiente?",
-      `Se eliminará a ${guardian.nombreCompleto}. Esta acción no se puede deshacer.`
-    )
+    const isMinor = isCurrentAthleteMinor();
     
-    if (result.isConfirmed) {
-      setIsProcessing(true)
-      try {
-        await onDelete(guardian)
-      } finally {
-        setIsProcessing(false)
+    // Si es menor de edad, preguntar si desea asignar uno nuevo
+    if (isMinor) {
+      const result = await showDeleteAlert(
+        "Deportista menor de edad",
+        "Esta deportista es menor de edad y el acudiente es obligatorio. ¿Desea eliminar este acudiente y asignar uno nuevo?",
+        { 
+          confirmButtonText: "Sí, eliminar y asignar nuevo",
+          cancelButtonText: "Cancelar"
+        }
+      );
+      
+      if (result.isConfirmed) {
+        setIsProcessing(true);
+        try {
+          await onDelete(guardian, true); // true indica que necesita asignar nuevo acudiente
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    } else {
+      // Si es mayor de edad, eliminar directamente
+      const result = await showDeleteAlert(
+        "¿Eliminar acudiente?",
+        `Se eliminará a ${guardian.nombreCompleto}. Esta acción no se puede deshacer.`
+      );
+      
+      if (result.isConfirmed) {
+        setIsProcessing(true);
+        try {
+          await onDelete(guardian, false);
+        } finally {
+          setIsProcessing(false);
+        }
       }
     }
-  }
+  };
+
+  const handleRemoveGuardian = async () => {
+    const isMinor = isCurrentAthleteMinor();
+    
+    if (isMinor) {
+      const result = await showDeleteAlert(
+        "Deportista menor de edad",
+        "Esta deportista es menor de edad y el acudiente es obligatorio. ¿Desea remover este acudiente y asignar uno nuevo?",
+        { 
+          confirmButtonText: "Sí, remover y asignar nuevo",
+          cancelButtonText: "Cancelar"
+        }
+      );
+      
+      if (result.isConfirmed) {
+        setIsProcessing(true);
+        try {
+          await onRemove(guardian, currentAthleteId, true);
+        } catch (error) {
+          console.error('❌ Error removiendo acudiente:', error);
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    } else {
+      const result = await showDeleteAlert(
+        "¿Remover acudiente?",
+        `Se removerá a ${guardian.nombreCompleto} de esta deportista. El acudiente seguirá asignado a otras deportistas.`
+      );
+      
+      if (result.isConfirmed) {
+        setIsProcessing(true);
+        try {
+          await onRemove(guardian, currentAthleteId, false);
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    }
+  };
 
   if (!isOpen || !guardian) return null
 
@@ -455,7 +551,36 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
     {/* Footer */}
     <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        {/* Botón Eliminar/Remover */}
+        <div>
+          {shouldShowDelete && (
+            <motion.button
+              onClick={handleDeleteGuardian}
+              disabled={isProcessing}
+              className="flex items-center gap-2 px-6 py-3 bg-red-400 text-white rounded-xl hover:bg-red-500 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FaTrash size={14} />
+              {isProcessing ? "Procesando..." : "Eliminar Acudiente"}
+            </motion.button>
+          )}
+          {shouldShowRemove && (
+            <motion.button
+              onClick={handleRemoveGuardian}
+              disabled={isProcessing}
+              className="flex items-center gap-2 px-6 py-3 bg-orange-400 text-white rounded-xl hover:bg-orange-500 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <FaTrash size={14} />
+              {isProcessing ? "Procesando..." : "Remover Acudiente"}
+            </motion.button>
+          )}
+        </div>
+
+        {/* Botón Cerrar */}
         <motion.button
           onClick={onClose}
           disabled={isProcessing}
