@@ -22,6 +22,8 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
   const isNatural = donorData.tipoPersona === "Natural";
   const isJuridica = donorData.tipoPersona === "Juridica";
   const isSponsor = donorData.tipo === "Patrocinador";
+  const phoneLabel = isJuridica ? "Tel\u00e9fono de contacto" : "Tel\u00e9fono";
+  const emailLabel = isJuridica ? "Correo del representante" : "Correo Electr\u00f3nico";
 
   const formatDate = (dateString) => {
     if (!dateString) return "No especificado";
@@ -56,13 +58,15 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
       : []),
     ...(isJuridica
       ? [
-          { label: "Persona de contacto", value: donorData.personaContacto },
+          { label: "Representante legal", value: donorData.personaContacto },
         ]
       : []),
     // Que patrocina se omite para simplificar
-    { label: "Telefono", value: donorData.telefono },
-    { label: "Correo Electronico", value: donorData.correo },
-    { label: "Direccion", value: donorData.direccion },
+    { label: phoneLabel, value: donorData.telefono },
+    { label: emailLabel, value: donorData.correo },
+    { label: "Direcci\u00f3n", value: donorData.direccion },
+    { label: "Ciudad", value: donorData.ciudad },
+    { label: "Pa\u00eds", value: donorData.pais },
     // Tipo de patrocinio se omite por simplicidad (fundacion deportiva)
     { label: "Estado", value: donorData.estado },
   ];

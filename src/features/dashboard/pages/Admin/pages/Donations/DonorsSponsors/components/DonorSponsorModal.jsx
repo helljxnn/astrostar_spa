@@ -45,6 +45,8 @@ const DonorSponsorModal = ({
 
   const isNatural = formData.tipoPersona === "Natural";
   const isJuridica = formData.tipoPersona === "Juridica";
+  const phoneLabel = isJuridica ? "Tel\u00e9fono de contacto" : "Tel\u00e9fono";
+  const emailLabel = isJuridica ? "Correo del representante" : "Correo Electr\u00f3nico";
 
   const fallbackDocumentTypes = [
     { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
@@ -271,7 +273,7 @@ const DonorSponsorModal = ({
                       }
                     />
                     <FormField
-                      label="Persona de contacto"
+                      label="Representante legal"
                       name="personaContacto"
                       type="text"
                       placeholder="Ej: Ana Garcia"
@@ -286,7 +288,7 @@ const DonorSponsorModal = ({
                 )}
 
                 <FormField
-                  label="Telefono"
+                  label={phoneLabel}
                   name="telefono"
                   type="tel"
                   placeholder="Ej: 3001234567"
@@ -298,7 +300,7 @@ const DonorSponsorModal = ({
                   touched={touched.telefono}
                 />
                 <FormField
-                  label="Correo Electronico"
+                  label={emailLabel}
                   name="correo"
                   type="email"
                   placeholder="ejemplo@correo.com"
@@ -311,7 +313,7 @@ const DonorSponsorModal = ({
                   helperText={checkingEmail ? "Verificando disponibilidad..." : undefined}
                 />
                 <FormField
-                  label="Direccion"
+                  label="Dirección"
                   name="direccion"
                   type="text"
                   placeholder="Ej: Calle 10 # 20-30"
@@ -321,6 +323,30 @@ const DonorSponsorModal = ({
                   required
                   error={errors.direccion}
                   touched={touched.direccion}
+                />
+                <FormField
+                  label="Ciudad"
+                  name="ciudad"
+                  type="text"
+                  placeholder="Ej: Medellin"
+                  value={formData.ciudad}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required
+                  error={errors.ciudad}
+                  touched={touched.ciudad}
+                />
+                <FormField
+                  label="Pais"
+                  name="pais"
+                  type="text"
+                  placeholder="Ej: Colombia"
+                  value={formData.pais}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required
+                  error={errors.pais}
+                  touched={touched.pais}
                 />
 
                 {mode === "edit" && (

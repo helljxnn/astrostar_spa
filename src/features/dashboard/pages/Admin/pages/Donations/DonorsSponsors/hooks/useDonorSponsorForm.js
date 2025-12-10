@@ -12,6 +12,8 @@ const initialState = {
   telefono: "",
   correo: "",
   direccion: "",
+  ciudad: "",
+  pais: "",
   estado: "Activo",
   descripcion: "",
 };
@@ -100,6 +102,8 @@ export const useDonorSponsorForm = ({
       telefono: record.telefono || "",
       correo: record.correo || "",
       direccion: record.direccion || "",
+      ciudad: record.ciudad || "",
+      pais: record.pais || "",
       estado: record.estado || "Activo",
       descripcion: record.descripcion || "",
     });
@@ -162,6 +166,22 @@ export const useDonorSponsorForm = ({
         if (val.length < 7) return "Minimo 7 digitos.";
       }
 
+      if (name === "ciudad") {
+        if (!val) return "La ciudad es obligatoria.";
+        if (val.length < 2) return "Debe tener al menos 2 caracteres.";
+        if (val.length > 120) return "La ciudad debe tener m\u00e1ximo 120 caracteres.";
+        if (!/^[\p{L}\s'.-]+$/u.test(val))
+          return "La ciudad solo puede contener letras y espacios.";
+      }
+
+      if (name === "pais") {
+        if (!val) return "El pais es obligatorio.";
+        if (val.length < 2) return "Debe tener al menos 2 caracteres.";
+        if (val.length > 120) return "El pais debe tener m\u00e1ximo 120 caracteres.";
+        if (!/^[\p{L}\s'.-]+$/u.test(val))
+          return "El pais solo puede contener letras y espacios.";
+      }
+
       if (name === "correo") {
         if (!val) return "El correo es obligatorio.";
         if (!/\S+@\S+\.\S+/.test(val))
@@ -171,6 +191,7 @@ export const useDonorSponsorForm = ({
       if (name === "direccion") {
         if (!val) return "La direccion es obligatoria.";
         if (val.length < 4) return "Debe tener al menos 4 caracteres.";
+        if (val.length > 200) return "La direccion debe tener m\u00e1ximo 200 caracteres.";
       }
 
       return "";
@@ -184,7 +205,7 @@ export const useDonorSponsorForm = ({
     } else {
       fieldsToCheck.push("razonSocial", "nit", "personaContacto");
     }
-    fieldsToCheck.push("telefono", "correo", "direccion");
+    fieldsToCheck.push("telefono", "correo", "direccion", "ciudad", "pais");
 
     const aggregatedErrors = {};
     fieldsToCheck.forEach((field) => {
@@ -335,6 +356,8 @@ export const useDonorSponsorForm = ({
       telefono: true,
       correo: true,
       direccion: true,
+      ciudad: true,
+      pais: true,
     });
 
     const isValid = validateForm();
