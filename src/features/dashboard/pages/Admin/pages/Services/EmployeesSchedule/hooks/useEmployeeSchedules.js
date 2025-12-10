@@ -25,6 +25,11 @@ const STATUS_COLOR = {
   Cancelado: "bg-gray-400",
 };
 
+const CANCEL_TYPES = {
+  FULL_DAY: "full",
+  TIME_RANGE: "time",
+};
+
 /* -------------------------------------------------------
  * UTILS
  * -----------------------------------------------------*/
@@ -71,36 +76,105 @@ const parseCustomRecurrence = (raw) => {
   const start = fecha ? new Date(`${fecha}T${horaInicio}`) : null;
   const end = fecha ? new Date(`${fecha}T${horaFin}`) : null;
 
-    const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
-    const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
-      ? estadoRaw
-      : "Programado";
+  const normalizeText = (value) =>
+    value ? String(value).trim().replace(/\s+/g, " ") : "";
 
-    return {
-      id: apiSchedule.id,
-      scheduleId: apiSchedule.id,
-      empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
-      empleado: name,
-      cargo,
-      fecha,
-      horaInicio,
-      horaFin,
-      repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
-      customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
-      descripcion: apiSchedule.description || apiSchedule.descripcion || "",
-      observaciones: apiSchedule.description || apiSchedule.descripcion || "",
-      novedad:
-        apiSchedule.novedad ||
-        apiSchedule.novedades ||
-        apiSchedule.news ||
-        "",
-      novedades: apiSchedule.novedades || apiSchedule.novedad || [],
-      estado,
-      motivoCancelacion:
-        apiSchedule.cancellationReason || apiSchedule.motivoCancelacion || "",
-      start,
-      end,
-      title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
+  const cancelPayloadRaw =
+    apiSchedule.cancelPayload
+      ? { ...apiSchedule.cancelPayload }
+      : apiSchedule.tipoCancelacion ||
+        apiSchedule.tiempoCancelacion ||
+        apiSchedule.explicacionTiempo
+      ? {
+          tipoCancelacion: apiSchedule.tipoCancelacion,
+          tiempoCancelacion: apiSchedule.tiempoCancelacion,
+          explicacionTiempo: apiSchedule.explicacionTiempo,
+        }
+      : null;
+
+  const cancellationReason = normalizeText(
+    cancelPayloadRaw?.motivoCancelacion ||
+      apiSchedule.cancellationReason ||
+      apiSchedule.motivoCancelacion ||
+      ""
+  );
+
+  if (cancelPayloadRaw) {
+    cancelPayloadRaw.motivoCancelacion = cancellationReason;
+  }
+
+  const hasTimeWindow =
+    Boolean(cancelPayloadRaw?.tiempoCancelacion) ||
+    Boolean(apiSchedule.tiempoCancelacion) ||
+    Boolean(cancelPayloadRaw?.explicacionTiempo) ||
+    Boolean(apiSchedule.explicacionTiempo);
+
+  const cancelType =
+    cancelPayloadRaw?.tipoCancelacion ||
+    apiSchedule.tipoCancelacion ||
+    (hasTimeWindow ? CANCEL_TYPES.TIME_RANGE : CANCEL_TYPES.FULL_DAY);
+
+  const collectNovedades = [];
+  if (apiSchedule.news) {
+    if (Array.isArray(apiSchedule.news)) {
+      collectNovedades.push(...apiSchedule.news);
+    } else {
+      collectNovedades.push(apiSchedule.news);
+    }
+  }
+
+  if (apiSchedule.novedades) {
+    if (Array.isArray(apiSchedule.novedades)) {
+      collectNovedades.push(...apiSchedule.novedades);
+    } else {
+      collectNovedades.push(apiSchedule.novedades);
+    }
+  }
+
+  if (apiSchedule.novedad) {
+    collectNovedades.push(apiSchedule.novedad);
+  }
+
+  if (cancellationReason) {
+    collectNovedades.unshift(cancellationReason);
+  }
+
+  const cleanedNovedades = [
+    ...new Set(collectNovedades.map(normalizeText).filter(Boolean)),
+  ];
+  const primaryNovedad = cleanedNovedades[0] || "";
+
+  const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
+  const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
+    ? estadoRaw
+    : "Programado";
+
+  return {
+    id: apiSchedule.id,
+    scheduleId: apiSchedule.id,
+    empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
+    empleado: name,
+    cargo,
+    fecha,
+    horaInicio,
+    horaFin,
+    repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
+    customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
+    descripcion: apiSchedule.description || apiSchedule.descripcion || "",
+    observaciones: apiSchedule.description || apiSchedule.descripcion || "",
+    novedad: primaryNovedad,
+    novedades: cleanedNovedades,
+    estado,
+    motivoCancelacion: cancellationReason,
+    tipoCancelacion: cancelType,
+    tiempoCancelacion:
+      cancelPayloadRaw?.tiempoCancelacion || apiSchedule.tiempoCancelacion || "",
+    explicacionTiempo:
+      cancelPayloadRaw?.explicacionTiempo || apiSchedule.explicacionTiempo || "",
+    cancelPayload: cancelPayloadRaw || null,
+    start,
+    end,
+    title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
     color: STATUS_COLOR[estado] || STATUS_COLOR.Programado,
   };
 };
@@ -475,17 +549,21 @@ export const useEmployeeSchedules = () => {
     [loadSchedules]
   );
 
-  const cancelSchedule = useCallback(
-    async (id, motivoCancelacion) => {
+  const registerNovelty = useCallback(
+    async (id, payload = {}) => {
       setLoading(true);
       try {
-        const response = await scheduleService.cancel(id, motivoCancelacion);
+        const body =
+          payload && typeof payload === "object"
+            ? payload
+            : { motivoCancelacion: payload || "" };
+        const response = await scheduleService.registerNovelty(id, body);
 
         if (!response?.success) {
-          throw new Error(response?.message || "No se pudo cancelar el horario");
+          throw new Error(response?.message || "No se pudo registrar la novedad");
         }
 
-        showSuccessAlert("Horario cancelado", response.message);
+        showSuccessAlert("Novedad registrada", response.message);
         await loadSchedules();
         return true;
       } catch (error) {
@@ -538,7 +616,7 @@ export const useEmployeeSchedules = () => {
     createSchedule,
     updateSchedule,
     deleteSchedule,
-    cancelSchedule,
+    registerNovelty,
     refresh: loadSchedules,
   };
 };

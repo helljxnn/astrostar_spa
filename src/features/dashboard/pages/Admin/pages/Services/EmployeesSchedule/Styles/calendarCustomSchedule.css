@@ -91,6 +91,13 @@
   flex: 1;
 }
 
+.schedule-event-pill__content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
 .schedule-event-pill__title {
   font-size: 11px;
   font-weight: 700;
@@ -102,11 +109,15 @@
   line-height: 1.2;
 }
 
-
-.schedule-event-pill__subtitle {
-  font-size: 9px;
-  font-weight: 500;
-  color: #1f2a52;
+.schedule-event-pill__badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .schedule-event-pill__action {

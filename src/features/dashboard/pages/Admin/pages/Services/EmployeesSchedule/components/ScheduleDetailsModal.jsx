@@ -24,6 +24,65 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
     employee.motivo ||
     "Sin descripción registrada.";
 
+  const displayState =
+    employee.estado === "Cancelado"
+      ? "Programado"
+      : employee.estado || "Sin estado";
+  const stateColor =
+    displayState === "Completado"
+      ? "bg-emerald-100 text-emerald-700"
+      : "bg-blue-100 text-blue-700";
+
+  const scheduleTimeLabel =
+    employee.hora ||
+    [employee.horaInicio, employee.horaFin].filter(Boolean).join(" - ") ||
+    "Sin horario asignado";
+  const observationText =
+    employee.descripcion ||
+    employee.observaciones ||
+    employee.motivoCancelacion ||
+    "Sin observaciones registradas.";
+  const detailFields = [
+    {
+      key: "cargo",
+      label: "Cargo",
+      value: employee.cargo || "Sin cargo asignado",
+      icon: <FaBriefcase className="w-4 h-4 text-primary-purple" />,
+    },
+    ...(employee.area
+      ? [
+          {
+            key: "area",
+            label: "Área",
+            value: employee.area,
+            icon: <FaMapMarkerAlt className="w-4 h-4 text-primary-purple" />,
+          },
+        ]
+      : []),
+    {
+      key: "fecha",
+      label: "Fecha",
+      value: employee.fecha || "Sin fecha registrada",
+      icon: <FaCalendar className="w-4 h-4 text-primary-purple" />,
+    },
+    {
+      key: "hora",
+      label: "Horario",
+      value: scheduleTimeLabel,
+      icon: <FaClock className="w-4 h-4 text-primary-purple" />,
+    },
+    {
+      key: "repeticion",
+      label: "Repetición",
+      value: employee.recurrenceLabel || "No se repite",
+      icon: <FaRedo className="w-4 h-4 text-primary-purple" />,
+    },
+  ];
+  const noveltyList = (
+    Array.isArray(employee.novedades) ? employee.novedades : [employee.novedad]
+  ).filter(Boolean);
+  const hasNovedades = noveltyList.length > 0;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -58,147 +117,79 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
             </div>
 
             <div className="modal-body px-6 py-6 space-y-6 text-gray-800">
-              <div className="border-b border-gray-100 pb-5">
-                <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                  {employee.empleado}
-                </h3>
-                <p className="text-gray-700 text-sm leading-relaxed max-w-2xl">
+              <div className="rounded-3xl border border-gray-100 bg-gradient-to-r from-primary-purple/10 to-primary-blue/10 p-5 space-y-3">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-gray-500">
+                      Empleado
+                    </p>
+                    <h3 className="text-2xl font-semibold text-gray-900">
+                      {employee.empleado}
+                    </h3>
+                  </div>
+                  <span className={`px-4 py-1.5 text-xs font-semibold rounded-full ${stateColor}`}>
+                    {displayState}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 leading-relaxed max-w-3xl">
                   {descripcionFinal}
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                {employee.cargo && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">
-                      Cargo
-                    </label>
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                      <FaBriefcase className="text-[#2B6CB0]" />
-                      <span className="font-medium text-gray-800">
-                        {employee.cargo}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {employee.area && (
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">
-                      Área
-                    </label>
-                    <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                      <FaMapMarkerAlt className="text-[#2B6CB0]" />
-                      <span>{employee.area}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">
-                    Fecha
-                  </label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                    <FaCalendar className="text-[#2B6CB0]" />
-                    <span>{employee.fecha}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">
-                    Hora
-                  </label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                    <FaClock className="text-[#2B6CB0]" />
-                    <span>
-                      {employee.hora ||
-                        `${employee.horaInicio || ""}${
-                          employee.horaFin ? ` - ${employee.horaFin}` : ""
-                        }`}
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">
-                    Repeticion
-                  </label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 bg-gray-50">
-                    <FaRedo className="text-[#2B6CB0]" />
-                    <span>{employee.recurrenceLabel || "No se repite"}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-2">
-                    Estado
-                  </label>
-                  <span
-                    className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
-                      employee.estado === "Programado"
-                        ? "bg-blue-100 text-blue-700"
-                        : employee.estado === "Cancelado"
-                        ? "bg-red-100 text-red-700"
-                        : employee.estado === "Completado"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700"
-                    }`}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {detailFields.map((field) => (
+                  <div
+                    key={field.key}
+                    className="rounded-2xl border border-gray-200 bg-white/90 shadow-sm p-4 flex items-start gap-3"
                   >
-                    {employee.estado || "Sin estado"}
-                  </span>
-                </div>
+                    <span className="flex items-center justify-center w-10 h-10 rounded-2xl bg-white/90 border border-gray-100 text-primary-purple/90">
+                      {field.icon}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-[11px] uppercase tracking-wider text-gray-500">
+                        {field.label}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {field.value}
+                      </p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {(employee.descripcion ||
-                employee.observaciones ||
-                employee.motivoCancelacion) && (
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-2">
-                    {employee.estado === "Cancelado"
-                      ? "Motivo de Cancelación"
-                      : "Observaciones / Descripción"}
-                  </label>
-                  <div
-                    className={`flex items-start gap-3 p-5 rounded-lg border text-sm leading-relaxed ${
-                      employee.estado === "Cancelado"
-                        ? "bg-red-50 border-red-300 text-red-900"
-                        : "bg-gray-50 border-gray-200 text-gray-800"
-                    }`}
-                  >
-                    <FaFileAlt
-                      className={`w-5 h-5 mt-1 ${
-                        employee.estado === "Cancelado"
-                          ? "text-red-600"
-                          : "text-[#2B6CB0]"
-                      }`}
-                    />
-                    <p>
-                      {employee.motivoCancelacion ||
-                        employee.descripcion ||
-                        employee.observaciones}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FaFileAlt className="w-4 h-4 text-primary-purple" />
+                    <p className="text-xs uppercase tracking-wider text-gray-500 font-semibold">
+                      Observaciones / Descripción
                     </p>
                   </div>
+                  <p className="text-sm leading-relaxed text-gray-700">{observationText}</p>
                 </div>
-              )}
-              {(employee.novedades?.length || employee.novedad) && (
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-2">
-                    Novedades del horario
-                  </label>
-                  <div className="flex flex-col gap-2 p-4 rounded-lg border border-dashed border-primary-purple/30 bg-primary-purple/5 text-sm text-gray-800">
-                    {(Array.isArray(employee.novedades)
-                      ? employee.novedades
-                      : [employee.novedad])
-                      .filter(Boolean)
-                      .map((item, index) => (
-                        <p key={`${item}-${index}`} className="flex items-start gap-2">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-primary-purple" />
-                          <span>{item}</span>
-                        </p>
-                      ))}
+
+                <div className="rounded-2xl border border-primary-purple/40 bg-primary-purple/5 p-5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary-purple" />
+                    <p className="text-xs uppercase tracking-wider text-primary-purple font-semibold">
+                      Novedades del horario
+                    </p>
                   </div>
+                  {hasNovedades ? (
+                    noveltyList.map((item, index) => (
+                      <p
+                        key={`${item}-${index}`}
+                        className="text-sm text-gray-800 leading-relaxed flex items-start gap-2"
+                      >
+                        <span className="w-2 h-2 mt-1 rounded-full bg-primary-purple" />
+                        <span>{item}</span>
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-700">Sin novedades registradas.</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex-shrink-0 border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end">

@@ -11,6 +11,7 @@ export default function ScheduleModal({
   schedule,
   isNew,
   employeesOptions = [],
+  existingSchedules = [],
   isReadOnly = false,
   isLoadingEmployees = false,
 }) {
@@ -110,6 +111,28 @@ export default function ScheduleModal({
     if (!form.descripcion?.trim()) {
       showErrorAlert("La descripcion es obligatoria.");
       return;
+    }
+
+    if (isNew && form.empleadoId && form.fecha) {
+      const employeeIdValue = String(form.empleadoId).trim();
+      const targetDate = form.fecha;
+      if (
+        employeeIdValue &&
+        existingSchedules.some((record) => {
+          const recordEmployeeId = String(record.empleadoId ?? record.employeeId ?? "").trim();
+          return (
+            recordEmployeeId &&
+            recordEmployeeId === employeeIdValue &&
+            (record.fecha === targetDate || record.scheduleDate === targetDate)
+          );
+        })
+      ) {
+        showErrorAlert(
+          "Horario duplicado",
+          "No se puede crear porque ese empleado ya está asociado a un horario ese día."
+        );
+        return;
+      }
     }
 
     if (!isNew && originalForm && !hasChanges(originalForm, form)) {
@@ -287,7 +310,6 @@ export default function ScheduleModal({
                   options={[
                     { value: "Programado", label: "Programado" },
                     { value: "Completado", label: "Completado" },
-                    { value: "Cancelado", label: "Cancelado" },
                   ]}
                 />
               </div>

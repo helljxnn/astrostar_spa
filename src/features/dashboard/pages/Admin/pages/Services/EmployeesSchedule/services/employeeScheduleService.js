@@ -29,10 +29,10 @@ class EmployeeScheduleService {
     return apiClient.put(`${this.endpoint}/${id}`, scheduleData);
   }
 
-  async cancel(id, motivoCancelacion) {
-    return apiClient.request(`${this.endpoint}/${id}/cancel`, {
+  async registerNovelty(id, payload = {}) {
+    return apiClient.request(`${this.endpoint}/${id}/novedad`, {
       method: "PATCH",
-      body: JSON.stringify({ motivoCancelacion }),
+      body: JSON.stringify(payload),
       headers: { "Content-Type": "application/json" },
     });
   }

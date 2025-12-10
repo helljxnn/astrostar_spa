@@ -5,6 +5,7 @@ import { FaUser, FaBuilding, FaHandHoldingHeart } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import useDonorSponsorForm from "../hooks/useDonorSponsorForm";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { createPortal } from "react-dom";
 
 const DonorSponsorModal = ({
   isOpen,
@@ -70,7 +71,9 @@ const DonorSponsorModal = ({
     label: item.label || item,
   })) || [];
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const overlay = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -373,20 +376,32 @@ const DonorSponsorModal = ({
                   Cancelar
                 </button>
                 <button
-                  onClick={async () => {
-                    const result = await handleSubmit();
-                    if (result?.valid) {
-                      const baseNombre = isJuridica ? formData.razonSocial : formData.nombreCompleto;
-                      const baseIdentificacion = isJuridica ? formData.nit : formData.numeroDocumento;
-                      onSave({
-                        ...formData,
-                        nombre: baseNombre,
-                        identificacion: baseIdentificacion,
-                      });
+                onClick={async () => {
+                  const result = await handleSubmit();
+                  if (result?.valid) {
+                    const baseNombre = isJuridica ? formData.razonSocial : formData.nombreCompleto;
+                    const baseIdentificacion = isJuridica ? formData.nit : formData.numeroDocumento;
+                    const payload = {
+                      ...formData,
+                      nombre: baseNombre,
+                      identificacion: baseIdentificacion,
+                    };
+
+                    if (isNatural) {
+                      delete payload.razonSocial;
+                      delete payload.nit;
+                      delete payload.personaContacto;
                     } else {
-                      showErrorAlert(
-                        "Campos incompletos",
-                        "Por favor, complete todos los campos obligatorios antes de continuar."
+                      delete payload.nombreCompleto;
+                      delete payload.tipoDocumento;
+                      delete payload.numeroDocumento;
+                    }
+
+                    onSave(payload);
+                  } else {
+                    showErrorAlert(
+                      "Campos incompletos",
+                      "Por favor, complete todos los campos obligatorios antes de continuar."
                       );
                     }
                   }}
@@ -402,6 +417,8 @@ const DonorSponsorModal = ({
       )}
     </AnimatePresence>
   );
+
+  return document?.body ? createPortal(overlay, document.body) : overlay;
 };
 
 export default DonorSponsorModal;
