@@ -3,10 +3,13 @@
  * Proporciona estado y funciones para operaciones CRUD
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import eventsService from '../../services/eventsService.js';
-import { showSuccessAlert, showErrorAlert } from '../../../../../../../../shared/utils/alerts.js';
-import { useAuth } from '../../../../../../../../shared/contexts/authContext.jsx';
+import { useState, useEffect, useCallback } from "react";
+import eventsService from "../../services/eventsService.js";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
 
 export const useEvents = () => {
   const { isAuthenticated } = useAuth();
@@ -19,13 +22,14 @@ export const useEvents = () => {
     total: 0,
     totalPages: 0,
     hasNext: false,
-    hasPrev: false
+    hasPrev: false,
   });
   const [referenceData, setReferenceData] = useState({
-    categories: [],
-    types: []
+    sportsCategories: [], // Categorías deportivas (para inscripciones)
+    eventCategories: [], // Categorías de eventos (tipo de evento)
+    types: [],
   });
-  
+
   const [dataLoaded, setDataLoaded] = useState(false);
 
   /**
@@ -34,66 +38,66 @@ export const useEvents = () => {
   const transformEventFromBackend = (event) => {
     // Extraer solo la fecha si viene en formato ISO
     const extractDate = (dateString) => {
-      if (!dateString) return '';
-      return dateString.split('T')[0];
+      if (!dateString) return "";
+      return dateString.split("T")[0];
     };
 
     const startDate = extractDate(event.startDate);
     const endDate = extractDate(event.endDate);
-    
+
     // Convertir "En_pausa" del backend a "Pausado" para el frontend
     const normalizeStatus = (status) => {
-      if (status === 'En_pausa') return 'Pausado';
+      if (status === "En_pausa") return "Pausado";
       return status;
     };
-    
+
     const estadoParaModal = normalizeStatus(event.status); // Para el modal de edición
     const estadoParaLista = estadoParaModal.toLowerCase(); // Para la visualización en la lista
-    
+
     // Extraer categorías del evento
-    // Priorizar ServiceCategory (múltiples categorías) sobre category (una sola)
-    const categories = event.ServiceCategory || [];
-    const categoryIds = categories.length > 0 
-      ? categories.map(sc => sc.categoryId) 
-      : (event.categoryId ? [event.categoryId] : []);
-    const categoryNames = categories.length > 0
-      ? categories.map(sc => sc.SportsCategory?.nombre).filter(Boolean)
-      : (event.category?.name ? [event.category.name] : []);
-    
+    // Usar serviceSportsCategories (múltiples categorías deportivas)
+    const categories = event.serviceSportsCategories || [];
+    const categoryIds =
+      categories.length > 0 ? categories.map((sc) => sc.sportsCategoryId) : [];
+    const categoryNames =
+      categories.length > 0
+        ? categories.map((sc) => sc.sportsCategory?.nombre).filter(Boolean)
+        : [];
+
     // Crear fechas para el calendario asegurando que no haya problemas de zona horaria
     // Usar la fecha y hora directamente sin conversión de zona horaria
     const createLocalDate = (dateStr, timeStr) => {
       if (!dateStr || !timeStr) return new Date();
-      const [year, month, day] = dateStr.split('-').map(Number);
-      const [hours, minutes] = timeStr.split(':').map(Number);
+      const [year, month, day] = dateStr.split("-").map(Number);
+      const [hours, minutes] = timeStr.split(":").map(Number);
       return new Date(year, month - 1, day, hours, minutes);
     };
-    
+
     return {
       id: event.id,
       nombre: event.name,
-      tipo: event.type?.name || event.ServiceType?.name || '',
+      tipo: event.type?.name || event.ServiceType?.name || "",
       tipoId: event.typeId,
-      descripcion: event.description || '',
+      descripcion: event.description || "",
       fechaInicio: startDate,
       fechaFin: endDate,
       horaInicio: event.startTime,
       horaFin: event.endTime,
       ubicacion: event.location,
       telefono: event.phone,
-      categoria: categoryNames.join(', ') || '', // Para mostrar en lista
+      categoria: categoryNames.join(", ") || "", // Para mostrar en lista
       categoryIds: categoryIds, // Para el formulario
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
-      patrocinador: event.ServiceSponsor?.map(s => s.Sponsor.name) || [],
+      patrocinador: event.ServiceSponsor?.map((s) => s.Sponsor.name) || [],
       hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
       // Para el calendario - usar createLocalDate para evitar problemas de zona horaria
       start: createLocalDate(startDate, event.startTime),
       end: createLocalDate(endDate, event.endTime),
-      title: event.name
+      title: event.name,
     };
   };
 
@@ -115,22 +119,22 @@ export const useEvents = () => {
       publish: event.publicar || false,
       categoryIds: event.categoryIds || [],
       sponsorNames: event.patrocinador || [],
-      typeId: event.tipoId
+      typeId: event.typeId || event.tipoId,
     };
 
     // Solo incluir el estado si está presente (no para eventos finalizados)
     if (event.estado !== undefined) {
       // Normalizar el estado para que coincida con el backend
-      let normalizedStatus = event.estado || 'Programado';
-      
+      let normalizedStatus = event.estado || "Programado";
+
       // Convertir "Pausado" a "En_pausa" para que coincida con el enum de Prisma
-      if (normalizedStatus.toLowerCase().includes('pausa')) {
-        normalizedStatus = 'En_pausa';
+      if (normalizedStatus.toLowerCase().includes("pausa")) {
+        normalizedStatus = "En_pausa";
       }
-      
+
       backendData.status = normalizedStatus;
     }
-    
+
     return backendData;
   };
 
@@ -140,12 +144,12 @@ export const useEvents = () => {
   const loadEvents = useCallback(async (params = {}) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await eventsService.getAll({
         page: 1,
         limit: 1000, // Cargar todos los eventos para el calendario
-        ...params
+        ...params,
       });
 
       if (response.success) {
@@ -153,109 +157,121 @@ export const useEvents = () => {
         setEvents(transformedEvents);
         setPagination(response.pagination);
       } else {
-        throw new Error(response.message || 'Error cargando eventos');
+        throw new Error(response.message || "Error cargando eventos");
       }
     } catch (err) {
       setError(err.message);
-      showErrorAlert('Error', 'No se pudieron cargar los eventos');
+      showErrorAlert("Error", "No se pudieron cargar los eventos");
     } finally {
       setLoading(false);
     }
   }, []);
 
-
-
   /**
    * Crear evento
    */
-  const createEvent = useCallback(async (eventData) => {
-    setLoading(true);
-    
-    try {
-      const backendData = transformEventToBackend(eventData);
-      const response = await eventsService.create(backendData);
-      
-      if (response.success) {
-        showSuccessAlert(
-          'Evento Creado', 
-          response.message || 'El evento ha sido creado exitosamente'
-        );
-        
-        // Recargar la lista
-        await loadEvents();
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Error creando evento');
+  const createEvent = useCallback(
+    async (eventData) => {
+      setLoading(true);
+
+      try {
+        const backendData = transformEventToBackend(eventData);
+        const response = await eventsService.create(backendData);
+
+        if (response.success) {
+          showSuccessAlert(
+            "Evento Creado",
+            response.message || "El evento ha sido creado exitosamente"
+          );
+
+          // Recargar la lista
+          await loadEvents();
+          return response.data;
+        } else {
+          throw new Error(response.message || "Error creando evento");
+        }
+      } catch (err) {
+        showErrorAlert("Error", err.message || "No se pudo crear el evento");
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo crear el evento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadEvents]);
+    },
+    [loadEvents]
+  );
 
   /**
    * Actualizar evento
    */
-  const updateEvent = useCallback(async (id, eventData) => {
-    setLoading(true);
-    
-    try {
-      const backendData = transformEventToBackend(eventData);
-      const response = await eventsService.update(id, backendData);
-      
-      if (response.success) {
-        showSuccessAlert(
-          'Evento Actualizado', 
-          response.message || 'El evento ha sido actualizado exitosamente'
+  const updateEvent = useCallback(
+    async (id, eventData) => {
+      setLoading(true);
+
+      try {
+        const backendData = transformEventToBackend(eventData);
+        const response = await eventsService.update(id, backendData);
+
+        if (response.success) {
+          showSuccessAlert(
+            "Evento Actualizado",
+            response.message || "El evento ha sido actualizado exitosamente"
+          );
+
+          // Recargar la lista
+          await loadEvents();
+          return response.data;
+        } else {
+          throw new Error(response.message || "Error actualizando evento");
+        }
+      } catch (err) {
+        showErrorAlert(
+          "Error",
+          err.message || "No se pudo actualizar el evento"
         );
-        
-        // Recargar la lista
-        await loadEvents();
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Error actualizando evento');
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo actualizar el evento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadEvents]);
+    },
+    [loadEvents]
+  );
 
   /**
    * Eliminar evento
    */
-  const deleteEvent = useCallback(async (id, eventName) => {
-    setLoading(true);
-    
-    try {
-      const response = await eventsService.delete(id);
-      
-      if (response.success) {
-        // Primero eliminar del estado local inmediatamente
-        setEvents(prevEvents => prevEvents.filter(event => event.id !== parseInt(id)));
-        
-        showSuccessAlert('Evento Eliminado', response.message);
-        
-        // Forzar recarga completa con timestamp para evitar caché
-        setTimeout(async () => {
-          await loadEvents({ _t: Date.now() });
-        }, 300);
-        
-        return true;
-      } else {
-        throw new Error(response.message || 'Error eliminando evento');
+  const deleteEvent = useCallback(
+    async (id, eventName) => {
+      setLoading(true);
+
+      try {
+        const response = await eventsService.delete(id);
+
+        if (response.success) {
+          // Primero eliminar del estado local inmediatamente
+          setEvents((prevEvents) =>
+            prevEvents.filter((event) => event.id !== parseInt(id))
+          );
+
+          showSuccessAlert("Evento Eliminado", response.message);
+
+          // Forzar recarga completa con timestamp para evitar caché
+          setTimeout(async () => {
+            await loadEvents({ _t: Date.now() });
+          }, 300);
+
+          return true;
+        } else {
+          throw new Error(response.message || "Error eliminando evento");
+        }
+      } catch (err) {
+        showErrorAlert("Error", err.message || "No se pudo eliminar el evento");
+        throw err;
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo eliminar el evento');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadEvents]);
+    },
+    [loadEvents]
+  );
 
   /**
    * Obtener estadísticas
@@ -273,36 +289,42 @@ export const useEvents = () => {
    * Cambiar página
    */
   const changePage = useCallback((newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   }, []);
 
   /**
    * Cambiar límite por página
    */
   const changeLimit = useCallback((newLimit) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
   // Cargar datos de referencia inmediatamente al montar
   useEffect(() => {
     let isMounted = true;
-    
+
     const cargarDatos = async () => {
       try {
         const response = await eventsService.getReferenceData();
         if (response && response.success && isMounted) {
-          setReferenceData(response.data);
+          // Mantener compatibilidad hacia atrás
+          const data = {
+            ...response.data,
+            categories:
+              response.data.sportsCategories || response.data.categories || [],
+          };
+          setReferenceData(data);
           setDataLoaded(true);
         }
       } catch (err) {
         // Error cargando datos de referencia
       }
     };
-    
+
     if (!dataLoaded) {
       cargarDatos();
     }
-    
+
     return () => {
       isMounted = false;
     };
@@ -322,7 +344,7 @@ export const useEvents = () => {
     error,
     pagination,
     referenceData,
-    
+
     // Funciones
     loadEvents,
     createEvent,
@@ -331,8 +353,8 @@ export const useEvents = () => {
     getStats,
     changePage,
     changeLimit,
-    
+
     // Utilidades
-    refresh: loadEvents
+    refresh: loadEvents,
   };
 };

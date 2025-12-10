@@ -16,7 +16,7 @@ export const EventModal = ({
   event,
   isNew,
   mode = "create",
-  referenceData = { categories: [], types: [] }
+  referenceData = { categories: [], types: [] },
 }) => {
   const [tipoEvento, setTipoEvento] = useState(""); // Ahora almacena el ID del tipo
   const [form, setForm] = useState({
@@ -33,64 +33,73 @@ export const EventModal = ({
     cronograma: null,
     patrocinador: [],
     categoryIds: [],
-    tipoId: null,
+    typeId: null,
     estado: "Programado", // Estado por defecto al crear
     publicar: false,
   });
 
   // Mapeo de tipos de evento a tipo de participante
   const eventTypeParticipantMap = {
-    'Festival': 'Equipos',
-    'Torneo': 'Equipos',
-    'Clausura': 'Deportistas',
-    'Taller': 'Deportistas'
+    Festival: "Equipos",
+    Torneo: "Equipos",
+    Clausura: "Deportistas",
+    Taller: "Deportistas",
   };
 
   // Obtener el nombre del tipo de evento seleccionado
   const getSelectedTypeName = () => {
-    const selectedType = referenceData.types.find(t => t.id === tipoEvento);
-    return selectedType?.name || '';
+    const selectedType = referenceData.types.find((t) => t.id === tipoEvento);
+    return selectedType?.name || "";
   };
 
   // Obtener el tipo de participante según el tipo de evento
   const getParticipantType = () => {
     const typeName = getSelectedTypeName();
-    return eventTypeParticipantMap[typeName] || 'Deportistas';
+    return eventTypeParticipantMap[typeName] || "Deportistas";
   };
 
-  const { errors, touched, validate, handleBlur, touchAllFields, isCheckingName } =
-    useFormEventValidation();
+  const {
+    errors,
+    touched,
+    validate,
+    handleBlur,
+    touchAllFields,
+    isCheckingName,
+  } = useFormEventValidation();
 
   // Función para formatear fecha a YYYY-MM-DD sin problemas de zona horaria
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
 
     // Si ya está en formato correcto YYYY-MM-DD, devolverlo directamente
-    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    if (
+      typeof dateString === "string" &&
+      dateString.match(/^\d{4}-\d{2}-\d{2}$/)
+    ) {
       return dateString;
     }
 
     // Si es un string que contiene 'T' (ISO string), extraer solo la fecha
-    if (typeof dateString === 'string' && dateString.includes('T')) {
-      return dateString.split('T')[0];
+    if (typeof dateString === "string" && dateString.includes("T")) {
+      return dateString.split("T")[0];
     }
 
     // Si es un objeto Date
     if (dateString instanceof Date) {
       const year = dateString.getFullYear();
-      const month = String(dateString.getMonth() + 1).padStart(2, '0');
-      const day = String(dateString.getDate()).padStart(2, '0');
+      const month = String(dateString.getMonth() + 1).padStart(2, "0");
+      const day = String(dateString.getDate()).padStart(2, "0");
       return `${year}-${month}-${day}`;
     }
 
     // Para cualquier otro caso, intentar convertir sin zona horaria
-    if (typeof dateString === 'string') {
+    if (typeof dateString === "string") {
       // Si contiene '/', convertir a formato ISO (MM/DD/YYYY)
-      if (dateString.includes('/')) {
-        const parts = dateString.split('/');
+      if (dateString.includes("/")) {
+        const parts = dateString.split("/");
         if (parts.length === 3) {
-          const month = parts[0].padStart(2, '0');
-          const day = parts[1].padStart(2, '0');
+          const month = parts[0].padStart(2, "0");
+          const day = parts[1].padStart(2, "0");
           const year = parts[2];
           return `${year}-${month}-${day}`;
         }
@@ -104,7 +113,7 @@ export const EventModal = ({
     if (event) {
       if (isNew) {
         // Cuando es nuevo, solo cargar las fechas seleccionadas del calendario
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           fechaInicio: formatDateForInput(event.fechaInicio) || "",
           fechaFin: formatDateForInput(event.fechaFin) || "",
@@ -114,7 +123,10 @@ export const EventModal = ({
       } else {
         // Cuando es edición, cargar todos los datos del evento
         // Buscar el ID del tipo basado en el nombre (para compatibilidad con datos existentes)
-        const typeId = event.tipoId || referenceData.types.find(t => t.name === event.tipo)?.id || "";
+        const typeId =
+          event.tipoId ||
+          referenceData.types.find((t) => t.name === event.tipo)?.id ||
+          "";
         setTipoEvento(typeId);
         setForm({
           id: event.id || null,
@@ -130,7 +142,7 @@ export const EventModal = ({
           cronograma: event.cronograma || null,
           patrocinador: event.patrocinador || [],
           categoryIds: event.categoryIds || [],
-          tipoId: typeId,
+          typeId: typeId,
           estado: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
         });
@@ -164,13 +176,13 @@ export const EventModal = ({
       }
 
       // Obtener el nombre del tipo para guardarlo
-      const selectedType = referenceData.types.find(t => t.id === tipoEvento);
+      const selectedType = referenceData.types.find((t) => t.id === tipoEvento);
 
       const eventData = {
         ...form,
-        tipo: selectedType?.name || '',
-        tipoId: tipoEvento,
-        id: event?.id
+        tipo: selectedType?.name || "",
+        typeId: tipoEvento, // Backend expects 'typeId', not 'tipoId'
+        id: event?.id,
       };
 
       // Si el evento está finalizado, no enviar el campo estado para evitar errores de validación
@@ -181,7 +193,9 @@ export const EventModal = ({
       await onSave(eventData);
 
       showSuccessAlert(
-        isNew ? "Evento creado exitosamente" : "Evento actualizado exitosamente",
+        isNew
+          ? "Evento creado exitosamente"
+          : "Evento actualizado exitosamente",
         isNew
           ? "El evento ha sido registrado correctamente."
           : "El evento ha sido actualizado correctamente."
@@ -212,8 +226,8 @@ export const EventModal = ({
             {mode === "view"
               ? "Ver Evento"
               : isNew
-                ? "Crear Evento"
-                : "Editar Evento"}
+              ? "Crear Evento"
+              : "Editar Evento"}
           </h2>
           <button
             onClick={onClose}
@@ -240,9 +254,9 @@ export const EventModal = ({
                   error={errors.tipoEvento}
                   touched={touched.tipoEvento}
                   placeholder="Seleccione tipo"
-                  options={referenceData.types.map(type => ({
+                  options={referenceData.types.map((type) => ({
                     value: type.id,
-                    label: type.name
+                    label: type.name,
                   }))}
                   required={mode !== "view"}
                   disabled={mode === "view"}
@@ -250,15 +264,30 @@ export const EventModal = ({
                 {tipoEvento && (
                   <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                     <div className="flex items-center gap-1">
-                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      <svg
+                        className="w-4 h-4 text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
                       </svg>
-                      <span className="text-xs font-medium text-gray-700">Inscripción:</span>
+                      <span className="text-xs font-medium text-gray-700">
+                        Inscripción:
+                      </span>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${getParticipantType() === 'Equipos'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-green-500 text-white'
-                      }`}>
+                    <span
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
+                        getParticipantType() === "Equipos"
+                          ? "bg-blue-500 text-white"
+                          : "bg-green-500 text-white"
+                      }`}
+                    >
                       {getParticipantType()}
                     </span>
                   </div>
@@ -272,7 +301,9 @@ export const EventModal = ({
                   value={form.nombre}
                   onChange={handleChange}
                   onBlur={() => handleBlur("nombre", form.nombre, form)}
-                  placeholder={`Nombre del ${tipoEvento ? getSelectedTypeName().toLowerCase() : 'evento'}`}
+                  placeholder={`Nombre del ${
+                    tipoEvento ? getSelectedTypeName().toLowerCase() : "evento"
+                  }`}
                   error={errors.nombre}
                   touched={touched.nombre}
                   required={mode !== "view"}
@@ -280,9 +311,25 @@ export const EventModal = ({
                 />
                 {isCheckingName && (
                   <div className="absolute right-3 top-9 flex items-center">
-                    <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin h-4 w-4 text-blue-500"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                   </div>
                 )}
@@ -307,10 +354,10 @@ export const EventModal = ({
               <MultiSelect
                 label="Categorías"
                 name="categoryIds"
-                options={referenceData.categories.map(cat => ({
+                options={referenceData.categories.map((cat) => ({
                   value: cat.id,
                   label: cat.name,
-                  description: cat.ageRange
+                  description: cat.ageRange,
                 }))}
                 value={form.categoryIds}
                 onChange={handleChange}
@@ -328,7 +375,7 @@ export const EventModal = ({
                   { value: "Natipan", label: "Natipan" },
                   { value: "Ponymalta", label: "Ponymalta" },
                   { value: "NovaSport", label: "NovaSport" },
-                  { value: "Adidas", label: "Adidas" }
+                  { value: "Adidas", label: "Adidas" },
                 ]}
                 value={form.patrocinador}
                 onChange={handleChange}
@@ -362,7 +409,9 @@ export const EventModal = ({
                   type="textarea"
                   value={form.descripcion}
                   onChange={handleChange}
-                  onBlur={() => handleBlur("descripcion", form.descripcion, form)}
+                  onBlur={() =>
+                    handleBlur("descripcion", form.descripcion, form)
+                  }
                   placeholder="Breve descripción"
                   error={errors.descripcion}
                   touched={touched.descripcion}
@@ -380,18 +429,20 @@ export const EventModal = ({
                 type="date"
                 value={form.fechaInicio}
                 onChange={handleChange}
-                onBlur={() =>
-                  handleBlur("fechaInicio", form.fechaInicio, form)
-                }
+                onBlur={() => handleBlur("fechaInicio", form.fechaInicio, form)}
                 error={errors.fechaInicio}
                 touched={touched.fechaInicio}
                 required={mode !== "view"}
                 disabled={mode === "view"}
-                min={isNew ? (() => {
-                  const tomorrow = new Date();
-                  tomorrow.setDate(tomorrow.getDate() + 1);
-                  return tomorrow.toISOString().split('T')[0];
-                })() : undefined}
+                min={
+                  isNew
+                    ? (() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tomorrow.toISOString().split("T")[0];
+                      })()
+                    : undefined
+                }
               />
 
               <FormField
@@ -436,80 +487,95 @@ export const EventModal = ({
 
             {/* Fila 4 - Imagen, Cronograma, Checkbox y Estado */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                <div>
-                  <label className="block mb-2 font-medium text-gray-700">
-                    Subir Imagen
-                  </label>
-                  <CloudinaryUpload
-                    archivo={form.imagen}
-                    onChange={(url) => handleChange("imagen", url)}
-                    disabled={mode === "view"}
-                    type="image"
-                  />
-                </div>
+              <div>
+                <label className="block mb-2 font-medium text-gray-700">
+                  Subir Imagen
+                </label>
+                <CloudinaryUpload
+                  archivo={form.imagen}
+                  onChange={(url) => handleChange("imagen", url)}
+                  disabled={mode === "view"}
+                  type="image"
+                />
+              </div>
 
-                <div>
-                  <label className="block mb-2 font-medium text-gray-700">
-                    Subir Cronograma
-                  </label>
-                  <CloudinaryUpload
-                    archivo={form.cronograma}
-                    onChange={(url) => handleChange("cronograma", url)}
-                    disabled={mode === "view"}
-                    type="schedule"
-                  />
-                </div>
+              <div>
+                <label className="block mb-2 font-medium text-gray-700">
+                  Subir Cronograma
+                </label>
+                <CloudinaryUpload
+                  archivo={form.cronograma}
+                  onChange={(url) => handleChange("cronograma", url)}
+                  disabled={mode === "view"}
+                  type="schedule"
+                />
+              </div>
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-medium text-gray-700">
-                    Publicar Evento
-                  </label>
-                  <div className="flex items-center gap-3">
-                    {/* Toggle Switch */}
-                    <button
-                      type="button"
-                      onClick={() => mode !== "view" && handleChange("publicar", !form.publicar)}
-                      disabled={mode === "view"}
-                      className={`
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Publicar Evento
+                </label>
+                <div className="flex items-center gap-3">
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      mode !== "view" &&
+                      handleChange("publicar", !form.publicar)
+                    }
+                    disabled={mode === "view"}
+                    className={`
                         relative inline-flex h-6 w-11 items-center rounded-full
                         transition-colors duration-200 ease-in-out
                         focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
-                        ${mode === "view" ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
-                        ${form.publicar ? 'bg-primary-purple' : 'bg-gray-300'}
+                        ${
+                          mode === "view"
+                            ? "cursor-not-allowed opacity-50"
+                            : "cursor-pointer"
+                        }
+                        ${form.publicar ? "bg-primary-purple" : "bg-gray-300"}
                       `}
-                    >
-                      <span
-                        className={`
+                  >
+                    <span
+                      className={`
                           inline-block h-4 w-4 transform rounded-full bg-white
                           transition-transform duration-200 ease-in-out
-                          ${form.publicar ? 'translate-x-6' : 'translate-x-1'}
+                          ${form.publicar ? "translate-x-6" : "translate-x-1"}
                         `}
-                      />
-                    </button>
-                    
-                    {/* Label con estado */}
-                    <span className={`text-sm font-medium ${form.publicar ? 'text-primary-purple' : 'text-gray-500'}`}>
-                      {form.publicar ? 'Visible para todos' : 'Solo visible para administradores'}
-                    </span>
-                  </div>
-                  
-                  {/* Descripción */}
-                  <p className="text-xs text-gray-500">
-                    {form.publicar 
-                      ? 'El evento será visible en la página pública' 
-                      : 'El evento solo será visible en el panel de administración'}
-                  </p>
+                    />
+                  </button>
+
+                  {/* Label con estado */}
+                  <span
+                    className={`text-sm font-medium ${
+                      form.publicar ? "text-primary-purple" : "text-gray-500"
+                    }`}
+                  >
+                    {form.publicar
+                      ? "Visible para todos"
+                      : "Solo visible para administradores"}
+                  </span>
                 </div>
 
-                {/* Estado - Visible en modo view y edit */}
-                {mode === "view" ? (
-                  // Modo ver: mostrar el estado como solo lectura
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                      Estado
-                    </label>
-                    <div className={`px-4 py-2.5 border rounded-lg font-medium ${
-                      form.estado === "Finalizado" || form.estado === "finalizado"
+                {/* Descripción */}
+                <p className="text-xs text-gray-500">
+                  {form.publicar
+                    ? "El evento será visible en la página pública"
+                    : "El evento solo será visible en el panel de administración"}
+                </p>
+              </div>
+
+              {/* Estado - Visible en modo view y edit */}
+              {mode === "view" ? (
+                // Modo ver: mostrar el estado como solo lectura
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-700">
+                    Estado
+                  </label>
+                  <div
+                    className={`px-4 py-2.5 border rounded-lg font-medium ${
+                      form.estado === "Finalizado" ||
+                      form.estado === "finalizado"
                         ? "bg-gray-100 border-gray-300 text-gray-700"
                         : form.estado === "Programado"
                         ? "bg-green-50 border-green-300 text-green-700"
@@ -518,50 +584,51 @@ export const EventModal = ({
                         : form.estado === "Pausado"
                         ? "bg-yellow-50 border-yellow-300 text-yellow-700"
                         : "bg-gray-100 border-gray-300 text-gray-700"
-                    }`}>
-                      {form.estado}
-                    </div>
+                    }`}
+                  >
+                    {form.estado}
                   </div>
-                ) : mode === "edit" ? (
-                  form.estado === "Finalizado" || form.estado === "finalizado" ? (
-                    // Si el evento está finalizado, mostrar como solo lectura
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Estado
-                      </label>
-                      <div className="px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium">
-                        Finalizado
-                      </div>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Este evento ya finalizó y no se puede modificar su estado
-                      </p>
+                </div>
+              ) : mode === "edit" ? (
+                form.estado === "Finalizado" || form.estado === "finalizado" ? (
+                  // Si el evento está finalizado, mostrar como solo lectura
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-700">
+                      Estado
+                    </label>
+                    <div className="px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium">
+                      Finalizado
                     </div>
-                  ) : (
-                    // Si no está finalizado, permitir cambiar el estado
-                    <FormField
-                      label="Estado"
-                      name="estado"
-                      type="select"
-                      value={form.estado}
-                      onChange={handleChange}
-                      onBlur={() => handleBlur("estado", form.estado, form)}
-                      placeholder="Seleccione estado"
-                      options={[
-                        { value: "Programado", label: "Programado" },
-                        { value: "Cancelado", label: "Cancelado" },
-                        { value: "Pausado", label: "Pausado" },
-                      ]}
-                      error={errors.estado}
-                      touched={touched.estado}
-                      required
-                      helperText="El estado 'Finalizado' se asigna automáticamente cuando termina el evento"
-                    />
-                  )
+                    <p className="mt-1 text-xs text-gray-500">
+                      Este evento ya finalizó y no se puede modificar su estado
+                    </p>
+                  </div>
                 ) : (
-                  <div></div>
-                )}
-              </div>
-            </> 
+                  // Si no está finalizado, permitir cambiar el estado
+                  <FormField
+                    label="Estado"
+                    name="estado"
+                    type="select"
+                    value={form.estado}
+                    onChange={handleChange}
+                    onBlur={() => handleBlur("estado", form.estado, form)}
+                    placeholder="Seleccione estado"
+                    options={[
+                      { value: "Programado", label: "Programado" },
+                      { value: "Cancelado", label: "Cancelado" },
+                      { value: "Pausado", label: "Pausado" },
+                    ]}
+                    error={errors.estado}
+                    touched={touched.estado}
+                    required
+                    helperText="El estado 'Finalizado' se asigna automáticamente cuando termina el evento"
+                  />
+                )
+              ) : (
+                <div></div>
+              )}
+            </div>
+          </>
         </div>
 
         {/* Footer */}
