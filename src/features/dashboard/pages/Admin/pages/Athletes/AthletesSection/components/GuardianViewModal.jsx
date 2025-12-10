@@ -60,7 +60,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         identificacion: guardian.identificacion || "",
         telefono: guardian.telefono || "",
         correo: guardian.correo || "",
-        direccion: guardian.direccion || ""
+        direccion: guardian.direccion || guardian.address || ""
       })
     }
   }, [guardian, isOpen, referenceData.documentTypes])
@@ -91,7 +91,13 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
     setIsProcessing(true)
     try {
-      await onEdit({ ...guardian, ...editForm })
+      // Enviar tanto 'direccion' como 'address' para compatibilidad con el backend
+      const updatedData = { 
+        ...guardian, 
+        ...editForm,
+        address: editForm.direccion // Asegurar que el backend reciba el campo 'address'
+      };
+      await onEdit(updatedData)
       showSuccessAlert("Acudiente actualizado", "Los cambios se guardaron correctamente")
       setActiveTab("view")
     } catch (error) {
@@ -276,10 +282,10 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
                 {/* Correo */}
                 <motion.div
-                  className="space-y-2 md:col-span-2 lg:col-span-3"
+                  className="space-y-2"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7, duration: 0.4 }}
+                  transition={{ delay: 0.6, duration: 0.4 }}
                 >
                   <label className="text-sm font-medium text-gray-600">Correo Electrónico</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px] break-all">
@@ -288,123 +294,19 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 </motion.div>
 
                 {/* Dirección */}
-                {guardian.direccion && (
-                  <motion.div
-                    className="space-y-2 md:col-span-2 lg:col-span-3"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8, duration: 0.4 }}
-                  >
-                    <label className="text-sm font-medium text-gray-600">Dirección</label>
-                    <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                      {guardian.direccion}
-                    </p>
-                  </motion.div>
-                )}
-              </div>
-            </div>
-
-            {/* Deportistas Asociadas */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <FaEye className="text-primary-purple" />
-                Deportistas Asociadas ({athletes?.length || 0})
-              </h3>
-              
-              {athletes && athletes.length > 0 ? (
-                <div className="space-y-3">
-                  {athletes.map((athlete, index) => {
-                    // Mapear campos del backend al frontend
-                    const firstName = athlete.firstName || athlete.nombres || "";
-                    const lastName = athlete.lastName || athlete.apellidos || "";
-                    const fullName = `${firstName} ${lastName}`.trim() || "Sin nombre";
-                    const documento = athlete.identification || athlete.numeroDocumento || "N/A";
-                    const categoria = athlete.categoria || "N/A";
-                    const parentesco = athlete.parentesco || "";
-                    const estadoInscripcion = athlete.estadoInscripcion || "Sin inscripción";
-                    
-                    return (
-                      <motion.div
-                        key={athlete.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 * index }}
-                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {/* Nombre Completo */}
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Nombre Completo</p>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {fullName}
-                            </p>
-                          </div>
-                          
-                          {/* Documento */}
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Documento</p>
-                            <p className="text-sm text-gray-900 font-mono">
-                              {documento}
-                            </p>
-                          </div>
-                          
-                          {/* Categoría */}
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Categoría</p>
-                            <p className="text-sm text-gray-900">
-                              {categoria}
-                            </p>
-                          </div>
-                          
-                          {/* Parentesco */}
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Parentesco</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {convertirParentesco(parentesco)}
-                            </p>
-                          </div>
-                          
-                          {/* Estado Inscripción */}
-                          <div className="md:col-span-2">
-                            <p className="text-xs text-gray-600 mb-1">Estado Inscripción</p>
-                            <p className="text-sm text-gray-900">
-                              {estadoInscripcion}
-                            </p>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
-                  <FaEye className="mx-auto text-gray-300 mb-3" size={32} />
-                  <p className="text-gray-600 font-medium">Sin deportistas asociadas</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Este acudiente no tiene deportistas asignadas actualmente
+                <motion.div
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7, duration: 0.4 }}
+                >
+                  <label className="text-sm font-medium text-gray-600">Dirección</label>
+                  <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                    {guardian.direccion || guardian.address || "N/A"}
                   </p>
-                </div>
-              )}
-            </div>
-
-            {/* Botón Eliminar */}
-            {onDelete && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-red-700">Esta acción no se puede deshacer</p>
-                  <motion.button
-                    onClick={handleDeleteGuardian}
-                    disabled={isProcessing}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <FaTrash size={14} />
-                    Eliminar Acudiente
-                  </motion.button>
-                </div>
+                </motion.div>
               </div>
-            )}
+            </div>
           </motion.div>
         )}
 
@@ -422,8 +324,8 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
               </h3>
 
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="md:col-span-2 lg:col-span-3">
                     <FormField
                       label="Nombre Completo"
                       name="nombreCompleto"
@@ -464,25 +366,21 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                     onChange={(e) => handleEditFormChange("telefono", e.target.value)}
                   />
 
-                  <div className="md:col-span-2">
-                    <FormField
-                      label="Correo Electrónico"
-                      name="correo"
-                      type="email"
-                      value={editForm.correo}
-                      onChange={(e) => handleEditFormChange("correo", e.target.value)}
-                    />
-                  </div>
+                  <FormField
+                    label="Correo Electrónico"
+                    name="correo"
+                    type="email"
+                    value={editForm.correo}
+                    onChange={(e) => handleEditFormChange("correo", e.target.value)}
+                  />
 
-                  <div className="md:col-span-2">
-                    <FormField
-                      label="Dirección"
-                      name="direccion"
-                      type="text"
-                      value={editForm.direccion}
-                      onChange={(e) => handleEditFormChange("direccion", e.target.value)}
-                    />
-                  </div>
+                  <FormField
+                    label="Dirección"
+                    name="direccion"
+                    type="text"
+                    value={editForm.direccion}
+                    onChange={(e) => handleEditFormChange("direccion", e.target.value)}
+                  />
                 </div>
 
                 <div className="flex justify-end pt-4 border-t border-gray-200">
@@ -497,6 +395,58 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                   </motion.button>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Información del Sistema */}
+        {activeTab === "view" && (guardian.createdAt || guardian.updatedAt) && (
+          <motion.div
+            className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 0.4 }}
+          >
+            <h4 className="text-sm font-semibold text-gray-800 mb-3">
+              Información del Sistema
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {guardian.createdAt && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Fecha de Creación:</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {new Date(guardian.createdAt).toLocaleDateString("es-CO", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })}
+                  </p>
+                </div>
+              )}
+              {guardian.updatedAt && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Última Actualización:</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {new Date(guardian.updatedAt).toLocaleDateString("es-CO", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })}
+                  </p>
+                </div>
+              )}
+              {guardian.statusAssignedAt && (
+                <div>
+                  <label className="text-xs font-medium text-gray-600">Estado Asignado:</label>
+                  <p className="text-sm text-gray-900 mt-1">
+                    {new Date(guardian.statusAssignedAt).toLocaleDateString("es-CO", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })}
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

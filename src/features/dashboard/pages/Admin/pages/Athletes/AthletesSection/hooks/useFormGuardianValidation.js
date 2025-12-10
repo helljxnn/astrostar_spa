@@ -159,6 +159,11 @@ export const guardianValidationRules = {
       return "";
     },
   ],
+  address: [
+    (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
+    (value) => value?.length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
+    (value) => value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
+  ],
   estado: [(v) => (!v ? "Debe seleccionar un estado" : "")],
 };
 
@@ -194,7 +199,18 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
         ? { name: nameOrEvent, val: value }
         : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
     setValues((prev) => ({ ...prev, [name]: val }));
-    if (touched[name]) {
+    
+    // Campos que SIEMPRE se validan instantáneamente (sin esperar touched)
+    const alwaysValidateFields = ['phoneNumber', 'email', 'identification'];
+    
+    // Si es un campo de validación instantánea, validar SIEMPRE
+    if (alwaysValidateFields.includes(name)) {
+      const error = validateField(name, val);
+      setErrors(prev => ({ ...prev, [name]: error }));
+      setTouched(prev => ({ ...prev, [name]: true }));
+    }
+    // Para otros campos, solo validar si ya están touched
+    else if (touched[name]) {
       const error = validateField(name, val);
       setErrors((prev) => ({ ...prev, [name]: error }));
     }

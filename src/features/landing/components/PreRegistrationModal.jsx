@@ -23,6 +23,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [newEmailError, setNewEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [cooldownTime, setCooldownTime] = useState(0);
 
   // Validaciones
   const validateField = (name, value) => {
@@ -105,10 +106,17 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Verificar cooldown
+    if (cooldownTime > 0) {
+      showNotification("error", `Por favor espera ${cooldownTime} segundos antes de enviar otra inscripción.`);
+      return;
+    }
+
     // Marcar todos los campos como tocados
     const allTouched = {
       nombres: true,
       apellidos: true,
+      numeroDocumento: true,
       fechaNacimiento: true,
       telefono: true,
       correo: true,
@@ -137,10 +145,24 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       if (result.success) {
         setSentEmail(formData.correo);
         setShowSuccess(true);
+        
+        // Iniciar cooldown de 60 segundos
+        setCooldownTime(60);
+        const cooldownInterval = setInterval(() => {
+          setCooldownTime((prev) => {
+            if (prev <= 1) {
+              clearInterval(cooldownInterval);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+        
         // Limpiar formulario
         setFormData({
           nombres: "",
           apellidos: "",
+          numeroDocumento: "",
           fechaNacimiento: "",
           telefono: "",
           correo: "",
@@ -216,6 +238,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setFormData({
       nombres: "",
       apellidos: "",
+      numeroDocumento: "",
       fechaNacimiento: "",
       telefono: "",
       correo: "",
@@ -232,7 +255,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   // Efecto para limpiar cuando se cierra el modal
   if (!isOpen) {
     // Limpiar después de que la animación de salida termine
-    if (formData.nombres || formData.apellidos || formData.fechaNacimiento || formData.telefono || formData.correo || Object.keys(errors).length > 0) {
+    if (formData.nombres || formData.apellidos || formData.numeroDocumento || formData.fechaNacimiento || formData.telefono || formData.correo || Object.keys(errors).length > 0) {
       setTimeout(resetFormData, 300);
     }
     return null;
@@ -383,14 +406,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50"
+                  disabled={isSubmitting || cooldownTime > 0}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <>
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Enviando...
                     </>
+                  ) : cooldownTime > 0 ? (
+                    `Espera ${cooldownTime}s para enviar otra inscripción`
                   ) : (
                     "Enviar Inscripción"
                   )}

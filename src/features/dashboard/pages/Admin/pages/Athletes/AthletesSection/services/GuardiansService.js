@@ -29,6 +29,9 @@ class GuardiansService {
         status
       });
       
+      console.log('🟢 [GuardiansService] Respuesta del backend:', response);
+      console.log('🟢 [GuardiansService] Direcciones de acudientes:', response?.data?.map(g => ({ id: g.id, nombre: g.nombreCompleto, address: g.address, direccion: g.direccion })));
+      
       if (response && response.success) {
         return {
           success: true,
@@ -269,6 +272,56 @@ class GuardiansService {
       return {
         success: false,
         data: [],
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verificar si un documento ya está registrado
+   */
+  async checkDocumentExists(identification, excludeId = null) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-document`, {
+        identification,
+        excludeId
+      });
+      
+      return {
+        success: true,
+        exists: response.exists || false,
+        guardian: response.guardian || null
+      };
+    } catch (error) {
+      console.error('Error verificando documento:', error);
+      return {
+        success: false,
+        exists: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verificar si un email ya está registrado
+   */
+  async checkEmailExists(email, excludeId = null) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-email`, {
+        email,
+        excludeId
+      });
+      
+      return {
+        success: true,
+        exists: response.exists || false,
+        guardian: response.guardian || null
+      };
+    } catch (error) {
+      console.error('Error verificando email:', error);
+      return {
+        success: false,
+        exists: false,
         error: error.message
       };
     }

@@ -77,7 +77,7 @@ const TemporaryTeams = () => {
     setEventAssignmentsCheck(assignmentsCheck)
   }
 
-  // Cargar equipos TEMPORALES
+  // Cargar TODOS los equipos (fundación y temporales)
   const loadTeams = async () => {
     setLoading(true)
     try {
@@ -85,7 +85,7 @@ const TemporaryTeams = () => {
         page: currentPage,
         limit: rowsPerPage,
         search: searchTerm,
-        teamType: "Temporal"
+        // No filtrar por teamType para mostrar todos los equipos
       })
       
       if (result.success) {

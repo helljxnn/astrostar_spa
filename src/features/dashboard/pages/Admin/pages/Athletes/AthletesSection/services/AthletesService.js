@@ -34,6 +34,7 @@ class AthletesService {
         estadoInscripcion
       });
       console.log('🟢 [AthletesService] Respuesta del backend:', response);
+      console.log('🟢 [AthletesService] Direcciones de deportistas:', response?.data?.map(a => ({ id: a.id, nombre: a.firstName, address: a.address })));
       
       if (response && response.success) {
         return {
@@ -305,6 +306,58 @@ class AthletesService {
         success: false,
         data: [],
         error: error.message
+      };
+    }
+  }
+
+  /**
+   * Verificar disponibilidad de email (busca en TODOS los usuarios)
+   */
+  async checkEmailAvailability(email, excludeId = null) {
+    try {
+      // Construir params solo con valores no nulos
+      const params = { email };
+      if (excludeId !== null && excludeId !== undefined) {
+        params.excludeUserId = excludeId;
+      }
+      
+      const response = await apiClient.get('/users/check-email', params);
+      
+      return {
+        available: response.available !== false,
+        message: response.message || ''
+      };
+    } catch (error) {
+      console.error('Error verificando email:', error);
+      return {
+        available: true, // En caso de error, permitir continuar
+        message: ''
+      };
+    }
+  }
+
+  /**
+   * Verificar disponibilidad de identificación (busca en TODOS los usuarios)
+   */
+  async checkIdentificationAvailability(identification, excludeId = null) {
+    try {
+      // Construir params solo con valores no nulos
+      const params = { identification };
+      if (excludeId !== null && excludeId !== undefined) {
+        params.excludeUserId = excludeId;
+      }
+      
+      const response = await apiClient.get('/users/check-identification', params);
+      
+      return {
+        available: response.available !== false,
+        message: response.message || ''
+      };
+    } catch (error) {
+      console.error('Error verificando identificación:', error);
+      return {
+        available: true, // En caso de error, permitir continuar
+        message: ''
       };
     }
   }

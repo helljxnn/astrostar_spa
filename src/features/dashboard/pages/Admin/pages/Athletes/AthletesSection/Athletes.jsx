@@ -147,6 +147,63 @@ const Athletes = () => {
     setIsViewModalOpen(true);
   };
 
+  // Validar si se puede eliminar una deportista
+  const canDeleteAthlete = (athlete) => {
+    if (!athlete) return { canDelete: false, reason: "Deportista no válida" };
+
+    const today = new Date();
+    
+    // Verificar matrícula vigente
+    if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
+      return { 
+        canDelete: false, 
+        reason: "Tiene matrícula vigente" 
+      };
+    }
+    
+    // Verificar si la matrícula venció hace más de 1 año
+    const expirationDate = athlete.enrollment?.fechaVencimiento || athlete.fechaVencimiento;
+    if (expirationDate) {
+      const expDate = new Date(expirationDate);
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      if (expDate > oneYearAgo) {
+        const monthsRemaining = Math.ceil(
+          (oneYearAgo - expDate) / (1000 * 60 * 60 * 24 * 30)
+        );
+        return { 
+          canDelete: false, 
+          reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento` 
+        };
+      }
+    } else {
+      // Si no tiene fecha de vencimiento, no se puede eliminar
+      return {
+        canDelete: false,
+        reason: "No se puede verificar el vencimiento de la matrícula"
+      };
+    }
+    
+    // Verificar equipos temporales
+    if (athlete.temporaryTeams && athlete.temporaryTeams.length > 0) {
+      return { 
+        canDelete: false, 
+        reason: `Está asignada a ${athlete.temporaryTeams.length} equipo(s) temporal(es)` 
+      };
+    }
+    
+    // Verificar eventos activos
+    if (athlete.activeEvents && athlete.activeEvents.length > 0) {
+      return { 
+        canDelete: false, 
+        reason: `Está asignada a ${athlete.activeEvents.length} evento(s) activo(s)` 
+      };
+    }
+    
+    return { canDelete: true };
+  };
+
   const handleDelete = async (athlete) => {
     if (!hasPermission('athletesSection', 'Eliminar')) {
       showErrorAlert('Sin permisos', 'No tienes permisos para eliminar deportistas');
@@ -155,9 +212,16 @@ const Athletes = () => {
     if (!athlete || !athlete.id)
       return showErrorAlert("Error", "Deportista no válido");
 
+    // Validar si se puede eliminar
+    const validation = canDeleteAthlete(athlete);
+    if (!validation.canDelete) {
+      showErrorAlert("No se puede eliminar", validation.reason);
+      return;
+    }
+
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
-      `Se eliminará al deportista ${athlete.firstName} ${athlete.lastName}.`,
+      `Se eliminará permanentemente a ${athlete.firstName || athlete.nombres} ${athlete.lastName || athlete.apellidos}.`,
       { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
     );
 
@@ -316,26 +380,13 @@ const Athletes = () => {
                 { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
                 { header: "Categoría", accessor: "categoria" },
                 { header: "Estado", accessor: "estado" },
-                { header: "Estado Inscripción", accessor: "estadoInscripcion" },
                 { header: "Acudiente", accessor: "acudienteNombre" },
                   { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
                 ]}
               />
             </PermissionGuard>
 
-            <PermissionGuard module="athletesSection" action="Crear">
-              <button
-              onClick={() => {
-                setModalMode("create");
-                setAthleteToEdit(null);
-                setNewlyCreatedGuardianId(null);
-                setIsModalOpen(true);
-              }}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-              >
-                <FaPlus /> Crear Deportista
-              </button>
-            </PermissionGuard>
+
           </div>
         </div>
       </div>
@@ -358,7 +409,6 @@ const Athletes = () => {
                   "Categoría",
                   "Teléfono",
                   "Acudiente",
-                  "Estado Inscripción",
                 ],
                 state: true,
                 actions: true,
@@ -376,7 +426,6 @@ const Athletes = () => {
                     nombreCompleto: `${firstName} ${lastName}`.trim() || "Sin nombre",
                     telefono: a.phoneNumber || a.telefono || "Sin teléfono",
                     acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
-                    estadoInscripcion: a.estadoInscripcion || "",
                   };
                 }),
                 dataPropertys: [
@@ -384,7 +433,6 @@ const Athletes = () => {
                   "categoria",
                   "telefono",
                   "acudienteNombre",
-                  "estadoInscripcion",
                 ],
                 state: true,
                 stateMap: {
@@ -392,24 +440,22 @@ const Athletes = () => {
                   Suspendida: "bg-orange-100 text-orange-800",
                   Vencida: "bg-yellow-100 text-yellow-800",
                 },
-                customRenderers: {
-                  estadoInscripcion: (value) => {
-                    return (
-                      <div className="text-center">
-                        <span className="text-gray-700">
-                          {value || "Sin estado"}
-                        </span>
-                      </div>
-                    );
-                  },
-                },
               }}
               onEdit={hasPermission('athletesSection', 'Editar') ? handleEdit : null}
               onDelete={hasPermission('athletesSection', 'Eliminar') ? handleDelete : null}
               onView={hasPermission('athletesSection', 'Ver') ? handleView : null}
               buttonConfig={{
                 edit: (item) => ({ show: hasPermission('athletesSection', 'Editar') }),
-                delete: (item) => ({ show: hasPermission('athletesSection', 'Eliminar') }),
+                delete: (item) => {
+                  const validation = canDeleteAthlete(item);
+                  return {
+                    show: hasPermission('athletesSection', 'Eliminar'),
+                    disabled: !validation.canDelete,
+                    title: validation.canDelete 
+                      ? "Eliminar deportista" 
+                      : `No se puede eliminar: ${validation.reason}`
+                  };
+                },
                 view: (item) => ({ show: hasPermission('athletesSection', 'Ver') }),
               }}
               customActions={[
@@ -451,6 +497,7 @@ const Athletes = () => {
         onUpdate={handleUpdate}
         athleteToEdit={athleteToEdit}
         guardians={guardians}
+        athletes={athletes}
         mode={modalMode}
         newlyCreatedGuardianId={newlyCreatedGuardianId}
         referenceData={referenceData}
@@ -465,6 +512,7 @@ const Athletes = () => {
             setIsGuardianViewOpen(true);
           }
         }}
+        onDeleteGuardian={handleDeleteGuardian}
       />
 
       <AthleteViewModal

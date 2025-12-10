@@ -148,7 +148,7 @@ export const useAthletes = () => {
           });
         }
         
-        // Para ACUDIENTES: Usar todos EXCEPTO RC y NIT (igual que empleados)
+        // Para ACUDIENTES: Usar todos EXCEPTO RC, TI y NIT
         const guardianDocTypes = allDocTypes.filter(dt => {
           if (!dt || !dt.label) {
             console.warn('⚠️ Tipo de documento sin label:', dt);
@@ -158,13 +158,14 @@ export const useAthletes = () => {
           const label = dt.label.toLowerCase();
           const isExcluded = (
             (label.includes('registro') && label.includes('civil')) ||
+            (label.includes('tarjeta') && label.includes('identidad')) ||
             label.includes('nit') ||
             label.includes('tributaria')
           );
           return !isExcluded;
         });
         
-        console.log('✅ Tipos para ACUDIENTES (sin RC ni NIT):', guardianDocTypes);
+        console.log('✅ Tipos para ACUDIENTES (sin RC, TI ni NIT):', guardianDocTypes);
         console.log('📊 Total acudientes:', guardianDocTypes.length);
         console.log('📋 Nombres acudientes:', guardianDocTypes.map(dt => dt.label));
         
@@ -184,8 +185,8 @@ export const useAthletes = () => {
         console.error('❌ No se pudieron cargar los tipos de documento');
       }
       
-      // Cargar categorías deportivas (mismo endpoint que equipos temporales)
-      const categoriesResponse = await apiClient.get('/teams/sports-categories');
+      // Cargar categorías deportivas
+      const categoriesResponse = await apiClient.get('/sports-categories');
       
       if (categoriesResponse && categoriesResponse.success) {
         setReferenceData(prev => ({
@@ -239,13 +240,23 @@ export const useAthletes = () => {
     setLoading(true);
     
     try {
+      const emailChanged = athleteData.emailChanged;
+      
       const response = await AthletesService.updateAthlete(id, athleteData);
       
       if (response.success) {
-        showSuccessAlert(
-          'Deportista actualizado',
-          response.message || 'El deportista se actualizó correctamente.'
-        );
+        // Si cambió el email y el backend envió credenciales, mostrar mensaje especial
+        if (emailChanged && response.data?.emailSent) {
+          showSuccessAlert(
+            'Deportista actualizado',
+            `El deportista se actualizó correctamente. Se ha enviado un correo con las nuevas credenciales a ${athleteData.email}.`
+          );
+        } else {
+          showSuccessAlert(
+            'Deportista actualizado',
+            response.message || 'El deportista se actualizó correctamente.'
+          );
+        }
         
         // Recargar la lista
         await loadAthletes();

@@ -249,8 +249,125 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                   </p>
                 </motion.div>
 
+                {/* Dirección */}
+                <motion.div
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.0, duration: 0.4 }}
+                >
+                  <label className="text-sm font-medium text-gray-600">
+                    Dirección
+                  </label>
+                  <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                    {athlete.address || athlete.direccion || "N/A"}
+                  </p>
+                </motion.div>
 
               </div>
+
+              {/* Motivo de Inactividad - Solo si está inactivo */}
+              {(athlete.status === 'Inactive' || athlete.estado === 'Inactivo') && 
+               (athlete.inactivityReason || athlete.motivoInactividad) && (
+                <motion.div
+                  className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.0, duration: 0.4 }}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 text-lg">⚠️</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-red-800 mb-1">
+                        Motivo de Inactividad
+                      </h4>
+                      <p className="text-sm text-red-700">
+                        {athlete.inactivityReason || athlete.motivoInactividad}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Información de Matrícula */}
+              {(athlete.enrollment || athlete.matricula) && (
+                <motion.div
+                  className="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.1, duration: 0.4 }}
+                >
+                  <h4 className="text-sm font-semibold text-purple-800 mb-3">
+                    Información de Matrícula
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-purple-600">Estado</label>
+                      <p className={`text-sm font-semibold mt-1 ${
+                        (athlete.enrollment?.estado === 'Vigente' || athlete.matricula?.estado === 'Vigente')
+                          ? 'text-green-700'
+                          : 'text-red-700'
+                      }`}>
+                        {athlete.enrollment?.estado || athlete.matricula?.estado || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-purple-600">Fecha Inicio</label>
+                      <p className="text-sm text-purple-900 mt-1">
+                        {formatDate(athlete.enrollment?.fechaInicio || athlete.matricula?.fechaInicio)}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-purple-600">Fecha Vencimiento</label>
+                      <p className="text-sm text-purple-900 mt-1">
+                        {formatDate(athlete.enrollment?.fechaVencimiento || athlete.matricula?.fechaVencimiento)}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Información del Sistema */}
+              {(athlete.createdAt || athlete.updatedAt) && (
+                <motion.div
+                  className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.3, duration: 0.4 }}
+                >
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                    Información del Sistema
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {athlete.createdAt && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600">Fecha de Creación:</label>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {formatDate(athlete.createdAt)}
+                        </p>
+                      </div>
+                    )}
+                    {athlete.updatedAt && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600">Última Actualización:</label>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {formatDate(athlete.updatedAt)}
+                        </p>
+                      </div>
+                    )}
+                    {athlete.statusAssignedAt && (
+                      <div>
+                        <label className="text-xs font-medium text-gray-600">Estado Asignado:</label>
+                        <p className="text-sm text-gray-900 mt-1">
+                          {formatDate(athlete.statusAssignedAt)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             {/* Footer */}

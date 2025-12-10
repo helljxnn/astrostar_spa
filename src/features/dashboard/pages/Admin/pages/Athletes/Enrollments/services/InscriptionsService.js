@@ -92,13 +92,21 @@ class InscriptionsService {
   // Actualizar estado de inscripción
   async updateStatus(id, newStatus) {
     try {
+      console.log("🔄 [InscriptionsService.updateStatus] Actualizando estado...");
+      console.log("🔄 [InscriptionsService.updateStatus] ID:", id);
+      console.log("🔄 [InscriptionsService.updateStatus] Nuevo estado:", newStatus);
+      console.log("🔄 [InscriptionsService.updateStatus] URL:", `${this.endpoint}/${id}/status`);
+      
       const response = await apiClient.put(`${this.endpoint}/${id}/status`, {
         estado: newStatus,
       });
 
+      console.log("✅ [InscriptionsService.updateStatus] Respuesta:", response);
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("Error updating inscription status:", error);
+      console.error("❌ [InscriptionsService.updateStatus] Error:", error);
+      console.error("❌ [InscriptionsService.updateStatus] Error message:", error.message);
+      console.error("❌ [InscriptionsService.updateStatus] Error response:", error.response);
       return { success: false, error: error.message };
     }
   }

@@ -33,15 +33,20 @@ export const useEnrollments = () => {
       // Cargar tipos de documento para deportistas
       const athletesDocTypesResponse = await AthletesService.getDocumentTypes();
       
-      // Cargar TODOS los tipos de documento para acudientes
+      // Cargar TODOS los tipos de documento
       const allDocTypesResponse = await apiClient.get("/document-types");
+      
+      // Filtrar tipos de documento para acudientes (excluir Tarjeta de Identidad)
+      const guardianDocTypes = (allDocTypesResponse.data || []).filter(
+        (docType) => !docType.label?.toLowerCase().includes("tarjeta de identidad")
+      );
       
       // Cargar categorías deportivas
       const categoriesResponse = await apiClient.get("/sports-categories");
 
       setReferenceData({
         documentTypes: athletesDocTypesResponse.success ? athletesDocTypesResponse.data : [],
-        guardianDocumentTypes: allDocTypesResponse.data || [],
+        guardianDocumentTypes: guardianDocTypes,
         sportsCategories: categoriesResponse.data || []
       });
     } catch (error) {
@@ -56,22 +61,30 @@ export const useEnrollments = () => {
         setLoading(true);
       }
 
+      // Procesar matrículas vencidas automáticamente
+      try {
+        await EnrollmentsService.processExpiredEnrollments();
+      } catch (error) {
+        console.error("Error procesando matrículas vencidas:", error);
+        // No mostramos error al usuario, es un proceso silencioso
+      }
+
       // Cargar deportistas con matrículas
       const athletesResult = await EnrollmentsService.getAll({
         pageSize: pagination.pageSize,
       });
 
-      // Cargar inscripciones pendientes del landing
-      console.log("🔍 Intentando cargar inscripciones pendientes...");
+      // Cargar todas las inscripciones (Pendiente, Procesada, Rechazada)
       const inscriptionsResult = await InscriptionsService.getAll({
-        estado: "PENDIENTE", // En mayúsculas para coincidir con el enum del backend
+        // Sin filtro de estado - muestra todas las inscripciones
       });
-      console.log("📦 Respuesta de inscripciones:", inscriptionsResult);
 
       // NO cargamos todos los acudientes aquí
       // Se cargarán bajo demanda cuando el usuario busque
 
       if (athletesResult.success) {
+        console.log('📊 [useEnrollments] Deportistas cargadas:', athletesResult.data?.length);
+        console.log('📊 [useEnrollments] Datos:', athletesResult.data);
         setAthletes(athletesResult.data || []);
         setPagination((prev) => ({
           ...prev,
@@ -81,28 +94,39 @@ export const useEnrollments = () => {
             (athletesResult.data?.length || 0) / prev.pageSize
           ),
         }));
+      } else {
+        console.log('❌ [useEnrollments] Error al cargar deportistas:', athletesResult.error);
       }
 
       if (inscriptionsResult.success) {
-        console.log("✅ Inscripciones cargadas exitosamente:", inscriptionsResult.data);
-        console.log("📊 Total de inscripciones:", inscriptionsResult.data.length);
+        console.log('📋 [useEnrollments] Todas las inscripciones:', inscriptionsResult.data);
         
-        // Ver qué valores de estado hay
-        const estados = inscriptionsResult.data.map(i => i.estado);
-        console.log("🔍 Estados encontrados:", [...new Set(estados)]);
-        
-        // Filtrar solo las pendientes en el frontend
-        const pendingInscriptions = (inscriptionsResult.data || []).filter(
-          (inscription) => 
-            inscription.estado === "PENDIENTE" || 
-            inscription.estado === "Pendiente" || 
-            inscription.estado === "pendiente"
+        // Crear un Set con los documentos de deportistas ya matriculados
+        const enrolledDocuments = new Set(
+          (athletesResult.data || []).map(athlete => 
+            athlete.numeroDocumento || athlete.identification
+          ).filter(Boolean)
         );
-        console.log("📋 Inscripciones pendientes filtradas:", pendingInscriptions.length);
         
+        console.log('📋 [useEnrollments] Documentos de deportistas matriculados:', Array.from(enrolledDocuments));
+        
+        // Filtrar solo las pendientes Y que NO tengan deportista matriculado
+        const pendingInscriptions = (inscriptionsResult.data || []).filter(
+          (inscription) => {
+            const estado = (inscription.estado || "").toUpperCase();
+            const isPending = estado === "PENDIENTE";
+            const documento = inscription.numeroDocumento;
+            const isAlreadyEnrolled = enrolledDocuments.has(documento);
+            
+            console.log(`📋 [useEnrollments] Inscripción ${inscription.nombres}: estado="${inscription.estado}" -> isPending=${isPending}, documento=${documento}, isAlreadyEnrolled=${isAlreadyEnrolled}`);
+            
+            return isPending && !isAlreadyEnrolled;
+          }
+        );
+        
+        console.log('📋 [useEnrollments] Inscripciones pendientes filtradas:', pendingInscriptions.length);
         setInscriptions(pendingInscriptions);
       } else {
-        console.error("❌ Error cargando inscripciones:", inscriptionsResult.error);
         setInscriptions([]);
       }
     } catch (error) {
@@ -120,52 +144,100 @@ export const useEnrollments = () => {
   // Buscar acudientes bajo demanda
   const searchGuardians = async (searchTerm) => {
     try {
-      if (!searchTerm || searchTerm.length < 2) {
+      console.log('🔍 [useEnrollments] Buscando acudientes con término:', searchTerm);
+      
+      // Si el searchTerm está vacío, cargar todos los acudientes (útil después de crear uno nuevo)
+      if (!searchTerm || searchTerm.length === 0) {
+        console.log('🔍 [useEnrollments] Cargando todos los acudientes...');
+        const result = await GuardiansService.getAll();
+        console.log('🔍 [useEnrollments] Resultado getAll:', result);
+        if (result.success) {
+          console.log('✅ [useEnrollments] Acudientes cargados:', result.data.length);
+          setGuardians(result.data || []);
+        } else {
+          console.log('❌ [useEnrollments] Error al cargar acudientes');
+          setGuardians([]);
+        }
+        return;
+      }
+
+      // Si tiene menos de 2 caracteres pero no está vacío, no buscar
+      if (searchTerm.length < 2) {
         setGuardians([]);
         return;
       }
 
+      console.log('🔍 [useEnrollments] Buscando con searchGuardians...');
       const result = await GuardiansService.searchGuardians(searchTerm, 20);
+      console.log('🔍 [useEnrollments] Resultado búsqueda:', result);
       
       if (result.success) {
+        console.log('✅ [useEnrollments] Acudientes encontrados:', result.data.length);
         setGuardians(result.data || []);
+      } else {
+        console.log('❌ [useEnrollments] Error en búsqueda');
+        setGuardians([]);
       }
     } catch (error) {
-      console.error("Error searching guardians:", error);
+      console.error("❌ [useEnrollments] Error searching guardians:", error);
+      setGuardians([]);
     }
   };
 
   useEffect(() => {
     loadReferenceData();
     loadData();
+    // Cargar todos los acudientes al inicio
+    searchGuardians("");
   }, []);
 
   // Crear matrícula desde pre-inscripción
   const createEnrollment = async (enrollmentData, preRegistrationId) => {
     try {
-      const result = await EnrollmentsService.createEnrollment(enrollmentData);
+      console.log("📝 [createEnrollment] Iniciando creación de matrícula...");
+      console.log("📝 [createEnrollment] enrollmentData:", enrollmentData);
+      console.log("📝 [createEnrollment] preRegistrationId:", preRegistrationId);
+      console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof preRegistrationId);
+      
+      // Pasar el preRegistrationId al servicio
+      const result = await EnrollmentsService.createEnrollment(enrollmentData, preRegistrationId);
 
       if (result.success) {
-        // Actualizar estado de inscripción a "matriculada"
-        if (preRegistrationId) {
-          await InscriptionsService.updateStatus(
-            preRegistrationId,
-            "MATRICULADA"
-          );
-        }
-
+        console.log("✅ [createEnrollment] Matrícula creada exitosamente");
+        console.log("📧 [createEnrollment] Email enviado:", result.emailSent);
+        console.log("🔑 [createEnrollment] Contraseña temporal:", result.temporaryPassword);
+        
         showSuccessAlert(
           "Matrícula creada",
           "La deportista ha sido matriculada exitosamente"
         );
+        
+        console.log("🔄 [createEnrollment] Recargando datos...");
         await loadData(pagination.page);
-        return result.data;
+        
+        // 🚀 ELIMINACIÓN POST-CARGA: Remover la inscripción del estado local DESPUÉS de recargar
+        // Esto asegura que incluso si el backend no actualizó el estado, no se muestre
+        if (preRegistrationId) {
+          console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local después de recargar...");
+          setInscriptions(prevInscriptions => 
+            prevInscriptions.filter(inscription => inscription.id !== preRegistrationId)
+          );
+          console.log("✅ [createEnrollment] Inscripción eliminada del estado local");
+        }
+        
+        // Retornar toda la información incluyendo credenciales
+        return {
+          data: result.data,
+          emailSent: result.emailSent,
+          temporaryPassword: result.temporaryPassword
+        };
       } else {
+        console.error("❌ [createEnrollment] Error al crear matrícula:", result.error);
         showErrorAlert("Error", result.error || "No se pudo crear la matrícula");
         return null;
       }
     } catch (error) {
-      console.error("Error creating enrollment:", error);
+      console.error("❌ [createEnrollment] Excepción:", error);
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
     }
@@ -235,6 +307,13 @@ export const useEnrollments = () => {
       );
 
       if (result.success) {
+        // 🚀 ELIMINACIÓN INSTANTÁNEA: Remover la inscripción del estado local inmediatamente
+        console.log("🗑️ [rejectInscription] Eliminando inscripción del estado local instantáneamente...");
+        setInscriptions(prevInscriptions => 
+          prevInscriptions.filter(inscription => inscription.id !== id)
+        );
+        console.log("✅ [rejectInscription] Inscripción eliminada del estado local");
+        
         showSuccessAlert(
           "Inscripción rechazada",
           "La inscripción ha sido rechazada"

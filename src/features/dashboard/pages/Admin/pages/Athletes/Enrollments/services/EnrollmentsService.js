@@ -17,10 +17,17 @@ class EnrollmentsService {
 
       const response = await apiClient.get(this.endpoint, { params });
 
+      console.log('📡 [EnrollmentsService.getAll] Respuesta del backend:', response.data);
+      
+      // El backend puede devolver un array directo o un objeto con data
+      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
+      
+      console.log('📡 [EnrollmentsService.getAll] Total de deportistas:', data.length);
+
       return {
         success: true,
-        data: response.data.data || [],
-        total: response.data.total || 0,
+        data: data,
+        total: response.data.total || data.length,
         hasMore: response.data.hasMore || false,
       };
     } catch (error) {
@@ -45,16 +52,68 @@ class EnrollmentsService {
   }
 
   // Crear matrícula (convertir pre-inscripción en deportista matriculada)
-  async createEnrollment(athleteData) {
+  async createEnrollment(athleteData, preRegistrationId = null) {
     try {
-      const response = await apiClient.post(this.endpoint, athleteData);
+      console.log('📤 [EnrollmentsService] Datos a enviar al backend:', athleteData);
+      console.log('📤 [EnrollmentsService] preRegistrationId:', preRegistrationId);
+      console.log('📤 [EnrollmentsService] Estado:', athleteData.estado);
+      console.log('📤 [EnrollmentsService] Tipo de estado:', typeof athleteData.estado);
+      
+      // Agregar preRegistrationId al body si existe
+      const dataToSend = {
+        ...athleteData,
+        ...(preRegistrationId && { preRegistrationId })
+      };
+      
+      console.log('📤 [EnrollmentsService] Data final a enviar:', dataToSend);
+      
+      const response = await apiClient.post(this.endpoint, dataToSend);
+
+      console.log('📧 [EnrollmentsService] Respuesta del backend:', response);
+
+      return {
+        success: true,
+        data: response.data,
+        emailSent: response.emailSent || false,
+        temporaryPassword: response.temporaryPassword || null,
+        message: response.message || 'Deportista creada exitosamente'
+      };
+    } catch (error) {
+      console.error("Error creating enrollment:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Renovar matrícula de deportista inactivo
+  async renewEnrollment(athleteId, enrollmentData = {}) {
+    try {
+      const response = await apiClient.post(
+        `/enrollments/renew/${athleteId}`,
+        enrollmentData
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        message: "Matrícula renovada exitosamente",
+      };
+    } catch (error) {
+      console.error("Error renewing enrollment:", error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Procesar matrículas vencidas manualmente
+  async processExpiredEnrollments() {
+    try {
+      const response = await apiClient.post("/enrollments/process-expired");
 
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error("Error creating enrollment:", error);
+      console.error("Error processing expired enrollments:", error);
       return { success: false, error: error.message };
     }
   }

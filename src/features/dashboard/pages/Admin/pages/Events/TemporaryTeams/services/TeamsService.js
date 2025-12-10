@@ -256,22 +256,47 @@ class TeamsService {
 
   async getTrainers() {
     try {
-      const response = await apiClient.get('/trainers');
+      console.log('🌐 [TeamsService.getTrainers] Llamando a /trainers...');
       
-      if (response && response.success) {
+      // Hacer petición directa sin apiClient para evitar problemas de autenticación
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const response = await fetch(`${API_BASE_URL}/trainers`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 [TeamsService.getTrainers] Status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log('📡 [TeamsService.getTrainers] Respuesta recibida:', data);
+      console.log('   - data.success:', data?.success);
+      console.log('   - data.data:', data?.data);
+      console.log('   - data.data.length:', data?.data?.length);
+      
+      if (data && data.success) {
+        console.log(`✅ [TeamsService.getTrainers] ${data.data?.length || 0} entrenadores obtenidos`);
         return {
           success: true,
-          data: response.data || []
+          data: data.data || []
         };
       }
       
+      console.warn('⚠️ [TeamsService.getTrainers] Respuesta sin éxito:', data);
       return {
         success: false,
         data: [],
-        error: response?.message || 'Error obteniendo entrenadores'
+        error: data?.message || 'Error obteniendo entrenadores'
       };
     } catch (error) {
-      console.error('❌ Error obteniendo entrenadores:', error);
+      console.error('❌ [TeamsService.getTrainers] Error:', error);
+      console.error('   Error completo:', error.message);
       return {
         success: false,
         data: [],
@@ -282,22 +307,47 @@ class TeamsService {
 
   async getAthletes() {
     try {
-      const response = await apiClient.get('/athletes');
+      console.log('🌐 [TeamsService.getAthletes] Llamando a /teams-athletes...');
       
-      if (response && response.success) {
+      // Hacer petición directa sin apiClient para evitar problemas de autenticación
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const response = await fetch(`${API_BASE_URL}/teams-athletes`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 [TeamsService.getAthletes] Status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log('📡 [TeamsService.getAthletes] Respuesta recibida:', data);
+      console.log('   - data.success:', data?.success);
+      console.log('   - data.data:', data?.data);
+      console.log('   - data.data.length:', data?.data?.length);
+      
+      if (data && data.success) {
+        console.log(`✅ [TeamsService.getAthletes] ${data.data?.length || 0} deportistas obtenidas`);
         return {
           success: true,
-          data: response.data || []
+          data: data.data || []
         };
       }
       
+      console.warn('⚠️ [TeamsService.getAthletes] Respuesta sin éxito:', data);
       return {
         success: false,
         data: [],
-        error: response?.message || 'Error obteniendo deportistas'
+        error: data?.message || 'Error obteniendo deportistas'
       };
     } catch (error) {
-      console.error('❌ Error obteniendo deportistas:', error);
+      console.error('❌ [TeamsService.getAthletes] Error:', error);
+      console.error('   Error completo:', error.message);
       return {
         success: false,
         data: [],

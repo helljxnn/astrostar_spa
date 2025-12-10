@@ -1,9 +1,10 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
 import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation";
+import GuardiansService from "../services/GuardiansService";
 
 const GuardianModal = ({
   isOpen,
@@ -15,8 +16,12 @@ const GuardianModal = ({
   referenceData = { documentTypes: [] },
 }) => {
   const isEditing = mode === "edit" || guardianToEdit !== null;
+  const [asyncErrors, setAsyncErrors] = useState({});
+  const [checkingDocument, setCheckingDocument] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+
   
-  const { values, errors, touched, handleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues } =
+  const { values, errors, touched, handleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues, setErrors } =
     useFormGuardianValidation(
       {
         nombreCompleto: "",
@@ -24,12 +29,118 @@ const GuardianModal = ({
         identification: "",
         email: "",
         phoneNumber: "",
+        address: "",
         fechaNacimiento: "",
+        estado: "Activo",
       },
       guardianValidationRules
     );
 
 
+
+  // Validación instantánea de documento
+  useEffect(() => {
+    const checkDocument = async () => {
+      if (!values.identification || values.identification.length < 6) {
+        setAsyncErrors(prev => ({ ...prev, identification: null }));
+        return;
+      }
+
+      setCheckingDocument(true);
+      try {
+        // Obtener todos los acudientes
+        const result = await GuardiansService.getAll();
+        
+        if (result.success) {
+          // Buscar si existe un acudiente con el mismo documento
+          const existingGuardian = result.data.find(g => {
+            const guardianId = g.identificacion || g.identification;
+            const isSameDocument = guardianId && guardianId.toLowerCase() === values.identification.toLowerCase();
+            const isDifferentGuardian = !isEditing || g.id !== guardianToEdit?.id;
+            return isSameDocument && isDifferentGuardian;
+          });
+
+          if (existingGuardian) {
+            const errorMsg = `Este documento ya está registrado`;
+            setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
+            setErrors(prev => ({ ...prev, identification: errorMsg }));
+            setTouched(prev => ({ ...prev, identification: true }));
+          } else {
+            setAsyncErrors(prev => ({ ...prev, identification: null }));
+            // Solo limpiar el error si es un error de duplicado
+            if (errors.identification && errors.identification.includes('ya está registrado')) {
+              setErrors(prev => ({ ...prev, identification: '' }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando documento:', error);
+      } finally {
+        setCheckingDocument(false);
+      }
+    };
+
+    // Debounce de 500ms
+    const timeoutId = setTimeout(checkDocument, 500);
+    return () => clearTimeout(timeoutId);
+  }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
+
+  // Validación instantánea de email
+  useEffect(() => {
+    const checkEmail = async () => {
+      if (!values.email || !values.email.includes('@')) {
+        setAsyncErrors(prev => ({ ...prev, email: null }));
+        return;
+      }
+
+      // Validar formato de email primero (antes de consultar al backend)
+      // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
+      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(values.email)) {
+        // Si el formato es inválido, no hacer la consulta al backend
+        // El error de formato ya lo maneja la validación síncrona
+        setAsyncErrors(prev => ({ ...prev, email: null }));
+        return;
+      }
+
+      setCheckingEmail(true);
+      try {
+        // Obtener todos los acudientes
+        const result = await GuardiansService.getAll();
+        
+        if (result.success) {
+          // Buscar si existe un acudiente con el mismo email
+          const existingGuardian = result.data.find(g => {
+            const guardianEmail = g.correo || g.email;
+            const isSameEmail = guardianEmail && guardianEmail.toLowerCase() === values.email.toLowerCase();
+            const isDifferentGuardian = !isEditing || g.id !== guardianToEdit?.id;
+            return isSameEmail && isDifferentGuardian;
+          });
+
+          if (existingGuardian) {
+            const errorMsg = `Este email ya está registrado`;
+            setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
+            setErrors(prev => ({ ...prev, email: errorMsg }));
+            setTouched(prev => ({ ...prev, email: true }));
+          } else {
+            setAsyncErrors(prev => ({ ...prev, email: null }));
+            // Solo limpiar el error si es un error de duplicado
+            if (errors.email && errors.email.includes('ya está registrado')) {
+              setErrors(prev => ({ ...prev, email: '' }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error verificando email:', error);
+      } finally {
+        setCheckingEmail(false);
+      }
+    };
+
+    // Debounce de 500ms
+    const timeoutId = setTimeout(checkEmail, 500);
+    return () => clearTimeout(timeoutId);
+  }, [values.email, isEditing, guardianToEdit?.id, setErrors, setTouched]);
 
   useEffect(() => {
   if (isOpen && isEditing && guardianToEdit) {
@@ -41,7 +152,9 @@ const GuardianModal = ({
       identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
       email: guardianToEdit.correo || guardianToEdit.email || "",
       phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
+      address: guardianToEdit.address || guardianToEdit.direccion || "",
       fechaNacimiento: guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
+      estado: guardianToEdit.estado || "Activo",
     });
     
     console.log('✅ Valores cargados:', {
@@ -55,19 +168,50 @@ const GuardianModal = ({
       identification: "",
       email: "",
       phoneNumber: "",
+      address: "",
       fechaNacimiento: "",
+      estado: "Activo",
     });
+    setAsyncErrors({});
   }
 }, [isOpen, isEditing, guardianToEdit, setValues]);
 
   const handleSubmit = async () => {
+    console.log("🔵 [GuardianModal] handleSubmit ejecutado");
+    console.log("🔵 [GuardianModal] Valores actuales:", values);
+    
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
     
-    if (!validateAllFields()) {
+    const isValid = validateAllFields();
+    console.log("🔵 [GuardianModal] Validación:", isValid);
+    console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
+    console.log("🔵 [GuardianModal] Errores asíncronos:", JSON.stringify(asyncErrors, null, 2));
+    
+    // Verificar si hay errores asíncronos
+    const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
+    
+    if (!isValid || hasAsyncErrors) {
+      console.log("❌ [GuardianModal] Validación falló, no se puede guardar");
+      console.log("❌ [GuardianModal] Campos con error:");
+      Object.keys(errors).forEach(key => {
+        if (errors[key]) {
+          console.log(`  - ${key}: ${errors[key]}`);
+        }
+      });
+      if (hasAsyncErrors) {
+        console.log("❌ [GuardianModal] Errores de duplicados:");
+        Object.keys(asyncErrors).forEach(key => {
+          if (asyncErrors[key]) {
+            console.log(`  - ${key}: ${asyncErrors[key]}`);
+          }
+        });
+      }
       return;
     }
+    
+    console.log("✅ [GuardianModal] Validación exitosa, procediendo a guardar...");
 
     if (isEditing) {
       const confirm = await showConfirmAlert(
@@ -85,6 +229,7 @@ const GuardianModal = ({
         identification: values.identification.trim(), // ✅ En inglés
         email: values.email.trim(), // ✅ En inglés
         phoneNumber: values.phoneNumber, // ✅ En inglés
+        address: values.address.trim(), // ✅ Dirección
         birthDate: values.fechaNacimiento, // ✅ En inglés
       };
       
@@ -120,6 +265,10 @@ const GuardianModal = ({
   };
 
   if (!isOpen) return null;
+
+  console.log("🟢 [GuardianModal] Modal abierto, mode:", mode, "isEditing:", isEditing);
+  console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
+  console.log("🟢 [GuardianModal] referenceData:", referenceData);
 
   return (
     <motion.div 
@@ -166,10 +315,7 @@ const GuardianModal = ({
               type="select"
               placeholder="Seleccionar tipo de documento"
               required
-              options={(referenceData?.documentTypes || []).map((type) => ({
-                value: type.id,
-                label: type.name,
-              }))}
+              options={referenceData?.documentTypes || []}
               value={values.documentTypeId}
               error={errors.documentTypeId}
               touched={touched.documentTypeId}
@@ -183,12 +329,12 @@ const GuardianModal = ({
               documentType={
                 (referenceData?.documentTypes || []).find(
                   (dt) => dt.id === parseInt(values.documentTypeId)
-                )?.name
+                )?.label
               }
               value={values.identification}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.identification}
+              error={errors.identification || asyncErrors.identification}
               touched={touched.identification}
               required
               label="Número de Documento"
@@ -217,7 +363,7 @@ const GuardianModal = ({
               value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.email}
+              error={errors.email || asyncErrors.email}
               touched={touched.email}
               required
               delay={0.4}
@@ -235,6 +381,20 @@ const GuardianModal = ({
               touched={touched.phoneNumber}
               required
               delay={0.5}
+            />
+            
+            <FormField
+              label="Dirección"
+              name="address"
+              type="text"
+              placeholder="Dirección de residencia"
+              value={values.address}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.address}
+              touched={touched.address}
+              required
+              delay={0.6}
             />
             
             <FormField
@@ -282,7 +442,10 @@ const GuardianModal = ({
               Cancelar
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={() => {
+                console.log("🟡 [GuardianModal] Botón clickeado!");
+                handleSubmit();
+              }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >
               {isEditing ? "Actualizar Acudiente" : "Crear Acudiente"}

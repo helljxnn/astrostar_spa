@@ -44,3 +44,21 @@ footer > div[style*="290px"] {
   height: 290px;
   overflow: hidden;
 }
+
+/* Estilos para filas de matrículas vencidas - TODA LA FILA ROJA */
+tbody tr.enrollment-expired-row {
+  background-color: #fecaca !important;
+}
+
+tbody tr.enrollment-expired-row td {
+  background-color: #fecaca !important;
+  padding: 0 !important;
+}
+
+tbody tr.enrollment-expired-row:hover {
+  background-color: #fca5a5 !important;
+}
+
+tbody tr.enrollment-expired-row:hover td {
+  background-color: #fca5a5 !important;
+}
