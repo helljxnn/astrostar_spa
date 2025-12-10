@@ -42,7 +42,7 @@ const parseCustomRecurrence = (raw) => {
 /* -------------------------------------------------------
  * NORMALIZACIÓN DE DATOS
  * -----------------------------------------------------*/
-const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
+  const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
   const employeeData = apiSchedule.employee || {};
   const user = employeeData.user || {};
 
@@ -71,30 +71,36 @@ const normalizeScheduleFromApi = (apiSchedule, employeeMap = {}) => {
   const start = fecha ? new Date(`${fecha}T${horaInicio}`) : null;
   const end = fecha ? new Date(`${fecha}T${horaFin}`) : null;
 
-  const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
-  const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
-    ? estadoRaw
-    : "Programado";
+    const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
+    const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
+      ? estadoRaw
+      : "Programado";
 
-  return {
-    id: apiSchedule.id,
-    scheduleId: apiSchedule.id,
-    empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
-    empleado: name,
-    cargo,
-    fecha,
-    horaInicio,
-    horaFin,
-    repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
-    customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
-    descripcion: apiSchedule.description || apiSchedule.descripcion || "",
-    observaciones: apiSchedule.description || apiSchedule.descripcion || "",
-    estado,
-    motivoCancelacion:
-      apiSchedule.cancellationReason || apiSchedule.motivoCancelacion || "",
-    start,
-    end,
-    title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
+    return {
+      id: apiSchedule.id,
+      scheduleId: apiSchedule.id,
+      empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
+      empleado: name,
+      cargo,
+      fecha,
+      horaInicio,
+      horaFin,
+      repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
+      customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
+      descripcion: apiSchedule.description || apiSchedule.descripcion || "",
+      observaciones: apiSchedule.description || apiSchedule.descripcion || "",
+      novedad:
+        apiSchedule.novedad ||
+        apiSchedule.novedades ||
+        apiSchedule.news ||
+        "",
+      novedades: apiSchedule.novedades || apiSchedule.novedad || [],
+      estado,
+      motivoCancelacion:
+        apiSchedule.cancellationReason || apiSchedule.motivoCancelacion || "",
+      start,
+      end,
+      title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
     color: STATUS_COLOR[estado] || STATUS_COLOR.Programado,
   };
 };
@@ -119,6 +125,8 @@ const buildOccurrence = (schedule, date, occurrenceIndex) => {
       schedule.estado === "Cancelado" ? " (Cancelado)" : ""
     }`,
     color: STATUS_COLOR[schedule.estado] || STATUS_COLOR.Programado,
+    novedad: schedule.novedad,
+    novedades: schedule.novedades,
   };
 };
 

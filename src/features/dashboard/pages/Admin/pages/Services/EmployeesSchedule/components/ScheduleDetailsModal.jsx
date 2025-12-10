@@ -38,26 +38,26 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
         >
           <motion.div
             onClick={(e) => e.stopPropagation()}
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25, stiffness: 250 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 overflow-hidden border border-gray-100"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 220 }}
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl mx-4 overflow-hidden border border-gray-100 flex flex-col"
           >
-            <div className="flex justify-between items-center px-8 py-5 border-b border-gray-200 bg-gradient-to-r from-[#6C7EFF] to-[#8AD7FF] text-white">
-              <h2 className="text-2xl font-semibold flex items-center gap-3">
-                <FaInfoCircle className="text-white" />
+            <div className="flex-shrink-0 relative px-6 py-5 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-primary-purple to-primary-blue text-transparent bg-clip-text flex items-center justify-center gap-3">
+                <FaInfoCircle className="text-primary-purple" />
                 Detalles del Horario
               </h2>
               <button
                 onClick={onClose}
-                className="text-white hover:text-white transition p-2 rounded-full hover:bg-white/10"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
               >
-                <FaTimes className="w-6 h-6" />
+                <FaTimes className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-8 space-y-8 text-gray-800">
+            <div className="modal-body px-6 py-6 space-y-6 text-gray-800">
               <div className="border-b border-gray-100 pb-5">
                 <h3 className="text-2xl font-semibold text-gray-900 mb-2">
                   {employee.empleado}
@@ -180,12 +180,31 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
                   </div>
                 </div>
               )}
+              {(employee.novedades?.length || employee.novedad) && (
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase block mb-2">
+                    Novedades del horario
+                  </label>
+                  <div className="flex flex-col gap-2 p-4 rounded-lg border border-dashed border-primary-purple/30 bg-primary-purple/5 text-sm text-gray-800">
+                    {(Array.isArray(employee.novedades)
+                      ? employee.novedades
+                      : [employee.novedad])
+                      .filter(Boolean)
+                      .map((item, index) => (
+                        <p key={`${item}-${index}`} className="flex items-start gap-2">
+                          <span className="w-2 h-2 mt-1 rounded-full bg-primary-purple" />
+                          <span>{item}</span>
+                        </p>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="px-8 py-5 bg-gray-50 border-t flex justify-end">
+            <div className="flex-shrink-0 border-t border-gray-200 px-6 py-4 bg-gray-50 flex justify-end">
               <button
                 onClick={onClose}
-                className="px-6 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition font-medium"
+                className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition font-medium"
               >
                 Cerrar
               </button>

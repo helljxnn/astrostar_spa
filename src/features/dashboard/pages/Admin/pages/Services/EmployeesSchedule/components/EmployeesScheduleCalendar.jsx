@@ -24,6 +24,7 @@ import {
   FaTrash,
   FaEye,
   FaBan,
+  FaStickyNote,
 } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustomSchedule.css";
@@ -44,9 +45,51 @@ const messages = {
   noEventsInRange: "No hay horarios en este rango.",
 };
 
-/* ============================================================
-   🔹 FUNCIÓN PARA GENERAR EVENTOS RECURRENTES
-============================================================ */
+
+const ROLE_COLORS = {
+  entrenador: { from: "#effbf2", to: "#d9f3d7", dot: "#4ade80", tagBg: "rgba(199, 249, 204, 0.25)" },
+  fisioterapia: { from: "#f5f3ff", to: "#e3deff", dot: "#8b5cf6", tagBg: "rgba(224, 215, 255, 0.3)" },
+  nutricion: { from: "#f0fbff", to: "#d6f0ff", dot: "#38bdf8", tagBg: "rgba(209, 242, 255, 0.35)" },
+  psicologia: { from: "#fff5fb", to: "#ffe1f0", dot: "#fb7185", tagBg: "rgba(252, 225, 243, 0.3)" },
+  default: { from: "#f5f6ff", to: "#e3e8ff", dot: "#6366f1", tagBg: "rgba(229, 237, 255, 0.45)" },
+};
+
+const ROLE_ALIASES = {
+  psicologa: "psicologia",
+  psicologo: "psicologia",
+  psicologia: "psicologia",
+  fisioterapeuta: "fisioterapia",
+  fisioterapia: "fisioterapia",
+  nutricionista: "nutricion",
+  nutricion: "nutricion",
+  entrenador: "entrenador",
+  admin: "",
+  administrador: "",
+  administradora: "",
+};
+
+const normalizeRole = (cargo = "") =>
+  cargo
+    .toLowerCase()
+    .replace(/[\u00e1]/g, "a")
+    .replace(/[\u00e9]/g, "e")
+    .replace(/[\u00ed]/g, "i")
+    .replace(/[\u00f3]/g, "o")
+    .replace(/[\u00fa]/g, "u")
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+
+const resolveRoleId = (cargo = "") => {
+  const key = normalizeRole(cargo);
+  return ROLE_ALIASES[key] !== undefined ? ROLE_ALIASES[key] : key;
+};
+
+const getRoleColors = (cargo = "") => {
+  const key = resolveRoleId(cargo);
+  if (!key) return ROLE_COLORS.default;
+  return ROLE_COLORS[key] || ROLE_COLORS.default;
+};
+
 function generateRecurringEvents(event) {
   const events = [];
   const startDate = parseISO(event.fecha);
@@ -143,11 +186,12 @@ export default function EmployeesScheduleCalendar({
   onViewEvent,
   onDeleteEvent,
   onCancelEvent,
+  onNovedad,
 }) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date());
   const calendarRef = useRef(null);
-  const [popover, setPopover] = useState({ open: false, style: {}, event: null });
+  const [popover, setPopover] = useState({ open: false, style: {}, horario: null });
 
   /* ---------- Normalizar eventos ---------- */
   const events = useMemo(() => {
@@ -159,9 +203,9 @@ export default function EmployeesScheduleCalendar({
   }, [schedules]);
 
   /* ---------- Abrir popover al presionar engranaje ---------- */
-  const openPopoverAt = (event, element) => {
+  const openPopoverAt = (horario, element) => {
     if (!calendarRef.current || !element) {
-      setPopover({ open: true, style: {}, event });
+      setPopover({ open: true, style: {}, horario });
       return;
     }
     const eventRect = element.getBoundingClientRect();
@@ -169,45 +213,46 @@ export default function EmployeesScheduleCalendar({
     const top = eventRect.top - containerRect.top + eventRect.height / 2;
     let left = eventRect.left - containerRect.left + eventRect.width + 8;
     const rightEdge = left + 260;
-    if (rightEdge > containerRect.width)
-      left = eventRect.left - containerRect.left - 260 - 8;
+    if (rightEdge > containerRect.width) left = eventRect.left - containerRect.left - 260 - 8;
     setPopover({
       open: true,
-      event,
+      horario,
       style: { position: "absolute", top: `${top}px`, left: `${left}px`, zIndex: 120 },
     });
   };
 
-  const closePopover = () => setPopover({ open: false, style: {}, event: null });
+  const closePopover = () => setPopover({ open: false, style: {}, horario: null });
 
   /* ---------- Renderizado de evento ---------- */
-  const EventRenderer = ({ event }) => {
+  const EventRenderer = ({ event: horario }) => {
     const ref = useRef(null);
     const handleCogClick = (e) => {
       e.stopPropagation();
-      openPopoverAt(event, ref.current);
+      openPopoverAt(horario, ref.current);
     };
+    const roleColors = getRoleColors(
+      horario.cargo || horario.area || horario.role || horario.rol || horario.title
+    );
+    const { from, to, dot } = roleColors;
 
-    const palettes = {
-      Programado: ["#8ea6ff", "#bbd9ff"],
-      Completado: ["#7ad8a8", "#b6f3d5"],
-      Cancelado: ["#d6d8e0", "#f1f3f8"],
-    };
-    const [from, to] = palettes[event.estado] || ["#8ea6ff", "#bbd9ff"];
-
-    const rawName =
-      event.empleado ||
-      (event.title || "").replace(/^Turno\s*-\s*/i, "") ||
-      event.title;
-
-    const shortenName = (name = "") => {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) return `${parts[0]} ${parts[1]}`;
-      return parts[0] || "";
-    };
-
-    const displayName = shortenName(rawName);
-    const cargoText = event.cargo ? ` · ${event.cargo}` : "";
+    const employeeName =
+      horario.empleado ||
+      (horario.title || "").replace(/^Turno\s*-\s*/i, "") ||
+      horario.title ||
+      "";
+    const displayRole =
+      horario.cargo ||
+      horario.role ||
+      horario.rol ||
+      horario.area ||
+      (horario.title && !/programado/i.test(horario.title) ? horario.title : "") ||
+      "Cargo asignado";
+    const statusClass =
+      horario.estado === "Cancelado"
+        ? "bg-red-100 text-red-700"
+        : horario.estado === "Completado"
+        ? "bg-emerald-100 text-emerald-700"
+        : "bg-blue-100 text-blue-700";
 
     return (
       <div
@@ -216,30 +261,24 @@ export default function EmployeesScheduleCalendar({
         style={{
           background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
         }}
+        title={`${displayRole}${employeeName ? ` · ${employeeName}` : ""}`}
       >
         <div className="schedule-event-pill__left">
-          <span
-            className={`dot ${
-              event.estado === "Cancelado"
-                ? "dot-gray"
-                : event.estado === "Completado"
-                ? "dot-green"
-                : "dot-indigo"
-            }`}
-          />
-          <span
-            className="schedule-event-pill__title"
-            title={`${rawName}${cargoText}`}
-          >
-            {displayName}
-            {event.cargo && (
-              <span className="schedule-event-pill__subtitle">{cargoText}</span>
-            )}
-          </span>
+          <span className="dot" style={{ backgroundColor: dot }} />
+          <span className="schedule-event-pill__title">{displayRole}</span>
         </div>
-        <button onClick={handleCogClick} className="schedule-event-pill__action" aria-label="Acciones">
-          <FaCog className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          {horario.estado && horario.estado !== "Programado" && (
+            <span
+              className={`hidden md:inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusClass}`}
+            >
+              {horario.estado}
+            </span>
+          )}
+          <button onClick={handleCogClick} className="schedule-event-pill__action" aria-label="Acciones">
+            <FaCog className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   };
@@ -266,6 +305,28 @@ export default function EmployeesScheduleCalendar({
     return () => window.removeEventListener("mousedown", handler);
   }, [popover.open]);
 
+
+  const popoverRoleColors = popover.horario
+    ? getRoleColors(
+        popover.horario.cargo ||
+          popover.horario.area ||
+          popover.horario.role ||
+          popover.horario.rol ||
+          popover.horario.title
+      )
+    : ROLE_COLORS.default;
+
+  const popoverStatusClass =
+    popover.horario?.estado === "Cancelado"
+      ? "bg-red-100 text-red-700"
+      : popover.horario?.estado === "Completado"
+      ? "bg-emerald-100 text-emerald-700"
+      : "bg-blue-100 text-blue-700";
+  const popoverNovedades = popover.horario
+    ? (Array.isArray(popover.horario.novedades)
+        ? popover.horario.novedades
+        : [popover.horario.novedad]).filter(Boolean)
+    : [];
   /* ============================================================
      🔹 RENDER PRINCIPAL
   ============================================================ */
@@ -312,7 +373,7 @@ export default function EmployeesScheduleCalendar({
       </div>
 
       {/* Calendario */}
-      <div className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white h-[45vh] max-h-[520px] min-h-[360px] calendar-shell">
+      <div className="rounded-2xl border border-gray-200 shadow-lg overflow-hidden bg-white h-[36vh] max-h-[420px] min-h-[320px] calendar-shell">
         <Calendar
           selectable
           culture="es"
@@ -340,13 +401,19 @@ export default function EmployeesScheduleCalendar({
           eventPropGetter={() => ({
             style: { border: "none", background: "transparent", padding: "2px 0" },
           })}
-          onSelectSlot={(slot) => onOpenModalForSlot?.({ start: slot.start, end: slot.end })}
-          onSelectEvent={(ev) => onOpenModalForEvent?.(ev)}
+          onSelectSlot={(slot) => {
+            closePopover();
+            onOpenModalForSlot?.({ start: slot.start, end: slot.end });
+          }}
+          onSelectEvent={(ev) => {
+            closePopover();
+            onViewEvent?.(ev);
+          }}
         />
       </div>
 
       {/* Popover */}
-      {popover.open && popover.event && (
+      {popover.open && popover.horario && (
         <div id="employee-popover" style={popover.style} className="w-[260px]">
           <motion.div
             initial={{ opacity: 0, y: -6, scale: 0.98 }}
@@ -355,29 +422,79 @@ export default function EmployeesScheduleCalendar({
             className="bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden"
           >
             <div className="px-3 py-2">
-              <div className="text-sm font-medium text-gray-800 mb-1">
-                {popover.event.title}
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <div className="text-sm font-medium text-gray-800 flex items-center gap-2">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: popoverRoleColors.dot }}
+                  />
+                  {popover.horario.empleado || popover.horario.title}
+                </div>
+                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${popoverStatusClass}`}>
+                  {popover.horario.estado || "Programado"}
+                </span>
               </div>
-              <div className="text-xs text-gray-500 mb-2">
-                {format(popover.event.start, "yyyy-MM-dd HH:mm", { locale: es })} -{" "}
-                {format(popover.event.end, "HH:mm", { locale: es })}
+              {popoverNovedades.length > 0 && (
+                <p className="text-xs text-gray-500 flex items-center gap-2 mb-2">
+                  <span className="w-2 h-2 rounded-full bg-primary-purple" />
+                  <span className="font-semibold text-primary-purple">
+                    Novedad:
+                  </span>
+                  <span className="text-gray-600">
+                    {popoverNovedades[0]}
+                  </span>
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2 mb-2 text-[11px] text-gray-600">
+                {popover.horario.cargo && (
+                  <span
+                    className="px-2 py-0.5 rounded-full border"
+                    style={{
+                      backgroundColor: popoverRoleColors.tagBg,
+                      borderColor: popoverRoleColors.dot,
+                    }}
+                  >
+                    {popover.horario.cargo}
+                  </span>
+                )}
+                {popover.horario.area && (
+                  <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                    {popover.horario.area}
+                  </span>
+                )}
+              </div>
+
+              <div className="text-xs text-gray-500 mb-3">
+                {format(popover.horario.start, "yyyy-MM-dd HH:mm", { locale: es })} -{" "}
+                {format(popover.horario.end, "HH:mm", { locale: es })}
               </div>
 
               <div className="grid gap-2">
-                <button
-                  onClick={() => {
-                    closePopover();
-                    onEditEvent?.(popover.event);
-                  }}
-                  className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
-                >
-                  <FaEdit className="w-4 h-4 text-green-600" /> Editar horario
-                </button>
+              <button
+                onClick={() => {
+                  closePopover();
+                  onEditEvent?.(popover.horario);
+                }}
+                className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
+              >
+                <FaEdit className="w-4 h-4 text-green-600" /> Editar horario
+              </button>
+
+              <button
+                onClick={() => {
+                  closePopover();
+                  onNovedad?.(popover.horario);
+                }}
+                className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
+              >
+                <FaStickyNote className="w-4 h-4 text-primary-purple" /> Novedad
+              </button>
 
                 <button
                   onClick={() => {
                     closePopover();
-                    onViewEvent?.(popover.event);
+                    onViewEvent?.(popover.horario);
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
                 >
@@ -387,7 +504,7 @@ export default function EmployeesScheduleCalendar({
                 <button
                   onClick={() => {
                     closePopover();
-                    onCancelEvent?.(popover.event);
+                    onCancelEvent?.(popover.horario);
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
                 >
@@ -398,7 +515,7 @@ export default function EmployeesScheduleCalendar({
                   onClick={() => {
                     closePopover();
                     onDeleteEvent?.(
-                      popover.event.scheduleId || popover.event.id
+                      popover.horario.scheduleId || popover.horario.id
                     );
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50 text-red-600"

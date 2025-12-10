@@ -102,6 +102,8 @@ function DonorsSponsors() {
       telefono: donor.telefono || "",
       correo: donor.correo || "",
       direccion: donor.direccion || "",
+      ciudad: donor.ciudad || "",
+      pais: donor.pais || "",
       estado: donor.estado || "",
     }));
   }, [donorsSponsors]);
@@ -132,6 +134,8 @@ function DonorsSponsors() {
                 { header: "Telefono", accessor: "telefono" },
                 { header: "Correo", accessor: "correo" },
                 { header: "Direccion", accessor: "direccion" },
+                { header: "Ciudad", accessor: "ciudad" },
+                { header: "Pais", accessor: "pais" },
                 { header: "Estado", accessor: "estado" },
               ]}
             />
@@ -149,13 +153,13 @@ function DonorsSponsors() {
         <Table
           rowsPerPage={pagination.limit || 5}
           thead={{
-            titles: ["Identificacion", "Nombre", "Tipo", "Telefono"],
+            titles: ["Identificacion", "Nombre", "Tipo", "Ciudad", "Pa\u00eds", "Telefono"],
             state: true,
             actions: true,
           }}
           tbody={{
             data: donorsSponsors,
-            dataPropertys: ["identificacion", "nombre", "tipo", "telefono"],
+            dataPropertys: ["identificacion", "nombre", "tipo", "ciudad", "pais", "telefono"],
             state: true,
           }}
           onEdit={handleEdit}

@@ -141,36 +141,36 @@ export default function ScheduleModal({
 
   return (
     <>
-      <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
+      <motion.div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
         <motion.div
-          initial={{ opacity: 0, y: -60 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -60 }}
-          transition={{ duration: 0.3 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl overflow-hidden border border-gray-100"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ type: "spring", damping: 20, stiffness: 200 }}
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] border border-gray-100 flex flex-col overflow-hidden"
         >
-          <div className="relative px-10 py-6 border-b border-gray-200 bg-gradient-to-r from-[#eef2ff] via-white to-[#e8f8ff] text-center">
-            <h2 className="text-3xl font-semibold text-[#8aa9ff]">
+          <div className="flex-shrink-0 relative px-6 py-5 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-primary-purple to-primary-blue text-transparent bg-clip-text">
               {isNew ? "Crear Horario" : isReadOnly ? "Detalle del Horario" : "Editar Horario"}
             </h2>
             {isReadOnly && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 text-center mt-1">
                 Solo lectura. No tienes permisos para editar este registro.
               </p>
             )}
             <button
-              onClick={onClose}
-              className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-2xl font-bold transition"
-              aria-label="Cerrar"
               type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
             >
               &times;
             </button>
           </div>
 
-          <div className="px-10 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-              <div className="xl:col-span-2 space-y-2">
+          <div className="modal-body flex-1 overflow-y-auto px-6 py-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="md:col-span-2 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Empleado *
                 </label>
@@ -269,36 +269,14 @@ export default function ScheduleModal({
                     { value: "dia", label: "Cada dia" },
                     { value: "semana", label: "Cada semana" },
                     { value: "mes", label: "Cada mes" },
-                    { value: "anio", label: "Cada ano" },
+                    { value: "anio", label: "Cada año" },
                     { value: "laboral", label: "Dias laborales" },
                     { value: "personalizado", label: "Personalizar..." },
                   ]}
                 />
               </div>
 
-              {recurrenceLabel && (
-                <div className="xl:col-span-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200">
-                  {recurrenceLabel}
-                </div>
-              )}
-
-              <div className="xl:col-span-4 space-y-2">
-                <FormField
-                  label="Descripcion *"
-                  name="descripcion"
-                  type="textarea"
-                  value={form.descripcion}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur("descripcion", form.descripcion, form)}
-                  placeholder="Notas adicionales sobre el horario..."
-                  error={errors.descripcion}
-                  touched={touched.descripcion}
-                  required
-                  readOnly={disabledFields}
-                />
-              </div>
-
-              <div className="md:col-span-1 space-y-2">
+              <div className="space-y-2">
                 <FormField
                   label="Estado"
                   name="estado"
@@ -314,13 +292,35 @@ export default function ScheduleModal({
                 />
               </div>
             </div>
+
+            {recurrenceLabel && (
+              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200">
+                {recurrenceLabel}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <FormField
+                label="Descripcion *"
+                name="descripcion"
+                type="textarea"
+                value={form.descripcion}
+                onChange={handleChange}
+                onBlur={() => handleBlur("descripcion", form.descripcion, form)}
+                placeholder="Notas adicionales sobre el horario..."
+                error={errors.descripcion}
+                touched={touched.descripcion}
+                required
+                readOnly={disabledFields}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 px-10 pb-8 border-t border-gray-200 pt-6 bg-gray-50">
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4 flex justify-end gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-white border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 transition shadow-sm"
+              className="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium"
             >
               {isReadOnly ? "Cerrar" : "Cancelar"}
             </button>
@@ -328,14 +328,14 @@ export default function ScheduleModal({
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="px-6 py-2.5 rounded-xl text-white font-semibold bg-[#74D5F4] hover:bg-[#5fc4e3] transition shadow-sm"
+                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition font-medium shadow-lg"
               >
                 {isNew ? "Crear Horario" : "Actualizar Horario"}
               </button>
             )}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
 
       {showCustomModal && !disabledFields && (
         <CustomRecurrenceModal
