@@ -11,6 +11,33 @@ import CancelDonationModal from "./components/CancelDonationModal";
 import donationsService from "./services/donationsService";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
+const DONOR_NAME_FIELDS = [
+  "nombre",
+  "name",
+  "razonSocial",
+  "razon_social",
+  "companyName",
+  "nombreCompleto",
+  "razon_social_completa",
+];
+
+const getDonorDisplayName = (donation) => {
+  if (!donation) return "Sin nombre";
+  if (donation.anonymous || !donation.donorSponsorId) return "Anonimo";
+  const sponsor = donation.donorSponsor || {};
+  for (const key of DONOR_NAME_FIELDS) {
+    if (sponsor[key]) {
+      return sponsor[key];
+    }
+  }
+  return (
+    donation.donorName ||
+    donation.nombre ||
+    sponsor?.representante ||
+    "Sin nombre"
+  );
+};
+
 const Donations = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,19 +58,17 @@ const Donations = () => {
         const records = resp?.data || resp?.data?.data || [];
 
         const normalized = records.map((d, idx) => {
-          const isAnon = d.anonymous || !d.donorSponsorId;
-          const donorName = isAnon
-            ? "Anonimo"
-            : d.donorSponsor?.name ||
-              d.donorSponsor?.nombre ||
-              d.donorName ||
-              "Sin nombre";
+          const donorName = getDonorDisplayName(d);
 
           const items =
             Array.isArray(d.details) && d.details.length > 0
               ? d.details.map((it) => ({
                   donationType: it.recordType || it.kind || "",
-                  amount: it.amount ?? it.quantity ?? "",
+                  amount: it.amount ?? "",
+                  quantity: it.quantity ?? "",
+                  description: it.description,
+                  classification: it.classification,
+                  method: it.channel,
                 }))
               : [];
 
@@ -145,7 +170,14 @@ const Donations = () => {
     const payment = details.find(
       (d) => (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") && d.recordType === "payment"
     );
-    const itemEspecie = details.find((d) => d.kind === "ESPECIE" && d.recordType === "item");
+    const especieItems = details
+      .filter((d) => d.kind === "ESPECIE" && d.recordType === "item")
+      .map((item) => ({
+        description: item.description ?? "",
+        quantity: item.quantity ?? item.amount ?? "",
+        classification: item.classification ?? "",
+        method: item.channel ?? "",
+      }));
     const foodDetail = details.find((d) => d.kind === "ALIMENTOS" && d.recordType === "food");
 
     const isFoodPurchase = raw.type === "ALIMENTOS";
@@ -162,10 +194,7 @@ const Donations = () => {
         : new Date().toISOString().slice(0, 16),
       econAmount: payment?.amount ?? "",
       econChannel: payment?.channel ?? "",
-      especieDesc: itemEspecie?.description ?? "",
-      especieQty: itemEspecie?.quantity ?? "",
-      especieClass: itemEspecie?.classification ?? "",
-      especieMethod: itemEspecie?.channel ?? "",
+      especieItems,
       isFoodPurchase,
       foodQty: foodDetail?.quantity ?? "",
       foodClass: foodDetail?.classification ?? "",
@@ -242,37 +271,19 @@ const Donations = () => {
             ],
           }}
           tbody={{
-            data: paginatedData.map((donation) => {
-              const statusColors = {
-                Recibida: "#22c55e",
-                "En proceso": "#38bdf8",
-                EnProceso: "#38bdf8",
-                Verificada: "#a78bfa",
-                Ejecutada: "#22c55e",
-                Anulada: "#f97316",
-              };
-
-              const statusText = donation.status || "";
-              const color = statusColors[statusText] || "#9BE9FF";
-              const hoverColor = "#6ED3FF";
-
-              return {
-                ...donation,
-                donationType: donation.typeLabel || "Sin tipos",
-                status: (
-                  <span
-                    className="font-medium cursor-default transition-all"
-                    style={{ color }}
-                    onMouseEnter={(e) => (e.target.style.color = hoverColor)}
-                    onMouseLeave={(e) => (e.target.style.color = color)}
-                  >
-                    {statusText}
-                  </span>
-                ),
-                _original: donation,
-              };
-            }),
-            dataPropertys: ["donorName", "donationType", "donationDate", "registerDate", "status"],
+            data: paginatedData.map((donation) => ({
+              ...donation,
+              donationType: donation.typeLabel || "Sin tipos",
+              status: donation.status,
+              _original: donation,
+            })),
+            dataPropertys: [
+              "donorName",
+              "donationType",
+              "donationDate",
+              "registerDate",
+              "status",
+            ],
           }}
           onEdit={(row) => handleEdit(row._original || row)}
           onView={(row) => handleView(row._original || row)}

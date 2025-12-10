@@ -9,6 +9,11 @@ class DonationsService {
     return apiClient.post("/donations", data);
   }
 
+  async update(id, data) {
+    if (!id) return null;
+    return apiClient.put(`/donations/${id}`, data);
+  }
+
   async uploadFiles(donationId, files = [], fileType = "soporte") {
     if (!donationId || files.length === 0) return null;
     const formData = new FormData();
