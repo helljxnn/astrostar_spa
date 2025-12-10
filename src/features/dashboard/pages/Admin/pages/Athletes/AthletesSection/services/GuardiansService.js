@@ -326,6 +326,33 @@ class GuardiansService {
       };
     }
   }
+
+  /**
+   * Remover acudiente de un deportista específico (desasociar)
+   */
+  async removeGuardianFromAthlete(athleteId) {
+    try {
+      const response = await apiClient.put(`/athletes/${athleteId}/remove-guardian`, {});
+      
+      if (response && response.success) {
+        return {
+          success: true,
+          message: response.message || 'Acudiente removido correctamente'
+        };
+      }
+      
+      return {
+        success: false,
+        error: response?.message || 'Error removiendo acudiente'
+      };
+    } catch (error) {
+      console.error(`Error removiendo acudiente del deportista ${athleteId}:`, error);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
 }
 
 export default new GuardiansService();
