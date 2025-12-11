@@ -3,11 +3,11 @@
  * Maneja todas las peticiones HTTP al backend de acudientes
  */
 
-import apiClient from '../../../../../../../../shared/services/apiClient.js';
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class GuardiansService {
   constructor() {
-    this.endpoint = '/guardians';
+    this.endpoint = "/guardians";
   }
 
   /**
@@ -15,64 +15,67 @@ class GuardiansService {
    */
   async getGuardians(params = {}) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        search = "", 
-        status = ""
-      } = params;
-      
-      const response = await apiClient.get(this.endpoint, { 
-        page, 
-        limit, 
+      const { page = 1, limit = 10, search = "", status = "" } = params;
+
+      const response = await apiClient.get(this.endpoint, {
+        page,
+        limit,
         search,
-        status
+        status,
       });
-      
-      console.log('🟢 [GuardiansService] Respuesta del backend:', response);
-      console.log('🟢 [GuardiansService] Direcciones de acudientes:', response?.data?.map(g => ({ id: g.id, nombre: g.nombreCompleto, address: g.address, direccion: g.direccion })));
-      
+
+      console.log("🟢 [GuardiansService] Respuesta del backend:", response);
+      console.log(
+        "🟢 [GuardiansService] Direcciones de acudientes:",
+        response?.data?.map((g) => ({
+          id: g.id,
+          nombre: g.nombreCompleto,
+          address: g.address,
+          direccion: g.direccion,
+        }))
+      );
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data || [],
           pagination: response.pagination || {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       } else {
         return {
           success: false,
           data: [],
           pagination: {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       }
     } catch (error) {
-      console.error('Error al obtener acudientes:', error);
+      console.error("Error al obtener acudientes:", error);
       return {
         success: false,
         data: [],
         pagination: {
-          page: params.page || 1, 
-          limit: params.limit || 10, 
-          total: 0, 
-          totalPages: 0, 
-          hasNext: false, 
-          hasPrev: false
+          page: params.page || 1,
+          limit: params.limit || 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
         },
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -83,23 +86,23 @@ class GuardiansService {
   async getGuardianById(id) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo acudiente'
+        error: response?.message || "Error obteniendo acudiente",
       };
     } catch (error) {
       console.error(`Error obteniendo acudiente ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -110,24 +113,24 @@ class GuardiansService {
   async createGuardian(guardianData) {
     try {
       const response = await apiClient.post(this.endpoint, guardianData);
-      
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error creando acudiente'
+        error: response?.message || "Error creando acudiente",
       };
     } catch (error) {
-      console.error('Error al crear acudiente:', error);
+      console.error("Error al crear acudiente:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -137,25 +140,28 @@ class GuardiansService {
    */
   async updateGuardian(id, guardianData) {
     try {
-      const response = await apiClient.put(`${this.endpoint}/${id}`, guardianData);
-      
+      const response = await apiClient.put(
+        `${this.endpoint}/${id}`,
+        guardianData
+      );
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error actualizando acudiente'
+        error: response?.message || "Error actualizando acudiente",
       };
     } catch (error) {
       console.error(`Error actualizando acudiente ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -166,23 +172,23 @@ class GuardiansService {
   async deleteGuardian(id) {
     try {
       const response = await apiClient.delete(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error eliminando acudiente'
+        error: response?.message || "Error eliminando acudiente",
       };
     } catch (error) {
       console.error(`Error eliminando acudiente ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -193,23 +199,23 @@ class GuardiansService {
   async getGuardianStats() {
     try {
       const response = await apiClient.get(`${this.endpoint}/stats`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo estadísticas'
+        error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
+      console.error("Error obteniendo estadísticas:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -218,10 +224,10 @@ class GuardiansService {
    * Buscar acudientes
    */
   async searchGuardians(searchTerm, limit = 20) {
-    return this.getGuardians({ 
-      search: searchTerm, 
+    return this.getGuardians({
+      search: searchTerm,
       limit,
-      page: 1 
+      page: 1,
     });
   }
 
@@ -229,7 +235,7 @@ class GuardiansService {
    * Obtener acudientes activos
    */
   async getActiveGuardians() {
-    return this.getGuardians({ status: 'Activo' });
+    return this.getGuardians({ status: "Activo" });
   }
 
   /**
@@ -268,11 +274,11 @@ class GuardiansService {
         data: allGuardians,
       };
     } catch (error) {
-      console.error('Error al obtener todos los acudientes:', error);
+      console.error("Error al obtener todos los acudientes:", error);
       return {
         success: false,
         data: [],
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -284,20 +290,20 @@ class GuardiansService {
     try {
       const response = await apiClient.get(`${this.endpoint}/check-document`, {
         identification,
-        excludeId
+        excludeId,
       });
-      
+
       return {
         success: true,
         exists: response.exists || false,
-        guardian: response.guardian || null
+        guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error('Error verificando documento:', error);
+      console.error("Error verificando documento:", error);
       return {
         success: false,
         exists: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -309,20 +315,20 @@ class GuardiansService {
     try {
       const response = await apiClient.get(`${this.endpoint}/check-email`, {
         email,
-        excludeId
+        excludeId,
       });
-      
+
       return {
         success: true,
         exists: response.exists || false,
-        guardian: response.guardian || null
+        guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error('Error verificando email:', error);
+      console.error("Error verificando email:", error);
       return {
         success: false,
         exists: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -332,24 +338,30 @@ class GuardiansService {
    */
   async removeGuardianFromAthlete(athleteId) {
     try {
-      const response = await apiClient.put(`/athletes/${athleteId}/remove-guardian`, {});
-      
+      const response = await apiClient.put(
+        `/deportistas/${athleteId}/remove-guardian`,
+        {}
+      );
+
       if (response && response.success) {
         return {
           success: true,
-          message: response.message || 'Acudiente removido correctamente'
+          message: response.message || "Acudiente removido correctamente",
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error removiendo acudiente'
+        error: response?.message || "Error removiendo acudiente",
       };
     } catch (error) {
-      console.error(`Error removiendo acudiente del deportista ${athleteId}:`, error);
+      console.error(
+        `Error removiendo acudiente del deportista ${athleteId}:`,
+        error
+      );
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
