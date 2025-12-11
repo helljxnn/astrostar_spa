@@ -339,7 +339,7 @@ class GuardiansService {
   async removeGuardianFromAthlete(athleteId) {
     try {
       const response = await apiClient.put(
-        `/deportistas/${athleteId}/remove-guardian`,
+        `/athletes/${athleteId}/remove-guardian`,
         {}
       );
 
