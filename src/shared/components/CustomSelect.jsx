@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const CustomSelect = ({
   name,
@@ -10,38 +10,38 @@ const CustomSelect = ({
   placeholder = "Seleccionar...",
   disabled = false,
   error = false,
-  className = ""
+  className = "",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const selectRef = useRef(null);
   const dropdownRef = useRef(null);
 
   // Filtrar opciones basado en búsqueda
-  const filteredOptions = options.filter(option =>
+  const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Encontrar la opción seleccionada
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = options.find((option) => option.value === value);
 
   // Cerrar dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (selectRef.current && !selectRef.current.contains(event.target)) {
         setIsOpen(false);
-        setSearchTerm('');
+        setSearchTerm("");
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Manejar selección de opción
   const handleOptionSelect = (option) => {
     if (onChange) {
-      if (typeof onChange === 'function') {
+      if (typeof onChange === "function") {
         if (onChange.length === 2) {
           onChange(name, option.value);
         } else {
@@ -50,24 +50,27 @@ const CustomSelect = ({
       }
     }
     setIsOpen(false);
-    setSearchTerm('');
+    setSearchTerm("");
   };
 
   // Manejar blur
   const handleBlur = () => {
     if (onBlur) {
-      if (typeof onBlur === 'function') {
+      if (typeof onBlur === "function") {
         if (onBlur.length === 1) {
           onBlur(name);
         } else {
-          onBlur({ target: { name } });
+          onBlur({ target: { name, value } });
         }
       }
     }
   };
 
   return (
-    <div ref={selectRef} className={`custom-select-container ${isOpen ? 'open' : ''} ${className}`}>
+    <div
+      ref={selectRef}
+      className={`custom-select-container ${isOpen ? "open" : ""} ${className}`}
+    >
       {/* Select Button */}
       <button
         type="button"
@@ -77,11 +80,16 @@ const CustomSelect = ({
         className={`
           w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
           text-left bg-white flex items-center justify-between
-          ${error
-            ? "border-red-300 focus:ring-red-500"
-            : "border-gray-300 focus:ring-purple-500"
+          ${
+            error
+              ? "border-red-300 focus:ring-red-500"
+              : "border-gray-300 focus:ring-purple-500"
           }
-          ${disabled ? "bg-gray-100 cursor-not-allowed" : "cursor-pointer hover:border-gray-400"}
+          ${
+            disabled
+              ? "bg-gray-100 cursor-not-allowed"
+              : "cursor-pointer hover:border-gray-400"
+          }
           ${isOpen ? "ring-2 ring-purple-500 border-transparent" : ""}
         `}
       >
@@ -96,7 +104,12 @@ const CustomSelect = ({
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </button>
 
@@ -136,7 +149,11 @@ const CustomSelect = ({
                     onClick={() => handleOptionSelect(option)}
                     className={`
                       w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors duration-150
-                      ${value === option.value ? "bg-purple-50 text-purple-700" : "text-gray-900"}
+                      ${
+                        value === option.value
+                          ? "bg-purple-50 text-purple-700"
+                          : "text-gray-900"
+                      }
                     `}
                   >
                     {option.label}

@@ -7,7 +7,7 @@ import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class AthletesService {
   constructor() {
-    this.endpoint = "/deportistas";
+    this.endpoint = "/athletes";
   }
 
   /**

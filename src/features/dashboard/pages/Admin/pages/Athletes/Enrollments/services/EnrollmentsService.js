@@ -2,7 +2,7 @@ import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class EnrollmentsService {
   constructor() {
-    this.endpoint = "/deportistas";
+    this.endpoint = "/athletes";
   }
   // Obtener todas las deportistas con matrículas
   async getAll(filters = {}) {

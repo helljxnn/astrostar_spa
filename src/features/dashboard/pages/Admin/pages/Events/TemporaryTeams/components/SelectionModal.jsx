@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import { useState, useMemo, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react";
-import TeamsService from "../services/TeamsService";
-import Pagination from "../../../../../../../../shared/components/Table/Pagination";
+import { useState, useMemo, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react"
+import TeamsService from "../services/TeamsService"
+import Pagination from "../../../../../../../../shared/components/Table/Pagination"
 
 const SelectionModal = ({
   isOpen,
@@ -20,274 +20,346 @@ const SelectionModal = ({
   unavailableAthleteIds = [], // IDs de deportistas que ya están en otros equipos
   excludeTeamId = null, // ID del equipo actual (para edición)
 }) => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const rowsPerPage = 5;
+  const [searchTerm, setSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [selectedCategory, setSelectedCategory] = useState("")
+  const [data, setData] = useState([])
+  const [loading, setLoading] = useState(false)
+  const rowsPerPage = 5
 
-  const isMultiSelect = mode === "athletes";
-  const title =
-    mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas";
-  const icon =
-    mode === "trainer" ? (
-      <UserCheck className="w-6 h-6" />
-    ) : (
-      <Users className="w-6 h-6" />
-    );
+  const isMultiSelect = mode === "athletes"
+  const title = mode === "trainer" ? "Seleccionar Entrenador" : "Seleccionar Deportistas"
+  const icon = mode === "trainer" ? <UserCheck className="w-6 h-6" /> : <Users className="w-6 h-6" />
 
   // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
-      loadData();
+      loadData()
     } else {
       // Limpiar datos cuando se cierra
-      setData([]);
-      setSearchTerm("");
-      setSelectedCategory("");
-      setCurrentPage(1);
-      setActiveTab(0);
+      setData([])
+      setSearchTerm("")
+      setSelectedCategory("")
+      setCurrentPage(1)
+      setActiveTab(0)
     }
-  }, [isOpen, mode]);
+  }, [isOpen, mode])
 
   const loadData = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      let response;
+      let response
       if (mode === "trainer") {
-        response = await TeamsService.getTrainers();
+        response = await TeamsService.getTrainers()
       } else {
-        response = await TeamsService.getAthletes();
+        response = await TeamsService.getAthletes()
       }
-
-      // Asegurar que siempre tengamos un array
+      
+      console.log('📥 Respuesta del servicio:', response)
+      
+      // FIX CRÍTICO: Asegurar que siempre tengamos un array
       if (response && response.success && Array.isArray(response.data)) {
-        setData(response.data);
+        console.log('✅ Datos cargados:', response.data.length, 'elementos')
+        setData(response.data)
       } else {
-        setData([]);
+        console.warn('⚠️ Respuesta inválida o sin datos:', response)
+        setData([])
       }
     } catch (error) {
-      setData([]);
+      console.error('❌ Error cargando datos:', error)
+      setData([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
-  // Determinar el tipo de equipo actual basado en el contexto
   const currentTeamType = useMemo(() => {
-    if (forceFoundationType) return "fundacion";
-    if (teamType) return teamType;
-    return null;
-  }, [forceFoundationType, teamType]);
+    if (forceFoundationType) return "fundacion"
+    if (teamType) return teamType
+    if (selectedItems.length > 0) return selectedItems[0]?.type
+    return null
+  }, [teamType, selectedItems, forceFoundationType])
 
-  // Agrupar datos por tipo (fundación o temporal)
   const groupedData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-
-    const groups = [
-      {
+    if (!data || data.length === 0) {
+      console.log('⚠️ No hay datos para agrupar')
+      return []
+    }
+    
+    console.log('📊 Agrupando datos:', data.length, 'elementos')
+    console.log('📊 Primer elemento:', data[0])
+    
+    // Si forceFoundationType está activo, solo mostrar fundación
+    if (forceFoundationType) {
+      const fundacion = data.filter(item => item.type === "fundacion")
+      console.log('🔵 Fundación (forzado):', fundacion.length)
+      return fundacion.length > 0 ? [{
         source: "fundacion",
-        sourceLabel:
-          mode === "trainer"
-            ? "Entrenadores de Fundación"
-            : "Deportistas de Fundación",
-        items: data.filter((item) => item.type === "fundacion"),
-      },
-      {
-        source: "temporal",
-        sourceLabel:
-          mode === "trainer"
-            ? "Entrenadores Temporales"
-            : "Deportistas Temporales",
-        items: data.filter((item) => item.type === "temporal"),
-      },
-    ];
+        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
+        items: fundacion
+      }] : []
+    }
+    
+    const fundacion = data.filter(item => item.type === "fundacion")
+    const temporal = data.filter(item => item.type === "temporal")
+    
+    console.log('🔵 Fundación:', fundacion.length)
+    console.log('🟡 Temporal:', temporal.length)
+    
+    const groups = []
+    
+    if (fundacion.length > 0) {
+      groups.push({
+        source: "fundacion",
+        sourceLabel: mode === "trainer" ? "Entrenadores de la Fundación" : "Deportistas de la Fundación",
+        items: fundacion
+      })
+    }
+    
+    if (temporal.length > 0) {
+      groups.push({
+        source: "temporal", 
+        sourceLabel: mode === "trainer" ? "Entrenadores Temporales" : "Deportistas Temporales",
+        items: temporal
+      })
+    }
+    
+    console.log('📦 Grupos creados:', groups.length)
+    
+    return groups
+  }, [data, mode, forceFoundationType])
 
-    return groups;
-  }, [data, mode]);
-
-  // Establecer el tab activo inicial basado en initialTabType
+  // Establecer el tab inicial basado en el tipo de equipo
   useEffect(() => {
-    if (isOpen && initialTabType && groupedData.length > 0) {
-      const tabIndex = groupedData.findIndex(
-        (g) => g.source === initialTabType
-      );
-      if (tabIndex !== -1) {
-        setActiveTab(tabIndex);
+    if (isOpen && groupedData.length > 0 && initialTabType) {
+      const tabIndex = groupedData.findIndex(group => group.source === initialTabType)
+      if (tabIndex !== -1 && activeTab !== tabIndex) {
+        setActiveTab(tabIndex)
       }
     }
-  }, [isOpen, initialTabType, groupedData]);
+  }, [isOpen, groupedData, initialTabType, activeTab])
 
-  // Obtener categorías únicas para el filtro
-  const categories = useMemo(() => {
-    if (mode !== "athletes") return [];
-    const activeGroup = groupedData[activeTab];
-    if (!activeGroup || !activeGroup.items) return [];
+  // Detectar la categoría seleccionada automáticamente
+  const autoSelectedCategory = useMemo(() => {
+    if (mode !== "athletes") return null
+    if (selectedItems.length === 0) return null
+    
+    // Buscar el primer deportista de fundación seleccionado
+    const firstFoundationAthlete = selectedItems.find(item => item.type === "fundacion" && item.categoria)
+    return firstFoundationAthlete?.categoria || null
+  }, [selectedItems, mode])
 
-    const cats = activeGroup.items
-      .filter((item) => item.type === "fundacion" && item.categoria)
-      .map((item) => item.categoria);
-    return [...new Set(cats)].sort();
-  }, [groupedData, activeTab, mode]);
+  // Actualizar el filtro de categoría cuando se detecta una categoría seleccionada
+  useEffect(() => {
+    if (autoSelectedCategory && selectedCategory !== autoSelectedCategory) {
+      setSelectedCategory(autoSelectedCategory)
+    } else if (!autoSelectedCategory && selectedCategory !== "") {
+      // Si no hay categoría seleccionada, limpiar el filtro
+      setSelectedCategory("")
+    }
+  }, [autoSelectedCategory])
 
-  // Filtrar datos según búsqueda y categoría
+  // ✅ CORRECTO: Usar solo los datos del tab actual
+  const currentGroupData = useMemo(() => {
+    const groupData = groupedData[activeTab]?.items || []
+    return groupData
+  }, [groupedData, activeTab])
+
+  const availableItems = useMemo(() => {
+    let items = currentGroupData
+    
+    // Solo filtrar si hay deportistas de fundación seleccionados con categoría
+    const hasFoundationAthletesSelected = selectedItems.some(item => item.type === "fundacion" && item.categoria)
+    
+    if (mode === "athletes" && autoSelectedCategory && hasFoundationAthletesSelected && groupedData[activeTab]?.source === "fundacion") {
+      items = items.filter(item => {
+        // Mantener los ya seleccionados
+        if (selectedItems.some(s => s.id === item.id)) return true
+        // Solo mostrar deportistas de la misma categoría
+        return item.categoria === autoSelectedCategory
+      })
+    }
+    
+    return items
+  }, [currentGroupData, mode, autoSelectedCategory, groupedData, activeTab, selectedItems])
+
   const filteredItems = useMemo(() => {
-    const activeGroup = groupedData[activeTab];
-    if (!activeGroup || !activeGroup.items) return [];
+    let filtered = availableItems
 
-    let filtered = activeGroup.items;
-
-    // Filtro de búsqueda
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (item) =>
-          item.name.toLowerCase().includes(search) ||
-          item.identification?.toLowerCase().includes(search) ||
-          (mode === "athletes" &&
-            item.categoria?.toLowerCase().includes(search))
-      );
+      const query = searchTerm.toLowerCase()
+      filtered = filtered.filter(item => 
+        item.name?.toLowerCase().includes(query) ||
+        item.identification?.toLowerCase().includes(query) ||
+        (item.categoria && item.categoria.toLowerCase().includes(query))
+      )
     }
 
-    // Filtro de categoría (solo para deportistas de fundación)
-    if (selectedCategory && mode === "athletes") {
-      filtered = filtered.filter((item) => item.categoria === selectedCategory);
+    if (mode === "athletes" && selectedCategory) {
+      filtered = filtered.filter((item) => {
+        if (item.type === "temporal") return true
+        return item.categoria === selectedCategory
+      })
     }
 
-    // Excluir entrenador si se proporciona excludeTrainerId
-    if (mode === "trainer" && excludeTrainerId) {
-      filtered = filtered.filter((item) => item.id !== excludeTrainerId);
+    console.log('🔍 Elementos filtrados:', filtered)
+    return filtered
+  }, [availableItems, searchTerm, selectedCategory, mode])
+
+  const totalRows = filteredItems.length
+  const totalPages = Math.ceil(totalRows / rowsPerPage)
+  const startIndex = (currentPage - 1) * rowsPerPage
+  const paginatedData = filteredItems.slice(startIndex, startIndex + rowsPerPage)
+
+  const prepareItemData = (item) => {
+    if (mode === "athletes" && item.type === "temporal") {
+      return {
+        ...item,
+        categoria: undefined
+      }
     }
+    return item
+  }
 
-    return filtered;
-  }, [
-    groupedData,
-    activeTab,
-    searchTerm,
-    selectedCategory,
-    mode,
-    excludeTrainerId,
-  ]);
-
-  // Paginación
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    return filteredItems.slice(startIndex, endIndex);
-  }, [filteredItems, currentPage, rowsPerPage]);
-
-  const totalPages = Math.ceil(filteredItems.length / rowsPerPage);
-  const totalRows = filteredItems.length;
-  const startIndex = (currentPage - 1) * rowsPerPage;
-
-  // Verificar si un item está seleccionado
-  const isSelected = (item) => {
-    return selectedItems.some((selected) => selected.id === item.id);
-  };
-
-  // Verificar si un item está disponible para selección
   const isItemAvailable = (item) => {
-    // Si no hay restricción de tipo, todos están disponibles
-    if (!currentTeamType) return true;
-
-    // Si hay restricción de tipo, solo permitir items del mismo tipo
-    if (item.type !== currentTeamType) return false;
-
-    // Para deportistas de fundación, verificar categoría
-    if (mode === "athletes" && item.type === "fundacion" && currentCategoria) {
-      return item.categoria === currentCategoria;
+    // Si es el entrenador a excluir, no está disponible
+    if (excludeTrainerId && item.id === excludeTrainerId) return false
+    
+    // Si ya está seleccionado, está disponible
+    if (selectedItems.some(s => s.id === item.id)) return true
+    
+    // Si hay un tipo de equipo definido desde props, solo permitir ese tipo
+    if (currentTeamType && item.type !== currentTeamType) return false
+    
+    // Si no hay selecciones, todo está disponible
+    if (selectedItems.length === 0) {
+      // EXCEPCIÓN: Si viene currentCategoria de props (editando equipo), aplicar restricción
+      if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria) {
+        return item.categoria === currentCategoria
+      }
+      return true
     }
-
-    return true;
-  };
+    
+    // Si hay elementos seleccionados, solo permitir del mismo tipo
+    const firstSelectedType = selectedItems[0].type
+    if (item.type !== firstSelectedType) return false
+    
+    // Para deportistas de fundación, verificar categoría solo si hay deportistas de fundación seleccionados
+    if (mode === "athletes" && item.type === "fundacion") {
+      const hasFoundationAthletesSelected = selectedItems.some(s => s.type === "fundacion" && s.categoria)
+      if (hasFoundationAthletesSelected && autoSelectedCategory && item.categoria) {
+        return item.categoria === autoSelectedCategory
+      }
+    }
+    
+    return true
+  }
 
   const handleSelect = (item) => {
-    if (isMultiSelect) {
-      const isCurrentlySelected = isSelected(item);
-      let newSelection;
+    if (!isItemAvailable(item)) return
 
-      if (isCurrentlySelected) {
-        newSelection = selectedItems.filter(
-          (selected) => selected.id !== item.id
-        );
+    const preparedItem = prepareItemData(item)
+
+    if (isMultiSelect) {
+      const isSelected = selectedItems.some((s) => s.id === preparedItem.id)
+      let newSelection
+
+      if (isSelected) {
+        newSelection = selectedItems.filter((s) => s.id !== preparedItem.id)
       } else {
-        newSelection = [...selectedItems, item];
+        newSelection = [...selectedItems, preparedItem]
       }
 
-      onSelect(newSelection);
+      onSelect(newSelection)
     } else {
-      onSelect([item]);
-      onClose();
+      // Para selección única (entrenadores)
+      const isAlreadySelected = selectedItems.some((s) => s.id === preparedItem.id)
+      
+      if (isAlreadySelected) {
+        // Si ya está seleccionado, deseleccionar (enviar null)
+        onSelect(null)
+      } else {
+        // Si no está seleccionado, seleccionar
+        onSelect(preparedItem)
+      }
+      onClose()
     }
-  };
-
-  const handleTabChange = (index) => {
-    setActiveTab(index);
-    setCurrentPage(1);
-    setSearchTerm("");
-    setSelectedCategory("");
-  };
+  }
 
   const handleConfirm = () => {
-    onSelect(selectedItems);
-    onClose();
-  };
+    onClose()
+  }
 
-  if (!isOpen) return null;
+  const isSelected = (item) => {
+    // Solo mostrar como seleccionado si el item está en selectedItems Y es del mismo tipo
+    return selectedItems.some((s) => s.id === item.id && s.type === item.type)
+  }
+
+  const handleTabChange = (index) => {
+    setActiveTab(index)
+    setSearchTerm("")
+    setSelectedCategory("")
+    setCurrentPage(1)
+  }
+
+  const getCurrentTeamInfo = () => {
+    if (!currentTeamType) return { type: null, category: null }
+    
+    const type = currentTeamType === "fundacion" ? "Fundación" : "Temporales"
+    const category = currentCategoria || null
+    return { type, category }
+  }
+
+  const getAvailabilityStats = () => {
+    const totalInCurrentTab = currentGroupData.length
+    const availableCount = availableItems.length
+    const unavailableCount = totalInCurrentTab - availableCount
+
+    return { totalInCurrentTab, availableCount, unavailableCount }
+  }
+
+  if (!isOpen) return null
+
+  const teamInfo = getCurrentTeamInfo()
+  const availabilityStats = getAvailabilityStats()
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
-          onClick={(e) => e.stopPropagation()}
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.2 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary-purple to-purple-600 text-white p-6">
+          <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {icon}
                 <div>
-                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">
-                    {title}
-                  </h2>
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold">{title}</h2>
+                  <p className="text-sm opacity-80">
+                    {data.length} elementos cargados • {filteredItems.length} filtrados
+                  </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6" />
+              <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-full transition-colors">
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
-            {isMultiSelect && (
-              <p className="mt-2 text-purple-100">
-                {selectedItems.length} seleccionado
-                {selectedItems.length !== 1 ? "s" : ""}
-              </p>
-            )}
           </div>
 
-          {/* Tabs */}
-          {groupedData.length > 1 && (
-            <div className="border-b border-gray-200">
+          {/* Tabs de fuentes */}
+          {groupedData && groupedData.length > 1 && (
+            <div className="border-b border-gray-200 bg-gray-50">
               <div className="flex">
                 {groupedData.map((group, index) => {
                   // Verificar si este tab debe estar deshabilitado
-                  const isTabDisabled =
-                    currentTeamType && group.source !== currentTeamType;
-
+                  const isTabDisabled = currentTeamType && group.source !== currentTeamType;
+                  
                   return (
                     <button
                       key={group.source}
@@ -302,13 +374,9 @@ const SelectionModal = ({
                       }`}
                     >
                       {group.sourceLabel}
-                      <span
-                        className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
-                          isTabDisabled
-                            ? "bg-gray-300 text-gray-500"
-                            : "bg-gray-200"
-                        }`}
-                      >
+                      <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${
+                        isTabDisabled ? "bg-gray-300 text-gray-500" : "bg-gray-200"
+                      }`}>
                         {group.items ? group.items.length : 0}
                       </span>
                     </button>
@@ -325,31 +393,29 @@ const SelectionModal = ({
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={`Buscar por nombre, identificación${
-                      mode === "athletes" ? " o categoría" : ""
-                    }...`}
+                    placeholder={`Buscar por nombre, identificación${mode === "athletes" ? " o categoría" : ""}...`}
                     value={searchTerm}
                     onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setCurrentPage(1);
+                      setSearchTerm(e.target.value)
+                      setCurrentPage(1)
                     }}
                     className="w-full pl-4 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                   />
                 </div>
               </div>
-              {mode === "athletes" && (
+              {mode === "athletes" && groupedData[activeTab]?.source === "fundacion" && (
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
                   <select
                     value={selectedCategory}
                     onChange={(e) => {
-                      setSelectedCategory(e.target.value);
-                      setCurrentPage(1);
+                      setSelectedCategory(e.target.value)
+                      setCurrentPage(1)
                     }}
                     className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                   >
                     <option value="">Todas las categorías</option>
-                    {categories.map((category) => (
+                    {[...new Set(currentGroupData.filter(item => item.categoria).map(item => item.categoria))].map((category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>
@@ -370,66 +436,40 @@ const SelectionModal = ({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Seleccionar
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Nombre
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Identificación
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Teléfono
-                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Seleccionar</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Nombre</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Identificación</th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Teléfono</th>
                         {mode === "athletes" && (
-                          <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                            Categoría
-                          </th>
+                          <th className="text-left py-3 px-4 font-semibold text-gray-700">Categoría</th>
                         )}
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Tipo
-                        </th>
+                        <th className="text-left py-3 px-4 font-semibold text-gray-700">Tipo</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedData && paginatedData.length > 0 ? (
                         paginatedData.map((item) => {
-                          const selected = isSelected(item);
-                          const isAvailable = isItemAvailable(item);
-
+                          const selected = isSelected(item)
+                          const isAvailable = isItemAvailable(item)
+                          
                           // Verificar si es deportista temporal no disponible
-                          const isTemporalUnavailable =
-                            mode === "athletes" &&
-                            item.type === "temporal" &&
-                            unavailableAthleteIds.includes(item.id);
-
-                          const displayCategory =
-                            item.type === "fundacion"
-                              ? item.categoria || "Sin categoría"
-                              : "No aplica";
+                          const isTemporalUnavailable = mode === "athletes" && 
+                                                       item.type === "temporal" && 
+                                                       unavailableAthleteIds.includes(item.id);
+                          
+                          const displayCategory = item.type === "fundacion" 
+                            ? (item.categoria || "Sin categoría")
+                            : "No aplica"
 
                           const getUnavailableReason = () => {
                             if (isTemporalUnavailable) {
                               return "Esta deportista ya está registrada en otro equipo activo";
                             }
                             if (isAvailable) return null;
-                            if (
-                              currentTeamType &&
-                              item.type !== currentTeamType
-                            ) {
-                              return `No se pueden seleccionar ${
-                                mode === "trainer"
-                                  ? "entrenadores"
-                                  : "deportistas"
-                              } de este tipo`;
+                            if (currentTeamType && item.type !== currentTeamType) {
+                              return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
                             }
-                            if (
-                              mode === "athletes" &&
-                              item.type === "fundacion" &&
-                              currentCategoria &&
-                              item.categoria !== currentCategoria
-                            ) {
+                            if (mode === "athletes" && item.type === "fundacion" && currentCategoria && item.categoria !== currentCategoria) {
                               return "Solo se pueden seleccionar deportistas de la misma categoría";
                             }
                             return "No disponible";
@@ -444,10 +484,10 @@ const SelectionModal = ({
                                   : selected
                                   ? "bg-purple-50 cursor-pointer"
                                   : isTemporalUnavailable
-                                  ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
-                                  : !isAvailable
-                                  ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
-                                  : "hover:bg-gray-50 cursor-pointer"
+                                    ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
+                                    : !isAvailable
+                                    ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
+                                    : "hover:bg-gray-50 cursor-pointer"
                               }`}
                               onClick={(e) => {
                                 // Si está seleccionada y es temporal no disponible, permitir deseleccionar
@@ -455,14 +495,14 @@ const SelectionModal = ({
                                   handleSelect(item);
                                   return;
                                 }
-
+                                
                                 // Si no está disponible y no está seleccionada, bloquear
                                 if (!isAvailable || isTemporalUnavailable) {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   return false;
                                 }
-
+                                
                                 handleSelect(item);
                               }}
                             >
@@ -472,25 +512,17 @@ const SelectionModal = ({
                                     <input
                                       type="checkbox"
                                       className={`w-4 h-4 focus:ring-primary-purple border-gray-300 rounded ${
-                                        selected
-                                          ? "text-primary-purple"
-                                          : "text-gray-300"
+                                        selected ? "text-primary-purple" : "text-gray-300"
                                       }`}
                                       checked={selected}
-                                      disabled={
-                                        !isAvailable &&
-                                        !(isTemporalUnavailable && selected)
-                                      }
+                                      disabled={!isAvailable && !(isTemporalUnavailable && selected)}
                                       onChange={(e) => {
-                                        e.stopPropagation();
+                                        e.stopPropagation()
                                         // Permitir deseleccionar si está seleccionada y es temporal no disponible
                                         if (isTemporalUnavailable && selected) {
-                                          handleSelect(item);
-                                        } else if (
-                                          isAvailable &&
-                                          !isTemporalUnavailable
-                                        ) {
-                                          handleSelect(item);
+                                          handleSelect(item)
+                                        } else if (isAvailable && !isTemporalUnavailable) {
+                                          handleSelect(item)
                                         }
                                       }}
                                     />
@@ -500,30 +532,20 @@ const SelectionModal = ({
                                         selected
                                           ? "bg-primary-purple border-primary-purple"
                                           : !isAvailable
-                                          ? "border-gray-300 bg-gray-100"
-                                          : "border-gray-300 hover:border-primary-purple"
+                                            ? "border-gray-300 bg-gray-100"
+                                            : "border-gray-300 hover:border-primary-purple"
                                       }`}
                                     >
-                                      {selected && (
-                                        <Check className="w-3 h-3 text-white" />
-                                      )}
+                                      {selected && <Check className="w-3 h-3 text-white" />}
                                     </div>
                                   )}
                                 </div>
                               </td>
                               <td className="py-3 px-4 relative">
                                 <div className="flex items-center gap-2">
-                                  <span
-                                    className={`font-medium ${
-                                      !isAvailable
-                                        ? "text-gray-400"
-                                        : "text-gray-900"
-                                    }`}
-                                    title={
-                                      !isAvailable || isTemporalUnavailable
-                                        ? getUnavailableReason()
-                                        : ""
-                                    }
+                                  <span 
+                                    className={`font-medium ${!isAvailable ? 'text-gray-400' : 'text-gray-900'}`} 
+                                    title={(!isAvailable || isTemporalUnavailable) ? getUnavailableReason() : ''}
                                   >
                                     {item.name}
                                   </span>
@@ -534,73 +556,52 @@ const SelectionModal = ({
                                   )}
                                 </div>
                               </td>
-                              <td
-                                className={`py-3 px-4 text-sm ${
-                                  !isAvailable
-                                    ? "text-gray-400"
-                                    : "text-gray-600"
-                                }`}
-                              >
+                              <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {item.identification || "N/A"}
                               </td>
-                              <td
-                                className={`py-3 px-4 text-sm ${
-                                  !isAvailable
-                                    ? "text-gray-400"
-                                    : "text-gray-600"
-                                }`}
-                              >
+                              <td className={`py-3 px-4 text-sm ${!isAvailable ? 'text-gray-400' : 'text-gray-600'}`}>
                                 {item.phoneNumber || "N/A"}
                               </td>
                               {mode === "athletes" && (
                                 <td className="py-3 px-4">
-                                  <span
-                                    className={`px-2 py-1 rounded-full text-xs ${
-                                      !isAvailable
-                                        ? "bg-gray-50 text-gray-300"
-                                        : item.type === "fundacion" &&
-                                          item.categoria
-                                        ? "bg-gray-200 text-gray-700"
-                                        : "bg-gray-100 text-gray-400"
-                                    }`}
-                                  >
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    !isAvailable
+                                      ? "bg-gray-50 text-gray-300"
+                                      : item.type === "fundacion" && item.categoria
+                                      ? "bg-gray-200 text-gray-700"
+                                      : "bg-gray-100 text-gray-400"
+                                  }`}>
                                     {displayCategory}
                                   </span>
                                 </td>
                               )}
                               <td className="py-3 px-4">
-                                <span
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    item.type === "fundacion"
-                                      ? "bg-purple-100 text-purple-800"
-                                      : "bg-blue-100 text-blue-800"
-                                  } ${!isAvailable ? "opacity-50" : ""}`}
-                                >
-                                  {item.type === "fundacion"
-                                    ? "Fundación"
-                                    : "Temporal"}
+                                <span className={`text-xs px-2 py-1 rounded ${
+                                  item.type === "fundacion" 
+                                    ? "bg-purple-100 text-purple-800" 
+                                    : "bg-blue-100 text-blue-800"
+                                } ${!isAvailable ? 'opacity-50' : ''}`}>
+                                  {item.type === "fundacion" ? "Fundación" : "Temporal"}
                                 </span>
                               </td>
                             </tr>
-                          );
+                          )
                         })
                       ) : (
                         <tr>
-                          <td
-                            colSpan={mode === "athletes" ? "6" : "5"}
-                            className="py-12 text-center text-gray-500"
-                          >
+                          <td colSpan={mode === "athletes" ? "6" : "5"} className="py-12 text-center text-gray-500">
                             <div className="text-4xl mb-4">🔍</div>
                             <p>
                               {searchTerm || selectedCategory
                                 ? "No se encontraron resultados con los filtros aplicados"
-                                : "No hay elementos disponibles"}
+                                : "No hay elementos disponibles"
+                              }
                             </p>
                             {(searchTerm || selectedCategory) && (
                               <button
                                 onClick={() => {
-                                  setSearchTerm("");
-                                  setSelectedCategory("");
+                                  setSearchTerm("")
+                                  setSelectedCategory("")
                                 }}
                                 className="mt-2 text-primary-purple hover:underline"
                               >
@@ -634,8 +635,7 @@ const SelectionModal = ({
           <div className="p-4 sm:p-6 border-t border-gray-200 bg-gray-50">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-sm text-gray-600">
-                {selectedItems.length}{" "}
-                {mode === "trainer" ? "entrenador" : "deportistas"} seleccionado
+                {selectedItems.length} {mode === "trainer" ? "entrenador" : "deportistas"} seleccionado
                 {selectedItems.length !== 1 ? "s" : ""}
               </div>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
@@ -657,9 +657,9 @@ const SelectionModal = ({
             </div>
           </div>
         </motion.div>
-      </motion.div>
+      </div>
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default SelectionModal;
+export default SelectionModal
