@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
 import { format } from "date-fns";
@@ -153,14 +153,30 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     registerNovelty,
   } = useEmployeeSchedules();
 
-  const [filteredListSchedules, setFilteredListSchedules] = useState([]);
-  const [filteredCalendarSchedules, setFilteredCalendarSchedules] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isNew, setIsNew] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const containerRef = useRef(null);
   const isLoading = loading || loadingEmployees;
+  const selectedRoleSet = useMemo(() => new Set(selectedRoles), [selectedRoles]);
+  const matchesSelectedRole = useCallback(
+    (item = {}) => {
+      if (selectedRoleSet.size === 0) return true;
+      const key = resolveRoleId(item.cargo || item.area || item.role || item.rol || "");
+      if (!key) return false;
+      return selectedRoleSet.has(key);
+    },
+    [selectedRoleSet]
+  );
+  const filteredListSchedules = useMemo(
+    () => rawSchedules.filter(matchesSelectedRole),
+    [rawSchedules, matchesSelectedRole]
+  );
+  const filteredCalendarSchedules = useMemo(
+    () => schedules.filter(matchesSelectedRole),
+    [schedules, matchesSelectedRole]
+  );
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -483,23 +499,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   const disabledList =
     disabledSchedules.length > 0 ? disabledSchedules : schedules;
-
-  useEffect(() => {
-    const selectedSet = new Set(selectedRoles);
-
-    const matchesRole = (item = {}) => {
-      if (selectedSet.size === 0) return true;
-      const key = resolveRoleId(item.cargo || item.area || "");
-      if (!key) return false;
-      return selectedSet.has(key);
-    };
-
-    const filteredList = rawSchedules.filter(matchesRole);
-    const filteredCalendar = schedules.filter(matchesRole);
-
-    setFilteredListSchedules(filteredList);
-    setFilteredCalendarSchedules(filteredCalendar);
-  }, [rawSchedules, schedules, selectedRoles]);
 
   const listSchedules = useMemo(() => {
     const map = new Map();

@@ -244,7 +244,7 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
         transition={{ duration: 0.25 }}
         className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
       >
-        <div className="relative px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-[#dbe2ff] via-[#e9f4ff] to-[#d5f1ff]">
+        <div className="relative px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-[#8aa9ff] text-center">
             {isNew ? "Crear Categoria Deportiva" : "Editar Categoria Deportiva"}
           </h2>
