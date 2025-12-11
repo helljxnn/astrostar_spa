@@ -302,7 +302,7 @@ class TeamsService {
             id: temp.id,
             name: `${temp.firstName || ''} ${temp.middleName || ''} ${temp.lastName || ''} ${temp.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
             identification: temp.identification,
-            phoneNumber: temp.phoneNumber,
+            phoneNumber: temp.phone || temp.phoneNumber,
             type: 'temporal'
           }));
         trainers.push(...temporalTrainers);
@@ -334,10 +334,24 @@ class TeamsService {
       
       const athletes = [];
       
-      // Transformar deportistas de fundación
+      // Transformar deportistas de fundación - Excluir inactivos
       if (athletesResponse?.success && Array.isArray(athletesResponse.data)) {
         console.log('✅ Athletes fundación encontrados:', athletesResponse.data.length);
+        
+        // Log de todos los status
+        athletesResponse.data.forEach((ath, index) => {
+          const name = `${ath.firstName || ''} ${ath.lastName || ''}`.trim();
+          console.log(`📋 Athlete ${index + 1}: ${name} - status: "${ath.status}"`);
+        });
+        
         const foundationAthletes = athletesResponse.data
+          .filter(ath => {
+            const isActive = ath.status !== 'Inactivo';
+            if (!isActive) {
+              console.log(`❌ Filtrando: ${ath.firstName} ${ath.lastName} - status: "${ath.status}"`);
+            }
+            return isActive;
+          })
           .map(ath => ({
             id: ath.id,
             name: `${ath.firstName || ''} ${ath.middleName || ''} ${ath.lastName || ''} ${ath.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
@@ -362,7 +376,7 @@ class TeamsService {
             id: temp.id,
             name: `${temp.firstName || ''} ${temp.middleName || ''} ${temp.lastName || ''} ${temp.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
             identification: temp.identification,
-            phoneNumber: temp.phoneNumber,
+            phoneNumber: temp.phone || temp.phoneNumber,
             type: 'temporal'
           }));
         console.log('✅ Deportistas temporales activos:', temporalAthletes.length);
@@ -402,7 +416,7 @@ class TeamsService {
 
   async getSportsCategories() {
     try {
-      const response = await apiClient.get(`${this.endpoint}/sports-categories`);
+      const response = await apiClient.get('/sports-categories');
       
       if (response && response.success) {
         return {

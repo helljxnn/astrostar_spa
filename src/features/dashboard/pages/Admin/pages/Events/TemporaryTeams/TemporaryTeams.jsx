@@ -42,36 +42,16 @@ const TemporaryTeams = () => {
       return "Eliminar equipo";
     }
 
-    const events = assignment.events || [];
-    const count = assignment.count || events.length;
+    const count = assignment.count || 0;
 
     if (count === 0) {
       return "Eliminar equipo";
     }
 
-    // Agrupar eventos por estado
-    const statusGroups = {};
-    events.forEach(event => {
-      const status = event.status || 'Desconocido';
-      if (!statusGroups[status]) {
-        statusGroups[status] = 0;
-      }
-      statusGroups[status]++;
-    });
-
-    // Crear mensaje natural
-    const statusList = Object.keys(statusGroups);
-    
     if (count === 1) {
-      // "Asignado a un evento con estado Programado"
-      return `Asignado a un evento con estado ${statusList[0]}`;
-    } else if (statusList.length === 1) {
-      // "Asignado a 3 eventos con estado Programado"
-      return `Asignado a ${count} eventos con estado ${statusList[0]}`;
+      return "Asignado a un evento";
     } else {
-      // "Asignado a 3 eventos con estado Programado y En_pausa"
-      const lastStatus = statusList.pop();
-      return `Asignado a ${count} eventos con estado ${statusList.join(', ')} y ${lastStatus}`;
+      return `Asignado a ${count} eventos`;
     }
   };
 

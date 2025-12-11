@@ -403,7 +403,7 @@ const SelectionModal = ({
                   />
                 </div>
               </div>
-              {mode === "athletes" && (
+              {mode === "athletes" && groupedData[activeTab]?.source === "fundacion" && (
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-gray-500" />
                   <select
