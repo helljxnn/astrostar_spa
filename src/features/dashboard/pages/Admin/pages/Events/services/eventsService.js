@@ -3,11 +3,11 @@
  * Maneja todas las peticiones HTTP al backend de eventos
  */
 
-import apiClient from '../../../../../../../shared/services/apiClient.js';
+import apiClient from "../../../../../../../shared/services/apiClient.js";
 
 class EventsService {
   constructor() {
-    this.endpoint = '/events';
+    this.endpoint = "/events";
   }
 
   /**
@@ -83,7 +83,7 @@ class EventsService {
   }
 
   /**
-   * Obtener datos de referencia (categorías y tipos)
+   * Obtener datos de referencia (categorías, tipos y patrocinadores)
    */
   async getReferenceData() {
     try {

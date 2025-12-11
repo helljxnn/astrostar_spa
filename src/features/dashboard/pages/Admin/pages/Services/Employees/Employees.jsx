@@ -6,7 +6,6 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import CredentialsModal from "../../../../../../../shared/components/CredentialsModal";
 import {
   showDeleteAlert,
   showErrorAlert,
@@ -39,8 +38,6 @@ const Employees = () => {
   const [viewingEmployee, setViewingEmployee] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [searchTerm, setSearchTerm] = useState("");
-  const [showCredentials, setShowCredentials] = useState(false);
-  const [createdEmployeeData, setCreatedEmployeeData] = useState(null);
 
   // Función para traducir estados
   const translateStatus = (status) => {
@@ -76,22 +73,20 @@ const Employees = () => {
       ];
 
       const textMatch = textFields.some(
-        (field) =>
-          field &&
-          String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower)
       );
 
       // Campo de estado (búsqueda exacta de palabra completa)
       const translatedStatus = translateStatus(employee.status).toLowerCase();
-      
+
       // Buscar como palabra completa para evitar que "activo" encuentre "desvinculado"
-      const statusMatch = translatedStatus === searchLower || 
-                         employee.status?.toLowerCase() === searchLower;
+      const statusMatch =
+        translatedStatus === searchLower ||
+        employee.status?.toLowerCase() === searchLower;
 
       return textMatch || statusMatch;
     });
   }, [employees, searchTerm]);
-
 
   // Usar paginación del servidor cuando no hay búsqueda local
   const displayData = searchTerm ? filteredData : employees;
@@ -151,6 +146,14 @@ const Employees = () => {
         }
 
         const result = await createEmployee(employeeData);
+
+        if (result.success) {
+          // Mostrar alerta de éxito
+          showSuccessAlert(
+            "Empleado Creado",
+            "El empleado ha sido creado exitosamente"
+          );
+        }
       }
 
       setEditingEmployee(null);
@@ -368,16 +371,6 @@ const Employees = () => {
         }}
         employee={viewingEmployee}
         referenceData={referenceData}
-      />
-
-      <CredentialsModal
-        isOpen={showCredentials}
-        onClose={() => {
-          setShowCredentials(false);
-          setCreatedEmployeeData(null);
-        }}
-        employeeData={createdEmployeeData?.employee?.user}
-        credentials={createdEmployeeData?.credentials}
       />
     </div>
   );

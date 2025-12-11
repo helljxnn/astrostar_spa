@@ -28,6 +28,7 @@ export const useEvents = () => {
     sportsCategories: [], // Categorías deportivas (para inscripciones)
     eventCategories: [], // Categorías de eventos (tipo de evento)
     types: [],
+    sponsors: [], // Patrocinadores activos
   });
 
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -305,19 +306,29 @@ export const useEvents = () => {
 
     const cargarDatos = async () => {
       try {
-        const response = await eventsService.getReferenceData();
-        if (response && response.success && isMounted) {
-          // Mantener compatibilidad hacia atrás
+        // Cargar datos de referencia de eventos (categorías, tipos y patrocinadores)
+        const eventsResponse = await eventsService.getReferenceData();
+
+        if (isMounted && eventsResponse && eventsResponse.success) {
+          // Los patrocinadores ahora vienen incluidos en getReferenceData
           const data = {
-            ...response.data,
+            ...eventsResponse.data,
             categories:
-              response.data.sportsCategories || response.data.categories || [],
+              eventsResponse.data.sportsCategories ||
+              eventsResponse.data.categories ||
+              [],
+            sponsors: eventsResponse.data.sponsors || [],
           };
+
           setReferenceData(data);
           setDataLoaded(true);
         }
       } catch (err) {
-        // Error cargando datos de referencia
+        console.error("Error cargando datos de referencia:", err);
+        // En caso de error, al menos marcar como cargado para no bloquear la app
+        if (isMounted) {
+          setDataLoaded(true);
+        }
       }
     };
 

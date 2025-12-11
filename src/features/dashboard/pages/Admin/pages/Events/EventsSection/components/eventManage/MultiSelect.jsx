@@ -2,17 +2,17 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaTimes, FaCheck } from "react-icons/fa";
 
-export const MultiSelect = ({ 
+export const MultiSelect = ({
   label,
-  options = [], 
-  value = [], 
-  onChange, 
-  error, 
-  touched, 
+  options = [],
+  value = [],
+  onChange,
+  error,
+  touched,
   disabled = false,
-  placeholder = "Selecciona opciones",
+  placeholder = "Haz clic para buscar y seleccionar",
   required = false,
-  name = "items"
+  name = "items",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,6 +23,7 @@ export const MultiSelect = ({
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+        setSearchTerm(""); // Limpiar búsqueda al cerrar
       }
     };
 
@@ -30,10 +31,19 @@ export const MultiSelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtrar opciones según búsqueda
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Limpiar búsqueda cuando se cierre el dropdown
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm("");
+    }
+  }, [isOpen]);
+
+  // Filtrar opciones según búsqueda - solo mostrar si hay término de búsqueda
+  const filteredOptions = searchTerm.trim()
+    ? options.filter((option) =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   // Verificar si una opción está seleccionada
   const isSelected = (optionValue) => {
@@ -45,9 +55,9 @@ export const MultiSelect = ({
     if (disabled) return;
 
     const newValue = isSelected(optionValue)
-      ? value.filter(v => v !== optionValue)
+      ? value.filter((v) => v !== optionValue)
       : [...value, optionValue];
-    
+
     onChange(name, newValue);
   };
 
@@ -55,19 +65,25 @@ export const MultiSelect = ({
   const removeItem = (optionValue, e) => {
     e.stopPropagation();
     if (disabled) return;
-    onChange(name, value.filter(v => v !== optionValue));
+    onChange(
+      name,
+      value.filter((v) => v !== optionValue)
+    );
   };
 
   // Obtener el label de una opción por su valor
   const getOptionLabel = (optionValue) => {
-    const option = options.find(opt => opt.value === optionValue);
+    const option = options.find((opt) => opt.value === optionValue);
     return option ? option.label : optionValue;
   };
 
   // Seleccionar todas las opciones
   const selectAll = () => {
     if (disabled) return;
-    onChange(name, filteredOptions.map(opt => opt.value));
+    onChange(
+      name,
+      filteredOptions.map((opt) => opt.value)
+    );
   };
 
   // Limpiar todas las selecciones
@@ -88,15 +104,17 @@ export const MultiSelect = ({
         className={`
           min-h-[42px] px-3 py-2 border rounded-lg cursor-pointer
           transition-all duration-200
-          ${disabled 
-            ? 'bg-gray-100 cursor-not-allowed' 
-            : 'bg-white hover:border-primary-purple'
+          ${
+            disabled
+              ? "bg-gray-100 cursor-not-allowed"
+              : "bg-white hover:border-primary-purple"
           }
-          ${error && touched 
-            ? 'border-red-500 focus:ring-red-500' 
-            : 'border-gray-300 focus:ring-primary-purple'
+          ${
+            error && touched
+              ? "border-red-500 focus:ring-red-500"
+              : "border-gray-300 focus:ring-primary-purple"
           }
-          ${isOpen ? 'ring-2 ring-primary-purple border-primary-purple' : ''}
+          ${isOpen ? "ring-2 ring-primary-purple border-primary-purple" : ""}
         `}
       >
         <div className="flex items-center justify-between gap-2">
@@ -125,10 +143,10 @@ export const MultiSelect = ({
               ))
             )}
           </div>
-          
+
           <FaChevronDown
             className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-              isOpen ? 'transform rotate-180' : ''
+              isOpen ? "transform rotate-180" : ""
             }`}
             size={14}
           />
@@ -162,46 +180,68 @@ export const MultiSelect = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar..."
+                placeholder="Escribe para buscar opciones..."
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                 onClick={(e) => e.stopPropagation()}
+                autoFocus
               />
             </div>
 
-            {/* Acciones rápidas */}
-            <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
-              <span className="text-xs text-gray-600 font-medium">
-                {value.length} de {options.length} seleccionadas
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    selectAll();
-                  }}
-                  className="text-xs text-primary-purple hover:text-primary-blue font-medium transition-colors"
-                >
-                  Todas
-                </button>
-                <span className="text-gray-300">|</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearAll();
-                  }}
-                  className="text-xs text-gray-600 hover:text-gray-800 font-medium transition-colors"
-                >
-                  Ninguna
-                </button>
+            {/* Acciones rápidas - solo mostrar si hay resultados de búsqueda */}
+            {searchTerm.trim() && filteredOptions.length > 0 && (
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
+                <span className="text-xs text-gray-600 font-medium">
+                  {value.length} seleccionadas | {filteredOptions.length}{" "}
+                  encontradas
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Seleccionar solo las opciones filtradas
+                      const filteredValues = filteredOptions.map(
+                        (opt) => opt.value
+                      );
+                      const newValue = [
+                        ...new Set([...value, ...filteredValues]),
+                      ];
+                      onChange(name, newValue);
+                    }}
+                    className="text-xs text-primary-purple hover:text-primary-blue font-medium transition-colors"
+                  >
+                    Todas visibles
+                  </button>
+                  <span className="text-gray-300">|</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearAll();
+                    }}
+                    className="text-xs text-gray-600 hover:text-gray-800 font-medium transition-colors"
+                  >
+                    Limpiar
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Lista de opciones */}
             <div className="max-h-60 overflow-y-auto">
-              {filteredOptions.length === 0 ? (
+              {!searchTerm.trim() ? (
+                <div className="px-4 py-8 text-center text-gray-500 text-sm">
+                  <div className="text-3xl mb-2">✏️</div>
+                  <p className="font-medium">Escribe para buscar</p>
+                  <p className="text-xs mt-1">
+                    Comienza a escribir para ver las opciones disponibles
+                  </p>
+                </div>
+              ) : filteredOptions.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
                   <div className="text-3xl mb-2">🔍</div>
-                  No se encontraron resultados
+                  <p className="font-medium">No se encontraron resultados</p>
+                  <p className="text-xs mt-1">
+                    Intenta con otros términos de búsqueda
+                  </p>
                 </div>
               ) : (
                 filteredOptions.map((option) => {
@@ -217,15 +257,19 @@ export const MultiSelect = ({
                       className={`
                         px-4 py-3 cursor-pointer transition-colors
                         border-b border-gray-100 last:border-b-0
-                        ${selected ? 'bg-purple-50' : 'bg-white'}
+                        ${selected ? "bg-purple-50" : "bg-white"}
                       `}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-medium ${
-                              selected ? 'text-primary-purple' : 'text-gray-700'
-                            }`}>
+                            <span
+                              className={`text-sm font-medium ${
+                                selected
+                                  ? "text-primary-purple"
+                                  : "text-gray-700"
+                              }`}
+                            >
                               {option.label}
                             </span>
                           </div>
@@ -235,21 +279,28 @@ export const MultiSelect = ({
                             </p>
                           )}
                         </div>
-                        
+
                         {/* Checkbox visual */}
-                        <div className={`
+                        <div
+                          className={`
                           w-5 h-5 rounded border-2 flex items-center justify-center
                           transition-all duration-200 flex-shrink-0
-                          ${selected 
-                            ? 'bg-primary-purple border-primary-purple' 
-                            : 'border-gray-300 bg-white'
+                          ${
+                            selected
+                              ? "bg-primary-purple border-primary-purple"
+                              : "border-gray-300 bg-white"
                           }
-                        `}>
+                        `}
+                        >
                           {selected && (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 30,
+                              }}
                             >
                               <FaCheck className="text-white" size={10} />
                             </motion.div>

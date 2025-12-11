@@ -364,25 +364,26 @@ export const EventModal = ({
                 error={errors.categoryIds}
                 touched={touched.categoryIds}
                 disabled={mode === "view"}
-                placeholder="Selecciona categorías"
+                placeholder="Busca y selecciona categorías"
                 required={true}
               />
 
               <MultiSelect
                 label="Patrocinadores"
                 name="patrocinador"
-                options={[
-                  { value: "Natipan", label: "Natipan" },
-                  { value: "Ponymalta", label: "Ponymalta" },
-                  { value: "NovaSport", label: "NovaSport" },
-                  { value: "Adidas", label: "Adidas" },
-                ]}
+                options={(referenceData.sponsors || []).map((sponsor) => ({
+                  value: sponsor.nombre,
+                  label: sponsor.nombre,
+                  description: sponsor.tipoPersona
+                    ? `${sponsor.tipoPersona} - ${sponsor.ciudad || ""}`
+                    : sponsor.ciudad || "",
+                }))}
                 value={form.patrocinador}
                 onChange={handleChange}
                 error={errors.patrocinador}
                 touched={touched.patrocinador}
                 disabled={mode === "view"}
-                placeholder="Selecciona patrocinadores"
+                placeholder="Busca y selecciona patrocinadores"
                 required={false}
               />
             </div>
