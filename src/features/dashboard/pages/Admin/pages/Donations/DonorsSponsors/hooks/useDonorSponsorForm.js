@@ -28,7 +28,7 @@ export const useDonorSponsorForm = ({
     "Cédula de Ciudadanía": 10,
     "Cedula de Ciudadania": 10,
     "Tarjeta de Identidad": 10,
-    "Pasaporte": 10,
+    Pasaporte: 10,
     "Cédula de Extranjería": 10,
     "Cedula de Extranjeria": 10,
     "Permiso de Permanencia": 10,
@@ -59,11 +59,11 @@ export const useDonorSponsorForm = ({
     return DOC_LENGTHS[formData.tipoDocumento] || 10;
   }, [formData.tipoDocumento]);
 
-
   const nameHelperText = useMemo(() => {
     if (errors.nombreCompleto) return undefined;
     const val = (formData.nombreCompleto || "").trim();
-    if (!val) return "Escribe el nombre completo tal como aparece en el documento.";
+    if (!val)
+      return "Escribe el nombre completo tal como aparece en el documento.";
     if (val.length < 3) return "Sigue escribiendo el nombre completo.";
     return "Nombre listo para guardar.";
   }, [errors.nombreCompleto, formData.nombreCompleto]);
@@ -77,44 +77,47 @@ export const useDonorSponsorForm = ({
     return "Razon social lista para guardar.";
   }, [errors.razonSocial, formData.razonSocial, formData.tipoPersona]);
 
-  const setFromRecord = useCallback((record) => {
-    if (!record) {
-      setFormData(initialState);
+  const setFromRecord = useCallback(
+    (record) => {
+      if (!record) {
+        setFormData(initialState);
+        setErrors({});
+        setTouched({});
+        originalValues.current = { correo: "", identificacion: "" };
+        return;
+      }
+
+      setFormData({
+        tipo: record.tipo || "Donante",
+        tipoPersona: record.tipoPersona || "Natural",
+        nombreCompleto: record.nombreCompleto || record.nombre || "",
+        razonSocial: record.razonSocial || record.nombre || "",
+        tipoDocumento: record.tipoDocumento || "",
+        numeroDocumento: (record.numeroDocumento || record.identificacion || "")
+          .toString()
+          .slice(0, docMaxLength),
+        nit: (record.nit || record.identificacion || "")
+          .toString()
+          .slice(0, NIT_MAX),
+        personaContacto: record.personaContacto || "",
+        telefono: record.telefono || "",
+        correo: record.correo || "",
+        direccion: record.direccion || "",
+        ciudad: record.ciudad || "",
+        pais: record.pais || "",
+        estado: record.estado || "Activo",
+        descripcion: record.descripcion || "",
+      });
       setErrors({});
       setTouched({});
-      originalValues.current = { correo: "", identificacion: "" };
-      return;
-    }
-
-    setFormData({
-      tipo: record.tipo || "Donante",
-      tipoPersona: record.tipoPersona || "Natural",
-      nombreCompleto: record.nombreCompleto || record.nombre || "",
-      razonSocial: record.razonSocial || record.nombre || "",
-      tipoDocumento: record.tipoDocumento || "",
-      numeroDocumento: (record.numeroDocumento || record.identificacion || "")
-        .toString()
-        .slice(0, docMaxLength),
-      nit: (record.nit || record.identificacion || "")
-        .toString()
-        .slice(0, NIT_MAX),
-      personaContacto: record.personaContacto || "",
-      telefono: record.telefono || "",
-      correo: record.correo || "",
-      direccion: record.direccion || "",
-      ciudad: record.ciudad || "",
-      pais: record.pais || "",
-      estado: record.estado || "Activo",
-      descripcion: record.descripcion || "",
-    });
-    setErrors({});
-    setTouched({});
-    originalValues.current = {
-      correo: record.correo || "",
-      identificacion:
-        record.identificacion || record.nit || record.numeroDocumento || "",
-    };
-  }, [docMaxLength]);
+      originalValues.current = {
+        correo: record.correo || "",
+        identificacion:
+          record.identificacion || record.nit || record.numeroDocumento || "",
+      };
+    },
+    [docMaxLength]
+  );
 
   useEffect(() => {
     setFromRecord(initialData);
@@ -152,8 +155,7 @@ export const useDonorSponsorForm = ({
 
       if (name === "nit" && isJuridica) {
         if (!val) return "El NIT es obligatorio.";
-        if (val.length !== NIT_MAX)
-          return `Debe tener ${NIT_MAX} caracteres.`;
+        if (val.length !== NIT_MAX) return `Debe tener ${NIT_MAX} caracteres.`;
       }
 
       if (name === "personaContacto" && isJuridica) {
@@ -169,7 +171,8 @@ export const useDonorSponsorForm = ({
       if (name === "ciudad") {
         if (!val) return "La ciudad es obligatoria.";
         if (val.length < 2) return "Debe tener al menos 2 caracteres.";
-        if (val.length > 120) return "La ciudad debe tener m\u00e1ximo 120 caracteres.";
+        if (val.length > 120)
+          return "La ciudad debe tener m\u00e1ximo 120 caracteres.";
         if (!/^[\p{L}\s'.-]+$/u.test(val))
           return "La ciudad solo puede contener letras y espacios.";
       }
@@ -177,7 +180,8 @@ export const useDonorSponsorForm = ({
       if (name === "pais") {
         if (!val) return "El pais es obligatorio.";
         if (val.length < 2) return "Debe tener al menos 2 caracteres.";
-        if (val.length > 120) return "El pais debe tener m\u00e1ximo 120 caracteres.";
+        if (val.length > 120)
+          return "El pais debe tener m\u00e1ximo 120 caracteres.";
         if (!/^[\p{L}\s'.-]+$/u.test(val))
           return "El pais solo puede contener letras y espacios.";
       }
@@ -191,7 +195,8 @@ export const useDonorSponsorForm = ({
       if (name === "direccion") {
         if (!val) return "La direccion es obligatoria.";
         if (val.length < 4) return "Debe tener al menos 4 caracteres.";
-        if (val.length > 200) return "La direccion debe tener m\u00e1ximo 200 caracteres.";
+        if (val.length > 200)
+          return "La direccion debe tener m\u00e1ximo 200 caracteres.";
       }
 
       return "";
@@ -298,7 +303,11 @@ export const useDonorSponsorForm = ({
   );
   const handleBlur = useCallback(
     async (e) => {
-      const { name, value } = e.target;
+      // Manejar casos donde e.target puede no tener value (como en CustomSelect)
+      const name = e.target?.name || e;
+      const value =
+        e.target?.value !== undefined ? e.target.value : formData[name] || "";
+
       setTouched((prev) => ({ ...prev, [name]: true }));
       const message = computeFieldError(name, value);
       setErrors((prev) => ({
@@ -309,8 +318,9 @@ export const useDonorSponsorForm = ({
       if (name === "correo" && value.trim()) {
         if (value.trim() === originalValues.current.correo) return;
         setCheckingEmail(true);
-        const result = await (checkEmailAvailability ||
-          (async () => ({ available: true })))(value.trim(), initialData?.id);
+        const result = await (
+          checkEmailAvailability || (async () => ({ available: true }))
+        )(value.trim(), initialData?.id);
         setCheckingEmail(false);
         if (!result?.available) {
           setErrors((prev) => ({
@@ -323,8 +333,9 @@ export const useDonorSponsorForm = ({
       if ((name === "numeroDocumento" || name === "nit") && value.trim()) {
         if (value.trim() === originalValues.current.identificacion) return;
         setCheckingId(true);
-        const result = await (checkIdentificationAvailability ||
-          (async () => ({ available: true })))(value.trim(), initialData?.id);
+        const result = await (
+          checkIdentificationAvailability || (async () => ({ available: true }))
+        )(value.trim(), initialData?.id);
         setCheckingId(false);
         if (!result?.available) {
           setErrors((prev) => ({
@@ -367,8 +378,9 @@ export const useDonorSponsorForm = ({
 
     if (formData.correo && formData.correo !== originalValues.current.correo) {
       setCheckingEmail(true);
-      const result = await (checkEmailAvailability ||
-        (async () => ({ available: true })))(formData.correo, initialData?.id);
+      const result = await (
+        checkEmailAvailability || (async () => ({ available: true }))
+      )(formData.correo, initialData?.id);
       setCheckingEmail(false);
       if (!result?.available) {
         setErrors((prev) => ({
@@ -379,10 +391,14 @@ export const useDonorSponsorForm = ({
       }
     }
 
-    if (normalizedId && normalizedId !== originalValues.current.identificacion) {
+    if (
+      normalizedId &&
+      normalizedId !== originalValues.current.identificacion
+    ) {
       setCheckingId(true);
-      const result = await (checkIdentificationAvailability ||
-        (async () => ({ available: true })))(normalizedId, initialData?.id);
+      const result = await (
+        checkIdentificationAvailability || (async () => ({ available: true }))
+      )(normalizedId, initialData?.id);
       setCheckingId(false);
       if (!result?.available) {
         setErrors((prev) => ({

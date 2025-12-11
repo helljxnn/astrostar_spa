@@ -84,12 +84,13 @@ const EmployeeModal = ({
     }
   };
 
-  // Función personalizada para manejar blur con validación de unicidad
+  // Función personalizada para manejar blur con validación de unicidad optimizada
   const handleCustomBlur = async (name) => {
     handleBlur(name);
-    
+
     // Validar unicidad para campos específicos solo si pasan la validación básica
-    if ((name === 'identification' || name === 'email') && formData[name]) {
+    // Usar timeout para evitar bloquear la interfaz
+    if ((name === "identification" || name === "email") && formData[name]) {
       // Primero validar que el campo cumpla con las reglas básicas
       const validationRule = employeeValidationRules[name];
       let validationError = "";
@@ -99,29 +100,46 @@ const EmployeeModal = ({
           if (validationError) break;
         }
       }
-      
+
       // Solo hacer la petición al servidor si no hay errores de validación básica
       if (!validationError) {
-        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
-        
-        try {
-          let response;
-          if (name === 'identification') {
-            response = await employeeService.checkIdentificationAvailability(formData[name], currentUserId);
-          } else if (name === 'email') {
-            response = await employeeService.checkEmailAvailability(formData[name], currentUserId);
-          }
+        const currentUserId =
+          employee && mode === "edit" ? employee.user?.id : null;
 
-          // Manejar diferentes estructuras de respuesta
-          const isAvailable = response?.data?.available ?? response?.available ?? true;
-          if (response && !isAvailable) {
-            const errorMessage = response?.data?.message || response?.message || `Este ${name === 'identification' ? 'número de documento' : 'email'} ya está en uso`;
-            // Establecer el error de unicidad
-            setErrors(prev => ({ ...prev, [name]: errorMessage }));
+        // Usar setTimeout para no bloquear la interfaz
+        setTimeout(async () => {
+          try {
+            let response;
+            if (name === "identification") {
+              response = await employeeService.checkIdentificationAvailability(
+                formData[name],
+                currentUserId
+              );
+            } else if (name === "email") {
+              response = await employeeService.checkEmailAvailability(
+                formData[name],
+                currentUserId
+              );
+            }
+
+            // Manejar diferentes estructuras de respuesta
+            const isAvailable =
+              response?.data?.available ?? response?.available ?? true;
+            if (response && !isAvailable) {
+              const errorMessage =
+                response?.data?.message ||
+                response?.message ||
+                `Este ${
+                  name === "identification" ? "número de documento" : "email"
+                } ya está en uso`;
+              // Establecer el error de unicidad
+              setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+            }
+          } catch (error) {
+            // Continuar sin bloquear si hay error en la validación
+            console.warn("Error en validación de unicidad:", error);
           }
-        } catch (error) {
-          // Continuar sin bloquear si hay error en la validación
-        }
+        }, 300); // Debounce de 300ms
       }
     }
   };
@@ -169,48 +187,7 @@ const EmployeeModal = ({
         return;
       }
 
-      // Validar unicidad de campos críticos antes del envío (solo si pasan validación básica)
-      if (formData.identification && !errors.identification) {
-        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
-        try {
-          const identificationCheck = await employeeService.checkIdentificationAvailability(
-            formData.identification, 
-            currentUserId
-          );
-          // Manejar diferentes estructuras de respuesta
-          const isAvailable = identificationCheck?.data?.available ?? identificationCheck?.available ?? true;
-          if (!isAvailable) {
-            showErrorAlert(
-              "Identificación duplicada",
-              "Este número de documento ya está en uso por otro empleado."
-            );
-            return;
-          }
-        } catch (error) {
-          // Continuar sin bloquear si hay error en la validación
-        }
-      }
-
-      if (formData.email && !errors.email) {
-        const currentUserId = employee && mode === 'edit' ? employee.user?.id : null;
-        try {
-          const emailCheck = await employeeService.checkEmailAvailability(
-            formData.email, 
-            currentUserId
-          );
-          // Manejar diferentes estructuras de respuesta
-          const isAvailable = emailCheck?.data?.available ?? emailCheck?.available ?? true;
-          if (!isAvailable) {
-            showErrorAlert(
-              "Email duplicado",
-              "Este email ya está en uso por otro empleado."
-            );
-            return;
-          }
-        } catch (error) {
-          // Continuar sin bloquear si hay error en la validación
-        }
-      }
+      // Las validaciones de unicidad se manejan en el backend para evitar demoras
 
       // Confirmación solo al editar
       if (mode === "edit") {
