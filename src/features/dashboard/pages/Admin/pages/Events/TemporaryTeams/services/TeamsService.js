@@ -1,53 +1,53 @@
-import apiClient from '../../../../../../../../shared/services/apiClient';
+import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class TeamsService {
   constructor() {
-    this.endpoint = '/teams';
+    this.endpoint = "/teams";
   }
 
   async getTeams(params = {}) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        search = "", 
-        status = "", 
-        teamType = "" 
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        status = "",
+        teamType = "",
       } = params;
-      
+
       const response = await apiClient.get(this.endpoint, {
-        page, 
-        limit, 
+        page,
+        limit,
         search,
         status,
-        teamType
+        teamType,
       });
-      
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data || [],
           pagination: response.pagination || {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       } else {
         return {
           success: false,
           data: [],
           pagination: {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       }
     } catch (error) {
@@ -55,14 +55,14 @@ class TeamsService {
         success: false,
         data: [],
         pagination: {
-          page: params.page || 1, 
-          limit: params.limit || 5, 
-          total: 0, 
-          totalPages: 0, 
-          hasNext: false, 
-          hasPrev: false
+          page: params.page || 1,
+          limit: params.limit || 5,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
         },
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -70,23 +70,23 @@ class TeamsService {
   async getTeamById(id) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo equipo'
+        error: response?.message || "Error obteniendo equipo",
       };
     } catch (error) {
       console.error(`Error obteniendo equipo ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -94,23 +94,23 @@ class TeamsService {
   async createTeam(teamData) {
     try {
       const response = await apiClient.post(this.endpoint, teamData);
-      
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error creando equipo'
+        error: response?.message || "Error creando equipo",
       };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || error.message
+        error: error.response?.data?.message || error.message,
       };
     }
   }
@@ -118,24 +118,24 @@ class TeamsService {
   async updateTeam(id, teamData) {
     try {
       const response = await apiClient.put(`${this.endpoint}/${id}`, teamData);
-      
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error actualizando equipo'
+        error: response?.message || "Error actualizando equipo",
       };
     } catch (error) {
       console.error(`Error actualizando equipo ${id}:`, error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message
+        error: error.response?.data?.message || error.message,
       };
     }
   }
@@ -143,48 +143,50 @@ class TeamsService {
   async deleteTeam(id) {
     try {
       const response = await apiClient.delete(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error eliminando equipo'
+        error: response?.message || "Error eliminando equipo",
       };
     } catch (error) {
       console.error(`Error eliminando equipo ${id}:`, error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message
+        error: error.response?.data?.message || error.message,
       };
     }
   }
 
   async changeTeamStatus(id, status) {
     try {
-      const response = await apiClient.patch(`${this.endpoint}/${id}/status`, { status });
-      
+      const response = await apiClient.patch(`${this.endpoint}/${id}/status`, {
+        status,
+      });
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error cambiando estado'
+        error: response?.message || "Error cambiando estado",
       };
     } catch (error) {
       console.error(`Error cambiando estado del equipo ${id}:`, error);
       return {
         success: false,
-        error: error.response?.data?.message || error.message
+        error: error.response?.data?.message || error.message,
       };
     }
   }
@@ -193,39 +195,36 @@ class TeamsService {
     try {
       const params = new URLSearchParams({ name: name.toString() });
       if (excludeId) {
-        params.append('excludeId', excludeId.toString());
+        params.append("excludeId", excludeId.toString());
       }
-      
+
       const url = `${this.endpoint}/check-name?${params}`;
-      console.log('🌐 Verificando disponibilidad de nombre');
-      console.log('   URL:', url);
-      console.log('   name:', name);
-      console.log('   excludeId:', excludeId);
-      
+
       const response = await apiClient.get(url);
-      
-      console.log('📡 Respuesta disponibilidad nombre:', response);
-      
+
       if (response && response.success !== undefined) {
         return {
           success: true,
           available: response.available,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
         available: true,
-        error: response?.message || 'Error verificando nombre'
+        error: response?.message || "Error verificando nombre",
       };
     } catch (error) {
-      console.error('❌ Error verificando disponibilidad:', error);
-      console.error('   Error completo:', error.response?.data || error.message);
+      console.error("❌ Error verificando disponibilidad:", error);
+      console.error(
+        "   Error completo:",
+        error.response?.data || error.message
+      );
       return {
         success: false,
         available: true,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -233,139 +232,115 @@ class TeamsService {
   async getTeamStats() {
     try {
       const response = await apiClient.get(`${this.endpoint}/stats`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo estadísticas'
+        error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
+      console.error("Error obteniendo estadísticas:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
 
   async getTrainers() {
     try {
-      console.log('🌐 [TeamsService.getTrainers] Llamando a /trainers...');
-      
       // Hacer petición directa sin apiClient para evitar problemas de autenticación
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const API_BASE_URL =
+        import.meta.env.VITE_API_URL || "http://localhost:4000/api";
       const response = await fetch(`${API_BASE_URL}/trainers`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       });
-      
-      console.log('📡 [TeamsService.getTrainers] Status:', response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
-      console.log('📡 [TeamsService.getTrainers] Respuesta recibida:', data);
-      console.log('   - data.success:', data?.success);
-      console.log('   - data.data:', data?.data);
-      console.log('   - data.data.length:', data?.data?.length);
-      
+
       if (data && data.success) {
-        console.log(`✅ [TeamsService.getTrainers] ${data.data?.length || 0} entrenadores obtenidos`);
         return {
           success: true,
-          data: data.data || []
+          data: data.data || [],
         };
       }
-      
-      console.warn('⚠️ [TeamsService.getTrainers] Respuesta sin éxito:', data);
+
       return {
         success: false,
         data: [],
-        error: data?.message || 'Error obteniendo entrenadores'
+        error: data?.message || "Error obteniendo entrenadores",
       };
     } catch (error) {
-      console.error('❌ [TeamsService.getTrainers] Error:', error);
-      console.error('   Error completo:', error.message);
       return {
         success: false,
         data: [],
-        error: error.message
+        error: error.message,
       };
     }
   }
 
   async getAthletes() {
     try {
-      console.log('🌐 [TeamsService.getAthletes] Llamando a /teams-athletes...');
-      
       // Hacer petición directa sin apiClient para evitar problemas de autenticación
-      const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const API_BASE_URL =
+        import.meta.env.VITE_API_URL || "http://localhost:4000/api";
       const response = await fetch(`${API_BASE_URL}/teams-athletes`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       });
-      
-      console.log('📡 [TeamsService.getAthletes] Status:', response.status);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
-      console.log('📡 [TeamsService.getAthletes] Respuesta recibida:', data);
-      console.log('   - data.success:', data?.success);
-      console.log('   - data.data:', data?.data);
-      console.log('   - data.data.length:', data?.data?.length);
-      
+
       if (data && data.success) {
-        console.log(`✅ [TeamsService.getAthletes] ${data.data?.length || 0} deportistas obtenidas`);
         return {
           success: true,
-          data: data.data || []
+          data: data.data || [],
         };
       }
-      
-      console.warn('⚠️ [TeamsService.getAthletes] Respuesta sin éxito:', data);
+
       return {
         success: false,
         data: [],
-        error: data?.message || 'Error obteniendo deportistas'
+        error: data?.message || "Error obteniendo deportistas",
       };
     } catch (error) {
-      console.error('❌ [TeamsService.getAthletes] Error:', error);
-      console.error('   Error completo:', error.message);
       return {
         success: false,
         data: [],
-        error: error.message
+        error: error.message,
       };
     }
   }
 
   async searchTeams(searchTerm, limit = 20) {
-    return this.getTeams({ 
-      search: searchTerm, 
+    return this.getTeams({
+      search: searchTerm,
       limit,
-      page: 1 
+      page: 1,
     });
   }
 
   async getActiveTeams() {
-    return this.getTeams({ status: 'Active' });
+    return this.getTeams({ status: "Active" });
   }
 
   async getTeamsByType(teamType) {
@@ -374,78 +349,82 @@ class TeamsService {
 
   async getSportsCategories() {
     try {
-      const response = await apiClient.get(`${this.endpoint}/sports-categories`);
-      
+      const response = await apiClient.get(
+        `${this.endpoint}/sports-categories`
+      );
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data || []
+          data: response.data || [],
         };
       }
-      
+
       return {
         success: false,
         data: [],
-        error: response?.message || 'Error obteniendo categorías deportivas'
+        error: response?.message || "Error obteniendo categorías deportivas",
       };
     } catch (error) {
-      console.error('Error obteniendo categorías deportivas:', error);
+      console.error("Error obteniendo categorías deportivas:", error);
       return {
         success: false,
         data: [],
-        error: error.message
+        error: error.message,
       };
     }
   }
 
-  async checkDuplicateTemporalTeam({ athleteIds, trainerId, excludeId = null }) {
+  async checkDuplicateTemporalTeam({
+    athleteIds,
+    trainerId,
+    excludeId = null,
+  }) {
     try {
       // Validar que al menos uno de los parámetros esté presente
       if ((!athleteIds || athleteIds.length === 0) && !trainerId) {
-        throw new Error('Se requiere al menos athleteIds o trainerId');
+        throw new Error("Se requiere al menos athleteIds o trainerId");
       }
-      
+
       // Construir los parámetros correctamente
       const queryParams = new URLSearchParams();
-      
+
       // Solo agregar athleteIds si hay elementos
       if (athleteIds && athleteIds.length > 0) {
-        queryParams.append('athleteIds', athleteIds.join(','));
+        queryParams.append("athleteIds", athleteIds.join(","));
       }
-      
+
       // Solo agregar trainerId si existe
       if (trainerId) {
-        queryParams.append('trainerId', trainerId.toString());
+        queryParams.append("trainerId", trainerId.toString());
       }
-      
+
       // Solo agregar excludeId si existe
       if (excludeId) {
-        queryParams.append('excludeId', excludeId.toString());
+        queryParams.append("excludeId", excludeId.toString());
       }
-      
-      console.log('🌐 Llamando al backend con params:', queryParams.toString());
-      
-      const response = await apiClient.get(`${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`);
-      
-      console.log('📡 Respuesta del backend:', response);
-      
+
+      const response = await apiClient.get(
+        `${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`
+      );
+
       if (response && response.success !== undefined) {
         return {
           success: true,
           available: response.available,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error verificando equipo duplicado'
+        error: response?.message || "Error verificando equipo duplicado",
       };
     } catch (error) {
-      console.error('Error verificando equipo duplicado:', error);
+      console.error("Error verificando equipo duplicado:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -454,124 +433,118 @@ class TeamsService {
     try {
       // Construir los parámetros manualmente para evitar el error del backend
       const queryParams = new URLSearchParams();
-      queryParams.append('trainerId', trainerId.toString());
-      
+      queryParams.append("trainerId", trainerId.toString());
+
       if (excludeId) {
-        queryParams.append('excludeId', excludeId.toString());
+        queryParams.append("excludeId", excludeId.toString());
       }
-      
-      console.log('🌐 Validando entrenador con params:', queryParams.toString());
-      
-      const response = await apiClient.get(`${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`);
-      
-      console.log('📡 Respuesta validación entrenador:', response);
-      
+
+      const response = await apiClient.get(
+        `${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`
+      );
+
       if (response && response.success !== undefined) {
         return {
           success: true,
           available: response.available,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error verificando entrenador'
+        error: response?.message || "Error verificando entrenador",
       };
     } catch (error) {
-      console.error('❌ Error verificando entrenador:', error);
+      console.error("❌ Error verificando entrenador:", error);
       return {
         success: false,
         error: error.message,
-        available: true // Asumir disponible en caso de error para no bloquear
+        available: true, // Asumir disponible en caso de error para no bloquear
       };
     }
   }
 
   async checkTemporalAthletesAvailability(athleteIds, excludeId = null) {
     // No enviar trainerId null, solo athleteIds
-    return this.checkDuplicateTemporalTeam({ 
-      athleteIds, 
-      excludeId 
+    return this.checkDuplicateTemporalTeam({
+      athleteIds,
+      excludeId,
     });
   }
 
   async checkTemporalPersonAvailability(personId, excludeTeamId = null) {
     try {
-      const params = new URLSearchParams({ 
-        personId: personId.toString() 
+      const params = new URLSearchParams({
+        personId: personId.toString(),
       });
-      
+
       if (excludeTeamId) {
-        params.append('excludeTeamId', excludeTeamId.toString());
+        params.append("excludeTeamId", excludeTeamId.toString());
       }
-      
+
       const url = `${this.endpoint}/check-temporal-person-availability?${params}`;
-      console.log('🌐 Verificando disponibilidad de persona temporal');
-      console.log('   URL:', url);
-      console.log('   personId:', personId);
-      console.log('   excludeTeamId:', excludeTeamId);
-      
+
       const response = await apiClient.get(url);
-      
-      console.log('📡 Respuesta disponibilidad completa:', response);
-      console.log('   available:', response.available);
-      console.log('   message:', response.message);
-      console.log('   success:', response.success);
-      
+
       if (response && response.success !== undefined) {
         return {
           success: true,
           available: response.available,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
         available: true,
-        error: response?.message || 'Error verificando disponibilidad'
+        error: response?.message || "Error verificando disponibilidad",
       };
     } catch (error) {
-      console.error('❌ Error verificando disponibilidad:', error);
-      console.error('   Error completo:', error.response?.data || error.message);
+      console.error("❌ Error verificando disponibilidad:", error);
+      console.error(
+        "   Error completo:",
+        error.response?.data || error.message
+      );
       return {
         success: false,
         available: true,
-        error: error.message
+        error: error.message,
       };
     }
   }
 
   async checkEventAssignments(teamId) {
     try {
-      const response = await apiClient.get(`${this.endpoint}/${teamId}/check-event-assignments`);
-      
+      const response = await apiClient.get(
+        `${this.endpoint}/${teamId}/check-event-assignments`
+      );
+
       if (response && response.success !== undefined) {
         return {
           success: true,
           isAssigned: response.isAssigned || false,
           count: response.count || 0,
           events: response.events || [],
-          message: response.message || ''
+          message: response.message || "",
         };
       }
-      
+
       return {
         success: false,
         isAssigned: false,
         count: 0,
         events: [],
-        error: response?.message || 'Error verificando asignación a eventos'
+        error: response?.message || "Error verificando asignación a eventos",
       };
     } catch (error) {
-      console.error('Error verificando asignación a eventos:', error);
+      console.error("Error verificando asignación a eventos:", error);
       return {
         success: false,
         isAssigned: false,
         count: 0,
         events: [],
-        error: error.message
+        error: error.message,
       };
     }
   }

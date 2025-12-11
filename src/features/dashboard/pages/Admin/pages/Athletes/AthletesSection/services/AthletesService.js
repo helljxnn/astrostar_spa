@@ -3,11 +3,11 @@
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
 
-import apiClient from '../../../../../../../../shared/services/apiClient.js';
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class AthletesService {
   constructor() {
-    this.endpoint = '/athletes';
+    this.endpoint = "/deportistas";
   }
 
   /**
@@ -15,69 +15,86 @@ class AthletesService {
    */
   async getAthletes(params = {}) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        search = "", 
-        status = "", 
+      const {
+        page = 1,
+        limit = 10,
+        search = "",
+        status = "",
         categoria = "",
-        estadoInscripcion = ""
+        estadoInscripcion = "",
       } = params;
-      
-      console.log('🟢 [AthletesService] Obteniendo deportistas con params:', { page, limit, search, status, categoria, estadoInscripcion });
-      const response = await apiClient.get(this.endpoint, { 
-        page, 
-        limit, 
+
+      console.log("🟢 [AthletesService] Obteniendo deportistas con params:", {
+        page,
+        limit,
         search,
         status,
         categoria,
-        estadoInscripcion
+        estadoInscripcion,
       });
-      console.log('🟢 [AthletesService] Respuesta del backend:', response);
-      console.log('🟢 [AthletesService] Direcciones de deportistas:', response?.data?.map(a => ({ id: a.id, nombre: a.firstName, address: a.address })));
-      
+      const response = await apiClient.get(this.endpoint, {
+        page,
+        limit,
+        search,
+        status,
+        categoria,
+        estadoInscripcion,
+      });
+      console.log("🟢 [AthletesService] Respuesta del backend:", response);
+      console.log(
+        "🟢 [AthletesService] Direcciones de deportistas:",
+        response?.data?.map((a) => ({
+          id: a.id,
+          nombre: a.firstName,
+          address: a.address,
+        }))
+      );
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data || [],
           pagination: response.pagination || {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       } else {
-        console.error('❌ [AthletesService] Respuesta sin success:', response);
+        console.error("❌ [AthletesService] Respuesta sin success:", response);
         return {
           success: false,
           data: [],
           pagination: {
-            page: parseInt(page), 
-            limit: parseInt(limit), 
-            total: 0, 
-            totalPages: 0, 
-            hasNext: false, 
-            hasPrev: false
-          }
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
         };
       }
     } catch (error) {
-      console.error('❌ [AthletesService] Error al obtener deportistas:', error);
+      console.error(
+        "❌ [AthletesService] Error al obtener deportistas:",
+        error
+      );
       return {
         success: false,
         data: [],
         pagination: {
-          page: params.page || 1, 
-          limit: params.limit || 10, 
-          total: 0, 
-          totalPages: 0, 
-          hasNext: false, 
-          hasPrev: false
+          page: params.page || 1,
+          limit: params.limit || 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
         },
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -88,23 +105,23 @@ class AthletesService {
   async getAthleteById(id) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo deportista'
+        error: response?.message || "Error obteniendo deportista",
       };
     } catch (error) {
       console.error(`Error obteniendo deportista ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -114,27 +131,30 @@ class AthletesService {
    */
   async createAthlete(athleteData) {
     try {
-      console.log('🟢 [AthletesService] Enviando datos al backend:', athleteData);
+      console.log(
+        "🟢 [AthletesService] Enviando datos al backend:",
+        athleteData
+      );
       const response = await apiClient.post(this.endpoint, athleteData);
-      console.log('🟢 [AthletesService] Respuesta del backend:', response);
-      
+      console.log("🟢 [AthletesService] Respuesta del backend:", response);
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error creando deportista'
+        error: response?.message || "Error creando deportista",
       };
     } catch (error) {
-      console.error('❌ [AthletesService] Error al crear deportista:', error);
+      console.error("❌ [AthletesService] Error al crear deportista:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -144,25 +164,28 @@ class AthletesService {
    */
   async updateAthlete(id, athleteData) {
     try {
-      const response = await apiClient.put(`${this.endpoint}/${id}`, athleteData);
-      
+      const response = await apiClient.put(
+        `${this.endpoint}/${id}`,
+        athleteData
+      );
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error actualizando deportista'
+        error: response?.message || "Error actualizando deportista",
       };
     } catch (error) {
       console.error(`Error actualizando deportista ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -173,23 +196,23 @@ class AthletesService {
   async deleteAthlete(id) {
     try {
       const response = await apiClient.delete(`${this.endpoint}/${id}`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error eliminando deportista'
+        error: response?.message || "Error eliminando deportista",
       };
     } catch (error) {
       console.error(`Error eliminando deportista ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -199,25 +222,27 @@ class AthletesService {
    */
   async changeAthleteStatus(id, status) {
     try {
-      const response = await apiClient.patch(`${this.endpoint}/${id}/status`, { status });
-      
+      const response = await apiClient.patch(`${this.endpoint}/${id}/status`, {
+        status,
+      });
+
       if (response && response.success) {
         return {
           success: true,
           data: response.data,
-          message: response.message
+          message: response.message,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error cambiando estado'
+        error: response?.message || "Error cambiando estado",
       };
     } catch (error) {
       console.error(`Error cambiando estado del deportista ${id}:`, error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -228,23 +253,23 @@ class AthletesService {
   async getAthleteStats() {
     try {
       const response = await apiClient.get(`${this.endpoint}/stats`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data
+          data: response.data,
         };
       }
-      
+
       return {
         success: false,
-        error: response?.message || 'Error obteniendo estadísticas'
+        error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error('Error obteniendo estadísticas:', error);
+      console.error("Error obteniendo estadísticas:", error);
       return {
         success: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -253,10 +278,10 @@ class AthletesService {
    * Buscar deportistas
    */
   async searchAthletes(searchTerm, limit = 20) {
-    return this.getAthletes({ 
-      search: searchTerm, 
+    return this.getAthletes({
+      search: searchTerm,
       limit,
-      page: 1 
+      page: 1,
     });
   }
 
@@ -264,7 +289,7 @@ class AthletesService {
    * Obtener deportistas activos
    */
   async getActiveAthletes() {
-    return this.getAthletes({ status: 'Activo' });
+    return this.getAthletes({ status: "Activo" });
   }
 
   /**
@@ -287,25 +312,25 @@ class AthletesService {
   async getDocumentTypes() {
     try {
       const response = await apiClient.get(`${this.endpoint}/document-types`);
-      
+
       if (response && response.success) {
         return {
           success: true,
-          data: response.data || []
+          data: response.data || [],
         };
       }
-      
+
       return {
         success: false,
         data: [],
-        error: response?.message || 'Error obteniendo tipos de documento'
+        error: response?.message || "Error obteniendo tipos de documento",
       };
     } catch (error) {
-      console.error('Error obteniendo tipos de documento:', error);
+      console.error("Error obteniendo tipos de documento:", error);
       return {
         success: false,
         data: [],
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -320,18 +345,18 @@ class AthletesService {
       if (excludeId !== null && excludeId !== undefined) {
         params.excludeUserId = excludeId;
       }
-      
-      const response = await apiClient.get('/users/check-email', params);
-      
+
+      const response = await apiClient.get("/users/check-email", params);
+
       return {
         available: response.available !== false,
-        message: response.message || ''
+        message: response.message || "",
       };
     } catch (error) {
-      console.error('Error verificando email:', error);
+      console.error("Error verificando email:", error);
       return {
         available: true, // En caso de error, permitir continuar
-        message: ''
+        message: "",
       };
     }
   }
@@ -346,18 +371,21 @@ class AthletesService {
       if (excludeId !== null && excludeId !== undefined) {
         params.excludeUserId = excludeId;
       }
-      
-      const response = await apiClient.get('/users/check-identification', params);
-      
+
+      const response = await apiClient.get(
+        "/users/check-identification",
+        params
+      );
+
       return {
         available: response.available !== false,
-        message: response.message || ''
+        message: response.message || "",
       };
     } catch (error) {
-      console.error('Error verificando identificación:', error);
+      console.error("Error verificando identificación:", error);
       return {
         available: true, // En caso de error, permitir continuar
-        message: ''
+        message: "",
       };
     }
   }

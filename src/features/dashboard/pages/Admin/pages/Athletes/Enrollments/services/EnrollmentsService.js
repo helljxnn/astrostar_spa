@@ -2,7 +2,7 @@ import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class EnrollmentsService {
   constructor() {
-    this.endpoint = "/athletes";
+    this.endpoint = "/deportistas";
   }
   // Obtener todas las deportistas con matrículas
   async getAll(filters = {}) {
@@ -17,12 +17,20 @@ class EnrollmentsService {
 
       const response = await apiClient.get(this.endpoint, { params });
 
-      console.log('📡 [EnrollmentsService.getAll] Respuesta del backend:', response.data);
-      
+      console.log(
+        "📡 [EnrollmentsService.getAll] Respuesta del backend:",
+        response.data
+      );
+
       // El backend puede devolver un array directo o un objeto con data
-      const data = Array.isArray(response.data) ? response.data : (response.data.data || []);
-      
-      console.log('📡 [EnrollmentsService.getAll] Total de deportistas:', data.length);
+      const data = Array.isArray(response.data)
+        ? response.data
+        : response.data.data || [];
+
+      console.log(
+        "📡 [EnrollmentsService.getAll] Total de deportistas:",
+        data.length
+      );
 
       return {
         success: true,
@@ -54,29 +62,38 @@ class EnrollmentsService {
   // Crear matrícula (convertir pre-inscripción en deportista matriculada)
   async createEnrollment(athleteData, preRegistrationId = null) {
     try {
-      console.log('📤 [EnrollmentsService] Datos a enviar al backend:', athleteData);
-      console.log('📤 [EnrollmentsService] preRegistrationId:', preRegistrationId);
-      console.log('📤 [EnrollmentsService] Estado:', athleteData.estado);
-      console.log('📤 [EnrollmentsService] Tipo de estado:', typeof athleteData.estado);
-      
+      console.log(
+        "📤 [EnrollmentsService] Datos a enviar al backend:",
+        athleteData
+      );
+      console.log(
+        "📤 [EnrollmentsService] preRegistrationId:",
+        preRegistrationId
+      );
+      console.log("📤 [EnrollmentsService] Estado:", athleteData.estado);
+      console.log(
+        "📤 [EnrollmentsService] Tipo de estado:",
+        typeof athleteData.estado
+      );
+
       // Agregar preRegistrationId al body si existe
       const dataToSend = {
         ...athleteData,
-        ...(preRegistrationId && { preRegistrationId })
+        ...(preRegistrationId && { preRegistrationId }),
       };
-      
-      console.log('📤 [EnrollmentsService] Data final a enviar:', dataToSend);
-      
+
+      console.log("📤 [EnrollmentsService] Data final a enviar:", dataToSend);
+
       const response = await apiClient.post(this.endpoint, dataToSend);
 
-      console.log('📧 [EnrollmentsService] Respuesta del backend:', response);
+      console.log("📧 [EnrollmentsService] Respuesta del backend:", response);
 
       return {
         success: true,
         data: response.data,
         emailSent: response.emailSent || false,
         temporaryPassword: response.temporaryPassword || null,
-        message: response.message || 'Deportista creada exitosamente'
+        message: response.message || "Deportista creada exitosamente",
       };
     } catch (error) {
       console.error("Error creating enrollment:", error);
