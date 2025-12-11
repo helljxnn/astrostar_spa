@@ -1,7 +1,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { FaArrowLeft, FaCloudUploadAlt } from "react-icons/fa";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FaArrowLeft, FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import donationsService from "./services/donationsService";
 import {
@@ -30,6 +30,8 @@ const RECEPTION_METHODS = [
   "Donacion directa",
 ];
 
+const CUSTOM_METHOD_OPTION = "__CUSTOM_METHOD__";
+
 const FOOD_CLASSES = ["Granos", "Proteinas", "Verduras", "Lacteos", "Otros"];
 const GOOD_CLASSES = [
   "Alimentos",
@@ -57,10 +59,18 @@ const formatNumber = (value) => {
 
 const DonationsForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [donors, setDonors] = useState([]);
   const [loadingDonors, setLoadingDonors] = useState(false);
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingDonationId, setEditingDonationId] = useState(null);
+  const [prefilledFromState, setPrefilledFromState] = useState(false);
+  const [customReceptionMethods, setCustomReceptionMethods] = useState([]);
+  const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
+  const [methodModalValue, setMethodModalValue] = useState("");
+  const [methodModalError, setMethodModalError] = useState("");
 
   const [form, setForm] = useState({
     anonymous: false,
@@ -78,6 +88,7 @@ const DonationsForm = () => {
     especieQty: "",
     especieClass: "",
     especieMethod: "",
+    especieItems: [],
     especieSoporte: null,
     foodQty: "",
     foodClass: "",
@@ -108,12 +119,61 @@ const DonationsForm = () => {
     fetchDonors();
   }, []);
 
+  useEffect(() => {
+    const donationState = location.state?.donation;
+    if (!donationState || prefilledFromState) return;
+
+    setIsEditing(Boolean(location.state?.isEditing));
+    setEditingDonationId(donationState.id);
+    setForm((prev) => ({
+      ...prev,
+      anonymous: donationState.anonymous ?? false,
+      donorSponsorId: donationState.donorSponsorId
+        ? String(donationState.donorSponsorId)
+        : "",
+      type: donationState.type || prev.type,
+      status: donationState.status || prev.status,
+      program: donationState.program || "",
+      donationAt: donationState.donationAt || prev.donationAt,
+      econAmount: donationState.econAmount ?? prev.econAmount,
+      econChannel: donationState.econChannel ?? prev.econChannel,
+      isFoodPurchase: donationState.isFoodPurchase ?? false,
+      foodQty: donationState.foodQty ?? "",
+      foodClass: donationState.foodClass ?? "",
+      especieItems: donationState.especieItems || [],
+    }));
+
+    const customMethods = (donationState.especieItems || [])
+      .map((item) => item.method)
+      .filter((method) => method && !RECEPTION_METHODS.includes(method));
+
+    if (customMethods.length) {
+      setCustomReceptionMethods((prev) => {
+        const next = [...prev];
+        customMethods.forEach((method) => {
+          if (!next.includes(method)) next.push(method);
+        });
+        return next;
+      });
+    }
+
+    setPrefilledFromState(true);
+  }, [location.state, prefilledFromState]);
+
   const handleChange = (field, value) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
       if (field === "type" && value !== "ECONOMICA") {
         next.isFoodPurchase = false;
+      }
+
+      if (field === "type" && value !== "ESPECIE") {
+        next.especieItems = [];
+        next.especieDesc = "";
+        next.especieQty = "";
+        next.especieClass = "";
+        next.especieMethod = "";
       }
 
       if (field === "isFoodPurchase" && !value) {
@@ -125,12 +185,107 @@ const DonationsForm = () => {
 
       return next;
     });
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
+    setErrors((prev) => {
+      const next = { ...prev, [field]: undefined };
+      if (field === "type" || field.startsWith("especie")) {
+        next.especieItems = undefined;
+      }
+      return next;
+    });
   };
 
   const handleFile = (field, files) => {
     setForm((prev) => ({ ...prev, [field]: files }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleAddEspecieItem = () => {
+    const entryErrors = {};
+    if (!form.especieDesc?.trim()) {
+      entryErrors.especieDesc = "Descripcion del bien requerida.";
+    }
+    if (!form.especieQty || Number(form.especieQty) <= 0) {
+      entryErrors.especieQty = "Cantidad requerida y mayor a 0.";
+    }
+    if (!form.especieClass) {
+      entryErrors.especieClass = "Clasificacion del bien requerida.";
+    }
+
+    if (Object.keys(entryErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...entryErrors }));
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      especieItems: [
+        ...prev.especieItems,
+        {
+          description: prev.especieDesc.trim(),
+          quantity: prev.especieQty,
+          classification: prev.especieClass,
+          method: prev.especieMethod,
+        },
+      ],
+      especieDesc: "",
+      especieQty: "",
+      especieClass: "",
+      especieMethod: "",
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      especieDesc: undefined,
+      especieQty: undefined,
+      especieClass: undefined,
+      especieMethod: undefined,
+      especieItems: undefined,
+    }));
+  };
+
+  const handleRemoveEspecieItem = (index) => {
+    setForm((prev) => ({
+      ...prev,
+      especieItems: prev.especieItems.filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handleMethodSelection = (value) => {
+    if (value === CUSTOM_METHOD_OPTION) {
+      setIsMethodModalOpen(true);
+      return;
+    }
+
+    handleChange("especieMethod", value);
+  };
+
+  const handleSaveCustomMethod = () => {
+    const trimmed = methodModalValue.trim();
+    if (!trimmed) {
+      setMethodModalError("Ingresa el nombre del metodo.");
+      return;
+    }
+
+    setCustomReceptionMethods((prev) => {
+      if (prev.includes(trimmed)) {
+        return prev;
+      }
+      return [...prev, trimmed];
+    });
+    setForm((prev) => ({
+      ...prev,
+      especieMethod: trimmed,
+    }));
+    setMethodModalValue("");
+    setMethodModalError("");
+    setIsMethodModalOpen(false);
+    setErrors((prev) => ({ ...prev, especieMethod: undefined }));
+  };
+
+  const handleCloseMethodModal = () => {
+    setIsMethodModalOpen(false);
+    setMethodModalValue("");
+    setMethodModalError("");
   };
 
   const validate = () => {
@@ -161,14 +316,9 @@ const DonationsForm = () => {
     }
 
     if (form.type === "ESPECIE") {
-      if (!form.especieDesc)
-        newErrors.especieDesc = "Descripcion del bien requerida.";
-      if (!form.especieQty || Number(form.especieQty) <= 0)
-        newErrors.especieQty = "Cantidad requerida y mayor a 0.";
-      if (!form.especieClass)
-        newErrors.especieClass = "Clasificacion del bien requerida.";
-      if (!form.especieMethod)
-        newErrors.especieMethod = "Metodo de recepcion requerido.";
+      if (!form.especieItems || form.especieItems.length === 0) {
+        newErrors.especieItems = "Agrega al menos una donación en especie.";
+      }
       if (!form.especieSoporte)
         newErrors.especieSoporte = "Soporte obligatorio (PDF/JPG/PNG, 5MB).";
     }
@@ -206,13 +356,16 @@ const DonationsForm = () => {
     }
 
     if (form.type === "ESPECIE") {
-      details.push({
-        kind: "ESPECIE",
-        recordType: "item",
-        description: form.especieDesc,
-        quantity: Number(form.especieQty),
-        classification: form.especieClass,
-        channel: form.especieMethod,
+      (form.especieItems || []).forEach((item) => {
+        const quantityValue = Number(item.quantity);
+        details.push({
+          kind: "ESPECIE",
+          recordType: "item",
+          description: item.description,
+          quantity: Number.isNaN(quantityValue) ? 0 : quantityValue,
+          classification: item.classification,
+          channel: item.method,
+        });
       });
     }
 
@@ -280,16 +433,24 @@ const DonationsForm = () => {
     try {
       const payload = buildPayload();
       console.log("donation payload", payload);
-      const resp = await donationsService.create(payload);
-      const donationId = resp?.data?.id || resp?.data?.data?.id;
+      const request = isEditing
+        ? donationsService.update(editingDonationId, payload)
+        : donationsService.create(payload);
+      const resp = await request;
+      const donationId =
+        resp?.data?.id ||
+        resp?.data?.data?.id ||
+        (isEditing ? editingDonationId : null);
 
       if (donationId) {
         await uploadAllFiles(donationId);
       }
 
       showSuccessAlert(
-        "Donacion guardada",
-        "Se registro la donacion y sus soportes correctamente."
+        isEditing ? "Donación actualizada" : "Donación guardada",
+        isEditing
+          ? "Los cambios se guardaron correctamente."
+          : "Se registró la donación y sus soportes correctamente."
       );
       navigate("/dashboard/donations");
     } catch (error) {
@@ -312,6 +473,14 @@ const DonationsForm = () => {
       setSubmitting(false);
     }
   };
+
+  const receptionOptions = useMemo(() => {
+    const unique = [...RECEPTION_METHODS];
+    customReceptionMethods.forEach((method) => {
+      if (!unique.includes(method)) unique.push(method);
+    });
+    return unique;
+  }, [customReceptionMethods]);
 
   const summary = useMemo(() => {
     const donorLabel =
@@ -362,10 +531,21 @@ const DonationsForm = () => {
     }
 
     if (form.type === "ESPECIE") {
-      details.push(`Descripcion: ${form.especieDesc || "N/A"}`);
-      details.push(`Cantidad: ${form.especieQty || "0"}`);
-      details.push(`Clasificacion: ${form.especieClass || "N/A"}`);
-      details.push(`Metodo de recepcion: ${form.especieMethod || "N/A"}`);
+      (form.especieItems || []).forEach((item, index) => {
+        const segments = [
+          `Descripcion: ${item.description || "N/A"}`,
+          `Cantidad: ${item.quantity || "0"}`,
+          item.classification ? `Clasificacion: ${item.classification}` : null,
+          item.method ? `Metodo de recepcion: ${item.method}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const prefix =
+          (form.especieItems?.length || 0) > 1
+            ? `Item ${index + 1}:`
+            : "Detalle:";
+        details.push(`${prefix} ${segments}`);
+      });
       files.push(
         form.especieSoporte
           ? `Soporte listo: ${form.especieSoporte.name}`
@@ -620,9 +800,25 @@ const DonationsForm = () => {
           {/* Seccion en especie */}
           {form.type === "ESPECIE" && (
             <section className="space-y-4">
-              <h3 className="text-base font-semibold text-gray-800">
-                Donacion en especie
-              </h3>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Donacion en especie
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Completa cada bien entregado y pulsa el botón + para agregarlo
+                    a la donación.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddEspecieItem}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-sky-200 text-sky-600 text-xs font-medium hover:bg-sky-50 transition"
+                >
+                  <FaPlus /> Agregar entrada
+                </button>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
@@ -686,25 +882,33 @@ const DonationsForm = () => {
                 </div>
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
-                    Metodo de recepcion *
+                    Metodo de recepcion (opcional)
                   </label>
-                  <select
-                    value={form.especieMethod}
-                    onChange={(e) => handleChange("especieMethod", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {RECEPTION_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.especieMethod && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieMethod}
-                    </span>
-                  )}
+                  <div className="flex gap-3">
+                    <select
+                      value={form.especieMethod}
+                      onChange={(e) => handleMethodSelection(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    >
+                      <option value="">Seleccionar...</option>
+                      {receptionOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                      <option value={CUSTOM_METHOD_OPTION}>Agregar otro...</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setIsMethodModalOpen(true)}
+                      className="px-3 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm"
+                    >
+                      <FaPlus />
+                    </button>
+                  </div>
+                  <span className="text-xs text-gray-500 mt-1">
+                    Puedes añadir un método personalizado.
+                  </span>
                 </div>
               </div>
 
@@ -732,6 +936,40 @@ const DonationsForm = () => {
                   </span>
                 )}
               </div>
+
+              {errors.especieItems && (
+                <p className="text-red-500 text-xs">{errors.especieItems}</p>
+              )}
+
+              {form.especieItems.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  {form.especieItems.map((item, index) => (
+                    <div
+                      key={`${item.description}-${index}`}
+                      className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          Item {index + 1}: {item.description}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Cantidad: {item.quantity || "0"} ·{" "}
+                          {item.classification || "Sin clasificacion"}
+                          {item.method ? ` · ${item.method}` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEspecieItem(index)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition"
+                        aria-label="Eliminar entrada"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
@@ -885,6 +1123,62 @@ const DonationsForm = () => {
             </div>
           </div>
         </aside>
+        {isMethodModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={handleCloseMethodModal}
+            />
+            <div
+              className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4"
+              role="dialog"
+              aria-modal="true"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Nuevo método de recepción
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleCloseMethodModal}
+                  className="text-sm text-gray-500 hover:text-gray-800"
+                >
+                  Cerrar
+                </button>
+              </div>
+              <p className="text-sm text-gray-500">
+                Agrega un método que no aparezca en la lista para usarlo en esta
+                o futuras donaciones.
+              </p>
+              <input
+                type="text"
+                value={methodModalValue}
+                onChange={(e) => setMethodModalValue(e.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                placeholder="Ej: Recepción en bodega principal"
+              />
+              {methodModalError && (
+                <p className="text-red-500 text-xs">{methodModalError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseMethodModal}
+                  className="px-4 py-2 text-sm text-gray-600 rounded-xl border border-gray-200 hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveCustomMethod}
+                  className="px-4 py-2 text-sm text-white rounded-xl bg-sky-500 hover:bg-sky-600 transition"
+                >
+                  Guardar método
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

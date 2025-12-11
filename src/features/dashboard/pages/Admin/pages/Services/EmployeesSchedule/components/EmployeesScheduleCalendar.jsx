@@ -25,6 +25,7 @@ import {
   FaEye,
   FaBan,
   FaStickyNote,
+  FaExclamationCircle,
 } from "react-icons/fa";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustomSchedule.css";
@@ -177,7 +178,7 @@ function generateRecurringEvents(event) {
 
 /* ============================================================
    🔹 COMPONENTE PRINCIPAL
-============================================================ */
+=========================================================== */
 export default function EmployeesScheduleCalendar({
   schedules = [],
   onOpenModalForSlot,
@@ -186,7 +187,7 @@ export default function EmployeesScheduleCalendar({
   onViewEvent,
   onDeleteEvent,
   onCancelEvent,
-  onNovedad,
+  noveltyKeys = new Set(),
 }) {
   const [view, setView] = useState("month");
   const [date, setDate] = useState(new Date());
@@ -240,6 +241,9 @@ export default function EmployeesScheduleCalendar({
       (horario.title || "").replace(/^Turno\s*-\s*/i, "") ||
       horario.title ||
       "";
+    const employeeFirstName = employeeName
+      ? employeeName.trim().split(/\s+/)[0]
+      : "";
     const displayRole =
       horario.cargo ||
       horario.role ||
@@ -247,6 +251,16 @@ export default function EmployeesScheduleCalendar({
       horario.area ||
       (horario.title && !/programado/i.test(horario.title) ? horario.title : "") ||
       "Cargo asignado";
+    const eventDateKey = horario.start
+      ? format(horario.start, "yyyy-MM-dd")
+      : horario.fecha || "";
+    const eventKey =
+      eventDateKey && (horario.scheduleId || horario.id)
+        ? `${horario.scheduleId || horario.id}::${eventDateKey}`
+        : "";
+    const hasApiNovedad =
+      horario.novedad || (Array.isArray(horario.novedades) && horario.novedades.some(Boolean));
+    const showNovedadBadge = hasApiNovedad && eventKey && noveltyKeys.has(eventKey);
     const statusClass =
       horario.estado === "Cancelado"
         ? "bg-red-100 text-red-700"
@@ -261,11 +275,20 @@ export default function EmployeesScheduleCalendar({
         style={{
           background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)`,
         }}
-        title={`${displayRole}${employeeName ? ` · ${employeeName}` : ""}`}
+        title={employeeName || displayRole}
       >
         <div className="schedule-event-pill__left">
           <span className="dot" style={{ backgroundColor: dot }} />
-          <span className="schedule-event-pill__title">{displayRole}</span>
+          <div className="schedule-event-pill__content">
+            <span className="schedule-event-pill__title">
+              {employeeFirstName || displayRole}
+            </span>
+          </div>
+          {showNovedadBadge && (
+            <span className="schedule-event-pill__badge" title="Horario con novedad">
+              <FaExclamationCircle className="w-3 h-3" />
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {horario.estado && horario.estado !== "Programado" && (
@@ -481,16 +504,6 @@ export default function EmployeesScheduleCalendar({
                 <FaEdit className="w-4 h-4 text-green-600" /> Editar horario
               </button>
 
-              <button
-                onClick={() => {
-                  closePopover();
-                  onNovedad?.(popover.horario);
-                }}
-                className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
-              >
-                <FaStickyNote className="w-4 h-4 text-primary-purple" /> Novedad
-              </button>
-
                 <button
                   onClick={() => {
                     closePopover();
@@ -508,7 +521,7 @@ export default function EmployeesScheduleCalendar({
                   }}
                   className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-50"
                 >
-                  <FaBan className="w-4 h-4 text-orange-600" /> Cancelar horario
+                  <FaStickyNote className="w-4 h-4 text-primary-purple" /> Crear novedad
                 </button>
 
                 <button

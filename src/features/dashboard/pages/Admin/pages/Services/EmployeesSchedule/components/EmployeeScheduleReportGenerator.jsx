@@ -257,7 +257,6 @@ const EmployeeScheduleReportGenerator = ({
                 <span className="px-2 py-1 bg-white border border-gray-200 rounded-full">{monthLabel}</span>
                 <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full">Programado: {stats.programado}</span>
                 <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">Completado: {stats.completado}</span>
-                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">Cancelado: {stats.cancelado}</span>
               </div>
             </div>
 

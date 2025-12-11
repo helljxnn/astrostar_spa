@@ -50,14 +50,23 @@ export const useDonorsSponsors = () => {
         });
 
         if (response.success) {
-          setDonorsSponsors(response.data || []);
+          const rawData = Array.isArray(response.data)
+            ? response.data
+            : Array.isArray(response.data?.data)
+            ? response.data.data
+            : [];
+          const normalized = rawData.map((record) => ({
+            ...record,
+            id: record.id || record._id || record.identificacion || "",
+          }));
+          setDonorsSponsors(normalized);
           const nextPagination = response.pagination
             ? { ...paginationRef.current, ...response.pagination }
             : {
                 ...paginationRef.current,
                 page: pageToUse,
                 limit: limitToUse,
-                total: response.data?.length || paginationRef.current.total,
+                total: rawData.length || paginationRef.current.total,
               };
 
           setPagination((prev) =>

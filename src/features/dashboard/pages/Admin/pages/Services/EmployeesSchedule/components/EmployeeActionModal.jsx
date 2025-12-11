@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { FaEdit, FaTrash, FaEye, FaBan, FaTimes } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaTimes, FaStickyNote } from "react-icons/fa";
 import { useState } from "react";
 import ScheduleDetailsModal from "./ScheduleDetailsModal";
 import CancelScheduleModal from "./CancelScheduleModal";
@@ -43,12 +43,12 @@ const EmployeeActionModal = ({
     },
     {
       id: "cancel",
-      label: "Cancelar horario",
-      icon: <FaBan className="w-4 h-4" />,
+      label: "Registrar novedad",
+      icon: <FaStickyNote className="w-4 h-4" />,
       color: "text-orange-600",
       hover: "hover:bg-orange-50",
-      description: "Marcar como cancelado",
-      available: !disabled && employee?.estado !== "Cancelado",
+      description: "Registrar un cambio o novedad en el turno",
+      available: !disabled,
     },
     {
       id: "delete",
@@ -69,7 +69,7 @@ const EmployeeActionModal = ({
       return;
     }
 
-    if (actionId === "cancel") {
+    if (actionId === "novedad") {
       setShowCancelModal(true);
       onClose();
       return;
@@ -98,8 +98,8 @@ const EmployeeActionModal = ({
     onClose();
   };
 
-  const handleCancelConfirm = (employeeWithReason) => {
-    onAction("cancel", employeeWithReason);
+  const handleNoveltyConfirm = (employeeWithReason) => {
+    onAction("novedad", employeeWithReason);
     setShowCancelModal(false);
   };
 
@@ -192,22 +192,28 @@ const EmployeeActionModal = ({
               {/* === Footer === */}
               {employee && (
                 <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-500">Estado:</span>
-                    <span
-                      className={`px-2 py-1 rounded-full font-medium ${
-                        employee.estado === "Programado"
-                          ? "bg-green-100 text-green-700"
-                          : employee.estado === "Cancelado"
-                          ? "bg-red-100 text-red-700"
-                          : employee.estado === "Completado"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {employee.estado || "Sin estado"}
-                    </span>
-                  </div>
+                  {(() => {
+                    const footerState =
+                      employee.estado === "Cancelado"
+                        ? "Programado"
+                        : employee.estado || "Sin estado";
+                    const footerStateColor =
+                      footerState === "Completado"
+                        ? "bg-blue-100 text-blue-700"
+                        : footerState === "Programado"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-700";
+                    return (
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-500">Estado:</span>
+                        <span
+                          className={`px-2 py-1 rounded-full font-medium ${footerStateColor}`}
+                        >
+                          {footerState}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   {employee.area && (
                     <div className="flex items-center justify-between mt-2">
@@ -231,11 +237,11 @@ const EmployeeActionModal = ({
         employee={employee}
       />
 
-      {/* Modal de cancelación */}
+      {/* Modal de novedad */}
       <CancelScheduleModal
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
-        onConfirm={handleCancelConfirm}
+        onConfirm={handleNoveltyConfirm}
         employee={employee}
       />
     </>

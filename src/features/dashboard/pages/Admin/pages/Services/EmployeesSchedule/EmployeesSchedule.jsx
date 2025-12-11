@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaCalendarAlt, FaBriefcase } from "react-icons/fa";
+import { FaPlus, FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
 import { format } from "date-fns";
+import { showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
 // Importar TUS componentes (asegúrate de que las rutas sean correctas)
 import EmployeesScheduleCalendar from "./components/EmployeesScheduleCalendar";
@@ -9,7 +10,6 @@ import ScheduleModal from "./components/EmployeesScheduleModal";
 import EmployeeScheduleReportGenerator from "./components/EmployeeScheduleReportGenerator";
 import ScheduleDetailsModal from "./components/ScheduleDetailsModal";
 import CancelScheduleModal from "./components/CancelScheduleModal";
-import ScheduleNovedadModal from "./components/ScheduleNovedadModal";
 import { useEmployeeSchedules } from "./hooks/useEmployeeSchedules";
 
 // Importaciones para permisos
@@ -68,6 +68,68 @@ const getRoleColors = (cargoOrId = "") => {
   return ROLE_COLORS[key] || ROLE_COLORS.default;
 };
 
+const scheduleHasNovedad = (schedule = {}) => {
+  if (!schedule) return false;
+  if (schedule.cancellationReason || schedule.motivoCancelacion) return true;
+  if (schedule.novedad) return true;
+  if (Array.isArray(schedule.novedades) && schedule.novedades.some(Boolean)) {
+    return true;
+  }
+  return false;
+};
+
+const formatScheduleTime = (value) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "HH:mm");
+};
+
+const toDateKey = (value) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "yyyy-MM-dd");
+};
+
+const getScheduleStartDate = (schedule = {}) => {
+  if (schedule.start) {
+    return new Date(schedule.start);
+  }
+  const fecha = schedule.fecha || schedule.fechaInicio;
+  const time = schedule.horaInicio || schedule.hora || "00:00";
+  if (fecha) {
+    return new Date(`${fecha}T${time}`);
+  }
+  return null;
+};
+
+const getScheduleDateKey = (schedule = {}) => {
+  const startDate = getScheduleStartDate(schedule);
+  if (startDate) {
+    return toDateKey(startDate);
+  }
+  const dateRef =
+    schedule.fecha ||
+    schedule.fechaInicio ||
+    schedule.scheduleDate ||
+    null;
+  return toDateKey(dateRef);
+};
+
+const getEmployeeKey = (schedule = {}) => {
+  const raw =
+    schedule.empleadoId ||
+    schedule.employeeId ||
+    schedule.empleado ||
+    schedule.employee ||
+    schedule.title ||
+    "";
+  return raw.toString().trim().toLowerCase();
+};
+
+const NOVELTY_STORAGE_KEY = "employee-schedule-novelties";
+
 const BASE_ROLE_FILTERS = [
   { id: "entrenador", label: ROLE_LABELS.entrenador },
   { id: "fisioterapia", label: ROLE_LABELS.fisioterapia },
@@ -88,23 +150,47 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     createSchedule,
     updateSchedule,
     deleteSchedule: removeSchedule,
-    cancelSchedule,
+    registerNovelty,
   } = useEmployeeSchedules();
 
-  const [filteredListSchedules, setFilteredListSchedules] = useState([]);
-  const [filteredCalendarSchedules, setFilteredCalendarSchedules] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isNew, setIsNew] = useState(true);
   const [selectedRoles, setSelectedRoles] = useState([]);
   const containerRef = useRef(null);
   const isLoading = loading || loadingEmployees;
+  const selectedRoleSet = useMemo(() => new Set(selectedRoles), [selectedRoles]);
+  const matchesSelectedRole = useCallback(
+    (item = {}) => {
+      if (selectedRoleSet.size === 0) return true;
+      const key = resolveRoleId(item.cargo || item.area || item.role || item.rol || "");
+      if (!key) return false;
+      return selectedRoleSet.has(key);
+    },
+    [selectedRoleSet]
+  );
+  const filteredListSchedules = useMemo(
+    () => rawSchedules.filter(matchesSelectedRole),
+    [rawSchedules, matchesSelectedRole]
+  );
+  const filteredCalendarSchedules = useMemo(
+    () => schedules.filter(matchesSelectedRole),
+    [schedules, matchesSelectedRole]
+  );
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [showNovedadModal, setShowNovedadModal] = useState(false);
   const [selectedScheduleForAction, setSelectedScheduleForAction] = useState(null);
-  const [selectedScheduleForNovedad, setSelectedScheduleForNovedad] = useState(null);
+  const [noveltyKeys, setNoveltyKeys] = useState(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const stored = window.localStorage.getItem(NOVELTY_STORAGE_KEY);
+      const parsed = stored ? JSON.parse(stored) : [];
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch (error) {
+      return new Set();
+    }
+  });
   const canViewSchedules = useMemo(
     () => hasPermission("employeesSchedule", "Ver"),
     [hasPermission]
@@ -160,6 +246,14 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     loadSchedules({ page: 1 });
   }, [disabled, canViewSchedules, loadSchedules]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(
+      NOVELTY_STORAGE_KEY,
+      JSON.stringify([...noveltyKeys])
+    );
+  }, [noveltyKeys]);
+
   const createDefaultSchedule = ({ start, end } = {}) => {
     const now = start ? new Date(start) : new Date();
     const defaultStart = start || now;
@@ -181,6 +275,13 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       motivoCancelacion: "",
       id: null,
     };
+  };
+
+  const noveltyKeyForSchedule = (schedule = {}) => {
+    const id = schedule.scheduleId || schedule.id;
+    const dateKey = getScheduleDateKey(schedule);
+    if (!id || !dateKey) return "";
+    return `${id}::${dateKey}`;
   };
 
   const openModalForSlot = ({ start, end } = {}) => {
@@ -239,49 +340,74 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     setShowDetailsModal(true);
   };
 
-  const openNovedadModal = (schedule) => {
-    if (!schedule) return;
-    const scheduleData = {
-      ...schedule,
-      scheduleId: schedule.scheduleId || schedule.id,
-      hora: `${schedule.horaInicio || format(schedule.start, "HH:mm")} - ${
-        schedule.horaFin || format(schedule.end, "HH:mm")
-      }`,
-      novedades: schedule.novedades || schedule.novedad || [],
-      novedad: schedule.novedad || (Array.isArray(schedule.novedades) ? schedule.novedades[0] : ""),
-    };
-    setSelectedScheduleForNovedad(scheduleData);
-    setShowNovedadModal(true);
-  };
-
   const openCancelModal = (schedule) => {
     const scheduleObj =
       typeof schedule === "string" || typeof schedule === "number"
         ? schedules.find((s) => (s.scheduleId || s.id) === schedule)
         : schedule;
     if (!scheduleObj) return;
+    const startTime =
+      scheduleObj.horaInicio || formatScheduleTime(scheduleObj.start);
+    const endTime = scheduleObj.horaFin || formatScheduleTime(scheduleObj.end);
+    const timeLabel = scheduleObj.hora
+      ? scheduleObj.hora
+      : [startTime, endTime].filter(Boolean).join(" - ");
     const scheduleData = {
       ...scheduleObj,
       scheduleId: scheduleObj.scheduleId || scheduleObj.id,
-      hora: `${scheduleObj.horaInicio || format(scheduleObj.start, "HH:mm")} - ${
-        scheduleObj.horaFin || format(scheduleObj.end, "HH:mm")
-      }`,
+      horaInicio: startTime,
+      horaFin: endTime,
+      hora: timeLabel,
     };
     setSelectedScheduleForAction(scheduleData);
     setShowCancelModal(true);
   };
 
   const handleSaveFromModal = async (form) => {
-    const payload = {
-      ...form,
-      descripcion: form.descripcion || form.observaciones || "",
-      observaciones: form.descripcion || form.observaciones || "",
-    };
+  const payload = {
+    ...form,
+    descripcion: form.descripcion || form.observaciones || "",
+    observaciones: form.descripcion || form.observaciones || "",
+  };
 
-    try {
-      if (isNew) {
-        await createSchedule(payload);
-      } else if (form.id) {
+  const payloadEmployeeKey = (payload.empleadoId || payload.empleado || "")
+    .toString()
+    .trim()
+    .toLowerCase();
+  const payloadDateKey = payload.fecha || toDateKey(payload.start);
+
+  if (payloadEmployeeKey && payloadDateKey) {
+    const isConflict = schedules.some((schedule) => {
+      const scheduleEmployeeKey = getEmployeeKey(schedule);
+      if (!scheduleEmployeeKey || scheduleEmployeeKey !== payloadEmployeeKey) return false;
+      const scheduleDateKey = getScheduleDateKey(schedule);
+      if (!scheduleDateKey || scheduleDateKey !== payloadDateKey) return false;
+
+      if (!isNew) {
+        const scheduleId =
+          (schedule.scheduleId || schedule.id || "").toString();
+        const payloadId = (payload.id || "").toString();
+        if (scheduleId && payloadId && scheduleId === payloadId) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    if (isConflict) {
+      showErrorAlert(
+        "Horario duplicado",
+        "Ese empleado ya tiene un horario en ese día."
+      );
+      return;
+    }
+  }
+
+  try {
+    if (isNew) {
+      await createSchedule(payload);
+    } else if (form.id) {
         await updateSchedule(form.id, payload);
       }
       closeModal();
@@ -303,13 +429,24 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     }
   };
 
-  const handleCancelConfirm = async (scheduleWithReason) => {
+  const handleNovedadConfirm = async (scheduleWithReason) => {
     if (!scheduleWithReason) return;
+    const payload =
+      scheduleWithReason.cancelPayload ||
+      { motivoCancelacion: scheduleWithReason.motivoCancelacion || "" };
+    const noveltyKey = noveltyKeyForSchedule(scheduleWithReason);
     try {
-      await cancelSchedule(
+      await registerNovelty(
         scheduleWithReason.scheduleId || scheduleWithReason.id,
-        scheduleWithReason.motivoCancelacion || ""
+        payload
       );
+      if (noveltyKey) {
+        setNoveltyKeys((prev) => {
+          const next = new Set(prev);
+          next.add(noveltyKey);
+          return next;
+        });
+      }
       setShowCancelModal(false);
       setSelectedScheduleForAction(null);
     } catch (error) {
@@ -362,23 +499,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   const disabledList =
     disabledSchedules.length > 0 ? disabledSchedules : schedules;
-
-  useEffect(() => {
-    const selectedSet = new Set(selectedRoles);
-
-    const matchesRole = (item = {}) => {
-      if (selectedSet.size === 0) return true;
-      const key = resolveRoleId(item.cargo || item.area || "");
-      if (!key) return false;
-      return selectedSet.has(key);
-    };
-
-    const filteredList = rawSchedules.filter(matchesRole);
-    const filteredCalendar = schedules.filter(matchesRole);
-
-    setFilteredListSchedules(filteredList);
-    setFilteredCalendarSchedules(filteredCalendar);
-  }, [rawSchedules, schedules, selectedRoles]);
 
   const listSchedules = useMemo(() => {
     const map = new Map();
@@ -575,16 +695,16 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           <div
             className="order-1 xl:order-1 flex-1 min-w-0 w-full bg-white rounded-2xl shadow-lg p-4 border border-gray-200 calendar-area"
           >
-          <EmployeesScheduleCalendar
-            schedules={filteredCalendarSchedules}
-            onOpenModalForSlot={hasPermission('employeesSchedule', 'Crear') ? openModalForSlot : null}
-            onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
-            onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}
-            onViewEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openDetailsModal(event) : null}
-            onNovedad={hasPermission('employeesSchedule', 'Ver') ? (event) => openNovedadModal(event) : null}
-            onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? handleDeleteSchedule : null}
-            onCancelEvent={hasPermission('employeesSchedule', 'Editar') ? openCancelModal : null}
-          />
+              <EmployeesScheduleCalendar
+                schedules={filteredCalendarSchedules}
+                onOpenModalForSlot={hasPermission('employeesSchedule', 'Crear') ? openModalForSlot : null}
+                onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
+                onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}
+                onViewEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openDetailsModal(event) : null}
+                onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? handleDeleteSchedule : null}
+                onCancelEvent={hasPermission('employeesSchedule', 'Editar') ? openCancelModal : null}
+                noveltyKeys={noveltyKeys}
+              />
         </div>
 
         <motion.div
@@ -601,12 +721,15 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           {listSchedules.length > 0 ? (
             <ul className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2 pb-1 activity-list">
               {listSchedules.map((schedule) => {
+                const hasNovedadBadge = scheduleHasNovedad(schedule);
                 const colors = getRoleColors(schedule.cargo || schedule.area);
                 const recurrenceLabel = buildRecurrenceLabel(schedule);
-                const statusColor =
+                const displayStatus =
                   schedule.estado === "Cancelado"
-                    ? "bg-red-100 text-red-700"
-                    : schedule.estado === "Completado"
+                    ? "Programado"
+                    : schedule.estado;
+                const statusColor =
+                  displayStatus === "Completado"
                     ? "bg-emerald-100 text-emerald-700"
                     : "bg-blue-100 text-blue-700";
                 const dateLabel = schedule.fecha || schedule.start?.toLocaleDateString?.() || "";
@@ -631,22 +754,30 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                     onClick={() => openDetailsModal(schedule)}
                   >
                     <div className="activity-card__header">
-                      <div>
+                      <div className="flex items-center gap-1">
                         <h3 className="text-sm font-bold text-gray-900">
                           {schedule.empleado || "Sin nombre"}
                         </h3>
-                        <p className="text-xs text-gray-700 flex flex-wrap gap-2 mt-1">
-                          {schedule.cargo && (
-                            <span className="badge" style={{ borderColor: colors.dot }}>
-                              <FaBriefcase className="inline-block mr-1" />
-                              {schedule.cargo}
-                            </span>
-                          )}
-                          {schedule.area && <span className="text-[11px]">Área: {schedule.area}</span>}
-                        </p>
+                        {hasNovedadBadge && (
+                          <FaExclamationCircle
+                            className="text-red-500"
+                            title="Horario con novedad"
+                          />
+                        )}
                       </div>
-                      <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusColor}`}>
-                        {schedule.estado}
+                      <p className="text-xs text-gray-700 flex flex-wrap gap-2 mt-1">
+                        {schedule.cargo && (
+                          <span className="badge" style={{ borderColor: colors.dot }}>
+                            <FaBriefcase className="inline-block mr-1" />
+                            {schedule.cargo}
+                          </span>
+                        )}
+                        {schedule.area && <span className="text-[11px]">Área: {schedule.area}</span>}
+                      </p>
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusColor}`}
+                      >
+                        {displayStatus}
                       </span>
                     </div>
 
@@ -726,6 +857,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                 onClose={closeModal}
                 onSave={handleSaveFromModal}
                 employeesOptions={employees}
+                existingSchedules={schedules}
                 isLoadingEmployees={loadingEmployees}
               />
             </motion.div>
@@ -739,19 +871,13 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         employee={selectedScheduleForAction}
       />
 
-      <ScheduleNovedadModal
-        isOpen={showNovedadModal}
-        onClose={() => setShowNovedadModal(false)}
-        schedule={selectedScheduleForNovedad}
-      />
-
       <CancelScheduleModal
         isOpen={showCancelModal}
         onClose={() => {
           setShowCancelModal(false);
           setSelectedScheduleForAction(null);
         }}
-        onConfirm={handleCancelConfirm}
+        onConfirm={handleNovedadConfirm}
         employee={selectedScheduleForAction}
       />
     </div>
