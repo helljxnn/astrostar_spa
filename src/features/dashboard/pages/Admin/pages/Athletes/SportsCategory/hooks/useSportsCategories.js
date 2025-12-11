@@ -1,7 +1,10 @@
 // useSportsCategories.js
 import { useState, useCallback } from "react";
 import apiClient from "../../../../../../../../shared/services/apiClient";
-import { showErrorAlert, showSuccessAlert } from "../../../../../../../../shared/utils/Alerts";
+import {
+  showErrorAlert,
+  showSuccessAlert,
+} from "../../../../../../../../shared/utils/Alerts";
 
 const API_URL = "/sports-categories";
 
@@ -13,7 +16,8 @@ const normalizeCategory = (raw = {}) => {
   const maxAge = raw.maxAge ?? raw.edadMaxima ?? null;
   const status = raw.status ?? raw.estado ?? "";
   const publish = raw.publish ?? raw.publicar ?? false;
-  const archivo = raw.archivo ?? raw.imageUrl ?? raw.file ?? raw.fileUrl ?? raw.image ?? "";
+  const archivo =
+    raw.archivo ?? raw.imageUrl ?? raw.file ?? raw.fileUrl ?? raw.image ?? "";
 
   return {
     ...raw,
@@ -38,7 +42,12 @@ const normalizeCategory = (raw = {}) => {
 export function useSportsCategories() {
   const [sportsCategories, setSportsCategories] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, pages: 0 });
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    pages: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -48,12 +57,16 @@ export function useSportsCategories() {
         setLoading(true);
         setError(null);
 
-        const response = await apiClient.get(API_URL, { params: { page, limit, search, status } });
+        const response = await apiClient.get(API_URL, {
+          params: { page, limit, search, status },
+        });
         const items = response?.data?.data || response?.data || response || [];
-        const normalized = Array.isArray(items) ? items.map(normalizeCategory) : [];
+        const normalized = Array.isArray(items)
+          ? items.map(normalizeCategory)
+          : [];
 
-        const respPagination =
-          response?.data?.pagination || response?.pagination || {
+        const respPagination = response?.data?.pagination ||
+          response?.pagination || {
             page,
             limit,
             total: Array.isArray(items) ? items.length : 0,
@@ -65,8 +78,14 @@ export function useSportsCategories() {
         setPagination({
           page: respPagination.page || page,
           limit: respPagination.limit || limit,
-          total: respPagination.total ?? (Array.isArray(items) ? items.length : 0),
-          pages: respPagination.pages ?? Math.ceil((respPagination.total ?? (Array.isArray(items) ? items.length : 0)) / limit),
+          total:
+            respPagination.total ?? (Array.isArray(items) ? items.length : 0),
+          pages:
+            respPagination.pages ??
+            Math.ceil(
+              (respPagination.total ??
+                (Array.isArray(items) ? items.length : 0)) / limit
+            ),
         });
 
         return { success: true, data: normalized, pagination: respPagination };
@@ -86,12 +105,17 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       const response = await apiClient.post(API_URL, data);
-      showSuccessAlert("Categoría creada", "Se creó correctamente.");
+      showSuccessAlert("Categoría creada");
       await fetchSportsCategories(params);
       return { success: true, data: response };
     } catch (err) {
       console.error("createSportsCategory error:", err);
-      showErrorAlert("Error", err?.response?.data?.message || err?.message || "No se pudo crear la categoría.");
+      showErrorAlert(
+        "Error",
+        err?.response?.data?.message ||
+          err?.message ||
+          "No se pudo crear la categoría."
+      );
       throw err;
     } finally {
       setLoading(false);
@@ -102,12 +126,17 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       const response = await apiClient.put(`${API_URL}/${id}`, data);
-      showSuccessAlert("Categoría actualizada", "Cambios guardados.");
+      showSuccessAlert("Categoría actualizada");
       await fetchSportsCategories(params);
       return { success: true, data: response };
     } catch (err) {
       console.error("updateSportsCategory error:", err);
-      showErrorAlert("Error", err?.response?.data?.message || err?.message || "No se pudo actualizar la categoría.");
+      showErrorAlert(
+        "Error",
+        err?.response?.data?.message ||
+          err?.message ||
+          "No se pudo actualizar la categoría."
+      );
       throw err;
     } finally {
       setLoading(false);
@@ -118,11 +147,15 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       await apiClient.delete(`${API_URL}/${id}`);
-      showSuccessAlert("Eliminada", "Categoría eliminada correctamente.");
+      showSuccessAlert("Categoría eliminada");
       await fetchSportsCategories(params);
     } catch (err) {
       console.error("deleteSportsCategory error:", err);
-      showErrorAlert("Error", "No se pudo eliminar la categoría.");
+      const errorMessage =
+        err?.response?.data?.message ||
+        err?.message ||
+        "No se pudo eliminar la categoría.";
+      showErrorAlert("Error al eliminar", errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -144,16 +177,21 @@ export function useSportsCategories() {
   // check name availability -> devuelve { available: boolean, message? }
   const checkCategoryNameAvailability = async (name, excludeId = null) => {
     const trimmed = (name ?? "").trim();
-    if (!trimmed) return { available: false, message: "El nombre es obligatorio" };
-    if (trimmed.length < 3) return { available: false, message: "Debe tener al menos 3 caracteres." };
+    if (!trimmed)
+      return { available: false, message: "El nombre es obligatorio" };
+    if (trimmed.length < 3)
+      return { available: false, message: "Debe tener al menos 3 caracteres." };
 
     try {
       const params = { name: trimmed };
       if (excludeId) params.excludeId = excludeId;
-      const response = await apiClient.get(`${API_URL}/validate-name`, { params });
+      const response = await apiClient.get(`${API_URL}/validate-name`, params);
       return response?.data || response || { available: true };
     } catch (err) {
-      console.warn("checkCategoryNameAvailability fallback (backend error):", err);
+      console.warn(
+        "checkCategoryNameAvailability fallback (backend error):",
+        err
+      );
       return { available: true };
     }
   };

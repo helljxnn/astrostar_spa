@@ -14,7 +14,12 @@ import {
 
 const MAX_FILE_SIZE_MB = 5;
 
-const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true }) => {
+const SportsCategoryModal = ({
+  isOpen,
+  onClose,
+  category = null,
+  isNew = true,
+}) => {
   const initialForm = {
     nombre: "",
     edadMinima: "",
@@ -25,7 +30,9 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     publicar: false,
   };
 
-  const [fileName, setFileName] = useState("No se ha seleccionado ningun archivo");
+  const [fileName, setFileName] = useState(
+    "No se ha seleccionado ningun archivo"
+  );
   const [previewUrl, setPreviewUrl] = useState("");
   const [initialName, setInitialName] = useState("");
   const [persistedImageUrl, setPersistedImageUrl] = useState("");
@@ -53,8 +60,12 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     setIsSubmitting,
   } = useFormSportsCategoryValidation(initialForm, validationRules);
 
-  const { nameValidation, validateCategoryName, validateCategoryNameSync, resetNameValidation } =
-    useSportsCategoryNameValidation(category?.id || null);
+  const {
+    nameValidation,
+    validateCategoryName,
+    validateCategoryNameSync,
+    resetNameValidation,
+  } = useSportsCategoryNameValidation(category?.id || null);
 
   const { createSportsCategory, updateSportsCategory } = useSportsCategories();
 
@@ -67,7 +78,8 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     setIsSubmitting(false);
 
     if (category && !isNew) {
-      const existingImage = category.fileUrl ?? category.imageUrl ?? category.archivo ?? "";
+      const existingImage =
+        category.fileUrl ?? category.imageUrl ?? category.archivo ?? "";
       const incomingName = category.name ?? category.nombre ?? "";
 
       setValues({
@@ -83,7 +95,10 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
       setInitialName(incomingName);
       setPersistedImageUrl(existingImage);
       setFileName(
-        category.fileName ?? (existingImage ? "Imagen actual" : "No se ha seleccionado ningun archivo")
+        category.fileName ??
+          (existingImage
+            ? "Imagen actual"
+            : "No se ha seleccionado ningun archivo")
       );
       setPreviewUrl(existingImage);
     } else {
@@ -121,7 +136,10 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     const f = e.target.files?.[0] ?? null;
     if (f) {
       if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
-        showErrorAlert("Archivo muy pesado", `La imagen supera ${MAX_FILE_SIZE_MB}MB.`);
+        showErrorAlert(
+          "Archivo muy pesado",
+          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`
+        );
         e.target.value = "";
         setFileName("No se ha seleccionado ningun archivo");
         handleChange("archivo", null);
@@ -142,12 +160,18 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     const trimmedName = (values.nombre || "").trim();
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
-      showErrorAlert("Formulario incompleto", "Revisa los campos obligatorios.");
+      showErrorAlert(
+        "Formulario incompleto",
+        "Revisa los campos obligatorios."
+      );
       return;
     }
 
     if (!trimmedName) {
-      showErrorAlert("Nombre requerido", "El nombre de la categoria es obligatorio.");
+      showErrorAlert(
+        "Nombre requerido",
+        "El nombre de la categoria es obligatorio."
+      );
       return;
     }
 
@@ -159,12 +183,16 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
     const minA = parseInt(values.edadMinima, 10);
     const maxA = parseInt(values.edadMaxima, 10);
     if (Number.isNaN(minA) || Number.isNaN(maxA) || minA >= maxA) {
-      showErrorAlert("Error en edades", "Edad maxima debe ser mayor que la minima.");
+      showErrorAlert(
+        "Error en edades",
+        "Edad maxima debe ser mayor que la minima."
+      );
       return;
     }
 
     const shouldValidateNameRemotely =
-      isNew || trimmedName.toLowerCase() !== (initialName || "").trim().toLowerCase();
+      isNew ||
+      trimmedName.toLowerCase() !== (initialName || "").trim().toLowerCase();
 
     if (shouldValidateNameRemotely) {
       try {
@@ -196,13 +224,13 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
       if (isNew) {
         await createSportsCategory(formData, { page: 1, limit: 10 });
       } else {
-        await updateSportsCategory(category.id, formData, { page: 1, limit: 10 });
+        await updateSportsCategory(category.id, formData, {
+          page: 1,
+          limit: 10,
+        });
       }
 
-      showSuccessAlert(
-        isNew ? "Categoria creada" : "Categoria actualizada",
-        "Ahora se vera en la landing si esta publicada."
-      );
+      showSuccessAlert(isNew ? "Categoria creada" : "Categoria actualizada");
       onClose();
     } catch (err) {
       console.error("handleSubmit error:", err);
@@ -218,19 +246,24 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
   };
 
   const currentTrimmedName = (values.nombre || "").trim();
-  const isNameTooShort = currentTrimmedName.length > 0 && currentTrimmedName.length < 3;
+  const isNameTooShort =
+    currentTrimmedName.length > 0 && currentTrimmedName.length < 3;
   const descripcionLength = (values.descripcion || "").length;
   const nameStatus = (() => {
     if (nameValidation.isChecking) return "checking";
-    if (errors.nombre || nameValidation.isDuplicate || isNameTooShort) return "error";
-    if (nameValidation.isAvailable && currentTrimmedName.length >= 3) return "success";
+    if (errors.nombre || nameValidation.isDuplicate || isNameTooShort)
+      return "error";
+    if (nameValidation.isAvailable && currentTrimmedName.length >= 3)
+      return "success";
     return "neutral";
   })();
   const nameInputStates = {
-    checking: "border-primary-purple ring-2 ring-primary-purple/20 bg-purple-50",
+    checking:
+      "border-primary-purple ring-2 ring-primary-purple/20 bg-purple-50",
     error: "border-red-400 ring-2 ring-red-100 bg-red-50",
     success: "border-green-500 ring-2 ring-green-100 bg-green-50",
-    neutral: "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30 bg-gray-50",
+    neutral:
+      "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30 bg-gray-50",
   };
   const nameInputClass = nameInputStates[nameStatus] || nameInputStates.neutral;
 
@@ -277,11 +310,17 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
                 )}
                 {nameValidation.isDuplicate && !isNameTooShort && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg font-semibold">Ɵ?</span>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg font-semibold">
+                    Ɵ?
+                  </span>
                 )}
-                {!nameValidation.isDuplicate && nameValidation.isAvailable && currentTrimmedName.length >= 3 && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-lg font-semibold">Ɵ?"</span>
-                )}
+                {!nameValidation.isDuplicate &&
+                  nameValidation.isAvailable &&
+                  currentTrimmedName.length >= 3 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-lg font-semibold">
+                      Ɵ?"
+                    </span>
+                  )}
               </div>
               <div className="space-y-1 text-xs mt-1">
                 {nameValidation.isChecking && (
@@ -296,24 +335,30 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                     Debe tener minimo 3 caracteres.
                   </p>
                 )}
-                {errors.nombre && <p className="text-red-500">Aviso: {errors.nombre}</p>}
+                {errors.nombre && (
+                  <p className="text-red-500">Aviso: {errors.nombre}</p>
+                )}
                 {nameValidation.isDuplicate && !isNameTooShort && (
                   <p className="flex items-center gap-2 text-red-600 font-semibold">
                     <span className="text-lg leading-none">Ɵ?</span>
                     {nameValidation.message || "Nombre no disponible"}
                   </p>
                 )}
-                {!nameValidation.isDuplicate && nameValidation.isAvailable && currentTrimmedName.length >= 3 && (
-                  <p className="flex items-center gap-2 text-green-600 font-semibold">
-                    <span className="text-lg leading-none">Ɵ?"</span>
-                    {nameValidation.message || "Nombre disponible"}
-                  </p>
-                )}
+                {!nameValidation.isDuplicate &&
+                  nameValidation.isAvailable &&
+                  currentTrimmedName.length >= 3 && (
+                    <p className="flex items-center gap-2 text-green-600 font-semibold">
+                      <span className="text-lg leading-none">Ɵ?"</span>
+                      {nameValidation.message || "Nombre disponible"}
+                    </p>
+                  )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">Edad minima *</label>
+              <label className="text-sm font-semibold text-gray-700 block">
+                Edad minima *
+              </label>
               <input
                 type="number"
                 value={values.edadMinima}
@@ -321,12 +366,15 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 onBlur={() => handleBlur("edadMinima")}
                 placeholder="Ej: 10"
                 className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
-                  errors.edadMinima ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                  errors.edadMinima
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
               {values.edadMinima &&
                 values.edadMaxima &&
-                parseInt(values.edadMinima, 10) >= parseInt(values.edadMaxima, 10) && (
+                parseInt(values.edadMinima, 10) >=
+                  parseInt(values.edadMaxima, 10) && (
                   <p className="text-red-500 text-xs mt-1">
                     Aviso: Edad maxima debe ser mayor que minima
                   </p>
@@ -334,7 +382,9 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">Edad maxima *</label>
+              <label className="text-sm font-semibold text-gray-700 block">
+                Edad maxima *
+              </label>
               <input
                 type="number"
                 value={values.edadMaxima}
@@ -342,12 +392,15 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 onBlur={() => handleBlur("edadMaxima")}
                 placeholder="Ej: 15"
                 className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
-                  errors.edadMaxima ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                  errors.edadMaxima
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
               {values.edadMinima &&
                 values.edadMaxima &&
-                parseInt(values.edadMinima, 10) >= parseInt(values.edadMaxima, 10) && (
+                parseInt(values.edadMinima, 10) >=
+                  parseInt(values.edadMaxima, 10) && (
                   <p className="text-red-500 text-xs mt-1">
                     Aviso: Edad maxima debe ser mayor que minima
                   </p>
@@ -365,7 +418,9 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                 placeholder="Breve descripcion..."
                 maxLength={200}
                 className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
-                  errors.descripcion ? "border-red-400 bg-red-50" : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                  errors.descripcion
+                    ? "border-red-400 bg-red-50"
+                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                 }`}
               />
               <div className="flex justify-between text-xs text-gray-600">
@@ -389,10 +444,13 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                     className="hidden"
                   />
                 </label>
-                <span className="text-xs text-gray-600 truncate">{fileName}</span>
+                <span className="text-xs text-gray-600 truncate">
+                  {fileName}
+                </span>
               </div>
               <span className="text-xs text-gray-500">
-                Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se mantiene la actual.
+                Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
+                mantiene la actual.
               </span>
               {previewUrl && (
                 <div className="w-full h-32 rounded-lg border overflow-hidden">
@@ -403,16 +461,19 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
                   />
                 </div>
               )}
-              {values.archivo && values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
-                <p className="text-red-500 text-xs">
-                  Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
-                </p>
-              )}
+              {values.archivo &&
+                values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
+                  <p className="text-red-500 text-xs">
+                    Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
+                  </p>
+                )}
             </div>
 
             {!isNew && (
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 block">Estado *</label>
+                <label className="text-sm font-semibold text-gray-700 block">
+                  Estado *
+                </label>
                 <select
                   value={values.estado}
                   onChange={(e) => handleChange("estado", e.target.value)}
@@ -438,7 +499,9 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
             />
             <div className="flex-1">
               <p className="text-sm font-semibold text-gray-800">
-                {values.publicar ? "Publicada en landing" : "Publicar categoria inmediatamente"}
+                {values.publicar
+                  ? "Publicada en landing"
+                  : "Publicar categoria inmediatamente"}
               </p>
               <p className="text-xs text-gray-600">
                 Al activarlo la categoria se mostrara en la landing.
@@ -459,7 +522,11 @@ const SportsCategoryModal = ({ isOpen, onClose, category = null, isNew = true })
               disabled={isSubmitting}
               className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70 shadow-sm"
             >
-              {isSubmitting ? "Guardando..." : isNew ? "Crear Categoria" : "Actualizar Categoria"}
+              {isSubmitting
+                ? "Guardando..."
+                : isNew
+                ? "Crear Categoria"
+                : "Actualizar Categoria"}
             </button>
           </div>
         </form>
