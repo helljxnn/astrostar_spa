@@ -258,33 +258,47 @@ class TeamsService {
 
   async getTrainers() {
     try {
-      // Obtener entrenadores de la fundación (employees)
+      console.log('🔵 Obteniendo entrenadores de fundación...');
       const employeesResponse = await apiClient.get('/employees');
+      console.log('📦 Respuesta employees:', employeesResponse);
       
-      // Obtener personas temporales
+      console.log('🟡 Obteniendo personas temporales...');
       const temporalResponse = await apiClient.get('/temporary-workers');
+      console.log('📦 Respuesta temporal:', temporalResponse);
       
       const trainers = [];
       
-      // Transformar empleados (fundación) - Filtrar solo entrenadores activos
+      // Transformar empleados (fundación) - Filtrar solo entrenadores
       if (employeesResponse?.success && Array.isArray(employeesResponse.data)) {
-        const foundationTrainers = employeesResponse.data
-          .filter(emp => emp.role === 'Entrenador' && emp.status === 'Activo')
-          .map(emp => ({
+        console.log('✅ Employees encontrados:', employeesResponse.data.length);
+        if (employeesResponse.data.length > 0) {
+          console.log('📊 Primer employee COMPLETO:', JSON.stringify(employeesResponse.data[0], null, 2));
+        }
+        
+        const entrenadores = employeesResponse.data.filter(emp => emp.user?.role?.name === 'Entrenador');
+        console.log('👨‍🏫 Entrenadores filtrados:', entrenadores.length);
+        
+        const foundationTrainers = entrenadores.map(emp => ({
             id: emp.id,
-            name: `${emp.firstName || ''} ${emp.middleName || ''} ${emp.lastName || ''} ${emp.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
-            identification: emp.identification,
-            phoneNumber: emp.phoneNumber,
+            name: `${emp.user?.firstName || ''} ${emp.user?.middleName || ''} ${emp.user?.lastName || ''} ${emp.user?.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
+            identification: emp.user?.identification,
+            phoneNumber: emp.user?.phoneNumber,
             type: 'fundacion'
           }));
         trainers.push(...foundationTrainers);
       }
       
-      // Transformar temporales - Filtrar solo entrenadores activos
+      // Transformar temporales - Filtrar solo entrenadores
       if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
-        const temporalTrainers = temporalResponse.data
-          .filter(temp => temp.type === 'Entrenador' && temp.status === 'Activo')
-          .map(temp => ({
+        console.log('✅ Temporales encontrados:', temporalResponse.data.length);
+        if (temporalResponse.data.length > 0) {
+          console.log('📊 Primer temporal COMPLETO:', JSON.stringify(temporalResponse.data[0], null, 2));
+        }
+        
+        const entrenadoresTemp = temporalResponse.data.filter(temp => temp.personType === 'Entrenador');
+        console.log('👨‍🏫 Entrenadores temporales filtrados:', entrenadoresTemp.length);
+        
+        const temporalTrainers = entrenadoresTemp.map(temp => ({
             id: temp.id,
             name: `${temp.firstName || ''} ${temp.middleName || ''} ${temp.lastName || ''} ${temp.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
             identification: temp.identification,
@@ -310,18 +324,20 @@ class TeamsService {
 
   async getAthletes() {
     try {
-      // Obtener deportistas de la fundación
+      console.log('🔵 Obteniendo deportistas de fundación...');
       const athletesResponse = await apiClient.get('/athletes');
+      console.log('📦 Respuesta athletes:', athletesResponse);
       
-      // Obtener personas temporales
+      console.log('🟡 Obteniendo personas temporales...');
       const temporalResponse = await apiClient.get('/temporary-workers');
+      console.log('📦 Respuesta temporal:', temporalResponse);
       
       const athletes = [];
       
-      // Transformar deportistas de fundación - Filtrar solo activos
+      // Transformar deportistas de fundación
       if (athletesResponse?.success && Array.isArray(athletesResponse.data)) {
+        console.log('✅ Athletes fundación encontrados:', athletesResponse.data.length);
         const foundationAthletes = athletesResponse.data
-          .filter(ath => ath.status === 'Activo')
           .map(ath => ({
             id: ath.id,
             name: `${ath.firstName || ''} ${ath.middleName || ''} ${ath.lastName || ''} ${ath.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
@@ -330,23 +346,30 @@ class TeamsService {
             categoria: ath.sportsCategory?.name || ath.categoria,
             type: 'fundacion'
           }));
+        console.log('✅ Athletes fundación activos:', foundationAthletes.length);
         athletes.push(...foundationAthletes);
       }
       
-      // Transformar deportistas temporales - Filtrar solo deportistas activos
+      // Transformar deportistas temporales
       if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
-        const temporalAthletes = temporalResponse.data
-          .filter(temp => temp.type === 'Deportista' && temp.status === 'Activo')
-          .map(temp => ({
+        console.log('✅ Temporales encontrados:', temporalResponse.data.length);
+        console.log('📊 Primer temporal COMPLETO:', JSON.stringify(temporalResponse.data[0], null, 2));
+        
+        const deportistas = temporalResponse.data.filter(temp => temp.personType === 'Deportista');
+        console.log('🏃 Deportistas filtrados:', deportistas.length);
+        
+        const temporalAthletes = deportistas.map(temp => ({
             id: temp.id,
             name: `${temp.firstName || ''} ${temp.middleName || ''} ${temp.lastName || ''} ${temp.secondLastName || ''}`.trim().replace(/\s+/g, ' '),
             identification: temp.identification,
             phoneNumber: temp.phoneNumber,
             type: 'temporal'
           }));
+        console.log('✅ Deportistas temporales activos:', temporalAthletes.length);
         athletes.push(...temporalAthletes);
       }
       
+      console.log('🎯 Total deportistas:', athletes.length);
       return {
         success: true,
         data: athletes
