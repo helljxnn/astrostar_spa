@@ -94,7 +94,15 @@ export const useEvents = () => {
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
       patrocinador: event.ServiceSponsor?.map((s) => s.Sponsor.name) || [],
-      hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
+      hasRegistrations: (() => {
+        const count = event._count?.participants || 0;
+        console.log(
+          `Evento ${
+            event.name
+          }: _count.participants = ${count}, hasRegistrations = ${count > 0}`
+        );
+        return count > 0;
+      })(), // Verificar si tiene inscripciones
       // Para el calendario - usar createLocalDate para evitar problemas de zona horaria
       start: createLocalDate(startDate, event.startTime),
       end: createLocalDate(endDate, event.endTime),
