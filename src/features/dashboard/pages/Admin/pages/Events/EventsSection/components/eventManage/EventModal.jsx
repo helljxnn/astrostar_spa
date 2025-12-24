@@ -36,6 +36,7 @@ export const EventModal = ({
     typeId: null,
     estado: "Programado", // Estado por defecto al crear
     publicar: false,
+    clearRegistrations: false, // Indicador para limpiar inscripciones
   });
 
   // Mapeo de tipos de evento a tipo de participante
@@ -145,6 +146,7 @@ export const EventModal = ({
           typeId: typeId,
           estado: event.estadoOriginal || event.estado || "Programado",
           publicar: event.publicar || false,
+          clearRegistrations: false, // Inicializar como false
         });
       }
     }
@@ -183,6 +185,7 @@ export const EventModal = ({
         tipo: selectedType?.name || "",
         typeId: tipoEvento, // Backend expects 'typeId', not 'tipoId'
         id: event?.id,
+        clearRegistrations: form.clearRegistrations || false, // Indicar si se deben limpiar las inscripciones
       };
 
       // Si el evento está finalizado, no enviar el campo estado para evitar errores de validación
@@ -249,7 +252,78 @@ export const EventModal = ({
                   name="tipoEvento"
                   type="select"
                   value={tipoEvento}
-                  onChange={(name, value) => setTipoEvento(value)}
+                  onChange={async (name, value) => {
+                    // Debug: Verificar condiciones
+                    console.log("=== DEBUG CAMBIO DE TIPO ===");
+                    console.log("isNew:", isNew);
+                    console.log(
+                      "event?.hasRegistrations:",
+                      event?.hasRegistrations
+                    );
+                    console.log("tipoEvento:", tipoEvento);
+                    console.log("event completo:", event);
+                    console.log(
+                      "Condición completa:",
+                      !isNew && event?.hasRegistrations && tipoEvento
+                    );
+
+                    // Validar cambio de tipo si hay inscripciones
+                    // Verificar si el evento tiene inscripciones (fallback si hasRegistrations no está definido)
+                    const eventHasRegistrations =
+                      event?.hasRegistrations ||
+                      (event?.participants && event.participants.length > 0);
+                    console.log(
+                      "eventHasRegistrations:",
+                      eventHasRegistrations
+                    );
+
+                    // TEMPORAL: Siempre validar en modo edición para probar
+                    if (!isNew && tipoEvento) {
+                      const currentTypeName = referenceData.types.find(
+                        (t) => t.id === tipoEvento
+                      )?.name;
+                      const newTypeName = referenceData.types.find(
+                        (t) => t.id === value
+                      )?.name;
+
+                      // Verificar compatibilidad de tipos
+                      const teamTypes = ["Festival", "Torneo"];
+                      const athleteTypes = ["Taller", "Clausura"];
+
+                      const currentIsTeamType =
+                        teamTypes.includes(currentTypeName);
+                      const newIsTeamType = teamTypes.includes(newTypeName);
+                      const currentIsAthleteType =
+                        athleteTypes.includes(currentTypeName);
+                      const newIsAthleteType =
+                        athleteTypes.includes(newTypeName);
+
+                      // Si hay inscripciones y se intenta cambiar entre tipos incompatibles
+                      if (
+                        (currentIsTeamType && newIsAthleteType) ||
+                        (currentIsAthleteType && newIsTeamType)
+                      ) {
+                        const participantType = currentIsTeamType
+                          ? "equipos"
+                          : "deportistas";
+                        const result = await showConfirmAlert(
+                          "¿Cambiar tipo de evento?",
+                          `Al cambiar de ${currentTypeName} a ${newTypeName} podrían eliminarse las inscripciones existentes si las hay. ¿Deseas continuar?`
+                        );
+
+                        if (!result.isConfirmed) {
+                          return; // No cambiar el tipo si el usuario cancela
+                        }
+
+                        // Si el usuario confirma, marcar que se deben eliminar las inscripciones
+                        setForm((prev) => ({
+                          ...prev,
+                          clearRegistrations: true,
+                        }));
+                      }
+                    }
+                    setTipoEvento(value);
+                  }}
                   onBlur={() => handleBlur("tipoEvento", tipoEvento, form)}
                   error={errors.tipoEvento}
                   touched={touched.tipoEvento}
@@ -261,37 +335,6 @@ export const EventModal = ({
                   required={mode !== "view"}
                   disabled={mode === "view"}
                 />
-                {tipoEvento && (
-                  <div className="flex items-center gap-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                    <div className="flex items-center gap-1">
-                      <svg
-                        className="w-4 h-4 text-purple-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                      <span className="text-xs font-medium text-gray-700">
-                        Inscripción:
-                      </span>
-                    </div>
-                    <span
-                      className={`text-xs font-bold px-2.5 py-1 rounded-full shadow-sm ${
-                        getParticipantType() === "Equipos"
-                          ? "bg-blue-500 text-white"
-                          : "bg-green-500 text-white"
-                      }`}
-                    >
-                      {getParticipantType()}
-                    </span>
-                  </div>
-                )}
               </div>
 
               <div className="relative">
