@@ -130,7 +130,7 @@ const ClassesCalendar = ({
     if (variant === "grid") {
       return (
         <div
-          className="p-1 rounded text-white text-xs cursor-pointer hover:opacity-80"
+          className="p-1 rounded text-black text-xs cursor-pointer hover:opacity-80"
           style={{ backgroundColor: event.backgroundColor }}
         >
           <div className="font-medium truncate text-xs leading-tight">

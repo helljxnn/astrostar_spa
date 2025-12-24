@@ -161,7 +161,7 @@ const CustomCalendarGrid = ({
                   {dayEvents.length === 1 ? "evento" : "eventos"}
                 </h4>
                 {isToday(date) && (
-                  <span className="inline-block mt-2 bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                  <span className="inline-block mt-2 bg-[#B595FF] bg-opacity-10 text-[#B595FF] px-2 py-1 rounded text-xs font-medium">
                     Hoy
                   </span>
                 )}
@@ -302,7 +302,11 @@ const CustomCalendarGrid = ({
                 view === "week" ? "min-h-[240px]" : "min-h-[90px]"
               } p-3 border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-gray-50 transition-colors ${
                 !isCurrentMonth ? "bg-gray-50 text-gray-400" : "bg-white"
-              } ${isSelectedDay ? "bg-blue-50 border-blue-200" : ""}`}
+              } ${
+                isSelectedDay
+                  ? "bg-[#B595FF] bg-opacity-10 border-[#B595FF]"
+                  : ""
+              }`}
               onClick={() => handleDateClick(day)}
             >
               {/* Day number */}
@@ -310,7 +314,7 @@ const CustomCalendarGrid = ({
                 <span
                   className={`text-sm font-medium ${
                     isDayToday
-                      ? "bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      ? "bg-[#B595FF] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
                       : isCurrentMonth
                       ? "text-gray-900"
                       : "text-gray-400"
@@ -353,7 +357,7 @@ const CustomCalendarGrid = ({
                               view === "week"
                                 ? undefined
                                 : event.backgroundColor || "#6366f1",
-                            color: view === "week" ? "#374151" : "white",
+                            color: view === "week" ? "#374151" : "#000000",
                           }}
                         >
                           <div className="font-medium truncate leading-tight">
