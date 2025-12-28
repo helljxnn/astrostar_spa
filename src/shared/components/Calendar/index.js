@@ -15,8 +15,3 @@ export { default as CalendarEvent } from "./Variants/CalendarEvent";
 
 // Helpers
 export * from "./BaseCalendar/helpers/calendarHelpers";
-
-// Examples (for reference)
-export { default as EventsCalendarExample } from "./examples/EventsCalendarExample";
-export { default as EmployeeScheduleCalendarExample } from "./examples/EmployeeScheduleCalendarExample";
-export { default as ClassesCalendarExample } from "./examples/ClassesCalendarExample";

@@ -96,11 +96,6 @@ export const useEvents = () => {
       patrocinador: event.ServiceSponsor?.map((s) => s.Sponsor.name) || [],
       hasRegistrations: (() => {
         const count = event._count?.participants || 0;
-        console.log(
-          `Evento ${
-            event.name
-          }: _count.participants = ${count}, hasRegistrations = ${count > 0}`
-        );
         return count > 0;
       })(), // Verificar si tiene inscripciones
       // Para el calendario - usar createLocalDate para evitar problemas de zona horaria

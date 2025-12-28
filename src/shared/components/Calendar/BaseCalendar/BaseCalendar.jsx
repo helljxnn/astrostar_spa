@@ -238,7 +238,9 @@ const BaseCalendar = ({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <createButtonIcon className="text-sm" />
+                  {React.createElement(createButtonIcon, {
+                    className: "text-sm",
+                  })}
                   <span className="hidden sm:inline">{createButtonText}</span>
                 </motion.button>
               </PermissionGuard>
@@ -432,7 +434,15 @@ const BaseCalendar = ({
                             {event.title || event.name || "Sin título"}
                           </h4>
                           <p className="text-xs text-gray-600 mb-2">
-                            {event.date || event.start || "Sin fecha"}
+                            {event.date
+                              ? typeof event.date === "string"
+                                ? event.date
+                                : event.date.toLocaleDateString()
+                              : event.start
+                              ? typeof event.start === "string"
+                                ? event.start
+                                : event.start.toLocaleDateString()
+                              : "Sin fecha"}
                           </p>
                           {sidebarActions.length > 0 && (
                             <div className="flex gap-1 flex-wrap">

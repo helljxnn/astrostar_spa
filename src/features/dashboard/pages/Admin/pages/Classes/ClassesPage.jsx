@@ -138,32 +138,12 @@ const ClassesPage = () => {
                 reportTypes={["pdf", "excel"]}
                 showDateFilter={true}
                 customFields={[
-                  { key: "professorName", label: "Profesor" },
-                  { key: "totalAthletes", label: "Deportistas" },
+                  { key: "extendedProps.professorName", label: "Profesor" },
+                  { key: "extendedProps.totalAthletes", label: "Deportistas" },
                   { key: "location", label: "Ubicación" },
                   { key: "status", label: "Estado" },
                 ]}
-                onGenerateReport={(reportData) => {
-                  console.log("Generar reporte de clases:", reportData);
-                  const { events, format, dateRange, entityName } = reportData;
-
-                  // Procesar datos específicos de clases
-                  const classesReportData = events.map((classEvent) => ({
-                    titulo: classEvent.title,
-                    fecha: classEvent.start || classEvent.date,
-                    horaInicio: classEvent.extendedProps?.startTime,
-                    horaFin: classEvent.extendedProps?.endTime,
-                    profesor: classEvent.extendedProps?.professorName,
-                    deportistas: classEvent.extendedProps?.totalAthletes || 0,
-                    ubicacion: classEvent.location,
-                    estado: classEvent.status || "Programada",
-                  }));
-
-                  console.log(
-                    `Generando reporte ${format} de ${entityName} del ${dateRange.start.toLocaleDateString()} al ${dateRange.end.toLocaleDateString()}`
-                  );
-                  console.table(classesReportData);
-                }}
+                // No usar onGenerateReport personalizado, dejar que use el servicio por defecto
               />
             )}
           </div>

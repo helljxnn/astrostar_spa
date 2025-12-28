@@ -253,29 +253,11 @@ export const EventModal = ({
                   type="select"
                   value={tipoEvento}
                   onChange={async (name, value) => {
-                    // Debug: Verificar condiciones
-                    console.log("=== DEBUG CAMBIO DE TIPO ===");
-                    console.log("isNew:", isNew);
-                    console.log(
-                      "event?.hasRegistrations:",
-                      event?.hasRegistrations
-                    );
-                    console.log("tipoEvento:", tipoEvento);
-                    console.log("event completo:", event);
-                    console.log(
-                      "Condición completa:",
-                      !isNew && event?.hasRegistrations && tipoEvento
-                    );
-
                     // Validar cambio de tipo si hay inscripciones
                     // Verificar si el evento tiene inscripciones (fallback si hasRegistrations no está definido)
                     const eventHasRegistrations =
                       event?.hasRegistrations ||
                       (event?.participants && event.participants.length > 0);
-                    console.log(
-                      "eventHasRegistrations:",
-                      eventHasRegistrations
-                    );
 
                     // TEMPORAL: Siempre validar en modo edición para probar
                     if (!isNew && tipoEvento) {

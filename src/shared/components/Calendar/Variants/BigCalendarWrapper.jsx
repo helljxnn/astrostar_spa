@@ -90,7 +90,7 @@ const BigCalendarWrapper = ({
   // Custom event component
   const EventComponent = ({ event }) => {
     if (renderEvent) {
-      return renderEvent(event);
+      return renderEvent({ event, view });
     }
 
     return (
