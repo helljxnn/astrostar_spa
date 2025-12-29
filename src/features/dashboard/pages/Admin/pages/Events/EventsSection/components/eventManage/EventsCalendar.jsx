@@ -7,6 +7,7 @@ import {
 } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FaPlus } from "react-icons/fa";
+import { Users, MapPin, Clock, Edit, Eye, Trash2 } from "lucide-react";
 import BaseCalendar from "../../../../../../../../../shared/components/Calendar/BaseCalendar/BaseCalendar";
 import { DashboardEventComponent } from "./DashboardEventComponent";
 import { EventModal } from "./EventModal";
@@ -224,15 +225,35 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
   // Renderizar evento personalizado
   const renderEvent = useCallback(
-    ({ event, view }) => {
+    (event, variant) => {
       if (!event) {
         return <div>Error: Evento inválido</div>;
       }
 
+      // Para la variante custom, necesitamos manejar diferentes tipos de vista
+      if (variant === "grid") {
+        return (
+          <DashboardEventComponent
+            event={event}
+            view="month" // Para grid siempre usamos month view
+            onActionClick={handleEventActionClick}
+          />
+        );
+      } else if (variant === "day") {
+        return (
+          <DashboardEventComponent
+            event={event}
+            view="day"
+            onActionClick={handleEventActionClick}
+          />
+        );
+      }
+
+      // Fallback para compatibilidad
       return (
         <DashboardEventComponent
           event={event}
-          view={view}
+          view="month"
           onActionClick={handleEventActionClick}
         />
       );
@@ -516,11 +537,287 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     setIsModalOpen(true);
   }, [hasPermission]);
 
+  /**
+   * Manejar clic en un evento desde la sidebar
+   */
+  const handleSidebarEventClick = useCallback((eventItem) => {
+    // Abrir modal de detalle del evento
+    const dashboardEvent = eventItem.extendedProps?.dashboardEvent || eventItem;
+
+    const formatTime = (date) => {
+      return date.toTimeString().slice(0, 5); // HH:MM
+    };
+
+    const formatDateLocal = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    const startDate = new Date(dashboardEvent.start);
+    const endDate = new Date(dashboardEvent.end);
+
+    setSelectedEvent({
+      nombre: dashboardEvent.title,
+      tipo: dashboardEvent.tipo,
+      descripcion: dashboardEvent.descripcion || "",
+      fechaInicio: formatDateLocal(startDate),
+      fechaFin: formatDateLocal(endDate),
+      horaInicio: formatTime(startDate),
+      horaFin: formatTime(endDate),
+      ubicacion: dashboardEvent.ubicacion || "",
+      telefono: dashboardEvent.telefono || "",
+      categoria: dashboardEvent.categoria || "",
+      categoryIds: dashboardEvent.categoryIds || [],
+      estado: dashboardEvent.estado || "",
+      publicar: dashboardEvent.publicar || false,
+      patrocinador: dashboardEvent.patrocinador || [],
+      imagen: dashboardEvent.imagen || null,
+      cronograma: dashboardEvent.cronograma || null,
+      id: dashboardEvent.id,
+    });
+    setIsNew(false);
+    setModalMode("view");
+    setIsModalOpen(true);
+  }, []);
+
+  /**
+   * Manejar edición de evento desde la sidebar
+   */
+  const handleEditEvent = useCallback(
+    (eventItem) => {
+      const dashboardEvent =
+        eventItem.extendedProps?.dashboardEvent || eventItem;
+
+      // Verificar permisos
+      if (!hasPermission("eventsManagement", "Editar")) {
+        showErrorAlert(
+          "Sin permisos",
+          "No tienes permisos para editar eventos"
+        );
+        return;
+      }
+
+      // Verificar si el evento está finalizado
+      const estadoEvento =
+        dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
+      if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
+        showErrorAlert(
+          "Evento Finalizado",
+          "No se puede editar un evento que ya finalizó."
+        );
+        return;
+      }
+
+      const formatTime = (date) => {
+        return date.toTimeString().slice(0, 5); // HH:MM
+      };
+
+      const formatDateLocal = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const startDate = new Date(dashboardEvent.start);
+      const endDate = new Date(dashboardEvent.end);
+
+      setSelectedEvent({
+        nombre: dashboardEvent.title,
+        tipo: dashboardEvent.tipo,
+        tipoId: dashboardEvent.tipoId,
+        descripcion: dashboardEvent.descripcion || "",
+        fechaInicio: formatDateLocal(startDate),
+        fechaFin: formatDateLocal(endDate),
+        horaInicio: formatTime(startDate),
+        horaFin: formatTime(endDate),
+        ubicacion: dashboardEvent.ubicacion || "",
+        telefono: dashboardEvent.telefono || "",
+        categoria: dashboardEvent.categoria || "",
+        categoryIds: dashboardEvent.categoryIds || [],
+        estado:
+          dashboardEvent.estadoOriginal ||
+          dashboardEvent.estado ||
+          "Programado",
+        estadoOriginal:
+          dashboardEvent.estadoOriginal ||
+          dashboardEvent.estado ||
+          "Programado",
+        publicar: dashboardEvent.publicar || false,
+        patrocinador: dashboardEvent.patrocinador || [],
+        imagen: dashboardEvent.imagen || null,
+        cronograma: dashboardEvent.cronograma || null,
+        id: dashboardEvent.id,
+      });
+      setIsNew(false);
+      setModalMode("edit");
+      setIsModalOpen(true);
+    },
+    [hasPermission]
+  );
+
+  /**
+   * Manejar eliminación de evento desde la sidebar
+   */
+  const handleDeleteEvent = useCallback(
+    async (eventItem) => {
+      const dashboardEvent =
+        eventItem.extendedProps?.dashboardEvent || eventItem;
+
+      // Verificar permisos
+      if (!hasPermission("eventsManagement", "Eliminar")) {
+        showErrorAlert(
+          "Sin permisos",
+          "No tienes permisos para eliminar eventos"
+        );
+        return;
+      }
+
+      try {
+        const result = await showDeleteAlert(
+          "¿Eliminar evento?",
+          `Se eliminará permanentemente el evento: ${dashboardEvent.title}`
+        );
+
+        if (result.isConfirmed) {
+          if (onDeleteEvent) {
+            await onDeleteEvent(dashboardEvent.id, dashboardEvent.title);
+          }
+        }
+      } catch (error) {
+        // El error ya se maneja en el hook
+      }
+    },
+    [hasPermission, onDeleteEvent]
+  );
+
+  /**
+   * Renderizar evento personalizado para la barra lateral
+   */
+  const renderSidebarItem = useCallback(
+    (event, actions) => (
+      <div className="space-y-2">
+        <div>
+          <h4 className="font-medium text-gray-800 text-sm mb-1">
+            {event.title}
+          </h4>
+          <div className="space-y-1 text-xs text-gray-600">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {event.extendedProps?.horaInicio} - {event.extendedProps?.horaFin}
+            </div>
+            {event.extendedProps?.ubicacion && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3" />
+                {event.extendedProps.ubicacion}
+              </div>
+            )}
+            {event.extendedProps?.tipo && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-medium">Tipo:</span>
+                {event.extendedProps.tipo}
+              </div>
+            )}
+            {event.extendedProps?.categoria && (
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-medium">Categoría:</span>
+                {event.extendedProps.categoria}
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <span className="text-xs font-medium">Estado:</span>
+              <span
+                className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                  event.extendedProps?.estado === "programado"
+                    ? "bg-blue-100 text-blue-800"
+                    : event.extendedProps?.estado === "en-curso"
+                    ? "bg-green-100 text-green-800"
+                    : event.extendedProps?.estado === "finalizado"
+                    ? "bg-gray-100 text-gray-800"
+                    : event.extendedProps?.estado === "cancelado"
+                    ? "bg-red-100 text-red-800"
+                    : event.extendedProps?.estado === "en-pausa"
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-purple-100 text-purple-800"
+                }`}
+              >
+                {event.extendedProps?.estado || "Programado"}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {actions.length > 0 && (
+          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+            {actions.map((action, actionIndex) => (
+              <button
+                key={actionIndex}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick(event);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                  action.variant === "danger"
+                    ? "text-red-600 hover:bg-red-50"
+                    : action.variant === "warning"
+                    ? "text-yellow-600 hover:bg-yellow-50"
+                    : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                }`}
+              >
+                {action.icon && <action.icon className="h-3 w-3" />}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    ),
+    []
+  );
+
+  // Configuración de acciones de la barra lateral
+  const sidebarActions = useMemo(
+    () => [
+      {
+        label: "Ver",
+        icon: Eye,
+        onClick: handleSidebarEventClick,
+        permission: { module: "events", action: "read" },
+        variant: "primary",
+      },
+      ...(hasPermission("eventsManagement", "Editar")
+        ? [
+            {
+              label: "Editar",
+              icon: Edit,
+              onClick: handleEditEvent,
+              permission: { module: "events", action: "edit" },
+              variant: "primary",
+            },
+          ]
+        : []),
+      ...(hasPermission("eventsManagement", "Eliminar")
+        ? [
+            {
+              label: "Eliminar",
+              icon: Trash2,
+              onClick: handleDeleteEvent,
+              permission: { module: "events", action: "delete" },
+              variant: "danger",
+            },
+          ]
+        : []),
+    ],
+    [hasPermission, handleSidebarEventClick, handleEditEvent, handleDeleteEvent]
+  );
+
   return (
     <>
       <BaseCalendar
         // Core props
-        variant="big-calendar"
+        variant="custom" // Cambiar a custom para que sea igual que clases
         events={transformedEvents}
         loading={false}
         // Event handlers
@@ -530,6 +827,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         onCreate={handleCreate}
         // Customization
         renderEvent={renderEvent}
+        renderSidebarItem={renderSidebarItem}
         calendarProps={{
           culture: "es",
           messages: {
@@ -550,7 +848,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         showReportButton={false} // Se maneja desde el componente padre
         showSearch={false} // Se maneja desde el componente padre
         showFilters={false} // Se maneja desde el componente padre
-        showSidebar={false}
+        showSidebar={true} // Habilitar sidebar como en clases
         showViewToggle={true}
         // External search and filters
         searchTerm={searchTerm}
@@ -563,7 +861,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         // View configuration
         viewTypes={["month", "week", "day"]}
         defaultView="month"
-        colorScheme="default"
+        // Sidebar config
+        sidebarTitle="Eventos Programados"
+        sidebarEmptyText="No hay eventos programados"
+        sidebarActions={sidebarActions}
+        // Styling
+        colorScheme="events" // Usar esquema de colores específico para eventos
       />
 
       {/* Modales del dashboard */}

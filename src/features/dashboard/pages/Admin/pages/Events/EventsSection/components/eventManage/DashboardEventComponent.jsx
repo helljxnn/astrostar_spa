@@ -1,9 +1,8 @@
-import React from "react";
 import { FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
 
 /**
  * Componente de evento personalizado para el dashboard administrativo
- * Compatible con el calendario genérico BaseCalendar
+ * Compatible con el calendario genérico BaseCalendar variante custom
  */
 export const DashboardEventComponent = ({
   event,
@@ -16,40 +15,33 @@ export const DashboardEventComponent = ({
   }
 
   const isMonthView = view === "month";
+  const isDayView = view === "day";
   const dashboardEvent = event.extendedProps?.dashboardEvent || event;
-
-  // Obtener la inicial del estado
-  const getEstadoInicial = () => {
-    const estado = event.extendedProps?.estado || event.status;
-    if (!estado) return "?";
-
-    const estados = {
-      programado: "P",
-      "en-curso": "C",
-      finalizado: "F",
-      cancelado: "X",
-      "en-pausa": "E",
-      pausado: "E",
-    };
-
-    return estados[estado.toLowerCase()] || estado.charAt(0).toUpperCase();
-  };
 
   // Obtener color según estado
   const getEstadoColor = () => {
     const estado = event.extendedProps?.estado || event.status;
-    if (!estado) return "#8b5cf6";
+    if (!estado) return "#B595FF";
 
     const colores = {
-      programado: "#3b82f6",
-      "en-curso": "#10b981",
+      programado: "#9be9ff",
+      "en-curso": "#95FFA7",
       finalizado: "#9ca3af",
-      cancelado: "#ef4444",
-      "en-pausa": "#f59e0b",
-      pausado: "#f59e0b",
+      cancelado: "#FC6D6D",
+      "en-pausa": "#EDEB85",
+      pausado: "#EDEB85",
     };
 
-    return colores[estado.toLowerCase()] || "#8b5cf6";
+    return colores[estado.toLowerCase()] || "#B595FF";
+  };
+
+  // Obtener color de texto según el fondo
+  const getTextColor = () => {
+    const estado = event.extendedProps?.estado || event.status;
+    if (estado === "en-pausa" || estado === "pausado") {
+      return "#374151"; // Texto oscuro para fondo amarillo
+    }
+    return "#000000"; // Texto negro para otros colores
   };
 
   const handleActionClick = (e, actionType) => {
@@ -70,140 +62,97 @@ export const DashboardEventComponent = ({
     onActionClick(syntheticEvent, actionType, dashboardEvent);
   };
 
+  // Renderizado para vista de día (más detallado)
+  if (isDayView) {
+    return (
+      <div className="flex items-start space-x-3">
+        <div className="flex-shrink-0 mt-1">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: getEstadoColor() }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h5 className="text-sm font-medium text-gray-900 mb-2">
+            {event.title}
+          </h5>
+          <div className="space-y-1">
+            {event.extendedProps?.ubicacion && (
+              <div className="flex items-center text-xs text-gray-600">
+                <FaMapMarkerAlt className="w-3 h-3 mr-2" />
+                {event.extendedProps.ubicacion}
+              </div>
+            )}
+            {event.extendedProps?.tipo && (
+              <div className="text-xs text-gray-600">
+                <span className="font-medium">Tipo:</span>{" "}
+                {event.extendedProps.tipo}
+              </div>
+            )}
+            {event.extendedProps?.categoria && (
+              <div className="text-xs text-gray-600">
+                <span className="font-medium">Categoría:</span>{" "}
+                {event.extendedProps.categoria}
+              </div>
+            )}
+          </div>
+
+          {/* Botones de acción para vista de día */}
+          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100 mt-2">
+            <button
+              onClick={(e) => handleActionClick(e, "crud")}
+              className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+            >
+              <FaCog className="h-3 w-3" />
+              Gestionar
+            </button>
+            <button
+              onClick={(e) => handleActionClick(e, "registration")}
+              className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+            >
+              <FaUsers className="h-3 w-3" />
+              Inscripciones
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizado para vista de grid (mes/semana) - estilo similar a clases
   return (
     <div
-      className="event-content"
+      className="p-1 rounded text-black text-xs cursor-pointer hover:opacity-80 relative group"
       style={{
-        fontSize: isMonthView ? "10px" : "11px",
-        lineHeight: "1.2",
-        padding: "2px",
-        position: "relative",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
+        backgroundColor: getEstadoColor(),
+        color: getTextColor(),
       }}
     >
-      <div className="event-info">
-        <div className="event-title pl-1">
-          <span
-            style={{
-              display: "inline-block",
-              width: "16px",
-              height: "16px",
-              lineHeight: "16px",
-              textAlign: "center",
-              borderRadius: "50%",
-              backgroundColor: getEstadoColor(),
-              color: "white",
-              fontSize: "9px",
-              fontWeight: "bold",
-              marginRight: "4px",
-              verticalAlign: "middle",
-            }}
-          >
-            {getEstadoInicial()}
-          </span>
-          {event?.title || "Sin título"}
-        </div>
-
-        {event?.location && !isMonthView && (
-          <div
-            className="event-location"
-            style={{
-              fontSize: "9px",
-              display: "flex",
-              alignItems: "center",
-              gap: "2px",
-              marginTop: "2px",
-            }}
-          >
-            <FaMapMarkerAlt size={8} /> {event?.location}
-          </div>
-        )}
+      <div className="font-medium truncate text-xs leading-tight">
+        {event.title}
       </div>
+      {event.extendedProps?.ubicacion && !isMonthView && (
+        <div className="opacity-90 text-xs leading-tight flex items-center gap-1 mt-0.5">
+          <FaMapMarkerAlt size={8} />
+          {event.extendedProps.ubicacion}
+        </div>
+      )}
 
-      {/* Botones de acción */}
-      <div
-        className="event-actions"
-        style={{
-          position: "absolute",
-          top: "2px",
-          right: "2px",
-          display: "flex",
-          gap: "2px",
-          opacity: 0,
-          transition: "opacity 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.opacity = "1";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = "0";
-        }}
-      >
+      {/* Botones de acción - aparecen al hacer hover */}
+      <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-0.5">
         <button
           onClick={(e) => handleActionClick(e, "crud")}
-          className={`event-btn event-btn--manage ${
-            isMonthView ? "event-btn--month" : "event-btn--week-day"
-          }`}
+          className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           title="Gestionar evento"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.9)";
-            e.currentTarget.style.transform = "scale(1.1)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.7)";
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-          style={{
-            width: isMonthView ? "16px" : "20px",
-            height: isMonthView ? "16px" : "20px",
-            borderRadius: "50%",
-            backgroundColor: "rgba(0,0,0,0.7)",
-            color: "white",
-            border: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            fontSize: isMonthView ? "8px" : "10px",
-            transition: "all 0.2s ease",
-          }}
         >
-          <FaCog size={isMonthView ? 8 : 10} />
+          <FaCog size={8} />
         </button>
-
         <button
           onClick={(e) => handleActionClick(e, "registration")}
-          className={`event-btn event-btn--registration ${
-            isMonthView ? "event-btn--month" : "event-btn--week-day"
-          }`}
+          className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           title="Inscripciones"
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.9)";
-            e.currentTarget.style.transform = "scale(1.1)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.7)";
-            e.currentTarget.style.transform = "scale(1)";
-          }}
-          style={{
-            width: isMonthView ? "16px" : "20px",
-            height: isMonthView ? "16px" : "20px",
-            borderRadius: "50%",
-            backgroundColor: "rgba(0,0,0,0.7)",
-            color: "white",
-            border: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            fontSize: isMonthView ? "8px" : "10px",
-            transition: "all 0.2s ease",
-          }}
         >
-          <FaUsers size={isMonthView ? 8 : 10} />
+          <FaUsers size={8} />
         </button>
       </div>
     </div>

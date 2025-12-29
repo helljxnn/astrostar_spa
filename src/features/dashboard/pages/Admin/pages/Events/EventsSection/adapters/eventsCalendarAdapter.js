@@ -11,48 +11,60 @@ import { es } from "date-fns/locale";
 export const transformEventsForBaseCalendar = (dashboardEvents = []) => {
   const transformedEvents = dashboardEvents
     .filter((event) => event && event.id) // Filtrar eventos inválidos
-    .map((event) => ({
-      // Campos requeridos por BaseCalendar
-      id: event.id,
-      title: event.title || event.nombre || "Sin título",
-      start: event.start,
-      end: event.end,
+    .map((event) => {
+      // Formatear horas para la sidebar
+      const startDate = new Date(event.start);
+      const endDate = new Date(event.end);
+      const horaInicio = startDate.toTimeString().slice(0, 5); // HH:MM
+      const horaFin = endDate.toTimeString().slice(0, 5); // HH:MM
 
-      // Campos adicionales para el calendario genérico
-      description: event.descripcion || "",
-      location: event.ubicacion || "",
-      status: normalizeStatus(event.estadoOriginal || event.estado),
-      type: event.tipo || "",
-      category: event.categoria || "",
+      return {
+        // Campos requeridos por BaseCalendar
+        id: event.id,
+        title: event.title || event.nombre || "Sin título",
+        start: event.start,
+        end: event.end,
 
-      // Campos extendidos para funcionalidades específicas
-      extendedProps: {
-        // Datos originales del dashboard
-        dashboardEvent: event,
+        // Campos adicionales para el calendario genérico
+        description: event.descripcion || "",
+        location: event.ubicacion || "",
+        status: normalizeStatus(event.estadoOriginal || event.estado),
+        type: event.tipo || "",
+        category: event.categoria || "",
 
-        // Campos para filtros y búsqueda
-        tipo: event.tipo || "",
-        categoria: event.categoria || "",
-        categoryIds: event.categoryIds || [],
-        ubicacion: event.ubicacion || "",
-        telefono: event.telefono || "",
-        estado: event.estadoOriginal || event.estado || "",
-        estadoOriginal: event.estadoOriginal || event.estado || "",
-        publicar: event.publicar || false,
-        patrocinador: event.patrocinador || [],
-        imagen: event.imagen || null,
-        cronograma: event.cronograma || null,
-        tipoId: event.tipoId,
+        // Campos extendidos para funcionalidades específicas
+        extendedProps: {
+          // Datos originales del dashboard
+          dashboardEvent: event,
 
-        // Campos para inscripciones
-        hasRegistrations: event.hasRegistrations || false,
-      },
+          // Campos para filtros y búsqueda
+          tipo: event.tipo || "",
+          categoria: event.categoria || "",
+          categoryIds: event.categoryIds || [],
+          ubicacion: event.ubicacion || "",
+          telefono: event.telefono || "",
+          estado: normalizeStatus(event.estadoOriginal || event.estado),
+          estadoOriginal: event.estadoOriginal || event.estado || "",
+          publicar: event.publicar || false,
+          patrocinador: event.patrocinador || [],
+          imagen: event.imagen || null,
+          cronograma: event.cronograma || null,
+          tipoId: event.tipoId,
 
-      // Configuración de color basada en el estado
-      color: getEventColor(event.estadoOriginal || event.estado),
-      backgroundColor: getEventColor(event.estadoOriginal || event.estado),
-      borderColor: getEventColor(event.estadoOriginal || event.estado),
-    }));
+          // Campos para la sidebar
+          horaInicio: horaInicio,
+          horaFin: horaFin,
+
+          // Campos para inscripciones
+          hasRegistrations: event.hasRegistrations || false,
+        },
+
+        // Configuración de color basada en el estado
+        color: getEventColor(event.estadoOriginal || event.estado),
+        backgroundColor: getEventColor(event.estadoOriginal || event.estado),
+        borderColor: getEventColor(event.estadoOriginal || event.estado),
+      };
+    });
 
   return transformedEvents;
 };
