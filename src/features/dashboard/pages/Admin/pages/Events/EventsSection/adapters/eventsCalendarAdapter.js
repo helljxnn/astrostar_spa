@@ -1,9 +1,11 @@
 /**
  * Adaptador para transformar eventos entre el formato del dashboard y el calendario genérico
+ * GENÉRICO - Sin lógica específica de módulos
  */
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getEventsModuleColor } from "./eventsColorAdapter";
 
 /**
  * Transforma eventos del formato del dashboard al formato del calendario genérico
@@ -59,10 +61,19 @@ export const transformEventsForBaseCalendar = (dashboardEvents = []) => {
           hasRegistrations: event.hasRegistrations || false,
         },
 
-        // Configuración de color basada en el estado
-        color: getEventColor(event.estadoOriginal || event.estado),
-        backgroundColor: getEventColor(event.estadoOriginal || event.estado),
-        borderColor: getEventColor(event.estadoOriginal || event.estado),
+        // Configuración de color usando el adaptador específico del módulo de eventos
+        color: getEventsModuleColor(
+          event.estadoOriginal || event.estado,
+          event.tipo
+        ),
+        backgroundColor: getEventsModuleColor(
+          event.estadoOriginal || event.estado,
+          event.tipo
+        ),
+        borderColor: getEventsModuleColor(
+          event.estadoOriginal || event.estado,
+          event.tipo
+        ),
       };
     });
 
@@ -80,38 +91,14 @@ const normalizeStatus = (status) => {
     "En-curso": "en-curso",
     Finalizado: "finalizado",
     Cancelado: "cancelado",
-    Pausado: "en-pausa",
-    En_pausa: "en-pausa",
     // Mantener compatibilidad con estados en minúsculas
     programado: "programado",
     "en-curso": "en-curso",
     finalizado: "finalizado",
     cancelado: "cancelado",
-    "en-pausa": "en-pausa",
   };
 
   return statusMap[status] || "programado";
-};
-
-/**
- * Obtiene el color del evento basado en su estado
- */
-const getEventColor = (status) => {
-  const colorMap = {
-    Programado: "#3b82f6",
-    programado: "#3b82f6",
-    "En-curso": "#10b981",
-    "en-curso": "#10b981",
-    Finalizado: "#9ca3af",
-    finalizado: "#9ca3af",
-    Cancelado: "#ef4444",
-    cancelado: "#ef4444",
-    Pausado: "#f59e0b",
-    En_pausa: "#f59e0b",
-    "en-pausa": "#f59e0b",
-  };
-
-  return colorMap[status] || "#8b5cf6";
 };
 
 /**
@@ -143,7 +130,6 @@ export const createCalendarFilters = (referenceData = {}) => {
       { value: "en-curso", label: "En curso" },
       { value: "finalizado", label: "Finalizado" },
       { value: "cancelado", label: "Cancelado" },
-      { value: "en-pausa", label: "En pausa" },
     ],
   });
 

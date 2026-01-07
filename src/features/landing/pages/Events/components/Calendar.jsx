@@ -69,24 +69,24 @@ export const Calendar = ({
     try {
       const convertTo24Hour = (time12) => {
         if (!time12) return "00:00";
-        
-        if (!time12.includes('AM') && !time12.includes('PM')) {
+
+        if (!time12.includes("AM") && !time12.includes("PM")) {
           return time12;
         }
-        
-        const [time, period] = time12.split(' ');
-        const [hours, minutes] = time.split(':');
+
+        const [time, period] = time12.split(" ");
+        const [hours, minutes] = time.split(":");
         let hour = parseInt(hours, 10);
-        
-        if (period === 'PM' && hour !== 12) {
+
+        if (period === "PM" && hour !== 12) {
           hour += 12;
-        } else if (period === 'AM' && hour === 12) {
+        } else if (period === "AM" && hour === 12) {
           hour = 0;
         }
-        
-        return `${hour.toString().padStart(2, '0')}:${minutes}`;
+
+        return `${hour.toString().padStart(2, "0")}:${minutes}`;
       };
-      
+
       const time24 = convertTo24Hour(nextEvent.time);
       return combineDateAndTime(nextEvent.date, time24);
     } catch {
@@ -115,15 +115,19 @@ export const Calendar = ({
     );
 
     const dayEvents = events
-  ? events.filter((ev) => {
-      try {
-        // Ahora verifica si el día está dentro del rango del evento
-        return isSameDay(new Date(ev.date), date, ev.endDate ? new Date(ev.endDate) : null);
-      } catch {
-        return false;
-      }
-    })
-  : [];
+      ? events.filter((ev) => {
+          try {
+            // Ahora verifica si el día está dentro del rango del evento
+            return isSameDay(
+              new Date(ev.date),
+              date,
+              ev.endDate ? new Date(ev.endDate) : null
+            );
+          } catch {
+            return false;
+          }
+        })
+      : [];
 
     const hasEvent = dayEvents.length > 0;
     const isSelected = selectedDate && isSameDay(selectedDate, date);
@@ -133,45 +137,46 @@ export const Calendar = ({
     // Helper function to convert 12-hour to 24-hour format
     const convertTo24Hour = (time12) => {
       if (!time12) return "00:00";
-      
+
       // Si ya está en formato 24 horas, devolverlo tal como está
-      if (!time12.includes('AM') && !time12.includes('PM')) {
+      if (!time12.includes("AM") && !time12.includes("PM")) {
         return time12;
       }
-      
-      const [time, period] = time12.split(' ');
-      const [hours, minutes] = time.split(':');
+
+      const [time, period] = time12.split(" ");
+      const [hours, minutes] = time.split(":");
       let hour = parseInt(hours, 10);
-      
-      if (period === 'PM' && hour !== 12) {
+
+      if (period === "PM" && hour !== 12) {
         hour += 12;
-      } else if (period === 'AM' && hour === 12) {
+      } else if (period === "AM" && hour === 12) {
         hour = 0;
       }
-      
-      return `${hour.toString().padStart(2, '0')}:${minutes}`;
+
+      return `${hour.toString().padStart(2, "0")}:${minutes}`;
     };
 
     // Verificar si TODOS los eventos del día han pasado su hora
-    const isPastEventDay = hasEvent && dayEvents.every((ev) => {
-      try {
-        const time24 = convertTo24Hour(ev.time);
-        const eventDateTime = combineDateAndTime(ev.date, time24);
-        // Agregar 1 minuto para asegurar que el evento se marque como pasado después de su hora
-        const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
-        return eventDateTime && eventEndTime <= today;
-      } catch {
-        return false;
-      }
-    });
+    const isPastEventDay =
+      hasEvent &&
+      dayEvents.every((ev) => {
+        try {
+          const time24 = convertTo24Hour(ev.time);
+          const eventDateTime = combineDateAndTime(ev.date, time24);
+          // Agregar 1 minuto para asegurar que el evento se marque como pasado después de su hora
+          const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
+          return eventDateTime && eventEndTime <= today;
+        } catch {
+          return false;
+        }
+      });
 
     // Mejorar la lógica para categorizar eventos
     const eventsByStatus = {
       cancelado: dayEvents.filter((ev) => ev.status === "cancelado"),
-      enPausa: dayEvents.filter((ev) => ev.status === "en-pausa"),
       finalizado: dayEvents.filter((ev) => {
-        // Solo incluir eventos que han pasado su hora Y no están cancelados/pausados
-        if (ev.status === "cancelado" || ev.status === "en-pausa") {
+        // Solo incluir eventos que han pasado su hora Y no están cancelados
+        if (ev.status === "cancelado") {
           return false;
         }
         try {
@@ -185,8 +190,8 @@ export const Calendar = ({
         }
       }),
       programado: dayEvents.filter((ev) => {
-        // Solo incluir eventos que no han pasado su hora Y no están cancelados/pausados
-        if (ev.status === "cancelado" || ev.status === "en-pausa") {
+        // Solo incluir eventos que no han pasado su hora Y no están cancelados
+        if (ev.status === "cancelado") {
           return false;
         }
         try {
@@ -204,9 +209,11 @@ export const Calendar = ({
     // Mejorar la lógica de estilos de botones
     let dayButtonClass = "";
     if (isSelected) {
-      dayButtonClass = "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
+      dayButtonClass =
+        "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
     } else if (isNextEventDay) {
-      dayButtonClass = "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
+      dayButtonClass =
+        "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
     } else if (isPastEventDay) {
       // Estilo gris para eventos pasados
       dayButtonClass = "bg-gray-300 text-gray-600 hover:bg-gray-400";
@@ -214,15 +221,18 @@ export const Calendar = ({
       // Solo aplicar el gradiente si hay eventos activos/programados
       const hasActiveEvents = eventsByStatus.programado.length > 0;
       if (hasActiveEvents) {
-        dayButtonClass = "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white hover:shadow-lg";
+        dayButtonClass =
+          "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white hover:shadow-lg";
       } else {
-        // Si solo hay eventos cancelados/pausados, usar estilo neutral
+        // Si solo hay eventos cancelados, usar estilo neutral
         dayButtonClass = "bg-gray-200 text-gray-600 hover:bg-gray-300";
       }
     } else if (isToday) {
-      dayButtonClass = "bg-white text-[#B595FF] border-2 border-[#B595FF] shadow-md hover:shadow-lg";
+      dayButtonClass =
+        "bg-white text-[#B595FF] border-2 border-[#B595FF] shadow-md hover:shadow-lg";
     } else {
-      dayButtonClass = "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
+      dayButtonClass =
+        "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
     }
 
     //Mejorar el tooltip para mostrar solo estados relevantes (sin contadores)

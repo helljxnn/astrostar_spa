@@ -75,10 +75,6 @@ const BigCalendarWrapper = ({
         case "cancelado":
           style.backgroundColor = "#FC6D6D";
           break;
-        case "en-pausa":
-          style.backgroundColor = "#EDEB85";
-          style.color = "#374151";
-          break;
         default:
           style.backgroundColor = "#B595FF";
       }

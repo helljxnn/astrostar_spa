@@ -1,8 +1,11 @@
 import { FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
+import { format } from "date-fns";
+import { getEventsModuleColor } from "../../adapters/eventsColorAdapter";
 
 /**
- * Componente de evento personalizado para el dashboard administrativo
+ * Componente de evento personalizado para el dashboard administrativo de EVENTOS
  * Compatible con el calendario genérico BaseCalendar variante custom
+ * ESPECÍFICO DEL MÓDULO DE EVENTOS
  */
 export const DashboardEventComponent = ({
   event,
@@ -18,30 +21,17 @@ export const DashboardEventComponent = ({
   const isDayView = view === "day";
   const dashboardEvent = event.extendedProps?.dashboardEvent || event;
 
-  // Obtener color según estado
+  // Obtener color usando el adaptador específico del módulo de eventos
   const getEstadoColor = () => {
+    const tipo = event.extendedProps?.tipo || event.type;
     const estado = event.extendedProps?.estado || event.status;
-    if (!estado) return "#B595FF";
 
-    const colores = {
-      programado: "#9be9ff",
-      "en-curso": "#95FFA7",
-      finalizado: "#9ca3af",
-      cancelado: "#FC6D6D",
-      "en-pausa": "#EDEB85",
-      pausado: "#EDEB85",
-    };
-
-    return colores[estado.toLowerCase()] || "#B595FF";
+    return getEventsModuleColor(estado, tipo);
   };
 
   // Obtener color de texto según el fondo
   const getTextColor = () => {
-    const estado = event.extendedProps?.estado || event.status;
-    if (estado === "en-pausa" || estado === "pausado") {
-      return "#374151"; // Texto oscuro para fondo amarillo
-    }
-    return "#000000"; // Texto negro para otros colores
+    return "#000000"; // Texto negro para todos los colores
   };
 
   const handleActionClick = (e, actionType) => {
@@ -122,23 +112,38 @@ export const DashboardEventComponent = ({
   // Renderizado para vista de grid (mes/semana) - estilo similar a clases
   return (
     <div
-      className="p-1 rounded text-black text-xs cursor-pointer hover:opacity-80 relative group"
+      className={`p-1 rounded text-black text-xs cursor-pointer hover:opacity-80 relative group ${
+        event.isMultiDay ? "border-l-4" : ""
+      }`}
       style={{
         backgroundColor: getEstadoColor(),
         color: getTextColor(),
+        borderLeftColor: event.isMultiDay ? getEstadoColor() : undefined,
       }}
     >
       <div className="font-medium truncate text-xs leading-tight">
         {event.title}
       </div>
-      {event.extendedProps?.ubicacion && !isMonthView && (
-        <div className="opacity-90 text-xs leading-tight flex items-center gap-1 mt-0.5">
-          <FaMapMarkerAlt size={8} />
-          {event.extendedProps.ubicacion}
+
+      {/* Show location only if not multi-day or if it's the first day */}
+      {event.extendedProps?.ubicacion &&
+        !isMonthView &&
+        (!event.isMultiDay || event.isFirstDay) && (
+          <div className="opacity-90 text-xs leading-tight flex items-center gap-1 mt-0.5">
+            <FaMapMarkerAlt size={8} />
+            {event.extendedProps.ubicacion}
+          </div>
+        )}
+
+      {/* Multi-day duration info - only show on first day */}
+      {event.isMultiDay && event.isFirstDay && (
+        <div className="opacity-75 text-xs leading-tight mt-0.5">
+          {format(event.multiDayStart, "dd/MM")} -{" "}
+          {format(event.multiDayEnd, "dd/MM")}
         </div>
       )}
 
-      {/* Botones de acción - aparecen al hacer hover */}
+      {/* Botones de acción - mostrar en todos los días del evento */}
       <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-0.5">
         <button
           onClick={(e) => handleActionClick(e, "crud")}

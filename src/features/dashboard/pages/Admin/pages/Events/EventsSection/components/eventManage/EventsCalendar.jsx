@@ -124,29 +124,72 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         return;
       }
 
-      // Validar que la fecha seleccionada sea al menos el día siguiente
+      // Validar que la fecha seleccionada sea al menos 1 semana de anticipación
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const oneWeekFromToday = new Date(today);
+      oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
 
-      const selectedDate = new Date(slotInfo.start);
+      // Determinar la fecha correcta - puede ser slotInfo.start o slotInfo directamente
+      let dateToUse;
+      if (slotInfo.start) {
+        dateToUse = slotInfo.start;
+      } else if (slotInfo instanceof Date) {
+        dateToUse = slotInfo;
+      } else {
+        showErrorAlert(
+          "Error de fecha",
+          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha."
+        );
+        return;
+      }
+
+      const selectedDate = new Date(dateToUse);
+
+      // Primero verificar si la fecha seleccionada es válida
+      if (isNaN(selectedDate.getTime())) {
+        showErrorAlert(
+          "Error de fecha",
+          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha."
+        );
+        return;
+      }
+
       const selectedDateOnly = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
         selectedDate.getDate()
       );
 
-      if (selectedDateOnly < tomorrow) {
+      if (selectedDateOnly.getTime() < oneWeekFromToday.getTime()) {
         showErrorAlert(
           "Fecha no válida",
-          "Los eventos deben crearse con al menos un día de anticipación. Por favor, selecciona una fecha a partir de mañana."
+          "Los eventos deben crearse con al menos 1 semana de anticipación. Por favor, selecciona una fecha a partir del " +
+            oneWeekFromToday.toLocaleDateString("es-ES", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }) +
+            "."
         );
         return;
       }
 
       // Formatear fechas y horas
       const formatDateLocal = (date) => {
+        if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+          // Si la fecha no es válida, usar la fecha mínima permitida (1 semana desde hoy)
+          const oneWeekFromToday = new Date();
+          oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
+          const year = oneWeekFromToday.getFullYear();
+          const month = String(oneWeekFromToday.getMonth() + 1).padStart(
+            2,
+            "0"
+          );
+          const day = String(oneWeekFromToday.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        }
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, "0");
         const day = String(date.getDate()).padStart(2, "0");
@@ -154,11 +197,23 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       };
 
       const formatTime = (date) => {
+        if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+          // Si la fecha no es válida, usar hora por defecto
+          return "09:00";
+        }
         return date.toTimeString().slice(0, 5); // HH:MM
       };
 
-      const startDate = new Date(slotInfo.start);
-      const endDate = new Date(slotInfo.end);
+      let startDate = dateToUse; // Ya es una fecha válida
+      let endDate = dateToUse; // Para eventos de un día, usar la misma fecha por defecto
+
+      // Si slotInfo tiene end y es válido, usarlo
+      if (slotInfo.end && slotInfo.end instanceof Date) {
+        const endDateCandidate = new Date(slotInfo.end);
+        if (!isNaN(endDateCandidate.getTime())) {
+          endDate = endDateCandidate;
+        }
+      }
 
       setSelectedEvent({
         nombre: "",
@@ -494,9 +549,15 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           await onUpdateEvent(transformedData.id, transformedData);
         }
 
+        // Cerrar modal solo si no hubo errores
         setIsModalOpen(false);
       } catch (error) {
-        // El error ya se muestra en el hook
+        console.error("Error al guardar evento:", error);
+        // El modal permanece abierto para que el usuario pueda corregir o intentar de nuevo
+        showErrorAlert(
+          "Error al guardar",
+          "No se pudo guardar el evento. Por favor, verifica los datos e intenta nuevamente."
+        );
       }
     },
     [isNew, onCreateEvent, onUpdateEvent]
@@ -531,10 +592,24 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       return;
     }
 
-    setSelectedEvent(null);
-    setIsNew(true);
-    setModalMode("create");
-    setIsModalOpen(true);
+    // Validar que se pueda crear eventos con al menos 1 semana de anticipación
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const oneWeekFromToday = new Date(today);
+    oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
+
+    showErrorAlert(
+      "Restricción de fecha",
+      "Los eventos deben crearse con al menos 1 semana de anticipación. Por favor, selecciona una fecha específica en el calendario a partir del " +
+        oneWeekFromToday.toLocaleDateString("es-ES", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }) +
+        " para crear un evento."
+    );
+    return;
   }, [hasPermission]);
 
   /**
@@ -738,8 +813,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                     ? "bg-gray-100 text-gray-800"
                     : event.extendedProps?.estado === "cancelado"
                     ? "bg-red-100 text-red-800"
-                    : event.extendedProps?.estado === "en-pausa"
-                    ? "bg-yellow-100 text-yellow-800"
                     : "bg-purple-100 text-purple-800"
                 }`}
               >
@@ -866,7 +939,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         sidebarEmptyText="No hay eventos programados"
         sidebarActions={sidebarActions}
         // Styling
-        colorScheme="events" // Usar esquema de colores específico para eventos
+        colorScheme="custom" // Usar colores personalizados definidos en cada evento
       />
 
       {/* Modales del dashboard */}

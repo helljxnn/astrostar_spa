@@ -24,12 +24,37 @@ const CalendarEvent = ({
   const time =
     event.time || event.hora || formatTime(event.start || event.date);
 
+  // Usar colores personalizados del evento si están disponibles
+  const useCustomColors =
+    colorScheme?.useEventColors && (event.backgroundColor || event.color);
+
+  console.log("CalendarEvent Debug:", {
+    eventId: event.id,
+    eventTitle: event.title,
+    colorScheme: colorScheme,
+    useEventColors: colorScheme?.useEventColors,
+    eventBackgroundColor: event.backgroundColor,
+    eventColor: event.color,
+    useCustomColors: useCustomColors,
+  });
+
+  const eventStyle = useCustomColors
+    ? {
+        backgroundColor: event.backgroundColor || event.color,
+        color: "#ffffff", // Texto blanco para mejor contraste
+      }
+    : {};
+  const eventClasses = useCustomColors
+    ? "text-white"
+    : `${statusConfig.bg} ${statusConfig.text}`;
+
   // Grid variant - compact for calendar grid
   if (variant === "grid") {
     return (
       <motion.div
         whileHover={{ scale: 1.02 }}
-        className={`p-1.5 rounded text-xs truncate cursor-pointer transition-all duration-200 ${statusConfig.bg} ${statusConfig.text} ${className}`}
+        className={`p-1.5 rounded text-xs truncate cursor-pointer transition-all duration-200 ${eventClasses} ${className}`}
+        style={eventStyle}
         onClick={onClick}
         title={title}
       >

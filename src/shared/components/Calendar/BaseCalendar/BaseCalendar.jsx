@@ -178,6 +178,13 @@ const BaseCalendar = ({
       secondary: "from-[#95FFA7] to-[#9BE9FF]",
       accent: "from-[#EDEB85] to-[#95FFA7]",
     },
+    custom: {
+      // Para esquema custom, usar colores individuales de cada evento
+      useEventColors: true,
+      primary: "from-[#B595FF] to-[#9BE9FF]", // Fallback
+      secondary: "from-[#95FFA7] to-[#9BE9FF]",
+      accent: "from-[#FF95D1] to-[#B595FF]",
+    },
   };
 
   const currentColorScheme = colorSchemes[colorScheme] || colorSchemes.default;

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../../shared/components/FormField";
 import { useFormEventValidation } from "../../hooks/useFormEventValidation";
@@ -114,12 +115,31 @@ export const EventModal = ({
     if (event) {
       if (isNew) {
         // Cuando es nuevo, solo cargar las fechas seleccionadas del calendario
+        // Asegurar que las fechas y horas tengan valores válidos
+        const getDefaultDate = () => {
+          const oneWeekFromToday = new Date();
+          oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
+          const year = oneWeekFromToday.getFullYear();
+          const month = String(oneWeekFromToday.getMonth() + 1).padStart(
+            2,
+            "0"
+          );
+          const day = String(oneWeekFromToday.getDate()).padStart(2, "0");
+          return `${year}-${month}-${day}`;
+        };
+
+        const fechaInicio =
+          formatDateForInput(event.fechaInicio) || getDefaultDate();
+        const fechaFin = formatDateForInput(event.fechaFin) || fechaInicio;
+        const horaInicio = event.horaInicio || "09:00";
+        const horaFin = event.horaFin || "10:00";
+
         setForm((prev) => ({
           ...prev,
-          fechaInicio: formatDateForInput(event.fechaInicio) || "",
-          fechaFin: formatDateForInput(event.fechaFin) || "",
-          horaInicio: event.horaInicio || "",
-          horaFin: event.horaFin || "",
+          fechaInicio,
+          fechaFin,
+          horaInicio,
+          horaFin,
         }));
       } else {
         // Cuando es edición, cargar todos los datos del evento
@@ -135,8 +155,8 @@ export const EventModal = ({
           descripcion: event.descripcion || "",
           fechaInicio: formatDateForInput(event.fechaInicio) || "",
           fechaFin: formatDateForInput(event.fechaFin) || "",
-          horaInicio: event.horaInicio || "",
-          horaFin: event.horaFin || "",
+          horaInicio: event.horaInicio || "09:00",
+          horaFin: event.horaFin || "10:00",
           ubicacion: event.ubicacion || "",
           telefono: event.telefono || "",
           imagen: event.imagen || null,
@@ -149,8 +169,27 @@ export const EventModal = ({
           clearRegistrations: false, // Inicializar como false
         });
       }
+    } else if (isNew) {
+      // Si no hay evento pero es nuevo, establecer valores por defecto válidos
+      const getDefaultDate = () => {
+        const oneWeekFromToday = new Date();
+        oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
+        const year = oneWeekFromToday.getFullYear();
+        const month = String(oneWeekFromToday.getMonth() + 1).padStart(2, "0");
+        const day = String(oneWeekFromToday.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const defaultDate = getDefaultDate();
+      setForm((prev) => ({
+        ...prev,
+        fechaInicio: defaultDate,
+        fechaFin: defaultDate,
+        horaInicio: "09:00",
+        horaFin: "10:00",
+      }));
     }
-  }, [event, isNew]);
+  }, [event, isNew, referenceData.types]);
 
   const handleChange = (name, value) => {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -214,18 +253,18 @@ export const EventModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50 p-2 sm:p-4">
+  const modalContent = (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999] p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.3 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col relative z-[10000] border border-gray-200"
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent">
+        <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-200 bg-white">
+          <h2 className="text-xl font-bold text-gray-900">
             {mode === "view"
               ? "Ver Evento"
               : isNew
@@ -234,7 +273,7 @@ export const EventModal = ({
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
+            className="text-gray-400 hover:text-gray-600 text-xl font-bold transition-colors"
           >
             ✖
           </button>
@@ -463,9 +502,11 @@ export const EventModal = ({
                 min={
                   isNew
                     ? (() => {
-                        const tomorrow = new Date();
-                        tomorrow.setDate(tomorrow.getDate() + 1);
-                        return tomorrow.toISOString().split("T")[0];
+                        const oneWeekFromToday = new Date();
+                        oneWeekFromToday.setDate(
+                          oneWeekFromToday.getDate() + 7
+                        );
+                        return oneWeekFromToday.toISOString().split("T")[0];
                       })()
                     : undefined
                 }
@@ -607,8 +648,6 @@ export const EventModal = ({
                         ? "bg-green-50 border-green-300 text-green-700"
                         : form.estado === "Cancelado"
                         ? "bg-red-50 border-red-300 text-red-700"
-                        : form.estado === "Pausado"
-                        ? "bg-yellow-50 border-yellow-300 text-yellow-700"
                         : "bg-gray-100 border-gray-300 text-gray-700"
                     }`}
                   >
@@ -642,7 +681,6 @@ export const EventModal = ({
                     options={[
                       { value: "Programado", label: "Programado" },
                       { value: "Cancelado", label: "Cancelado" },
-                      { value: "Pausado", label: "Pausado" },
                     ]}
                     error={errors.estado}
                     touched={touched.estado}
@@ -691,4 +729,7 @@ export const EventModal = ({
       </motion.div>
     </div>
   );
+
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };

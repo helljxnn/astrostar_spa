@@ -151,7 +151,6 @@ const Event = () => {
         { value: "En-curso", label: "En Curso" },
         { value: "Finalizado", label: "Finalizado" },
         { value: "Cancelado", label: "Cancelado" },
-        { value: "En-pausa", label: "En Pausa" },
       ],
     },
     {
@@ -177,143 +176,138 @@ const Event = () => {
   ];
 
   return (
-    <div className="font-monserrat">
+    <div className="space-y-6">
       {/* Header con controles genéricos */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Eventos</h1>
-          <p className="text-gray-600 text-sm mt-1">
-            Gestiona y programa eventos deportivos
-          </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           {/* Buscador genérico */}
-          <div className="flex-1 sm:flex-initial">
+          <div className="w-full sm:w-auto">
             <SearchInput
               placeholder="Buscar eventos..."
               value={searchTerm}
               onChange={handleSearch}
-              className="w-full sm:w-64"
+              className="min-w-[200px]"
             />
           </div>
 
-          {/* Botón de filtros */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-              showFilters
-                ? "bg-purple-50 border-purple-200 text-purple-700"
-                : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-          </motion.button>
+          {/* Botones de acción */}
+          <div className="flex gap-2">
+            {/* Botón crear evento */}
+            {canCreateEvents && (
+              <motion.button
+                onClick={handleCreateFromCalendar}
+                className="flex items-center gap-2 px-4 py-2 bg-[#B595FF] text-white rounded-lg font-medium hover:bg-[#9BE9FF] transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Plus className="h-4 w-4" />
+                <span>Crear</span>
+              </motion.button>
+            )}
 
-          {/* Botón de crear evento */}
-          {canCreateEvents && (
+            {/* Botón de filtros */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleCreateFromCalendar}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
+                showFilters
+                  ? "bg-[#B595FF] text-white border-[#B595FF]"
+                  : "text-gray-700 hover:text-[#B595FF]"
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Plus className="h-4 w-4" />
-              Crear
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filtros</span>
             </motion.button>
-          )}
 
-          {/* Generador de reportes genérico */}
-          {canExportEvents && (
-            <CalendarReportGenerator
-              data={events}
-              entityName="eventos"
-              onGenerateReport={handleGenerateReport}
-              customFields={[
-                { key: "tipo", label: "Tipo de Evento" },
-                { key: "categoria", label: "Categoría" },
-                { key: "ubicacion", label: "Ubicación" },
-                { key: "telefono", label: "Teléfono" },
-                { key: "estado", label: "Estado" },
-                { key: "publicar", label: "Publicado" },
-              ]}
-              reportTypes={["pdf", "excel"]}
-              showDateFilter={true}
-              buttonProps={{
-                variant: "outline",
-                size: "sm",
-                className: "border-gray-200 text-gray-700 hover:bg-gray-50",
-              }}
-            />
-          )}
+            {/* Generador de reportes genérico */}
+            {canExportEvents && (
+              <CalendarReportGenerator
+                data={events}
+                title="Reportes"
+                entityName="eventos"
+                reportTypes={["pdf", "excel"]}
+                showDateFilter={true}
+                customFields={[
+                  { key: "tipo", label: "Tipo de Evento" },
+                  { key: "categoria", label: "Categoría" },
+                  { key: "ubicacion", label: "Ubicación" },
+                  { key: "telefono", label: "Teléfono" },
+                  { key: "estado", label: "Estado" },
+                  { key: "publicar", label: "Publicado" },
+                ]}
+                // No usar onGenerateReport personalizado, dejar que use el servicio por defecto
+              />
+            )}
+          </div>
         </div>
       </div>
 
       {/* Panel de filtros */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-6 overflow-hidden"
-          >
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {filters.map((filter) => (
-                  <div key={filter.id}>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {filter.label}
-                    </label>
-                    <select
-                      value={selectedFilters[filter.field] || ""}
-                      onChange={(e) =>
-                        handleFiltersChange({
-                          ...selectedFilters,
-                          [filter.field]: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="">Todos</option>
-                      {filter.options.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Calendario de eventos */}
-      <div className="mt-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      {showFilters && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              ✕
+            </button>
           </div>
-        ) : (
-          <EventsCalendar
-            ref={calendarRef}
-            events={events}
-            referenceData={referenceData}
-            onCreateEvent={handleCreateFromCalendar}
-            onUpdateEvent={updateEvent}
-            onDeleteEvent={deleteEvent}
-            onRefresh={loadEvents}
-            searchTerm={searchTerm}
-            selectedFilters={selectedFilters}
-            onFiltersChange={handleFiltersChange}
-          />
-        )}
-      </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filters.map((filter) => (
+              <div key={filter.id} className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {filter.label}
+                </label>
+                <select
+                  value={selectedFilters[filter.field] || ""}
+                  onChange={(e) =>
+                    handleFiltersChange({
+                      ...selectedFilters,
+                      [filter.field]: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B595FF] focus:border-transparent"
+                >
+                  <option value="">Todos</option>
+                  {filter.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Calendario de Eventos */}
+      <EventsCalendar
+        key={refreshTrigger} // Force re-render when refreshTrigger changes
+        ref={calendarRef}
+        events={events}
+        referenceData={referenceData}
+        onCreateEvent={createEvent}
+        onUpdateEvent={updateEvent}
+        onDeleteEvent={deleteEvent}
+        onRefresh={loadEvents}
+        searchTerm={searchTerm}
+        selectedFilters={selectedFilters}
+        onFiltersChange={handleFiltersChange}
+      />
 
       {/* Modal de evento */}
       {isModalOpen && (

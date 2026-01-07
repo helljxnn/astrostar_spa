@@ -44,7 +44,7 @@ const CustomCalendarGrid = ({
     return [];
   }, [date, view]);
 
-  // Group events by date
+  // Group events by date - including multi-day events
   const eventsByDate = useMemo(() => {
     const groups = {};
 
@@ -54,14 +54,56 @@ const CustomCalendarGrid = ({
       if (!event) return;
 
       try {
-        const eventDate = new Date(event.date || event.start || new Date());
-        const dateKey = format(eventDate, "yyyy-MM-dd");
+        const startDate = new Date(event.start || event.date || new Date());
+        const endDate = new Date(
+          event.end || event.start || event.date || new Date()
+        );
 
-        if (!groups[dateKey]) {
-          groups[dateKey] = [];
+        // Normalize dates to start of day to avoid time zone issues
+        const start = new Date(
+          startDate.getFullYear(),
+          startDate.getMonth(),
+          startDate.getDate()
+        );
+        const end = new Date(
+          endDate.getFullYear(),
+          endDate.getMonth(),
+          endDate.getDate()
+        );
+
+        // If it's a single day event or same day, just add to start date
+        if (start.getTime() === end.getTime()) {
+          const dateKey = format(start, "yyyy-MM-dd");
+          if (!groups[dateKey]) {
+            groups[dateKey] = [];
+          }
+          groups[dateKey].push(event);
+        } else {
+          // Multi-day event: add to all days between start and end (inclusive)
+          const currentDate = new Date(start);
+          while (currentDate <= end) {
+            const dateKey = format(currentDate, "yyyy-MM-dd");
+            if (!groups[dateKey]) {
+              groups[dateKey] = [];
+            }
+
+            // Add event with additional info about multi-day status
+            const eventForDay = {
+              ...event,
+              isMultiDay: true,
+              multiDayStart: start,
+              multiDayEnd: end,
+              isFirstDay: currentDate.getTime() === start.getTime(),
+              isLastDay: currentDate.getTime() === end.getTime(),
+              currentDay: new Date(currentDate),
+            };
+
+            groups[dateKey].push(eventForDay);
+
+            // Move to next day
+            currentDate.setDate(currentDate.getDate() + 1);
+          }
         }
-
-        groups[dateKey].push(event);
       } catch (error) {
         console.warn("Error processing event date:", event, error);
       }
@@ -346,11 +388,13 @@ const CustomCalendarGrid = ({
                           className={`${
                             view === "week"
                               ? "p-1.5 text-xs border-l-2 bg-gray-50 hover:bg-gray-100"
-                              : "p-1.5 rounded text-xs hover:opacity-80"
-                          } transition-colors duration-200`}
+                              : "p-1.5 rounded text-xs hover:opacity-80 relative"
+                          } transition-colors duration-200 ${
+                            event.isMultiDay ? "border-l-4" : ""
+                          }`}
                           style={{
                             borderLeftColor:
-                              view === "week"
+                              view === "week" || event.isMultiDay
                                 ? event.backgroundColor || "#6366f1"
                                 : undefined,
                             backgroundColor:
@@ -368,11 +412,22 @@ const CustomCalendarGrid = ({
                               {event.time}
                             </div>
                           )}
-                          {view === "month" && event.time && (
-                            <div className="opacity-75 text-xs leading-tight">
-                              {event.time}
-                            </div>
-                          )}
+                          {view === "month" &&
+                            event.time &&
+                            !event.isMultiDay && (
+                              <div className="opacity-75 text-xs leading-tight">
+                                {event.time}
+                              </div>
+                            )}
+                          {/* Multi-day duration info */}
+                          {event.isMultiDay &&
+                            view === "month" &&
+                            event.isFirstDay && (
+                              <div className="opacity-75 text-xs leading-tight">
+                                {format(event.multiDayStart, "dd/MM")} -{" "}
+                                {format(event.multiDayEnd, "dd/MM")}
+                              </div>
+                            )}
                         </div>
                       )}
                     </div>
