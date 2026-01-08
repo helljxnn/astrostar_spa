@@ -21,6 +21,7 @@ const BaseCalendar = ({
   onEventClick,
   onDateSelect,
   onSlotSelect,
+  onEventActionClick,
   onCreate,
   onEdit,
   onDelete,
@@ -389,6 +390,7 @@ const BaseCalendar = ({
                 date={selectedDate}
                 onDateSelect={onDateSelect}
                 onEventClick={onEventClick}
+                onEventActionClick={onEventActionClick}
                 renderEvent={renderEvent}
                 loading={loading}
                 colorScheme={currentColorScheme}
@@ -401,7 +403,7 @@ const BaseCalendar = ({
         {/* Sidebar */}
         {showSidebar && (
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 min-h-[600px]">
               <h3 className="text-lg font-semibold mb-4 text-[#B595FF]">
                 {sidebarTitle}
               </h3>
@@ -420,7 +422,9 @@ const BaseCalendar = ({
                   <p>{sidebarEmptyText}</p>
                 </div>
               ) : (
-                <div className={`space-y-3 ${sidebarHeight} overflow-y-auto`}>
+                <div
+                  className={`space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto`}
+                >
                   {(sidebarMaxItems
                     ? filteredEvents.slice(0, sidebarMaxItems)
                     : filteredEvents

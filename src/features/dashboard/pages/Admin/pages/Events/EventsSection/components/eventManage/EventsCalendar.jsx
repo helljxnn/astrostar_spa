@@ -938,6 +938,10 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         sidebarTitle="Eventos Programados"
         sidebarEmptyText="No hay eventos programados"
         sidebarActions={sidebarActions}
+        sidebarHeight="h-auto" // Altura automática para coincidir con el calendario
+        sidebarItemMinHeight="min-h-[120px]" // Altura mínima de cada evento
+        sidebarItemPadding="p-3" // Padding de cada evento
+        sidebarMaxItems={null} // Sin límite de eventos
         // Styling
         colorScheme="custom" // Usar colores personalizados definidos en cada evento
       />

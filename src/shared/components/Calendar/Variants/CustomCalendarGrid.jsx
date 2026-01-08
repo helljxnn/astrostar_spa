@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   startOfMonth,
@@ -26,6 +26,43 @@ const CustomCalendarGrid = ({
   colorScheme,
   ...props
 }) => {
+  // Estado para manejar el tooltip de eventos adicionales
+  const [hoveredCell, setHoveredCell] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  // Función para manejar el hover del "ver más"
+  const handleShowMoreHover = (dayKey, events, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const tooltipWidth = 200; // Ancho estimado del tooltip (reducido)
+    const tooltipHeight = 150; // Alto estimado del tooltip (reducido)
+
+    let x = rect.right + 10;
+    let y = rect.top;
+
+    // Ajustar posición horizontal si se sale de la pantalla
+    if (x + tooltipWidth > viewportWidth) {
+      x = rect.left - tooltipWidth - 10;
+    }
+
+    // Ajustar posición vertical si se sale de la pantalla
+    if (y + tooltipHeight > viewportHeight) {
+      y = viewportHeight - tooltipHeight - 10;
+    }
+
+    if (y < 10) {
+      y = 10;
+    }
+
+    setTooltipPosition({ x, y });
+    setHoveredCell({ dayKey, events });
+  };
+
+  // Función para ocultar el tooltip
+  const handleShowMoreLeave = () => {
+    setHoveredCell(null);
+  };
   // Generate calendar days based on view
   const calendarDays = useMemo(() => {
     if (view === "month") {
@@ -326,9 +363,15 @@ const CustomCalendarGrid = ({
       )}
 
       {/* Calendar Grid */}
-      <div className={`grid ${gridCols}`}>
+      <div className={`grid ${gridCols} relative`}>
         {calendarDays.map((day, index) => {
           const dayEvents = getEventsForDate(day);
+          const dayKey = format(day, "yyyy-MM-dd");
+          const maxEventsToShow = view === "week" ? 8 : 2;
+          const hasMoreEvents = dayEvents.length > maxEventsToShow;
+          const eventsToShow = dayEvents.slice(0, maxEventsToShow);
+          const hiddenEvents = dayEvents.slice(maxEventsToShow);
+
           const isCurrentMonth =
             view === "month" ? isSameMonth(day, date) : true;
           const isDayToday = isToday(day);
@@ -341,18 +384,18 @@ const CustomCalendarGrid = ({
               animate={{ opacity: 1 }}
               transition={{ delay: index * 0.01 }}
               className={`${
-                view === "week" ? "min-h-[240px]" : "min-h-[90px]"
-              } p-3 border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-gray-50 transition-colors ${
+                view === "week" ? "min-h-[240px]" : "h-[100px]"
+              } p-2.5 border-r border-b border-gray-200 last:border-r-0 cursor-pointer hover:bg-gray-50 transition-colors duration-200 ${
                 !isCurrentMonth ? "bg-gray-50 text-gray-400" : "bg-white"
               } ${
                 isSelectedDay
                   ? "bg-[#B595FF] bg-opacity-10 border-[#B595FF]"
                   : ""
-              }`}
+              } overflow-hidden relative`}
               onClick={() => handleDateClick(day)}
             >
               {/* Day number */}
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <span
                   className={`text-sm font-medium ${
                     isDayToday
@@ -372,77 +415,181 @@ const CustomCalendarGrid = ({
               </div>
 
               {/* Events */}
-              <div className="space-y-1">
-                {dayEvents
-                  .slice(0, view === "week" ? 8 : 3)
-                  .map((event, eventIndex) => (
-                    <div
-                      key={event.id || eventIndex}
-                      onClick={(e) => handleEventClick(event, e)}
-                      className="cursor-pointer"
-                    >
-                      {renderEvent ? (
-                        renderEvent(event, "grid")
-                      ) : (
-                        <div
-                          className={`${
+              <div className="space-y-1 flex-1 overflow-hidden">
+                {eventsToShow.map((event, eventIndex) => (
+                  <div
+                    key={event.id || eventIndex}
+                    onClick={(e) => handleEventClick(event, e)}
+                    className="cursor-pointer"
+                  >
+                    {renderEvent ? (
+                      renderEvent(event, "grid")
+                    ) : (
+                      <div
+                        className={`${
+                          view === "week"
+                            ? "p-1.5 text-xs border-l-2 bg-gray-50 hover:bg-gray-100"
+                            : "p-1 px-1.5 rounded text-xs hover:opacity-80 relative"
+                        } transition-colors duration-200 ${
+                          event.isMultiDay ? "border-l-4" : ""
+                        }`}
+                        style={{
+                          borderLeftColor:
+                            view === "week" || event.isMultiDay
+                              ? event.backgroundColor || "#6366f1"
+                              : undefined,
+                          backgroundColor:
                             view === "week"
-                              ? "p-1.5 text-xs border-l-2 bg-gray-50 hover:bg-gray-100"
-                              : "p-1.5 rounded text-xs hover:opacity-80 relative"
-                          } transition-colors duration-200 ${
-                            event.isMultiDay ? "border-l-4" : ""
-                          }`}
-                          style={{
-                            borderLeftColor:
-                              view === "week" || event.isMultiDay
-                                ? event.backgroundColor || "#6366f1"
-                                : undefined,
-                            backgroundColor:
-                              view === "week"
-                                ? undefined
-                                : event.backgroundColor || "#6366f1",
-                            color: view === "week" ? "#374151" : "#000000",
-                          }}
-                        >
-                          <div className="font-medium truncate leading-tight">
-                            {event.title}
+                              ? undefined
+                              : event.backgroundColor || "#6366f1",
+                          color: view === "week" ? "#374151" : "#000000",
+                        }}
+                      >
+                        <div className="font-medium truncate leading-tight text-xs">
+                          {event.title}
+                        </div>
+                        {view === "week" && event.time && (
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            {event.time}
                           </div>
-                          {view === "week" && event.time && (
-                            <div className="text-xs text-gray-600 mt-0.5">
+                        )}
+                        {view === "month" &&
+                          event.time &&
+                          !event.isMultiDay && (
+                            <div className="opacity-75 text-xs leading-tight">
                               {event.time}
                             </div>
                           )}
-                          {view === "month" &&
-                            event.time &&
-                            !event.isMultiDay && (
-                              <div className="opacity-75 text-xs leading-tight">
-                                {event.time}
-                              </div>
-                            )}
-                          {/* Multi-day duration info */}
-                          {event.isMultiDay &&
-                            view === "month" &&
-                            event.isFirstDay && (
-                              <div className="opacity-75 text-xs leading-tight">
-                                {format(event.multiDayStart, "dd/MM")} -{" "}
-                                {format(event.multiDayEnd, "dd/MM")}
-                              </div>
-                            )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        {/* Multi-day duration info */}
+                        {event.isMultiDay &&
+                          view === "month" &&
+                          event.isFirstDay && (
+                            <div className="opacity-75 text-xs leading-tight">
+                              {format(event.multiDayStart, "dd/MM")} -{" "}
+                              {format(event.multiDayEnd, "dd/MM")}
+                            </div>
+                          )}
+                      </div>
+                    )}
+                  </div>
+                ))}
 
-                {/* Show more indicator */}
-                {dayEvents.length > (view === "week" ? 8 : 3) && (
-                  <div className="text-xs text-gray-500 font-medium px-1">
-                    +{dayEvents.length - (view === "week" ? 8 : 3)} más
+                {/* Show more indicator with hover tooltip */}
+                {hasMoreEvents && (
+                  <div className="relative">
+                    <div
+                      onMouseEnter={(e) =>
+                        handleShowMoreHover(dayKey, hiddenEvents, e)
+                      }
+                      onMouseLeave={handleShowMoreLeave}
+                      className="text-xs text-[#B595FF] font-medium px-1 py-0.5 hover:bg-[#B595FF] hover:bg-opacity-10 rounded transition-colors duration-200 cursor-pointer inline-block"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      +{dayEvents.length - maxEventsToShow} más
+                    </div>
                   </div>
                 )}
               </div>
             </motion.div>
           );
         })}
+
+        {/* Tooltip para eventos adicionales */}
+        {hoveredCell && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.15 }}
+            className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 p-2 max-w-xs events-tooltip"
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            {/* Lista compacta de eventos */}
+            <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
+              {hoveredCell.events.map((event, index) => (
+                <div
+                  key={event.id || index}
+                  className="flex items-center justify-between p-2 rounded hover:bg-gray-50 transition-colors duration-200 group"
+                >
+                  {/* Nombre del evento */}
+                  <div className="flex items-center flex-1 min-w-0 mr-2">
+                    <div
+                      className="w-2 h-2 rounded-full flex-shrink-0 mr-2"
+                      style={{
+                        backgroundColor: event.backgroundColor || "#6366f1",
+                      }}
+                    />
+                    <span
+                      className="text-xs font-medium text-gray-900 truncate cursor-pointer hover:text-[#B595FF] transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event, e);
+                        setHoveredCell(null);
+                      }}
+                      title={event.title}
+                    >
+                      {event.title}
+                    </span>
+                  </div>
+
+                  {/* Botones de acción */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onEventActionClick) {
+                          const dashboardEvent =
+                            event.extendedProps?.dashboardEvent || event;
+                          onEventActionClick(e, "crud", dashboardEvent);
+                        }
+                        setHoveredCell(null);
+                      }}
+                      className="p-1 text-[#B595FF] hover:bg-[#B595FF] hover:text-white rounded transition-all duration-200"
+                      title="Gestionar evento"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onEventActionClick) {
+                          const dashboardEvent =
+                            event.extendedProps?.dashboardEvent || event;
+                          onEventActionClick(e, "registration", dashboardEvent);
+                        }
+                        setHoveredCell(null);
+                      }}
+                      className="p-1 text-[#B595FF] hover:bg-[#B595FF] hover:text-white rounded transition-all duration-200"
+                      title="Inscripciones"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
