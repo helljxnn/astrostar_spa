@@ -2,14 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaTimes, FaCheck } from "react-icons/fa";
 
-export const CategoryMultiSelect = ({ 
-  options = [], 
-  value = [], 
-  onChange, 
-  error, 
-  touched, 
+export const CategoryMultiSelect = ({
+  options = [],
+  value = [],
+  onChange,
+  error,
+  touched,
   disabled = false,
-  placeholder = "Selecciona categorías" 
+  placeholder = "Selecciona categorías",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,10 +27,12 @@ export const CategoryMultiSelect = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filtrar opciones según búsqueda
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filtrar opciones según búsqueda - mostrar todas si no hay término de búsqueda
+  const filteredOptions = searchTerm.trim()
+    ? options.filter((option) =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : options;
 
   // Verificar si una opción está seleccionada
   const isSelected = (optionValue) => {
@@ -42,9 +44,9 @@ export const CategoryMultiSelect = ({
     if (disabled) return;
 
     const newValue = isSelected(optionValue)
-      ? value.filter(v => v !== optionValue)
+      ? value.filter((v) => v !== optionValue)
       : [...value, optionValue];
-    
+
     onChange("categoryIds", newValue);
   };
 
@@ -52,19 +54,25 @@ export const CategoryMultiSelect = ({
   const removeCategory = (optionValue, e) => {
     e.stopPropagation();
     if (disabled) return;
-    onChange("categoryIds", value.filter(v => v !== optionValue));
+    onChange(
+      "categoryIds",
+      value.filter((v) => v !== optionValue)
+    );
   };
 
   // Obtener el label de una opción por su valor
   const getOptionLabel = (optionValue) => {
-    const option = options.find(opt => opt.value === optionValue);
+    const option = options.find((opt) => opt.value === optionValue);
     return option ? option.label : optionValue;
   };
 
   // Seleccionar todas las opciones
   const selectAll = () => {
     if (disabled) return;
-    onChange("categoryIds", filteredOptions.map(opt => opt.value));
+    onChange(
+      "categoryIds",
+      filteredOptions.map((opt) => opt.value)
+    );
   };
 
   // Limpiar todas las selecciones
@@ -85,15 +93,17 @@ export const CategoryMultiSelect = ({
         className={`
           min-h-[42px] px-3 py-2 border rounded-lg cursor-pointer
           transition-all duration-200
-          ${disabled 
-            ? 'bg-gray-100 cursor-not-allowed' 
-            : 'bg-white hover:border-primary-purple'
+          ${
+            disabled
+              ? "bg-gray-100 cursor-not-allowed"
+              : "bg-white hover:border-primary-purple"
           }
-          ${error && touched 
-            ? 'border-red-500 focus:ring-red-500' 
-            : 'border-gray-300 focus:ring-primary-purple'
+          ${
+            error && touched
+              ? "border-red-500 focus:ring-red-500"
+              : "border-gray-300 focus:ring-primary-purple"
           }
-          ${isOpen ? 'ring-2 ring-primary-purple border-primary-purple' : ''}
+          ${isOpen ? "ring-2 ring-primary-purple border-primary-purple" : ""}
         `}
       >
         <div className="flex items-center justify-between gap-2">
@@ -122,10 +132,10 @@ export const CategoryMultiSelect = ({
               ))
             )}
           </div>
-          
+
           <FaChevronDown
             className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ${
-              isOpen ? 'transform rotate-180' : ''
+              isOpen ? "transform rotate-180" : ""
             }`}
             size={14}
           />
@@ -198,7 +208,9 @@ export const CategoryMultiSelect = ({
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
                   <div className="text-3xl mb-2">🔍</div>
-                  No se encontraron categorías
+                  {searchTerm.trim()
+                    ? "No se encontraron categorías"
+                    : "No hay categorías disponibles"}
                 </div>
               ) : (
                 filteredOptions.map((option) => {
@@ -214,15 +226,19 @@ export const CategoryMultiSelect = ({
                       className={`
                         px-4 py-3 cursor-pointer transition-colors
                         border-b border-gray-100 last:border-b-0
-                        ${selected ? 'bg-purple-50' : 'bg-white'}
+                        ${selected ? "bg-purple-50" : "bg-white"}
                       `}
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-medium ${
-                              selected ? 'text-primary-purple' : 'text-gray-700'
-                            }`}>
+                            <span
+                              className={`text-sm font-medium ${
+                                selected
+                                  ? "text-primary-purple"
+                                  : "text-gray-700"
+                              }`}
+                            >
                               {option.label}
                             </span>
                           </div>
@@ -232,21 +248,28 @@ export const CategoryMultiSelect = ({
                             </p>
                           )}
                         </div>
-                        
+
                         {/* Checkbox visual */}
-                        <div className={`
+                        <div
+                          className={`
                           w-5 h-5 rounded border-2 flex items-center justify-center
                           transition-all duration-200 flex-shrink-0
-                          ${selected 
-                            ? 'bg-primary-purple border-primary-purple' 
-                            : 'border-gray-300 bg-white'
+                          ${
+                            selected
+                              ? "bg-primary-purple border-primary-purple"
+                              : "border-gray-300 bg-white"
                           }
-                        `}>
+                        `}
+                        >
                           {selected && (
                             <motion.div
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                              transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 30,
+                              }}
                             >
                               <FaCheck className="text-white" size={10} />
                             </motion.div>

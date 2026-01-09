@@ -10,7 +10,7 @@ export const MultiSelect = ({
   error,
   touched,
   disabled = false,
-  placeholder = "Haz clic para buscar y seleccionar",
+  placeholder = "Seleccionar opciones disponibles",
   required = false,
   name = "items",
 }) => {
@@ -38,12 +38,12 @@ export const MultiSelect = ({
     }
   }, [isOpen]);
 
-  // Filtrar opciones según búsqueda - solo mostrar si hay término de búsqueda
+  // Filtrar opciones según búsqueda - mostrar todas si no hay término de búsqueda
   const filteredOptions = searchTerm.trim()
     ? options.filter((option) =>
         option.label.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : [];
+    : options;
 
   // Verificar si una opción está seleccionada
   const isSelected = (optionValue) => {
@@ -180,19 +180,19 @@ export const MultiSelect = ({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Escribe para buscar opciones..."
+                placeholder="Buscar opciones..."
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
                 onClick={(e) => e.stopPropagation()}
                 autoFocus
               />
             </div>
 
-            {/* Acciones rápidas - solo mostrar si hay resultados de búsqueda */}
-            {searchTerm.trim() && filteredOptions.length > 0 && (
+            {/* Acciones rápidas - mostrar siempre que haya opciones */}
+            {filteredOptions.length > 0 && (
               <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
                 <span className="text-xs text-gray-600 font-medium">
                   {value.length} seleccionadas | {filteredOptions.length}{" "}
-                  encontradas
+                  {searchTerm.trim() ? "encontradas" : "disponibles"}
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -209,7 +209,7 @@ export const MultiSelect = ({
                     }}
                     className="text-xs text-primary-purple hover:text-primary-blue font-medium transition-colors"
                   >
-                    Todas visibles
+                    {searchTerm.trim() ? "Todas visibles" : "Todas"}
                   </button>
                   <span className="text-gray-300">|</span>
                   <button
@@ -227,20 +227,18 @@ export const MultiSelect = ({
 
             {/* Lista de opciones */}
             <div className="max-h-60 overflow-y-auto">
-              {!searchTerm.trim() ? (
-                <div className="px-4 py-8 text-center text-gray-500 text-sm">
-                  <div className="text-3xl mb-2">✏️</div>
-                  <p className="font-medium">Escribe para buscar</p>
-                  <p className="text-xs mt-1">
-                    Comienza a escribir para ver las opciones disponibles
-                  </p>
-                </div>
-              ) : filteredOptions.length === 0 ? (
+              {filteredOptions.length === 0 ? (
                 <div className="px-4 py-8 text-center text-gray-500 text-sm">
                   <div className="text-3xl mb-2">🔍</div>
-                  <p className="font-medium">No se encontraron resultados</p>
+                  <p className="font-medium">
+                    {searchTerm.trim()
+                      ? "No se encontraron resultados"
+                      : "No hay opciones disponibles"}
+                  </p>
                   <p className="text-xs mt-1">
-                    Intenta con otros términos de búsqueda
+                    {searchTerm.trim()
+                      ? "Intenta con otros términos de búsqueda"
+                      : "No hay elementos para mostrar"}
                   </p>
                 </div>
               ) : (

@@ -9,7 +9,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useClasses } from "../hooks/useClasses";
-import LoadingSpinner from "../../../../../../../shared/components/LoadingSpinner";
+import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import employeeService from "../../Services/Employees/services/employeeService";
 import AthletesService from "../../Athletes/AthletesSection/services/AthletesService";
 
@@ -240,7 +240,7 @@ const ClassFormModal = ({ isOpen, onClose, onSuccess, classData = null }) => {
 
         {loadingData ? (
           <div className="p-8">
-            <LoadingSpinner />
+            <InlineLoader message="Cargando datos..." />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -500,7 +500,9 @@ const ClassFormModal = ({ isOpen, onClose, onSuccess, classData = null }) => {
                 disabled={loading}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                {loading && <LoadingSpinner size="sm" />}
+                {loading && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
                 {classData ? "Actualizar" : "Crear"} Clase
               </button>
             </div>

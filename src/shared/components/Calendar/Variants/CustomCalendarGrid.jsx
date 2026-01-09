@@ -12,7 +12,7 @@ import {
   isToday,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import LoadingSpinner from "../../LoadingSpinner";
+import { InlineLoader } from "../../Loader";
 import CalendarEvent from "./CalendarEvent";
 
 const CustomCalendarGrid = ({
@@ -173,7 +173,7 @@ const CustomCalendarGrid = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96 bg-white rounded-xl border border-gray-100">
-        <LoadingSpinner />
+        <InlineLoader message="Cargando calendario..." />
       </div>
     );
   }
