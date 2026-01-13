@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 // Estado global del loader
 let globalLoaderState = {
@@ -22,12 +22,12 @@ export const useLoader = () => {
   }, []);
 
   // Registrar listener al montar el componente
-  useState(() => {
+  useEffect(() => {
     globalLoaderState.listeners.add(updateComponent);
     return () => {
       globalLoaderState.listeners.delete(updateComponent);
     };
-  });
+  }, [updateComponent]);
 
   const showLoader = useCallback((message = "Cargando...") => {
     globalLoaderState.isLoading = true;

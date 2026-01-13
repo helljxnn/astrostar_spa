@@ -1,18 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { 
-  FaArrowLeft, 
-  FaSearch
-} from "react-icons/fa";
+import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import RegistrationsService from "../../services/RegistrationsService";
 import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
+import { InlineLoader } from "../../../../../../../../../shared/components/Loader";
 
-const ViewAthletesModal = ({ 
-  isOpen, 
-  onClose, 
-  eventName, 
-  eventId
-}) => {
+const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -26,30 +19,38 @@ const ViewAthletesModal = ({
   const loadRegistrations = async () => {
     setLoading(true);
     try {
-      const response = await RegistrationsService.getEventAthleteRegistrations(eventId);
-      
+      const response = await RegistrationsService.getEventAthleteRegistrations(
+        eventId
+      );
+
       if (response.success && response.data) {
         setRegistrations(response.data);
       }
     } catch (error) {
-      console.error('Error cargando inscripciones:', error);
-      showErrorAlert('Error', 'No se pudieron cargar las inscripciones');
+      console.error("Error cargando inscripciones:", error);
+      showErrorAlert("Error", "No se pudieron cargar las inscripciones");
     } finally {
       setLoading(false);
     }
   };
 
   if (!isOpen) return null;
-  
+
   // Transformar inscripciones a formato del componente
   const allAthletes = registrations
-    .filter(reg => reg.athlete)
-    .map(reg => ({
+    .filter((reg) => reg.athlete)
+    .map((reg) => ({
       id: reg.athlete.id,
-      nombre: `${reg.athlete.user?.firstName || ''} ${reg.athlete.user?.lastName || ''}`.trim() || 'Sin nombre',
-      identificacion: reg.athlete.user?.identification || 'N/A',
-      edad: reg.athlete.user?.age || 'N/A',
-      categorias: reg.athlete.inscriptions?.map(i => i.sportsCategory?.nombre).filter(Boolean) || [],
+      nombre:
+        `${reg.athlete.user?.firstName || ""} ${
+          reg.athlete.user?.lastName || ""
+        }`.trim() || "Sin nombre",
+      identificacion: reg.athlete.user?.identification || "N/A",
+      edad: reg.athlete.user?.age || "N/A",
+      categorias:
+        reg.athlete.inscriptions
+          ?.map((i) => i.sportsCategory?.nombre)
+          .filter(Boolean) || [],
       registrationId: reg.id,
       status: reg.status,
     }));
@@ -57,12 +58,16 @@ const ViewAthletesModal = ({
   // Filtrar por búsqueda
   const filteredAthletes = useMemo(() => {
     if (!searchTerm) return allAthletes;
-    
-    return allAthletes.filter(athlete => {
+
+    return allAthletes.filter((athlete) => {
       const searchLower = searchTerm.toLowerCase();
       const matchesName = athlete.nombre.toLowerCase().includes(searchLower);
-      const matchesId = athlete.identificacion?.toLowerCase().includes(searchLower);
-      const matchesCategory = athlete.categorias?.some(cat => cat.toLowerCase().includes(searchLower));
+      const matchesId = athlete.identificacion
+        ?.toLowerCase()
+        .includes(searchLower);
+      const matchesCategory = athlete.categorias?.some((cat) =>
+        cat.toLowerCase().includes(searchLower)
+      );
       return matchesName || matchesId || matchesCategory;
     });
   }, [allAthletes, searchTerm]);
@@ -117,13 +122,15 @@ const ViewAthletesModal = ({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center py-20">
-              <div className="w-12 h-12 border-4 border-primary-purple/30 border-t-primary-purple rounded-full animate-spin"></div>
+              <InlineLoader message="Cargando atletas..." />
             </div>
           ) : filteredAthletes.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🔍</div>
               <p className="text-gray-500 text-lg">
-                {searchTerm ? 'No se encontraron resultados' : 'No hay deportistas inscritos'}
+                {searchTerm
+                  ? "No se encontraron resultados"
+                  : "No hay deportistas inscritos"}
               </p>
             </div>
           ) : (
@@ -142,11 +149,11 @@ const ViewAthletesModal = ({
                         {athlete.nombre}
                       </h3>
                     </div>
-                    
+
                     {athlete.categorias && athlete.categorias.length > 0 && (
                       <div className="flex items-center gap-1 flex-wrap">
                         {athlete.categorias.slice(0, 2).map((cat, idx) => (
-                          <span 
+                          <span
                             key={idx}
                             className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
                           >
@@ -160,7 +167,7 @@ const ViewAthletesModal = ({
                         )}
                       </div>
                     )}
-                    
+
                     <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">ID:</span>
@@ -181,7 +188,8 @@ const ViewAthletesModal = ({
         {/* Footer */}
         <div className="p-4 border-t bg-gray-50 flex justify-between items-center">
           <p className="text-sm text-gray-600">
-            Mostrando {filteredAthletes.length} de {allAthletes.length} deportistas
+            Mostrando {filteredAthletes.length} de {allAthletes.length}{" "}
+            deportistas
           </p>
           <button
             onClick={onClose}

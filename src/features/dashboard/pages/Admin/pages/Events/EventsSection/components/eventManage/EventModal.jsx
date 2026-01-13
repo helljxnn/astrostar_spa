@@ -376,7 +376,7 @@ export const EventModal = ({
                 {isCheckingName && (
                   <div className="absolute right-3 top-9 flex items-center">
                     <svg
-                      className="animate-spin h-4 w-4 text-blue-500"
+                      className="animate-spin h-4 w-4 text-primary-purple"
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"

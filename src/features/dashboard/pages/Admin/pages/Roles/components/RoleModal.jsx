@@ -451,7 +451,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
               {/* Estados de validación en tiempo real */}
               {nameValidation.isChecking && (
                 <div className="text-blue-500 text-sm flex items-center gap-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   <span>Verificando disponibilidad...</span>
                 </div>
               )}
