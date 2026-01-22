@@ -112,7 +112,7 @@ const SelectionModal = ({
   useEffect(() => {
     if (isOpen && initialTabType && groupedData.length > 0) {
       const tabIndex = groupedData.findIndex(
-        (g) => g.source === initialTabType
+        (g) => g.source === initialTabType,
       );
       if (tabIndex !== -1) {
         setActiveTab(tabIndex);
@@ -147,7 +147,7 @@ const SelectionModal = ({
           item.name.toLowerCase().includes(search) ||
           item.identification?.toLowerCase().includes(search) ||
           (mode === "athletes" &&
-            item.categoria?.toLowerCase().includes(search))
+            item.categoria?.toLowerCase().includes(search)),
       );
     }
 
@@ -210,7 +210,7 @@ const SelectionModal = ({
 
       if (isCurrentlySelected) {
         newSelection = selectedItems.filter(
-          (selected) => selected.id !== item.id
+          (selected) => selected.id !== item.id,
         );
       } else {
         newSelection = [...selectedItems, item];
@@ -243,7 +243,7 @@ const SelectionModal = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
         onClick={onClose}
       >
         <motion.div
@@ -297,8 +297,8 @@ const SelectionModal = ({
                         activeTab === index
                           ? "bg-white text-primary-purple border-b-2 border-primary-purple"
                           : isTabDisabled
-                          ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                       }`}
                     >
                       {group.sourceLabel}
@@ -442,12 +442,12 @@ const SelectionModal = ({
                                 selected && isTemporalUnavailable
                                   ? "bg-rose-50 cursor-pointer"
                                   : selected
-                                  ? "bg-purple-50 cursor-pointer"
-                                  : isTemporalUnavailable
-                                  ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
-                                  : !isAvailable
-                                  ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
-                                  : "hover:bg-gray-50 cursor-pointer"
+                                    ? "bg-purple-50 cursor-pointer"
+                                    : isTemporalUnavailable
+                                      ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
+                                      : !isAvailable
+                                        ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
+                                        : "hover:bg-gray-50 cursor-pointer"
                               }`}
                               onClick={(e) => {
                                 // Si está seleccionada y es temporal no disponible, permitir deseleccionar
@@ -500,8 +500,8 @@ const SelectionModal = ({
                                         selected
                                           ? "bg-primary-purple border-primary-purple"
                                           : !isAvailable
-                                          ? "border-gray-300 bg-gray-100"
-                                          : "border-gray-300 hover:border-primary-purple"
+                                            ? "border-gray-300 bg-gray-100"
+                                            : "border-gray-300 hover:border-primary-purple"
                                       }`}
                                     >
                                       {selected && (
@@ -559,9 +559,9 @@ const SelectionModal = ({
                                       !isAvailable
                                         ? "bg-gray-50 text-gray-300"
                                         : item.type === "fundacion" &&
-                                          item.categoria
-                                        ? "bg-gray-200 text-gray-700"
-                                        : "bg-gray-100 text-gray-400"
+                                            item.categoria
+                                          ? "bg-gray-200 text-gray-700"
+                                          : "bg-gray-100 text-gray-400"
                                     }`}
                                   >
                                     {displayCategory}

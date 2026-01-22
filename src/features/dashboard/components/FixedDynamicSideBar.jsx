@@ -1,11 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
-import { useSidebarVisibility } from "../../../shared/hooks/useSidebarVisibility.js";
-import {
-  MODULE_CONFIG,
-  MODULE_GROUPS,
-} from "../../../shared/constants/moduleConfig.js";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MdDashboard,
@@ -21,12 +16,17 @@ import {
   FaHandHoldingHeart,
   FaRegCalendarAlt,
   FaShoppingCart,
-  FaDollarSign,
   FaSignOutAlt,
+  FaCalendarAlt,
+  FaRunning,
+  FaClipboardCheck,
+  FaFileContract,
+  FaUserClock,
+  FaTruck,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
-function DynamicSideBar({
+function FixedDynamicSideBar({
   isOpen: externalIsOpen,
   setIsOpen: setExternalIsOpen,
   isExpanded: externalIsExpanded,
@@ -60,13 +60,6 @@ function DynamicSideBar({
 
   const location = useLocation();
   const { userRole, logout } = useAuth();
-  const {
-    visibleModules,
-    visibleGroups,
-    isModuleVisible,
-    isGroupVisible,
-    getVisibleChildModules,
-  } = useSidebarVisibility();
 
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -124,18 +117,173 @@ function DynamicSideBar({
       FaRegCalendarAlt: <FaRegCalendarAlt size={size} className="shrink-0" />,
       FaShoppingCart: <FaShoppingCart size={size} className="shrink-0" />,
       GiWeightLiftingUp: <GiWeightLiftingUp size={size} className="shrink-0" />,
+      FaCalendarAlt: <FaCalendarAlt size={size} className="shrink-0" />,
+      FaChalkboardTeacher: (
+        <FaChalkboardTeacher size={size} className="shrink-0" />
+      ),
+      FaMedal: <FaMedal size={size} className="shrink-0" />,
+      FaRunning: <FaRunning size={size} className="shrink-0" />,
+      FaClipboardCheck: <FaClipboardCheck size={size} className="shrink-0" />,
+      FaFileContract: <FaFileContract size={size} className="shrink-0" />,
+      FaCalendarStar: <FaCalendarStar size={size} className="shrink-0" />,
+      FaUserClock: <FaUserClock size={size} className="shrink-0" />,
+      FaDonate: <FaDonate size={size} className="shrink-0" />,
+      FaTruck: <FaTruck size={size} className="shrink-0" />,
     };
     return icons[iconName] || <FaUsers size={size} className="shrink-0" />;
   };
 
-  // Renderizar módulo individual
-  const renderModule = (moduleId, delay = 0) => {
-    const module = MODULE_CONFIG[moduleId];
-    if (!module || !isModuleVisible(moduleId)) return null;
+  // Configuración completa de módulos (basada en tu configuración original)
+  const modules = [
+    {
+      id: "dashboard",
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: "MdDashboard",
+    },
+  ];
 
+  // Módulos individuales principales
+  const individualModules = [
+    {
+      id: "users",
+      name: "Usuarios",
+      path: "/dashboard/users",
+      icon: "FaUsers",
+    },
+    {
+      id: "roles",
+      name: "Roles",
+      path: "/dashboard/roles",
+      icon: "FaUserShield",
+    },
+    {
+      id: "sportsEquipment",
+      name: "Material Deportivo",
+      path: "/dashboard/sportsequipment",
+      icon: "GiWeightLiftingUp",
+    },
+  ];
+
+  // Grupos de módulos
+  const moduleGroups = [
+    {
+      id: "services",
+      name: "Servicios",
+      icon: "FaBriefcase",
+      children: [
+        {
+          id: "employees",
+          name: "Empleados",
+          path: "/dashboard/employees",
+        },
+        {
+          id: "employeesSchedule",
+          name: "Horario Empleados",
+          path: "/dashboard/employees-schedule",
+        },
+        {
+          id: "appointmentManagement",
+          name: "Gestión de Citas",
+          path: "/dashboard/appointment-management",
+        },
+        {
+          id: "classes",
+          name: "Clases",
+          path: "/dashboard/classes",
+        },
+      ],
+    },
+    {
+      id: "athletes",
+      name: "Deportistas",
+      icon: "FaClipboardList",
+      children: [
+        {
+          id: "sportsCategory",
+          name: "Categoría Deportiva",
+          path: "/dashboard/sports-category",
+        },
+        {
+          id: "athletesSection",
+          name: "Gestión de Deportistas",
+          path: "/dashboard/athletes-section",
+        },
+        {
+          id: "athletesAssistance",
+          name: "Asistencia Deportistas",
+          path: "/dashboard/athletes-assistance",
+        },
+        {
+          id: "enrollments",
+          name: "Matrículas",
+          path: "/dashboard/enrollments",
+        },
+      ],
+    },
+    {
+      id: "events",
+      name: "Eventos",
+      icon: "FaRegCalendarAlt",
+      children: [
+        {
+          id: "eventsManagement",
+          name: "Gestión de Eventos",
+          path: "/dashboard/events",
+        },
+        {
+          id: "temporaryWorkers",
+          name: "Personas Temporales",
+          path: "/dashboard/temporary-workers",
+        },
+        {
+          id: "temporaryTeams",
+          name: "Equipos Temporales",
+          path: "/dashboard/temporary-teams",
+        },
+      ],
+    },
+    {
+      id: "donations",
+      name: "Donaciones",
+      icon: "FaHandHoldingHeart",
+      children: [
+        {
+          id: "donorsSponsors",
+          name: "Donantes/Patrocinadores",
+          path: "/dashboard/donors-sponsors",
+        },
+        {
+          id: "donationsManagement",
+          name: "Donaciones",
+          path: "/dashboard/donations",
+        },
+      ],
+    },
+    {
+      id: "purchases",
+      name: "Compras",
+      icon: "FaShoppingCart",
+      children: [
+        {
+          id: "providers",
+          name: "Proveedores",
+          path: "/dashboard/providers",
+        },
+        {
+          id: "purchasesManagement",
+          name: "Compras",
+          path: "/dashboard/purchases",
+        },
+      ],
+    },
+  ];
+
+  // Renderizar módulo individual
+  const renderModule = (module, delay = 0) => {
     return (
       <motion.div
-        key={moduleId}
+        key={module.id}
         variants={menuItemVariants}
         initial="initial"
         animate="animate"
@@ -178,32 +326,25 @@ function DynamicSideBar({
   };
 
   // Renderizar grupo de módulos
-  const renderGroup = (groupId) => {
-    const group = MODULE_GROUPS[groupId];
-    if (!group || !isGroupVisible(groupId)) return null;
-
-    const visibleChildren = getVisibleChildModules(groupId);
-    if (visibleChildren.length === 0) return null;
+  const renderGroup = (group) => {
+    const hasActiveChild = group.children.some((child) => isActive(child.path));
 
     return (
       <motion.div
-        key={groupId}
+        key={group.id}
         className="mt-1 relative mb-1"
         variants={menuItemVariants}
         initial="initial"
         animate="animate"
       >
         <motion.button
-          onClick={() => toggleMenu(groupId)}
+          onClick={() => toggleMenu(group.id)}
           className={`flex items-center justify-between ${
             isExpanded ? "w-full" : ""
           } px-4 py-3 rounded-xl text-[15px] transition-all duration-200 ${
             !isExpanded ? "justify-center" : ""
           } ${
-            openMenu === groupId ||
-            visibleChildren.some((childId) =>
-              isActive(MODULE_CONFIG[childId]?.path),
-            )
+            openMenu === group.id || hasActiveChild
               ? "bg-indigo-100 text-primary-purple shadow-sm"
               : "text-gray-700 hover:bg-indigo-50 hover:text-black"
           }`}
@@ -234,7 +375,7 @@ function DynamicSideBar({
           <AnimatePresence mode="wait">
             {isExpanded && (
               <motion.div
-                animate={{ rotate: openMenu === groupId ? 180 : 0 }}
+                animate={{ rotate: openMenu === group.id ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
                 <MdExpandMore size={20} className="shrink-0" />
@@ -245,7 +386,7 @@ function DynamicSideBar({
 
         {isExpanded && (
           <AnimatePresence>
-            {openMenu === groupId && (
+            {openMenu === group.id && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: "auto", opacity: 1 }}
@@ -254,31 +395,26 @@ function DynamicSideBar({
                 className="overflow-hidden"
               >
                 <div className="pl-12 pr-3 py-2 space-y-1">
-                  {visibleChildren.map((childId, index) => {
-                    const childModule = MODULE_CONFIG[childId];
-                    if (!childModule) return null;
-
-                    return (
-                      <motion.div
-                        key={childId}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                  {group.children.map((child, index) => (
+                    <motion.div
+                      key={child.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                    >
+                      <Link
+                        to={child.path}
+                        onClick={() => setIsOpen(false)}
+                        className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                          isActive(child.path)
+                            ? "bg-indigo-100 text-primary-purple shadow-sm"
+                            : "text-gray-700 hover:bg-indigo-50 hover:text-black"
+                        }`}
                       >
-                        <Link
-                          to={childModule.path}
-                          onClick={() => setIsOpen(false)}
-                          className={`block px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                            isActive(childModule.path)
-                              ? "bg-indigo-100 text-primary-purple shadow-sm"
-                              : "text-gray-700 hover:bg-indigo-50 hover:text-black"
-                          }`}
-                        >
-                          {childModule.name}
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
+                        {child.name}
+                      </Link>
+                    </motion.div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -350,24 +486,15 @@ function DynamicSideBar({
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-2">
           <div className={`${!isExpanded ? "flex flex-col items-center" : ""}`}>
             {/* Dashboard */}
-            {renderModule("dashboard")}
+            {modules.map((module, index) => renderModule(module, index * 0.05))}
 
             {/* Módulos individuales principales */}
-            {renderModule("users")}
-            {renderModule("roles")}
-            {renderModule("sportsEquipment")}
-
-            {/* Enlace directo a Gestión de citas para deportista y acudiente */}
-            {isModuleVisible("appointmentManagement") &&
-              (userRole === "deportista" || userRole === "acudiente") &&
-              renderModule("appointmentManagement")}
+            {individualModules.map((module, index) =>
+              renderModule(module, (modules.length + index) * 0.05),
+            )}
 
             {/* Grupos de módulos */}
-            {renderGroup("services")}
-            {renderGroup("athletes")}
-            {renderGroup("donations")}
-            {renderGroup("events")}
-            {renderGroup("purchases")}
+            {moduleGroups.map((group) => renderGroup(group))}
           </div>
         </nav>
 
@@ -409,4 +536,4 @@ function DynamicSideBar({
   );
 }
 
-export default DynamicSideBar;
+export default FixedDynamicSideBar;

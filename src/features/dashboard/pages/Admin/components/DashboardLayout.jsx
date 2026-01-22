@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
-import { FaBars } from "react-icons/fa";
 import DynamicSideBar from "../../../components/DynamicSideBar";
 import { TopBar } from "../components/TopBar";
 import Portal from "../../../../../shared/components/Portal";
 import ViewProfileModal from "../../../../auth/pages/ViewProfileModal";
 import EditProfileModal from "../../../../auth/pages/EditProfileModal";
 import { useAuth } from "../../../../../shared/contexts/authContext";
+import "./SidebarFix.css";
 
 function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,11 +21,11 @@ function DashboardLayout() {
       const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       if (mobile) {
-        setSidebarOpen(false); // Por defecto cerrado en móvil
-        setIsExpanded(true); // Siempre expandido en el estado móvil para mostrar el contenido completo
+        setSidebarOpen(false);
+        setIsExpanded(true);
       } else {
-        setSidebarOpen(true); // Por defecto abierto en desktop
-        setIsExpanded(true); // Por defecto expandido en desktop
+        setSidebarOpen(true);
+        setIsExpanded(true);
       }
     };
 
@@ -37,23 +37,17 @@ function DashboardLayout() {
     };
   }, []);
 
-  const toggleSidebarExpansion = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   const handleUpdateProfile = async (updatedData) => {
     try {
-      // Actualizar el contexto con los nuevos datos
       if (updateUser) {
         updateUser(updatedData);
       }
-      // Actualizar también en localStorage
       const storedUser = localStorage.getItem("user");
       if (storedUser) {
         const userObj = JSON.parse(storedUser);
         localStorage.setItem(
           "user",
-          JSON.stringify({ ...userObj, ...updatedData })
+          JSON.stringify({ ...userObj, ...updatedData }),
         );
       }
     } catch (error) {
@@ -67,25 +61,43 @@ function DashboardLayout() {
       {/* Overlay con blur para móvil */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 z-30 bg-black/30 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <DynamicSideBar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <DynamicSideBar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        isExpanded={isExpanded}
+        setIsExpanded={setIsExpanded}
+      />
 
-      {/* Contenido Principal */}
+      {/* Contenido Principal - CON ATRIBUTOS PARA CSS */}
       <div
-        className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out dashboard-main-content"
+        data-sidebar={
           isMobile
-            ? "ml-0"
-            : isExpanded
-            ? "ml-[18rem]" // Espacio para sidebar expandido
-            : "ml-[5rem]" // Espacio para sidebar colapsado
-        }`}
+            ? "closed"
+            : sidebarOpen && isExpanded
+              ? "expanded"
+              : sidebarOpen && !isExpanded
+                ? "collapsed"
+                : "closed"
+        }
+        style={{
+          marginLeft: isMobile
+            ? "0px"
+            : sidebarOpen && isExpanded
+              ? "288px"
+              : sidebarOpen && !isExpanded
+                ? "80px"
+                : "0px",
+        }}
       >
         <TopBar
-          toggleSidebar={toggleSidebarExpansion}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          isMobile={isMobile}
           onOpenProfileModals={{
             setView: setViewModalOpen,
             setEdit: setEditModalOpen,
@@ -95,15 +107,6 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </div>
-
-      {/* Botón para mostrar/ocultar sidebar en móvil */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="fixed bottom-6 right-6 lg:hidden z-50 p-3 rounded-full bg-primary-purple text-white shadow-lg"
-        aria-label="Toggle sidebar"
-      >
-        <FaBars size={20} />
-      </button>
 
       {/* Portal para los modales */}
       <Portal>

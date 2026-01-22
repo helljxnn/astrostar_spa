@@ -165,7 +165,7 @@ const TemporaryTeamModal = ({
       try {
         const result = await TeamsService.checkTemporalPersonAvailability(
           selectedTrainer.id,
-          teamToEdit?.id
+          teamToEdit?.id,
         );
         if (!result.available) {
           setDuplicateWarnings((prev) => ({
@@ -208,7 +208,7 @@ const TemporaryTeamModal = ({
       try {
         const result = await TeamsService.checkNameAvailability(
           formData.nombre,
-          teamToEdit?.id
+          teamToEdit?.id,
         );
         if (result.success && !result.available) {
           setErrors((prev) => ({
@@ -278,7 +278,7 @@ const TemporaryTeamModal = ({
     }
 
     const temporalAthletes = selectedAthletes.filter(
-      (d) => d.type === "temporal" && d.id
+      (d) => d.type === "temporal" && d.id,
     );
 
     if (temporalAthletes.length === 0) {
@@ -293,7 +293,7 @@ const TemporaryTeamModal = ({
         for (const athlete of temporalAthletes) {
           const result = await TeamsService.checkTemporalPersonAvailability(
             athlete.id,
-            teamToEdit?.id
+            teamToEdit?.id,
           );
 
           if (!result.available) {
@@ -312,7 +312,7 @@ const TemporaryTeamModal = ({
           // Guardar los IDs de las deportistas no disponibles
           const unavailableIds = temporalAthletes
             .filter((athlete) =>
-              unavailableAthletes.some((ua) => ua.name === athlete.name)
+              unavailableAthletes.some((ua) => ua.name === athlete.name),
             )
             .map((athlete) => athlete.id);
           setUnavailableAthleteIds(unavailableIds);
@@ -510,7 +510,7 @@ const TemporaryTeamModal = ({
           selectedAthletes[0]?.type === "fundacion"
             ? "de la fundación"
             : "temporales"
-        } seleccionadas.`
+        } seleccionadas.`,
       );
       return;
     }
@@ -548,13 +548,13 @@ const TemporaryTeamModal = ({
     if (athletes.length > 0) {
       const firstAthleteType = athletes[0].type;
       const hasMixedTypes = athletes.some(
-        (athlete) => athlete.type !== firstAthleteType
+        (athlete) => athlete.type !== firstAthleteType,
       );
 
       if (hasMixedTypes) {
         showErrorAlert(
           "Tipos mixtos no permitidos",
-          "No se pueden seleccionar deportistas de la fundación y temporales en el mismo equipo."
+          "No se pueden seleccionar deportistas de la fundación y temporales en el mismo equipo.",
         );
         return;
       }
@@ -568,7 +568,7 @@ const TemporaryTeamModal = ({
             selectedTrainer.type === "fundacion"
               ? "de la fundación"
               : "temporal"
-          }.`
+          }.`,
         );
         return;
       }
@@ -576,13 +576,13 @@ const TemporaryTeamModal = ({
       if (firstAthleteType === "fundacion" && athletes.length > 1) {
         const firstCategory = athletes[0].categoria;
         const hasMixedCategories = athletes.some(
-          (athlete) => athlete.categoria !== firstCategory
+          (athlete) => athlete.categoria !== firstCategory,
         );
 
         if (hasMixedCategories) {
           showErrorAlert(
             "Categorías mixtas no permitidas",
-            "Todas las deportistas de la fundación deben ser de la misma categoría."
+            "Todas las deportistas de la fundación deben ser de la misma categoría.",
           );
           return;
         }
@@ -634,7 +634,7 @@ const TemporaryTeamModal = ({
     if (hasValidationErrors) {
       showErrorAlert(
         "Campos incompletos",
-        "Por favor completa todos los campos correctamente antes de continuar."
+        "Por favor completa todos los campos correctamente antes de continuar.",
       );
       return;
     }
@@ -643,7 +643,7 @@ const TemporaryTeamModal = ({
     if (duplicateWarnings.trainer || duplicateWarnings.athletes) {
       showErrorAlert(
         "No se puede crear el equipo",
-        "Hay entrenadores o deportistas temporales que ya están registrados en otros equipos. Por favor, selecciona otros miembros."
+        "Hay entrenadores o deportistas temporales que ya están registrados en otros equipos. Por favor, selecciona otros miembros.",
       );
       return;
     }
@@ -655,7 +655,7 @@ const TemporaryTeamModal = ({
     ) {
       showErrorAlert(
         "Error de validación",
-        "No se pueden seleccionar un entrenador y deportistas de diferentes tipos (fundación o temporales)."
+        "No se pueden seleccionar un entrenador y deportistas de diferentes tipos (fundación o temporales).",
       );
       return;
     }
@@ -663,13 +663,13 @@ const TemporaryTeamModal = ({
     if (selectedAthletes.length > 0) {
       const firstAthleteType = selectedAthletes[0].type;
       const hasMixedTypes = selectedAthletes.some(
-        (athlete) => athlete.type !== firstAthleteType
+        (athlete) => athlete.type !== firstAthleteType,
       );
 
       if (hasMixedTypes) {
         showErrorAlert(
           "Error de validación",
-          "No se pueden seleccionar deportistas de diferentes tipos en el mismo equipo."
+          "No se pueden seleccionar deportistas de diferentes tipos en el mismo equipo.",
         );
         return;
       }
@@ -678,13 +678,13 @@ const TemporaryTeamModal = ({
     if (teamType === "fundacion" && selectedAthletes.length > 1) {
       const firstCategory = selectedAthletes[0].categoria;
       const hasMixedCategories = selectedAthletes.some(
-        (athlete) => athlete.categoria !== firstCategory
+        (athlete) => athlete.categoria !== firstCategory,
       );
 
       if (hasMixedCategories) {
         showErrorAlert(
           "Error de validación",
-          "Todas las deportistas de la fundación deben ser de la misma categoría."
+          "Todas las deportistas de la fundación deben ser de la misma categoría.",
         );
         return;
       }
@@ -696,7 +696,7 @@ const TemporaryTeamModal = ({
         `Se actualizarán los datos del equipo ${
           teamToEdit?.nombre || formData.nombre
         }`,
-        { confirmButtonText: "Actualizar", cancelButtonText: "Cancelar" }
+        { confirmButtonText: "Actualizar", cancelButtonText: "Cancelar" },
       );
       if (!confirmResult.isConfirmed) return;
     }
@@ -767,7 +767,7 @@ const TemporaryTeamModal = ({
   return (
     <>
       <motion.div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -904,8 +904,8 @@ const TemporaryTeamModal = ({
                       duplicateWarnings.trainer
                         ? "border-red-400"
                         : selectedTrainer
-                        ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
-                        : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
+                          ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
+                          : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -964,7 +964,7 @@ const TemporaryTeamModal = ({
                         setTeamType(
                           selectedAthletes.length > 0
                             ? selectedAthletes[0].type
-                            : null
+                            : null,
                         );
                         handleChange("entrenador", "");
                         setCurrentCategoria(null);
@@ -1127,8 +1127,8 @@ const TemporaryTeamModal = ({
                       duplicateWarnings.athletes
                         ? "border-red-400"
                         : selectedAthletes.length > 0
-                        ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
-                        : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
+                          ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
+                          : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
                     }`}
                   >
                     <div className="flex items-center gap-3">

@@ -10,18 +10,33 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Función para cerrar modal y limpiar scroll
+  const handleClose = () => {
+    document.body.classList.remove("events-modal-open");
+    onClose();
+  };
+
   useEffect(() => {
     if (isOpen && eventId) {
       loadRegistrations();
+      // Bloquear scroll del body
+      document.body.classList.add("events-modal-open");
+    } else {
+      // Desbloquear scroll del body
+      document.body.classList.remove("events-modal-open");
     }
+
+    // Cleanup al desmontar
+    return () => {
+      document.body.classList.remove("events-modal-open");
+    };
   }, [isOpen, eventId]);
 
   const loadRegistrations = async () => {
     setLoading(true);
     try {
-      const response = await RegistrationsService.getEventAthleteRegistrations(
-        eventId
-      );
+      const response =
+        await RegistrationsService.getEventAthleteRegistrations(eventId);
 
       if (response.success && response.data) {
         setRegistrations(response.data);
@@ -66,26 +81,40 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
         ?.toLowerCase()
         .includes(searchLower);
       const matchesCategory = athlete.categorias?.some((cat) =>
-        cat.toLowerCase().includes(searchLower)
+        cat.toLowerCase().includes(searchLower),
       );
       return matchesName || matchesId || matchesCategory;
     });
   }, [allAthletes, searchTerm]);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      style={{
+        zIndex: 999999,
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative modal-content my-8"
+        style={{
+          zIndex: 1000000,
+          position: "relative",
+          margin: "auto",
+        }}
       >
         {/* Header */}
         <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="p-2 hover:bg-white/20 rounded-full transition-colors"
               >
                 <FaArrowLeft className="w-5 h-5" />
@@ -192,7 +221,7 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
             deportistas
           </p>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
           >
             Cerrar

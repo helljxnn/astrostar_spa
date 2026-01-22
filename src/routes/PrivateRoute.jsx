@@ -73,6 +73,15 @@ const PrivateRoute = ({
  * Componente para mostrar cuando no se tienen permisos
  */
 const AccessDenied = () => {
+  const handleGoBack = () => {
+    // Si hay historial, ir atrás, sino ir al dashboard principal
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/dashboard";
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <motion.div
@@ -97,7 +106,7 @@ const AccessDenied = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => window.history.back()}
+          onClick={handleGoBack}
           className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
         >
           Volver

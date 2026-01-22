@@ -44,7 +44,7 @@ const TeamRegistrationFormModal = ({
       if (response.success) {
         // Filtrar equipos que ya están seleccionados
         const filtered = (response.data || []).filter(
-          (team) => !selectedTeams.find((st) => st.id === team.id)
+          (team) => !selectedTeams.find((st) => st.id === team.id),
         );
         setSearchResults(filtered);
       }
@@ -62,9 +62,8 @@ const TeamRegistrationFormModal = ({
 
     setLoading(true);
     try {
-      const response = await RegistrationsService.getEventRegistrations(
-        eventId
-      );
+      const response =
+        await RegistrationsService.getEventRegistrations(eventId);
 
       if (response.success && Array.isArray(response.data)) {
         const registeredTeams = response.data
@@ -86,11 +85,21 @@ const TeamRegistrationFormModal = ({
   };
 
   useEffect(() => {
-    // Limpiar búsqueda al abrir modal
+    // Limpiar búsqueda al abrir modal y controlar scroll del body
     if (isOpen && isTeamType) {
       setSearchTerm("");
       setSearchResults([]);
+      // Bloquear scroll del body
+      document.body.classList.add("events-modal-open");
+    } else {
+      // Desbloquear scroll del body
+      document.body.classList.remove("events-modal-open");
     }
+
+    // Cleanup al desmontar
+    return () => {
+      document.body.classList.remove("events-modal-open");
+    };
   }, [isOpen, isTeamType]);
 
   useEffect(() => {
@@ -171,12 +180,12 @@ const TeamRegistrationFormModal = ({
 
       // Equipos nuevos a inscribir
       const teamsToAdd = selectedTeams.filter(
-        (t) => !initialIds.includes(t.id)
+        (t) => !initialIds.includes(t.id),
       );
 
       // Equipos a quitar (cancelar inscripción)
       const teamsToRemove = initialTeams.filter(
-        (t) => !currentIds.includes(t.id)
+        (t) => !currentIds.includes(t.id),
       );
 
       // Cancelar inscripciones de equipos quitados
@@ -198,12 +207,12 @@ const TeamRegistrationFormModal = ({
       if (teamsToAdd.length > 0 || teamsToRemove.length > 0) {
         showSuccessAlert(
           "Cambios guardados",
-          `Se actualizó la inscripción: ${teamsToAdd.length} agregados, ${teamsToRemove.length} removidos`
+          `Se actualizó la inscripción: ${teamsToAdd.length} agregados, ${teamsToRemove.length} removidos`,
         );
       } else {
         showSuccessAlert(
           "Sin cambios",
-          "No se realizaron cambios en las inscripciones"
+          "No se realizaron cambios en las inscripciones",
         );
       }
 
@@ -228,15 +237,29 @@ const TeamRegistrationFormModal = ({
       }
       return acc;
     },
-    { fundacion: 0, temporal: 0 }
+    { fundacion: 0, temporal: 0 },
   );
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      style={{
+        zIndex: 999999,
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content my-8"
+        style={{
+          zIndex: 1000000,
+          position: "relative",
+          margin: "auto",
+        }}
       >
         <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
           <div className="flex items-center gap-4">

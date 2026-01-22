@@ -1,0 +1,36 @@
+/* Fix definitivo para el problema de sobreposición del sidebar */
+
+/* Asegurar que el contenido principal siempre tenga el margen correcto */
+.dashboard-main-content {
+  transition: margin-left 0.3s ease-in-out !important;
+}
+
+/* Forzar margen cuando el sidebar está abierto - solo cuando NO hay modales de eventos */
+body:not(.events-modal-open) .dashboard-main-content[data-sidebar="expanded"] {
+  margin-left: 288px !important;
+}
+
+body:not(.events-modal-open) .dashboard-main-content[data-sidebar="collapsed"] {
+  margin-left: 80px !important;
+}
+
+body:not(.events-modal-open) .dashboard-main-content[data-sidebar="closed"] {
+  margin-left: 0px !important;
+}
+
+/* En móvil, siempre sin margen */
+@media (max-width: 1023px) {
+  body:not(.events-modal-open) .dashboard-main-content {
+    margin-left: 0px !important;
+  }
+}
+
+/* Asegurar que el sidebar tenga el z-index correcto */
+.dynamic-sidebar {
+  z-index: 50 !important;
+}
+
+/* Overlay para móvil */
+.sidebar-overlay {
+  z-index: 40 !important;
+}
