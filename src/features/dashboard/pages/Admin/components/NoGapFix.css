@@ -10,7 +10,6 @@
 
 /* Sidebar con width exacto */
 .dynamic-sidebar {
-  width: 288px !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
@@ -64,4 +63,15 @@
     margin-left: 0px !important;
     width: 100vw !important;
   }
+}
+
+/* NUEVO: Asegurar que las transiciones sean suaves */
+.dashboard-main-content {
+  transition: all 0.3s ease-in-out !important;
+}
+
+/* NUEVO: Fix específico para cuando el sidebar está colapsado */
+.dashboard-main-content[data-sidebar="collapsed"] {
+  min-width: calc(100vw - 80px) !important;
+  max-width: calc(100vw - 80px) !important;
 }

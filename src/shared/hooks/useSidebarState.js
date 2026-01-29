@@ -48,18 +48,30 @@ export const useSidebarState = () => {
 
   // Calcular el estado del sidebar para CSS
   const getSidebarState = useCallback(() => {
-    if (isMobile) return "closed";
-    if (sidebarOpen && isExpanded) return "expanded";
-    if (sidebarOpen && !isExpanded) return "collapsed";
-    return "closed";
+    const state = isMobile
+      ? "closed"
+      : sidebarOpen && isExpanded
+        ? "expanded"
+        : sidebarOpen && !isExpanded
+          ? "collapsed"
+          : "closed";
+
+    console.log("Sidebar State:", { isMobile, sidebarOpen, isExpanded, state });
+    return state;
   }, [isMobile, sidebarOpen, isExpanded]);
 
   // Calcular el margen izquierdo
   const getMarginLeft = useCallback(() => {
-    if (isMobile) return "0px";
-    if (sidebarOpen && isExpanded) return "288px";
-    if (sidebarOpen && !isExpanded) return "80px";
-    return "0px";
+    const margin = isMobile
+      ? "0px"
+      : sidebarOpen && isExpanded
+        ? "288px"
+        : sidebarOpen && !isExpanded
+          ? "80px"
+          : "0px";
+
+    console.log("Margin Left:", { isMobile, sidebarOpen, isExpanded, margin });
+    return margin;
   }, [isMobile, sidebarOpen, isExpanded]);
 
   // Toggle del sidebar

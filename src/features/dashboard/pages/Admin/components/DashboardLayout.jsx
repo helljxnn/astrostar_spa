@@ -7,8 +7,7 @@ import ViewProfileModal from "../../../../auth/pages/ViewProfileModal";
 import EditProfileModal from "../../../../auth/pages/EditProfileModal";
 import { useAuth } from "../../../../../shared/contexts/authContext";
 import { useSidebarState } from "../../../../../shared/hooks/useSidebarState";
-import "./SidebarFix.css";
-import "./NoGapFix.css";
+import "./FinalFix.css";
 
 function DashboardLayout() {
   const [isViewModalOpen, setViewModalOpen] = useState(false);
@@ -25,6 +24,15 @@ function DashboardLayout() {
     getMarginLeft,
     toggleSidebar,
   } = useSidebarState();
+
+  // Debug log
+  console.log("DashboardLayout render:", {
+    sidebarOpen,
+    isExpanded,
+    isMobile,
+    state: getSidebarState(),
+    marginLeft: getMarginLeft(),
+  });
 
   const handleUpdateProfile = async (updatedData) => {
     try {
@@ -68,6 +76,7 @@ function DashboardLayout() {
         data-sidebar={getSidebarState()}
         style={{
           marginLeft: getMarginLeft(),
+          width: `calc(100vw - ${getMarginLeft()})`,
         }}
         key={`${sidebarOpen}-${isExpanded}-${isMobile}`} // Force re-render on state change
       >
