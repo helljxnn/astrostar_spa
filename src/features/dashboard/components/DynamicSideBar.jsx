@@ -87,11 +87,11 @@ function DynamicSideBar({
 
   const sidebarVariants = {
     expanded: {
-      width: "18rem",
+      width: "288px", // Usar px en lugar de rem para mayor precisión
       transition: { duration: 0.3, ease: "easeInOut" },
     },
     collapsed: {
-      width: "5rem",
+      width: "80px", // Usar px en lugar de rem para mayor precisión
       transition: { duration: 0.3, ease: "easeInOut" },
     },
   };
@@ -298,7 +298,7 @@ function DynamicSideBar({
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out"
+        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out dynamic-sidebar"
         initial={{ x: isMobile ? -288 : 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
