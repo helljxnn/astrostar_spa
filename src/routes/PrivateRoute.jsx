@@ -1,34 +1,27 @@
-import React from 'react';
+import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/contexts/authContext.jsx";
-import { usePermissions } from '../shared/hooks/usePermissions';
-import { motion } from 'framer-motion';
+import { usePermissions } from "../shared/hooks/usePermissions";
+import { motion } from "framer-motion";
+import { Loader } from "../shared/components/Loader";
 
 /**
  * Componente para proteger rutas basado en roles y permisos
  */
-const PrivateRoute = ({ 
+const PrivateRoute = ({
   allowedRoles, // Sistema legacy - array de roles
-  module,       // Sistema nuevo - módulo específico
-  action = 'Ver', // Sistema nuevo - acción específica
-  fallbackPath = '/dashboard',
+  module, // Sistema nuevo - módulo específico
+  action = "Ver", // Sistema nuevo - acción específica
+  fallbackPath = "/dashboard",
   showFallback = true,
-  children 
+  children,
 }) => {
   const { isAuthenticated, userRole, isLoading } = useAuth();
   const { hasPermission, hasModuleAccess, loading, isAdmin } = usePermissions();
 
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-primary-blue border-t-transparent rounded-full"
-        />
-      </div>
-    );
+    return <Loader isVisible={true} message="Verificando autenticación..." />;
   }
 
   // Si no está autenticado, redirigir al login
@@ -36,17 +29,9 @@ const PrivateRoute = ({
     return <Navigate to="/login" />;
   }
 
-  // Mostrar loading mientras se cargan los permisos 
-  if ((module || action !== 'Ver') && loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-primary-blue border-t-transparent rounded-full"
-        />
-      </div>
-    );
+  // Mostrar loading mientras se cargan los permisos
+  if ((module || action !== "Ver") && loading) {
+    return <Loader isVisible={true} message="Cargando permisos..." />;
   }
 
   // Si es admin, permitir acceso a todo
@@ -88,6 +73,15 @@ const PrivateRoute = ({
  * Componente para mostrar cuando no se tienen permisos
  */
 const AccessDenied = () => {
+  const handleGoBack = () => {
+    // Si hay historial, ir atrás, sino ir al dashboard principal
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = "/dashboard";
+    }
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">
       <motion.div
@@ -112,7 +106,7 @@ const AccessDenied = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => window.history.back()}
+          onClick={handleGoBack}
           className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
         >
           Volver

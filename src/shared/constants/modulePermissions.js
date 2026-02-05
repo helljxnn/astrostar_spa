@@ -1,43 +1,14 @@
-// Todos los módulos del sistema
-export const ALL_MODULES = [
-  "dashboard",
-  "users",
-  "roles",
-  "sportsEquipment",
-  "employees",
-  "employeesSchedule",
-  "appointmentManagement",
-  "sportsCategory",
-  "athletesSection",
-  "athletesAssistance",
-  "donorsSponsors",
-  "donationsManagement",
-  "eventsManagement",
-  "temporaryWorkers",
-  "temporaryTeams",
-  "providers",
-  "purchasesManagement",
-];
+import {
+  ALL_MODULES,
+  AVAILABLE_ACTIONS,
+  generateAdminPermissions,
+} from "./moduleConfig";
+
+// Re-exportar desde moduleConfig para mantener compatibilidad
+export { ALL_MODULES, generateAdminPermissions };
 
 // Todas las acciones disponibles
-export const ALL_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar"];
-
-/**
- * Genera permisos completos para administrador
- * @returns {Object} Objeto con todos los permisos para admin
- */
-export const generateAdminPermissions = () => {
-  const adminPermissions = {};
-
-  ALL_MODULES.forEach((module) => {
-    adminPermissions[module] = {};
-    ALL_ACTIONS.forEach((action) => {
-      adminPermissions[module][action] = true;
-    });
-  });
-
-  return adminPermissions;
-};
+export const ALL_ACTIONS = AVAILABLE_ACTIONS;
 
 /**
  * Genera permisos vacíos para un nuevo rol

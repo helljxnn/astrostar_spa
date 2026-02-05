@@ -86,13 +86,6 @@ export const getEventStatusConfig = (status) => {
       ring: "ring-red-200",
       dot: "#FC6D6D",
     },
-    "en-pausa": {
-      label: "En Pausa",
-      bg: "bg-gradient-to-r from-[#EDEB85] to-yellow-200",
-      text: "text-gray-800",
-      ring: "ring-yellow-200",
-      dot: "#EDEB85",
-    },
   };
 
   return configs[status] || configs.programado;

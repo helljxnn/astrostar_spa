@@ -1,12 +1,15 @@
 import { useRef, useEffect } from "react";
 
-export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplete }) => {
+export const EventCard = ({
+  event,
+  isHighlighted,
+  onViewMore,
+  onHighlightComplete,
+}) => {
   const cardRef = useRef(null);
 
   useEffect(() => {
     if (isHighlighted && cardRef.current) {
-
-      
       requestAnimationFrame(() => {
         if (cardRef.current) {
           cardRef.current.scrollIntoView({
@@ -14,19 +17,16 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
             block: "center",
             inline: "nearest",
           });
-        
         }
       });
 
       const highlightTimeoutId = setTimeout(() => {
-
         if (onHighlightComplete) {
           onHighlightComplete();
         }
       }, 2500);
 
       return () => {
-
         clearTimeout(highlightTimeoutId);
       };
     }
@@ -86,11 +86,19 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
     } catch (error) {
       return event.status || "programado";
     }
-    if (event.status === "cancelado" || event.status === "en-pausa") {
+    if (event.status === "cancelado") {
       return event.status;
     }
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const eventDateOnly = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate());
+    const todayDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+    const eventDateOnly = new Date(
+      eventDate.getFullYear(),
+      eventDate.getMonth(),
+      eventDate.getDate()
+    );
     if (eventDateOnly < todayDate) {
       return "finalizado";
     }
@@ -117,12 +125,6 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
         text: "text-white",
         ring: "ring-red-200",
       },
-      "en-pausa": {
-        label: "En Pausa",
-        bg: "bg-gradient-to-r from-[#9be9ff] to-blue-200",
-        text: "text-white",
-        ring: "ring-blue-200",
-      },
     };
     return configs[status] || configs.programado;
   };
@@ -136,20 +138,22 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
       ref={cardRef}
       id={`event-${event.id}`}
       className={`group relative rounded-lg sm:rounded-xl md:rounded-2xl bg-white transition-all duration-700 shadow-md hover:shadow-lg max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto ${
-        isHighlighted ? "transform scale-[1.02] z-10" : "hover:transform hover:scale-[1.01] hover:-translate-y-1"
+        isHighlighted
+          ? "transform scale-[1.02] z-10"
+          : "hover:transform hover:scale-[1.01] hover:-translate-y-1"
       }`}
       style={{
         zIndex: isHighlighted ? 10 : "auto",
       }}
     >
       {isHighlighted && (
-        <div 
-          className="absolute inset-0 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden pointer-events-none after:content-[''] after:absolute after:-inset-1 after:rounded-lg sm:after:rounded-xl md:after:rounded-2xl after:blur-md after:animate-pulse" 
+        <div
+          className="absolute inset-0 rounded-lg sm:rounded-xl md:rounded-2xl overflow-hidden pointer-events-none after:content-[''] after:absolute after:-inset-1 after:rounded-lg sm:after:rounded-xl md:after:rounded-2xl after:blur-md after:animate-pulse"
           style={{
-            background: 'linear-gradient(to right, #b595ff, #9be9ff)',
+            background: "linear-gradient(to right, #b595ff, #9be9ff)",
             zIndex: -1,
             opacity: isHighlighted ? 1 : 0,
-            transition: 'opacity 0.7s',
+            transition: "opacity 0.7s",
           }}
         />
       )}
@@ -163,7 +167,7 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          
+
           {/* Badge de estado */}
           <div
             className={`absolute top-1 right-1 sm:top-2 sm:right-2 md:top-3 md:right-3 px-1.5 py-0.5 sm:px-2 sm:py-1 md:px-3 md:py-1.5 rounded sm:rounded-md md:rounded-lg text-xs sm:text-sm font-bold ${statusConfig.bg} ${statusConfig.text} shadow-md backdrop-blur-sm`}
@@ -195,7 +199,9 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
             <div className="flex items-start gap-1.5 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-700">
               <span className="text-sm sm:text-base md:text-lg mt-0.5">📅</span>
               <div className="flex-1">
-                <span className="font-semibold block">{formatDate(event.date, event.endDate)}</span>
+                <span className="font-semibold block">
+                  {formatDate(event.date, event.endDate)}
+                </span>
                 {duration && duration > 1 && (
                   <span className="text-xs text-[#b595ff] font-medium mt-0.5 block">
                     Evento de {duration} días
@@ -223,7 +229,7 @@ export const EventCard = ({ event, isHighlighted, onViewMore, onHighlightComplet
           <p className="text-gray-700 leading-relaxed text-xs sm:text-sm md:text-base mb-3 sm:mb-4 md:mb-5 line-clamp-2">
             {event.description}
           </p>
-          
+
           <button
             onClick={() => onViewMore(event)}
             className="w-full bg-gradient-to-r from-[#b595ff] to-[#9be9ff] text-white py-1.5 sm:py-2 md:py-2.5 rounded sm:rounded-lg md:rounded-xl font-bold text-xs sm:text-sm md:text-base hover:shadow-lg transition-all duration-500 transform hover:scale-[1.01] hover:from-[#a085ef] hover:to-[#8bd9ef]"

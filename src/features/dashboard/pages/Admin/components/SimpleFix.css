@@ -1,0 +1,35 @@
+/* Solución simple y directa para el sidebar */
+
+/* Contenido principal con transiciones suaves */
+.dashboard-main-content {
+  transition: all 0.3s ease-in-out !important;
+  position: relative;
+}
+
+/* Estados específicos del contenido */
+.dashboard-main-content[data-sidebar="expanded"] {
+  margin-left: 288px !important;
+}
+
+.dashboard-main-content[data-sidebar="collapsed"] {
+  margin-left: 80px !important;
+}
+
+.dashboard-main-content[data-sidebar="closed"] {
+  margin-left: 0px !important;
+}
+
+/* Móvil siempre sin margen */
+@media (max-width: 1023px) {
+  .dashboard-main-content {
+    margin-left: 0px !important;
+  }
+}
+
+/* Sidebar fijo */
+.dynamic-sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 50 !important;
+}

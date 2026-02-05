@@ -132,10 +132,12 @@ const SelectionModal = ({
 
   // Establecer el tab inicial basado en el tipo de equipo
   useEffect(() => {
-    if (isOpen && groupedData.length > 0 && initialTabType) {
-      const tabIndex = groupedData.findIndex(group => group.source === initialTabType)
-      if (tabIndex !== -1 && activeTab !== tabIndex) {
-        setActiveTab(tabIndex)
+    if (isOpen && initialTabType && groupedData.length > 0) {
+      const tabIndex = groupedData.findIndex(
+        (g) => g.source === initialTabType,
+      );
+      if (tabIndex !== -1) {
+        setActiveTab(tabIndex);
       }
     }
   }, [isOpen, groupedData, initialTabType, activeTab])
@@ -188,12 +190,19 @@ const SelectionModal = ({
     let filtered = availableItems
 
     if (searchTerm) {
-      const query = searchTerm.toLowerCase()
-      filtered = filtered.filter(item => 
-        item.name?.toLowerCase().includes(query) ||
-        item.identification?.toLowerCase().includes(query) ||
-        (item.categoria && item.categoria.toLowerCase().includes(query))
-      )
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (item) =>
+          item.name.toLowerCase().includes(search) ||
+          item.identification?.toLowerCase().includes(search) ||
+          (mode === "athletes" &&
+            item.categoria?.toLowerCase().includes(search)),
+      );
+    }
+
+    // Filtro de categoría (solo para deportistas de fundación)
+    if (selectedCategory && mode === "athletes") {
+      filtered = filtered.filter((item) => item.categoria === selectedCategory);
     }
 
     if (mode === "athletes" && selectedCategory) {
@@ -265,8 +274,10 @@ const SelectionModal = ({
       const isSelected = selectedItems.some((s) => s.id === preparedItem.id)
       let newSelection
 
-      if (isSelected) {
-        newSelection = selectedItems.filter((s) => s.id !== preparedItem.id)
+      if (isCurrentlySelected) {
+        newSelection = selectedItems.filter(
+          (selected) => selected.id !== item.id,
+        );
       } else {
         newSelection = [...selectedItems, preparedItem]
       }
@@ -326,7 +337,13 @@ const SelectionModal = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+        onClick={onClose}
+      >
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -369,8 +386,8 @@ const SelectionModal = ({
                         activeTab === index
                           ? "bg-white text-primary-purple border-b-2 border-primary-purple"
                           : isTabDisabled
-                          ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                          : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+                            ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                            : "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
                       }`}
                     >
                       {group.sourceLabel}
@@ -482,12 +499,12 @@ const SelectionModal = ({
                                 selected && isTemporalUnavailable
                                   ? "bg-rose-50 cursor-pointer"
                                   : selected
-                                  ? "bg-purple-50 cursor-pointer"
-                                  : isTemporalUnavailable
-                                    ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
-                                    : !isAvailable
-                                    ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
-                                    : "hover:bg-gray-50 cursor-pointer"
+                                    ? "bg-purple-50 cursor-pointer"
+                                    : isTemporalUnavailable
+                                      ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
+                                      : !isAvailable
+                                        ? "bg-gray-100 cursor-not-allowed opacity-60 hover:bg-gray-200"
+                                        : "hover:bg-gray-50 cursor-pointer"
                               }`}
                               onClick={(e) => {
                                 // Si está seleccionada y es temporal no disponible, permitir deseleccionar
@@ -564,13 +581,16 @@ const SelectionModal = ({
                               </td>
                               {mode === "athletes" && (
                                 <td className="py-3 px-4">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    !isAvailable
-                                      ? "bg-gray-50 text-gray-300"
-                                      : item.type === "fundacion" && item.categoria
-                                      ? "bg-gray-200 text-gray-700"
-                                      : "bg-gray-100 text-gray-400"
-                                  }`}>
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs ${
+                                      !isAvailable
+                                        ? "bg-gray-50 text-gray-300"
+                                        : item.type === "fundacion" &&
+                                            item.categoria
+                                          ? "bg-gray-200 text-gray-700"
+                                          : "bg-gray-100 text-gray-400"
+                                    }`}
+                                  >
                                     {displayCategory}
                                   </span>
                                 </td>

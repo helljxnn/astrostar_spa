@@ -21,6 +21,7 @@ const BaseCalendar = ({
   onEventClick,
   onDateSelect,
   onSlotSelect,
+  onEventActionClick,
   onCreate,
   onEdit,
   onDelete,
@@ -178,6 +179,13 @@ const BaseCalendar = ({
       secondary: "from-[#95FFA7] to-[#9BE9FF]",
       accent: "from-[#EDEB85] to-[#95FFA7]",
     },
+    custom: {
+      // Para esquema custom, usar colores individuales de cada evento
+      useEventColors: true,
+      primary: "from-[#B595FF] to-[#9BE9FF]", // Fallback
+      secondary: "from-[#95FFA7] to-[#9BE9FF]",
+      accent: "from-[#FF95D1] to-[#B595FF]",
+    },
   };
 
   const currentColorScheme = colorSchemes[colorScheme] || colorSchemes.default;
@@ -238,7 +246,9 @@ const BaseCalendar = ({
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <createButtonIcon className="text-sm" />
+                  {React.createElement(createButtonIcon, {
+                    className: "text-sm",
+                  })}
                   <span className="hidden sm:inline">{createButtonText}</span>
                 </motion.button>
               </PermissionGuard>
@@ -380,6 +390,7 @@ const BaseCalendar = ({
                 date={selectedDate}
                 onDateSelect={onDateSelect}
                 onEventClick={onEventClick}
+                onEventActionClick={onEventActionClick}
                 renderEvent={renderEvent}
                 loading={loading}
                 colorScheme={currentColorScheme}
@@ -392,7 +403,7 @@ const BaseCalendar = ({
         {/* Sidebar */}
         {showSidebar && (
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 min-h-[600px]">
               <h3 className="text-lg font-semibold mb-4 text-[#B595FF]">
                 {sidebarTitle}
               </h3>
@@ -411,7 +422,9 @@ const BaseCalendar = ({
                   <p>{sidebarEmptyText}</p>
                 </div>
               ) : (
-                <div className={`space-y-3 ${sidebarHeight} overflow-y-auto`}>
+                <div
+                  className={`space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto`}
+                >
                   {(sidebarMaxItems
                     ? filteredEvents.slice(0, sidebarMaxItems)
                     : filteredEvents
@@ -432,7 +445,15 @@ const BaseCalendar = ({
                             {event.title || event.name || "Sin título"}
                           </h4>
                           <p className="text-xs text-gray-600 mb-2">
-                            {event.date || event.start || "Sin fecha"}
+                            {event.date
+                              ? typeof event.date === "string"
+                                ? event.date
+                                : event.date.toLocaleDateString()
+                              : event.start
+                              ? typeof event.start === "string"
+                                ? event.start
+                                : event.start.toLocaleDateString()
+                              : "Sin fecha"}
                           </p>
                           {sidebarActions.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
