@@ -42,7 +42,7 @@
 
 /* Asegurar que los modales estén siempre por encima */
 .modal-overlay {
-  z-index: 9999 !important;
+  z-index: 999999 !important;
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -53,17 +53,22 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  padding: 1rem !important;
+  overflow-y: auto !important;
 }
 
 .modal-content {
-  z-index: 10000 !important;
+  z-index: 1000000 !important;
   position: relative !important;
   margin: auto !important;
   max-height: 90vh !important;
   overflow: hidden !important;
+  width: 100% !important;
+  max-width: 64rem !important;
 }
 
-/* Prevenir scroll del body cuando hay modales abiertos - SIN interferir con el sidebar */
+/* Prevenir scroll del body cuando hay modales abiertos */
+body.modal-open,
 body.events-modal-open {
   overflow: hidden !important;
   /* Removido position: fixed que causaba problemas con el sidebar */
@@ -71,34 +76,46 @@ body.events-modal-open {
 
 /* Forzar que los modales estén por encima de cualquier elemento sticky o fixed */
 .modal-overlay {
-  z-index: 9999 !important;
+  z-index: 999999 !important;
 }
 
 .modal-content {
-  z-index: 10000 !important;
+  z-index: 1000000 !important;
 }
 
 /* Asegurar que los modales no se corten en la parte superior */
-@media (max-height: 600px) {
-  .modal-overlay {
-    padding: 1rem !important;
-    align-items: flex-start !important;
-  }
-  
-  .modal-content {
-    margin-top: 1rem !important;
-    max-height: calc(100vh - 2rem) !important;
-  }
-}
-
-@media (max-height: 500px) {
+@media (max-height: 700px) {
   .modal-overlay {
     padding: 0.5rem !important;
+    align-items: flex-start !important;
   }
   
   .modal-content {
     margin-top: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
+  }
+}
+
+@media (max-height: 600px) {
+  .modal-overlay {
+    padding: 0.25rem !important;
+    align-items: flex-start !important;
+  }
+  
+  .modal-content {
+    margin-top: 0.25rem !important;
+    max-height: calc(100vh - 0.5rem) !important;
+  }
+}
+
+@media (max-height: 500px) {
+  .modal-overlay {
+    padding: 0.125rem !important;
+  }
+  
+  .modal-content {
+    margin-top: 0.125rem !important;
+    max-height: calc(100vh - 0.25rem) !important;
   }
 }
 
@@ -121,6 +138,38 @@ body.events-modal-open {
   width: 100vw !important;
   height: 100vh !important;
   z-index: 999999 !important;
+}
+
+/* Estilos específicos para modales de eventos */
+.event-modal-overlay {
+  z-index: 999999 !important;
+}
+
+.event-modal-content {
+  z-index: 1000000 !important;
+}
+
+/* Asegurar que los modales se centren correctamente en pantallas pequeñas */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 0.5rem !important;
+  }
+  
+  .modal-content {
+    max-width: calc(100vw - 1rem) !important;
+    margin: 0.5rem auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding: 0.25rem !important;
+  }
+  
+  .modal-content {
+    max-width: calc(100vw - 0.5rem) !important;
+    margin: 0.25rem auto !important;
+  }
 }
 
 /* ===============================

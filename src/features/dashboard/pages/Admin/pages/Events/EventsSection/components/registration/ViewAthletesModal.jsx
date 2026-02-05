@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaSearch } from "react-icons/fa";
+import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
 import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
 import { InlineLoader } from "../../../../../../../../../shared/components/Loader";
@@ -87,26 +88,37 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
     });
   }, [allAthletes, searchTerm]);
 
-  return (
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  const modalContent = (
     <div
-      className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
       style={{
         zIndex: 999999,
         position: "fixed",
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         width: "100vw",
         height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
       }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative modal-content my-8"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col relative modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
           margin: "auto",
+          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: "72rem",
         }}
       >
         {/* Header */}
@@ -230,6 +242,9 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
       </motion.div>
     </div>
   );
+
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default ViewAthletesModal;

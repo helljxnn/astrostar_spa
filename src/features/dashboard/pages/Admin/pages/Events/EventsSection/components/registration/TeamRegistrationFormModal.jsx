@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
+import { createPortal } from "react-dom";
 import TeamsService from "../../../TemporaryTeams/services/TeamsService";
 import RegistrationsService from "../../services/RegistrationsService";
 import {
@@ -240,25 +241,36 @@ const TeamRegistrationFormModal = ({
     { fundacion: 0, temporal: 0 },
   );
 
-  return (
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  const modalContent = (
     <div
-      className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
       style={{
         zIndex: 999999,
         position: "fixed",
-        inset: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         width: "100vw",
         height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
       }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content my-8"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
           margin: "auto",
+          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: "64rem",
         }}
       >
         <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
@@ -592,6 +604,9 @@ const TeamRegistrationFormModal = ({
       </motion.div>
     </div>
   );
+
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default TeamRegistrationFormModal;
