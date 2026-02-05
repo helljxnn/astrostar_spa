@@ -42,7 +42,17 @@ const TemporaryTeams = () => {
       return "Eliminar equipo";
     }
 
-    return "Equipo asignado a un evento";
+    const count = assignment.count || 0;
+
+    if (count === 0) {
+      return "Eliminar equipo";
+    }
+
+    if (count === 1) {
+      return "Asignado a un evento";
+    } else {
+      return `Asignado a ${count} eventos`;
+    }
   };
 
   // Verificar asignaciones a eventos para todos los equipos
@@ -77,7 +87,7 @@ const TemporaryTeams = () => {
     setEventAssignmentsCheck(assignmentsCheck)
   }
 
-  // Cargar TODOS los equipos (fundación y temporales)
+  // Cargar equipos TEMPORALES
   const loadTeams = async () => {
     setLoading(true)
     try {
@@ -85,7 +95,7 @@ const TemporaryTeams = () => {
         page: currentPage,
         limit: rowsPerPage,
         search: searchTerm,
-        // No filtrar por teamType para mostrar todos los equipos
+        teamType: "Temporal"
       })
       
       if (result.success) {
@@ -273,7 +283,7 @@ const TemporaryTeams = () => {
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Equipos</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Equipos Temporales</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -320,23 +330,6 @@ const TemporaryTeams = () => {
                 Activo: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
                 Inactivo: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
-              customRenderers: {
-                cantidadDeportistas: (value) => (
-                  <div className="pl-8 text-gray-700">
-                    {value}
-                  </div>
-                ),
-                categoria: (value) => (
-                  <div className="pl-4 text-gray-700">
-                    {value}
-                  </div>
-                ),
-                teamTypeForDisplay: (value) => (
-                  <div className="-ml-2 text-gray-700">
-                    {value}
-                  </div>
-                )
-              }
             }}
             rowsPerPage={1000}
             onEdit={hasPermission('temporaryTeams', 'Editar') ? handleEdit : null}
@@ -375,9 +368,9 @@ const TemporaryTeams = () => {
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
-            <p>No se encontraron equipos que coincidan con "{searchTerm}"</p>
+            <p>No se encontraron equipos temporales que coincidan con "{searchTerm}"</p>
           ) : (
-            <p>No hay equipos registrados. ¡Crea el primero!</p>
+            <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
           )}
         </div>
       )}
