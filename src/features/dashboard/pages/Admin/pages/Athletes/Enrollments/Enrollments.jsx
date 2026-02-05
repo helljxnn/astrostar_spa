@@ -70,7 +70,6 @@ const Enrollments = () => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
-      console.log("🔄 Auto-refresh silencioso de inscripciones...");
       refresh(true); // true = silent mode
     }, 3000); // 3 segundos para actualizaciones prácticamente instantáneas
 
@@ -110,11 +109,13 @@ const Enrollments = () => {
 
     return inscriptions.filter((inscription) => {
       const textFields = [
-        inscription.nombres,
-        inscription.apellidos,
-        inscription.correo,
-        inscription.numeroDocumento,
-        inscription.telefono,
+        inscription.firstName,
+        inscription.middleName,
+        inscription.lastName,
+        inscription.secondLastName,
+        inscription.email,
+        inscription.identification,
+        inscription.phoneNumber,
       ];
 
       return textFields.some(
@@ -152,26 +153,14 @@ const Enrollments = () => {
 
   // Guardar matrícula (crear deportista + matrícula)
   const handleSaveEnrollment = async (athleteData) => {
-    console.log("💾 [handleSaveEnrollment] Guardando matrícula...");
-    console.log("💾 [handleSaveEnrollment] selectedInscription:", selectedInscription);
-    console.log("💾 [handleSaveEnrollment] selectedInscription?.id:", selectedInscription?.id);
-    
     const result = await createEnrollment(
       athleteData,
       selectedInscription?.id
     );
 
     if (result) {
-      console.log("✅ [handleSaveEnrollment] Matrícula guardada");
-      console.log("📧 [handleSaveEnrollment] Email enviado:", result.emailSent);
-      console.log("🔑 [handleSaveEnrollment] Contraseña temporal:", result.temporaryPassword);
-      
       setIsAthleteModalOpen(false);
       setSelectedInscription(null);
-      
-      // No mostramos el modal de credenciales, solo el sweet alert que ya se muestra en el hook
-    } else {
-      console.log("❌ [handleSaveEnrollment] Error al guardar matrícula");
     }
   };
 
@@ -179,9 +168,6 @@ const Enrollments = () => {
   const handleOpenRenew = (athlete) => {
     if (!athlete || athlete.target) return;
     const currentAthlete = athletes.find((a) => a.id === athlete.id) || athlete;
-    console.log('🔍 [handleOpenRenew] Datos del atleta:', currentAthlete);
-    console.log('🔍 [handleOpenRenew] fechaNacimiento:', currentAthlete?.fechaNacimiento);
-    console.log('🔍 [handleOpenRenew] inscripciones:', currentAthlete?.inscripciones);
     setSelectedAthlete(currentAthlete);
     setIsRenewModalOpen(true);
   };
@@ -702,14 +688,14 @@ const Enrollments = () => {
                   data: paginatedData.map((inscription) => {
                     // Formatear fecha de nacimiento de forma segura (sin problemas de zona horaria)
                     let fechaNacimientoDisplay = "Fecha inválida";
-                    if (inscription.fechaNacimiento) {
+                    if (inscription.birthDate) {
                       try {
                         // Si viene en formato YYYY-MM-DD, formatear directamente
-                        if (typeof inscription.fechaNacimiento === 'string' && /^\d{4}-\d{2}-\d{2}/.test(inscription.fechaNacimiento)) {
-                          const [year, month, day] = inscription.fechaNacimiento.split('T')[0].split('-');
+                        if (typeof inscription.birthDate === 'string' && /^\d{4}-\d{2}-\d{2}/.test(inscription.birthDate)) {
+                          const [year, month, day] = inscription.birthDate.split('T')[0].split('-');
                           fechaNacimientoDisplay = `${day}/${month}/${year}`;
                         } else {
-                          const date = new Date(inscription.fechaNacimiento);
+                          const date = new Date(inscription.birthDate);
                           if (!isNaN(date.getTime())) {
                             fechaNacimientoDisplay = date.toLocaleDateString("es-ES");
                           }
@@ -729,10 +715,19 @@ const Enrollments = () => {
                       }
                     }
 
+                    // Construir nombre completo desde los campos separados
+                    const firstName = inscription.firstName || "";
+                    const middleName = inscription.middleName || "";
+                    const lastName = inscription.lastName || "";
+                    const secondLastName = inscription.secondLastName || "";
+                    const nombreCompleto = `${firstName} ${middleName} ${lastName} ${secondLastName}`.replace(/\s+/g, ' ').trim();
+
                     return {
                       ...inscription,
-                      nombreCompleto: `${inscription.nombres} ${inscription.apellidos}`,
-                      documento: inscription.numeroDocumento || "Sin documento",
+                      nombreCompleto: nombreCompleto || "Sin nombre",
+                      documento: inscription.identification || "Sin documento",
+                      telefono: inscription.phoneNumber || "Sin teléfono",
+                      correo: inscription.email || "Sin correo",
                       fechaNacimientoDisplay,
                       fechaInscripcionDisplay,
                     };
@@ -761,9 +756,10 @@ const Enrollments = () => {
                   },
                   {
                     onClick: async (inscription) => {
+                      const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
                       const result = await showConfirmAlert(
                         "¿Rechazar inscripción?",
-                        `¿Estás seguro de rechazar la inscripción de ${inscription.nombres} ${inscription.apellidos}?`,
+                        `¿Estás seguro de rechazar la inscripción de ${fullName}?`,
                         { confirmButtonText: "Sí, rechazar", cancelButtonText: "Cancelar" }
                       );
                       if (result.isConfirmed) {
