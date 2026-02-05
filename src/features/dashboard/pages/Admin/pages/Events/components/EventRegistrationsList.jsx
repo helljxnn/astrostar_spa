@@ -1,15 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useRegistrations } from '../hooks/useRegistrations';
+import React, { useEffect, useState } from "react";
+import { useRegistrations } from "../hooks/useRegistrations";
+import { InlineLoader } from "../../../../../../shared/components/Loader";
 
 /**
  * Componente para listar las inscripciones de un evento
- * 
+ *
  * Props:
  * - eventId: ID del evento
  * - eventName: Nombre del evento (opcional)
  * - onRegistrationUpdate: Callback cuando se actualiza una inscripción
  */
-const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate }) => {
+const EventRegistrationsList = ({
+  eventId,
+  eventName = "",
+  onRegistrationUpdate,
+}) => {
   const {
     loading,
     registrations,
@@ -18,7 +23,7 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
     cancelRegistration,
   } = useRegistrations();
 
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedRegistration, setSelectedRegistration] = useState(null);
 
@@ -63,26 +68,30 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
 
   const getStatusBadgeClass = (status) => {
     const statusClasses = {
-      Registered: 'badge-info',
-      Confirmed: 'badge-success',
-      Cancelled: 'badge-danger',
-      Attended: 'badge-primary',
+      Registered: "badge-info",
+      Confirmed: "badge-success",
+      Cancelled: "badge-danger",
+      Attended: "badge-primary",
     };
-    return statusClasses[status] || 'badge-secondary';
+    return statusClasses[status] || "badge-secondary";
   };
 
   const getStatusLabel = (status) => {
     const statusLabels = {
-      Registered: 'Registrado',
-      Confirmed: 'Confirmado',
-      Cancelled: 'Cancelado',
-      Attended: 'Asistió',
+      Registered: "Registrado",
+      Confirmed: "Confirmado",
+      Cancelled: "Cancelado",
+      Attended: "Asistió",
     };
     return statusLabels[status] || status;
   };
 
   if (loading && registrations.length === 0) {
-    return <div className="loading">Cargando inscripciones...</div>;
+    return (
+      <div className="flex justify-center items-center py-8">
+        <InlineLoader message="Cargando inscripciones..." />
+      </div>
+    );
   }
 
   return (
@@ -113,7 +122,10 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
 
       {registrations.length === 0 ? (
         <div className="empty-state">
-          <p>No hay inscripciones {statusFilter && `con estado "${getStatusLabel(statusFilter)}"`}</p>
+          <p>
+            No hay inscripciones{" "}
+            {statusFilter && `con estado "${getStatusLabel(statusFilter)}"`}
+          </p>
         </div>
       ) : (
         <div className="registrations-table">
@@ -132,27 +144,36 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
               {registrations.map((registration) => (
                 <tr key={registration.id}>
                   <td>
-                    <strong>{registration.team?.name || 'N/A'}</strong>
+                    <strong>{registration.team?.name || "N/A"}</strong>
                     {registration.team?.category && (
-                      <div className="team-category">{registration.team.category}</div>
+                      <div className="team-category">
+                        {registration.team.category}
+                      </div>
                     )}
                   </td>
                   <td className="text-center">
                     {registration.team?._count?.members || 0}
                   </td>
                   <td>
-                    <span className={`badge ${getStatusBadgeClass(registration.status)}`}>
+                    <span
+                      className={`badge ${getStatusBadgeClass(
+                        registration.status
+                      )}`}
+                    >
                       {getStatusLabel(registration.status)}
                     </span>
                   </td>
                   <td>
-                    {new Date(registration.registrationDate).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {new Date(registration.registrationDate).toLocaleDateString(
+                      "es-ES",
+                      {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
                   </td>
                   <td>
                     {registration.notes ? (
@@ -167,9 +188,11 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
                   </td>
                   <td>
                     <div className="action-buttons">
-                      {registration.status === 'Registered' && (
+                      {registration.status === "Registered" && (
                         <button
-                          onClick={() => handleStatusChange(registration.id, 'Confirmed')}
+                          onClick={() =>
+                            handleStatusChange(registration.id, "Confirmed")
+                          }
                           disabled={loading}
                           className="btn-sm btn-success"
                           title="Confirmar"
@@ -177,9 +200,11 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
                           ✓ Confirmar
                         </button>
                       )}
-                      {registration.status === 'Confirmed' && (
+                      {registration.status === "Confirmed" && (
                         <button
-                          onClick={() => handleStatusChange(registration.id, 'Attended')}
+                          onClick={() =>
+                            handleStatusChange(registration.id, "Attended")
+                          }
                           disabled={loading}
                           className="btn-sm btn-primary"
                           title="Marcar como asistido"
@@ -187,7 +212,7 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
                           ✓ Asistió
                         </button>
                       )}
-                      {registration.status !== 'Cancelled' && (
+                      {registration.status !== "Cancelled" && (
                         <button
                           onClick={() => handleCancelClick(registration)}
                           disabled={loading}
@@ -212,7 +237,7 @@ const EventRegistrationsList = ({ eventId, eventName = '', onRegistrationUpdate 
           <div className="modal-dialog">
             <h4>Confirmar Cancelación</h4>
             <p>
-              ¿Está seguro que desea cancelar la inscripción del equipo{' '}
+              ¿Está seguro que desea cancelar la inscripción del equipo{" "}
               <strong>{selectedRegistration?.team?.name}</strong>?
             </p>
             <div className="modal-actions">

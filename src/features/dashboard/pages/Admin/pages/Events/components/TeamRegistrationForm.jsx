@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useRegistrations } from '../hooks/useRegistrations';
+import React, { useState, useEffect } from "react";
+import { useRegistrations } from "../hooks/useRegistrations";
 
 /**
  * Formulario para inscribir equipos a eventos
- * 
+ *
  * Props:
  * - events: Array de eventos disponibles
  * - teams: Array de equipos disponibles
@@ -21,10 +21,10 @@ const TeamRegistrationForm = ({
   const { registerTeam, loading } = useRegistrations();
 
   const [formData, setFormData] = useState({
-    serviceId: preselectedEventId || '',
-    teamId: preselectedTeamId || '',
-    sportsCategoryId: '',
-    notes: '',
+    serviceId: preselectedEventId || "",
+    teamId: preselectedTeamId || "",
+    sportsCategoryId: "",
+    notes: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -46,7 +46,7 @@ const TeamRegistrationForm = ({
     }));
     // Limpiar error del campo
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -54,15 +54,15 @@ const TeamRegistrationForm = ({
     const newErrors = {};
 
     if (!formData.serviceId) {
-      newErrors.serviceId = 'Debe seleccionar un evento';
+      newErrors.serviceId = "Debe seleccionar un evento";
     }
 
     if (!formData.teamId) {
-      newErrors.teamId = 'Debe seleccionar un equipo';
+      newErrors.teamId = "Debe seleccionar un equipo";
     }
 
     if (formData.notes && formData.notes.length > 500) {
-      newErrors.notes = 'Las notas no pueden exceder 500 caracteres';
+      newErrors.notes = "Las notas no pueden exceder 500 caracteres";
     }
 
     setErrors(newErrors);
@@ -95,10 +95,10 @@ const TeamRegistrationForm = ({
     if (result.success) {
       // Limpiar formulario
       setFormData({
-        serviceId: preselectedEventId || '',
-        teamId: preselectedTeamId || '',
-        sportsCategoryId: '',
-        notes: '',
+        serviceId: preselectedEventId || "",
+        teamId: preselectedTeamId || "",
+        sportsCategoryId: "",
+        notes: "",
       });
       setErrors({});
 
@@ -111,21 +111,19 @@ const TeamRegistrationForm = ({
 
   const handleReset = () => {
     setFormData({
-      serviceId: preselectedEventId || '',
-      teamId: preselectedTeamId || '',
-      sportsCategoryId: '',
-      notes: '',
+      serviceId: preselectedEventId || "",
+      teamId: preselectedTeamId || "",
+      sportsCategoryId: "",
+      notes: "",
     });
     setErrors({});
   };
 
   // Filtrar eventos activos (no cancelados ni finalizados)
-  const activeEvents = events.filter(
-    (event) => event.status === 'Programado' || event.status === 'Pausado'
-  );
+  const activeEvents = events.filter((event) => event.status === "Programado");
 
   // Filtrar equipos activos
-  const activeTeams = teams.filter((team) => team.status === 'Active');
+  const activeTeams = teams.filter((team) => team.status === "Active");
 
   return (
     <div className="team-registration-form">
@@ -143,7 +141,7 @@ const TeamRegistrationForm = ({
             value={formData.serviceId}
             onChange={handleChange}
             disabled={loading || !!preselectedEventId}
-            className={errors.serviceId ? 'error' : ''}
+            className={errors.serviceId ? "error" : ""}
           >
             <option value="">Seleccione un evento</option>
             {activeEvents.map((event) => (
@@ -152,7 +150,9 @@ const TeamRegistrationForm = ({
               </option>
             ))}
           </select>
-          {errors.serviceId && <span className="error-message">{errors.serviceId}</span>}
+          {errors.serviceId && (
+            <span className="error-message">{errors.serviceId}</span>
+          )}
         </div>
 
         {/* Selector de Equipo */}
@@ -166,21 +166,25 @@ const TeamRegistrationForm = ({
             value={formData.teamId}
             onChange={handleChange}
             disabled={loading || !!preselectedTeamId}
-            className={errors.teamId ? 'error' : ''}
+            className={errors.teamId ? "error" : ""}
           >
             <option value="">Seleccione un equipo</option>
             {activeTeams.map((team) => (
               <option key={team.id} value={team.id}>
-                {team.name} {team.category ? `- ${team.category}` : ''}
+                {team.name} {team.category ? `- ${team.category}` : ""}
               </option>
             ))}
           </select>
-          {errors.teamId && <span className="error-message">{errors.teamId}</span>}
+          {errors.teamId && (
+            <span className="error-message">{errors.teamId}</span>
+          )}
         </div>
 
         {/* Categoría Deportiva (Opcional) */}
         <div className="form-group">
-          <label htmlFor="sportsCategoryId">Categoría Deportiva (Opcional)</label>
+          <label htmlFor="sportsCategoryId">
+            Categoría Deportiva (Opcional)
+          </label>
           <select
             id="sportsCategoryId"
             name="sportsCategoryId"
@@ -205,12 +209,12 @@ const TeamRegistrationForm = ({
             placeholder="Información adicional sobre la inscripción..."
             rows="4"
             maxLength="500"
-            className={errors.notes ? 'error' : ''}
+            className={errors.notes ? "error" : ""}
           />
-          <small>
-            {formData.notes.length}/500 caracteres
-          </small>
-          {errors.notes && <span className="error-message">{errors.notes}</span>}
+          <small>{formData.notes.length}/500 caracteres</small>
+          {errors.notes && (
+            <span className="error-message">{errors.notes}</span>
+          )}
         </div>
 
         {/* Botones */}
@@ -224,7 +228,7 @@ const TeamRegistrationForm = ({
             Limpiar
           </button>
           <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? 'Inscribiendo...' : 'Inscribir Equipo'}
+            {loading ? "Inscribiendo..." : "Inscribir Equipo"}
           </button>
         </div>
       </form>

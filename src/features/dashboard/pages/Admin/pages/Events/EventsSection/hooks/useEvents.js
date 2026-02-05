@@ -46,9 +46,8 @@ export const useEvents = () => {
     const startDate = extractDate(event.startDate);
     const endDate = extractDate(event.endDate);
 
-    // Convertir "En_pausa" del backend a "Pausado" para el frontend
+    // Normalizar estado
     const normalizeStatus = (status) => {
-      if (status === "En_pausa") return "Pausado";
       return status;
     };
 
@@ -94,7 +93,10 @@ export const useEvents = () => {
       imagen: event.imageUrl,
       cronograma: event.scheduleFile,
       patrocinador: event.ServiceSponsor?.map((s) => s.Sponsor.name) || [],
-      hasRegistrations: (event._count?.participants || 0) > 0, // Verificar si tiene inscripciones
+      hasRegistrations: (() => {
+        const count = event._count?.participants || 0;
+        return count > 0;
+      })(), // Verificar si tiene inscripciones
       // Para el calendario - usar createLocalDate para evitar problemas de zona horaria
       start: createLocalDate(startDate, event.startTime),
       end: createLocalDate(endDate, event.endTime),
@@ -127,11 +129,6 @@ export const useEvents = () => {
     if (event.estado !== undefined) {
       // Normalizar el estado para que coincida con el backend
       let normalizedStatus = event.estado || "Programado";
-
-      // Convertir "Pausado" a "En_pausa" para que coincida con el enum de Prisma
-      if (normalizedStatus.toLowerCase().includes("pausa")) {
-        normalizedStatus = "En_pausa";
-      }
 
       backendData.status = normalizedStatus;
     }

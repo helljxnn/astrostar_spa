@@ -161,7 +161,9 @@ const CustomSelect = ({
                 ))
               ) : (
                 <div className="px-3 py-2 text-gray-500 text-sm">
-                  No se encontraron opciones
+                  {searchTerm
+                    ? "No se encontraron opciones"
+                    : "No hay opciones disponibles"}
                 </div>
               )}
             </div>

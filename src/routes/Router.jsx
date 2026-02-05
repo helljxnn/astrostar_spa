@@ -11,7 +11,8 @@ import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
 import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
 import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
-import PrivateRoutes from "./PrivateRoutes.jsx"; 
+import { Unauthorized } from "../shared/components/Unauthorized.jsx";
+import PrivateRoutes from "./PrivateRoutes.jsx";
 
 function AppRoutes() {
   return (
@@ -24,11 +25,15 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/services" element={<Services />} />
       </Route>
+
       {/* Rutas de autenticación sin Layout */}
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-code" element={<VerifyCode />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Ruta pública para acceso no autorizado */}
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Rutas Privadas */}
       <Route path="/*" element={<PrivateRoutes />} />

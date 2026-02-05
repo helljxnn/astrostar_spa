@@ -5,8 +5,6 @@ import { X, UserCheck, Users } from "lucide-react";
 const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   if (!isOpen || !team) return null;
 
-
-
   // Función simplificada y más robusta
   const getTeamTypeInfo = () => {
     let detectedType = null;
@@ -48,7 +46,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -226,7 +224,8 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-gray-900 text-sm">
-                      {team.segundoEntrenadorData?.identification || "No especificado"}
+                      {team.segundoEntrenadorData?.identification ||
+                        "No especificado"}
                     </p>
                   </div>
                 </div>
@@ -237,7 +236,8 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-gray-900 text-sm">
-                      {team.segundoEntrenadorData?.phoneNumber || "No especificado"}
+                      {team.segundoEntrenadorData?.phoneNumber ||
+                        "No especificado"}
                     </p>
                   </div>
                 </div>
@@ -290,7 +290,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                           {athlete.name || athlete}
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           Identificación
@@ -299,7 +299,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                           {athlete.identification || "N/A"}
                         </p>
                       </div>
-                      
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           Teléfono
@@ -308,7 +308,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                           {athlete.phoneNumber || "N/A"}
                         </p>
                       </div>
-                      
+
                       {athlete.categoria && (
                         <div>
                           <label className="block text-xs font-medium text-gray-500 mb-1">

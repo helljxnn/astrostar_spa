@@ -4,6 +4,7 @@ import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
+import { useLoader } from "../../../../../../../shared/components/Loader";
 import {
   showSuccessAlert,
   showConfirmAlert,
@@ -125,6 +126,9 @@ const actions = [
 ];
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
+  // Hook del loader
+  const { showLoader, hideLoader } = useLoader();
+
   // Hook de validación
   const {
     values: formData,
@@ -144,9 +148,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   );
 
   // Hook para validación de nombres duplicados
-  const { nameValidation, validateRoleName, clearValidation, reloadRoles } = useRoleNameValidation(
-    roleData?.id
-  );
+  const { nameValidation, validateRoleName, clearValidation, reloadRoles } =
+    useRoleNameValidation(roleData?.id);
 
   const [expandedCategories, setExpandedCategories] = useState({});
   const [permissionError, setPermissionError] = useState("");
@@ -154,7 +157,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Manejar cambios en el nombre con validación de duplicados
   const handleNameChange = (name, value) => {
     handleChange(name, value);
-    if (name === 'nombre') {
+    if (name === "nombre") {
       validateRoleName(value);
     }
   };
@@ -163,10 +166,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   useEffect(() => {
     if (roleData) {
       // Verificar si es el rol de Administrador
-      if (roleData.name === 'Administrador') {
+      if (roleData.name === "Administrador") {
         showErrorAlert(
-          'Acción no permitida',
-          'El rol de Administrador es un rol del sistema y no puede ser editado.'
+          "Acción no permitida",
+          "El rol de Administrador es un rol del sistema y no puede ser editado."
         );
         onClose();
         return;
@@ -178,7 +181,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         descripcion: roleData.description || roleData.descripcion || "",
         permisos: roleData.permissions || roleData.permisos || {},
       });
-      
+
       // Limpiar validación de nombres al cargar datos
       clearValidation();
     }
@@ -233,7 +236,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
       moduleCategories[categoryName].forEach((module) => {
         // Para Dashboard y Usuarios, solo permitir "Ver"
-        if (module.key === 'dashboard' || module.key === 'users') {
+        if (module.key === "dashboard" || module.key === "users") {
           newPermisos[module.key] = { Ver: true };
         } else {
           newPermisos[module.key] = actions.reduce(
@@ -270,9 +273,9 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       ...prev,
       permisos: {
         ...prev.permisos,
-        [moduleKey]: 
+        [moduleKey]:
           // Para Dashboard y Usuarios, solo permitir "Ver"
-          moduleKey === 'dashboard' || moduleKey === 'users'
+          moduleKey === "dashboard" || moduleKey === "users"
             ? { Ver: true }
             : actions.reduce(
                 (acc, action) => ({ ...acc, [action.name]: true }),
@@ -303,7 +306,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   const getCategoryTotalPermissions = (categoryName) => {
     return moduleCategories[categoryName].reduce((total, module) => {
       // Para Dashboard y Usuarios, solo hay 1 acción disponible (Ver)
-      if (module.key === 'dashboard' || module.key === 'users') {
+      if (module.key === "dashboard" || module.key === "users") {
         return total + 1;
       }
       return total + actions.length;
@@ -323,10 +326,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
     // Verificar si hay nombre duplicado
     if (nameValidation.isDuplicate) {
-      showErrorAlert(
-        "Nombre duplicado",
-        nameValidation.message
-      );
+      showErrorAlert("Nombre duplicado", nameValidation.message);
       return;
     }
 
@@ -351,31 +351,40 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       permissions: formData.permisos,
     };
 
-    // alerta de confirmación si se está editando
-    if (roleData) {
-      const result = await showConfirmAlert(
-        "¿Estás seguro de actualizar este rol?",
-        "Los cambios se guardarán y no se podrán deshacer fácilmente."
+    try {
+      // alerta de confirmación si se está editando
+      if (roleData) {
+        const result = await showConfirmAlert(
+          "¿Estás seguro de actualizar este rol?",
+          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+        );
+
+        if (!result.isConfirmed) return;
+      }
+
+      // Mostrar loader durante el proceso de guardado
+      showLoader(roleData ? "Actualizando rol..." : "Creando rol...");
+
+      // Guardar rol
+      await onSave(roleToSave);
+
+      // Recargar roles para validación futura
+      await reloadRoles();
+
+      showSuccessAlert(
+        roleData ? "Rol Actualizado" : "Rol Creado",
+        roleData
+          ? "El rol ha sido actualizado exitosamente."
+          : "El rol ha sido creado exitosamente."
       );
 
-      if (!result.isConfirmed) return;
-    }
-
-    // Guardar rol
-    await onSave(roleToSave);
-
-    // Recargar roles para validación futura
-    await reloadRoles();
-
-    showSuccessAlert(
-      roleData ? "Rol Actualizado" : "Rol Creado",
-      roleData
-        ? "El rol ha sido actualizado exitosamente."
-        : "El rol ha sido creado exitosamente."
-    );
-
-    if (!roleData) {
-      setFormData({ nombre: "", descripcion: "", permisos: {} });
+      if (!roleData) {
+        setFormData({ nombre: "", descripcion: "", permisos: {} });
+      }
+    } catch (error) {
+      console.error("Error en handleSubmit:", error);
+    } finally {
+      hideLoader();
     }
 
     setPermissionError("");
@@ -430,7 +439,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                 placeholder="Nombre del rol"
                 required
                 value={formData.nombre}
-                error={errors.nombre || (nameValidation.isDuplicate ? nameValidation.message : '')}
+                error={
+                  errors.nombre ||
+                  (nameValidation.isDuplicate ? nameValidation.message : "")
+                }
                 touched={touched.nombre}
                 onChange={handleNameChange}
                 onBlur={handleBlur}
@@ -439,24 +451,26 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
               {/* Estados de validación en tiempo real */}
               {nameValidation.isChecking && (
                 <div className="text-blue-500 text-sm flex items-center gap-2">
-                  <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   <span>Verificando disponibilidad...</span>
                 </div>
               )}
-              
+
               {!nameValidation.isChecking && nameValidation.isDuplicate && (
                 <div className="text-red-500 text-sm flex items-center gap-1">
                   <span>❌</span>
                   <span>Nombre no disponible</span>
                 </div>
               )}
-              
-              {!nameValidation.isChecking && nameValidation.isAvailable && formData.nombre.trim().length >= 2 && (
-                <div className="text-green-500 text-sm flex items-center gap-1">
-                  <span>✅</span>
-                  <span>Nombre disponible</span>
-                </div>
-              )}
+
+              {!nameValidation.isChecking &&
+                nameValidation.isAvailable &&
+                formData.nombre.trim().length >= 2 && (
+                  <div className="text-green-500 text-sm flex items-center gap-1">
+                    <span>✅</span>
+                    <span>Nombre disponible</span>
+                  </div>
+                )}
             </div>
 
             <FormField
@@ -605,7 +619,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                             {permissionCount > 0 && (
                                               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                                                 {permissionCount}/
-                                                {module.key === 'dashboard' || module.key === 'users' ? 1 : actions.length}
+                                                {module.key === "dashboard" ||
+                                                module.key === "users"
+                                                  ? 1
+                                                  : actions.length}
                                               </span>
                                             )}
                                           </div>
@@ -642,67 +659,70 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                           {actions
                                             .filter((action) => {
                                               // Para Dashboard y Usuarios, solo mostrar "Ver"
-                                              if (module.key === 'dashboard' || module.key === 'users') {
-                                                return action.name === 'Ver';
+                                              if (
+                                                module.key === "dashboard" ||
+                                                module.key === "users"
+                                              ) {
+                                                return action.name === "Ver";
                                               }
                                               return true;
                                             })
                                             .map((action) => {
-                                            const isChecked =
-                                              formData.permisos[module.key]?.[
-                                                action.name
-                                              ] || false;
+                                              const isChecked =
+                                                formData.permisos[module.key]?.[
+                                                  action.name
+                                                ] || false;
 
-                                            return (
-                                              <motion.label
-                                                key={action.name}
-                                                className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200 text-xs
+                                              return (
+                                                <motion.label
+                                                  key={action.name}
+                                                  className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200 text-xs
                                                 ${
                                                   isChecked
                                                     ? `${action.color} text-white shadow-sm`
                                                     : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
                                                 }`}
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                              >
-                                                <input
-                                                  type="checkbox"
-                                                  checked={isChecked}
-                                                  onChange={() =>
-                                                    handlePermissionChange(
-                                                      module.key,
-                                                      action.name
-                                                    )
-                                                  }
-                                                  className="sr-only"
-                                                />
-                                                <div
-                                                  className={`w-3 h-3 rounded border flex items-center justify-center
+                                                  whileHover={{ scale: 1.02 }}
+                                                  whileTap={{ scale: 0.98 }}
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() =>
+                                                      handlePermissionChange(
+                                                        module.key,
+                                                        action.name
+                                                      )
+                                                    }
+                                                    className="sr-only"
+                                                  />
+                                                  <div
+                                                    className={`w-3 h-3 rounded border flex items-center justify-center
                                                 ${
                                                   isChecked
                                                     ? "bg-white border-white"
                                                     : "border-gray-300 bg-white"
                                                 }`}
-                                                >
-                                                  {isChecked && (
-                                                    <motion.div
-                                                      initial={{ scale: 0 }}
-                                                      animate={{ scale: 1 }}
-                                                      className={`text-xs ${action.color.replace(
-                                                        "bg-",
-                                                        "text-"
-                                                      )}`}
-                                                    >
-                                                      ✓
-                                                    </motion.div>
-                                                  )}
-                                                </div>
-                                                <span className="font-medium">
-                                                  {action.name}
-                                                </span>
-                                              </motion.label>
-                                            );
-                                          })}
+                                                  >
+                                                    {isChecked && (
+                                                      <motion.div
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        className={`text-xs ${action.color.replace(
+                                                          "bg-",
+                                                          "text-"
+                                                        )}`}
+                                                      >
+                                                        ✓
+                                                      </motion.div>
+                                                    )}
+                                                  </div>
+                                                  <span className="font-medium">
+                                                    {action.name}
+                                                  </span>
+                                                </motion.label>
+                                              );
+                                            })}
                                         </div>
                                       </motion.div>
                                     );

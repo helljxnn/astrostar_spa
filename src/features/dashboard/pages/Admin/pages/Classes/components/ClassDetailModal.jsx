@@ -12,7 +12,7 @@ import {
   Edit,
 } from "lucide-react";
 import classesService from "../services/classesService";
-import LoadingSpinner from "../../../../../../../shared/components/LoadingSpinner";
+import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 import { toast } from "../../../../../../../shared/utils/toast";
 
@@ -153,7 +153,7 @@ const ClassDetailModal = ({ isOpen, onClose, classData }) => {
 
         {loading ? (
           <div className="p-8">
-            <LoadingSpinner />
+            <InlineLoader message="Cargando detalles..." />
           </div>
         ) : classDetail ? (
           <div className="p-6 space-y-6">
