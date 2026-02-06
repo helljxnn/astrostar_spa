@@ -6,6 +6,7 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
+import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import {
   showDeleteAlert,
   showErrorAlert,
@@ -20,8 +21,6 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 // Hook personalizado para personas temporales
 import { useTemporaryPersons } from "./hooks/useTemporaryPersons.js";
 
-
-
 const TemporaryPersons = () => {
   const { hasPermission } = usePermissions();
   const {
@@ -35,15 +34,12 @@ const TemporaryPersons = () => {
     changePage,
   } = useTemporaryPersons();
 
-
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [editingPerson, setEditingPerson] = useState(null);
   const [viewingPerson, setViewingPerson] = useState(null);
   const [modalMode, setModalMode] = useState("create");
   const [searchTerm, setSearchTerm] = useState("");
-
 
   // Función para traducir estados
   const translateStatus = (status) => {
@@ -84,20 +80,22 @@ const TemporaryPersons = () => {
       ];
 
       const textMatch = textFields.some(
-        (field) =>
-          field &&
-          String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower)
       );
 
       // Campos de estado y tipo (búsqueda exacta de palabra completa)
       const translatedStatus = translateStatus(person.status).toLowerCase();
-      const translatedType = translatePersonType(person.personType).toLowerCase();
-      
+      const translatedType = translatePersonType(
+        person.personType
+      ).toLowerCase();
+
       // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
-      const statusMatch = translatedStatus === searchLower || 
-                         person.status?.toLowerCase() === searchLower;
-      const typeMatch = translatedType === searchLower || 
-                       person.personType?.toLowerCase() === searchLower;
+      const statusMatch =
+        translatedStatus === searchLower ||
+        person.status?.toLowerCase() === searchLower;
+      const typeMatch =
+        translatedType === searchLower ||
+        person.personType?.toLowerCase() === searchLower;
 
       return textMatch || statusMatch || typeMatch;
     });
@@ -148,7 +146,6 @@ const TemporaryPersons = () => {
 
   const handleSave = async (personData) => {
     try {
-
       if (editingPerson) {
         // Editar - verificar permisos
         if (!hasPermission("temporaryWorkers", "Editar")) {
@@ -159,13 +156,16 @@ const TemporaryPersons = () => {
           return false;
         }
 
-        const result = await updateTemporaryPerson(editingPerson.id, personData);
-        
+        const result = await updateTemporaryPerson(
+          editingPerson.id,
+          personData
+        );
+
         // Mostrar advertencias si las hay
         if (result.warnings && result.warnings.length > 0) {
           showWarningAlert(
             "Actualización completada con advertencias",
-            result.warnings.join('. ')
+            result.warnings.join(". ")
           );
         } else {
           showSuccessAlert(
@@ -184,12 +184,12 @@ const TemporaryPersons = () => {
         }
 
         const result = await createTemporaryPerson(personData);
-        
+
         // Mostrar advertencias si las hay
         if (result.warnings && result.warnings.length > 0) {
           showWarningAlert(
             "Persona creada con advertencias",
-            result.warnings.join('. ')
+            result.warnings.join(". ")
           );
         } else {
           showSuccessAlert(
@@ -207,13 +207,21 @@ const TemporaryPersons = () => {
       if (error.response && error.response.data) {
         const serverErrors = error.response.data.errors;
         if (serverErrors && Array.isArray(serverErrors)) {
-          const errorMessages = serverErrors.map(err => err.message).join('. ');
+          const errorMessages = serverErrors
+            .map((err) => err.message)
+            .join(". ");
           showErrorAlert("Errores de validación del servidor", errorMessages);
         } else {
-          showErrorAlert("Error del servidor", error.response.data.message || "Error desconocido");
+          showErrorAlert(
+            "Error del servidor",
+            error.response.data.message || "Error desconocido"
+          );
         }
       } else {
-        showErrorAlert("Error de conexión", "No se pudo conectar con el servidor");
+        showErrorAlert(
+          "Error de conexión",
+          "No se pudo conectar con el servidor"
+        );
       }
       return false;
     }
@@ -235,7 +243,10 @@ const TemporaryPersons = () => {
 
   const handleView = (person) => {
     if (!hasPermission("temporaryWorkers", "Ver")) {
-      showErrorAlert("Sin permisos", "No tienes permisos para ver personas temporales");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver personas temporales"
+      );
       return;
     }
     setViewingPerson(person);
@@ -254,16 +265,17 @@ const TemporaryPersons = () => {
     // Validaciones previas a la eliminación
     const deleteValidationErrors = validatePersonForDeletion(person);
     if (deleteValidationErrors.length > 0) {
-      showErrorAlert(
-        "No se puede eliminar",
-        deleteValidationErrors.join('. ')
-      );
+      showErrorAlert("No se puede eliminar", deleteValidationErrors.join(". "));
       return;
     }
 
     try {
-      const personName = `${person.firstName || ""} ${person.middleName || ""} ${person.lastName || ""} ${person.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
-      
+      const personName = `${person.firstName || ""} ${
+        person.middleName || ""
+      } ${person.lastName || ""} ${person.secondLastName || ""}`
+        .replace(/\s+/g, " ")
+        .trim();
+
       const result = await showDeleteAlert(
         "¿Eliminar persona temporal?",
         `Se eliminará permanentemente la persona temporal: ${personName}. Esta acción no se puede deshacer.`
@@ -281,7 +293,10 @@ const TemporaryPersons = () => {
       if (error.response && error.response.data) {
         showErrorAlert("Error al eliminar", error.response.data.message);
       } else {
-        showErrorAlert("Error de conexión", "No se pudo eliminar la persona temporal");
+        showErrorAlert(
+          "Error de conexión",
+          "No se pudo eliminar la persona temporal"
+        );
       }
     }
   };
@@ -292,12 +307,16 @@ const TemporaryPersons = () => {
 
     // Verificar si tiene datos críticos que impidan la eliminación
     if (person.teamMembers && person.teamMembers.length > 0) {
-      errors.push('Esta persona está asignada a equipos y no puede ser eliminada');
+      errors.push(
+        "Esta persona está asignada a equipos y no puede ser eliminada"
+      );
     }
 
     // Verificar si es un entrenador con deportistas asignados
-    if (person.personType === 'Entrenador' && person.team) {
-      errors.push('Los entrenadores con equipos asignados no pueden ser eliminados directamente');
+    if (person.personType === "Entrenador" && person.team) {
+      errors.push(
+        "Los entrenadores con equipos asignados no pueden ser eliminados directamente"
+      );
     }
 
     return errors;
@@ -306,7 +325,9 @@ const TemporaryPersons = () => {
   return (
     <div className="p-6 font-questrial">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Personas Temporales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Personas Temporales
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <SearchInput
@@ -346,14 +367,9 @@ const TemporaryPersons = () => {
         </div>
       </div>
 
-
-
-
-
       {loading ? (
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
-          <span className="ml-2 text-gray-600">Cargando personas temporales...</span>
+          <InlineLoader message="Cargando personas temporales..." />
         </div>
       ) : (
         <>
@@ -366,7 +382,11 @@ const TemporaryPersons = () => {
             tbody={{
               data: displayData.map((person) => ({
                 ...person,
-                nombreCompleto: `${person.firstName || ""} ${person.middleName || ""} ${person.lastName || ""} ${person.secondLastName || ""}`.replace(/\s+/g, ' ').trim(),
+                nombreCompleto: `${person.firstName || ""} ${
+                  person.middleName || ""
+                } ${person.lastName || ""} ${person.secondLastName || ""}`
+                  .replace(/\s+/g, " ")
+                  .trim(),
                 identificacion: person.identification || "No especificado",
                 tipoPersona: translatePersonType(person.personType) || "",
                 estado: translateStatus(person.status) || "",
@@ -379,11 +399,17 @@ const TemporaryPersons = () => {
               ],
               state: true,
             }}
-            onEdit={hasPermission("temporaryWorkers", "Editar") ? handleEdit : null}
-            onDelete={
-              hasPermission("temporaryWorkers", "Eliminar") ? handleDelete : null
+            onEdit={
+              hasPermission("temporaryWorkers", "Editar") ? handleEdit : null
             }
-            onView={hasPermission("temporaryWorkers", "Ver") ? handleView : null}
+            onDelete={
+              hasPermission("temporaryWorkers", "Eliminar")
+                ? handleDelete
+                : null
+            }
+            onView={
+              hasPermission("temporaryWorkers", "Ver") ? handleView : null
+            }
             buttonConfig={{
               edit: () => ({
                 show: hasPermission("temporaryWorkers", "Editar"),

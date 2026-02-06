@@ -45,19 +45,19 @@ import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/Purchas
 import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
 
 /* --- Componentes generales --- */
-import { Unauthorized } from "../shared/components/Unauthorized.jsx";
+import DashboardHome from "../shared/components/DashboardHome.jsx";
 
 const PrivateRoutes = () => {
   return (
     <Routes>
-      {/* Ruta pública para acceso no autorizado */}
-      <Route path="/unauthorized" element={<Unauthorized />} />
-
       {/* Todas las rutas bajo el layout /dashboard */}
       <Route path="/dashboard" element={<DashboardLayout />}>
         {/* --- Principal --- */}
+        <Route index element={<DashboardHome />} />
+
+        {/* --- Dashboard específico (requiere permisos) --- */}
         <Route
-          index
+          path="analytics"
           element={
             <PrivateRoute module="dashboard" action="Ver">
               <Dashboard />

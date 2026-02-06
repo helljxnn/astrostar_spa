@@ -1,0 +1,51 @@
+/* SOLUCIÓN FINAL - Sobrescribe todo lo anterior */
+
+/* Reset completo del contenido principal */
+.dashboard-main-content {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-width: auto !important;
+  max-width: none !important;
+  flex: 1 !important;
+  transition: margin-left 0.3s ease-in-out !important;
+}
+
+/* Forzar estilos inline - el CSS inline debería tener prioridad */
+.dashboard-main-content[style*="margin-left: 80px"] {
+  margin-left: 80px !important;
+  width: calc(100vw - 80px) !important;
+}
+
+.dashboard-main-content[style*="margin-left: 288px"] {
+  margin-left: 288px !important;
+  width: calc(100vw - 288px) !important;
+}
+
+.dashboard-main-content[style*="margin-left: 0px"] {
+  margin-left: 0px !important;
+  width: 100vw !important;
+}
+
+/* Sidebar fijo */
+.dynamic-sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  z-index: 50 !important;
+}
+
+/* Contenedor principal sin interferencias */
+.min-h-screen.bg-gray-50.flex {
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+
+/* Móvil */
+@media (max-width: 1023px) {
+  .dashboard-main-content {
+    margin-left: 0px !important;
+    width: 100vw !important;
+  }
+}

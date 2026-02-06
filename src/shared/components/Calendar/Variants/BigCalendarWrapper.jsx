@@ -3,7 +3,7 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import LoadingSpinner from "../../LoadingSpinner";
+import { InlineLoader } from "../../Loader";
 
 // Configure moment for Spanish
 moment.locale("es");
@@ -75,10 +75,6 @@ const BigCalendarWrapper = ({
         case "cancelado":
           style.backgroundColor = "#FC6D6D";
           break;
-        case "en-pausa":
-          style.backgroundColor = "#EDEB85";
-          style.color = "#374151";
-          break;
         default:
           style.backgroundColor = "#B595FF";
       }
@@ -90,7 +86,7 @@ const BigCalendarWrapper = ({
   // Custom event component
   const EventComponent = ({ event }) => {
     if (renderEvent) {
-      return renderEvent(event);
+      return renderEvent({ event, view });
     }
 
     return (
@@ -104,7 +100,7 @@ const BigCalendarWrapper = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96 bg-white rounded-xl border border-gray-100">
-        <LoadingSpinner />
+        <InlineLoader message="Cargando calendario..." />
       </div>
     );
   }

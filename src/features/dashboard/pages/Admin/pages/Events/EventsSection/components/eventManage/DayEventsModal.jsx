@@ -1,4 +1,3 @@
-import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import es from "date-fns/locale/es";

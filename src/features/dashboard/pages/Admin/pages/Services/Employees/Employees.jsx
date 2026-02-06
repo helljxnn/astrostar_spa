@@ -6,6 +6,7 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import {
   showDeleteAlert,
   showErrorAlert,
@@ -277,8 +278,7 @@ const Employees = () => {
 
       {loading ? (
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
-          <span className="ml-2 text-gray-600">Cargando empleados...</span>
+          <InlineLoader message="Cargando empleados..." />
         </div>
       ) : (
         <>
