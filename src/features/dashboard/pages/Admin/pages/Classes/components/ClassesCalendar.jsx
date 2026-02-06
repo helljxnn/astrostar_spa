@@ -61,8 +61,8 @@ const ClassesCalendar = ({
   /**
    * Generar reporte de clases
    */
-  const handleGenerateReport = (events) => {
-    console.log("Generar reporte de clases:", events);
+  const handleGenerateReport = (reportData) => {
+    console.log("Generar reporte de clases:", reportData);
     // Este handler no se usa ya que el botón de reportes está deshabilitado
   };
 

@@ -1,20 +1,13 @@
-import "react-big-calendar/lib/css/react-big-calendar.css"; // Asegura que los estilos del calendario se carguen
-import "./styles/AppointmentCalendar.css"; // Importar estilos personalizados para el hover
-import React, { useState, useMemo, useCallback } from "react";
-import { Calendar, momentLocalizer } from "react-big-calendar";
-import moment from "moment";
-import "moment/locale/es"; // Importar localización en español para moment
-import { SiGoogleforms } from "react-icons/si";
-import { showSuccessAlert, } from "../../../../../../../shared/utils/alerts";
-import Swal from 'sweetalert2';
+﻿import React, { useState, useMemo, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Plus, Filter } from "lucide-react";
+import { showSuccessAlert } from "../../../../../../../shared/utils/alerts";
+import Swal from "sweetalert2";
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
-// Configurar moment para que use español globalmente en este componente
-moment.locale("es");
+import { BaseCalendar, CalendarReportGenerator } from "../../../../../../../shared/components/Calendar";
 
-// El localizer le dice a react-big-calendar cómo manejar las fechas
-const localizer = momentLocalizer(moment);
 
 // Datos de ejemplo para las citas. En una app real, esto vendría de una API.
 const sampleAppointments = [
@@ -77,57 +70,15 @@ function Appointments() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedAppointment, setSelectedAppointment] = useState(null);
-    const [initialSlot, setInitialSlot] = useState(null); // Para guardar la fecha del slot seleccionado
-    const [view, setView] = useState("month"); // Estado para controlar la vista actual del calendario
-    const [date, setDate] = useState(new Date()); // Estado para la fecha actual del calendario
+    const [initialSlot, setInitialSlot] = useState(null); // Para guardar la fecha seleccionada
     const [searchTerm, setSearchTerm] = useState(""); // Estado para el término de búsqueda
+    const [showFilters, setShowFilters] = useState(false);
+    const [selectedFilters, setSelectedFilters] = useState({
+        specialty: "",
+        specialist: "",
+        status: "",
+    });
 
-
-    // Función para dar estilo a las citas del calendario
-    const appointmentPropGetter = (event) => {
-        // Obtiene el color de la especialidad o un color por defecto si no se encuentra.
-        const backgroundColor = specialtyColors[event.specialty] || '#6D28D9'; // Morado por defecto
-        let className = 'rbc-event-custom'; // Clase base para estilos comunes
-
-        const style = {
-            backgroundColor,
-            borderRadius: "5px",
-            color: "white",
-            border: "0px",
-            display: "block",
-        };
-
-        if (event.status === 'cancelled') {
-            className += ' event-cancelled';
-        }
-        if (event.status === 'completed') {
-            className += ' event-completed';
-        }
-        return { className, style };
-    };
-
-    // Mensajes en español para el calendario
-    const messages = {
-        allDay: 'Todo el día',
-        previous: 'Anterior',
-        next: 'Siguiente',
-        today: 'Hoy',
-        month: 'Mes',
-        week: 'Semana',
-        day: 'Día',
-        agenda: 'Agenda',
-        date: 'Fecha',
-        time: 'Hora',
-        event: 'Cita',
-        noEventsInRange: 'No hay citas en este rango.',
-        showMore: total => `+ Ver más (${total})`
-    };
-
-    // Funciones para la navegación del calendario
-    const handleNavigate = (action) => {
-        if (action === 'TODAY') setDate(new Date());
-        else setDate(moment(date).add(action === 'PREV' ? -1 : 1, view).toDate());
-    };
 
     // Obtiene la etiqueta de la especialidad a partir de su valor
     const getSpecialtyLabel = (value) => {
@@ -135,30 +86,73 @@ function Appointments() {
         return option ? option.label : 'No especificada';
     };
 
-    const filteredAppointments = useMemo(() => {
-        const term = searchTerm.toLowerCase();
-        if (!term) return appointments;
+    const handleFiltersChange = (nextFilters) => {
+        setSelectedFilters(prev => ({ ...prev, ...nextFilters }));
+    };
 
-        return appointments.filter(appointment => {
-            const specialtyLabel = getSpecialtyLabel(appointment.specialty).toLowerCase();
-            const specialist = (appointment.specialist || '').toLowerCase();
-            const title = (appointment.title || '').toLowerCase();
-            const description = (appointment.description || '').toLowerCase();
+    const appointmentEvents = useMemo(() => {
+        return appointments.map((appointment) => {
+            const startDate = appointment.start ? new Date(appointment.start) : null;
+            const endDate = appointment.end ? new Date(appointment.end) : null;
+            const date = startDate ? startDate.toISOString().split("T")[0] : "";
+            const time = startDate ? startDate.toTimeString().slice(0, 5) : "";
             const athlete = sampleAthletes.find(a => a.id === appointment.athlete);
-            const athleteName = athlete ? `${athlete.nombres} ${athlete.apellidos}`.toLowerCase() : '';
+            const athleteName = athlete ? `${athlete.nombres} ${athlete.apellidos}` : "Deportista";
+            const specialtyLabel = getSpecialtyLabel(appointment.specialty);
+            const backgroundColor = specialtyColors[appointment.specialty] || "#B595FF";
 
-            return specialtyLabel.includes(term) ||
-                specialist.includes(term) ||
-                title.includes(term) ||
-                description.includes(term) ||
-                athleteName.includes(term);
+            return {
+                id: appointment.id,
+                title: appointment.title || `Cita: ${athleteName}`,
+                date,
+                time,
+                start: startDate,
+                end: endDate,
+                status: appointment.status,
+                specialty: appointment.specialty,
+                specialist: appointment.specialist,
+                athleteName,
+                description: appointment.description,
+                backgroundColor,
+                borderColor: backgroundColor,
+                extendedProps: {
+                    ...appointment,
+                    athleteName,
+                    specialtyLabel,
+                },
+            };
         });
-    }, [appointments, searchTerm]);
+    }, [appointments]);
+
+    const filters = [
+        {
+            id: "specialty",
+            label: "Especialidad",
+            field: "specialty",
+            options: specialtyOptions,
+        },
+        {
+            id: "specialist",
+            label: "Especialista",
+            field: "specialist",
+            options: allSpecialistOptions,
+        },
+        {
+            id: "status",
+            label: "Estado",
+            field: "status",
+            options: [
+                { value: "active", label: "Activa" },
+                { value: "completed", label: "Completada" },
+                { value: "cancelled", label: "Cancelada" },
+            ],
+        },
+    ];
 
     const handleSelectAppointment = (appointment) => {
-        // Solo mostramos el modal de detalles para citas que tienen detalles.
-        if (appointment.specialty) {
-            setSelectedAppointment(appointment);
+        const appointmentData = appointment?.extendedProps || appointment;
+        if (appointmentData?.specialty) {
+            setSelectedAppointment(appointmentData);
             setIsViewModalOpen(true);
         }
     };
@@ -181,10 +175,8 @@ function Appointments() {
         setInitialSlot(null); // Limpiamos la fecha al cerrar
     };
 
-    const handleSelectSlot = useCallback((slotInfo) => {
-        // Guardamos la información del slot (que incluye la fecha de inicio)
-        // y abrimos el modal de creación.
-        setInitialSlot(slotInfo);
+    const handleDateSelect = useCallback((selectedDate) => {
+        setInitialSlot({ start: selectedDate });
         setIsCreateModalOpen(true);
     }, []);
 
@@ -251,104 +243,220 @@ function Appointments() {
         }
     };
 
-    return (
-        <div className="w-full h-auto grid grid-rows-[auto_1fr] relative p-4">
-            {/* Cabecera */}
-            <div id="header" className="w-full h-auto p-4 flex justify-between items-center">
+    const renderEvent = (event, variant) => {
+        const color = event.backgroundColor || "#B595FF";
+        if (variant === "grid") {
+            return (
+                <div
+                    className="p-1 rounded text-black text-xs cursor-pointer hover:opacity-80"
+                    style={{ backgroundColor: color }}
+                >
+                    <div className="font-medium truncate text-xs leading-tight">
+                        {event.title}
+                    </div>
+                </div>
+            );
+        }
+        return <span>{event.title}</span>;
+    };
+
+    const renderSidebarItem = (event, actions) => {
+        const specialtyLabel =
+            event.extendedProps?.specialtyLabel || getSpecialtyLabel(event.specialty);
+        return (
+            <div className="space-y-2">
                 <div>
-                    <h1 className="text-4xl font-bold text-gray-800">Gestión de Citas</h1>
-                    <p className="text-gray-500 mt-2">
+                    <h4 className="font-medium text-gray-800 text-sm mb-1">
+                        {event.title}
+                    </h4>
+                    <div className="space-y-1 text-xs text-gray-600">
+                        {event.time && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-medium">Hora:</span>
+                                {event.time}
+                            </div>
+                        )}
+                        {event.specialist && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-medium">Especialista:</span>
+                                {event.specialist}
+                            </div>
+                        )}
+                        {specialtyLabel && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-medium">Especialidad:</span>
+                                {specialtyLabel}
+                            </div>
+                        )}
+                        {event.athleteName && (
+                            <div className="flex items-center gap-1">
+                                <span className="text-xs font-medium">Deportista:</span>
+                                {event.athleteName}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {actions.length > 0 && (
+                    <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+                        {actions.map((action, actionIndex) => (
+                            <button
+                                key={actionIndex}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    action.onClick(event);
+                                }}
+                                className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                            >
+                                {action.icon && <action.icon className="h-3 w-3" />}
+                                {action.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-6 p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Gestión de Citas</h1>
+                    <p className="text-gray-500 mt-1">
                         Visualiza, crea y gestiona las citas
                     </p>
                 </div>
-                <div className="flex items-center gap-4">
-                    {/* Controles de Navegación del Calendario */}
-                    <div className="hidden sm:flex items-center justify-center bg-gray-100 rounded-lg p-1 border border-gray-200">
-                        <button
-                            onClick={() => handleNavigate('PREV')}
-                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
-                        >
-                            &lt;
-                        </button>
 
-                        <button
-                            onClick={() => handleNavigate('TODAY')}
-                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
-                        >
-                            Hoy
-                        </button>
-                        {/* Texto del Mes y Año */}
-                        <span className="px-4 py-2 text-base font-semibold text-gray-700 w-40 text-center">
-                            {moment(date).format('MMMM YYYY').replace(/^\w/, (c) => c.toUpperCase())}
-                        </span>
-                        <button
-                            onClick={() => handleNavigate('NEXT')}
-                            className="px-3 py-2 rounded-md text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors"
-                        >
-                            &gt;
-                        </button>
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                    <div className="w-full sm:w-auto">
+                        <SearchInput
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Buscar citas..."
+                            className="min-w-[200px]"
+                        />
                     </div>
 
-                    {/* Grupo de botones para las vistas del calendario */}
-                    <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1 border border-gray-200">
-                        <button
-                            onClick={() => setView('month')}
-                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'month' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <motion.button
+                            onClick={handleOpenCreateModal}
+                            className="flex items-center gap-2 px-4 py-2 bg-[#B595FF] text-white rounded-lg font-medium hover:bg-[#9BE9FF] transition-all duration-300"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            Mes
-                        </button>
-                        <button
-                            onClick={() => setView('week')}
-                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'week' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
+                            <Plus className="h-4 w-4" />
+                            <span>Crear</span>
+                        </motion.button>
+                        <motion.button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${showFilters
+                                ? "bg-[#B595FF] text-white border-[#B595FF]"
+                                : "text-gray-700 hover:text-[#B595FF]"}`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
-                            Semana
-                        </button>
-                        <button
-                            onClick={() => setView('day')}
-                            className={`px-4 py-2 rounded-md text-sm font-semibold transition-colors ${view === 'day' ? 'bg-white text-primary-purple shadow-sm' : 'text-gray-600 hover:bg-gray-200'}`}
-                        >
-                            Día
-                        </button>
+                            <Filter className="h-4 w-4" />
+                            <span className="hidden sm:inline">Filtros</span>
+                        </motion.button>
+                        <CalendarReportGenerator
+                            events={appointmentEvents}
+                            title="Reportes"
+                            entityName="citas"
+                            reportTypes={["pdf", "excel"]}
+                            showDateFilter={true}
+                            customFields={[
+                                { key: "specialist", label: "Especialista" },
+                                { key: "specialty", label: "Especialidad" },
+                                { key: "athleteName", label: "Deportista" },
+                                { key: "status", label: "Estado" },
+                            ]}
+                        />
                     </div>
-                    <button onClick={handleOpenCreateModal} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg shadow hover:opacity-90 transition whitespace-nowrap">
-                        Crear Cita <SiGoogleforms size={20} />
-                    </button>
                 </div>
             </div>
 
-            {/* Cuerpo con el Calendario */}
-            <div id="body" className="w-full h-full p-4 bg-white rounded-2xl shadow-lg">
-                {/* Buscador reubicado */}
-                <div className="w-full flex justify-end mb-4">
-                    <SearchInput
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar..."
-                    />
-                </div>
-                <div className="h-[50vh]"> {/* Altura flexible para que ocupe el espacio disponible */}
-                    <Calendar
-                        localizer={localizer}
-                        events={filteredAppointments}
-                        startAccessor="start"
-                        endAccessor="end"
-                        style={{ height: '100%' }}
-                        eventPropGetter={appointmentPropGetter}
-                        messages={messages}
-                        views={['month', 'week', 'day', 'agenda']}
-                        date={date} // Controla la fecha mostrada
-                        onNavigate={setDate} // Actualiza la fecha al navegar internamente
-                        onSelectEvent={handleSelectAppointment}
-                        view={view}
-                        selectable={true} // Hacemos el calendario seleccionable
-                        onDrillDown={() => { }} // Evita el comportamiento por defecto de navegar al día
-                        onSelectSlot={handleSelectSlot} // Manejador para cuando se selecciona un slot
-                        onView={setView}
-                        toolbar={false} // Desactivamos la barra de herramientas interna
-                    />
-                </div>
-            </div>
+            {showFilters && (
+                <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+                >
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+                        <button
+                            onClick={() => setShowFilters(false)}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            x
+                        </button>
+                    </div>
 
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filters.map((filter) => (
+                            <div key={filter.id} className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700">
+                                    {filter.label}
+                                </label>
+                                <select
+                                    value={selectedFilters[filter.id] || ""}
+                                    onChange={(e) => handleFiltersChange({ [filter.id]: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B595FF] focus:border-transparent"
+                                >
+                                    <option value="">Todos</option>
+                                    {filter.options.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        ))}
+                    </div>
+
+                    {(selectedFilters.specialty || selectedFilters.specialist || selectedFilters.status) && (
+                        <div className="mt-4">
+                            <button
+                                onClick={() => setSelectedFilters({ specialty: "", specialist: "", status: "" })}
+                                className="text-xs font-semibold text-gray-600 px-3 py-1 rounded-full border border-gray-200 hover:bg-gray-100 transition"
+                            >
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
+            <BaseCalendar
+                variant="custom"
+                events={appointmentEvents}
+                onEventClick={handleSelectAppointment}
+                onCreate={handleOpenCreateModal}
+                onDateSelect={handleDateSelect}
+                renderEvent={renderEvent}
+                renderSidebarItem={renderSidebarItem}
+                title="Calendario de Citas"
+                showHeader={false}
+                showCreateButton={false}
+                showReportButton={false}
+                showSearch={false}
+                showFilters={false}
+                createButtonText="Crear Cita"
+                reportButtonText="Reportes de Citas"
+                searchTerm={searchTerm}
+                searchPlaceholder="Buscar citas..."
+                searchFields={["title", "specialist", "specialty", "athleteName", "description"]}
+                filters={filters}
+                selectedFilters={selectedFilters}
+                onFiltersChange={handleFiltersChange}
+                viewTypes={["month", "week", "day"]}
+                defaultView="month"
+                sidebarTitle="Citas Programadas"
+                sidebarEmptyText="No hay citas programadas"
+                colorScheme="events"
+                className="appointments-calendar"
+            />
             {/* Modal para Crear Cita */}
             <AppointmentForm
                 isOpen={isCreateModalOpen}
@@ -399,3 +507,4 @@ function Appointments() {
 
 
 export default Appointments;
+

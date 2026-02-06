@@ -8,7 +8,13 @@ import autoTable from "jspdf-autotable";
 import { showErrorAlert } from "../../shared/utils/alerts";
 import { exportToExcel } from "../../shared/utils/Excel";
 
-const ReportButton = ({ data, fileName = "Reporte", columns }) => {
+const ReportButton = ({
+  data,
+  fileName = "Reporte",
+  columns,
+  buttonClassName = "",
+  iconClassName = "",
+}) => {
   const [open, setOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const dropdownRef = useRef(null);
@@ -178,17 +184,21 @@ const ReportButton = ({ data, fileName = "Reporte", columns }) => {
       <motion.button
         onClick={toggleDropdown}
         disabled={isGenerating}
-        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-gray-700 font-semibold transition-colors ${
-          isGenerating 
-            ? 'bg-gray-300 cursor-not-allowed' 
-            : 'hover:bg-gray-200'
-        }`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${
+          isGenerating
+            ? "bg-gray-300 cursor-not-allowed text-gray-700"
+            : "text-gray-700 hover:bg-gray-200"
+        } ${buttonClassName}`}
         whileHover={isGenerating ? {} : { scale: 1.03 }}
         whileTap={isGenerating ? {} : { scale: 0.97 }}
       >
         <IoMdDownload 
           size={22} 
-          className={isGenerating ? "text-gray-500" : "text-primary-purple"} 
+          className={
+            isGenerating
+              ? "text-gray-500"
+              : iconClassName || "text-primary-purple"
+          }
         />
         {isGenerating ? "Generando..." : "Generar reporte"}
         {!isGenerating && (
