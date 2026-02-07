@@ -25,15 +25,6 @@ function DashboardLayout() {
     toggleSidebar,
   } = useSidebarState();
 
-  // Debug log
-  console.log("DashboardLayout render:", {
-    sidebarOpen,
-    isExpanded,
-    isMobile,
-    state: getSidebarState(),
-    marginLeft: getMarginLeft(),
-  });
-
   const handleUpdateProfile = async (updatedData) => {
     try {
       if (updateUser) {

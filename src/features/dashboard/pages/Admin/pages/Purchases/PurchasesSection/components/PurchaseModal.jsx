@@ -4,9 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { showErrorAlert } from '../../../../../../../../shared/utils/alerts';
 import providersService from '../../Providers/services/ProvidersService';
 
-const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
+const PurchaseModal = ({ isOpen, onClose, onSave }) => {
   const navigate = useNavigate();
-  const isEditMode = !!purchase;
   
   const [formData, setFormData] = useState({
     proveedor: '',
@@ -28,24 +27,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
     { value: 'Transferencia', label: 'Transferencia' },
     { value: 'Efectivo', label: 'Efectivo' },
     { value: 'Tarjeta', label: 'Tarjeta' },
-    { value: 'Cheque', label: 'Cheque' },
   ];
-
-  // Cargar datos de compra si está en modo edición
-  useEffect(() => {
-    if (isOpen && purchase) {
-      setFormData({
-        proveedor: purchase.proveedor || '',
-        concepto: purchase.concepto || '',
-        fechaCompra: purchase.fechaCompra || '',
-        montoTotal: purchase.montoTotal || '',
-        metodoPago: purchase.metodoPago || 'Transferencia',
-        observaciones: purchase.observaciones || '',
-      });
-      setProviderSearchTerm(purchase.proveedor || '');
-      setFacturaPreview(purchase.facturaUrl || null);
-    }
-  }, [isOpen, purchase]);
 
   // Filtrar proveedores según el término de búsqueda (solo cuando se escribe)
   useEffect(() => {
@@ -187,8 +169,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
       showErrorAlert('Monto inválido', 'El monto debe ser mayor a 0');
       return;
     }
-    // En modo edición, la factura es opcional
-    if (!isEditMode && !facturaFile) {
+    if (!facturaFile) {
       showErrorAlert('Factura requerida', 'Debes subir la factura');
       return;
     }
@@ -205,12 +186,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
         observaciones: formData.observaciones,
       };
 
-      // Si es edición, incluir el ID
-      if (isEditMode) {
-        purchaseData.id = purchase.id;
-      }
-
-      const success = await onSave(purchaseData, facturaFile, isEditMode);
+      const success = await onSave(purchaseData, facturaFile);
       
       if (success) {
         handleClose();
@@ -252,7 +228,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
             ✕
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {isEditMode ? 'Editar Compra' : 'Registrar Compra'}
+            Registrar Compra
           </h2>
         </div>
 
@@ -370,19 +346,22 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Monto Total <span className="text-red-500">*</span>
+                Monto Total (COP) <span className="text-red-500">*</span>
               </label>
-              <input
-                type="number"
-                name="montoTotal"
-                value={formData.montoTotal}
-                onChange={handleChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-                required
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  name="montoTotal"
+                  value={formData.montoTotal}
+                  onChange={handleChange}
+                  placeholder="0"
+                  min="0"
+                  step="1"
+                  className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -409,8 +388,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
           {/* Subir Factura */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Factura {!isEditMode && <span className="text-red-500">*</span>}
-              {isEditMode && <span className="text-xs text-gray-500 ml-2">(opcional - solo si deseas cambiarla)</span>}
+              Factura <span className="text-red-500">*</span>
             </label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-blue transition-colors">
               <input
@@ -479,7 +457,7 @@ const PurchaseModal = ({ isOpen, onClose, onSave, purchase = null }) => {
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? 'Guardando...' : (isEditMode ? 'Actualizar Compra' : 'Guardar Compra')}
+              {loading ? 'Guardando...' : 'Guardar Compra'}
             </button>
           </div>
         </div>

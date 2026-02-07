@@ -56,7 +56,6 @@ export const useSidebarState = () => {
           ? "collapsed"
           : "closed";
 
-    console.log("Sidebar State:", { isMobile, sidebarOpen, isExpanded, state });
     return state;
   }, [isMobile, sidebarOpen, isExpanded]);
 
@@ -70,7 +69,6 @@ export const useSidebarState = () => {
           ? "80px"
           : "0px";
 
-    console.log("Margin Left:", { isMobile, sidebarOpen, isExpanded, margin });
     return margin;
   }, [isMobile, sidebarOpen, isExpanded]);
 

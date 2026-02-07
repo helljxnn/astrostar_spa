@@ -845,7 +845,7 @@ const TemporaryTeamModal = ({
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <motion.div className="flex-1 overflow-y-auto p-3">
             {/* Información básica */}
             {/* Campo de nombre - Ancho completo */}
             <motion.div
@@ -1212,7 +1212,7 @@ const TemporaryTeamModal = ({
                       }`}
                     />
                   </div>
-                </div>
+                </button>
 
                 <div className="space-y-3">
                   <button
@@ -1386,7 +1386,7 @@ const TemporaryTeamModal = ({
                   </div>
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Descripción */}
             <motion.div
@@ -1405,7 +1405,7 @@ const TemporaryTeamModal = ({
                 rows={3}
               />
             </motion.div>
-          </div>
+          </motion.div>
 
           {/* Footer */}
           <div className="flex-shrink-0 border-t border-gray-200 p-3">
@@ -1464,6 +1464,7 @@ const TemporaryTeamModal = ({
         excludeTrainerId={selectedTrainer?.id}
         initialTabType="fundacion"
       />
+    </motion.div>
     </>
   );
 };

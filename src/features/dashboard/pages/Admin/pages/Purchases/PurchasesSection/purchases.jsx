@@ -14,7 +14,6 @@ const Purchases = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState(null);
-  const [editingPurchase, setEditingPurchase] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -69,34 +68,16 @@ const Purchases = () => {
 
   // Handlers
   const handleCreate = () => {
-    setEditingPurchase(null);
     setIsModalOpen(true);
   };
 
-  const handleEdit = (purchase) => {
-    setEditingPurchase(purchase);
-    setIsModalOpen(true);
-  };
-
-  const handleSave = async (purchaseData, facturaFile, isEditMode) => {
+  const handleSave = async (purchaseData, facturaFile) => {
     try {
-      let response;
-      
-      if (isEditMode) {
-        response = await purchasesService.updatePurchase(purchaseData.id, purchaseData, facturaFile);
-        if (response.success) {
-          showSuccessAlert("Compra Actualizada", "La compra se ha actualizado exitosamente");
-        }
-      } else {
-        response = await purchasesService.createPurchase(purchaseData, facturaFile);
-        if (response.success) {
-          showSuccessAlert("Compra Registrada", "La compra se ha registrado exitosamente");
-        }
-      }
+      const response = await purchasesService.createPurchase(purchaseData, facturaFile);
       
       if (response.success) {
+        showSuccessAlert("Compra Registrada", "La compra se ha registrado exitosamente");
         setIsModalOpen(false);
-        setEditingPurchase(null);
         fetchPurchases();
         return true;
       }
@@ -113,15 +94,22 @@ const Purchases = () => {
   };
 
   const handleDownloadInvoice = async (purchase) => {
+    console.log('🔍 Intentando descargar factura:', {
+      id: purchase.id,
+      facturaUrl: purchase.facturaUrl,
+      purchase: purchase
+    });
+    
     if (!purchase.facturaUrl) {
       showErrorAlert("Error", "No hay factura disponible");
       return;
     }
     try {
       await purchasesService.downloadInvoice(purchase.id);
+      showSuccessAlert("Descarga exitosa", "La factura se descargó correctamente");
     } catch (error) {
       console.error('Error al descargar factura:', error);
-      showErrorAlert("Error", "No se pudo descargar la factura");
+      showErrorAlert("Error", error.message || "No se pudo descargar la factura");
     }
   };
 
@@ -130,6 +118,7 @@ const Purchases = () => {
     ...p,
     fechaCompraFormatted: formatDate(p.fechaCompra),
     montoTotalFormatted: formatCurrency(p.montoTotal),
+    conceptoTruncated: p.concepto.length > 50 ? p.concepto.substring(0, 50) + '...' : p.concepto,
   }));
 
   // Datos para reporte
@@ -182,35 +171,25 @@ const Purchases = () => {
         </div>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Cargando compras...</p>
-        </div>
-      )}
-
       {/* Tabla */}
-      {!loading && (
-        <>
-          <Table
-            thead={{
-              titles: ["Fecha", "Proveedor", "Concepto", "Monto", "Método de Pago"],
-              state: false,
-              actions: true,
-            }}
-            tbody={{
-              data: tableData,
-              dataPropertys: ["fechaCompraFormatted", "proveedor", "concepto", "montoTotalFormatted", "metodoPago"],
-              state: false,
-            }}
-            onView={handleView}
-            onEdit={handleEdit}
-            customActions={[
-              {
-                onClick: handleDownloadInvoice,
-                className: "p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors",
-                label: <FaDownload />,
-                title: "Descargar factura",
+      <Table
+        thead={{
+          titles: ["Fecha", "Proveedor", "Concepto", "Monto", "Método de Pago"],
+          state: false,
+          actions: true,
+        }}
+        tbody={{
+          data: tableData,
+          dataPropertys: ["fechaCompraFormatted", "proveedor", "conceptoTruncated", "montoTotalFormatted", "metodoPago"],
+          state: false,
+        }}
+        onView={handleView}
+        customActions={[
+          {
+            onClick: handleDownloadInvoice,
+            className: "p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors",
+            label: <FaDownload />,
+            title: "Descargar factura",
                 show: () => true
               }
             ]}
@@ -221,9 +200,7 @@ const Purchases = () => {
                 title: "Ver detalles",
               }),
               edit: () => ({
-                show: true,
-                disabled: false,
-                title: "Editar compra",
+                show: false,
               }),
               delete: () => ({
                 show: false,
@@ -242,24 +219,19 @@ const Purchases = () => {
               startIndex={startIndex}
             />
           )}
-        </>
-      )}
 
       {/* Modales */}
       <PurchaseModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingPurchase(null);
-        }}
+        onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
-        purchase={editingPurchase}
       />
 
       <PurchaseViewModal
         isOpen={isViewModalOpen}
         onClose={() => setIsViewModalOpen(false)}
         purchase={selectedPurchase}
+        onRefresh={fetchPurchases}
       />
     </div>
   );

@@ -1,8 +1,68 @@
-import { FaTimes, FaFileAlt, FaCalendar, FaDollarSign, FaCreditCard, FaUser, FaStickyNote } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaTimes, FaFileAlt, FaCalendar, FaDollarSign, FaCreditCard, FaUser, FaStickyNote, FaPlus } from 'react-icons/fa';
+import AddNoteModal from './AddNoteModal';
+import purchasesService from '../services/PurchasesService';
+import { showSuccessAlert, showErrorAlert } from '../../../../../../../../shared/utils/alerts';
 
 // Componente para ver detalles de una compra
-const PurchaseViewModal = ({ isOpen, onClose, purchase }) => {
+const PurchaseViewModal = ({ isOpen, onClose, purchase, onRefresh }) => {
+  const [isAddNoteModalOpen, setIsAddNoteModalOpen] = useState(false);
+  const [loadingNote, setLoadingNote] = useState(false);
+  const [notes, setNotes] = useState([]);
+  const [loadingNotes, setLoadingNotes] = useState(false);
+
+  // Cargar notas cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && purchase?.id) {
+      fetchNotes();
+    }
+  }, [isOpen, purchase?.id]);
+
+  const fetchNotes = async () => {
+    if (!purchase?.id) return;
+    
+    try {
+      setLoadingNotes(true);
+      const response = await purchasesService.getNotes(purchase.id);
+      if (response.success) {
+        setNotes(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar notas:', error);
+    } finally {
+      setLoadingNotes(false);
+    }
+  };
+
+  const handleSaveNote = async (noteText) => {
+    try {
+      setLoadingNote(true);
+      const response = await purchasesService.addNote(purchase.id, noteText);
+      
+      if (response.success) {
+        showSuccessAlert('Nota agregada', 'La nota se ha guardado correctamente');
+        fetchNotes(); // Recargar notas
+        if (onRefresh) onRefresh(); // Refrescar lista de compras
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error al guardar nota:', error);
+      showErrorAlert('Error', 'No se pudo guardar la nota');
+      return false;
+    } finally {
+      setLoadingNote(false);
+    }
+  };
+
   if (!isOpen || !purchase) return null;
+
+  // Log para debugging
+  console.log('📄 Datos de factura:', {
+    facturaUrl: purchase.facturaUrl,
+    facturaNombre: purchase.facturaNombre,
+    purchaseCompleto: purchase
+  });
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('es-CO', {
@@ -61,6 +121,11 @@ const PurchaseViewModal = ({ isOpen, onClose, purchase }) => {
                 <span className="text-sm font-medium">Proveedor</span>
               </div>
               <p className="text-base text-gray-900">{purchase.proveedor}</p>
+              {purchase.proveedorNit && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {purchase.proveedorTipoDocumento || 'Documento'}: {purchase.proveedorNit}
+                </p>
+              )}
             </div>
 
             {/* Fecha */}
@@ -113,35 +178,103 @@ const PurchaseViewModal = ({ isOpen, onClose, purchase }) => {
 
           {/* Factura */}
           <div className="border border-gray-200 rounded-lg p-4">
-            <h3 className="text-base text-gray-800 mb-4">Factura Adjunta</h3>
+            <div className="flex items-center gap-2 text-gray-500 mb-3">
+              <FaFileAlt className="text-sm" />
+              <span className="text-sm font-medium">Factura Adjunta</span>
+            </div>
 
-            {/* Preview de la factura */}
-            <div className="bg-gray-50 rounded-lg p-4 min-h-[200px] flex items-center justify-center border border-gray-200">
+            {/* Preview compacto de la factura */}
+            <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3 border border-gray-200">
               {isImage ? (
-                <img
-                  src={purchase.facturaUrl}
-                  alt="Factura"
-                  className="max-h-96 rounded-lg shadow"
-                />
+                <>
+                  <img
+                    src={purchase.facturaUrl}
+                    alt="Factura"
+                    className="h-16 w-16 object-cover rounded border border-gray-300"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 font-medium">
+                      {purchase.facturaNombre || 'Imagen adjunta'}
+                    </p>
+                  </div>
+                </>
               ) : isPDF ? (
-                <div className="text-center">
-                  <FaFileAlt className="text-5xl text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600 font-medium">Documento PDF</p>
-                  <p className="text-sm text-gray-500 mt-2">Usa el botón de descarga en la tabla para ver el archivo</p>
-                </div>
+                <>
+                  <div className="h-16 w-16 bg-gray-100 rounded flex items-center justify-center border border-gray-300">
+                    <FaFileAlt className="text-2xl text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 font-medium">
+                      {purchase.facturaNombre || 'Documento PDF'}
+                    </p>
+                  </div>
+                </>
               ) : (
-                <div className="text-center">
-                  <FaFileAlt className="text-5xl text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600">Archivo adjunto</p>
+                <>
+                  <div className="h-16 w-16 bg-gray-100 rounded flex items-center justify-center border border-gray-300">
+                    <FaFileAlt className="text-2xl text-gray-400" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700 font-medium">
+                      {purchase.facturaNombre || 'Archivo adjunto'}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Sección de Notas / Aclaraciones */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                <FaStickyNote className="text-primary-blue" />
+                Notas / Aclaraciones
+              </h3>
+              <button
+                onClick={() => setIsAddNoteModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 bg-primary-blue text-white text-sm rounded-lg hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus className="text-xs" />
+                Agregar Nota
+              </button>
+            </div>
+
+            {/* Lista de notas */}
+            <div className="space-y-3">
+              {loadingNotes ? (
+                <p className="text-sm text-gray-500 text-center py-4">Cargando notas...</p>
+              ) : notes.length > 0 ? (
+                notes.map((note, index) => (
+                  <div key={note.id || index} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-gray-800 text-sm mb-2 whitespace-pre-wrap">{note.text || note.note}</p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <FaCalendar className="text-[10px]" />
+                      <span className="font-medium">Nota agregada el {formatDateTime(note.createdAt)}</span>
+                      {note.createdByName && (
+                        <>
+                          <span>•</span>
+                          <span>{note.createdByName}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <FaStickyNote className="text-3xl text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No hay notas registradas</p>
+                  <p className="text-xs text-gray-400 mt-1">Agrega una nota para documentar información adicional</p>
                 </div>
               )}
             </div>
           </div>
 
           {/* Información de Registro */}
-          <div className="border-t pt-4">
-            <p className="text-sm text-gray-500">
-              Registrado el {formatDateTime(purchase.createdAt)}
+          <div className="text-center pt-2">
+            <p className="text-xs text-gray-400">
+              Compra registrada el {formatDateTime(purchase.createdAt)}
+              {purchase.createdByName && ` por ${purchase.createdByName}`}
             </p>
           </div>
           </div>
@@ -159,6 +292,14 @@ const PurchaseViewModal = ({ isOpen, onClose, purchase }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal para agregar nota */}
+      <AddNoteModal
+        isOpen={isAddNoteModalOpen}
+        onClose={() => setIsAddNoteModalOpen(false)}
+        onSave={handleSaveNote}
+        loading={loadingNote}
+      />
     </div>
   );
 };
