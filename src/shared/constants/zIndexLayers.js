@@ -6,15 +6,18 @@
 export const Z_INDEX_LAYERS = {
   // Elementos base (0-9)
   BASE: 0,
+  CONTENT: 1, // Contenido principal del dashboard
 
   // Elementos elevados (10-49)
   ELEVATED: 10,
+  TOPBAR: 10, // TopBar sticky
   DROPDOWN: 20,
-  TOOLTIP: 30,
+  SIDEBAR_OVERLAY: 25, // Overlay del sidebar en móvil
+  SIDEBAR: 30, // Sidebar (reducido de 50 a 30)
+  TOOLTIP: 35,
   STICKY_HEADER: 40,
 
   // Elementos de navegación (50-99)
-  SIDEBAR: 50,
   NAVBAR: 60,
 
   // Overlays y modales (100-999)
