@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Outlet } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import DynamicSideBar from "../../../components/DynamicSideBar";
 import { TopBar } from "../components/TopBar";
 import Portal from "../../../../../shared/components/Portal";
@@ -8,11 +8,13 @@ import EditProfileModal from "../../../../auth/pages/EditProfileModal";
 import { useAuth } from "../../../../../shared/contexts/authContext";
 import { useSidebarState } from "../../../../../shared/hooks/useSidebarState";
 import "./FinalFix.css";
+import "./ContentAboveSidebar.css";
 
 function DashboardLayout() {
   const [isViewModalOpen, setViewModalOpen] = useState(false);
   const [isEditModalOpen, setEditModalOpen] = useState(false);
   const { user, updateUser } = useAuth();
+  const location = useLocation();
 
   const {
     sidebarOpen,
@@ -25,14 +27,16 @@ function DashboardLayout() {
     toggleSidebar,
   } = useSidebarState();
 
-  // Debug log
-  console.log("DashboardLayout render:", {
-    sidebarOpen,
-    isExpanded,
-    isMobile,
-    state: getSidebarState(),
-    marginLeft: getMarginLeft(),
-  });
+  // Aplicar margin-left con JavaScript para máxima prioridad
+  useEffect(() => {
+    const content = document.querySelector(".dashboard-main-content");
+    if (content) {
+      const marginValue = getMarginLeft();
+      content.style.setProperty("margin-left", marginValue, "important");
+    }
+  }, [getMarginLeft, location.pathname]);
+
+  // Removed flickering prevention useEffect - was causing more issues
 
   const handleUpdateProfile = async (updatedData) => {
     try {
@@ -54,11 +58,11 @@ function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       {/* Overlay con blur para móvil */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay z-[45]"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -70,15 +74,14 @@ function DashboardLayout() {
         setIsExpanded={setIsExpanded}
       />
 
-      {/* Contenido Principal - CON ATRIBUTOS PARA CSS */}
+      {/* Contenido Principal */}
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out dashboard-main-content"
+        className="min-h-screen dashboard-main-content"
         data-sidebar={getSidebarState()}
         style={{
-          marginLeft: getMarginLeft(),
-          width: `calc(100vw - ${getMarginLeft()})`,
+          zIndex: 1,
+          position: "relative",
         }}
-        key={`${sidebarOpen}-${isExpanded}-${isMobile}`} // Force re-render on state change
       >
         <TopBar
           toggleSidebar={toggleSidebar}
@@ -88,7 +91,7 @@ function DashboardLayout() {
             setEdit: setEditModalOpen,
           }}
         />
-        <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
+        <main className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
           <Outlet />
         </main>
       </div>
