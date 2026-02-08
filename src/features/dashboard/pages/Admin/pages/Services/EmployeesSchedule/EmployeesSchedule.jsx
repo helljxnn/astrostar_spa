@@ -1,19 +1,19 @@
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
+import { Plus, Filter } from "lucide-react";
+import { FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
 import { format } from "date-fns";
+import SearchInput from "../../../../../../../shared/components/SearchInput";
 import { showErrorAlert } from "../../../../../../../shared/utils/alerts";
 
 // Importar TUS componentes (asegúrate de que las rutas sean correctas)
-import EmployeesScheduleCalendar from "./components/EmployeesScheduleCalendar";
 import ScheduleModal from "./components/EmployeesScheduleModal";
-import EmployeeScheduleReportGenerator from "./components/EmployeeScheduleReportGenerator";
 import ScheduleDetailsModal from "./components/ScheduleDetailsModal";
 import CancelScheduleModal from "./components/CancelScheduleModal";
+import { BaseCalendar, CalendarReportGenerator } from "../../../../../../../shared/components/Calendar";
 import { useEmployeeSchedules } from "./hooks/useEmployeeSchedules";
 
 // Importaciones para permisos
-import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 const ROLE_COLORS = {
@@ -128,8 +128,6 @@ const getEmployeeKey = (schedule = {}) => {
   return raw.toString().trim().toLowerCase();
 };
 
-const NOVELTY_STORAGE_KEY = "employee-schedule-novelties";
-
 const BASE_ROLE_FILTERS = [
   { id: "entrenador", label: ROLE_LABELS.entrenador },
   { id: "fisioterapia", label: ROLE_LABELS.fisioterapia },
@@ -156,41 +154,18 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [isNew, setIsNew] = useState(true);
-  const [selectedRoles, setSelectedRoles] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState({
+    status: "",
+    role: "",
+  });
   const containerRef = useRef(null);
   const isLoading = loading || loadingEmployees;
-  const selectedRoleSet = useMemo(() => new Set(selectedRoles), [selectedRoles]);
-  const matchesSelectedRole = useCallback(
-    (item = {}) => {
-      if (selectedRoleSet.size === 0) return true;
-      const key = resolveRoleId(item.cargo || item.area || item.role || item.rol || "");
-      if (!key) return false;
-      return selectedRoleSet.has(key);
-    },
-    [selectedRoleSet]
-  );
-  const filteredListSchedules = useMemo(
-    () => rawSchedules.filter(matchesSelectedRole),
-    [rawSchedules, matchesSelectedRole]
-  );
-  const filteredCalendarSchedules = useMemo(
-    () => schedules.filter(matchesSelectedRole),
-    [schedules, matchesSelectedRole]
-  );
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedScheduleForAction, setSelectedScheduleForAction] = useState(null);
-  const [noveltyKeys, setNoveltyKeys] = useState(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const stored = window.localStorage.getItem(NOVELTY_STORAGE_KEY);
-      const parsed = stored ? JSON.parse(stored) : [];
-      return new Set(Array.isArray(parsed) ? parsed : []);
-    } catch (error) {
-      return new Set();
-    }
-  });
   const canViewSchedules = useMemo(
     () => hasPermission("employeesSchedule", "Ver"),
     [hasPermission]
@@ -199,6 +174,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     () => hasPermission("employeesSchedule", "Editar"),
     [hasPermission]
   );
+  const canCreateSchedules = hasPermission("employeesSchedule", "Crear") || true;
+  const canExportSchedules = hasPermission("employeesSchedule", "Ver") || true;
 
   const disabledSchedules = useMemo(
     () =>
@@ -236,6 +213,31 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     }));
   }, [rawSchedules, employees]);
 
+  const filters = useMemo(
+    () => [
+      {
+        id: "status",
+        label: "Estado",
+        field: "estado",
+        options: [
+          { value: "Programado", label: "Programado" },
+          { value: "Completado", label: "Completado" },
+          { value: "Cancelado", label: "Cancelado" },
+        ],
+      },
+      {
+        id: "role",
+        label: "Cargo",
+        field: "roleId",
+        options: availableRoles.map((role) => ({
+          value: role.id,
+          label: role.label,
+        })),
+      },
+    ],
+    [availableRoles]
+  );
+
   useEffect(() => {
     if (disabled) return;
     loadEmployees();
@@ -246,13 +248,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     loadSchedules({ page: 1 });
   }, [disabled, canViewSchedules, loadSchedules]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(
-      NOVELTY_STORAGE_KEY,
-      JSON.stringify([...noveltyKeys])
-    );
-  }, [noveltyKeys]);
 
   const createDefaultSchedule = ({ start, end } = {}) => {
     const now = start ? new Date(start) : new Date();
@@ -275,13 +270,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       motivoCancelacion: "",
       id: null,
     };
-  };
-
-  const noveltyKeyForSchedule = (schedule = {}) => {
-    const id = schedule.scheduleId || schedule.id;
-    const dateKey = getScheduleDateKey(schedule);
-    if (!id || !dateKey) return "";
-    return `${id}::${dateKey}`;
   };
 
   const openModalForSlot = ({ start, end } = {}) => {
@@ -434,19 +422,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const payload =
       scheduleWithReason.cancelPayload ||
       { motivoCancelacion: scheduleWithReason.motivoCancelacion || "" };
-    const noveltyKey = noveltyKeyForSchedule(scheduleWithReason);
     try {
       await registerNovelty(
         scheduleWithReason.scheduleId || scheduleWithReason.id,
         payload
       );
-      if (noveltyKey) {
-        setNoveltyKeys((prev) => {
-          const next = new Set(prev);
-          next.add(noveltyKey);
-          return next;
-        });
-      }
       setShowCancelModal(false);
       setSelectedScheduleForAction(null);
     } catch (error) {
@@ -487,53 +467,192 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isModalOpen]);
 
-  const handleToggleRole = (roleId) => {
-    setSelectedRoles((prev) =>
-      prev.includes(roleId)
-        ? prev.filter((id) => id !== roleId)
-        : [...prev, roleId]
-    );
+  const handleSearch = (event) => {
+    const term = event?.target ? event.target.value : event;
+    setSearchTerm(term);
   };
 
-  const clearRoleFilters = () => setSelectedRoles([]);
+  const handleFiltersChange = (newFilters) => {
+    setSelectedFilters((prev) => ({ ...prev, ...newFilters }));
+  };
 
   const disabledList =
     disabledSchedules.length > 0 ? disabledSchedules : schedules;
 
-  const listSchedules = useMemo(() => {
-    const map = new Map();
+  const scheduleEvents = useMemo(() => {
+    return schedules.map((schedule) => {
+      const startDate = schedule.start || getScheduleStartDate(schedule);
+      const date = schedule.fecha || (startDate ? format(startDate, "yyyy-MM-dd") : "");
+      const timeLabel =
+        schedule.horaInicio && schedule.horaFin
+          ? `${schedule.horaInicio} - ${schedule.horaFin}`
+          : schedule.hora || "";
+      const roleKey = resolveRoleId(
+        schedule.cargo || schedule.area || schedule.role || schedule.rol
+      );
+      const colors = getRoleColors(roleKey);
+      const title = schedule.empleado
+        ? `Turno - ${schedule.empleado}`
+        : schedule.title || "Turno";
 
-    const getDateValue = (item) => {
-      const dateRef = item?.fecha || item?.start || item?.scheduleDate || 0;
-      const dateObj = new Date(dateRef);
-      const value = dateObj.getTime();
-      return Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
-    };
-
-    filteredListSchedules.forEach((s) => {
-      const key =
-        s?.recurrenceGroup ||
-        s?.parentId ||
-        s?.scheduleId ||
-        s?.id ||
-        `${s?.empleadoId || s?.empleado}-${s?.horaInicio || ""}-${s?.horaFin || ""}-${s?.area || ""}-${s?.repeticion || "no"}`;
-
-      if (!map.has(key)) {
-        map.set(key, s);
-        return;
-      }
-
-      const currentValue = getDateValue(s);
-      const existing = map.get(key);
-      const existingValue = getDateValue(existing);
-
-      if (currentValue < existingValue) {
-        map.set(key, s);
-      }
+      return {
+        id: schedule.scheduleId || schedule.id,
+        title,
+        date,
+        time: timeLabel,
+        start: startDate,
+        end: schedule.end || null,
+        estado: schedule.estado || schedule.status || "Programado",
+        fecha: schedule.fecha || date,
+        horaInicio: schedule.horaInicio,
+        horaFin: schedule.horaFin,
+        roleId: roleKey,
+        cargo: schedule.cargo,
+        area: schedule.area,
+        empleado: schedule.empleado,
+        backgroundColor: colors.to,
+        borderColor: colors.dot,
+        extendedProps: schedule,
+      };
     });
+  }, [schedules]);
 
-    return Array.from(map.values());
-  }, [filteredListSchedules]);
+  const sidebarActions = useMemo(() => {
+    const actions = [
+      {
+        label: "Ver",
+        onClick: (event) => openDetailsModal(event?.extendedProps || event),
+        permission: { module: "employeesSchedule", action: "Ver" },
+        variant: "primary",
+      },
+    ];
+
+    if (hasPermission("employeesSchedule", "Editar")) {
+      actions.push({
+        label: "Editar",
+        onClick: (event) =>
+          openModalForEvent(event?.extendedProps || event, { readOnly: false }),
+        permission: { module: "employeesSchedule", action: "Editar" },
+        variant: "primary",
+      });
+      actions.push({
+        label: "Cancelar",
+        onClick: (event) => openCancelModal(event?.extendedProps || event),
+        permission: { module: "employeesSchedule", action: "Editar" },
+        variant: "warning",
+      });
+    }
+
+    if (hasPermission("employeesSchedule", "Eliminar")) {
+      actions.push({
+        label: "Eliminar",
+        onClick: (event) =>
+          handleDeleteSchedule(
+            event?.scheduleId || event?.id || event?.extendedProps?.id
+          ),
+        permission: { module: "employeesSchedule", action: "Eliminar" },
+        variant: "danger",
+      });
+    }
+
+    return actions;
+  }, [hasPermission, openDetailsModal, openModalForEvent, openCancelModal, handleDeleteSchedule]);
+
+  const renderEvent = (event, variant) => {
+    if (variant === "grid") {
+      return (
+        <div
+          className="p-1 rounded text-black text-xs cursor-pointer hover:opacity-80"
+          style={{ backgroundColor: event.backgroundColor || "#B595FF" }}
+        >
+          <div className="font-medium truncate text-xs leading-tight">
+            {event.title}
+          </div>
+        </div>
+      );
+    }
+    return <span>{event.title}</span>;
+  };
+
+  const renderSidebarItem = (event, actions) => {
+    const schedule = event?.extendedProps || event;
+    const colors = getRoleColors(schedule.cargo || schedule.area);
+    const recurrenceLabel = buildRecurrenceLabel(schedule);
+    const displayStatus =
+      schedule.estado === "Cancelado" ? "Programado" : schedule.estado;
+    const statusColor =
+      displayStatus === "Completado"
+        ? "bg-emerald-100 text-emerald-700"
+        : "bg-blue-100 text-blue-700";
+
+    return (
+      <div className="space-y-2">
+        <div>
+          <div className="flex items-center gap-1">
+            <h4 className="font-medium text-gray-800 text-sm">
+              {schedule.empleado || event.title}
+            </h4>
+            {scheduleHasNovedad(schedule) && (
+              <FaExclamationCircle
+                className="text-red-500"
+                title="Horario con novedad"
+              />
+            )}
+          </div>
+          <div className="space-y-1 text-xs text-gray-600 mt-1">
+            {schedule.cargo && (
+              <div className="flex items-center gap-1">
+                <FaBriefcase className="h-3 w-3" />
+                {schedule.cargo}
+              </div>
+            )}
+            {schedule.area && (
+              <div className="text-[11px] text-gray-600">
+                Área: {schedule.area}
+              </div>
+            )}
+            {event.time && (
+              <div className="text-xs text-gray-600">
+                {event.time}
+              </div>
+            )}
+            <div className="text-xs text-gray-700">
+              {recurrenceLabel}
+            </div>
+          </div>
+          <span
+            className={`inline-flex mt-2 px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusColor}`}
+            style={{ borderColor: colors.dot }}
+          >
+            {displayStatus}
+          </span>
+        </div>
+
+        {actions.length > 0 && (
+          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+            {actions.map((action, actionIndex) => (
+              <button
+                key={actionIndex}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick(event);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                  action.variant === "danger"
+                    ? "text-red-600 hover:bg-red-50"
+                    : action.variant === "warning"
+                    ? "text-yellow-600 hover:bg-yellow-50"
+                    : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                }`}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (disabled) {
     return (
@@ -547,7 +666,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
               <div className="space-y-3">
                 {disabledList.map((schedule) => (
                   <motion.div
-                    key={schedule.scheduleId || schedule.id || `${schedule.empleado}-${schedule.fecha}-${schedule.horaInicio}`}
+                    key={
+                      schedule.scheduleId ||
+                      schedule.id ||
+                      `${schedule.empleado}-${schedule.fecha}-${schedule.horaInicio}`
+                    }
                     layout
                     className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm"
                   >
@@ -590,245 +713,159 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   }
 
   return (
-    <div className="font-monserrat p-4" ref={containerRef}>
-      <div className="schedule-header space-y-4 mb-6">
+    <div className="space-y-6 font-monserrat p-4" ref={containerRef}>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Horario de Empleados
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900">Horario de Empleados</h1>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600">
-                Filtra los horarios agrupados por cargo y haz clic sobre un horario para ver los detalles.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 justify-end">
-              {isLoading && (
-                <span className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-full border border-gray-200">
-                  Cargando...
-                </span>
-              )}
-              <div className="flex flex-wrap items-center gap-2">
-                <PermissionGuard module="employeesSchedule" action="Crear">
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => openModalForSlot(createDefaultSchedule())}
-                    className="flex items-center gap-1 px-4 py-2 text-sm bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors font-medium"
-                  >
-                    <FaPlus className="text-xs" />
-                    Crear
-                  </motion.button>
-                </PermissionGuard>
-                <PermissionGuard module="employeesSchedule" action="Ver">
-                  <EmployeeScheduleReportGenerator
-                    className="text-sm"
-                    data={listSchedules}
-                    columns={[
-                      { key: "empleado", label: "Empleado" },
-                      { key: "cargo", label: "Cargo" },
-                      { key: "fecha", label: "Fecha" },
-                      { key: "horaInicio", label: "Hora inicio" },
-                      { key: "horaFin", label: "Hora fin" },
-                      { key: "estado", label: "Estado" },
-                    ]}
-                  />
-                </PermissionGuard>
-              </div>
-            </div>
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="w-full sm:w-auto">
+            <SearchInput
+              placeholder="Buscar horarios..."
+              value={searchTerm}
+              onChange={handleSearch}
+              className="min-w-[200px]"
+            />
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-gray-600 mr-1">Cargos:</span>
-            {availableRoles.map((role) => {
-              const colors = getRoleColors(role.id);
-              const isActive = selectedRoles.includes(role.id);
-              return (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => handleToggleRole(role.id)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-1"
-                  style={{
-                    background: isActive
-                      ? `linear-gradient(135deg, ${colors.from}, ${colors.to})`
-                      : colors.tagBg,
-                    borderColor: colors.dot,
-                    color: "#1f2937",
-                  }}
-                  aria-pressed={isActive}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: colors.dot }}
-                  />
-                  {role.label}
-                </button>
-              );
-            })}
-
-            {selectedRoles.length > 0 && (
-              <button
-                type="button"
-                onClick={clearRoleFilters}
-                className="text-xs font-semibold text-gray-600 px-3 py-1 rounded-full border border-gray-200 hover:bg-gray-100 transition"
+          <div className="flex items-center gap-2 flex-wrap">
+            {canCreateSchedules && (
+              <motion.button
+                onClick={() => openModalForSlot(createDefaultSchedule())}
+                className="flex items-center gap-2 px-4 py-2 bg-[#B595FF] text-white rounded-lg font-medium hover:bg-[#9BE9FF] transition-all duration-300"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
-                Limpiar filtros
-              </button>
+                <Plus className="h-4 w-4" />
+                <span>Crear</span>
+              </motion.button>
+            )}
+
+            <motion.button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
+                showFilters
+                  ? "bg-[#B595FF] text-white border-[#B595FF]"
+                  : "text-gray-700 hover:text-[#B595FF]"
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filtros</span>
+            </motion.button>
+
+            {canExportSchedules && (
+              <CalendarReportGenerator
+                events={scheduleEvents}
+                title="Reportes"
+                entityName="horarios"
+                reportTypes={["pdf", "excel"]}
+                showDateFilter={true}
+                customFields={[
+                  { key: "empleado", label: "Empleado" },
+                  { key: "cargo", label: "Cargo" },
+                  { key: "fecha", label: "Fecha" },
+                  { key: "horaInicio", label: "Hora inicio" },
+                  { key: "horaFin", label: "Hora fin" },
+                  { key: "estado", label: "Estado" },
+                ]}
+              />
             )}
           </div>
         </div>
       </div>
 
-      {isLoading && (
-        <div className="flex items-center gap-2 mb-3 text-sm text-gray-600">
-          <span className="w-3 h-3 border-2 border-gray-300 border-t-[#c084fc] rounded-full animate-spin" />
-          <span>Cargando horarios y empleados...</span>
-        </div>
+      {showFilters && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              x
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filters.map((filter) => (
+              <div key={filter.id} className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  {filter.label}
+                </label>
+                <select
+                  value={selectedFilters[filter.id] || ""}
+                  onChange={(e) =>
+                    handleFiltersChange({ [filter.id]: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#B595FF] focus:border-transparent"
+                >
+                  <option value="">Todos</option>
+                  {filter.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       )}
 
-        <div className="schedule-content">
-          <div
-            className="order-1 xl:order-1 flex-1 min-w-0 w-full bg-white rounded-2xl shadow-lg p-4 border border-gray-200 calendar-area"
-          >
-              <EmployeesScheduleCalendar
-                schedules={filteredCalendarSchedules}
-                onOpenModalForSlot={hasPermission('employeesSchedule', 'Crear') ? openModalForSlot : null}
-                onOpenModalForEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openModalForEvent(event, { readOnly: !hasPermission('employeesSchedule', 'Editar') }) : null}
-                onEditEvent={hasPermission('employeesSchedule', 'Editar') ? (event) => openModalForEvent(event, { readOnly: false }) : null}
-                onViewEvent={hasPermission('employeesSchedule', 'Ver') ? (event) => openDetailsModal(event) : null}
-                onDeleteEvent={hasPermission('employeesSchedule', 'Eliminar') ? handleDeleteSchedule : null}
-                onCancelEvent={hasPermission('employeesSchedule', 'Editar') ? openCancelModal : null}
-                noveltyKeys={noveltyKeys}
-              />
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="order-2 xl:order-2 w-full xl:max-w-[360px] xl:min-w-[290px] bg-white rounded-2xl shadow-lg p-4 border border-gray-100 flex-shrink-0 sticky top-4 self-start activity-panel"
-        >
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="text-lg font-semibold text-[#c084fc]">Actividades Programadas</h2>
-            <span className="text-xs font-semibold text-gray-600 px-2 py-1 rounded-full bg-gray-100">
-              {listSchedules.length} registros
-            </span>
-          </div>
-          {listSchedules.length > 0 ? (
-            <ul className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2 pb-1 activity-list">
-              {listSchedules.map((schedule) => {
-                const hasNovedadBadge = scheduleHasNovedad(schedule);
-                const colors = getRoleColors(schedule.cargo || schedule.area);
-                const recurrenceLabel = buildRecurrenceLabel(schedule);
-                const displayStatus =
-                  schedule.estado === "Cancelado"
-                    ? "Programado"
-                    : schedule.estado;
-                const statusColor =
-                  displayStatus === "Completado"
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-blue-100 text-blue-700";
-                const dateLabel = schedule.fecha || schedule.start?.toLocaleDateString?.() || "";
-                const timeLabel =
-                  schedule.horaInicio && schedule.horaFin
-                    ? `${schedule.horaInicio} - ${schedule.horaFin}`
-                    : schedule.hora;
-
-                return (
-                  <motion.li
-                    key={
-                      schedule.scheduleId ||
-                      schedule.id ||
-                      `${schedule.empleado}-${schedule.fecha}-${schedule.horaInicio}`
-                    }
-                    whileHover={{ scale: 1.01 }}
-                    className="activity-card"
-                    style={{
-                      borderColor: colors.dot,
-                      background: `linear-gradient(135deg, ${colors.from}, ${colors.to})`,
-                    }}
-                    onClick={() => openDetailsModal(schedule)}
-                  >
-                    <div className="activity-card__header">
-                      <div className="flex items-center gap-1">
-                        <h3 className="text-sm font-bold text-gray-900">
-                          {schedule.empleado || "Sin nombre"}
-                        </h3>
-                        {hasNovedadBadge && (
-                          <FaExclamationCircle
-                            className="text-red-500"
-                            title="Horario con novedad"
-                          />
-                        )}
-                      </div>
-                      <p className="text-xs text-gray-700 flex flex-wrap gap-2 mt-1">
-                        {schedule.cargo && (
-                          <span className="badge" style={{ borderColor: colors.dot }}>
-                            <FaBriefcase className="inline-block mr-1" />
-                            {schedule.cargo}
-                          </span>
-                        )}
-                        {schedule.area && <span className="text-[11px]">Área: {schedule.area}</span>}
-                      </p>
-                      <span
-                        className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusColor}`}
-                      >
-                        {displayStatus}
-                      </span>
-                    </div>
-
-                    <div className="activity-card__body">
-                      <div className="activity-card__row">
-                        <span className="text-[11px] text-gray-800">Fecha</span>
-                        <span className="font-semibold text-xs">{dateLabel || "Sin fecha"}</span>
-                      </div>
-                      {timeLabel && (
-                        <div className="activity-card__row">
-                          <span className="text-[11px] text-gray-800">Horario</span>
-                          <span className="font-semibold text-xs">{timeLabel}</span>
-                        </div>
-                      )}
-                      <div className="activity-card__row">
-                        <span className="text-[11px] text-gray-800">Repetición</span>
-                        <span className="text-xs text-gray-700" title={`Repite: ${recurrenceLabel}`}>
-                          {recurrenceLabel}
-                        </span>
-                      </div>
-                      {schedule.observaciones && (
-                        <p className="text-[11px] text-gray-800 line-clamp-3 mt-1">
-                          {schedule.observaciones}
-                        </p>
-                      )}
-                      {(schedule.novedad || (Array.isArray(schedule.novedades) && schedule.novedades.length > 0)) && (
-                        <div className="text-[11px] text-gray-700 mt-1">
-                          <span className="font-semibold">Novedades:</span>{" "}
-                          {(Array.isArray(schedule.novedades) ? schedule.novedades : [schedule.novedad])
-                            .filter(Boolean)
-                            .map((item, idx) => (
-                              <span key={item + idx} className="block">
-                                {item}
-                              </span>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-
-                  </motion.li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-gray-500 text-center text-sm">
-              No hay actividades registradas.
-            </p>
-          )}
-        </motion.div>
-      </div>
-
+      <BaseCalendar
+        variant="custom"
+        events={scheduleEvents}
+        loading={isLoading}
+        onEventClick={
+          canViewSchedules
+            ? (event) => openDetailsModal(event?.extendedProps || event)
+            : null
+        }
+        onCreate={
+          canCreateSchedules ? () => openModalForSlot(createDefaultSchedule()) : null
+        }
+        onDateSelect={
+          canCreateSchedules ? (day) => openModalForSlot({ start: day }) : null
+        }
+        renderEvent={renderEvent}
+        renderSidebarItem={renderSidebarItem}
+        title="Calendario de Horarios"
+        showHeader={false}
+        showCreateButton={false}
+        showReportButton={false}
+        showSearch={false}
+        showFilters={false}
+        createButtonText="Crear Horario"
+        reportButtonText="Reportes de Horarios"
+        searchTerm={searchTerm}
+        searchPlaceholder="Buscar horarios..."
+        searchFields={[
+          "empleado",
+          "cargo",
+          "area",
+          "estado",
+          "descripcion",
+          "observaciones",
+        ]}
+        filters={filters}
+        selectedFilters={selectedFilters}
+        onFiltersChange={handleFiltersChange}
+        viewTypes={["month", "week", "day"]}
+        defaultView="month"
+        sidebarTitle="Horarios Programados"
+        sidebarEmptyText="No hay horarios programados"
+        sidebarActions={sidebarActions}
+        colorScheme="schedule"
+        className="employees-schedule-calendar"
+      />
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
@@ -885,3 +922,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 };
 
 export default EmployeeSchedule;
+
+
+
+
