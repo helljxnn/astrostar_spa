@@ -710,3 +710,80 @@ body.events-modal-open {
   z-index: 4 !important;
   position: relative !important;
 }
+
+/* CRÍTICO: Asegurar que los botones de eventos sean siempre clickeables */
+.rbc-event button,
+.rbc-event-content button,
+button[title="Gestionar evento"],
+button[title="Inscripciones"],
+.group button,
+.group > div:last-child button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  z-index: 1000 !important;
+  position: relative !important;
+  touch-action: manipulation !important;
+}
+
+/* Forzar que los botones estén siempre por encima */
+.group > div:last-child {
+  pointer-events: auto !important;
+  z-index: 999 !important;
+  position: absolute !important;
+}
+
+/* Asegurar que el hover funcione en los botones */
+.group:hover button,
+.group:hover > div:last-child,
+.group:hover > div:last-child button {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+}
+
+/* Hacer los botones visibles en hover del grupo */
+.group:hover > div:last-child {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Prevenir que otros elementos bloqueen los botones */
+.rbc-event,
+.rbc-event-content {
+  pointer-events: auto !important;
+}
+
+/* Asegurar que el contenedor del evento no bloquee los clicks en los botones */
+.rbc-month-row,
+.rbc-row-content,
+.rbc-row-segment {
+  pointer-events: auto !important;
+}
+
+/* Asegurar que el contenedor de botones sea clickeable */
+.group > div:last-child {
+  pointer-events: auto !important;
+  z-index: 100 !important;
+}
+
+/* Prevenir que el evento capture clicks destinados a los botones */
+.rbc-event.group {
+  pointer-events: auto !important;
+}
+
+.rbc-event.group > * {
+  pointer-events: auto !important;
+}
+
+/* Forzar visibilidad de botones en hover */
+.group:hover .absolute {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Asegurar que los SVG dentro de los botones no bloqueen clicks */
+.group button svg,
+.group button * {
+  pointer-events: none !important;
+}

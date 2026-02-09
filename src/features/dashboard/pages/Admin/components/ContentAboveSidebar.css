@@ -14,13 +14,13 @@
 .dashboard-main-content {
   position: relative !important;
   z-index: 1 !important;
-  isolation: isolate !important;
+  /* Removido isolation: isolate para permitir que los elementos internos tengan su propio z-index */
   pointer-events: auto !important;
 }
 
 .dashboard-main-content main {
   position: relative !important;
-  z-index: 0 !important;
+  z-index: auto !important;
   background-color: #f7f7fb !important;
   min-height: 100vh !important;
   pointer-events: auto !important;
@@ -56,6 +56,32 @@
   pointer-events: auto !important;
 }
 
+/* MODALES DE ACCIONES DE EVENTOS - Máxima prioridad */
+div[class*="fixed"][class*="z-[60]"],
+div[class*="fixed"][class*="z-[70]"],
+div[class*="fixed"][class*="z-[9998]"],
+div[class*="fixed"][class*="z-[9999]"] {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+  position: fixed !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Asegurar que los modales de framer-motion sean visibles */
+div[style*="position: fixed"] {
+  pointer-events: auto !important;
+}
+
+/* Forzar visibilidad de modales con AnimatePresence */
+div[style*="position: fixed"][style*="top"][style*="left"] {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+  display: block !important;
+  visibility: visible !important;
+}
+
 /* Optimizaciones básicas */
 .dashboard-main-content {
   will-change: auto !important;
@@ -67,6 +93,68 @@
   transform: translateZ(0) !important;
   backface-visibility: hidden !important;
   -webkit-backface-visibility: hidden !important;
+}
+
+/* EVENTOS DEL CALENDARIO: Asegurar que los botones sean clickeables */
+/* Los botones de eventos deben estar por encima del contenido pero por debajo del sidebar */
+.rbc-event button,
+.rbc-event-content button,
+.event-actions button,
+.event-btn,
+button[title="Gestionar evento"],
+button[title="Inscripciones"],
+.group button {
+  pointer-events: auto !important;
+  position: relative !important;
+  z-index: 100 !important;
+  cursor: pointer !important;
+}
+
+/* Contenedor de botones debe tener z-index alto */
+.group > div[style*="position: absolute"],
+.group > div:last-child {
+  z-index: 100 !important;
+  pointer-events: auto !important;
+}
+
+/* Hacer visible el contenedor de botones en hover */
+.group:hover > div:last-child,
+.group:hover > div[style*="opacity"] {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Asegurar que los eventos y su contenido permitan clicks */
+.rbc-event,
+.rbc-event-content,
+.event-actions {
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+/* Contenedor de eventos en el calendario */
+.rbc-month-view,
+.rbc-time-view,
+.rbc-agenda-view {
+  position: relative !important;
+  z-index: auto !important;
+}
+
+/* Asegurar que los SVG dentro de botones no bloqueen */
+.rbc-event button svg,
+.rbc-event button svg *,
+.group button svg,
+.group button svg * {
+  pointer-events: none !important;
+}
+
+/* Eliminar cualquier transform que pueda crear contextos de apilamiento problemáticos */
+.rbc-month-row,
+.rbc-row-content,
+.rbc-row-segment,
+.rbc-event-content {
+  transform: none !important;
+  will-change: auto !important;
 }
 
 /* Responsive: MÓVIL */

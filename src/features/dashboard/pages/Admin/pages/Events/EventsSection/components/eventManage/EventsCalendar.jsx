@@ -45,7 +45,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     selectedFilters = {},
     onFiltersChange,
   },
-  ref
+  ref,
 ) {
   const { hasPermission } = usePermissions();
 
@@ -110,7 +110,14 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   }));
 
   // Manejar click en evento (delegado al BaseCalendar)
-  const handleEventClick = useCallback(() => {
+  const handleEventClick = useCallback((event, jsEvent) => {
+    // Si el click fue en un botón, no hacer nada
+    if (
+      jsEvent &&
+      (jsEvent.target.tagName === "BUTTON" || jsEvent.target.closest("button"))
+    ) {
+      return;
+    }
     // No hacer nada aquí, las acciones se manejan a través de los botones del evento
     return;
   }, []);
@@ -139,7 +146,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       } else {
         showErrorAlert(
           "Error de fecha",
-          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha."
+          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha.",
         );
         return;
       }
@@ -150,7 +157,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       if (isNaN(selectedDate.getTime())) {
         showErrorAlert(
           "Error de fecha",
-          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha."
+          "No se pudo procesar la fecha seleccionada. Por favor, intenta seleccionar otra fecha.",
         );
         return;
       }
@@ -158,7 +165,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       const selectedDateOnly = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
-        selectedDate.getDate()
+        selectedDate.getDate(),
       );
 
       if (selectedDateOnly.getTime() < oneWeekFromToday.getTime()) {
@@ -171,7 +178,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               month: "long",
               day: "numeric",
             }) +
-            "."
+            ".",
         );
         return;
       }
@@ -185,7 +192,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           const year = oneWeekFromToday.getFullYear();
           const month = String(oneWeekFromToday.getMonth() + 1).padStart(
             2,
-            "0"
+            "0",
           );
           const day = String(oneWeekFromToday.getDate()).padStart(2, "0");
           return `${year}-${month}-${day}`;
@@ -227,7 +234,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       setModalMode("create");
       setIsModalOpen(true);
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   // Manejar selección de slot (para crear evento)
@@ -235,17 +242,36 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     (slotInfo) => {
       handleDateSelect(slotInfo);
     },
-    [handleDateSelect]
+    [handleDateSelect],
   );
 
   // Manejar click en acciones de evento
   const handleEventActionClick = useCallback(
     (e, actionType, dashboardEvent) => {
-      if (!e.currentTarget) {
+      // Obtener el target del evento
+      const target = e?.currentTarget || e?.target;
+
+      if (!target) {
+        console.error("No target found in event");
+        // Usar posición por defecto en el centro de la pantalla
+        const position = {
+          top: window.innerHeight / 2 - 75,
+          left: window.innerWidth / 2 - 110,
+        };
+
+        if (actionType === "crud") {
+          setActionModal({ isOpen: true, position, event: dashboardEvent });
+        } else if (actionType === "registration") {
+          setRegistrationModal({
+            isOpen: true,
+            position,
+            event: dashboardEvent,
+          });
+        }
         return;
       }
 
-      const rect = e.currentTarget.getBoundingClientRect();
+      const rect = target.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       const modalWidth = 220;
@@ -275,7 +301,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         setRegistrationModal({ isOpen: true, position, event: dashboardEvent });
       }
     },
-    []
+    [],
   );
 
   // Renderizar evento personalizado
@@ -292,6 +318,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             event={event}
             view="month" // Para grid siempre usamos month view
             onActionClick={handleEventActionClick}
+            setActionModal={setActionModal}
+            setRegistrationModal={setRegistrationModal}
           />
         );
       } else if (variant === "day") {
@@ -300,6 +328,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             event={event}
             view="day"
             onActionClick={handleEventActionClick}
+            setActionModal={setActionModal}
+            setRegistrationModal={setRegistrationModal}
           />
         );
       }
@@ -310,10 +340,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           event={event}
           view="month"
           onActionClick={handleEventActionClick}
+          setActionModal={setActionModal}
+          setRegistrationModal={setRegistrationModal}
         />
       );
     },
-    [handleEventActionClick]
+    [handleEventActionClick, setActionModal, setRegistrationModal],
   );
 
   // Manejar acciones CRUD
@@ -338,7 +370,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           if (!hasPermission("eventsManagement", "Editar")) {
             showErrorAlert(
               "Sin permisos",
-              "No tienes permisos para editar eventos"
+              "No tienes permisos para editar eventos",
             );
             return;
           }
@@ -350,7 +382,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           const today = new Date(
             now.getFullYear(),
             now.getMonth(),
-            now.getDate()
+            now.getDate(),
           );
 
           const eventEndDate = dashboardEvent.end
@@ -359,14 +391,14 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           const endDateOnly = new Date(
             eventEndDate.getFullYear(),
             eventEndDate.getMonth(),
-            eventEndDate.getDate()
+            eventEndDate.getDate(),
           );
           const hasPassed = endDateOnly < today;
 
           if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
             showErrorAlert(
               "Evento Finalizado",
-              "No se puede editar un evento que ya finalizó. Solo puedes verlo o eliminarlo."
+              "No se puede editar un evento que ya finalizó. Solo puedes verlo o eliminarlo.",
             );
             return;
           }
@@ -377,7 +409,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           ) {
             showErrorAlert(
               "Evento Cancelado y Finalizado",
-              "No se puede editar un evento cancelado cuya fecha ya pasó. Solo puedes verlo o eliminarlo."
+              "No se puede editar un evento cancelado cuya fecha ya pasó. Solo puedes verlo o eliminarlo.",
             );
             return;
           }
@@ -423,7 +455,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           if (!hasPermission("eventsManagement", "Eliminar")) {
             showErrorAlert(
               "Sin permisos",
-              "No tienes permisos para eliminar eventos"
+              "No tienes permisos para eliminar eventos",
             );
             return;
           }
@@ -431,7 +463,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           try {
             const result = await showDeleteAlert(
               "¿Eliminar evento?",
-              `Se eliminará permanentemente el evento: ${dashboardEvent.title}`
+              `Se eliminará permanentemente el evento: ${dashboardEvent.title}`,
             );
 
             if (result.isConfirmed) {
@@ -448,7 +480,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           if (!hasPermission("eventsManagement", "Ver")) {
             showErrorAlert(
               "Sin permisos",
-              "No tienes permisos para ver eventos"
+              "No tienes permisos para ver eventos",
             );
             return;
           }
@@ -483,7 +515,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           break;
       }
     },
-    [actionModal.event, hasPermission, onDeleteEvent]
+    [actionModal.event, hasPermission, onDeleteEvent],
   );
 
   // Manejar acciones de inscripción
@@ -499,7 +531,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
           showErrorAlert(
             "Evento Finalizado",
-            "No se pueden realizar inscripciones en un evento finalizado."
+            "No se pueden realizar inscripciones en un evento finalizado.",
           );
           return;
         }
@@ -507,7 +539,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         if (estadoEvento === "Cancelado" || estadoEvento === "cancelado") {
           showErrorAlert(
             "Evento Cancelado",
-            "No se pueden realizar inscripciones en un evento cancelado."
+            "No se pueden realizar inscripciones en un evento cancelado.",
           );
           return;
         }
@@ -534,7 +566,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         }, 100);
       }
     },
-    [registrationModal.event]
+    [registrationModal.event],
   );
 
   // Guardar evento
@@ -556,11 +588,11 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         // El modal permanece abierto para que el usuario pueda corregir o intentar de nuevo
         showErrorAlert(
           "Error al guardar",
-          "No se pudo guardar el evento. Por favor, verifica los datos e intenta nuevamente."
+          "No se pudo guardar el evento. Por favor, verifica los datos e intenta nuevamente.",
         );
       }
     },
-    [isNew, onCreateEvent, onUpdateEvent]
+    [isNew, onCreateEvent, onUpdateEvent],
   );
 
   // Cerrar todos los modales
@@ -607,7 +639,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           month: "long",
           day: "numeric",
         }) +
-        " para crear un evento."
+        " para crear un evento.",
     );
     return;
   }, [hasPermission]);
@@ -669,7 +701,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       if (!hasPermission("eventsManagement", "Editar")) {
         showErrorAlert(
           "Sin permisos",
-          "No tienes permisos para editar eventos"
+          "No tienes permisos para editar eventos",
         );
         return;
       }
@@ -680,7 +712,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
         showErrorAlert(
           "Evento Finalizado",
-          "No se puede editar un evento que ya finalizó."
+          "No se puede editar un evento que ya finalizó.",
         );
         return;
       }
@@ -730,7 +762,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       setModalMode("edit");
       setIsModalOpen(true);
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   /**
@@ -745,7 +777,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       if (!hasPermission("eventsManagement", "Eliminar")) {
         showErrorAlert(
           "Sin permisos",
-          "No tienes permisos para eliminar eventos"
+          "No tienes permisos para eliminar eventos",
         );
         return;
       }
@@ -753,7 +785,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       try {
         const result = await showDeleteAlert(
           "¿Eliminar evento?",
-          `Se eliminará permanentemente el evento: ${dashboardEvent.title}`
+          `Se eliminará permanentemente el evento: ${dashboardEvent.title}`,
         );
 
         if (result.isConfirmed) {
@@ -765,7 +797,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         // El error ya se maneja en el hook
       }
     },
-    [hasPermission, onDeleteEvent]
+    [hasPermission, onDeleteEvent],
   );
 
   /**
@@ -808,12 +840,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                   event.extendedProps?.estado === "programado"
                     ? "bg-blue-100 text-blue-800"
                     : event.extendedProps?.estado === "en-curso"
-                    ? "bg-green-100 text-green-800"
-                    : event.extendedProps?.estado === "finalizado"
-                    ? "bg-gray-100 text-gray-800"
-                    : event.extendedProps?.estado === "cancelado"
-                    ? "bg-red-100 text-red-800"
-                    : "bg-purple-100 text-purple-800"
+                      ? "bg-green-100 text-green-800"
+                      : event.extendedProps?.estado === "finalizado"
+                        ? "bg-gray-100 text-gray-800"
+                        : event.extendedProps?.estado === "cancelado"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-purple-100 text-purple-800"
                 }`}
               >
                 {event.extendedProps?.estado || "Programado"}
@@ -835,8 +867,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                   action.variant === "danger"
                     ? "text-red-600 hover:bg-red-50"
                     : action.variant === "warning"
-                    ? "text-yellow-600 hover:bg-yellow-50"
-                    : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                      ? "text-yellow-600 hover:bg-yellow-50"
+                      : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
                 }`}
               >
                 {action.icon && <action.icon className="h-3 w-3" />}
@@ -847,7 +879,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         )}
       </div>
     ),
-    []
+    [],
   );
 
   // Configuración de acciones de la barra lateral
@@ -883,7 +915,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           ]
         : []),
     ],
-    [hasPermission, handleSidebarEventClick, handleEditEvent, handleDeleteEvent]
+    [
+      hasPermission,
+      handleSidebarEventClick,
+      handleEditEvent,
+      handleDeleteEvent,
+    ],
   );
 
   return (

@@ -11,6 +11,8 @@ export const DashboardEventComponent = ({
   event,
   view = "month",
   onActionClick,
+  setActionModal,
+  setRegistrationModal,
 }) => {
   // Validación defensiva
   if (!event) {
@@ -35,21 +37,62 @@ export const DashboardEventComponent = ({
   };
 
   const handleActionClick = (e, actionType) => {
-    e.stopPropagation();
-    e.preventDefault();
+    // Calcular posición del botón
+    let position = { top: 100, left: 100 }; // Posición por defecto
 
-    if (!onActionClick) return;
+    try {
+      const target = e.currentTarget || e.target;
+      if (target && target.getBoundingClientRect) {
+        const rect = target.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const modalWidth = 220;
+        const modalHeight = 150;
 
-    const target = e.currentTarget;
-    if (!target) return;
+        // Posición predeterminada (abajo del botón)
+        let top = rect.bottom + 5;
+        let left = rect.left;
 
-    // Crear evento sintético con el target guardado
-    const syntheticEvent = {
-      ...e,
-      currentTarget: target,
-    };
+        // Ajustar posición para evitar que se corte
+        if (left + modalWidth > viewportWidth) {
+          left = rect.right - modalWidth;
+        }
 
-    onActionClick(syntheticEvent, actionType, dashboardEvent);
+        if (top + modalHeight > viewportHeight) {
+          top = rect.top - modalHeight - 5;
+        }
+
+        if (left < 10) left = 10;
+        if (top < 10) top = rect.bottom + 5;
+
+        position = { top, left };
+      }
+    } catch (error) {
+      console.error("Error calculating position:", error);
+    }
+
+    // Usar los setters directos
+    if (setActionModal && setRegistrationModal) {
+      if (actionType === "crud") {
+        setActionModal({
+          isOpen: true,
+          position,
+          event: dashboardEvent,
+        });
+      } else if (actionType === "registration") {
+        setRegistrationModal({
+          isOpen: true,
+          position,
+          event: dashboardEvent,
+        });
+      }
+      return;
+    }
+
+    // Fallback a onActionClick
+    if (onActionClick) {
+      onActionClick(e, actionType, dashboardEvent);
+    }
   };
 
   // Renderizado para vista de día (más detallado)
@@ -88,17 +131,42 @@ export const DashboardEventComponent = ({
           </div>
 
           {/* Botones de acción para vista de día */}
-          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100 mt-2">
+          <div
+            className="flex gap-1 flex-wrap pt-2 border-t border-gray-100 mt-2"
+            style={{
+              pointerEvents: "auto",
+              zIndex: 999,
+              position: "relative",
+            }}
+          >
             <button
-              onClick={(e) => handleActionClick(e, "crud")}
+              type="button"
+              onClick={(e) => {
+                handleActionClick(e, "crud");
+              }}
               className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+              style={{
+                pointerEvents: "auto",
+                zIndex: 1000,
+                position: "relative",
+                cursor: "pointer",
+              }}
             >
               <FaCog className="h-3 w-3" />
               Gestionar
             </button>
             <button
-              onClick={(e) => handleActionClick(e, "registration")}
+              type="button"
+              onClick={(e) => {
+                handleActionClick(e, "registration");
+              }}
               className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+              style={{
+                pointerEvents: "auto",
+                zIndex: 1000,
+                position: "relative",
+                cursor: "pointer",
+              }}
             >
               <FaUsers className="h-3 w-3" />
               Inscripciones
@@ -112,13 +180,16 @@ export const DashboardEventComponent = ({
   // Renderizado para vista de grid (mes/semana) - estilo similar a clases
   return (
     <div
-      className={`p-1 rounded text-black text-xs cursor-pointer hover:opacity-80 relative group ${
+      className={`p-1 rounded text-black text-xs relative group ${
         event.isMultiDay ? "border-l-4" : ""
       }`}
       style={{
         backgroundColor: getEstadoColor(),
         color: getTextColor(),
         borderLeftColor: event.isMultiDay ? getEstadoColor() : undefined,
+        pointerEvents: "auto",
+        position: "relative",
+        zIndex: 1,
       }}
     >
       <div className="font-medium truncate text-xs leading-tight">
@@ -144,18 +215,47 @@ export const DashboardEventComponent = ({
       )}
 
       {/* Botones de acción - mostrar en todos los días del evento */}
-      <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-0.5">
+      <div
+        className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-0.5"
+        style={{
+          pointerEvents: "auto",
+          zIndex: 100,
+          position: "absolute",
+        }}
+      >
         <button
-          onClick={(e) => handleActionClick(e, "crud")}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleActionClick(e, "crud");
+          }}
           className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           title="Gestionar evento"
+          style={{
+            pointerEvents: "auto",
+            zIndex: 101,
+            position: "relative",
+            cursor: "pointer",
+          }}
         >
           <FaCog size={8} />
         </button>
         <button
-          onClick={(e) => handleActionClick(e, "registration")}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleActionClick(e, "registration");
+          }}
           className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
           title="Inscripciones"
+          style={{
+            pointerEvents: "auto",
+            zIndex: 101,
+            position: "relative",
+            cursor: "pointer",
+          }}
         >
           <FaUsers size={8} />
         </button>

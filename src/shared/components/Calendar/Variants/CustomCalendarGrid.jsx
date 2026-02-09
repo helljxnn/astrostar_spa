@@ -93,19 +93,19 @@ const CustomCalendarGrid = ({
       try {
         const startDate = new Date(event.start || event.date || new Date());
         const endDate = new Date(
-          event.end || event.start || event.date || new Date()
+          event.end || event.start || event.date || new Date(),
         );
 
         // Normalize dates to start of day to avoid time zone issues
         const start = new Date(
           startDate.getFullYear(),
           startDate.getMonth(),
-          startDate.getDate()
+          startDate.getDate(),
         );
         const end = new Date(
           endDate.getFullYear(),
           endDate.getMonth(),
-          endDate.getDate()
+          endDate.getDate(),
         );
 
         // If it's a single day event or same day, just add to start date
@@ -142,7 +142,7 @@ const CustomCalendarGrid = ({
           }
         }
       } catch (error) {
-        console.warn("Error processing event date:", event, error);
+        // Silently skip invalid events
       }
     });
 
@@ -164,9 +164,14 @@ const CustomCalendarGrid = ({
 
   // Handle event click
   const handleEventClick = (event, e) => {
+    // Si el click fue en un botón o dentro de un botón, no hacer nada
+    if (e && (e.target.tagName === "BUTTON" || e.target.closest("button"))) {
+      return;
+    }
+
     e.stopPropagation();
     if (onEventClick) {
-      onEventClick(event);
+      onEventClick(event, e);
     }
   };
 
@@ -401,8 +406,8 @@ const CustomCalendarGrid = ({
                     isDayToday
                       ? "bg-[#B595FF] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
                       : isCurrentMonth
-                      ? "text-gray-900"
-                      : "text-gray-400"
+                        ? "text-gray-900"
+                        : "text-gray-400"
                   }`}
                 >
                   {format(day, "d")}
@@ -419,7 +424,16 @@ const CustomCalendarGrid = ({
                 {eventsToShow.map((event, eventIndex) => (
                   <div
                     key={event.id || eventIndex}
-                    onClick={(e) => handleEventClick(event, e)}
+                    onClick={(e) => {
+                      // Solo manejar clicks que NO sean en botones
+                      if (
+                        e.target.tagName === "BUTTON" ||
+                        e.target.closest("button")
+                      ) {
+                        return;
+                      }
+                      handleEventClick(event, e);
+                    }}
                     className="cursor-pointer"
                   >
                     {renderEvent ? (
