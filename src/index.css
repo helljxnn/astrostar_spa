@@ -102,3 +102,16 @@ aside.dynamic-sidebar {
 body.modal-open {
   overflow: hidden !important;
 }
+
+/* ===============================================
+   SWEETALERT2 Z-INDEX FIX
+   =============================================== */
+/* Asegurar que SweetAlert2 siempre aparezca por encima de los modales */
+.swal2-container {
+  z-index: 9999999 !important;
+}
+
+/* Backdrop de SweetAlert2 */
+.swal2-container.swal2-backdrop-show {
+  z-index: 9999998 !important;
+}

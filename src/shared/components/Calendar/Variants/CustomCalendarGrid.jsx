@@ -554,6 +554,9 @@ const CustomCalendarGrid = ({
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <button
                       onClick={(e) => {
+                        console.log(
+                          "🔧 CustomCalendarGrid: Botón GESTIONAR clickeado",
+                        );
                         e.stopPropagation();
                         if (onEventActionClick) {
                           const dashboardEvent =
@@ -564,11 +567,18 @@ const CustomCalendarGrid = ({
                       }}
                       className="p-1 text-[#B595FF] hover:bg-[#B595FF] hover:text-white rounded transition-all duration-200"
                       title="Gestionar evento"
+                      style={{
+                        pointerEvents: "auto",
+                        cursor: "pointer",
+                        position: "relative",
+                        zIndex: 201,
+                      }}
                     >
                       <svg
                         className="w-3 h-3"
                         fill="currentColor"
                         viewBox="0 0 20 20"
+                        style={{ pointerEvents: "none" }}
                       >
                         <path
                           fillRule="evenodd"
@@ -579,6 +589,9 @@ const CustomCalendarGrid = ({
                     </button>
                     <button
                       onClick={(e) => {
+                        console.log(
+                          "📝 CustomCalendarGrid: Botón INSCRIPCIONES clickeado",
+                        );
                         e.stopPropagation();
                         if (onEventActionClick) {
                           const dashboardEvent =
@@ -588,6 +601,12 @@ const CustomCalendarGrid = ({
                         setHoveredCell(null);
                       }}
                       className="p-1 text-[#B595FF] hover:bg-[#B595FF] hover:text-white rounded transition-all duration-200"
+                      style={{
+                        pointerEvents: "auto",
+                        cursor: "pointer",
+                        position: "relative",
+                        zIndex: 201,
+                      }}
                       title="Inscripciones"
                     >
                       <svg

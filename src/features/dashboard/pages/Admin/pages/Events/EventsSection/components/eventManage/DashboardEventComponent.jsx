@@ -37,8 +37,7 @@ export const DashboardEventComponent = ({
   };
 
   const handleActionClick = (e, actionType) => {
-    // Calcular posición del botón
-    let position = { top: 100, left: 100 }; // Posición por defecto
+    let position = { top: 100, left: 100 };
 
     try {
       const target = e.currentTarget || e.target;
@@ -49,11 +48,9 @@ export const DashboardEventComponent = ({
         const modalWidth = 220;
         const modalHeight = 150;
 
-        // Posición predeterminada (abajo del botón)
         let top = rect.bottom + 5;
         let left = rect.left;
 
-        // Ajustar posición para evitar que se corte
         if (left + modalWidth > viewportWidth) {
           left = rect.right - modalWidth;
         }
@@ -71,7 +68,6 @@ export const DashboardEventComponent = ({
       console.error("Error calculating position:", error);
     }
 
-    // Usar los setters directos
     if (setActionModal && setRegistrationModal) {
       if (actionType === "crud") {
         setActionModal({
@@ -90,6 +86,7 @@ export const DashboardEventComponent = ({
     }
 
     // Fallback a onActionClick
+    console.log("⚠️ Usando fallback onActionClick");
     if (onActionClick) {
       onActionClick(e, actionType, dashboardEvent);
     }
@@ -239,7 +236,7 @@ export const DashboardEventComponent = ({
             cursor: "pointer",
           }}
         >
-          <FaCog size={8} />
+          <FaCog size={8} style={{ pointerEvents: "none" }} />
         </button>
         <button
           type="button"

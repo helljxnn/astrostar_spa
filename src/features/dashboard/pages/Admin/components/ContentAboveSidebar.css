@@ -44,11 +44,12 @@
 
 /* MODALES: SIEMPRE POR ENCIMA DE TODO */
 .modal-overlay,
-.event-modal-overlay,
-[role="dialog"] {
+.event-modal-overlay {
   z-index: 999999 !important;
   pointer-events: auto !important;
 }
+
+/* NO forzar z-index en [role="dialog"] para permitir que los modales usen su propio z-index */
 
 .modal-content,
 .event-modal-content {
@@ -56,31 +57,25 @@
   pointer-events: auto !important;
 }
 
-/* MODALES DE ACCIONES DE EVENTOS - Máxima prioridad */
-div[class*="fixed"][class*="z-[60]"],
-div[class*="fixed"][class*="z-[70]"],
-div[class*="fixed"][class*="z-[9998]"],
-div[class*="fixed"][class*="z-[9999]"] {
-  z-index: 999999 !important;
+/* Asegurar que todos los elementos dentro de modales sean clickeables */
+.modal-content *,
+.event-modal-content *,
+[role="dialog"] *,
+div[class*="fixed"][class*="z-[9999]"] *,
+div[class*="fixed"][class*="z-[10000]"] * {
   pointer-events: auto !important;
-  position: fixed !important;
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
 }
+
+/* MODALES DE ACCIONES DE EVENTOS - NO FORZAR z-index, dejar que usen inline styles */
+/* Removido para permitir que los estilos inline tengan prioridad */
 
 /* Asegurar que los modales de framer-motion sean visibles */
 div[style*="position: fixed"] {
   pointer-events: auto !important;
 }
 
-/* Forzar visibilidad de modales con AnimatePresence */
-div[style*="position: fixed"][style*="top"][style*="left"] {
-  z-index: 999999 !important;
-  pointer-events: auto !important;
-  display: block !important;
-  visibility: visible !important;
-}
+/* NO forzar z-index ni visibility en modales posicionados */
+/* Permitir que los estilos inline tengan prioridad */
 
 /* Optimizaciones básicas */
 .dashboard-main-content {
@@ -108,6 +103,18 @@ button[title="Inscripciones"],
   position: relative !important;
   z-index: 100 !important;
   cursor: pointer !important;
+}
+
+/* BOTONES DENTRO DE MODALES - Asegurar que sean clickeables */
+div[class*="fixed"] button,
+div[class*="z-[9999]"] button,
+div[class*="z-[10000]"] button,
+.modal-content button,
+.event-modal-content button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative !important;
+  z-index: auto !important;
 }
 
 /* Contenedor de botones debe tener z-index alto */

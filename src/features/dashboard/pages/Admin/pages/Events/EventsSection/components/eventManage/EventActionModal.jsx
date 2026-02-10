@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { createPortal } from "react-dom";
 
 const EventActionModal = ({
   isOpen,
@@ -9,7 +10,9 @@ const EventActionModal = ({
   eventStatus,
   event,
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   // Verificar si el evento está finalizado
   const isFinalized =
@@ -73,13 +76,17 @@ const EventActionModal = ({
   // Filtrar acciones según el estado del evento
   const actions = allActions.filter((action) => action.showWhen);
 
-  return (
+  const modalContent = (
     <>
       {/* Overlay */}
       <div
         className="fixed inset-0 z-[9998]"
         onClick={onClose}
-        style={{ pointerEvents: "auto" }}
+        style={{
+          pointerEvents: "auto",
+          zIndex: 9999998,
+          backgroundColor: "transparent",
+        }}
       />
 
       {/* Modal */}
@@ -94,6 +101,8 @@ const EventActionModal = ({
           left: position?.left || "50%",
           transform: position ? "none" : "translate(-50%, -50%)",
           pointerEvents: "auto",
+          zIndex: 9999999,
+          position: "fixed",
         }}
       >
         <div className="p-2">
@@ -119,6 +128,9 @@ const EventActionModal = ({
       </motion.div>
     </>
   );
+
+  // Renderizar usando portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default EventActionModal;

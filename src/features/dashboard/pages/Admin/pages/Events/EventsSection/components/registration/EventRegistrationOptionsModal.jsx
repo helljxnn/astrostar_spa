@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { FaUserPlus, FaEdit, FaEye } from "react-icons/fa";
+import { createPortal } from "react-dom";
 
 const EventRegistrationOptionsModal = ({
   isOpen,
@@ -7,10 +8,12 @@ const EventRegistrationOptionsModal = ({
   onAction,
   position,
   eventType,
-  hasRegistrations = false, // prop para saber si hay inscripciones
-  eventStatus = "", // prop para saber el estado del evento
+  hasRegistrations = false,
+  eventStatus = "",
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   // Determinar el tipo de participante según el tipo de evento
   const getParticipantType = () => {
@@ -69,13 +72,18 @@ const EventRegistrationOptionsModal = ({
     ];
   }
 
-  return (
+  // Renderizar el modal usando portal
+  const modalContent = (
     <>
       {/* Overlay */}
       <div
         className="fixed inset-0 z-[9998]"
         onClick={onClose}
-        style={{ pointerEvents: "auto" }}
+        style={{
+          pointerEvents: "auto",
+          zIndex: 9999998,
+          backgroundColor: "transparent",
+        }}
       />
 
       {/* Modal */}
@@ -90,6 +98,8 @@ const EventRegistrationOptionsModal = ({
           left: position?.left || "50%",
           transform: position ? "none" : "translate(-50%, -50%)",
           pointerEvents: "auto",
+          zIndex: 9999999,
+          position: "fixed",
         }}
       >
         <div className="p-2">
@@ -115,6 +125,9 @@ const EventRegistrationOptionsModal = ({
       </motion.div>
     </>
   );
+
+  // Renderizar usando portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default EventRegistrationOptionsModal;
