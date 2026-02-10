@@ -273,7 +273,7 @@ const TeamRegistrationFormModal = ({
           maxWidth: "64rem",
         }}
       >
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
+        <div className="bg-primary-purple p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}
