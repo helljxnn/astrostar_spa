@@ -1,10 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  FaPlus,
-  FaClipboardList,
-  FaHistory,
-  FaUserPlus,
-} from "react-icons/fa";
+import { FaPlus, FaClipboardList, FaHistory, FaUserPlus } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
@@ -65,14 +60,14 @@ const Enrollments = () => {
   const [activeTab, setActiveTab] = useState("matriculas"); // "matriculas" o "inscripciones"
   const rowsPerPage = 10;
 
-  // Auto-refresh cada 3 segundos cuando estamos en la pestaña de inscripciones
+  // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
   useEffect(() => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
       console.log("🔄 Auto-refresh silencioso de inscripciones...");
       refresh(true); // true = silent mode
-    }, 3000); // 3 segundos para actualizaciones prácticamente instantáneas
+    }, 30000); // 30 segundos - balance entre actualización y rendimiento
 
     return () => clearInterval(interval);
   }, [activeTab, refresh]);
@@ -97,7 +92,7 @@ const Enrollments = () => {
       ];
 
       return textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower),
       );
     });
   }, [athletes, searchTerm]);
@@ -118,13 +113,14 @@ const Enrollments = () => {
       ];
 
       return textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower),
       );
     });
   }, [inscriptions, searchTerm]);
 
   // Datos según el tab activo
-  const currentData = activeTab === "matriculas" ? filteredAthletes : filteredInscriptions;
+  const currentData =
+    activeTab === "matriculas" ? filteredAthletes : filteredInscriptions;
   const totalRows = currentData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (pagination.page - 1) * rowsPerPage;
@@ -153,22 +149,28 @@ const Enrollments = () => {
   // Guardar matrícula (crear deportista + matrícula)
   const handleSaveEnrollment = async (athleteData) => {
     console.log("💾 [handleSaveEnrollment] Guardando matrícula...");
-    console.log("💾 [handleSaveEnrollment] selectedInscription:", selectedInscription);
-    console.log("💾 [handleSaveEnrollment] selectedInscription?.id:", selectedInscription?.id);
-    
-    const result = await createEnrollment(
-      athleteData,
-      selectedInscription?.id
+    console.log(
+      "💾 [handleSaveEnrollment] selectedInscription:",
+      selectedInscription,
     );
+    console.log(
+      "💾 [handleSaveEnrollment] selectedInscription?.id:",
+      selectedInscription?.id,
+    );
+
+    const result = await createEnrollment(athleteData, selectedInscription?.id);
 
     if (result) {
       console.log("✅ [handleSaveEnrollment] Matrícula guardada");
       console.log("📧 [handleSaveEnrollment] Email enviado:", result.emailSent);
-      console.log("🔑 [handleSaveEnrollment] Contraseña temporal:", result.temporaryPassword);
-      
+      console.log(
+        "🔑 [handleSaveEnrollment] Contraseña temporal:",
+        result.temporaryPassword,
+      );
+
       setIsAthleteModalOpen(false);
       setSelectedInscription(null);
-      
+
       // No mostramos el modal de credenciales, solo el sweet alert que ya se muestra en el hook
     } else {
       console.log("❌ [handleSaveEnrollment] Error al guardar matrícula");
@@ -179,9 +181,15 @@ const Enrollments = () => {
   const handleOpenRenew = (athlete) => {
     if (!athlete || athlete.target) return;
     const currentAthlete = athletes.find((a) => a.id === athlete.id) || athlete;
-    console.log('🔍 [handleOpenRenew] Datos del atleta:', currentAthlete);
-    console.log('🔍 [handleOpenRenew] fechaNacimiento:', currentAthlete?.fechaNacimiento);
-    console.log('🔍 [handleOpenRenew] inscripciones:', currentAthlete?.inscripciones);
+    console.log("🔍 [handleOpenRenew] Datos del atleta:", currentAthlete);
+    console.log(
+      "🔍 [handleOpenRenew] fechaNacimiento:",
+      currentAthlete?.fechaNacimiento,
+    );
+    console.log(
+      "🔍 [handleOpenRenew] inscripciones:",
+      currentAthlete?.inscripciones,
+    );
     setSelectedAthlete(currentAthlete);
     setIsRenewModalOpen(true);
   };
@@ -218,15 +226,18 @@ const Enrollments = () => {
           nombreArchivo: enrollmentData.comprobante.name,
           fechaSubida: new Date().toISOString(),
           tipo: enrollmentData.comprobante.type,
-          tamaño: enrollmentData.comprobante.size
-        }
+          tamaño: enrollmentData.comprobante.size,
+        },
       };
 
       const updatedAthlete = {
         ...selectedAthlete,
         categoria: enrollmentData.categoria,
         estadoInscripcion: "Vigente",
-        inscripciones: [newInscription, ...(selectedAthlete.inscripciones || [])],
+        inscripciones: [
+          newInscription,
+          ...(selectedAthlete.inscripciones || []),
+        ],
       };
 
       // Aquí deberías llamar al servicio para actualizar en el backend
@@ -235,7 +246,7 @@ const Enrollments = () => {
 
       showSuccessAlert(
         "Matrícula renovada",
-        `Se creó una nueva matrícula vigente para ${selectedAthlete.nombres} ${selectedAthlete.apellidos}.`
+        `Se creó una nueva matrícula vigente para ${selectedAthlete.nombres} ${selectedAthlete.apellidos}.`,
       );
 
       setIsRenewModalOpen(false);
@@ -245,7 +256,7 @@ const Enrollments = () => {
       console.error("Error renovando matrícula:", error);
       showErrorAlert(
         "Error al renovar",
-        error.message || "Ocurrió un error al renovar la matrícula."
+        error.message || "Ocurrió un error al renovar la matrícula.",
       );
     } finally {
       setIsRenewing(false);
@@ -257,7 +268,7 @@ const Enrollments = () => {
     if (!hasPermission("enrollments", "Eliminar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar matrículas"
+        "No tienes permisos para eliminar matrículas",
       );
       return;
     }
@@ -271,7 +282,7 @@ const Enrollments = () => {
       `Se eliminará la matrícula de ${athlete.firstName || athlete.nombres} ${
         athlete.lastName || athlete.apellidos
       }.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
 
     if (!confirmResult.isConfirmed) return;
@@ -307,59 +318,90 @@ const Enrollments = () => {
                   const lastName = athlete.lastName || athlete.apellidos || "";
                   const email = athlete.email || athlete.correo || "";
                   const phone = athlete.phoneNumber || athlete.telefono || "";
-                  const identification = athlete.identification || athlete.numeroDocumento || "";
-                  
+                  const identification =
+                    athlete.identification || athlete.numeroDocumento || "";
+
                   // Obtener tipo de documento del deportista
                   let tipoDocumento = "No especificado";
-                  const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
+                  const docTypeId =
+                    athlete.user?.documentTypeId || athlete.documentTypeId;
                   if (docTypeId && referenceData?.documentTypes) {
-                    const docType = referenceData.documentTypes.find(dt => dt.id === docTypeId);
+                    const docType = referenceData.documentTypes.find(
+                      (dt) => dt.id === docTypeId,
+                    );
                     if (docType) {
                       tipoDocumento = docType.name || docType.label;
                     }
                   }
-                  
+
                   // Obtener tipo de documento del acudiente
                   let tipoDocumentoAcudiente = "";
                   if (guardian) {
                     const guardianDocTypeId = guardian.documentTypeId;
-                    if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
-                      const docType = referenceData.guardianDocumentTypes.find(dt => dt.id === guardianDocTypeId);
+                    if (
+                      guardianDocTypeId &&
+                      referenceData?.guardianDocumentTypes
+                    ) {
+                      const docType = referenceData.guardianDocumentTypes.find(
+                        (dt) => dt.id === guardianDocTypeId,
+                      );
                       if (docType) {
                         tipoDocumentoAcudiente = docType.name || docType.label;
                       }
                     }
                   }
-                  
+
                   // Obtener la matrícula más reciente
-                  const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
-                  
+                  const latestEnrollment =
+                    athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+
                   // Formatear fechas
                   let fechaMatricula = "";
-                  if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-                    const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                  if (
+                    latestEnrollment?.enrollmentDate ||
+                    latestEnrollment?.fechaInscripcion
+                  ) {
+                    const fecha = new Date(
+                      latestEnrollment.enrollmentDate ||
+                        latestEnrollment.fechaInscripcion,
+                    );
                     if (!isNaN(fecha.getTime())) {
                       fechaMatricula = fecha.toLocaleDateString("es-ES");
                     }
                   }
-                  
+
                   let fechaVencimiento = "";
-                  if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
-                    const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+                  if (
+                    latestEnrollment?.expirationDate ||
+                    latestEnrollment?.fechaVencimiento
+                  ) {
+                    const fecha = new Date(
+                      latestEnrollment.expirationDate ||
+                        latestEnrollment.fechaVencimiento,
+                    );
                     if (!isNaN(fecha.getTime())) {
                       fechaVencimiento = fecha.toLocaleDateString("es-ES");
                     }
-                  } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-                    const fechaInsc = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                  } else if (
+                    latestEnrollment?.enrollmentDate ||
+                    latestEnrollment?.fechaInscripcion
+                  ) {
+                    const fechaInsc = new Date(
+                      latestEnrollment.enrollmentDate ||
+                        latestEnrollment.fechaInscripcion,
+                    );
                     if (!isNaN(fechaInsc.getTime())) {
                       const fechaVenc = new Date(fechaInsc);
                       fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
                       fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
                     }
                   }
-                  
-                  const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
-                  
+
+                  const estadoMatricula =
+                    latestEnrollment?.status ||
+                    latestEnrollment?.estado ||
+                    "Sin matrícula";
+
                   return {
                     nombres: firstName,
                     apellidos: lastName,
@@ -373,10 +415,16 @@ const Enrollments = () => {
                     fechaMatricula,
                     fechaVencimiento,
                     estadoMatricula,
-                    acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+                    acudienteNombre: guardian
+                      ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim()
+                      : "Sin acudiente",
                     acudienteTipoDocumento: tipoDocumentoAcudiente,
-                    acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
-                    acudienteTelefono: guardian?.phone || guardian?.telefono || "",
+                    acudienteDocumento:
+                      guardian?.identification ||
+                      guardian?.identificacion ||
+                      "",
+                    acudienteTelefono:
+                      guardian?.phone || guardian?.telefono || "",
                     acudienteCorreo: guardian?.email || guardian?.correo || "",
                   };
                 })}
@@ -394,7 +442,10 @@ const Enrollments = () => {
                   { header: "Fecha Vencimiento", accessor: "fechaVencimiento" },
                   { header: "Estado Matrícula", accessor: "estadoMatricula" },
                   { header: "Acudiente", accessor: "acudienteNombre" },
-                  { header: "Tipo Doc. Acudiente", accessor: "acudienteTipoDocumento" },
+                  {
+                    header: "Tipo Doc. Acudiente",
+                    accessor: "acudienteTipoDocumento",
+                  },
                   { header: "Doc. Acudiente", accessor: "acudienteDocumento" },
                   { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
                   { header: "Correo Acudiente", accessor: "acudienteCorreo" },
@@ -429,15 +480,27 @@ const Enrollments = () => {
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             <span>Matrículas</span>
-            <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
-              activeTab === "matriculas"
-                ? "bg-primary-purple text-white"
-                : "bg-gray-200 text-gray-600"
-            }`}>
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
+                activeTab === "matriculas"
+                  ? "bg-primary-purple text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}
+            >
               {athletes.length}
             </span>
           </button>
@@ -452,8 +515,18 @@ const Enrollments = () => {
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
             </svg>
             <span>Inscripciones</span>
             {inscriptions.length > 0 && activeTab !== "inscripciones" ? (
@@ -461,11 +534,13 @@ const Enrollments = () => {
                 {inscriptions.length}
               </span>
             ) : (
-              <span className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
-                activeTab === "inscripciones"
-                  ? "bg-primary-blue text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}>
+              <span
+                className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
+                  activeTab === "inscripciones"
+                    ? "bg-primary-blue text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
                 {inscriptions.length}
               </span>
             )}
@@ -504,52 +579,91 @@ const Enrollments = () => {
                     const lastName = a.lastName || a.apellidos || "";
 
                     // Obtener la matrícula más reciente
-                    const latestEnrollment = a.enrollments?.[0] || a.inscripciones?.[0];
-                    
+                    const latestEnrollment =
+                      a.enrollments?.[0] || a.inscripciones?.[0];
+
                     // Formatear fecha de matrícula
                     let fechaMatricula = "N/A";
-                    if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-                      const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                    if (
+                      latestEnrollment?.enrollmentDate ||
+                      latestEnrollment?.fechaInscripcion
+                    ) {
+                      const fecha = new Date(
+                        latestEnrollment.enrollmentDate ||
+                          latestEnrollment.fechaInscripcion,
+                      );
                       if (!isNaN(fecha.getTime())) {
                         fechaMatricula = fecha.toLocaleDateString("es-ES");
                       }
                     }
-                    
+
                     // Formatear fecha de vencimiento
                     let fechaVencimiento = "N/A";
-                    if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
-                      const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+                    if (
+                      latestEnrollment?.expirationDate ||
+                      latestEnrollment?.fechaVencimiento
+                    ) {
+                      const fecha = new Date(
+                        latestEnrollment.expirationDate ||
+                          latestEnrollment.fechaVencimiento,
+                      );
                       if (!isNaN(fecha.getTime())) {
                         fechaVencimiento = fecha.toLocaleDateString("es-ES");
                       }
-                    } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+                    } else if (
+                      latestEnrollment?.enrollmentDate ||
+                      latestEnrollment?.fechaInscripcion
+                    ) {
                       // Si no hay fecha de vencimiento, calcularla sumando 1 año a la fecha de inscripción
-                      const fechaInscripcion = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                      const fechaInscripcion = new Date(
+                        latestEnrollment.enrollmentDate ||
+                          latestEnrollment.fechaInscripcion,
+                      );
                       if (!isNaN(fechaInscripcion.getTime())) {
                         const fechaVenc = new Date(fechaInscripcion);
                         fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-                        fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
+                        fechaVencimiento =
+                          fechaVenc.toLocaleDateString("es-ES");
                       }
                     }
 
                     // Verificar si la matrícula está vencida
                     let isVencida = false;
-                    if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
-                      const fechaVenc = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+                    if (
+                      latestEnrollment?.expirationDate ||
+                      latestEnrollment?.fechaVencimiento
+                    ) {
+                      const fechaVenc = new Date(
+                        latestEnrollment.expirationDate ||
+                          latestEnrollment.fechaVencimiento,
+                      );
                       const hoy = new Date();
                       isVencida = fechaVenc < hoy;
-                      console.log(`📅 ${firstName} ${lastName}: Fecha venc=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`);
-                    } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+                      console.log(
+                        `📅 ${firstName} ${lastName}: Fecha venc=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`,
+                      );
+                    } else if (
+                      latestEnrollment?.enrollmentDate ||
+                      latestEnrollment?.fechaInscripcion
+                    ) {
                       // Si no hay fecha de vencimiento, calcularla
-                      const fechaInscripcion = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+                      const fechaInscripcion = new Date(
+                        latestEnrollment.enrollmentDate ||
+                          latestEnrollment.fechaInscripcion,
+                      );
                       const fechaVenc = new Date(fechaInscripcion);
                       fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
                       const hoy = new Date();
                       isVencida = fechaVenc < hoy;
-                      console.log(`📅 ${firstName} ${lastName}: Fecha insc=${fechaInscripcion.toLocaleDateString()}, Fecha venc calculada=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`);
+                      console.log(
+                        `📅 ${firstName} ${lastName}: Fecha insc=${fechaInscripcion.toLocaleDateString()}, Fecha venc calculada=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`,
+                      );
                     }
 
-                    const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
+                    const estadoMatricula =
+                      latestEnrollment?.status ||
+                      latestEnrollment?.estado ||
+                      "Sin matrícula";
 
                     return {
                       ...a,
@@ -580,7 +694,13 @@ const Enrollments = () => {
                     fechaMatricula: (value, row) => {
                       return (
                         <div className="text-left pl-4">
-                          <span className={value === "N/A" ? "text-gray-400" : "text-gray-700"}>
+                          <span
+                            className={
+                              value === "N/A"
+                                ? "text-gray-400"
+                                : "text-gray-700"
+                            }
+                          >
                             {value}
                           </span>
                         </div>
@@ -614,11 +734,23 @@ const Enrollments = () => {
                       // Calcular días hasta vencimiento
                       const latestEnrollment = row.latestEnrollment;
                       let fechaVenc;
-                      
-                      if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
-                        fechaVenc = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
-                      } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-                        fechaVenc = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+
+                      if (
+                        latestEnrollment?.expirationDate ||
+                        latestEnrollment?.fechaVencimiento
+                      ) {
+                        fechaVenc = new Date(
+                          latestEnrollment.expirationDate ||
+                            latestEnrollment.fechaVencimiento,
+                        );
+                      } else if (
+                        latestEnrollment?.enrollmentDate ||
+                        latestEnrollment?.fechaInscripcion
+                      ) {
+                        fechaVenc = new Date(
+                          latestEnrollment.enrollmentDate ||
+                            latestEnrollment.fechaInscripcion,
+                        );
                         fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
                       }
 
@@ -631,7 +763,9 @@ const Enrollments = () => {
                       }
 
                       const hoy = new Date();
-                      const diasRestantes = Math.ceil((fechaVenc - hoy) / (1000 * 60 * 60 * 24));
+                      const diasRestantes = Math.ceil(
+                        (fechaVenc - hoy) / (1000 * 60 * 60 * 24),
+                      );
 
                       let colorClass = "text-gray-700";
                       if (diasRestantes < 0) {
@@ -666,23 +800,23 @@ const Enrollments = () => {
                     show: hasPermission("enrollments", "Eliminar"),
                   }),
                 }}
-              customActions={[
-                {
-                  onClick: (athlete) => handleOpenRenew(athlete),
-                  label: <FaClipboardList className="w-4 h-4" />,
-                  className:
-                    "p-2 text-primary-purple hover:text-primary-blue hover:bg-purple-50 rounded transition-colors",
-                  tooltip: "Renovar Matrícula",
-                  show: (athlete) => athlete.isVencida, // Solo mostrar si está vencida
-                },
-                {
-                  onClick: (athlete) => handleOpenHistory(athlete),
-                  label: <FaHistory className="w-4 h-4" />,
-                  className:
-                    "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
-                  tooltip: "Historial de Matrículas",
-                },
-              ]}
+                customActions={[
+                  {
+                    onClick: (athlete) => handleOpenRenew(athlete),
+                    label: <FaClipboardList className="w-4 h-4" />,
+                    className:
+                      "p-2 text-primary-purple hover:text-primary-blue hover:bg-purple-50 rounded transition-colors",
+                    tooltip: "Renovar Matrícula",
+                    show: (athlete) => athlete.isVencida, // Solo mostrar si está vencida
+                  },
+                  {
+                    onClick: (athlete) => handleOpenHistory(athlete),
+                    label: <FaHistory className="w-4 h-4" />,
+                    className:
+                      "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
+                    tooltip: "Historial de Matrículas",
+                  },
+                ]}
               />
             ) : (
               <Table
@@ -705,13 +839,19 @@ const Enrollments = () => {
                     if (inscription.fechaNacimiento) {
                       try {
                         // Si viene en formato YYYY-MM-DD, formatear directamente
-                        if (typeof inscription.fechaNacimiento === 'string' && /^\d{4}-\d{2}-\d{2}/.test(inscription.fechaNacimiento)) {
-                          const [year, month, day] = inscription.fechaNacimiento.split('T')[0].split('-');
+                        if (
+                          typeof inscription.fechaNacimiento === "string" &&
+                          /^\d{4}-\d{2}-\d{2}/.test(inscription.fechaNacimiento)
+                        ) {
+                          const [year, month, day] = inscription.fechaNacimiento
+                            .split("T")[0]
+                            .split("-");
                           fechaNacimientoDisplay = `${day}/${month}/${year}`;
                         } else {
                           const date = new Date(inscription.fechaNacimiento);
                           if (!isNaN(date.getTime())) {
-                            fechaNacimientoDisplay = date.toLocaleDateString("es-ES");
+                            fechaNacimientoDisplay =
+                              date.toLocaleDateString("es-ES");
                           }
                         }
                       } catch (e) {
@@ -721,11 +861,13 @@ const Enrollments = () => {
 
                     // Formatear fecha de inscripción de forma segura
                     let fechaInscripcionDisplay = "Fecha inválida";
-                    const inscriptionDate = inscription.fechaPreRegistro || inscription.createdAt;
+                    const inscriptionDate =
+                      inscription.fechaPreRegistro || inscription.createdAt;
                     if (inscriptionDate) {
                       const date = new Date(inscriptionDate);
                       if (!isNaN(date.getTime())) {
-                        fechaInscripcionDisplay = date.toLocaleDateString("es-ES");
+                        fechaInscripcionDisplay =
+                          date.toLocaleDateString("es-ES");
                       }
                     }
 
@@ -749,7 +891,8 @@ const Enrollments = () => {
                 }}
                 customActions={[
                   {
-                    onClick: (inscription) => handleSelectInscription(inscription),
+                    onClick: (inscription) =>
+                      handleSelectInscription(inscription),
                     label: <FaUserPlus className="w-4 h-4" />,
                     className:
                       "p-2 text-primary-blue hover:text-primary-purple rounded transition-colors",
@@ -764,7 +907,10 @@ const Enrollments = () => {
                       const result = await showConfirmAlert(
                         "¿Rechazar inscripción?",
                         `¿Estás seguro de rechazar la inscripción de ${inscription.nombres} ${inscription.apellidos}?`,
-                        { confirmButtonText: "Sí, rechazar", cancelButtonText: "Cancelar" }
+                        {
+                          confirmButtonText: "Sí, rechazar",
+                          cancelButtonText: "Cancelar",
+                        },
                       );
                       if (result.isConfirmed) {
                         await rejectInscription(inscription.id);
@@ -792,7 +938,7 @@ const Enrollments = () => {
         </>
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          {activeTab === "matriculas" 
+          {activeTab === "matriculas"
             ? "No hay matrículas registradas todavía."
             : "No hay inscripciones pendientes del landing."}
         </div>
@@ -828,15 +974,23 @@ const Enrollments = () => {
             return showErrorAlert("Error", "Acudiente no válido");
           }
 
-          const GuardiansService = (await import("../AthletesSection/services/GuardiansService.js")).default;
+          const GuardiansService = (
+            await import("../AthletesSection/services/GuardiansService.js")
+          ).default;
           const result = await GuardiansService.deleteGuardian(guardian.id);
-          
+
           if (result.success) {
             await searchGuardians(""); // Recargar lista de acudientes
-            showSuccessAlert("Acudiente eliminado", "El acudiente ha sido eliminado correctamente");
+            showSuccessAlert(
+              "Acudiente eliminado",
+              "El acudiente ha sido eliminado correctamente",
+            );
             return true;
           } else {
-            showErrorAlert("Error", result.error || "No se pudo eliminar el acudiente");
+            showErrorAlert(
+              "Error",
+              result.error || "No se pudo eliminar el acudiente",
+            );
             return false;
           }
         }}
@@ -849,31 +1003,45 @@ const Enrollments = () => {
         }}
         onSave={async (guardianData) => {
           console.log("📝 Intentando crear acudiente con datos:", guardianData);
-          const GuardiansService = (await import("../AthletesSection/services/GuardiansService.js")).default;
+          const GuardiansService = (
+            await import("../AthletesSection/services/GuardiansService.js")
+          ).default;
           const result = await GuardiansService.createGuardian(guardianData);
           console.log("📡 Respuesta del servicio:", result);
-          
+
           if (result.success) {
             setNewlyCreatedGuardianId(result.data.id);
             await searchGuardians(""); // Recargar lista de acudientes
             setIsGuardianModalOpen(false);
-            showSuccessAlert("Acudiente creado", "El acudiente ha sido creado exitosamente");
+            showSuccessAlert(
+              "Acudiente creado",
+              "El acudiente ha sido creado exitosamente",
+            );
             return true; // ✅ Retornar true para que el modal sepa que fue exitoso
           } else {
-            showErrorAlert("Error", result.error || "No se pudo crear el acudiente");
+            showErrorAlert(
+              "Error",
+              result.error || "No se pudo crear el acudiente",
+            );
             return false; // ✅ Retornar false en caso de error
           }
         }}
         mode="create"
-        referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
+        referenceData={{
+          documentTypes: referenceData.guardianDocumentTypes || [],
+        }}
       />
 
       <GuardianViewModal
         isOpen={isGuardianViewOpen}
         onClose={() => setIsGuardianViewOpen(false)}
         guardian={guardianToView}
-        athletes={athletes.filter((a) => String(a.acudiente) === String(guardianToView?.id))}
-        referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
+        athletes={athletes.filter(
+          (a) => String(a.acudiente) === String(guardianToView?.id),
+        )}
+        referenceData={{
+          documentTypes: referenceData.guardianDocumentTypes || [],
+        }}
       />
 
       <RenewEnrollmentModal
