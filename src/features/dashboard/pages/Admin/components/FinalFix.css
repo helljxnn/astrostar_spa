@@ -1,30 +1,37 @@
-/* SOLUCIÓN FINAL - Sobrescribe todo lo anterior */
+/* SOLUCIÓN SIMPLE - Solo estilos básicos */
 
-/* Reset completo del contenido principal */
+/* Contenido principal básico */
 .dashboard-main-content {
   margin: 0 !important;
   padding: 0 !important;
+  min-height: 100vh !important;
+  position: relative !important;
+  z-index: 1 !important;
+  transform: none !important;
+  will-change: auto !important;
+  /* CRÍTICO: Prevenir desbordamiento de hijos */
+  overflow-x: hidden !important;
+}
+
+/* CRÍTICO: Forzar que TODOS los hijos respeten el contenedor */
+.dashboard-main-content * {
+  position: relative !important;
+  max-width: 100% !important;
+}
+
+/* CRÍTICO: Sobrescribir reglas globales de main */
+.dashboard-main-content main {
   width: auto !important;
-  min-width: auto !important;
-  max-width: none !important;
-  flex: 1 !important;
-  transition: margin-left 0.3s ease-in-out !important;
+  flex: none !important;
+  position: relative !important;
+  overflow-x: hidden !important;
 }
 
-/* Forzar estilos inline - el CSS inline debería tener prioridad */
-.dashboard-main-content[style*="margin-left: 80px"] {
-  margin-left: 80px !important;
-  width: calc(100vw - 80px) !important;
-}
-
-.dashboard-main-content[style*="margin-left: 288px"] {
-  margin-left: 288px !important;
-  width: calc(100vw - 288px) !important;
-}
-
-.dashboard-main-content[style*="margin-left: 0px"] {
-  margin-left: 0px !important;
-  width: 100vw !important;
+/* CRÍTICO: Prevenir que elementos con position absolute se desborden */
+.dashboard-main-content [style*="position: absolute"],
+.dashboard-main-content .absolute {
+  left: auto !important;
+  right: auto !important;
 }
 
 /* Sidebar fijo */
@@ -35,17 +42,21 @@
   z-index: 50 !important;
 }
 
-/* Contenedor principal sin interferencias */
-.min-h-screen.bg-gray-50.flex {
-  margin: 0 !important;
-  padding: 0 !important;
-  gap: 0 !important;
+/* Overlay del sidebar en móvil */
+.sidebar-overlay {
+  z-index: 45 !important;
 }
 
-/* Móvil */
+/* Contenedor principal */
+.min-h-screen.bg-gray-50 {
+  margin: 0 !important;
+  padding: 0 !important;
+  position: relative !important;
+}
+
+/* Móvil - forzar margin-left 0 */
 @media (max-width: 1023px) {
   .dashboard-main-content {
     margin-left: 0px !important;
-    width: 100vw !important;
   }
 }

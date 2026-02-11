@@ -44,7 +44,7 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
     <header
       className="w-full h-16 px-6 flex items-center justify-between 
       bg-gradient-to-r from-white/70 via-white/60 to-white/70 
-      backdrop-blur-lg shadow-md sticky top-0 z-40 border-b border-gray-200 font-montserrat"
+      backdrop-blur-lg shadow-md sticky top-0 z-10 border-b border-gray-200 font-montserrat"
     >
       <div className="flex items-center gap-4">
         {/* Botón del sidebar para móvil */}
