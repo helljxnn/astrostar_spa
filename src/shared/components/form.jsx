@@ -13,7 +13,20 @@ import { motion, AnimatePresence } from "framer-motion";
  * @param {string} props.submitText - El texto para el botón de envío (ej. "Crear", "Guardar Cambios").
  * @param {number} props.id - El id de un registro si para actualizar o no.
 */
-const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guardar", id = null }) => {
+const Form = ({
+    isOpen,
+    title,
+    children,
+    onClose,
+    onSubmit,
+    submitText = "Guardar",
+    id = null,
+    headerClassName = "",
+    titleClassName = "",
+    bodyClassName = "",
+    footerClassName = "",
+    containerClassName = "",
+}) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -70,19 +83,19 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                     {/* Contenedor del Formulario con animación */}
                     <motion.div
                         variants={modalVariants}
-                        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+                        className={`relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto ${containerClassName}`}
                     >
                         <form onSubmit={handleSubmit}>
                             {/* Header */}
-                            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+                            <div className={`sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10 ${headerClassName}`}>
                                 <button type="button" onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full">✕</button>
-                                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                                <h2 className={`text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center ${titleClassName}`}>
                                     {title}
                                 </h2>
                             </div>
 
                             {/* Body & Footer Wrapper */}
-                            <div className="p-6 space-y-6">
+                            <div className={`p-6 space-y-6 ${bodyClassName}`}>
                                 {/* Body: Contenido dinámico */}
                                 <div className="space-y-6">
                                     {Children.map(children, (child) => (
@@ -93,7 +106,7 @@ const Form = ({ isOpen, title, children, onClose, onSubmit, submitText = "Guarda
                                 {id && <input type="hidden" name="id" value={id} />}
 
                                 {/* Footer: Botones de acción */}
-                                <motion.div variants={itemVariants} className="flex justify-between pt-6 border-t border-gray-200 w-full">
+                                <motion.div variants={itemVariants} className={`flex justify-between pt-6 border-t border-gray-200 w-full ${footerClassName}`}>
                                     <motion.button
                                         type="button"
                                         onClick={onClose}

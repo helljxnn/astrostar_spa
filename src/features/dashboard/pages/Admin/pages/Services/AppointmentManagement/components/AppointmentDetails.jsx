@@ -2,27 +2,21 @@ import React from 'react';
 import moment from 'moment';
 import 'moment/locale/es';
 import { motion, AnimatePresence } from 'framer-motion';
-import { showConfirmAlert, showSuccessAlert } from '../../../../../../../../shared/utils/alerts';
-import Swal from 'sweetalert2';
 import { FaCheckCircle, FaTimes } from 'react-icons/fa';
 
-// Estas opciones deberían idealmente venir de una fuente compartida o una API.
-// Por ahora, las mantenemos aquí para que el componente sea autónomo.
-const specialtyOptions = [
-    { value: "psicologia", label: "Psicología Deportiva" },
-    { value: "fisioterapia", label: "Fisioterapia" },
-    { value: "nutricion", label: "Nutrición" },
-    { value: "medicina", label: "Medicina Deportiva" },
-];
-
-const getSpecialtyLabel = (value) => {
-    const option = specialtyOptions.find(opt => opt.value === value);
+const getSpecialtyLabel = (value, options = []) => {
+    const option = options.find(opt => opt.value === value);
     return option ? option.label : 'No especificada';
 };
 
 const getAthleteName = (athleteId, athleteList) => {
-    const athlete = athleteList.find(a => a.id === athleteId);
-    return athlete ? `${athlete.nombres} ${athlete.apellidos}` : 'Desconocido';
+    const athlete = athleteList.find(a => a.id === athleteId || a.athleteId === athleteId);
+    if (!athlete) return 'Desconocido';
+    return (
+        athlete.label ||
+        athlete.fullName ||
+        `${athlete.nombres || athlete.firstName || ''} ${athlete.apellidos || athlete.lastName || ''}`.trim()
+    );
 };
 
 /**
@@ -35,26 +29,26 @@ const getAthleteName = (athleteId, athleteList) => {
  * @param {Array<object>} props.athleteList - Lista de atletas para resolver nombres.
  */
 
-const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = [], onCancelAppointment, onMarkAsCompleted }) => {
+const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = [], specialtyOptions = [], onCancelAppointment, onMarkAsCompleted }) => {
     if (!appointmentData) return null;
 
     // Configuración de detalles
     const details = [
-        { label: "Deportista", value: getAthleteName(appointmentData.athlete, athleteList) },
-        { label: "Especialidad", value: getSpecialtyLabel(appointmentData.specialty) },
-        { label: "Especialista", value: appointmentData.specialist },
-        { label: "Fecha", value: moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') },
-        { label: "Hora", value: moment(appointmentData.start).format('h:mm a') },
+        { label: "Deportista", value: getAthleteName(appointmentData.athleteId || appointmentData.athlete, athleteList) },
+        { label: "Especialidad", value: getSpecialtyLabel(appointmentData.specialty, specialtyOptions) },
+        { label: "Especialista", value: appointmentData.specialistName || appointmentData.specialist || 'No especificado' },
+        { label: "Fecha", value: appointmentData.start ? moment(appointmentData.start).format('dddd, D [de] MMMM [de] YYYY') : 'No registrada' },
+        { label: "Hora", value: appointmentData.start ? moment(appointmentData.start).format('h:mm a') : 'No registrada' },
         { label: "Descripción / Motivo", value: appointmentData.description },
-        { label: "Estado de la cita", value: appointmentData.status === 'cancelled' ? 'Cancelada' : (appointmentData.status === 'completed' ? 'Completada' : 'Activa') }
+        { label: "Estado de la cita", value: appointmentData.status === 'Cancelado' ? 'Cancelada' : (appointmentData.status === 'Completado' ? 'Completada' : 'Programada') }
     ];
 
     // Añadir condicionalmente el motivo de cancelación o la conclusión
-    if (appointmentData.status === 'cancelled') {
+    if (appointmentData.status === 'Cancelado') {
         details.push({
             label: "Motivo de cancelación", value: appointmentData.cancelReason || 'No especificado'
         });
-    } else if (appointmentData.status === 'completed') {
+    } else if (appointmentData.status === 'Completado') {
         details.push({
             label: "Conclusión de la cita", value: appointmentData.conclusion || 'No registrada'
         });
@@ -117,7 +111,7 @@ const AppointmentDetails = ({ isOpen, onClose, appointmentData, athleteList = []
 
                         {/* Footer */}
                         <div className="sticky bottom-0 bg-white rounded-b-2xl border-t border-gray-200 p-6 flex justify-between items-center gap-4">
-                            {appointmentData.status === 'active' && (
+                            {appointmentData.status === 'Programado' && (
                                 <>
                                     <button
                                         onClick={handleCancelAppointment}

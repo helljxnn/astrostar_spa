@@ -12,6 +12,8 @@ const Table = ({
   onView, // para vista detallada
   customActions, // para botones personalizados
   buttonConfig = {}, // configuración de botones
+  enableHorizontalScroll = true,
+  tableClassName = "",
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -52,10 +54,16 @@ const Table = ({
   return (
     <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
       {/* Tabla desktop */}
-      <div className="overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <div
+        className={
+          enableHorizontalScroll
+            ? "overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+            : "overflow-x-hidden hidden sm:block w-full"
+        }
+      >
         <table
           id="table"
-          className="w-full border-collapse text-sm font-monserrat"
+          className={`w-full border-collapse text-sm font-monserrat ${tableClassName}`}
         >
           <Thead options={{ thead }} />
           <Tbody options={{ tbody: tbodyProps }} />
@@ -97,6 +105,14 @@ const Table = ({
 
             {/* Acciones */}
             <div className="flex items-center gap-3 mt-3">
+              {tbodyProps.onView && (
+                <button
+                  onClick={() => tbodyProps.onView(item)}
+                  className="px-3 py-1 rounded-lg bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors text-xs"
+                >
+                  Ver
+                </button>
+              )}
               <button
                 onClick={() => tbodyProps.onEdit && tbodyProps.onEdit(item)}
                 className="px-3 py-1 rounded-lg bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white transition-colors text-xs"
@@ -109,14 +125,6 @@ const Table = ({
               >
                 Eliminar
               </button>
-              {tbodyProps.onView && (
-                <button
-                  onClick={() => tbodyProps.onView(item)}
-                  className="px-3 py-1 rounded-lg bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors text-xs"
-                >
-                  Ver
-                </button>
-              )}
               {/* Botones personalizados */}
               {customActions &&
                 customActions.map((action, idx) => (

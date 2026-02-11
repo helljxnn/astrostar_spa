@@ -1,4 +1,4 @@
-// SportsCategory.jsx
+﻿// SportsCategory.jsx
 import React, { useState, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 
@@ -231,13 +231,6 @@ const SportsCategory = () => {
         </div>
       )}
 
-      {loading && (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary-purple border-r-transparent"></div>
-          <p className="mt-4 text-gray-600 font-medium">Cargando categorías...</p>
-        </div>
-      )}
-
       {!loading && totalRows === 0 && searchTerm && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 mb-6">
           <div className="text-6xl mb-4">🔍</div>
@@ -340,3 +333,4 @@ const SportsCategory = () => {
 };
 
 export default SportsCategory;
+

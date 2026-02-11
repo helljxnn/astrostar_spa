@@ -108,6 +108,30 @@ function DonorsSponsors() {
     }));
   }, [donorsSponsors]);
 
+  const tableData = useMemo(() => {
+    return (donorsSponsors || []).map((donor) => {
+      const isJuridica = donor.tipoPersona === "Juridica";
+      const tipoIdentificacion =
+        donor.tipoDocumento || donor.documentType || (isJuridica ? "NIT" : "");
+      const numeroIdentificacion =
+        (isJuridica
+          ? donor.nit ||
+            donor.numeroDocumento ||
+            donor.identificacion ||
+            donor.identification
+          : donor.numeroDocumento ||
+            donor.identificacion ||
+            donor.nit ||
+            donor.identification) || "";
+
+      return {
+        ...donor,
+        tipoIdentificacion,
+        numeroIdentificacion,
+      };
+    });
+  }, [donorsSponsors]);
+
   return (
     <div className="p-6 font-questrial space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
@@ -149,18 +173,40 @@ function DonorsSponsors() {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div>
         <Table
           rowsPerPage={pagination.limit || 5}
           thead={{
-            titles: ["Identificacion", "Nombre", "Tipo", "Ciudad", "Pa\u00eds", "Telefono"],
+            titles: [
+              "Nombre",
+              "Tipo de Identificacion",
+              "Numero de Identificacion",
+              "Tel\u00e9fono",
+              "Correo",
+              "Tipo",
+            ],
             state: true,
             actions: true,
           }}
           tbody={{
-            data: donorsSponsors,
-            dataPropertys: ["identificacion", "nombre", "tipo", "ciudad", "pais", "telefono"],
+            data: tableData,
+            dataPropertys: [
+              "nombre",
+              "tipoIdentificacion",
+              "numeroIdentificacion",
+              "telefono",
+              "correo",
+              "tipo",
+            ],
             state: true,
+            cellClassNames: {
+              nombre: "whitespace-normal break-words",
+              tipoIdentificacion: "whitespace-normal",
+              numeroIdentificacion: "whitespace-normal break-words pr-12",
+              telefono: "whitespace-normal pl-12",
+              correo: "whitespace-normal break-all",
+              tipo: "whitespace-normal",
+            },
           }}
           onEdit={handleEdit}
           onDelete={handleDelete}

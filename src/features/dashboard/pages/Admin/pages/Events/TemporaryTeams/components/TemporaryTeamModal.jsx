@@ -1,4 +1,4 @@
-/* "use client" */
+﻿/* "use client" */
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -63,7 +63,7 @@ const TemporaryTeamModal = ({
 
   // Debug: Mostrar el estado de duplicateWarnings
   useEffect(() => {
-    console.log('🔔 Estado duplicateWarnings actualizado:', duplicateWarnings);
+    console.log('ðŸ”” Estado duplicateWarnings actualizado:', duplicateWarnings);
     console.log('   - trainer:', duplicateWarnings.trainer);
     console.log('   - athletes:', duplicateWarnings.athletes);
   }, [duplicateWarnings]);
@@ -97,12 +97,12 @@ const TemporaryTeamModal = ({
         }
       }
       
-      // Después de cargar todo, marcar como no inicial
+      // DespuÃ©s de cargar todo, marcar como no inicial
       setTimeout(() => {
         setIsInitialLoad(false);
       }, 500);
     } else if (isOpen && !isEditing) {
-      setIsInitialLoad(false); // No es carga inicial si es creación
+      setIsInitialLoad(false); // No es carga inicial si es creaciÃ³n
       
       setFormData({
         nombre: "",
@@ -132,7 +132,7 @@ const TemporaryTeamModal = ({
     }
   }, [selectedAthletes, teamType]);
 
-  // Actualizar validación de deportistas cuando cambie la selección
+  // Actualizar validaciÃ³n de deportistas cuando cambie la selecciÃ³n
   useEffect(() => {
     if (touched.deportistas) {
       setErrors(prev => {
@@ -149,7 +149,7 @@ const TemporaryTeamModal = ({
 
   // Validar disponibilidad de entrenador temporal en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect entrenador ejecutado:', {
+    console.log('ðŸ”„ useEffect entrenador ejecutado:', {
       entrenador: selectedTrainer?.name,
       tipo: selectedTrainer?.type,
       id: selectedTrainer?.id,
@@ -159,38 +159,38 @@ const TemporaryTeamModal = ({
 
     // Si es carga inicial y estamos editando, no validar
     if (isInitialLoad && teamToEdit) {
-      console.log('⏭️ Saltando validación - carga inicial de edición');
+      console.log('â­ï¸ Saltando validaciÃ³n - carga inicial de ediciÃ³n');
       return;
     }
 
     if (!selectedTrainer || selectedTrainer.type !== 'temporal' || !selectedTrainer.id) {
-      console.log('🧹 Limpiando warning de entrenador (no temporal o vacío)');
+      console.log('ðŸ§¹ Limpiando warning de entrenador (no temporal o vacÃ­o)');
       setDuplicateWarnings(prev => ({ ...prev, trainer: null }));
       return;
     }
 
     const validateTrainer = async () => {
       try {
-        console.log('🔍 Validando entrenador temporal:', selectedTrainer.name);
+        console.log('ðŸ” Validando entrenador temporal:', selectedTrainer.name);
         const result = await TeamsService.checkTemporalPersonAvailability(
           selectedTrainer.id,
           teamToEdit?.id,
         );
         
-        console.log('📋 Resultado validación entrenador:', result);
+        console.log('ðŸ“‹ Resultado validaciÃ³n entrenador:', result);
         
         if (!result.available) {
-          console.log('⚠️ Entrenador NO disponible - MOSTRANDO WARNING');
+          console.log('âš ï¸ Entrenador NO disponible - MOSTRANDO WARNING');
           setDuplicateWarnings(prev => ({
             ...prev,
-            trainer: result.message || "Entrenador ya está registrado en otro equipo"
+            trainer: result.message || "Entrenador ya estÃ¡ registrado en otro equipo"
           }));
         } else {
-          console.log('✅ Entrenador disponible - LIMPIANDO WARNING');
+          console.log('âœ… Entrenador disponible - LIMPIANDO WARNING');
           setDuplicateWarnings(prev => ({ ...prev, trainer: null }));
         }
       } catch (error) {
-        console.error('❌ Error validando entrenador:', error);
+        console.error('âŒ Error validando entrenador:', error);
       }
     };
 
@@ -199,7 +199,7 @@ const TemporaryTeamModal = ({
 
   // Validar nombre del equipo en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect nombre ejecutado:', {
+    console.log('ðŸ”„ useEffect nombre ejecutado:', {
       nombre: formData.nombre,
       touched: touched.nombre,
       isInitialLoad,
@@ -207,10 +207,10 @@ const TemporaryTeamModal = ({
     });
 
     const validateName = async () => {
-      // No validar si el campo está vacío
+      // No validar si el campo estÃ¡ vacÃ­o
       if (!formData.nombre?.trim()) {
-        console.log('⏭️ Saltando validación - campo vacío');
-        // Limpiar error si el campo está vacío
+        console.log('â­ï¸ Saltando validaciÃ³n - campo vacÃ­o');
+        // Limpiar error si el campo estÃ¡ vacÃ­o
         setErrors(prev => {
           const newErrors = { ...prev };
           delete newErrors.nombre;
@@ -221,17 +221,17 @@ const TemporaryTeamModal = ({
 
       // Solo validar si el campo ha sido tocado al menos una vez
       if (!touched.nombre) {
-        console.log('⏭️ Saltando validación - campo no tocado');
+        console.log('â­ï¸ Saltando validaciÃ³n - campo no tocado');
         return;
       }
 
       // Si es carga inicial y estamos editando, no validar
       if (isInitialLoad && teamToEdit) {
-        console.log('⏭️ Saltando validación - carga inicial de edición');
+        console.log('â­ï¸ Saltando validaciÃ³n - carga inicial de ediciÃ³n');
         return;
       }
 
-      console.log('🔍 Validando nombre:', formData.nombre);
+      console.log('ðŸ” Validando nombre:', formData.nombre);
 
       try {
         const result = await TeamsService.checkNameAvailability(
@@ -239,13 +239,13 @@ const TemporaryTeamModal = ({
           teamToEdit?.id,
         );
 
-        console.log('📋 Resultado validación nombre:', result);
+        console.log('ðŸ“‹ Resultado validaciÃ³n nombre:', result);
 
         if (result.success && !result.available) {
-          console.log('⚠️ Nombre NO disponible - MOSTRANDO ERROR');
+          console.log('âš ï¸ Nombre NO disponible - MOSTRANDO ERROR');
           setErrors(prev => ({
             ...prev,
-            nombre: "Este nombre ya está registrado"
+            nombre: "Este nombre ya estÃ¡ registrado"
           }));
           // Marcar como tocado para que el error persista
           setTouched(prev => ({
@@ -253,7 +253,7 @@ const TemporaryTeamModal = ({
             nombre: true
           }));
         } else if (result.success && result.available) {
-          console.log('✅ Nombre disponible - LIMPIANDO ERROR');
+          console.log('âœ… Nombre disponible - LIMPIANDO ERROR');
           setErrors(prev => {
             const newErrors = { ...prev };
             delete newErrors.nombre;
@@ -261,7 +261,7 @@ const TemporaryTeamModal = ({
           });
         }
       } catch (error) {
-        console.error('❌ Error validando nombre:', error);
+        console.error('âŒ Error validando nombre:', error);
       }
     };
 
@@ -273,7 +273,7 @@ const TemporaryTeamModal = ({
     return () => clearTimeout(timeoutId);
   }, [formData.nombre, touched.nombre, teamToEdit?.id, isInitialLoad, teamToEdit]);
 
-  // Validar entrenador en tiempo real (solo después de interactuar)
+  // Validar entrenador en tiempo real (solo despuÃ©s de interactuar)
   useEffect(() => {
     // Solo validar si el campo ya fue tocado
     if (touched.entrenador) {
@@ -296,7 +296,7 @@ const TemporaryTeamModal = ({
 
   // Validar disponibilidad de deportistas temporales en tiempo real
   useEffect(() => {
-    console.log('🔄 useEffect deportistas ejecutado:', {
+    console.log('ðŸ”„ useEffect deportistas ejecutado:', {
       cantidad: selectedAthletes.length,
       teamId: teamToEdit?.id,
       isInitialLoad
@@ -304,12 +304,12 @@ const TemporaryTeamModal = ({
 
     // Si es carga inicial y estamos editando, no validar
     if (isInitialLoad && teamToEdit) {
-      console.log('⏭️ Saltando validación - carga inicial de edición');
+      console.log('â­ï¸ Saltando validaciÃ³n - carga inicial de ediciÃ³n');
       return;
     }
 
     if (!selectedAthletes || selectedAthletes.length === 0) {
-      console.log('🧹 Limpiando warning de deportistas (vacío)');
+      console.log('ðŸ§¹ Limpiando warning de deportistas (vacÃ­o)');
       setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
       return;
     }
@@ -319,14 +319,14 @@ const TemporaryTeamModal = ({
     );
 
     if (temporalAthletes.length === 0) {
-      console.log('🧹 Limpiando warning de deportistas (no temporales)');
+      console.log('ðŸ§¹ Limpiando warning de deportistas (no temporales)');
       setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
       return;
     }
 
     const validateAthletes = async () => {
       try {
-        console.log('🔍 Validando deportistas temporales:', temporalAthletes.length);
+        console.log('ðŸ” Validando deportistas temporales:', temporalAthletes.length);
         const unavailableAthletes = [];
 
         for (const athlete of temporalAthletes) {
@@ -343,12 +343,12 @@ const TemporaryTeamModal = ({
           }
         }
 
-        console.log('📋 Deportistas no disponibles:', unavailableAthletes);
+        console.log('ðŸ“‹ Deportistas no disponibles:', unavailableAthletes);
 
         if (unavailableAthletes.length > 0) {
           const message = unavailableAthletes.length === 1
             ? unavailableAthletes[0].message
-            : `Hay ${unavailableAthletes.length} deportistas que ya están registradas en otros equipos`;
+            : `Hay ${unavailableAthletes.length} deportistas que ya estÃ¡n registradas en otros equipos`;
           
           // Guardar los IDs de las deportistas no disponibles
           const unavailableIds = temporalAthletes
@@ -362,12 +362,12 @@ const TemporaryTeamModal = ({
             athletes: message
           }));
         } else {
-          console.log('✅ Deportistas disponibles - LIMPIANDO WARNING');
+          console.log('âœ… Deportistas disponibles - LIMPIANDO WARNING');
           setUnavailableAthleteIds([]);
           setDuplicateWarnings(prev => ({ ...prev, athletes: null }));
         }
       } catch (error) {
-        console.error('❌ Error validando deportistas:', error);
+        console.error('âŒ Error validando deportistas:', error);
       }
     };
 
@@ -377,7 +377,7 @@ const TemporaryTeamModal = ({
   const shouldShowCategoryField = teamType === "temporal";
   const shouldShowSecondTrainer = teamType === "fundacion";
 
-  // Cargar categorías deportivas cuando se necesiten
+  // Cargar categorÃ­as deportivas cuando se necesiten
   useEffect(() => {
     const loadCategories = async () => {
       if (shouldShowCategoryField && categories.length === 0) {
@@ -403,7 +403,7 @@ const TemporaryTeamModal = ({
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Marcar como tocado inmediatamente para validación en tiempo real
+    // Marcar como tocado inmediatamente para validaciÃ³n en tiempo real
     setTouched(prev => ({ ...prev, [field]: true }));
     
     // Validar inmediatamente en tiempo real con el nuevo valor
@@ -429,9 +429,9 @@ const TemporaryTeamModal = ({
         } else if (/\s{2,}/.test(value)) {
           newErrors.nombre = "No se permiten espacios dobles";
         } else {
-          // NO eliminar el error aquí, el useEffect de validación de nombre duplicado lo manejará
+          // NO eliminar el error aquÃ­, el useEffect de validaciÃ³n de nombre duplicado lo manejarÃ¡
           // Solo eliminar si no hay error de duplicado
-          if (errors.nombre !== "Este nombre ya está registrado") {
+          if (errors.nombre !== "Este nombre ya estÃ¡ registrado") {
             delete newErrors.nombre;
           }
         }
@@ -454,13 +454,13 @@ const TemporaryTeamModal = ({
         break;
       case 'categoria':
         if (teamType === "temporal" && !value?.trim()) {
-          newErrors.categoria = "La categoría es obligatoria para equipos temporales";
+          newErrors.categoria = "La categorÃ­a es obligatoria para equipos temporales";
         } else {
           delete newErrors.categoria;
         }
         break;
       case 'descripcion':
-        // La descripción no es obligatoria
+        // La descripciÃ³n no es obligatoria
         delete newErrors.descripcion;
         break;
     }
@@ -478,7 +478,7 @@ const TemporaryTeamModal = ({
 
   const getCombinedError = (fieldName) => {
     // Para el campo nombre, si hay error de duplicado, mostrarlo siempre
-    if (fieldName === 'nombre' && errors[fieldName] === "Este nombre ya está registrado") {
+    if (fieldName === 'nombre' && errors[fieldName] === "Este nombre ya estÃ¡ registrado") {
       return errors[fieldName];
     }
     
@@ -514,22 +514,22 @@ const TemporaryTeamModal = ({
     }
 
     if (teamType === "temporal" && !formData.categoria?.trim()) {
-      newErrors.categoria = "La categoría es obligatoria para equipos temporales";
+      newErrors.categoria = "La categorÃ­a es obligatoria para equipos temporales";
     }
 
-    // La descripción no es obligatoria
+    // La descripciÃ³n no es obligatoria
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleTrainerSelect = (trainer) => {
-    // Si trainer es null, significa que se deseleccionó
+    // Si trainer es null, significa que se deseleccionÃ³
     if (trainer === null) {
       setSelectedTrainer(null);
       setFormData(prev => ({ ...prev, entrenador: "" }));
       
-      // Marcar como tocado para activar validación
+      // Marcar como tocado para activar validaciÃ³n
       setTouched(prev => ({ ...prev, entrenador: true }));
       
       // Si no hay deportistas, limpiar el tipo de equipo
@@ -543,10 +543,10 @@ const TemporaryTeamModal = ({
       showErrorAlert(
         "Tipo incompatible",
         `No se puede seleccionar un entrenador ${
-          trainer.type === "fundacion" ? "de la fundación" : "temporal"
+          trainer.type === "fundacion" ? "de la fundaciÃ³n" : "temporal"
         } cuando tienes deportistas ${
           selectedAthletes[0]?.type === "fundacion"
-            ? "de la fundación"
+            ? "de la fundaciÃ³n"
             : "temporales"
         } seleccionadas.`,
       );
@@ -569,7 +569,7 @@ const TemporaryTeamModal = ({
   };
 
   const handleSecondTrainerSelect = (trainer) => {
-    // Si trainer es null, significa que se deseleccionó
+    // Si trainer es null, significa que se deseleccionÃ³
     if (trainer === null) {
       setSelectedSecondTrainer(null);
       setFormData(prev => ({ ...prev, segundoEntrenador: "" }));
@@ -592,7 +592,7 @@ const TemporaryTeamModal = ({
       if (hasMixedTypes) {
         showErrorAlert(
           "Tipos mixtos no permitidos",
-          "No se pueden seleccionar deportistas de la fundación y temporales en el mismo equipo.",
+          "No se pueden seleccionar deportistas de la fundaciÃ³n y temporales en el mismo equipo.",
         );
         return;
       }
@@ -601,10 +601,10 @@ const TemporaryTeamModal = ({
         showErrorAlert(
           "Tipo incompatible",
           `No se pueden seleccionar deportistas ${
-            firstAthleteType === "fundacion" ? "de la fundación" : "temporales"
+            firstAthleteType === "fundacion" ? "de la fundaciÃ³n" : "temporales"
           } cuando tienes un entrenador ${
             selectedTrainer.type === "fundacion"
-              ? "de la fundación"
+              ? "de la fundaciÃ³n"
               : "temporal"
           }.`,
         );
@@ -619,8 +619,8 @@ const TemporaryTeamModal = ({
 
         if (hasMixedCategories) {
           showErrorAlert(
-            "Categorías mixtas no permitidas",
-            "Todas las deportistas de la fundación deben ser de la misma categoría.",
+            "CategorÃ­as mixtas no permitidas",
+            "Todas las deportistas de la fundaciÃ³n deben ser de la misma categorÃ­a.",
           );
           return;
         }
@@ -629,7 +629,7 @@ const TemporaryTeamModal = ({
 
     setSelectedAthletes(athletes);
     
-    // Marcar como tocado para activar validación
+    // Marcar como tocado para activar validaciÃ³n
     setTouched(prev => ({ ...prev, deportistas: true }));
 
     if (!selectedTrainer && athletes.length > 0) {
@@ -642,7 +642,7 @@ const TemporaryTeamModal = ({
         setCurrentCategoria(categoria);
         handleChange("categoria", categoria);
       } else {
-        // Limpiar categoría cuando no hay deportistas seleccionadas
+        // Limpiar categorÃ­a cuando no hay deportistas seleccionadas
         setCurrentCategoria(null);
         handleChange("categoria", "");
       }
@@ -677,19 +677,19 @@ const TemporaryTeamModal = ({
       return;
     }
 
-    // Bloquear creación si hay advertencias de duplicados
+    // Bloquear creaciÃ³n si hay advertencias de duplicados
     if (duplicateWarnings.trainer || duplicateWarnings.athletes) {
       showErrorAlert(
         "No se puede crear el equipo",
-        "Hay entrenadores o deportistas temporales que ya están registrados en otros equipos. Por favor, selecciona otros miembros.",
+        "Hay entrenadores o deportistas temporales que ya estÃ¡n registrados en otros equipos. Por favor, selecciona otros miembros.",
       );
       return;
     }
 
     if (selectedTrainer && selectedAthletes.length > 0 && selectedTrainer.type !== selectedAthletes[0]?.type) {
       showErrorAlert(
-        "Error de validación",
-        "No se pueden seleccionar un entrenador y deportistas de diferentes tipos (fundación o temporales).",
+        "Error de validaciÃ³n",
+        "No se pueden seleccionar un entrenador y deportistas de diferentes tipos (fundaciÃ³n o temporales).",
       );
       return;
     }
@@ -702,7 +702,7 @@ const TemporaryTeamModal = ({
 
       if (hasMixedTypes) {
         showErrorAlert(
-          "Error de validación",
+          "Error de validaciÃ³n",
           "No se pueden seleccionar deportistas de diferentes tipos en el mismo equipo.",
         );
         return;
@@ -717,8 +717,8 @@ const TemporaryTeamModal = ({
 
       if (hasMixedCategories) {
         showErrorAlert(
-          "Error de validación",
-          "Todas las deportistas de la fundación deben ser de la misma categoría.",
+          "Error de validaciÃ³n",
+          "Todas las deportistas de la fundaciÃ³n deben ser de la misma categorÃ­a.",
         );
         return;
       }
@@ -726,8 +726,8 @@ const TemporaryTeamModal = ({
 
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
-        "¿Confirmar actualización?",
-        `Se actualizarán los datos del equipo ${
+        "Â¿Confirmar actualizaciÃ³n?",
+        `Se actualizarÃ¡n los datos del equipo ${
           teamToEdit?.nombre || formData.nombre
         }`,
         { confirmButtonText: "Actualizar", cancelButtonText: "Cancelar" },
@@ -738,7 +738,7 @@ const TemporaryTeamModal = ({
     try {
       const teamData = {
         nombre: formData.nombre,
-        telefono: "", // Campo temporal vacío para compatibilidad con backend
+        telefono: "", // Campo temporal vacÃ­o para compatibilidad con backend
         entrenador: formData.entrenador,
         entrenadorData: selectedTrainer,
         deportistas: selectedAthletes,
@@ -755,20 +755,20 @@ const TemporaryTeamModal = ({
         teamData.segundoEntrenadorData = selectedSecondTrainer;
       }
 
-      console.log('� Datots del equipo a enviar:', JSON.stringify(teamData, null, 2));
+      console.log('ï¿½ Datots del equipo a enviar:', JSON.stringify(teamData, null, 2));
 
       if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
-        console.log('📝 Actualizando equipo:', updatedTeamData);
+        console.log('ðŸ“ Actualizando equipo:', updatedTeamData);
         await onUpdate(updatedTeamData);
       } else {
-        console.log('➕ Creando nuevo equipo:', teamData);
+        console.log('âž• Creando nuevo equipo:', teamData);
         await onSave(teamData);
       }
 
       onClose();
     } catch (error) {
-      console.error("❌ Error al guardar equipo:", error);
+      console.error("âŒ Error al guardar equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };
@@ -794,7 +794,7 @@ const TemporaryTeamModal = ({
 
   const getTeamTypeText = () => {
     if (!teamType) return null;
-    return teamType === "fundacion" ? "Fundación" : "Temporales";
+    return teamType === "fundacion" ? "FundaciÃ³n" : "Temporales";
   };
 
   if (!isOpen) return null;
@@ -846,7 +846,7 @@ const TemporaryTeamModal = ({
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-3">
-            {/* Información básica */}
+            {/* InformaciÃ³n bÃ¡sica */}
             {/* Campo de nombre - Ancho completo */}
             <motion.div
               className="mb-3"
@@ -868,7 +868,7 @@ const TemporaryTeamModal = ({
               />
             </motion.div>
 
-            {/* Campo de estado - Solo en modo edición */}
+            {/* Campo de estado - Solo en modo ediciÃ³n */}
             {isEditing && (
               <motion.div
                 className="mb-3"
@@ -897,7 +897,7 @@ const TemporaryTeamModal = ({
               </motion.div>
             )}
 
-            {/* Mostrar categoría automática para equipos de fundación */}
+            {/* Mostrar categorÃ­a automÃ¡tica para equipos de fundaciÃ³n */}
             {teamType === "fundacion" && currentCategoria && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -906,7 +906,7 @@ const TemporaryTeamModal = ({
               >
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium text-gray-700">
-                    Categoría del equipo:
+                    CategorÃ­a del equipo:
                   </span>
                   <span className="text-sm text-gray-700 bg-gray-200 px-2 py-1 rounded-full">
                     {currentCategoria}
@@ -915,7 +915,7 @@ const TemporaryTeamModal = ({
               </motion.div>
             )}
 
-            {/* Selección de Entrenador */}
+            {/* SelecciÃ³n de Entrenador */}
             <motion.div
               className="space-y-3 mb-3"
               initial={{ opacity: 0, y: 10 }}
@@ -966,7 +966,7 @@ const TemporaryTeamModal = ({
                             </span>
                             {selectedTrainer.phoneNumber && (
                               <>
-                                <span className="text-xs text-gray-400">•</span>
+                                <span className="text-xs text-gray-400">â€¢</span>
                                 <span className="text-xs text-gray-600">
                                   {selectedTrainer.phoneNumber}
                                 </span>
@@ -1013,28 +1013,28 @@ const TemporaryTeamModal = ({
 
               {getCombinedError("entrenador") && (
                 <div className="text-red-500 text-xs flex items-center gap-1 mt-1">
-                  <span>⚠️</span>
+                  <span>âš ï¸</span>
                   <span>{getCombinedError("entrenador")}</span>
                 </div>
               )}
               
               {duplicateWarnings.trainer && (
                 <>
-                  {console.log('🎨 Renderizando warning de entrenador:', duplicateWarnings.trainer)}
+                  {console.log('ðŸŽ¨ Renderizando warning de entrenador:', duplicateWarnings.trainer)}
                   <motion.div 
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.2 }}
                     className="text-red-500 text-xs flex items-center gap-1 mt-1"
                   >
-                    <span>⚠️</span>
+                    <span>âš ï¸</span>
                     <span>{duplicateWarnings.trainer}</span>
                   </motion.div>
                 </>
               )}
             </motion.div>
 
-            {/* Segundo Entrenador - Solo para equipos de fundación */}
+            {/* Segundo Entrenador - Solo para equipos de fundaciÃ³n */}
             {shouldShowSecondTrainer && (
               <motion.div
                 className="space-y-3 mb-3"
@@ -1081,7 +1081,7 @@ const TemporaryTeamModal = ({
                               </span>
                               {selectedSecondTrainer.phoneNumber && (
                                 <>
-                                  <span className="text-xs text-gray-400">•</span>
+                                  <span className="text-xs text-gray-400">â€¢</span>
                                   <span className="text-xs text-gray-600">
                                     {selectedSecondTrainer.phoneNumber}
                                   </span>
@@ -1130,7 +1130,7 @@ const TemporaryTeamModal = ({
               </motion.div>
             )}
 
-            {/* Selección de Deportistas */}
+            {/* SelecciÃ³n de Deportistas */}
             <motion.div
               className="space-y-3 mb-3"
               initial={{ opacity: 0, y: 10 }}
@@ -1188,7 +1188,7 @@ const TemporaryTeamModal = ({
                         }`}
                       >
                         {selectedAthletes.length > 0
-                          ? "Modificar selección de deportistas"
+                          ? "Modificar selecciÃ³n de deportistas"
                           : "Seleccionar deportistas"}
                       </p>
                       {selectedAthletes.length === 0 && (
@@ -1212,90 +1212,33 @@ const TemporaryTeamModal = ({
                       }`}
                     />
                   </div>
-                </div>
+                </button>
 
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsAthletesModalOpen(true)}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-200 flex items-center justify-between group ${
-                      (touched.deportistas && errors.deportistas) ||
-                      duplicateWarnings.athletes
-                        ? "border-red-400"
-                        : selectedAthletes.length > 0
-                          ? "border-primary-purple/30 bg-primary-purple/5 hover:border-primary-purple/50"
-                          : "border-gray-300 bg-white hover:border-primary-purple hover:bg-primary-purple/3"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`p-2 rounded-lg ${
-                          selectedAthletes.length > 0
-                            ? "bg-primary-purple text-white"
-                            : "bg-gray-100 text-gray-400 group-hover:bg-primary-purple/10 group-hover:text-primary-purple"
-                        }`}
-                      >
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <div className="text-left">
-                        <p
-                          className={`font-medium text-sm ${
-                            selectedAthletes.length > 0
-                              ? "text-gray-900"
-                              : "text-gray-500 group-hover:text-gray-700"
-                          }`}
-                        >
-                          {selectedAthletes.length > 0
-                            ? "Modificar selección de deportistas"
-                            : "Seleccionar deportistas"}
-                        </p>
-                        {selectedAthletes.length === 0 && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Haz clic para agregar deportistas al equipo
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {selectedAthletes.length > 0 && (
-                        <div className="w-5 h-5 bg-primary-purple text-white rounded-full flex items-center justify-center text-xs font-bold">
-                          {selectedAthletes.length}
-                        </div>
-                      )}
-                      <Plus
-                        className={`w-4 h-4 text-gray-400 transition-transform ${
-                          selectedAthletes.length > 0
-                            ? "text-primary-purple"
-                            : "group-hover:text-primary-purple"
-                        }`}
-                      />
-                    </div>
-                  </button>
 
-                {/* Mensajes de error y advertencia - Justo después del botón */}
+                {/* Mensajes de error y advertencia - Justo despuÃ©s del botÃ³n */}
                 {touched.deportistas && errors.deportistas && (
                   <div className="text-red-500 text-xs flex items-center gap-1 mt-2">
-                    <span>⚠️</span>
+                    <span>âš ï¸</span>
                     <span>{errors.deportistas}</span>
                   </div>
                 )}
                 
                 {duplicateWarnings.athletes && (
                   <>
-                    {console.log('🎨 Renderizando warning de deportistas:', duplicateWarnings.athletes)}
+                    {console.log('ðŸŽ¨ Renderizando warning de deportistas:', duplicateWarnings.athletes)}
                     <motion.div 
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
                       className="text-red-500 text-xs flex items-center gap-1 mt-2"
                     >
-                      <span>⚠️</span>
+                      <span>âš ï¸</span>
                       <span>{duplicateWarnings.athletes}</span>
                     </motion.div>
                   </>
                 )}
 
-                {/* Campo de categoría para equipos temporales */}
+                {/* Campo de categorÃ­a para equipos temporales */}
                 {shouldShowCategoryField && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1305,14 +1248,14 @@ const TemporaryTeamModal = ({
                     {loadingCategories ? (
                       <div className="flex items-center gap-2 text-gray-500 text-sm p-3 bg-gray-50 rounded-lg">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-blue"></div>
-                        Cargando categorías...
+                        Cargando categorÃ­as...
                       </div>
                     ) : (
                       <FormField
-                        label="Categoría del Equipo Temporal"
+                        label="CategorÃ­a del Equipo Temporal"
                         name="categoria"
                         type="select"
-                        placeholder="Seleccione una categoría"
+                        placeholder="Seleccione una categorÃ­a"
                         options={categories.map(cat => ({
                           value: cat.name,
                           label: cat.name
@@ -1355,7 +1298,7 @@ const TemporaryTeamModal = ({
                             <span
                               className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800"
                             >
-                              {athlete.type === "fundacion" ? "Fundación" : "Temporal"}
+                              {athlete.type === "fundacion" ? "FundaciÃ³n" : "Temporal"}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 flex-wrap">
@@ -1367,7 +1310,7 @@ const TemporaryTeamModal = ({
                             {athlete.identification && <span>{athlete.identification}</span>}
                             {athlete.phoneNumber && (
                               <>
-                                <span className="text-gray-400">•</span>
+                                <span className="text-gray-400">â€¢</span>
                                 <span>{athlete.phoneNumber}</span>
                               </>
                             )}
@@ -1388,7 +1331,7 @@ const TemporaryTeamModal = ({
               </div>
             </motion.div>
 
-            {/* Descripción */}
+            {/* DescripciÃ³n */}
             <motion.div
               className="mb-3"
               initial={{ opacity: 0, y: 10 }}
@@ -1396,10 +1339,10 @@ const TemporaryTeamModal = ({
               transition={{ delay: 0.65, duration: 0.4 }}
             >
               <FormField
-                label="Descripción"
+                label="DescripciÃ³n"
                 name="descripcion"
                 type="textarea"
-                placeholder="Información del equipo..."
+                placeholder="InformaciÃ³n del equipo..."
                 value={formData.descripcion}
                 onChange={(e) => handleChange("descripcion", e.target.value)}
                 rows={3}
@@ -1429,7 +1372,7 @@ const TemporaryTeamModal = ({
         </motion.div>
       </motion.div>
 
-      {/* Modales de selección */}
+      {/* Modales de selecciÃ³n */}
       <SelectionModal
         isOpen={isTrainerModalOpen}
         onClose={() => setIsTrainerModalOpen(false)}

@@ -20,7 +20,7 @@ export const useAssistanceAthletes = () => {
       try {
         const response = await assistanceathletesService.getSportsCategories({
           page: 1,
-          limit: 200,
+          limit: 100,
         });
         if (response && response.success) {
           const names = (response.data || [])

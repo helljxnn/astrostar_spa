@@ -12,24 +12,23 @@ const AttendanceTable = ({
   <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden">
     <div className="overflow-x-auto w-full">
       <table className="w-full text-sm text-left text-gray-500">
-      <thead
-        className="text-gray-700 text-sm uppercase tracking-wider bg-gradient-to-r from-primary-purple to-primary-blue"
-      >
-        <tr>
-          <th className="px-6 py-4 text-left font-semibold text-white">#</th>
-          <th className="px-6 py-4 text-left font-semibold text-white">Nombre</th>
-          <th className="px-6 py-4 text-left font-semibold text-white">Documento</th>
-          <th className="px-6 py-4 text-center font-semibold text-white">Edad</th>
-          <th className="px-6 py-4 text-center font-semibold text-white">Categoría</th>
-          <th className="px-6 py-4 text-center font-semibold text-white w-40">
-            Asistencia
-          </th>
-          <th className="px-6 py-4 text-left font-semibold text-white">Observación</th>
-          <th className="px-6 py-4 text-center font-semibold text-white w-36">
-            Acciones
-          </th>
-        </tr>
-      </thead>
+        <thead
+          className="text-gray-700 text-sm uppercase tracking-wider bg-gradient-to-r from-primary-purple to-primary-blue"
+        >
+          <tr>
+            <th className="px-6 py-4 text-left font-semibold text-white">#</th>
+            <th className="px-6 py-4 text-left font-semibold text-white">Nombre</th>
+            <th className="px-6 py-4 text-left font-semibold text-white">Documento</th>
+            <th className="px-6 py-4 text-center font-semibold text-white">Edad</th>
+            <th className="px-6 py-4 text-center font-semibold text-white">Categoría</th>
+            <th className="px-6 py-4 text-center font-semibold text-white w-40">
+              Asistencia
+            </th>
+            <th className="px-6 py-4 text-left font-semibold text-white">
+              Observación
+            </th>
+          </tr>
+        </thead>
 
       <tbody className="divide-y divide-gray-200">
         {paginatedData.map((a, idx) => (
@@ -40,8 +39,16 @@ const AttendanceTable = ({
             <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
               {startIndex + idx + 1}
             </td>
-            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-              {a.nombre}
+            <td className="px-6 py-4 whitespace-nowrap">
+              <div className="flex flex-col">
+                <span className="font-medium text-gray-900">{a.nombre}</span>
+                <button
+                  onClick={() => onViewHistory(a)}
+                  className="mt-1 text-xs font-semibold text-primary-purple hover:text-primary-blue transition-colors text-left w-fit"
+                >
+                  Ver historial
+                </button>
+              </div>
             </td>
             <td className="px-6 py-4 whitespace-nowrap">{a.documento}</td>
             <td className="px-6 py-4 text-center">{a.edad}</td>
@@ -66,14 +73,6 @@ const AttendanceTable = ({
                 rows="1"
                 style={{ minHeight: "34px", maxHeight: "60px" }}
               />
-            </td>
-            <td className="px-6 py-4 text-center">
-              <button
-                onClick={() => onViewHistory(a)}
-                className="px-3 py-2 text-sm text-white rounded-lg bg-primary-blue hover:bg-primary-purple transition-colors shadow"
-              >
-                Ver historial
-              </button>
             </td>
           </tr>
         ))}

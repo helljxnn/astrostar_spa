@@ -50,6 +50,15 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
             {/* Columna: Acciones */}
             <td className="px-6 py-4 text-center">
               <div className="flex flex-row items-center justify-center gap-3">
+                {onView && (
+                  <button
+                    onClick={() => onView(item)}
+                    className="bg-[#f7edff] text-[#bdaaff] p-2 rounded-full transition hover:bg-[#ecddff] hover:text-[#a78bfa] hover:scale-105"
+                    title="Ver"
+                  >
+                    <FaEye />
+                  </button>
+                )}
                 {onEdit && (
                   <button
                     onClick={() => onEdit(item)}
@@ -66,15 +75,6 @@ const Tbody = ({ data, dataPropertys, onEdit, onDelete, onView, onList }) => {
                     title="Eliminar"
                   >
                     <FaTrash />
-                  </button>
-                )}
-                {onView && (
-                  <button
-                    onClick={() => onView(item)}
-                    className="bg-[#f7edff] text-[#bdaaff] p-2 rounded-full transition hover:bg-[#ecddff] hover:text-[#a78bfa] hover:scale-105"
-                    title="Ver"
-                  >
-                    <FaEye />
                   </button>
                 )}
                 {onList && (

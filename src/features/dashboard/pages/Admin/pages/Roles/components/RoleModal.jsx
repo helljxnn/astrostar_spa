@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
@@ -123,6 +123,7 @@ const actions = [
   { name: "Editar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Eliminar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Listar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
 ];
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
@@ -791,3 +792,4 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 };
 
 export default RoleModal;
+
