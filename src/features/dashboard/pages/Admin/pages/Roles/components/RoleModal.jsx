@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
@@ -144,7 +145,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       descripcion: "",
       permisos: {},
     },
-    roleValidationRules
+    roleValidationRules,
   );
 
   // Hook para validación de nombres duplicados
@@ -169,7 +170,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (roleData.name === "Administrador") {
         showErrorAlert(
           "Acción no permitida",
-          "El rol de Administrador es un rol del sistema y no puede ser editado."
+          "El rol de Administrador es un rol del sistema y no puede ser editado.",
         );
         onClose();
         return;
@@ -196,7 +197,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         }
         return total;
       },
-      0
+      0,
     );
 
     if (totalPermissions === 0 && Object.keys(touched).length > 0) {
@@ -241,7 +242,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         } else {
           newPermisos[module.key] = actions.reduce(
             (acc, action) => ({ ...acc, [action.name]: true }),
-            {}
+            {},
           );
         }
       });
@@ -279,7 +280,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             ? { Ver: true }
             : actions.reduce(
                 (acc, action) => ({ ...acc, [action.name]: true }),
-                {}
+                {},
               ),
       },
     }));
@@ -317,7 +318,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   const handleSubmit = async () => {
     const isValid = validateAllFields();
     const hasPermissions = Object.values(formData.permisos).some(
-      (modulePerms) => Object.values(modulePerms).some(Boolean)
+      (modulePerms) => Object.values(modulePerms).some(Boolean),
     );
 
     if (!hasPermissions) {
@@ -334,12 +335,12 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (nameValidation.isChecking) {
         showErrorAlert(
           "Validando nombre",
-          "Por favor, espere mientras se valida el nombre del rol."
+          "Por favor, espere mientras se valida el nombre del rol.",
         );
       } else {
         showErrorAlert(
           "Campos incompletos",
-          "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar."
+          "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar.",
         );
       }
       return;
@@ -356,7 +357,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (roleData) {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar este rol?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
 
         if (!result.isConfirmed) return;
@@ -375,7 +376,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         roleData ? "Rol Actualizado" : "Rol Creado",
         roleData
           ? "El rol ha sido actualizado exitosamente."
-          : "El rol ha sido creado exitosamente."
+          : "El rol ha sido creado exitosamente.",
       );
 
       if (!roleData) {
@@ -395,399 +396,422 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   const totalPermissions = Object.values(formData.permisos).reduce(
     (total, modulePerms) =>
       total + Object.values(modulePerms).filter(Boolean).length,
-    0
+    0,
   );
 
   if (!isOpen) return null;
 
-  return (
-    <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto relative"
-        initial={{ scale: 0.8, opacity: 0, y: 50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.8, opacity: 0, y: 50 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
-          <button
-            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
-            onClick={onClose}
-          >
-            ✕
-          </button>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {roleData ? "Editar Rol" : "Crear Rol"}
-          </h2>
-        </div>
-
-        {/* Contenido del formulario */}
-        <div className="p-6 space-y-6">
-          {/* Campos básicos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <FormField
-                label="Nombre"
-                name="nombre"
-                type="text"
-                placeholder="Nombre del rol"
-                required
-                value={formData.nombre}
-                error={
-                  errors.nombre ||
-                  (nameValidation.isDuplicate ? nameValidation.message : "")
-                }
-                touched={touched.nombre}
-                onChange={handleNameChange}
-                onBlur={handleBlur}
-                delay={0.1}
-              />
-              {/* Estados de validación en tiempo real */}
-              {nameValidation.isChecking && (
-                <div className="text-blue-500 text-sm flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Verificando disponibilidad...</span>
-                </div>
-              )}
-
-              {!nameValidation.isChecking && nameValidation.isDuplicate && (
-                <div className="text-red-500 text-sm flex items-center gap-1">
-                  <span>❌</span>
-                  <span>Nombre no disponible</span>
-                </div>
-              )}
-
-              {!nameValidation.isChecking &&
-                nameValidation.isAvailable &&
-                formData.nombre.trim().length >= 2 && (
-                  <div className="text-green-500 text-sm flex items-center gap-1">
-                    <span>✅</span>
-                    <span>Nombre disponible</span>
-                  </div>
-                )}
-            </div>
-
-            <FormField
-              label="Descripción"
-              name="descripcion"
-              type="textarea"
-              placeholder="Descripción del rol"
-              required
-              value={formData.descripcion}
-              error={errors.descripcion}
-              touched={touched.descripcion}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.2}
-            />
-          </div>
-
-          {/* Permisos */}
+  const modalContent = (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 10000 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="space-y-4"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto relative"
+            style={{ zIndex: 10001 }}
+            initial={{ scale: 0.8, opacity: 0, y: 50 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.8, opacity: 0, y: 50 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <span className="text-purple-600">🛡️</span>
-                Permisos del Rol <span className="text-red-500">*</span>
-              </h3>
-              <div className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
-                {totalPermissions} permisos seleccionados
-              </div>
+            {/* Header */}
+            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
+              <button
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
+                onClick={onClose}
+              >
+                ✕
+              </button>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                {roleData ? "Editar Rol" : "Crear Rol"}
+              </h2>
             </div>
 
-            {/* Módulos organizados por categorías */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
-              <div className="space-y-6">
-                {Object.entries(moduleCategories).map(
-                  ([categoryName, modules], categoryIndex) => {
-                    const categoryPermissionCount =
-                      getCategoryPermissionCount(categoryName);
-                    const categoryTotalPermissions =
-                      getCategoryTotalPermissions(categoryName);
-                    const isExpanded = expandedCategories[categoryName];
+            {/* Contenido del formulario */}
+            <div className="p-6 space-y-6">
+              {/* Campos básicos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <FormField
+                    label="Nombre"
+                    name="nombre"
+                    type="text"
+                    placeholder="Nombre del rol"
+                    required
+                    value={formData.nombre}
+                    error={
+                      errors.nombre ||
+                      (nameValidation.isDuplicate ? nameValidation.message : "")
+                    }
+                    touched={touched.nombre}
+                    onChange={handleNameChange}
+                    onBlur={handleBlur}
+                    delay={0.1}
+                  />
+                  {/* Estados de validación en tiempo real */}
+                  {nameValidation.isChecking && (
+                    <div className="text-blue-500 text-sm flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Verificando disponibilidad...</span>
+                    </div>
+                  )}
 
-                    return (
-                      <motion.div
-                        key={categoryName}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.05 * categoryIndex }}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-                      >
-                        {/* Header de categoría */}
-                        <div
-                          className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
-                          onClick={() => toggleCategoryExpansion(categoryName)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className="text-lg font-bold text-gray-800">
-                                {categoryName}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {categoryPermissionCount > 0 && (
-                                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                                  {categoryPermissionCount}/
-                                  {categoryTotalPermissions}
-                                </span>
-                              )}
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    selectAllPermissionsForCategory(
-                                      categoryName
-                                    );
-                                  }}
-                                  className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
-                                >
-                                  Todo
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    clearAllPermissionsForCategory(
-                                      categoryName
-                                    );
-                                  }}
-                                  className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
-                                >
-                                  Limpiar
-                                </button>
-                              </div>
-                              <motion.div
-                                animate={{ rotate: isExpanded ? 180 : 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="text-gray-500"
-                              >
-                                ▼
-                              </motion.div>
-                            </div>
-                          </div>
-                        </div>
+                  {!nameValidation.isChecking && nameValidation.isDuplicate && (
+                    <div className="text-red-500 text-sm flex items-center gap-1">
+                      <span>❌</span>
+                      <span>Nombre no disponible</span>
+                    </div>
+                  )}
 
-                        {/* Módulos de la categoría */}
-                        <AnimatePresence>
-                          {isExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="overflow-hidden"
+                  {!nameValidation.isChecking &&
+                    nameValidation.isAvailable &&
+                    formData.nombre.trim().length >= 2 && (
+                      <div className="text-green-500 text-sm flex items-center gap-1">
+                        <span>✅</span>
+                        <span>Nombre disponible</span>
+                      </div>
+                    )}
+                </div>
+
+                <FormField
+                  label="Descripción"
+                  name="descripcion"
+                  type="textarea"
+                  placeholder="Descripción del rol"
+                  required
+                  value={formData.descripcion}
+                  error={errors.descripcion}
+                  touched={touched.descripcion}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  delay={0.2}
+                />
+              </div>
+
+              {/* Permisos */}
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <span className="text-purple-600">🛡️</span>
+                    Permisos del Rol <span className="text-red-500">*</span>
+                  </h3>
+                  <div className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
+                    {totalPermissions} permisos seleccionados
+                  </div>
+                </div>
+
+                {/* Módulos organizados por categorías */}
+                <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
+                  <div className="space-y-6">
+                    {Object.entries(moduleCategories).map(
+                      ([categoryName, modules], categoryIndex) => {
+                        const categoryPermissionCount =
+                          getCategoryPermissionCount(categoryName);
+                        const categoryTotalPermissions =
+                          getCategoryTotalPermissions(categoryName);
+                        const isExpanded = expandedCategories[categoryName];
+
+                        return (
+                          <motion.div
+                            key={categoryName}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.05 * categoryIndex }}
+                            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                          >
+                            {/* Header de categoría */}
+                            <div
+                              className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
+                              onClick={() =>
+                                toggleCategoryExpansion(categoryName)
+                              }
                             >
-                              <div className="p-4 border-t border-gray-100">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                  {modules.map((module, moduleIndex) => {
-                                    const permissionCount =
-                                      getModulePermissionCount(module.key);
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-lg font-bold text-gray-800">
+                                    {categoryName}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {categoryPermissionCount > 0 && (
+                                    <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                                      {categoryPermissionCount}/
+                                      {categoryTotalPermissions}
+                                    </span>
+                                  )}
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        selectAllPermissionsForCategory(
+                                          categoryName,
+                                        );
+                                      }}
+                                      className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+                                    >
+                                      Todo
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        clearAllPermissionsForCategory(
+                                          categoryName,
+                                        );
+                                      }}
+                                      className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+                                    >
+                                      Limpiar
+                                    </button>
+                                  </div>
+                                  <motion.div
+                                    animate={{ rotate: isExpanded ? 180 : 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="text-gray-500"
+                                  >
+                                    ▼
+                                  </motion.div>
+                                </div>
+                              </div>
+                            </div>
 
-                                    return (
-                                      <motion.div
-                                        key={module.key}
-                                        initial={{ opacity: 0, scale: 0.9 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        transition={{
-                                          delay: 0.05 * moduleIndex,
-                                        }}
-                                        className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200"
-                                      >
-                                        {/* Header del módulo */}
-                                        <div className="flex items-center justify-between mb-3">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-lg">
-                                              {module.icon}
-                                            </span>
-                                            <span className="font-semibold text-gray-800 text-sm">
-                                              {module.name}
-                                            </span>
-                                          </div>
-                                          <div className="flex items-center gap-2">
-                                            {permissionCount > 0 && (
-                                              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                {permissionCount}/
-                                                {module.key === "dashboard" ||
-                                                module.key === "users"
-                                                  ? 1
-                                                  : actions.length}
-                                              </span>
-                                            )}
-                                          </div>
-                                        </div>
+                            {/* Módulos de la categoría */}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{
+                                    duration: 0.3,
+                                    ease: "easeInOut",
+                                  }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="p-4 border-t border-gray-100">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                      {modules.map((module, moduleIndex) => {
+                                        const permissionCount =
+                                          getModulePermissionCount(module.key);
 
-                                        {/* Botones de control del módulo */}
-                                        <div className="flex gap-1 mb-3">
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              selectAllPermissionsForModule(
-                                                module.key
-                                              )
-                                            }
-                                            className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                        return (
+                                          <motion.div
+                                            key={module.key}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{
+                                              delay: 0.05 * moduleIndex,
+                                            }}
+                                            className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200"
                                           >
-                                            Todo
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onClick={() =>
-                                              clearAllPermissionsForModule(
-                                                module.key
-                                              )
-                                            }
-                                            className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                                          >
-                                            Limpiar
-                                          </button>
-                                        </div>
+                                            {/* Header del módulo */}
+                                            <div className="flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-lg">
+                                                  {module.icon}
+                                                </span>
+                                                <span className="font-semibold text-gray-800 text-sm">
+                                                  {module.name}
+                                                </span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                {permissionCount > 0 && (
+                                                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                                                    {permissionCount}/
+                                                    {module.key ===
+                                                      "dashboard" ||
+                                                    module.key === "users"
+                                                      ? 1
+                                                      : actions.length}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </div>
 
-                                        {/* Permisos del módulo */}
-                                        <div className="grid grid-cols-2 gap-2">
-                                          {actions
-                                            .filter((action) => {
-                                              // Para Dashboard y Usuarios, solo mostrar "Ver"
-                                              if (
-                                                module.key === "dashboard" ||
-                                                module.key === "users"
-                                              ) {
-                                                return action.name === "Ver";
-                                              }
-                                              return true;
-                                            })
-                                            .map((action) => {
-                                              const isChecked =
-                                                formData.permisos[module.key]?.[
-                                                  action.name
-                                                ] || false;
+                                            {/* Botones de control del módulo */}
+                                            <div className="flex gap-1 mb-3">
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  selectAllPermissionsForModule(
+                                                    module.key,
+                                                  )
+                                                }
+                                                className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                                              >
+                                                Todo
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onClick={() =>
+                                                  clearAllPermissionsForModule(
+                                                    module.key,
+                                                  )
+                                                }
+                                                className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                                              >
+                                                Limpiar
+                                              </button>
+                                            </div>
 
-                                              return (
-                                                <motion.label
-                                                  key={action.name}
-                                                  className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200 text-xs
+                                            {/* Permisos del módulo */}
+                                            <div className="grid grid-cols-2 gap-2">
+                                              {actions
+                                                .filter((action) => {
+                                                  // Para Dashboard y Usuarios, solo mostrar "Ver"
+                                                  if (
+                                                    module.key ===
+                                                      "dashboard" ||
+                                                    module.key === "users"
+                                                  ) {
+                                                    return (
+                                                      action.name === "Ver"
+                                                    );
+                                                  }
+                                                  return true;
+                                                })
+                                                .map((action) => {
+                                                  const isChecked =
+                                                    formData.permisos[
+                                                      module.key
+                                                    ]?.[action.name] || false;
+
+                                                  return (
+                                                    <motion.label
+                                                      key={action.name}
+                                                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-all duration-200 text-xs
                                                 ${
                                                   isChecked
                                                     ? `${action.color} text-white shadow-sm`
                                                     : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
                                                 }`}
-                                                  whileHover={{ scale: 1.02 }}
-                                                  whileTap={{ scale: 0.98 }}
-                                                >
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={() =>
-                                                      handlePermissionChange(
-                                                        module.key,
-                                                        action.name
-                                                      )
-                                                    }
-                                                    className="sr-only"
-                                                  />
-                                                  <div
-                                                    className={`w-3 h-3 rounded border flex items-center justify-center
+                                                      whileHover={{
+                                                        scale: 1.02,
+                                                      }}
+                                                      whileTap={{ scale: 0.98 }}
+                                                    >
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={() =>
+                                                          handlePermissionChange(
+                                                            module.key,
+                                                            action.name,
+                                                          )
+                                                        }
+                                                        className="sr-only"
+                                                      />
+                                                      <div
+                                                        className={`w-3 h-3 rounded border flex items-center justify-center
                                                 ${
                                                   isChecked
                                                     ? "bg-white border-white"
                                                     : "border-gray-300 bg-white"
                                                 }`}
-                                                  >
-                                                    {isChecked && (
-                                                      <motion.div
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
-                                                        className={`text-xs ${action.color.replace(
-                                                          "bg-",
-                                                          "text-"
-                                                        )}`}
                                                       >
-                                                        ✓
-                                                      </motion.div>
-                                                    )}
-                                                  </div>
-                                                  <span className="font-medium">
-                                                    {action.name}
-                                                  </span>
-                                                </motion.label>
-                                              );
-                                            })}
-                                        </div>
-                                      </motion.div>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    );
-                  }
-                )}
-              </div>
-            </div>
+                                                        {isChecked && (
+                                                          <motion.div
+                                                            initial={{
+                                                              scale: 0,
+                                                            }}
+                                                            animate={{
+                                                              scale: 1,
+                                                            }}
+                                                            className={`text-xs ${action.color.replace(
+                                                              "bg-",
+                                                              "text-",
+                                                            )}`}
+                                                          >
+                                                            ✓
+                                                          </motion.div>
+                                                        )}
+                                                      </div>
+                                                      <span className="font-medium">
+                                                        {action.name}
+                                                      </span>
+                                                    </motion.label>
+                                                  );
+                                                })}
+                                            </div>
+                                          </motion.div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        );
+                      },
+                    )}
+                  </div>
+                </div>
 
-            {/* Error de permisos */}
-            <AnimatePresence>
-              {permissionError && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: "auto" }}
-                  exit={{ opacity: 0, y: -10, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-red-500 text-sm flex items-center gap-1"
+                {/* Error de permisos */}
+                <AnimatePresence>
+                  {permissionError && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="text-red-500 text-sm flex items-center gap-1"
+                    >
+                      <span>⚠️</span>
+                      <span>{permissionError}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Botones */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="flex justify-between pt-6 border-t border-gray-200"
+              >
+                <motion.button
+                  type="button"
+                  onClick={onClose}
+                  className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <span>⚠️</span>
-                  <span>{permissionError}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  Cancelar
+                </motion.button>
+                <motion.button
+                  onClick={handleSubmit}
+                  className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
+                  whileHover={{
+                    scale: 1.02,
+                    boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)",
+                  }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {roleData ? "Actualizar Rol" : "Crear Rol"}
+                </motion.button>
+              </motion.div>
+            </div>
           </motion.div>
-
-          {/* Botones */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="flex justify-between pt-6 border-t border-gray-200"
-          >
-            <motion.button
-              type="button"
-              onClick={onClose}
-              className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Cancelar
-            </motion.button>
-            <motion.button
-              onClick={handleSubmit}
-              className="px-8 py-3 bg-primary-blue text-white rounded-xl hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)",
-              }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {roleData ? "Actualizar Rol" : "Crear Rol"}
-            </motion.button>
-          </motion.div>
-        </div>
-      </motion.div>
-    </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default RoleModal;

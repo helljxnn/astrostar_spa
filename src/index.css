@@ -2,6 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===============================================
+   Z-INDEX GLOBAL - Sistema Centralizado
+   ÚNICO LUGAR donde se definen z-index
+   =============================================== */
+
+/* Sidebar y contenido base */
+.dynamic-sidebar,
+aside.dynamic-sidebar {
+  z-index: 50 !important;
+  position: fixed !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+.sidebar-overlay {
+  z-index: 45 !important;
+}
+
+.dashboard-main-content {
+  z-index: 1 !important;
+  position: relative !important;
+  transform: none !important;
+  will-change: auto !important;
+  /* CRÍTICO: No crear contexto de apilamiento */
+  isolation: auto !important;
+}
+
+.dashboard-main-content header {
+  z-index: 10 !important;
+}
+
+/* SOLUCIÓN UNIVERSAL: Todos los modales con fixed inset-0 */
+/* Esto asegura que CUALQUIER modal funcione correctamente */
+div[class*="fixed"][class*="inset-0"]:not(.sidebar-overlay):not(
+    .dynamic-sidebar
+  ) {
+  z-index: 10000 !important;
+}
+
+/* Modales generales - NO usar clases genéricas, solo inline styles */
+/* Los modales deben usar: style={{ zIndex: 10000 }} para overlay */
+/* y style={{ zIndex: 10001 }} para contenido */
+
+/* Modales de eventos del calendario - clase específica */
+.event-modal-overlay {
+  z-index: 100000 !important;
+}
+
+.event-modal-content {
+  z-index: 100001 !important;
+}
+
+/* SweetAlert2 */
+.swal2-container {
+  z-index: 1000000 !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  z-index: 999999 !important;
+}
+
+/* ===============================================
+   FIN Z-INDEX GLOBAL
+   =============================================== */
+
+/* Prevenir que modales se bloqueen cuando hay modal abierto */
+body.modal-open {
+  overflow: hidden !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -73,45 +143,4 @@ tbody tr.enrollment-expired-row:hover {
 
 tbody tr.enrollment-expired-row:hover td {
   background-color: #fca5a5 !important;
-}
-
-/* ===============================================
-   Z-INDEX GLOBAL - Prevenir conflictos del sidebar
-   =============================================== */
-
-/* FORZAR que el sidebar SIEMPRE esté por encima */
-.dynamic-sidebar,
-aside.dynamic-sidebar {
-  z-index: 50 !important;
-  position: fixed !important;
-  /* GPU optimization for sidebar only */
-  transform: translateZ(0) !important;
-  will-change: transform !important;
-}
-
-/* FORZAR que el contenido principal esté por debajo */
-.dashboard-main-content {
-  z-index: 1 !important;
-  position: relative !important;
-  /* CRITICAL: NO GPU layers for content to prevent flickering */
-  transform: none !important;
-  will-change: auto !important;
-}
-
-/* Prevenir que modales se bloqueen cuando hay modal abierto */
-body.modal-open {
-  overflow: hidden !important;
-}
-
-/* ===============================================
-   SWEETALERT2 Z-INDEX FIX
-   =============================================== */
-/* Asegurar que SweetAlert2 siempre aparezca por encima de los modales */
-.swal2-container {
-  z-index: 9999999 !important;
-}
-
-/* Backdrop de SweetAlert2 */
-.swal2-container.swal2-backdrop-show {
-  z-index: 9999998 !important;
 }

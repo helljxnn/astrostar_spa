@@ -91,7 +91,7 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   // Renderizar el modal usando un portal para evitar problemas de z-index
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto event-modal-overlay"
       style={{
         zIndex: 999999,
         position: "fixed",
