@@ -18,6 +18,7 @@ import {
   FaShoppingCart,
   FaSignOutAlt,
   FaCalendarAlt,
+  FaTruck,
   FaRunning,
   FaClipboardCheck,
   FaFileContract,
@@ -101,12 +102,6 @@ function SimpleSideBar({
       path: "/dashboard/roles",
       icon: <FaUserShield size={20} className="shrink-0" />,
     },
-    {
-      id: "sportsEquipment",
-      name: "Material Deportivo",
-      path: "/dashboard/sportsequipment",
-      icon: <GiWeightLiftingUp size={20} className="shrink-0" />,
-    },
   ];
 
   const moduleGroups = [
@@ -155,12 +150,14 @@ function SimpleSideBar({
       ],
     },
     {
-      id: "purchases",
-      name: "Compras",
-      icon: <FaShoppingCart size={20} className="shrink-0" />,
+      id: "equipment",
+      name: "Materiales",
+      icon: <GiWeightLiftingUp size={20} className="shrink-0" />,
       children: [
+        { name: "Materiales", path: "/dashboard/materials" },
+        { name: "Categorías de Materiales", path: "/dashboard/material-categories" },
+        { name: "Ingresos de Materiales", path: "/dashboard/materials-registry" },
         { name: "Proveedores", path: "/dashboard/providers" },
-        { name: "Compras", path: "/dashboard/purchases" },
       ],
     },
   ];

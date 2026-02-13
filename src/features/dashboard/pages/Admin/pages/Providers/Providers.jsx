@@ -4,18 +4,18 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
 import ProviderViewModal from "./components/ProviderViewModal.jsx";
-import Table from "../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
-import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
-import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
+import Table from "../../../../../../shared/components/Table/table.jsx";
+import Pagination from "../../../../../../shared/components/Table/Pagination.jsx";
+import SearchInput from "../../../../../../shared/components/SearchInput.jsx";
+import ReportButton from "../../../../../../shared/components/ReportButton.jsx";
 import providersService from "./services/ProvidersService.js";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../shared/utils/alerts.js";
-import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
-import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
+} from "../../../../../../shared/utils/alerts.js";
+import PermissionGuard from "../../../../../../shared/components/PermissionGuard.jsx";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions.js";
 
 const Providers = () => {
   const location = useLocation();
@@ -343,6 +343,11 @@ const Providers = () => {
   };
 
   const buttonConfig = {
+    view: () => ({
+      show: hasPermission("providers", "Ver"),
+      disabled: false,
+      title: "Ver detalles",
+    }),
     edit: (provider) => ({
       show: hasPermission("providers", "Editar"),
       disabled: false,
@@ -354,11 +359,6 @@ const Providers = () => {
       title: activePurchasesCheck[provider.id]
         ? "No se puede eliminar con compras activas"
         : "Eliminar proveedor",
-    }),
-    view: () => ({
-      show: hasPermission("providers", "Ver"),
-      disabled: false,
-      title: "Ver detalles",
     }),
   };
 
@@ -485,13 +485,13 @@ const Providers = () => {
                     Inactivo: "bg-red-100 text-red-800",
                   },
                 }}
+                onView={hasPermission("providers", "Ver") ? handleView : null}
                 onEdit={
                   hasPermission("providers", "Editar") ? handleEdit : null
                 }
                 onDelete={
                   hasPermission("providers", "Eliminar") ? handleDelete : null
                 }
-                onView={hasPermission("providers", "Ver") ? handleView : null}
                 buttonConfig={buttonConfig}
               />
             </div>

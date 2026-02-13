@@ -157,16 +157,37 @@ function FixedDynamicSideBar({
       path: "/dashboard/roles",
       icon: "FaUserShield",
     },
-    {
-      id: "sportsEquipment",
-      name: "Material Deportivo",
-      path: "/dashboard/sportsequipment",
-      icon: "GiWeightLiftingUp",
-    },
   ];
 
   // Grupos de módulos
   const moduleGroups = [
+    {
+      id: "equipment",
+      name: "Materiales",
+      icon: "GiWeightLiftingUp",
+      children: [
+        {
+          id: "sportsEquipment",
+          name: "Materiales",
+          path: "/dashboard/materials",
+        },
+        {
+          id: "materialCategories",
+          name: "Categorías de Materiales",
+          path: "/dashboard/material-categories",
+        },
+        {
+          id: "materialsRegistry",
+          name: "Ingresos de Materiales",
+          path: "/dashboard/materials-registry",
+        },
+        {
+          id: "providers",
+          name: "Proveedores",
+          path: "/dashboard/providers",
+        },
+      ],
+    },
     {
       id: "services",
       name: "Servicios",
@@ -257,23 +278,6 @@ function FixedDynamicSideBar({
           id: "donationsManagement",
           name: "Donaciones",
           path: "/dashboard/donations",
-        },
-      ],
-    },
-    {
-      id: "purchases",
-      name: "Compras",
-      icon: "FaShoppingCart",
-      children: [
-        {
-          id: "providers",
-          name: "Proveedores",
-          path: "/dashboard/providers",
-        },
-        {
-          id: "purchasesManagement",
-          name: "Compras",
-          path: "/dashboard/purchases",
         },
       ],
     },

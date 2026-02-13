@@ -33,16 +33,17 @@ import EventsDashboard from "../features/dashboard/pages/Admin/pages/Events/Even
 import TemporaryTeams from "../features/dashboard/pages/Admin/pages/Events/TemporaryTeams/TemporaryTeams.jsx";
 
 /* --- Material Deportivo --- */
-import SportsEquipment from "../features/dashboard/pages/Admin/pages/SportEquipment/SportsEquipment.jsx";
+import MaterialsCatalog from "../features/dashboard/pages/Admin/pages/SportsMaterials/Materials/MaterialsCatalog.jsx";
+import MaterialCategories from "../features/dashboard/pages/Admin/pages/SportsMaterials/Categories/MaterialCategories.jsx";
+import MaterialsRegistry from "../features/dashboard/pages/Admin/pages/SportsMaterials/MaterialsRegistry/MaterialsRegistry.jsx";
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
 import DonationsForm from "../features/dashboard/pages/Admin/pages/Donations/Donations/DonationsForm.jsx";
 import DonorsSponsors from "../features/dashboard/pages/Admin/pages/Donations/DonorsSponsors/donorsSponsors.jsx";
 
-/* --- Compras --- */
-import Purchases from "../features/dashboard/pages/Admin/pages/Purchases/PurchasesSection/purchases.jsx";
-import Providers from "../features/dashboard/pages/Admin/pages/Purchases/Providers/Providers.jsx";
+/* --- Proveedores --- */
+import Providers from "../features/dashboard/pages/Admin/pages/Providers/Providers.jsx";
 
 /* --- Componentes generales --- */
 import DashboardHome from "../shared/components/DashboardHome.jsx";
@@ -193,12 +194,32 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Material Deportivo --- */}
+        {/* --- Módulo: Materiales --- */}
         <Route
-          path="sportsequipment"
+          path="materials"
           element={
             <PrivateRoute module="sportsEquipment" action="Ver">
-              <SportsEquipment />
+              <MaterialsCatalog />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Categorías de Materiales --- */}
+        <Route
+          path="material-categories"
+          element={
+            <PrivateRoute module="materialCategories" action="Ver">
+              <MaterialCategories />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Ingresos de Materiales --- */}
+        <Route
+          path="materials-registry"
+          element={
+            <PrivateRoute module="materialsRegistry" action="Ver">
+              <MaterialsRegistry />
             </PrivateRoute>
           }
         />
@@ -229,15 +250,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Compras --- */}
-        <Route
-          path="purchases"
-          element={
-            <PrivateRoute module="purchasesManagement" action="Ver">
-              <Purchases />
-            </PrivateRoute>
-          }
-        />
+        {/* --- Módulo: Proveedores --- */}
         <Route
           path="providers"
           element={

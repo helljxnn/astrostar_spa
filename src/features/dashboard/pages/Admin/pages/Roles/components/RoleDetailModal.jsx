@@ -10,64 +10,13 @@ import {
   FaPlus,
   FaTrash,
 } from "react-icons/fa";
+import { MODULE_CONFIG, generateAdminPermissions, getModuleNamesMap } from "../../../../../../../shared/constants/moduleConfig";
 
 const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
   if (!isOpen) return null;
 
-  // Función para generar permisos completos de administrador
-  const generateAdminPermissions = () => {
-    const modules = [
-      "dashboard",
-      "users",
-      "roles",
-      "sportsEquipment",
-      "employees",
-      "employeesSchedule",
-      "appointmentManagement",
-      "sportsCategory",
-      "athletesSection",
-      "athletesAssistance",
-      "donorsSponsors",
-      "donationsManagement",
-      "eventsManagement",
-      "temporaryWorkers",
-      "temporaryTeams",
-      "providers",
-      "purchasesManagement",
-    ];
-    const actions = ["Ver", "Crear", "Editar", "Eliminar"];
-
-    const adminPermissions = {};
-    modules.forEach((module) => {
-      adminPermissions[module] = {};
-      actions.forEach((action) => {
-        adminPermissions[module][action] = true;
-      });
-    });
-
-    return adminPermissions;
-  };
-
-  // Mapeo de nombres de módulos 
-  const moduleNamesMap = {
-    dashboard: "Dashboard",
-    users: "Usuarios",
-    roles: "Roles",
-    sportsEquipment: "Material Deportivo",
-    employees: "Empleados",
-    employeesSchedule: "Horario Empleados",
-    appointmentManagement: "Gestión de citas",
-    sportsCategory: "Categoría deportiva",
-    athletesSection: "Gestión de deportistas",
-    athletesAssistance: "Asistencia Deportistas",
-    donorsSponsors: "Donantes/Patrocinadores",
-    donationsManagement: "Donaciones",
-    eventsManagement: "Gestión de Eventos",
-    temporaryWorkers: "Personas temporales",
-    temporaryTeams: "Equipos",
-    providers: "Proveedores",
-    purchasesManagement: "Compras",
-  };
+  // Usar el mapeo de nombres desde moduleConfig
+  const moduleNamesMap = getModuleNamesMap();
 
   // Función para contar permisos activos
   const countActivePermissions = (permissions) => {
