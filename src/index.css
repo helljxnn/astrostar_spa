@@ -4,48 +4,39 @@
 
 /* ===============================================
    Z-INDEX GLOBAL - Sistema Centralizado
-   ÚNICO LUGAR donde se definen z-index
+   Reglas DESPUÉS de Tailwind para mayor prioridad
    =============================================== */
 
-/* Sidebar y contenido base */
+/* Sidebar - z-index bajo (40) */
 .dynamic-sidebar,
-aside.dynamic-sidebar {
-  z-index: 50 !important;
-  position: fixed !important;
-  transform: translateZ(0) !important;
-  will-change: transform !important;
+aside.dynamic-sidebar,
+aside[class*="dynamic-sidebar"] {
+  z-index: 40 !important;
 }
 
 .sidebar-overlay {
-  z-index: 45 !important;
+  z-index: 39 !important;
 }
 
+/* Contenido base */
 .dashboard-main-content {
   z-index: 1 !important;
-  position: relative !important;
-  transform: none !important;
-  will-change: auto !important;
-  /* CRÍTICO: No crear contexto de apilamiento */
-  isolation: auto !important;
 }
 
 .dashboard-main-content header {
   z-index: 10 !important;
 }
 
-/* SOLUCIÓN UNIVERSAL: Todos los modales con fixed inset-0 */
-/* Esto asegura que CUALQUIER modal funcione correctamente */
-div[class*="fixed"][class*="inset-0"]:not(.sidebar-overlay):not(
-    .dynamic-sidebar
-  ) {
+/* MODALES - z-index ALTO (10000) para estar por encima del sidebar */
+/* MÁXIMA PRIORIDAD - Sobrescribe TODO */
+.fixed.inset-0,
+div.fixed.inset-0,
+[class*="fixed"][class*="inset-0"],
+[class~="fixed"][class~="inset-0"] {
   z-index: 10000 !important;
 }
 
-/* Modales generales - NO usar clases genéricas, solo inline styles */
-/* Los modales deben usar: style={{ zIndex: 10000 }} para overlay */
-/* y style={{ zIndex: 10001 }} para contenido */
-
-/* Modales de eventos del calendario - clase específica */
+/* Modales de eventos del calendario */
 .event-modal-overlay {
   z-index: 100000 !important;
 }
@@ -63,11 +54,22 @@ div[class*="fixed"][class*="inset-0"]:not(.sidebar-overlay):not(
   z-index: 999999 !important;
 }
 
-/* ===============================================
-   FIN Z-INDEX GLOBAL
-   =============================================== */
+/* Estilos adicionales del sidebar */
+.dynamic-sidebar,
+aside.dynamic-sidebar {
+  position: fixed !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
 
-/* Prevenir que modales se bloqueen cuando hay modal abierto */
+.dashboard-main-content {
+  position: relative !important;
+  transform: none !important;
+  will-change: auto !important;
+  isolation: auto !important;
+}
+
+/* Prevenir scroll cuando hay modal abierto */
 body.modal-open {
   overflow: hidden !important;
 }
