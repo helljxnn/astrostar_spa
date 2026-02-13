@@ -10,6 +10,7 @@ const Table = ({
   onEdit,
   onDelete,
   onView, // para vista detallada
+  onList,
   customActions, // para botones personalizados
   buttonConfig = {}, // configuración de botones
   enableHorizontalScroll = true,
@@ -47,8 +48,14 @@ const Table = ({
     onEdit,
     onDelete,
     onView,
+    onList,
     customActions,
     buttonConfig,
+  };
+
+  const resolveButtonConfig = (type, item) => {
+    const configFn = buttonConfig?.[type];
+    return typeof configFn === "function" ? configFn(item) : {};
   };
 
   return (
@@ -72,73 +79,133 @@ const Table = ({
 
       {/* Tarjetas móvil */}
       <div className="block sm:hidden p-3 space-y-4">
-        {tbodyProps.data.map((item, index) => (
-          <div
-            key={index}
-            className="border rounded-xl shadow-sm p-4 bg-gray-50 text-gray-700"
-          >
-            {/* Mapeo dinámico de las propiedades */}
-            {tbody.dataPropertys.map((property, i) => (
-              <p key={i} className="text-sm mb-1">
-                <span className="font-semibold">{thead.titles[i]}:</span>{" "}
-                {item[property]}
-              </p>
-            ))}
+        {tbodyProps.data.map((item, index) => {
+          const viewConfig = resolveButtonConfig("view", item);
+          const editConfig = resolveButtonConfig("edit", item);
+          const deleteConfig = resolveButtonConfig("delete", item);
 
-            {/* Estado */}
-            {tbody.state && (
-              <p className="mt-1 text-sm font-medium">
-                <span className="font-semibold">Estado: </span>
-                <span
-                  className={
-                    item.estado === "Activo"
-                      ? "text-primary-purple"
-                      : item.estado === "Inactivo"
-                      ? "text-primary-blue"
-                      : "text-gray-400"
-                  }
-                >
-                  {item.estado}
-                </span>
-              </p>
-            )}
+          const viewVisible = tbodyProps.onView && viewConfig.show !== false;
+          const editVisible = tbodyProps.onEdit && editConfig.show !== false;
+          const deleteVisible =
+            tbodyProps.onDelete && deleteConfig.show !== false;
 
-            {/* Acciones */}
-            <div className="flex items-center gap-3 mt-3">
-              {tbodyProps.onView && (
-                <button
-                  onClick={() => tbodyProps.onView(item)}
-                  className="px-3 py-1 rounded-lg bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors text-xs"
-                >
-                  Ver
-                </button>
-              )}
-              <button
-                onClick={() => tbodyProps.onEdit && tbodyProps.onEdit(item)}
-                className="px-3 py-1 rounded-lg bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white transition-colors text-xs"
-              >
-                Editar
-              </button>
-              <button
-                onClick={() => tbodyProps.onDelete && tbodyProps.onDelete(item)}
-                className="px-3 py-1 rounded-lg bg-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-colors text-xs"
-              >
-                Eliminar
-              </button>
-              {/* Botones personalizados */}
-              {customActions &&
-                customActions.map((action, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => action.onClick(item)}
-                    className={action.className}
+          const viewDisabled = viewConfig.disabled || false;
+          const editDisabled = editConfig.disabled || false;
+          const deleteDisabled = deleteConfig.disabled || false;
+
+          return (
+            <div
+              key={index}
+              className="border rounded-xl shadow-sm p-4 bg-gray-50 text-gray-700"
+            >
+              {/* Mapeo dinámico de las propiedades */}
+              {tbody.dataPropertys.map((property, i) => (
+                <p key={i} className="text-sm mb-1">
+                  <span className="font-semibold">{thead.titles[i]}:</span>{" "}
+                  {item[property]}
+                </p>
+              ))}
+
+              {/* Estado */}
+              {tbody.state && (
+                <p className="mt-1 text-sm font-medium">
+                  <span className="font-semibold">Estado: </span>
+                  <span
+                    className={
+                      item.estado === "Activo"
+                        ? "text-primary-purple"
+                        : item.estado === "Inactivo"
+                        ? "text-primary-blue"
+                        : "text-gray-400"
+                    }
                   >
-                    {action.label}
+                    {item.estado}
+                  </span>
+                </p>
+              )}
+
+              {/* Acciones */}
+              <div className="flex items-center flex-wrap gap-3 mt-3">
+                {viewVisible && (
+                  <button
+                    onClick={() => !viewDisabled && tbodyProps.onView(item)}
+                    disabled={viewDisabled}
+                    title={viewConfig.title || "Ver Detalle"}
+                    className={`px-3 py-1 rounded-lg transition-colors text-xs ${
+                      viewDisabled
+                        ? `bg-gray-100 text-gray-400 cursor-not-allowed ${viewConfig.className || ""}`
+                        : `bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white ${viewConfig.className || ""}`
+                    }`}
+                  >
+                    Ver
                   </button>
-                ))}
+                )}
+
+                {editVisible && (
+                  <button
+                    onClick={() => !editDisabled && tbodyProps.onEdit(item)}
+                    disabled={editDisabled}
+                    title={editConfig.title || "Editar"}
+                    className={`px-3 py-1 rounded-lg transition-colors text-xs ${
+                      editDisabled
+                        ? `bg-gray-100 text-gray-400 cursor-not-allowed ${editConfig.className || ""}`
+                        : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${editConfig.className || ""}`
+                    }`}
+                  >
+                    Editar
+                  </button>
+                )}
+
+                {deleteVisible && (
+                  <button
+                    onClick={() => !deleteDisabled && tbodyProps.onDelete(item)}
+                    disabled={deleteDisabled}
+                    title={deleteConfig.title || "Eliminar"}
+                    className={`px-3 py-1 rounded-lg transition-colors text-xs ${
+                      deleteDisabled
+                        ? `bg-gray-100 text-gray-400 cursor-not-allowed ${deleteConfig.className || ""}`
+                        : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${deleteConfig.className || ""}`
+                    }`}
+                  >
+                    Eliminar
+                  </button>
+                )}
+
+                {tbodyProps.onList && (
+                  <button
+                    onClick={() => tbodyProps.onList(item)}
+                    className="px-3 py-1 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-colors text-xs"
+                    title="Ver Lista"
+                  >
+                    Lista
+                  </button>
+                )}
+
+                {/* Botones personalizados */}
+                {customActions &&
+                  (typeof customActions === "function"
+                    ? customActions(item)
+                    : customActions.map((action, idx) => {
+                        const shouldShow = action.show
+                          ? action.show(item)
+                          : true;
+                        if (!shouldShow) return null;
+
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => action.onClick(item)}
+                            className={action.className}
+                            title={action.title}
+                          >
+                            {action.label}
+                          </button>
+                        );
+                      }))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Paginación */}

@@ -1,8 +1,8 @@
 ﻿// SportsCategory.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FaPlus } from "react-icons/fa";
 
-import Table from "./components/Table/Table";
+import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -14,9 +14,68 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 import { useSportsCategories } from "./hooks/useSportsCategories";
 import { showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/Alerts";
-import { useMemo } from "react";
 
-const MODULE_NAME = "sportsCategory";
+const MODULE_NAME = "sportsCategory";
+
+const parseCount = (value) => {
+  if (Array.isArray(value)) return value.length;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
+
+const getAssociationMeta = (item = {}) => {
+  const associations =
+    item.associations ?? item.asociaciones ?? item._count ?? {};
+  const inscriptions = parseCount(
+    item.inscriptionsCount ??
+      item.inscripcionesCount ??
+      associations.inscriptions ??
+      associations.inscripciones ??
+      item.inscriptions ??
+      item.inscripciones
+  );
+  const participants = parseCount(
+    item.participantsCount ??
+      item.participantesCount ??
+      associations.participants ??
+      associations.participantes ??
+      item.participants ??
+      item.participantes
+  );
+  const services = parseCount(
+    item.servicesCount ??
+      item.serviciosCount ??
+      item.serviceSportsCategoriesCount ??
+      associations.serviceSportsCategories ??
+      associations.services ??
+      item.serviceSportsCategories
+  );
+  const total = inscriptions + participants + services;
+  const isAssociated =
+    item.isAssociated ??
+    item.asociada ??
+    item.asociado ??
+    item.tieneAsociaciones ??
+    total > 0;
+
+  return {
+    inscriptions,
+    participants,
+    services,
+    total,
+    isAssociated: Boolean(isAssociated),
+  };
+};
+
+const buildAssociationDetails = (association) => {
+  const details = [];
+  if (association.inscriptions)
+    details.push(`${association.inscriptions} inscripción(es)`);
+  if (association.participants)
+    details.push(`${association.participants} participante(s)`);
+  if (association.services) details.push(`${association.services} evento(s)`);
+  return details;
+};
 
 const SportsCategory = () => {
   const { hasPermission } = usePermissions();
@@ -48,6 +107,12 @@ const SportsCategory = () => {
   const [categoryForAthletes, setCategoryForAthletes] = useState(null);
   const [athletesData, setAthletesData] = useState([]);
 
+  const canCreate = hasPermission(MODULE_NAME, "Crear");
+  const canEdit = hasPermission(MODULE_NAME, "Editar");
+  const canDelete = hasPermission(MODULE_NAME, "Eliminar");
+  const canView = hasPermission(MODULE_NAME, "Ver");
+  const canList = hasPermission(MODULE_NAME, "Listar");
+
   const reportData = sportsCategories.map((cat) => ({
     nombre: cat.nombre || "",
     descripcion: cat.descripcion || "",
@@ -74,10 +139,14 @@ const SportsCategory = () => {
 
   // fetch inicial
   useEffect(() => {
+    const term = (searchTerm || "").trim();
+    const pageToFetch = term ? 1 : currentPage;
+    const limitToFetch = term ? 1000 : rowsPerPage;
+
     fetchSportsCategories({
-      page: currentPage,
-      limit: (searchTerm || "").trim() ? 1000 : rowsPerPage, // si hay búsqueda, traer más para filtrar local
-      search: searchTerm?.trim() || "",
+      page: pageToFetch,
+      limit: limitToFetch,
+      search: term,
     }).catch((err) => console.error("fetch error:", err));
   }, [currentPage, rowsPerPage, searchTerm, fetchSportsCategories]);
 
@@ -105,9 +174,19 @@ const SportsCategory = () => {
   const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
+  const paginatedData = displayData.slice(startIndex, endIndex);
+
+  const getFetchParams = () => {
+    const term = (searchTerm || "").trim();
+    return {
+      page: term ? 1 : currentPage,
+      limit: term ? 1000 : rowsPerPage,
+      search: term,
+    };
+  };
 
   const handleCreate = () => {
-    if (!hasPermission(MODULE_NAME, "Crear")) {
+    if (!canCreate) {
       showErrorAlert("Sin permisos", "No tienes permisos para crear categorías deportivas");
       return;
     }
@@ -117,7 +196,7 @@ const SportsCategory = () => {
   };
 
   const handleEdit = (item) => {
-    if (!hasPermission(MODULE_NAME, "Editar")) {
+    if (!canEdit) {
       showErrorAlert("Sin permisos", "No tienes permisos para editar categorías deportivas");
       return;
     }
@@ -129,10 +208,28 @@ const SportsCategory = () => {
   const handleModalClose = () => {
     setIsModalOpen(false);
     setSelectedCategory(null);
-    fetchSportsCategories({ page: currentPage, limit: rowsPerPage, search: searchTerm }).catch(() => {});
+    fetchSportsCategories(getFetchParams()).catch(() => {});
   };
 
   const handleDelete = async (item) => {
+    if (!canDelete) {
+      showErrorAlert("Sin permisos", "No tienes permisos para eliminar categorías deportivas");
+      return;
+    }
+
+    const association = getAssociationMeta(item);
+    if (association.isAssociated) {
+      const details = buildAssociationDetails(association);
+
+      showErrorAlert(
+        "No se puede eliminar",
+        details.length
+          ? `La categoría está asociada a ${details.join(", ")}.`
+          : "La categoría está asociada y no puede eliminarse."
+      );
+      return;
+    }
+
     try {
       const result = await showConfirmAlert("¿Eliminar categoría?", `Se eliminará la categoría "${item.nombre ?? item.name}".`, {
         confirmButtonText: "Sí, eliminar",
@@ -140,9 +237,7 @@ const SportsCategory = () => {
       if (!result.isConfirmed) return;
 
       await deleteSportsCategory(item.id, {
-        page: currentPage,
-        limit: rowsPerPage,
-        search: searchTerm,
+        ...getFetchParams(),
       });
     } catch (err) {
       console.error("delete error:", err);
@@ -150,7 +245,7 @@ const SportsCategory = () => {
   };
 
   const handleView = async (item) => {
-    if (!hasPermission(MODULE_NAME, "Ver")) {
+    if (!canView) {
       showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de categorías deportivas");
       return;
     }
@@ -164,7 +259,7 @@ const SportsCategory = () => {
   };
 
   const handleList = async (item) => {
-    if (!hasPermission(MODULE_NAME, "Listar")) {
+    if (!canList) {
       showErrorAlert("Sin permisos", "No tienes permisos para listar atletas de categorías deportivas");
       return;
     }
@@ -262,9 +357,10 @@ const SportsCategory = () => {
                   "Edad mínima",
                   "Edad máxima",
                 ],
+                state: true,
               }}
               tbody={{
-                data: displayData,
+                data: paginatedData,
                 dataPropertys: [
                   "nombre",
                   "descripcion",
@@ -275,10 +371,37 @@ const SportsCategory = () => {
                 stateProperty: "estado",
               }}
               rowsPerPage={rowsPerPage}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleView}
-              onList={handleList}
+              onEdit={canEdit ? handleEdit : null}
+              onDelete={canDelete ? handleDelete : null}
+              onView={canView ? handleView : null}
+              onList={canList ? handleList : null}
+              buttonConfig={{
+                view: () => ({
+                  show: canView,
+                  disabled: false,
+                  title: "Ver detalles de la categoría",
+                }),
+                edit: () => ({
+                  show: canEdit,
+                  disabled: false,
+                  title: "Editar categoría",
+                }),
+                delete: (item) => {
+                  const association = getAssociationMeta(item);
+                  const details = buildAssociationDetails(association);
+                  const blocked = association.isAssociated;
+
+                  return {
+                    show: canDelete,
+                    disabled: blocked,
+                    title: blocked
+                      ? details.length
+                        ? `No se puede eliminar: asociada a ${details.join(", ")}`
+                        : "No se puede eliminar: categoría asociada"
+                      : "Eliminar categoría",
+                  };
+                },
+              }}
             />
           </div>
 
@@ -333,4 +456,5 @@ const SportsCategory = () => {
 };
 
 export default SportsCategory;
+
 

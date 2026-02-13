@@ -144,100 +144,123 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
   }, [normalizedAthletes, searchTerm]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-6xl">
-      <div className="flex flex-col">
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue text-white p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 p-3 rounded-full">
-                <MdSports size={28} />
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
+      <div className="flex flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
+        <div className="bg-gradient-to-r from-[#8a7bff] via-[#9bb9ff] to-[#89e4ff] text-white px-5 py-3 sm:px-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                <MdSports size={22} />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Deportistas por categoria</h2>
-                <p className="text-white/80 mt-1">{categoryData.nombre}</p>
+                <p className="text-xs uppercase tracking-[0.22em] text-white/70">
+                  Listado
+                </p>
+                <h2 className="text-lg sm:text-xl font-semibold">
+                  Deportistas por categoría
+                </h2>
+                <p className="text-white/80 mt-0.5">{categoryData.nombre}</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors p-2"
+              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center"
+              aria-label="Cerrar"
             >
-              <FaTimes size={20} />
+              <FaTimes size={16} />
             </button>
           </div>
-          <div className="flex flex-wrap items-center gap-3 mt-4 text-sm">
-            <span className={`px-3 py-1 rounded-full font-medium ${ageRangeClass}`}>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+            <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-semibold">
               {ageRangeLabel}
             </span>
-            <span className="text-white/80">
+            <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-semibold">
               {normalizedAthletes.length}{" "}
               {normalizedAthletes.length === 1 ? "deportista" : "deportistas"}
             </span>
           </div>
         </div>
 
-        <div className="border-b bg-white p-4">
-          <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre, documento, correo o categoria..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
-            />
+        <div className="border-b bg-white px-5 py-2.5 sm:px-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex-1">
+              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Buscar
+              </label>
+              <div className="relative mt-2">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por nombre, documento, correo o categoría..."
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+                />
+              </div>
+            </div>
+            <div className="text-xs text-gray-500 sm:text-right">
+              Resultados: {filteredAthletes.length} de {normalizedAthletes.length}
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="bg-gray-50/50 px-5 py-3 sm:px-6 max-h-[55vh] overflow-y-auto">
           {filteredAthletes.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                <FaUser size={32} className="text-gray-400" />
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
+              <div className="bg-gray-100 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <FaUser size={28} className="text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
                 {searchTerm ? "No se encontraron resultados" : "No hay deportistas registrados"}
               </h3>
               <p className="text-gray-500">
                 {searchTerm
-                  ? "Intenta con otro termino de busqueda."
-                  : `Aun no hay deportistas en la categoria "${categoryData.nombre}".`}
+                  ? "Intenta con otro término de búsqueda."
+                  : `Aún no hay deportistas en la categoría "${categoryData.nombre}".`}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-200 rounded-xl">
-              <table className="min-w-[900px] w-full text-sm">
+            <div className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+              <table className="w-full text-sm table-fixed">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold">Nombre</th>
-                    <th className="px-4 py-3 text-left font-semibold">Tipo Doc</th>
-                    <th className="px-4 py-3 text-left font-semibold">Documento</th>
-                    <th className="px-4 py-3 text-left font-semibold">Edad</th>
-                    <th className="px-4 py-3 text-left font-semibold">Correo</th>
-                    <th className="px-4 py-3 text-left font-semibold">Categoria</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[24%]">Nombre</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[16%] hidden lg:table-cell">
+                      Tipo doc
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[16%] hidden md:table-cell">
+                      Documento
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[10%]">Edad</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[22%]">Correo</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[12%]">Categoría</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredAthletes.map((athlete) => (
-                    <tr key={athlete.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                <tbody className="divide-y divide-gray-100">
+                  {filteredAthletes.map((athlete, index) => (
+                    <tr
+                      key={athlete.id ?? index}
+                      className="odd:bg-white even:bg-slate-50/50 hover:bg-slate-100 transition-colors"
+                    >
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
                           <FaUser className="text-primary-blue w-4 h-4" />
-                          <span className="font-medium text-gray-800">
+                          <span className="font-medium text-gray-800 truncate">
                             {athlete.nombre || "N/A"}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2 text-gray-700">
+                      <td className="px-3 py-2.5 hidden lg:table-cell">
+                        <div className="flex items-center gap-2 text-gray-700 min-w-0">
                           <FaIdCard className="w-4 h-4 text-gray-500" />
-                          <span>{athlete.tipoDocumento || "N/A"}</span>
+                          <span className="truncate">{athlete.tipoDocumento || "N/A"}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 font-mono text-gray-700">
+                      <td className="px-3 py-2.5 font-mono text-gray-700 hidden md:table-cell truncate">
                         {athlete.documento || "N/A"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2 text-gray-700">
                           <FaCalendarAlt className="w-4 h-4 text-primary-purple" />
                           <span>
@@ -245,15 +268,15 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
                           <FaEnvelope className="w-4 h-4 text-green-600" />
                           <span className="text-blue-600 hover:text-blue-800 truncate">
                             {athlete.email || "N/A"}
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2.5">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${ageRangeClass}`}>
                           {athlete.categoria || "N/A"}
                         </span>
@@ -266,14 +289,14 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
           )}
         </div>
 
-        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t">
+        <div className="bg-gray-50 px-5 py-2.5 flex items-center justify-between border-t">
           <span className="text-sm text-gray-600">
             Mostrando {filteredAthletes.length} de {normalizedAthletes.length} deportistas
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
+            className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
           >
             Cerrar
           </button>

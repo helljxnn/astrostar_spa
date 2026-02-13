@@ -34,6 +34,25 @@ const Modal = ({
   };
 
   // Contenido del modal
+  const {
+    className: contentClassName,
+    style: contentStyleOverrides,
+    ...restContentProps
+  } = contentProps || {};
+
+  const mergedContentStyle = {
+    ...contentStyles,
+    ...(contentStyleOverrides || {}),
+  };
+
+  const mergedContentClasses = [
+    contentClasses,
+    maxWidth,
+    contentClassName,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
@@ -52,10 +71,10 @@ const Modal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.2 }}
-            className={`${contentClasses} ${maxWidth}`}
-            style={contentStyles}
+            className={mergedContentClasses}
+            style={mergedContentStyle}
             onClick={(e) => e.stopPropagation()}
-            {...contentProps}
+            {...restContentProps}
           >
             {children}
           </motion.div>

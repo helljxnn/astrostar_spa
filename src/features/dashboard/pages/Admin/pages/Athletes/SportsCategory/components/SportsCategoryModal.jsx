@@ -317,7 +317,7 @@ const SportsCategoryModal = ({
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden border border-gray-100"
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-[#8aa9ff] text-center">
@@ -334,89 +334,100 @@ const SportsCategoryModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5">
-          <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 block">
-                  Nombre categoria *
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={values.nombre}
-                    onChange={(e) => handleNameChange(e.target.value)}
-                    onBlur={() => handleBlur("nombre")}
-                    placeholder="Ej: Infantil A"
-                    className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border bg-gray-50 ${nameInputClass}`}
-                  />
-                  {nameValidation.isChecking && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
-                  )}
-                  {nameValidation.isDuplicate && !isNameTooShort && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
-                      <FaTimesCircle size={18} aria-hidden="true" />
-                    </span>
-                  )}
-                  {!nameValidation.isDuplicate &&
-                    nameValidation.isAvailable &&
-                    currentTrimmedName.length >= 3 && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
-                        <FaCheckCircle size={18} aria-hidden="true" />
+          <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-6">
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Datos principales
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    Campos obligatorios *
+                  </span>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Nombre de categoría *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={values.nombre}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onBlur={() => handleBlur("nombre")}
+                      placeholder="Ej: Infantil A"
+                      className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border bg-gray-50 ${nameInputClass}`}
+                    />
+                    {nameValidation.isChecking && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
+                    )}
+                    {nameValidation.isDuplicate && !isNameTooShort && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <FaTimesCircle size={18} aria-hidden="true" />
                       </span>
                     )}
-                </div>
-                <div className="space-y-1 text-xs mt-1">
-                  {nameValidation.isChecking && (
-                    <p className="flex items-center gap-2 text-primary-purple font-medium">
-                      <span className="w-3 h-3 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
-                      Verificando disponibilidad...
-                    </p>
-                  )}
-                  {isNameTooShort && (
-                    <p className="flex items-center gap-2 text-yellow-700">
-                      <span className="text-base leading-none">!</span>
-                      Debe tener minimo 3 caracteres.
-                    </p>
-                  )}
-                  {errors.nombre && (
-                    <p className="text-red-500">Aviso: {errors.nombre}</p>
-                  )}
-                  {nameValidation.isDuplicate && !isNameTooShort && (
-                    <p className="flex items-center gap-2 text-red-600 font-semibold">
-                      <FaTimesCircle size={16} aria-hidden="true" />
-                      {nameValidation.message || "Nombre no disponible"}
-                    </p>
-                  )}
-                  {!nameValidation.isDuplicate &&
-                    nameValidation.isAvailable &&
-                    currentTrimmedName.length >= 3 && (
-                      <p className="flex items-center gap-2 text-green-600 font-semibold">
-                        <FaCheckCircle size={16} aria-hidden="true" />
-                        {nameValidation.message || "Nombre disponible"}
+                    {!nameValidation.isDuplicate &&
+                      nameValidation.isAvailable &&
+                      currentTrimmedName.length >= 3 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                          <FaCheckCircle size={18} aria-hidden="true" />
+                        </span>
+                      )}
+                  </div>
+                  <div className="space-y-1 text-xs mt-1">
+                    {nameValidation.isChecking && (
+                      <p className="flex items-center gap-2 text-primary-purple font-medium">
+                        <span className="w-3 h-3 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
+                        Verificando disponibilidad...
                       </p>
                     )}
+                    {isNameTooShort && (
+                      <p className="flex items-center gap-2 text-yellow-700">
+                        <span className="text-base leading-none">!</span>
+                        Debe tener mínimo 3 caracteres.
+                      </p>
+                    )}
+                    {errors.nombre && (
+                      <p className="text-red-500">Aviso: {errors.nombre}</p>
+                    )}
+                    {nameValidation.isDuplicate && !isNameTooShort && (
+                      <p className="flex items-center gap-2 text-red-600 font-semibold">
+                        <FaTimesCircle size={16} aria-hidden="true" />
+                        {nameValidation.message || "Nombre no disponible"}
+                      </p>
+                    )}
+                    {!nameValidation.isDuplicate &&
+                      nameValidation.isAvailable &&
+                      currentTrimmedName.length >= 3 && (
+                        <p className="flex items-center gap-2 text-green-600 font-semibold">
+                          <FaCheckCircle size={16} aria-hidden="true" />
+                          {nameValidation.message || "Nombre disponible"}
+                        </p>
+                      )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 block">
-                  Descripcion *
-                </label>
-                <textarea
-                  value={values.descripcion}
-                  onChange={(e) => handleChange("descripcion", e.target.value)}
-                  onBlur={() => handleBlur("descripcion")}
-                  placeholder="Breve descripcion..."
-                  maxLength={200}
-                  className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
-                    errors.descripcion
-                      ? "border-red-400 bg-red-50"
-                      : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
-                  }`}
-                />
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>Maximo 200 caracteres</span>
-                  <span>{descripcionLength}/200</span>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Descripción *
+                  </label>
+                  <textarea
+                    value={values.descripcion}
+                    onChange={(e) => handleChange("descripcion", e.target.value)}
+                    onBlur={() => handleBlur("descripcion")}
+                    placeholder="Breve descripción..."
+                    maxLength={200}
+                    className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
+                      errors.descripcion
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                    }`}
+                  />
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Máximo 200 caracteres</span>
+                    <span>{descripcionLength}/200</span>
+                  </div>
                 </div>
               </div>
 
@@ -433,7 +444,7 @@ const SportsCategoryModal = ({
                       Rango de edades *
                     </p>
                     <p className="text-xs text-gray-500">
-                      Selecciona edad minima y maxima
+                      Selecciona edad mínima y máxima
                     </p>
                   </div>
                   <span
@@ -454,7 +465,7 @@ const SportsCategoryModal = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700 block">
-                      Edad minima *
+                      Edad mínima *
                     </label>
                     <input
                       type="number"
@@ -465,7 +476,7 @@ const SportsCategoryModal = ({
                       value={values.edadMinima ?? ""}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder={`Minimo ${AGE_MIN}`}
+                    placeholder={`Mínimo ${AGE_MIN}`}
                       className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
                         errors.edadMinima || isMinTooLow
                           ? "border-red-400 bg-red-50"
@@ -473,11 +484,11 @@ const SportsCategoryModal = ({
                       }`}
                     />
                     <p className="text-xs text-gray-500">
-                      Minimo permitido: {AGE_MIN} años
+                      Mínimo permitido: {AGE_MIN} años
                     </p>
                     {isMinTooLow && (
                       <p className="text-red-500 text-xs mt-1">
-                        La edad minima debe ser mayor o igual a {AGE_MIN} años.
+                        La edad mínima debe ser mayor o igual a {AGE_MIN} años.
                       </p>
                     )}
                     {errors.edadMinima && (
@@ -489,7 +500,7 @@ const SportsCategoryModal = ({
 
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700 block">
-                      Edad maxima *
+                      Edad máxima *
                     </label>
                     <input
                       type="number"
@@ -500,7 +511,7 @@ const SportsCategoryModal = ({
                       value={values.edadMaxima ?? ""}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      placeholder={`Maximo ${AGE_MAX}`}
+                    placeholder={`Máximo ${AGE_MAX}`}
                       className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
                         errors.edadMaxima || isMaxTooHigh
                           ? "border-red-400 bg-red-50"
@@ -508,11 +519,11 @@ const SportsCategoryModal = ({
                       }`}
                     />
                     <p className="text-xs text-gray-500">
-                      Maximo permitido: {AGE_MAX} años
+                      Máximo permitido: {AGE_MAX} años
                     </p>
                     {isMaxTooHigh && (
                       <p className="text-red-500 text-xs mt-1">
-                        La edad maxima debe ser menor o igual a {AGE_MAX} años.
+                        La edad máxima debe ser menor o igual a {AGE_MAX} años.
                       </p>
                     )}
                     {errors.edadMaxima && (
@@ -528,7 +539,7 @@ const SportsCategoryModal = ({
                   parseInt(values.edadMinima, 10) >=
                     parseInt(values.edadMaxima, 10) && (
                     <p className="text-red-500 text-xs mt-2">
-                      Aviso: Edad maxima debe ser mayor que minima
+                      Aviso: Edad máxima debe ser mayor que mínima
                     </p>
                   )}
               </div>
@@ -580,7 +591,7 @@ const SportsCategoryModal = ({
                   />
                 </label>
                 <span className="text-xs text-gray-500">
-                  Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
+                  Tamaño máximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
                   mantiene la actual.
                 </span>
                 {(previewUrl || values.archivo) && (
