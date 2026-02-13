@@ -1,6 +1,5 @@
 import AppRoutes from "./routes/Router";
 import { AuthProvider } from "./shared/contexts/authContext";
-import LoadingProvider from "./shared/contexts/loaderContext";
 import { useInstantTooltip } from "./shared/hooks/useInstantTooltip";
 import GlobalLoader from "./shared/components/Loader/GlobalLoader";
 
@@ -10,10 +9,8 @@ function App() {
 
   return (
     <AuthProvider>
-      <LoadingProvider>
-        <AppRoutes />
-        <GlobalLoader />
-      </LoadingProvider>
+      <AppRoutes />
+      <GlobalLoader />
     </AuthProvider>
   );
 }

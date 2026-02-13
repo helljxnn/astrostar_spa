@@ -122,7 +122,7 @@ export const EventModal = ({
           const year = oneWeekFromToday.getFullYear();
           const month = String(oneWeekFromToday.getMonth() + 1).padStart(
             2,
-            "0"
+            "0",
           );
           const day = String(oneWeekFromToday.getDate()).padStart(2, "0");
           return `${year}-${month}-${day}`;
@@ -203,7 +203,7 @@ export const EventModal = ({
       if (!isValid) {
         showErrorAlert(
           "Formulario incompleto",
-          "Por favor completa todos los campos requeridos correctamente."
+          "Por favor completa todos los campos requeridos correctamente.",
         );
         return;
       }
@@ -211,7 +211,7 @@ export const EventModal = ({
       if (!isNew) {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar este evento?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
         if (!result.isConfirmed) return;
       }
@@ -240,7 +240,7 @@ export const EventModal = ({
           : "Evento actualizado exitosamente",
         isNew
           ? "El evento ha sido registrado correctamente."
-          : "El evento ha sido actualizado correctamente."
+          : "El evento ha sido actualizado correctamente.",
       );
 
       onClose();
@@ -248,19 +248,29 @@ export const EventModal = ({
       console.error("Error al guardar evento:", error);
       showErrorAlert(
         "Error al guardar",
-        "No se pudo guardar el evento. Intenta de nuevo."
+        "No se pudo guardar el evento. Intenta de nuevo.",
       );
     }
   };
 
   const modalContent = (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999] p-2 sm:p-4">
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999] p-2 sm:p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+      style={{ pointerEvents: "auto" }}
+    >
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.3 }}
         className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col relative z-[10000] border border-gray-200"
+        onClick={(e) => e.stopPropagation()}
+        style={{ pointerEvents: "auto" }}
       >
         {/* Header */}
         <div className="flex-shrink-0 flex justify-between items-center p-4 border-b border-gray-200 bg-white">
@@ -268,8 +278,8 @@ export const EventModal = ({
             {mode === "view"
               ? "Ver Evento"
               : isNew
-              ? "Crear Evento"
-              : "Editar Evento"}
+                ? "Crear Evento"
+                : "Editar Evento"}
           </h2>
           <button
             onClick={onClose}
@@ -301,10 +311,10 @@ export const EventModal = ({
                     // TEMPORAL: Siempre validar en modo edición para probar
                     if (!isNew && tipoEvento) {
                       const currentTypeName = referenceData.types.find(
-                        (t) => t.id === tipoEvento
+                        (t) => t.id === tipoEvento,
                       )?.name;
                       const newTypeName = referenceData.types.find(
-                        (t) => t.id === value
+                        (t) => t.id === value,
                       )?.name;
 
                       // Verificar compatibilidad de tipos
@@ -329,7 +339,7 @@ export const EventModal = ({
                           : "deportistas";
                         const result = await showConfirmAlert(
                           "¿Cambiar tipo de evento?",
-                          `Al cambiar de ${currentTypeName} a ${newTypeName} podrían eliminarse las inscripciones existentes si las hay. ¿Deseas continuar?`
+                          `Al cambiar de ${currentTypeName} a ${newTypeName} podrían eliminarse las inscripciones existentes si las hay. ¿Deseas continuar?`,
                         );
 
                         if (!result.isConfirmed) {
@@ -504,7 +514,7 @@ export const EventModal = ({
                     ? (() => {
                         const oneWeekFromToday = new Date();
                         oneWeekFromToday.setDate(
-                          oneWeekFromToday.getDate() + 7
+                          oneWeekFromToday.getDate() + 7,
                         );
                         return oneWeekFromToday.toISOString().split("T")[0];
                       })()
@@ -645,10 +655,10 @@ export const EventModal = ({
                       form.estado === "finalizado"
                         ? "bg-gray-100 border-gray-300 text-gray-700"
                         : form.estado === "Programado"
-                        ? "bg-green-50 border-green-300 text-green-700"
-                        : form.estado === "Cancelado"
-                        ? "bg-red-50 border-red-300 text-red-700"
-                        : "bg-gray-100 border-gray-300 text-gray-700"
+                          ? "bg-green-50 border-green-300 text-green-700"
+                          : form.estado === "Cancelado"
+                            ? "bg-red-50 border-red-300 text-red-700"
+                            : "bg-gray-100 border-gray-300 text-gray-700"
                     }`}
                   >
                     {form.estado}
@@ -709,15 +719,23 @@ export const EventModal = ({
               ) : (
                 <>
                   <button
-                    onClick={onClose}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                    }}
                     className="w-full sm:w-auto px-5 py-2 rounded-lg bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 transition"
+                    style={{ pointerEvents: "auto", cursor: "pointer" }}
                   >
                     Cancelar
                   </button>
                   <button
-                    onClick={handleSubmit}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubmit();
+                    }}
                     type="button"
                     className="w-full sm:w-auto px-5 py-2 rounded-lg bg-primary-purple text-white font-semibold hover:bg-primary-blue transition"
+                    style={{ pointerEvents: "auto", cursor: "pointer" }}
                   >
                     {isNew ? "Crear" : "Actualizar"}
                   </button>

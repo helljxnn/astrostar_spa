@@ -244,7 +244,7 @@ const TeamRegistrationFormModal = ({
   // Renderizar el modal usando un portal para evitar problemas de z-index
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto event-modal-overlay"
       style={{
         zIndex: 999999,
         position: "fixed",
@@ -273,7 +273,7 @@ const TeamRegistrationFormModal = ({
           maxWidth: "64rem",
         }}
       >
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
+        <div className="bg-primary-purple p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}

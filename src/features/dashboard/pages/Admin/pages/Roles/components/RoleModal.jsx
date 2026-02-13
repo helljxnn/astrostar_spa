@@ -1,4 +1,5 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
@@ -145,7 +146,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       descripcion: "",
       permisos: {},
     },
-    roleValidationRules
+    roleValidationRules,
   );
 
   // Hook para validación de nombres duplicados
@@ -170,7 +171,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (roleData.name === "Administrador") {
         showErrorAlert(
           "Acción no permitida",
-          "El rol de Administrador es un rol del sistema y no puede ser editado."
+          "El rol de Administrador es un rol del sistema y no puede ser editado.",
         );
         onClose();
         return;
@@ -197,7 +198,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         }
         return total;
       },
-      0
+      0,
     );
 
     if (totalPermissions === 0 && Object.keys(touched).length > 0) {
@@ -242,7 +243,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         } else {
           newPermisos[module.key] = actions.reduce(
             (acc, action) => ({ ...acc, [action.name]: true }),
-            {}
+            {},
           );
         }
       });
@@ -280,7 +281,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             ? { Ver: true }
             : actions.reduce(
                 (acc, action) => ({ ...acc, [action.name]: true }),
-                {}
+                {},
               ),
       },
     }));
@@ -318,7 +319,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   const handleSubmit = async () => {
     const isValid = validateAllFields();
     const hasPermissions = Object.values(formData.permisos).some(
-      (modulePerms) => Object.values(modulePerms).some(Boolean)
+      (modulePerms) => Object.values(modulePerms).some(Boolean),
     );
 
     if (!hasPermissions) {
@@ -335,12 +336,12 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (nameValidation.isChecking) {
         showErrorAlert(
           "Validando nombre",
-          "Por favor, espere mientras se valida el nombre del rol."
+          "Por favor, espere mientras se valida el nombre del rol.",
         );
       } else {
         showErrorAlert(
           "Campos incompletos",
-          "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar."
+          "Por favor, complete todos los campos obligatorios y seleccione al menos un permiso antes de continuar.",
         );
       }
       return;
@@ -357,7 +358,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (roleData) {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar este rol?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
 
         if (!result.isConfirmed) return;
@@ -376,7 +377,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         roleData ? "Rol Actualizado" : "Rol Creado",
         roleData
           ? "El rol ha sido actualizado exitosamente."
-          : "El rol ha sido creado exitosamente."
+          : "El rol ha sido creado exitosamente.",
       );
 
       if (!roleData) {
@@ -396,20 +397,22 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   const totalPermissions = Object.values(formData.permisos).reduce(
     (total, modulePerms) =>
       total + Object.values(modulePerms).filter(Boolean).length,
-    0
+    0,
   );
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 10000 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] overflow-y-auto relative"
+        style={{ zIndex: 10001 }}
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -549,7 +552,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     selectAllPermissionsForCategory(
-                                      categoryName
+                                      categoryName,
                                     );
                                   }}
                                   className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
@@ -561,7 +564,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     clearAllPermissionsForCategory(
-                                      categoryName
+                                      categoryName,
                                     );
                                   }}
                                   className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
@@ -587,7 +590,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                               initial={{ height: 0, opacity: 0 }}
                               animate={{ height: "auto", opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              transition={{
+                                duration: 0.3,
+                                ease: "easeInOut",
+                              }}
                               className="overflow-hidden"
                             >
                               <div className="p-4 border-t border-gray-100">
@@ -635,7 +641,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                             type="button"
                                             onClick={() =>
                                               selectAllPermissionsForModule(
-                                                module.key
+                                                module.key,
                                               )
                                             }
                                             className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
@@ -646,7 +652,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                             type="button"
                                             onClick={() =>
                                               clearAllPermissionsForModule(
-                                                module.key
+                                                module.key,
                                               )
                                             }
                                             className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
@@ -683,7 +689,9 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                                     ? `${action.color} text-white shadow-sm`
                                                     : "bg-white hover:bg-gray-100 text-gray-700 border border-gray-200"
                                                 }`}
-                                                  whileHover={{ scale: 1.02 }}
+                                                  whileHover={{
+                                                    scale: 1.02,
+                                                  }}
                                                   whileTap={{ scale: 0.98 }}
                                                 >
                                                   <input
@@ -692,7 +700,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                                     onChange={() =>
                                                       handlePermissionChange(
                                                         module.key,
-                                                        action.name
+                                                        action.name,
                                                       )
                                                     }
                                                     className="sr-only"
@@ -707,11 +715,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                                   >
                                                     {isChecked && (
                                                       <motion.div
-                                                        initial={{ scale: 0 }}
-                                                        animate={{ scale: 1 }}
+                                                        initial={{
+                                                          scale: 0,
+                                                        }}
+                                                        animate={{
+                                                          scale: 1,
+                                                        }}
                                                         className={`text-xs ${action.color.replace(
                                                           "bg-",
-                                                          "text-"
+                                                          "text-",
                                                         )}`}
                                                       >
                                                         ✓
@@ -735,7 +747,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                         </AnimatePresence>
                       </motion.div>
                     );
-                  }
+                  },
                 )}
               </div>
             </div>
@@ -789,6 +801,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default RoleModal;
