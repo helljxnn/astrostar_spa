@@ -28,16 +28,6 @@ const CalendarEvent = ({
   const useCustomColors =
     colorScheme?.useEventColors && (event.backgroundColor || event.color);
 
-  console.log("CalendarEvent Debug:", {
-    eventId: event.id,
-    eventTitle: event.title,
-    colorScheme: colorScheme,
-    useEventColors: colorScheme?.useEventColors,
-    eventBackgroundColor: event.backgroundColor,
-    eventColor: event.color,
-    useCustomColors: useCustomColors,
-  });
-
   const eventStyle = useCustomColors
     ? {
         backgroundColor: event.backgroundColor || event.color,

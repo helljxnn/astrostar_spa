@@ -1,6 +1,12 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaPlus, FaFilter, FaCalendarAlt, FaTimes } from "react-icons/fa";
+import {
+  FaPlus,
+  FaFilter,
+  FaCalendarAlt,
+  FaTimes,
+  FaList,
+} from "react-icons/fa";
 import CalendarHeader from "./CalendarHeader";
 import CalendarControls from "./CalendarControls";
 import CalendarReportGenerator from "./CalendarReportGenerator";
@@ -91,6 +97,7 @@ const BaseCalendar = ({
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [currentView, setCurrentView] = useState(defaultView);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showAllEvents, setShowAllEvents] = useState(false); // Estado para controlar vista de eventos
 
   // Sincronizar searchTerm externo
   useEffect(() => {
@@ -106,6 +113,29 @@ const BaseCalendar = ({
     selectedFilters: selectedFilters || {},
     filters: filters || [],
   });
+
+  // Filtrar eventos del día seleccionado para el sidebar
+  const sidebarEvents = useMemo(() => {
+    if (showAllEvents) {
+      return filteredEvents;
+    }
+
+    // Filtrar eventos del día seleccionado
+    return filteredEvents.filter((event) => {
+      const eventDate = event.start || event.date;
+      if (!eventDate) return false;
+
+      const eventDateObj =
+        typeof eventDate === "string" ? new Date(eventDate) : eventDate;
+      const selectedDateObj = new Date(selectedDate);
+
+      return (
+        eventDateObj.getDate() === selectedDateObj.getDate() &&
+        eventDateObj.getMonth() === selectedDateObj.getMonth() &&
+        eventDateObj.getFullYear() === selectedDateObj.getFullYear()
+      );
+    });
+  }, [filteredEvents, selectedDate, showAllEvents]);
 
   const { goToPrevious, goToNext, goToToday, getCalendarTitle } =
     useCalendarNavigation({
@@ -130,7 +160,7 @@ const BaseCalendar = ({
         });
       }
     },
-    [selectedFilters, onFiltersChange]
+    [selectedFilters, onFiltersChange],
   );
 
   // Handle view change
@@ -152,7 +182,7 @@ const BaseCalendar = ({
         onGenerateReport(reportData);
       }
     },
-    [onGenerateReport]
+    [onGenerateReport],
   );
 
   // Color scheme configuration
@@ -404,9 +434,30 @@ const BaseCalendar = ({
         {showSidebar && (
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 min-h-[600px]">
-              <h3 className="text-lg font-semibold mb-4 text-[#B595FF]">
-                {sidebarTitle}
-              </h3>
+              {/* Header del sidebar con botón de toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-[#B595FF]">
+                  {sidebarTitle}
+                </h3>
+                <motion.button
+                  onClick={() => setShowAllEvents(!showAllEvents)}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
+                    showAllEvents
+                      ? "bg-[#B595FF] text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  title={
+                    showAllEvents
+                      ? "Mostrar solo eventos del día"
+                      : "Mostrar todos los eventos"
+                  }
+                >
+                  <FaList className="text-xs" />
+                  <span>{showAllEvents ? "Del día" : "Todos"}</span>
+                </motion.button>
+              </div>
 
               {loading ? (
                 <div className="space-y-3">
@@ -416,18 +467,22 @@ const BaseCalendar = ({
                     </div>
                   ))}
                 </div>
-              ) : filteredEvents.length === 0 ? (
+              ) : sidebarEvents.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   <FaCalendarAlt className="mx-auto text-3xl mb-2 opacity-50" />
-                  <p>{sidebarEmptyText}</p>
+                  <p>
+                    {showAllEvents
+                      ? sidebarEmptyText
+                      : "No hay actividades para este día"}
+                  </p>
                 </div>
               ) : (
                 <div
                   className={`space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto`}
                 >
                   {(sidebarMaxItems
-                    ? filteredEvents.slice(0, sidebarMaxItems)
-                    : filteredEvents
+                    ? sidebarEvents.slice(0, sidebarMaxItems)
+                    : sidebarEvents
                   ).map((event, index) => (
                     <motion.div
                       key={event.id || index}
@@ -450,10 +505,10 @@ const BaseCalendar = ({
                                 ? event.date
                                 : event.date.toLocaleDateString()
                               : event.start
-                              ? typeof event.start === "string"
-                                ? event.start
-                                : event.start.toLocaleDateString()
-                              : "Sin fecha"}
+                                ? typeof event.start === "string"
+                                  ? event.start
+                                  : event.start.toLocaleDateString()
+                                : "Sin fecha"}
                           </p>
                           {sidebarActions.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
@@ -473,8 +528,8 @@ const BaseCalendar = ({
                                       action.variant === "danger"
                                         ? "text-red-600 hover:bg-red-50"
                                         : action.variant === "warning"
-                                        ? "text-yellow-600 hover:bg-yellow-50"
-                                        : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                                          ? "text-yellow-600 hover:bg-yellow-50"
+                                          : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
                                     }`}
                                   >
                                     {action.icon && <action.icon />}

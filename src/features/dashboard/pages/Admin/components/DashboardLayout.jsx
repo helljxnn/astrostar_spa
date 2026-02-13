@@ -7,8 +7,6 @@ import ViewProfileModal from "../../../../auth/pages/ViewProfileModal";
 import EditProfileModal from "../../../../auth/pages/EditProfileModal";
 import { useAuth } from "../../../../../shared/contexts/authContext";
 import { useSidebarState } from "../../../../../shared/hooks/useSidebarState";
-import "./FinalFix.css";
-import "./ContentAboveSidebar.css";
 
 function DashboardLayout() {
   const [isViewModalOpen, setViewModalOpen] = useState(false);

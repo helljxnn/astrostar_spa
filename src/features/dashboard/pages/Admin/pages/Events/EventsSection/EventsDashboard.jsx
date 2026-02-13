@@ -147,30 +147,30 @@ const Event = () => {
       label: "Estado",
       field: "status",
       options: [
-        { value: "Programado", label: "Programado" },
-        { value: "En-curso", label: "En Curso" },
-        { value: "Finalizado", label: "Finalizado" },
-        { value: "Cancelado", label: "Cancelado" },
+        { value: "programado", label: "Programado" },
+        { value: "en-curso", label: "En Curso" },
+        { value: "finalizado", label: "Finalizado" },
+        { value: "cancelado", label: "Cancelado" },
       ],
     },
     {
       id: "type",
       label: "Tipo",
-      field: "tipo",
+      field: "type",
       options:
         referenceData.types?.map((type) => ({
-          value: type.nombre,
-          label: type.nombre,
+          value: type.name,
+          label: type.name,
         })) || [],
     },
     {
       id: "category",
       label: "Categoría",
-      field: "categoria",
+      field: "category",
       options:
-        referenceData.categories?.map((category) => ({
-          value: category.nombre,
-          label: category.nombre,
+        referenceData.eventCategories?.map((category) => ({
+          value: category.name,
+          label: category.name,
         })) || [],
     },
   ];

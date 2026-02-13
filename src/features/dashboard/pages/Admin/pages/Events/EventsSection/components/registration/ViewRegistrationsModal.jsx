@@ -168,7 +168,7 @@ const ViewRegistrationsModal = ({
   // Renderizar el modal usando un portal para evitar problemas de z-index
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto modal-overlay"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto event-modal-overlay"
       style={{
         zIndex: 999999,
         position: "fixed",
@@ -199,7 +199,7 @@ const ViewRegistrationsModal = ({
         }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
+        <div className="bg-primary-purple p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -217,7 +217,7 @@ const ViewRegistrationsModal = ({
         </div>
 
         {/* Estadísticas */}
-        <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 border-b">
+        <div className="p-6 bg-purple-50 border-b">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 20 }}

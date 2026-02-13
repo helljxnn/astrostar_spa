@@ -1,6 +1,7 @@
 // SportsCategoryModal.jsx
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import {
   useFormSportsCategoryValidation,
@@ -32,7 +33,7 @@ const SportsCategoryModal = ({
   };
 
   const [fileName, setFileName] = useState(
-    "No se ha seleccionado ningun archivo"
+    "No se ha seleccionado ningun archivo",
   );
   const [previewUrl, setPreviewUrl] = useState("");
   const [initialName, setInitialName] = useState("");
@@ -99,7 +100,7 @@ const SportsCategoryModal = ({
         category.fileName ??
           (existingImage
             ? "Imagen actual"
-            : "No se ha seleccionado ningun archivo")
+            : "No se ha seleccionado ningun archivo"),
       );
       setPreviewUrl(existingImage);
     } else {
@@ -139,7 +140,7 @@ const SportsCategoryModal = ({
       if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
         showErrorAlert(
           "Archivo muy pesado",
-          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`
+          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`,
         );
         e.target.value = "";
         setFileName("No se ha seleccionado ningun archivo");
@@ -163,7 +164,7 @@ const SportsCategoryModal = ({
     if (Object.keys(newErrors).length > 0) {
       showErrorAlert(
         "Formulario incompleto",
-        "Revisa los campos obligatorios."
+        "Revisa los campos obligatorios.",
       );
       return;
     }
@@ -171,7 +172,7 @@ const SportsCategoryModal = ({
     if (!trimmedName) {
       showErrorAlert(
         "Nombre requerido",
-        "El nombre de la categoria es obligatorio."
+        "El nombre de la categoria es obligatorio.",
       );
       return;
     }
@@ -186,7 +187,7 @@ const SportsCategoryModal = ({
     if (Number.isNaN(minA) || Number.isNaN(maxA) || minA >= maxA) {
       showErrorAlert(
         "Error en edades",
-        "Edad maxima debe ser mayor que la minima."
+        "Edad maxima debe ser mayor que la minima.",
       );
       return;
     }
@@ -270,12 +271,16 @@ const SportsCategoryModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-3">
+  const modalContent = (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-3" style={{ zIndex: 10000 }}>
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.25 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
+        style={{ zIndex: 10001 }}
+      >
         className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
@@ -429,7 +434,6 @@ const SportsCategoryModal = ({
                 <span>{descripcionLength}/200</span>
               </div>
             </div>
-
           </div>
 
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -573,14 +577,16 @@ const SportsCategoryModal = ({
               {isSubmitting
                 ? "Guardando..."
                 : isNew
-                ? "Crear Categoria"
-                : "Actualizar Categoria"}
+                  ? "Crear Categoria"
+                  : "Actualizar Categoria"}
             </button>
           </div>
         </form>
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default SportsCategoryModal;

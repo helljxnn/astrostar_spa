@@ -64,15 +64,15 @@ export const transformEventsForBaseCalendar = (dashboardEvents = []) => {
         // Configuración de color usando el adaptador específico del módulo de eventos
         color: getEventsModuleColor(
           event.estadoOriginal || event.estado,
-          event.tipo
+          event.tipo,
         ),
         backgroundColor: getEventsModuleColor(
           event.estadoOriginal || event.estado,
-          event.tipo
+          event.tipo,
         ),
         borderColor: getEventsModuleColor(
           event.estadoOriginal || event.estado,
-          event.tipo
+          event.tipo,
         ),
       };
     });
@@ -88,7 +88,7 @@ const normalizeStatus = (status) => {
 
   const statusMap = {
     Programado: "programado",
-    "En-curso": "en-curso",
+    En_curso: "en-curso",
     Finalizado: "finalizado",
     Cancelado: "cancelado",
     // Mantener compatibilidad con estados en minúsculas

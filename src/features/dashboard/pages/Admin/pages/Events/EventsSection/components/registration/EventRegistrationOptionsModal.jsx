@@ -1,16 +1,19 @@
 import { motion } from "framer-motion";
 import { FaUserPlus, FaEdit, FaEye } from "react-icons/fa";
+import { createPortal } from "react-dom";
 
-const EventRegistrationOptionsModal = ({ 
-  isOpen, 
-  onClose, 
-  onAction, 
-  position, 
+const EventRegistrationOptionsModal = ({
+  isOpen,
+  onClose,
+  onAction,
+  position,
   eventType,
-  hasRegistrations = false, // prop para saber si hay inscripciones
-  eventStatus = "" // prop para saber el estado del evento
+  hasRegistrations = false,
+  eventStatus = "",
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   // Determinar el tipo de participante según el tipo de evento
   const getParticipantType = () => {
@@ -29,15 +32,15 @@ const EventRegistrationOptionsModal = ({
   const participantType = getParticipantType();
 
   // Verificar si el evento está finalizado o cancelado
-  const isEventFinishedOrCancelled = 
-    eventStatus === "Finalizado" || 
-    eventStatus === "finalizado" || 
-    eventStatus === "Cancelado" || 
+  const isEventFinishedOrCancelled =
+    eventStatus === "Finalizado" ||
+    eventStatus === "finalizado" ||
+    eventStatus === "Cancelado" ||
     eventStatus === "cancelado";
 
   // Definir acciones según el estado del evento
   let actions = [];
-  
+
   if (isEventFinishedOrCancelled) {
     // Si el evento está finalizado o cancelado, solo mostrar "Ver inscritos"
     actions = [
@@ -69,25 +72,34 @@ const EventRegistrationOptionsModal = ({
     ];
   }
 
-  return (
+  // Renderizar el modal usando portal
+  const modalContent = (
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-[60]"
+        className="fixed inset-0 z-[9998]"
         onClick={onClose}
+        style={{
+          pointerEvents: "auto",
+          zIndex: 9999998,
+          backgroundColor: "transparent",
+        }}
       />
-      
+
       {/* Modal */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -10 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        className="fixed z-[70] bg-white rounded-xl shadow-2xl border border-gray-200 min-w-[220px] max-w-[280px]"
+        className="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 min-w-[220px] max-w-[280px]"
         style={{
           top: position?.top || "50%",
           left: position?.left || "50%",
           transform: position ? "none" : "translate(-50%, -50%)",
+          pointerEvents: "auto",
+          zIndex: 9999999,
+          position: "fixed",
         }}
       >
         <div className="p-2">
@@ -113,6 +125,9 @@ const EventRegistrationOptionsModal = ({
       </motion.div>
     </>
   );
+
+  // Renderizar usando portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default EventRegistrationOptionsModal;

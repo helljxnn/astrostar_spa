@@ -2,6 +2,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===============================================
+   Z-INDEX GLOBAL - Sistema Centralizado
+   Reglas DESPUÉS de Tailwind para mayor prioridad
+   =============================================== */
+
+/* Sidebar - z-index bajo (40) */
+.dynamic-sidebar,
+aside.dynamic-sidebar,
+aside[class*="dynamic-sidebar"] {
+  z-index: 40 !important;
+}
+
+.sidebar-overlay {
+  z-index: 39 !important;
+}
+
+/* Contenido base */
+.dashboard-main-content {
+  z-index: 1 !important;
+}
+
+.dashboard-main-content header {
+  z-index: 10 !important;
+}
+
+/* MODALES - z-index ALTO (10000) para estar por encima del sidebar */
+/* MÁXIMA PRIORIDAD - Sobrescribe TODO */
+.fixed.inset-0,
+div.fixed.inset-0,
+[class*="fixed"][class*="inset-0"],
+[class~="fixed"][class~="inset-0"] {
+  z-index: 10000 !important;
+}
+
+/* Modales de eventos del calendario */
+.event-modal-overlay {
+  z-index: 100000 !important;
+}
+
+.event-modal-content {
+  z-index: 100001 !important;
+}
+
+/* SweetAlert2 */
+.swal2-container {
+  z-index: 1000000 !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  z-index: 999999 !important;
+}
+
+/* Estilos adicionales del sidebar */
+.dynamic-sidebar,
+aside.dynamic-sidebar {
+  position: fixed !important;
+  transform: translateZ(0) !important;
+  will-change: transform !important;
+}
+
+.dashboard-main-content {
+  position: relative !important;
+  transform: none !important;
+  will-change: auto !important;
+  isolation: auto !important;
+}
+
+/* Prevenir scroll cuando hay modal abierto */
+body.modal-open {
+  overflow: hidden !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -73,32 +145,4 @@ tbody tr.enrollment-expired-row:hover {
 
 tbody tr.enrollment-expired-row:hover td {
   background-color: #fca5a5 !important;
-}
-
-/* ===============================================
-   Z-INDEX GLOBAL - Prevenir conflictos del sidebar
-   =============================================== */
-
-/* FORZAR que el sidebar SIEMPRE esté por encima */
-.dynamic-sidebar,
-aside.dynamic-sidebar {
-  z-index: 50 !important;
-  position: fixed !important;
-  /* GPU optimization for sidebar only */
-  transform: translateZ(0) !important;
-  will-change: transform !important;
-}
-
-/* FORZAR que el contenido principal esté por debajo */
-.dashboard-main-content {
-  z-index: 1 !important;
-  position: relative !important;
-  /* CRITICAL: NO GPU layers for content to prevent flickering */
-  transform: none !important;
-  will-change: auto !important;
-}
-
-/* Prevenir que modales se bloqueen cuando hay modal abierto */
-body.modal-open {
-  overflow: hidden !important;
 }

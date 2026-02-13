@@ -64,6 +64,9 @@ export const useEvents = () => {
         ? categories.map((sc) => sc.sportsCategory?.nombre).filter(Boolean)
         : [];
 
+    // Extraer categoría del evento (EventCategory)
+    const eventCategory = event.event_categories?.name || "";
+
     // Crear fechas para el calendario asegurando que no haya problemas de zona horaria
     // Usar la fecha y hora directamente sin conversión de zona horaria
     const createLocalDate = (dateStr, timeStr) => {
@@ -85,8 +88,9 @@ export const useEvents = () => {
       horaFin: event.endTime,
       ubicacion: event.location,
       telefono: event.phone,
-      categoria: categoryNames.join(", ") || "", // Para mostrar en lista
-      categoryIds: categoryIds, // Para el formulario
+      categoria: eventCategory, // Categoría del evento (EventCategory)
+      categoriasDeportivas: categoryNames.join(", ") || "", // Categorías deportivas para mostrar
+      categoryIds: categoryIds, // IDs de categorías deportivas para el formulario
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
@@ -179,7 +183,7 @@ export const useEvents = () => {
         if (response.success) {
           showSuccessAlert(
             "Evento Creado",
-            response.message || "El evento ha sido creado exitosamente"
+            response.message || "El evento ha sido creado exitosamente",
           );
 
           // Recargar la lista
@@ -195,7 +199,7 @@ export const useEvents = () => {
         setLoading(false);
       }
     },
-    [loadEvents]
+    [loadEvents],
   );
 
   /**
@@ -212,7 +216,7 @@ export const useEvents = () => {
         if (response.success) {
           showSuccessAlert(
             "Evento Actualizado",
-            response.message || "El evento ha sido actualizado exitosamente"
+            response.message || "El evento ha sido actualizado exitosamente",
           );
 
           // Recargar la lista
@@ -224,14 +228,14 @@ export const useEvents = () => {
       } catch (err) {
         showErrorAlert(
           "Error",
-          err.message || "No se pudo actualizar el evento"
+          err.message || "No se pudo actualizar el evento",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [loadEvents]
+    [loadEvents],
   );
 
   /**
@@ -247,7 +251,7 @@ export const useEvents = () => {
         if (response.success) {
           // Primero eliminar del estado local inmediatamente
           setEvents((prevEvents) =>
-            prevEvents.filter((event) => event.id !== parseInt(id))
+            prevEvents.filter((event) => event.id !== parseInt(id)),
           );
 
           showSuccessAlert("Evento Eliminado", response.message);
@@ -268,7 +272,7 @@ export const useEvents = () => {
         setLoading(false);
       }
     },
-    [loadEvents]
+    [loadEvents],
   );
 
   /**
