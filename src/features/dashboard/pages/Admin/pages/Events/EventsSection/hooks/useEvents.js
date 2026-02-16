@@ -260,32 +260,46 @@ export const useEvents = () => {
               totalAffected,
             );
 
-            // Construir mensaje de alerta
+            // Construir mensaje de alerta con el estilo del sistema
             const categoryNames = removedCategories
               .map((c) => c.nombre)
               .join(", ");
 
             let htmlMessage = `
-              <div class="text-left">
-                <p class="mb-3">
-                  Se eliminarán las siguientes categorías: 
-                  <strong class="text-red-600">${categoryNames}</strong>
-                </p>
+              <div class="text-left space-y-4">
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+                  <p class="text-gray-800 mb-2">
+                    Se eliminarán las siguientes categorías:
+                  </p>
+                  <p class="font-semibold text-red-600 text-lg">
+                    ${categoryNames}
+                  </p>
+                </div>
                 
-                <p class="mb-3">
-                  Esto afectará a <strong class="text-red-600">${totalAffected}</strong> inscripción(es):
-                </p>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                  <p class="text-gray-800">
+                    Esto afectará a <strong class="text-yellow-700 text-lg">${totalAffected}</strong> inscripción(es):
+                  </p>
+                </div>
             `;
 
             if (affectedTeams.length > 0) {
               htmlMessage += `
-                <div class="mb-3">
-                  <p class="font-semibold text-gray-700">📋 Equipos (${affectedTeams.length}):</p>
-                  <ul class="list-disc pl-5 text-sm">
+                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">🏆</span>
+                    <p class="font-semibold text-gray-800">Equipos (${affectedTeams.length})</p>
+                  </div>
+                  <ul class="space-y-2 max-h-40 overflow-y-auto">
                     ${affectedTeams
                       .map(
                         (team) => `
-                      <li>${team.name} - <span class="text-gray-600">${team.category}</span></li>
+                      <li class="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                        <span class="w-2 h-2 bg-primary-purple rounded-full"></span>
+                        <span class="font-medium text-gray-800">${team.name}</span>
+                        <span class="text-gray-500">•</span>
+                        <span class="text-gray-600">${team.category}</span>
+                      </li>
                     `,
                       )
                       .join("")}
@@ -296,13 +310,21 @@ export const useEvents = () => {
 
             if (affectedAthletes.length > 0) {
               htmlMessage += `
-                <div class="mb-3">
-                  <p class="font-semibold text-gray-700">👤 Deportistas (${affectedAthletes.length}):</p>
-                  <ul class="list-disc pl-5 text-sm">
+                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div class="flex items-center gap-2 mb-3">
+                    <span class="text-2xl">👤</span>
+                    <p class="font-semibold text-gray-800">Deportistas (${affectedAthletes.length})</p>
+                  </div>
+                  <ul class="space-y-2 max-h-40 overflow-y-auto">
                     ${affectedAthletes
                       .map(
                         (athlete) => `
-                      <li>${athlete.name} - <span class="text-gray-600">${athlete.category}</span></li>
+                      <li class="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                        <span class="w-2 h-2 bg-primary-blue rounded-full"></span>
+                        <span class="font-medium text-gray-800">${athlete.name}</span>
+                        <span class="text-gray-500">•</span>
+                        <span class="text-gray-600">${athlete.category}</span>
+                      </li>
                     `,
                       )
                       .join("")}
@@ -312,28 +334,46 @@ export const useEvents = () => {
             }
 
             htmlMessage += `
-                <p class="mt-4 text-red-600 font-semibold">
-                  ⚠️ Esta acción no se puede deshacer
-                </p>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div class="flex items-center gap-2">
+                    <span class="text-2xl">⚠️</span>
+                    <p class="text-red-700 font-semibold">
+                      Esta acción no se puede deshacer
+                    </p>
+                  </div>
+                </div>
               </div>
             `;
 
-            // Mostrar alerta de confirmación usando SweetAlert2
+            // Mostrar alerta de confirmación con estilos del sistema
             const Swal = (await import("sweetalert2")).default;
             const result = await Swal.fire({
-              title: "⚠️ Advertencia: Inscripciones Afectadas",
+              title:
+                '<span style="color: #b595ff;">⚠️ Inscripciones Afectadas</span>',
               html: htmlMessage,
               icon: "warning",
+              iconColor: "#b595ff",
               showCancelButton: true,
-              confirmButtonColor: "#d33",
-              cancelButtonColor: "#3085d6",
-              confirmButtonText: "Sí, continuar",
-              cancelButtonText: "Cancelar",
-              width: "600px",
+              confirmButtonColor: "#b595ff",
+              cancelButtonColor: "#9be9ff",
+              confirmButtonText:
+                '<span style="font-weight: 600;">Sí, continuar</span>',
+              cancelButtonText:
+                '<span style="font-weight: 600;">Cancelar</span>',
+              width: "650px",
+              padding: "2rem",
+              background: "#ffffff",
+              backdrop: "rgba(181, 149, 255, 0.1)",
               customClass: {
-                popup: "swal-wide",
+                popup: "rounded-2xl shadow-2xl",
+                title: "text-2xl font-bold mb-4",
                 htmlContainer: "text-left",
+                confirmButton:
+                  "rounded-lg px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-200",
+                cancelButton:
+                  "rounded-lg px-6 py-3 font-semibold shadow-lg hover:shadow-xl transition-all duration-200",
               },
+              buttonsStyling: true,
             });
 
             // Si el usuario cancela, no continuar
