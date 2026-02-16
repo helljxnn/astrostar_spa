@@ -578,7 +578,13 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         if (isNew) {
           await onCreateEvent(transformedData);
         } else {
-          await onUpdateEvent(transformedData.id, transformedData);
+          // Pasar las categorías originales para verificar cambios
+          const originalCategoryIds = selectedEvent?.categoryIds || [];
+          await onUpdateEvent(
+            transformedData.id,
+            transformedData,
+            originalCategoryIds,
+          );
         }
 
         // Cerrar modal solo si no hubo errores
@@ -592,7 +598,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         );
       }
     },
-    [isNew, onCreateEvent, onUpdateEvent],
+    [isNew, onCreateEvent, onUpdateEvent, selectedEvent],
   );
 
   // Cerrar todos los modales

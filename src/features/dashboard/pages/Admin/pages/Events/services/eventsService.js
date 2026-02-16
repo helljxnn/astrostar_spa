@@ -93,6 +93,21 @@ class EventsService {
       throw error;
     }
   }
+
+  /**
+   * Verificar inscripciones afectadas por cambio de categorías
+   */
+  async checkAffectedRegistrations(eventId, categoryIds) {
+    try {
+      const response = await apiClient.post(
+        `${this.endpoint}/${eventId}/check-affected-registrations`,
+        { categoryIds },
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default new EventsService();

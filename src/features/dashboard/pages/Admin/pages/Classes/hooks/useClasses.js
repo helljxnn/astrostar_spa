@@ -52,7 +52,7 @@ export const useClasses = () => {
         setLoading(false);
       }
     },
-    [filters]
+    [filters],
   );
 
   /**
@@ -60,7 +60,6 @@ export const useClasses = () => {
    */
   const createClass = async (data) => {
     try {
-      setLoading(true);
       const response = await classesService.create(data);
 
       if (response.success) {
@@ -74,8 +73,6 @@ export const useClasses = () => {
       console.error("Error creating class:", err);
       toast.error(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -84,7 +81,6 @@ export const useClasses = () => {
    */
   const updateClass = async (id, data) => {
     try {
-      setLoading(true);
       const response = await classesService.update(id, data);
 
       if (response.success) {
@@ -98,8 +94,6 @@ export const useClasses = () => {
       console.error("Error updating class:", err);
       toast.error(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -108,7 +102,6 @@ export const useClasses = () => {
    */
   const deleteClass = async (id) => {
     try {
-      setLoading(true);
       const response = await classesService.delete(id);
 
       if (response.success) {
@@ -122,8 +115,6 @@ export const useClasses = () => {
       console.error("Error deleting class:", err);
       toast.error(err.message);
       throw err;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -175,7 +166,7 @@ export const useClasses = () => {
       const response = await classesService.confirmAttendance(
         classId,
         athleteId,
-        notes
+        notes,
       );
 
       if (response.success) {
@@ -198,14 +189,14 @@ export const useClasses = () => {
     classId,
     athleteId,
     status,
-    notes = null
+    notes = null,
   ) => {
     try {
       const response = await classesService.updateAttendanceStatus(
         classId,
         athleteId,
         status,
-        notes
+        notes,
       );
 
       if (response.success) {

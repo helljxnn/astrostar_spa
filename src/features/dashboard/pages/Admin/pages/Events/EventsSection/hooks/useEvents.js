@@ -202,15 +202,158 @@ export const useEvents = () => {
     [loadEvents],
   );
 
+  // Función auxiliar para comparar arrays
+  const arraysEqual = (a, b) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
   /**
    * Actualizar evento
    */
   const updateEvent = useCallback(
-    async (id, eventData) => {
+    async (id, eventData, originalCategoryIds = []) => {
       setLoading(true);
 
       try {
         const backendData = transformEventToBackend(eventData);
+
+        console.log("🔍 DEBUG - Verificando cambios de categorías:");
+        console.log("  Original categoryIds:", originalCategoryIds);
+        console.log("  Nuevas categoryIds:", backendData.categoryIds);
+
+        // Verificar si las categorías cambiaron
+        const newCategoryIds = backendData.categoryIds || [];
+        const originalSorted = [...originalCategoryIds].sort((a, b) => a - b);
+        const newSorted = [...newCategoryIds].sort((a, b) => a - b);
+        const categoriesChanged = !arraysEqual(originalSorted, newSorted);
+
+        console.log("  Categorías cambiaron:", categoriesChanged);
+
+        // Si las categorías cambiaron, verificar inscripciones afectadas
+        if (categoriesChanged && newCategoryIds.length > 0) {
+          console.log("  ✅ Verificando inscripciones afectadas...");
+
+          const checkResult = await eventsService.checkAffectedRegistrations(
+            id,
+            newCategoryIds,
+          );
+
+          console.log("  Resultado de verificación:", checkResult);
+
+          if (
+            checkResult.success &&
+            checkResult.data.hasAffectedRegistrations
+          ) {
+            const {
+              affectedTeams,
+              affectedAthletes,
+              removedCategories,
+              totalAffected,
+            } = checkResult.data;
+
+            console.log(
+              "  ⚠️ Inscripciones afectadas encontradas:",
+              totalAffected,
+            );
+
+            // Construir mensaje de alerta
+            const categoryNames = removedCategories
+              .map((c) => c.nombre)
+              .join(", ");
+
+            let htmlMessage = `
+              <div class="text-left">
+                <p class="mb-3">
+                  Se eliminarán las siguientes categorías: 
+                  <strong class="text-red-600">${categoryNames}</strong>
+                </p>
+                
+                <p class="mb-3">
+                  Esto afectará a <strong class="text-red-600">${totalAffected}</strong> inscripción(es):
+                </p>
+            `;
+
+            if (affectedTeams.length > 0) {
+              htmlMessage += `
+                <div class="mb-3">
+                  <p class="font-semibold text-gray-700">📋 Equipos (${affectedTeams.length}):</p>
+                  <ul class="list-disc pl-5 text-sm">
+                    ${affectedTeams
+                      .map(
+                        (team) => `
+                      <li>${team.name} - <span class="text-gray-600">${team.category}</span></li>
+                    `,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              `;
+            }
+
+            if (affectedAthletes.length > 0) {
+              htmlMessage += `
+                <div class="mb-3">
+                  <p class="font-semibold text-gray-700">👤 Deportistas (${affectedAthletes.length}):</p>
+                  <ul class="list-disc pl-5 text-sm">
+                    ${affectedAthletes
+                      .map(
+                        (athlete) => `
+                      <li>${athlete.name} - <span class="text-gray-600">${athlete.category}</span></li>
+                    `,
+                      )
+                      .join("")}
+                  </ul>
+                </div>
+              `;
+            }
+
+            htmlMessage += `
+                <p class="mt-4 text-red-600 font-semibold">
+                  ⚠️ Esta acción no se puede deshacer
+                </p>
+              </div>
+            `;
+
+            // Mostrar alerta de confirmación usando SweetAlert2
+            const Swal = (await import("sweetalert2")).default;
+            const result = await Swal.fire({
+              title: "⚠️ Advertencia: Inscripciones Afectadas",
+              html: htmlMessage,
+              icon: "warning",
+              showCancelButton: true,
+              confirmButtonColor: "#d33",
+              cancelButtonColor: "#3085d6",
+              confirmButtonText: "Sí, continuar",
+              cancelButtonText: "Cancelar",
+              width: "600px",
+              customClass: {
+                popup: "swal-wide",
+                htmlContainer: "text-left",
+              },
+            });
+
+            // Si el usuario cancela, no continuar
+            if (!result.isConfirmed) {
+              console.log("  ❌ Usuario canceló la operación");
+              setLoading(false);
+              return { success: false, cancelled: true };
+            }
+
+            console.log("  ✅ Usuario confirmó, procediendo con actualización");
+          } else {
+            console.log("  ℹ️ No hay inscripciones afectadas");
+          }
+        } else {
+          console.log(
+            "  ℹ️ No se verifican inscripciones (categorías no cambiaron o están vacías)",
+          );
+        }
+
+        // Proceder con la actualización
         const response = await eventsService.update(id, backendData);
 
         if (response.success) {
@@ -226,6 +369,7 @@ export const useEvents = () => {
           throw new Error(response.message || "Error actualizando evento");
         }
       } catch (err) {
+        console.error("❌ Error en updateEvent:", err);
         showErrorAlert(
           "Error",
           err.message || "No se pudo actualizar el evento",
@@ -235,7 +379,7 @@ export const useEvents = () => {
         setLoading(false);
       }
     },
-    [loadEvents],
+    [loadEvents, arraysEqual],
   );
 
   /**

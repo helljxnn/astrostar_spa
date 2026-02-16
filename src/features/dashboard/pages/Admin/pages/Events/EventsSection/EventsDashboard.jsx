@@ -111,7 +111,9 @@ const Event = () => {
       if (isNew) {
         await createEvent(eventData);
       } else {
-        await updateEvent(eventData.id, eventData);
+        // Pasar las categorías originales para verificar cambios
+        const originalCategoryIds = selectedEvent?.categoryIds || [];
+        await updateEvent(eventData.id, eventData, originalCategoryIds);
       }
       setIsModalOpen(false);
       // Trigger refresh para que el calendario se actualice
