@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
+import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
 import {
   showSuccessAlert,
@@ -17,6 +18,7 @@ const AthleteRegistrationFormModal = ({
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [availableAthletes, setAvailableAthletes] = useState([]); // Deportistas disponibles
   const [selectedAthletes, setSelectedAthletes] = useState([]);
   const [initialAthletes, setInitialAthletes] = useState([]); // Guardar deportistas iniciales para comparar
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,6 +26,28 @@ const AthleteRegistrationFormModal = ({
   const searchTimeoutRef = useRef(null);
   const hasLoadedRef = useRef(false); // Para evitar cargas múltiples
   const lastEventIdRef = useRef(null); // Para rastrear cambios de evento
+
+  // Cargar deportistas disponibles
+  const loadAvailableAthletes = useCallback(async () => {
+    if (!event?.id) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await RegistrationsService.getAvailableAthletes();
+
+      if (response.success) {
+        const athletesData = response.data.athletes || [];
+        setAvailableAthletes(athletesData);
+      }
+    } catch (error) {
+      console.error("Error cargando deportistas disponibles:", error);
+      setAvailableAthletes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [event?.id]);
 
   // Declarar searchAthletes antes de los useEffect que lo usan
   const searchAthletes = useCallback(
@@ -35,51 +59,43 @@ const AthleteRegistrationFormModal = ({
 
       setSearching(true);
       try {
-        const response = await RegistrationsService.getAvailableAthletes();
+        // Filtrar de los deportistas disponibles
+        const filtered = availableAthletes.filter((athlete) => {
+          const fullName = `${athlete.user?.firstName || ""} ${
+            athlete.user?.lastName || ""
+          }`.toLowerCase();
+          const identification =
+            athlete.user?.identification?.toLowerCase() || "";
+          const searchLower = term.toLowerCase();
 
-        if (response.success) {
-          const athletesData = response.data.athletes || [];
+          // Buscar en nombre o documento
+          const matchesNameOrDocument =
+            fullName.includes(searchLower) ||
+            identification.includes(searchLower);
 
-          // Filtrar por término de búsqueda (nombre, documento o categoría)
-          let filtered = athletesData.filter((athlete) => {
-            const fullName = `${athlete.user?.firstName || ""} ${
-              athlete.user?.lastName || ""
-            }`.toLowerCase();
-            const identification =
-              athlete.user?.identification?.toLowerCase() || "";
-            const searchLower = term.toLowerCase();
-
-            // Buscar en nombre o documento
-            const matchesNameOrDocument =
-              fullName.includes(searchLower) ||
-              identification.includes(searchLower);
-
-            // Buscar en categorías
-            const matchesCategory = athlete.inscriptions?.some(
-              (inscription) => {
-                const categoryName =
-                  inscription.sportsCategory?.nombre?.toLowerCase() || "";
-                return categoryName.includes(searchLower);
-              }
-            );
-
-            return matchesNameOrDocument || matchesCategory;
+          // Buscar en categorías
+          const matchesCategory = athlete.inscriptions?.some((inscription) => {
+            const categoryName =
+              inscription.sportsCategory?.nombre?.toLowerCase() || "";
+            return categoryName.includes(searchLower);
           });
 
           // Excluir deportistas ya seleccionados
-          filtered = filtered.filter(
-            (athlete) => !selectedAthletes.find((sa) => sa.id === athlete.id)
+          const notSelected = !selectedAthletes.find(
+            (sa) => sa.id === athlete.id,
           );
 
-          setSearchResults(filtered);
-        }
+          return (matchesNameOrDocument || matchesCategory) && notSelected;
+        });
+
+        setSearchResults(filtered);
       } catch (err) {
         console.error("Error searching athletes:", err);
       } finally {
         setSearching(false);
       }
     },
-    [selectedAthletes]
+    [availableAthletes, selectedAthletes],
   );
 
   const loadRegisteredAthletes = useCallback(async () => {
@@ -88,7 +104,7 @@ const AthleteRegistrationFormModal = ({
     setLoading(true);
     try {
       const response = await RegistrationsService.getEventAthleteRegistrations(
-        event.id
+        event.id,
       );
 
       if (response.success && Array.isArray(response.data)) {
@@ -121,10 +137,19 @@ const AthleteRegistrationFormModal = ({
         setSearchResults([]);
         lastEventIdRef.current = event.id;
 
+        // Cargar deportistas disponibles
+        loadAvailableAthletes();
+
         // Modo unificado: siempre cargar deportistas inscritos
         hasLoadedRef.current = true;
         loadRegisteredAthletes();
       }
+
+      // Bloquear scroll del body
+      document.body.classList.add("events-modal-open");
+    } else {
+      // Desbloquear scroll del body
+      document.body.classList.remove("events-modal-open");
     }
 
     // Reset cuando se cierra el modal
@@ -132,10 +157,15 @@ const AthleteRegistrationFormModal = ({
       hasLoadedRef.current = false;
       lastEventIdRef.current = null;
     }
-  }, [isOpen, event?.id, loadRegisteredAthletes]);
+
+    // Cleanup al desmontar
+    return () => {
+      document.body.classList.remove("events-modal-open");
+    };
+  }, [isOpen, event?.id, loadRegisteredAthletes, loadAvailableAthletes]);
 
   useEffect(() => {
-    // Búsqueda con debounce
+    // Búsqueda con debounce - ahora busca en availableAthletes
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -172,6 +202,10 @@ const AthleteRegistrationFormModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    console.log("=== INICIO DE INSCRIPCIÓN ===");
+    console.log("Deportistas seleccionados:", selectedAthletes);
+    console.log("Deportistas iniciales:", initialAthletes);
+
     if (selectedAthletes.length === 0) {
       setError("Debe seleccionar al menos un deportista");
       return;
@@ -185,86 +219,93 @@ const AthleteRegistrationFormModal = ({
       const initialIds = initialAthletes.map((a) => a.id);
       const currentIds = selectedAthletes.map((a) => a.id);
 
+      console.log("IDs iniciales:", initialIds);
+      console.log("IDs actuales:", currentIds);
+
       // Deportistas nuevos a inscribir
       const athletesToAdd = selectedAthletes.filter(
-        (a) => !initialIds.includes(a.id)
+        (a) => !initialIds.includes(a.id),
       );
 
       // Deportistas a quitar (cancelar inscripción)
       const athletesToRemove = initialAthletes.filter(
-        (a) => !currentIds.includes(a.id)
+        (a) => !currentIds.includes(a.id),
       );
+
+      console.log("Deportistas a agregar:", athletesToAdd);
+      console.log("Deportistas a remover:", athletesToRemove);
 
       // Cancelar inscripciones de deportistas quitados
       if (athletesToRemove.length > 0) {
         for (const athlete of athletesToRemove) {
           if (athlete.registrationId) {
             await RegistrationsService.cancelRegistration(
-              athlete.registrationId
+              athlete.registrationId,
             );
           }
         }
       }
 
       // Inscribir deportistas nuevos
-      let response = { success: true };
       if (athletesToAdd.length > 0) {
         const athleteIdsToAdd = athletesToAdd.map((a) => a.id);
 
-        if (athleteIdsToAdd.length === 1) {
-          response = await RegistrationsService.registerAthlete({
-            serviceId: event.id,
-            athleteId: athleteIdsToAdd[0],
-          });
-        } else {
-          response = await RegistrationsService.registerAthletesBulk({
-            serviceId: event.id,
-            athleteIds: athleteIdsToAdd,
-          });
-        }
-      }
+        console.log("Deportistas a inscribir:", athleteIdsToAdd);
+        console.log("Datos a enviar:", {
+          serviceId: event.id,
+          athleteIds: athleteIdsToAdd,
+        });
 
-      if (response.success) {
+        const response = await RegistrationsService.registerAthletesBulk({
+          serviceId: event.id,
+          athleteIds: athleteIdsToAdd,
+        });
+
+        console.log("Respuesta del servidor:", response);
+
+        if (!response.success) {
+          const errorMsg =
+            response.message ||
+            response.error ||
+            "Error al inscribir deportista(s)";
+          setError(errorMsg);
+          showErrorAlert("Error", errorMsg);
+          return;
+        }
+
         // Verificar si hubo errores en la inscripción masiva
         const hasErrors =
           response.data?.errors && response.data.errors.length > 0;
         const successful = response.data?.successful || athletesToAdd.length;
-        const failed = response.data?.failed || 0;
 
         if (hasErrors && successful === 0) {
           // Todos fallaron
           setError(
-            `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`
+            `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`,
           );
           showErrorAlert(
             "Error",
-            `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`
+            `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`,
           );
-        } else {
-          // Mensaje según los cambios realizados
-          if (athletesToAdd.length > 0 || athletesToRemove.length > 0) {
-            showSuccessAlert(
-              "Cambios guardados",
-              `Se actualizó la inscripción: ${athletesToAdd.length} agregados, ${athletesToRemove.length} removidos`
-            );
-          } else {
-            showSuccessAlert(
-              "Sin cambios",
-              "No se realizaron cambios en las inscripciones"
-            );
-          }
-
-          if (onSuccess) onSuccess(response.data);
-          onClose();
+          return;
         }
-      } else {
-        const errorMsg =
-          response.message ||
-          response.error ||
-          "Error al inscribir deportista(s)";
-        setError(errorMsg);
-        showErrorAlert("Error", errorMsg);
       }
+
+      // Mensaje según los cambios realizados
+      if (athletesToAdd.length > 0 || athletesToRemove.length > 0) {
+        showSuccessAlert(
+          "Cambios guardados",
+          `Se actualizó la inscripción: ${athletesToAdd.length} agregados, ${athletesToRemove.length} removidos`,
+        );
+      } else {
+        showSuccessAlert(
+          "Sin cambios",
+          "No se realizaron cambios en las inscripciones",
+        );
+      }
+
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (err) {
       console.error("Error registering athletes:", err);
       const errorMsg =
@@ -285,24 +326,40 @@ const AthleteRegistrationFormModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
-
-      {/* Modal */}
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  const modalContent = (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto event-modal-overlay"
+      style={{
+        zIndex: 999999,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: "100vw",
+        height: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        transition={{ duration: 0.2 }}
-        className="relative z-10 w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
+        style={{
+          zIndex: 1000000,
+          position: "relative",
+          margin: "auto",
+          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: "64rem",
+        }}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white">
+        <div className="bg-primary-purple p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -351,6 +408,123 @@ const AthleteRegistrationFormModal = ({
             </div>
           </div>
 
+          {/* Mostrar deportistas disponibles cuando no hay búsqueda */}
+          {searchTerm.length === 0 && availableAthletes.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-600 mb-2 font-medium">
+                Deportistas disponibles (
+                {
+                  availableAthletes.filter(
+                    (a) => !selectedAthletes.find((sa) => sa.id === a.id),
+                  ).length
+                }
+                )
+              </p>
+              <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                {availableAthletes
+                  .filter(
+                    (athlete) =>
+                      !selectedAthletes.find((sa) => sa.id === athlete.id),
+                  )
+                  .map((athlete) => (
+                    <div
+                      key={athlete.id}
+                      onClick={() => handleSelectAthlete(athlete)}
+                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-semibold text-gray-900 text-sm truncate">
+                              {athlete.user?.firstName} {athlete.user?.lastName}
+                            </h4>
+                            {athlete.inscriptions &&
+                              athlete.inscriptions.length > 0 && (
+                                <>
+                                  {(() => {
+                                    const uniqueCategories =
+                                      athlete.inscriptions.reduce(
+                                        (acc, inscription) => {
+                                          const categoryId =
+                                            inscription.sportsCategory?.id;
+                                          if (
+                                            categoryId &&
+                                            !acc.find(
+                                              (item) =>
+                                                item.sportsCategory?.id ===
+                                                categoryId,
+                                            )
+                                          ) {
+                                            acc.push(inscription);
+                                          }
+                                          return acc;
+                                        },
+                                        [],
+                                      );
+
+                                    return (
+                                      <>
+                                        {uniqueCategories
+                                          .slice(0, 1)
+                                          .map((inscription, idx) => (
+                                            <span
+                                              key={
+                                                inscription.sportsCategory
+                                                  ?.id || idx
+                                              }
+                                              className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
+                                            >
+                                              {
+                                                inscription.sportsCategory
+                                                  ?.nombre
+                                              }
+                                            </span>
+                                          ))}
+                                        {uniqueCategories.length > 1 && (
+                                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold flex-shrink-0">
+                                            +{uniqueCategories.length - 1}
+                                          </span>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </>
+                              )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span className="truncate">
+                              ID: {athlete.user?.identification || "N/A"}
+                            </span>
+                            {athlete.user?.age && (
+                              <>
+                                <span className="text-gray-400">•</span>
+                                <span className="flex-shrink-0">
+                                  {athlete.user.age} años
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <svg
+                          className="w-5 h-5 text-primary-purple flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Resultados de búsqueda */}
           <AnimatePresence>
             {searchResults.length > 0 && (
@@ -387,14 +561,14 @@ const AthleteRegistrationFormModal = ({
                                           !acc.find(
                                             (item) =>
                                               item.sportsCategory?.id ===
-                                              categoryId
+                                              categoryId,
                                           )
                                         ) {
                                           acc.push(inscription);
                                         }
                                         return acc;
                                       },
-                                      []
+                                      [],
                                     );
 
                                   return (
@@ -462,6 +636,33 @@ const AthleteRegistrationFormModal = ({
               Escribe al menos 2 caracteres para buscar
             </p>
           )}
+
+          {searchTerm.length >= 2 &&
+            searchResults.length === 0 &&
+            !searching && (
+              <p className="text-xs text-gray-500 mt-2">
+                No se encontraron deportistas que coincidan con "{searchTerm}"
+              </p>
+            )}
+
+          {loading && (
+            <div className="mt-3 flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 text-sm text-gray-600">
+                Cargando deportistas disponibles...
+              </span>
+            </div>
+          )}
+
+          {!loading &&
+            searchTerm.length === 0 &&
+            availableAthletes.length === 0 && (
+              <div className="mt-3 text-center py-4">
+                <p className="text-sm text-gray-600">
+                  No hay deportistas disponibles
+                </p>
+              </div>
+            )}
         </div>
 
         {/* Content */}
@@ -549,14 +750,14 @@ const AthleteRegistrationFormModal = ({
                                           !acc.find(
                                             (item) =>
                                               item.sportsCategory?.id ===
-                                              categoryId
+                                              categoryId,
                                           )
                                         ) {
                                           acc.push(inscription);
                                         }
                                         return acc;
                                       },
-                                      []
+                                      [],
                                     );
 
                                   return (
@@ -706,6 +907,9 @@ const AthleteRegistrationFormModal = ({
       </motion.div>
     </div>
   );
+
+  // Renderizar el modal usando un portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default AthleteRegistrationFormModal;
