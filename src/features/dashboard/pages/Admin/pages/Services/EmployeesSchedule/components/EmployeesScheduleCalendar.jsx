@@ -261,12 +261,6 @@ export default function EmployeesScheduleCalendar({
     const hasApiNovedad =
       horario.novedad || (Array.isArray(horario.novedades) && horario.novedades.some(Boolean));
     const showNovedadBadge = hasApiNovedad && eventKey && noveltyKeys.has(eventKey);
-    const statusClass =
-      horario.estado === "Cancelado"
-        ? "bg-red-100 text-red-700"
-        : horario.estado === "Completado"
-        ? "bg-emerald-100 text-emerald-700"
-        : "bg-blue-100 text-blue-700";
 
     return (
       <div
@@ -291,13 +285,6 @@ export default function EmployeesScheduleCalendar({
           )}
         </div>
         <div className="flex items-center gap-2">
-          {horario.estado && horario.estado !== "Programado" && (
-            <span
-              className={`hidden md:inline-flex px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusClass}`}
-            >
-              {horario.estado}
-            </span>
-          )}
           <button onClick={handleCogClick} className="schedule-event-pill__action" aria-label="Acciones">
             <FaCog className="w-4 h-4" />
           </button>
@@ -339,12 +326,6 @@ export default function EmployeesScheduleCalendar({
       )
     : ROLE_COLORS.default;
 
-  const popoverStatusClass =
-    popover.horario?.estado === "Cancelado"
-      ? "bg-red-100 text-red-700"
-      : popover.horario?.estado === "Completado"
-      ? "bg-emerald-100 text-emerald-700"
-      : "bg-blue-100 text-blue-700";
   const popoverNovedades = popover.horario
     ? (Array.isArray(popover.horario.novedades)
         ? popover.horario.novedades
@@ -453,9 +434,6 @@ export default function EmployeesScheduleCalendar({
                   />
                   {popover.horario.empleado || popover.horario.title}
                 </div>
-                <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${popoverStatusClass}`}>
-                  {popover.horario.estado || "Programado"}
-                </span>
               </div>
               {popoverNovedades.length > 0 && (
                 <p className="text-xs text-gray-500 flex items-center gap-2 mb-2">

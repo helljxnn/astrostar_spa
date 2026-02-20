@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { FaCalendarAlt, FaEnvelope, FaIdCard, FaSearch, FaTimes, FaUser } from "react-icons/fa";
-import { MdSports } from "react-icons/md";
 import { Modal } from "../../../../../../../../shared/components/Modal";
 
 const getFirstValue = (...values) => {
@@ -34,7 +33,7 @@ const normalizeCategory = (category) => {
     category?.nombre,
     category?.name,
     category?.Nombre,
-    "Categoria deportiva",
+    "Categoría deportiva",
   );
   const minAgeRaw = getFirstValue(category?.edadMinima, category?.minAge, category?.EdadMinima);
   const maxAgeRaw = getFirstValue(category?.edadMaxima, category?.maxAge, category?.EdadMaxima);
@@ -144,68 +143,70 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
   }, [normalizedAthletes, searchTerm]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-4xl">
-      <div className="flex flex-col overflow-hidden rounded-3xl bg-white shadow-xl">
-        <div className="bg-gradient-to-r from-[#8a7bff] via-[#9bb9ff] to-[#89e4ff] text-white px-5 py-3 sm:px-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
-                <MdSports size={22} />
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-white/70">
-                  Listado
-                </p>
-                <h2 className="text-lg sm:text-xl font-semibold">
-                  Deportistas por categoría
-                </h2>
-                <p className="text-white/80 mt-0.5">{categoryData.nombre}</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-white/20 hover:bg-white/30 transition flex items-center justify-center"
-              aria-label="Cerrar"
-            >
-              <FaTimes size={16} />
-            </button>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
-            <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-semibold">
-              {ageRangeLabel}
-            </span>
-            <span className="px-2.5 py-1 rounded-full bg-white/20 text-white font-semibold">
-              {normalizedAthletes.length}{" "}
-              {normalizedAthletes.length === 1 ? "deportista" : "deportistas"}
-            </span>
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-5xl">
+      <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh]">
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 relative">
+          <button
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+            onClick={onClose}
+            type="button"
+            aria-label="Cerrar"
+          >
+            <FaTimes size={16} />
+          </button>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+            Deportistas por categoría
+          </h2>
+          <p className="text-center text-gray-600 mt-1 text-sm">{categoryData.nombre}</p>
         </div>
 
-        <div className="border-b bg-white px-5 py-2.5 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Buscar
-              </label>
-              <div className="relative mt-2">
-                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Buscar por nombre, documento, correo o categoría..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-primary-purple focus:border-transparent"
-                />
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Rango de edad
+              </p>
+              <div className="mt-2">
+                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${ageRangeClass}`}>
+                  {ageRangeLabel}
+                </span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 sm:text-right">
-              Resultados: {filteredAthletes.length} de {normalizedAthletes.length}
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Total deportistas
+              </p>
+              <p className="mt-2 text-sm font-semibold text-gray-800">
+                {normalizedAthletes.length}{" "}
+                {normalizedAthletes.length === 1 ? "deportista" : "deportistas"}
+              </p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Coincidencias
+              </p>
+              <p className="mt-2 text-sm font-semibold text-gray-800">
+                {filteredAthletes.length} de {normalizedAthletes.length}
+              </p>
             </div>
           </div>
-        </div>
 
-        <div className="bg-gray-50/50 px-5 py-3 sm:px-6 max-h-[55vh] overflow-y-auto">
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Buscar
+            </label>
+            <div className="relative mt-2">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nombre, documento, correo o categoría..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+              />
+            </div>
+          </div>
+
           {filteredAthletes.length === 0 ? (
             <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
               <div className="bg-gray-100 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-4">
@@ -289,7 +290,7 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
           )}
         </div>
 
-        <div className="bg-gray-50 px-5 py-2.5 flex items-center justify-between border-t">
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
           <span className="text-sm text-gray-600">
             Mostrando {filteredAthletes.length} de {normalizedAthletes.length} deportistas
           </span>

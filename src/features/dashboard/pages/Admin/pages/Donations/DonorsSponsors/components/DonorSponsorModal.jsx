@@ -151,7 +151,7 @@ const DonorSponsorModal = ({
                       <p className="text-sm font-medium text-gray-700">Tipo de Persona</p>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { value: "Juridica", label: "Persona Juridica", icon: <FaBuilding /> },
+                          { value: "Juridica", label: "Empresa / Organizacion", icon: <FaBuilding /> },
                           { value: "Natural", label: "Persona Natural", icon: <FaUser /> },
                         ].map((option) => {
                           const active = formData.tipoPersona === option.value;

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import AttendanceToggle from "./AttendanceToggle";
 
 const AttendanceTable = ({
@@ -9,12 +9,10 @@ const AttendanceTable = ({
   onObservationChange,
   onViewHistory,
 }) => (
-  <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden">
-    <div className="overflow-x-auto w-full">
-      <table className="w-full text-sm text-left text-gray-500">
-        <thead
-          className="text-gray-700 text-sm uppercase tracking-wider bg-gradient-to-r from-primary-purple to-primary-blue"
-        >
+  <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
+    <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+      <table className="w-full border-collapse text-sm font-monserrat text-left text-gray-700">
+        <thead className="text-gray-700 text-sm uppercase tracking-wider bg-gradient-to-r from-primary-purple to-primary-blue">
           <tr>
             <th className="px-6 py-4 text-left font-semibold text-white">#</th>
             <th className="px-6 py-4 text-left font-semibold text-white">Nombre</th>
@@ -29,57 +27,53 @@ const AttendanceTable = ({
             </th>
           </tr>
         </thead>
+        <tbody className="divide-y divide-gray-200">
+          {paginatedData.map((a, idx) => (
+            <tr
+              key={a.id}
+              className="bg-white hover:bg-primary-purple-light/30 transition-colors"
+            >
+              <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                {startIndex + idx + 1}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                {a.nombre}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">{a.documento}</td>
+              <td className="px-6 py-4 text-center">{a.edad}</td>
+              <td className="px-6 py-4 text-center">{a.categoria}</td>
 
-      <tbody className="divide-y divide-gray-200">
-        {paginatedData.map((a, idx) => (
-          <tr
-            key={a.id}
-            className="bg-white hover:bg-gray-50/50 transition-colors"
-          >
-            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-              {startIndex + idx + 1}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="flex flex-col">
-                <span className="font-medium text-gray-900">{a.nombre}</span>
-                <button
-                  onClick={() => onViewHistory(a)}
-                  className="mt-1 text-xs font-semibold text-primary-purple hover:text-primary-blue transition-colors text-left w-fit"
-                >
-                  Ver historial
-                </button>
-              </div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">{a.documento}</td>
-            <td className="px-6 py-4 text-center">{a.edad}</td>
-            <td className="px-6 py-4 text-center">{a.categoria}</td>
+              <td className="px-6 py-4 text-center">
+                <div className="flex items-center justify-center">
+                  <AttendanceToggle
+                    checked={a.asistencia}
+                    onChange={() => onAttendanceChange(a.id)}
+                    gradient={gradient}
+                  />
+                </div>
+              </td>
 
-            <td className="px-6 py-4 text-center">
-              <div className="flex items-center justify-center">
-                <AttendanceToggle
-                  checked={a.asistencia}
-                  onChange={() => onAttendanceChange(a.id)}
-                  gradient={gradient}
+              <td className="px-6 py-4">
+                <textarea
+                  value={a.observacion}
+                  onChange={(e) => onObservationChange(a.id, e.target.value)}
+                  placeholder="Observación..."
+                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm resize-none bg-gray-50"
+                  rows="1"
+                  style={{ minHeight: "34px", maxHeight: "60px" }}
                 />
-              </div>
-            </td>
-
-            <td className="px-6 py-4">
-              <textarea
-                value={a.observacion}
-                onChange={(e) => onObservationChange(a.id, e.target.value)}
-                placeholder="Observación..."
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm resize-none bg-gray-50"
-                rows="1"
-                style={{ minHeight: "34px", maxHeight: "60px" }}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
+
+
   </div>
 );
 
 export default AttendanceTable;
+
+
+

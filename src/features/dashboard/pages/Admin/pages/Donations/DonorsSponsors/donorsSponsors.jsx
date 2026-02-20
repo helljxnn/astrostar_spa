@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
@@ -202,8 +202,8 @@ function DonorsSponsors() {
             cellClassNames: {
               nombre: "whitespace-normal break-words",
               tipoIdentificacion: "whitespace-normal",
-              numeroIdentificacion: "whitespace-normal break-words pr-12",
-              telefono: "whitespace-normal pl-12",
+              numeroIdentificacion: "whitespace-normal break-words",
+              telefono: "whitespace-normal",
               correo: "whitespace-normal break-all",
               tipo: "whitespace-normal",
             },
@@ -235,3 +235,4 @@ function DonorsSponsors() {
 }
 
 export default DonorsSponsors;
+

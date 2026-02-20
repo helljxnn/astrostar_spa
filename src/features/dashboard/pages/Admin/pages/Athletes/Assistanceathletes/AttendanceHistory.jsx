@@ -1,253 +1,271 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ReportButton from "../../../../../../../shared/components/ReportButton";
+import { FaEye } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
+import Pagination from "../../../../../../../shared/components/Table/Pagination";
+import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
+import assistanceathletesService from "./services/AssistanceathletesService";
+
+const DEFAULT_ROWS_PER_PAGE = 10;
+const ALL_CATEGORIES = "Todas";
+const todayISO = () => new Date().toISOString().split("T")[0];
+const formatInputValue = (value) => {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+};
+
+const formatDate = (value) => {
+  if (!value) return "";
+  const parts = value.split("-");
+  if (parts.length !== 3) return value;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+};
+
+const parseDisplayDate = (value) => {
+  if (!value) return "";
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, day, month, year] = match;
+  const iso = `${year}-${month}-${day}`;
+  const date = new Date(`${iso}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (
+    date.getUTCFullYear().toString() !== year ||
+    String(date.getUTCMonth() + 1).padStart(2, "0") !== month ||
+    String(date.getUTCDate()).padStart(2, "0") !== day
+  ) {
+    return null;
+  }
+  return iso;
+};
 
 export default function AssistanceHistory() {
   const navigate = useNavigate();
-  /* ----------------------------- Estados ----------------------------- */
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+
+  const [startDate, setStartDate] = useState(() => todayISO());
+  const [endDate, setEndDate] = useState(() => todayISO());
+  const [startDateInput, setStartDateInput] = useState(() =>
+    formatDate(todayISO())
+  );
+  const [endDateInput, setEndDateInput] = useState(() =>
+    formatDate(todayISO())
+  );
   const [searchTerm, setSearchTerm] = useState("");
-  const [historyData, setHistoryData] = useState({ dates: [], athletes: [] });
-  const [filteredData, setFilteredData] = useState({ dates: [], athletes: [] });
+  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [categories, setCategories] = useState([ALL_CATEGORIES]);
 
-  /* ------------------------- Cargar Datos --------------------------- */
+  const [historyRows, setHistoryRows] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: DEFAULT_ROWS_PER_PAGE,
+    total: 0,
+    pages: 0,
+  });
+  const [range, setRange] = useState(() => ({
+    startDate: todayISO(),
+    endDate: todayISO(),
+  }));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailHistory, setDetailHistory] = useState([]);
+  const [detailAthlete, setDetailAthlete] = useState(null);
+
+  const rangeLabel = useMemo(() => {
+    const rangeStart = range.startDate || startDate;
+    const rangeEnd = range.endDate || endDate;
+
+    if (!rangeStart && !rangeEnd) return "Últimos 30 días";
+    if (rangeStart && rangeEnd && rangeStart === rangeEnd) {
+      return `Día: ${formatDate(rangeStart)}`;
+    }
+    if (rangeStart && rangeEnd) {
+      return `${formatDate(rangeStart)} - ${formatDate(rangeEnd)}`;
+    }
+    if (rangeStart) return `Desde ${formatDate(rangeStart)}`;
+    return `Hasta ${formatDate(rangeEnd)}`;
+  }, [range, startDate, endDate]);
+
+  const fetchSummary = async (page = 1, override = {}) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const effectiveStartDate =
+        override.startDate !== undefined ? override.startDate : startDate;
+      const effectiveEndDate =
+        override.endDate !== undefined ? override.endDate : endDate;
+      const effectiveSearch =
+        override.search !== undefined ? override.search : searchTerm;
+      const effectiveCategory =
+        override.category !== undefined ? override.category : categoryFilter;
+
+      const params = {
+        page,
+        limit: pagination.limit,
+      };
+      if (effectiveStartDate) params.startDate = effectiveStartDate;
+      if (effectiveEndDate) params.endDate = effectiveEndDate;
+      if (effectiveSearch.trim()) params.search = effectiveSearch.trim();
+      if (effectiveCategory && effectiveCategory !== ALL_CATEGORIES) {
+        params.categoria = effectiveCategory;
+      }
+
+      const response = await assistanceathletesService.getHistorySummary(params);
+
+      if (response && response.success) {
+        setHistoryRows(response.data || []);
+        setPagination(
+          response.pagination || {
+            page,
+            limit: pagination.limit,
+            total: 0,
+            pages: 0,
+          }
+        );
+        setRange(
+          response.range || {
+            startDate: effectiveStartDate || "",
+            endDate: effectiveEndDate || "",
+          }
+        );
+      } else {
+        setHistoryRows([]);
+        setPagination((prev) => ({ ...prev, page, total: 0, pages: 0 }));
+        setRange({
+          startDate: effectiveStartDate || "",
+          endDate: effectiveEndDate || "",
+        });
+        setError(response?.message || "No se pudo cargar el historial.");
+      }
+    } catch (errorCaught) {
+      console.error("Error loading history summary:", errorCaught);
+      setHistoryRows([]);
+      setPagination((prev) => ({ ...prev, page, total: 0, pages: 0 }));
+      setRange({
+        startDate: override.startDate !== undefined ? override.startDate : startDate,
+        endDate: override.endDate !== undefined ? override.endDate : endDate,
+      });
+      setError("No se pudo cargar el historial.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const allKeys = Object.keys(localStorage).filter((k) =>
-      k.startsWith("attendance_")
-    );
+    fetchSummary(1);
+  }, []);
 
-    if (allKeys.length === 0) {
-      const mockDates = [
-        "2024-05-12",
-        "2024-05-13",
-        "2024-05-14",
-        "2024-05-15",
-        "2024-05-16",
-        "2024-05-17",
-      ];
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await assistanceathletesService.getSportsCategories({
+          page: 1,
+          limit: 100,
+        });
+        if (response && response.success) {
+          const names = (response.data || [])
+            .map((cat) => cat.name || cat.nombre)
+            .filter(Boolean);
+          const unique = Array.from(new Set(names)).sort((a, b) =>
+            a.localeCompare(b)
+          );
+          setCategories([ALL_CATEGORIES, ...unique]);
+        }
+      } catch (errorCaught) {
+        console.error("Error loading categories:", errorCaught);
+      }
+    };
 
-      const mockAthletes = [
-        {
-          documento: "123456789",
-          nombre: "Valeria Barrientos",
-          categoria: "Sub 15",
-          asistencias: {
-            "2024-05-12": true,
-            "2024-05-13": true,
-            "2024-05-14": false,
-            "2024-05-15": true,
-            "2024-05-16": false,
-            "2024-05-17": true,
-          },
-        },
-        {
-          documento: "987654321",
-          nombre: "Anita Santos",
-          categoria: "Juvenil",
-          asistencias: {
-            "2024-05-12": true,
-            "2024-05-13": false,
-            "2024-05-14": true,
-            "2024-05-15": true,
-            "2024-05-16": false,
-            "2024-05-17": false,
-          },
-        },
-        {
-          documento: "654321789",
-          nombre: "Karen Bedoya",
-          categoria: "Sub 25",
-          asistencias: {
-            "2024-05-12": false,
-            "2024-05-13": true,
-            "2024-05-14": false,
-            "2024-05-15": false,
-            "2024-05-16": true,
-            "2024-05-17": true,
-          },
-        },
-        {
-          documento: "874563912",
-          nombre: "Yudy Alvarez",
-          categoria: "Juvenil",
-          asistencias: {
-            "2024-05-12": false,
-            "2024-05-13": true,
-            "2024-05-14": true,
-            "2024-05-15": true,
-            "2024-05-16": false,
-            "2024-05-17": true,
-          },
-        },
-      ];
+    loadCategories();
+  }, []);
 
-      setHistoryData({ dates: mockDates, athletes: mockAthletes });
-      setFilteredData({ dates: mockDates, athletes: mockAthletes });
+  const handleConsult = () => {
+    const parsedStart = parseDisplayDate(startDateInput);
+    const parsedEnd = parseDisplayDate(endDateInput);
+
+    if (parsedStart === null || parsedEnd === null) {
+      setError("Fecha inválida. Usa el formato dd/mm/aaaa.");
       return;
     }
 
-    // Si hay datos en localStorage
-    const athletesMap = new Map();
-    const dates = [];
+    if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
+      setError("La fecha inicial no puede ser mayor a la fecha final.");
+      return;
+    }
 
-    allKeys.forEach((key) => {
-      const date = key.replace("attendance_", "");
-      dates.push(date);
-      const data = JSON.parse(localStorage.getItem(key)) || [];
-
-      data.forEach((a) => {
-        if (!athletesMap.has(a.documento)) {
-          athletesMap.set(a.documento, {
-            documento: a.documento,
-            nombre: a.nombre,
-            categoria: a.categoria,
-            asistencias: {},
-            observaciones: {},
-          });
-        }
-        const athlete = athletesMap.get(a.documento);
-        athlete.asistencias[date] = a.asistencia;
-        if (a.observacion) {
-          athlete.observaciones[date] = a.observacion;
-        }
-      });
+    setStartDate(parsedStart || "");
+    setEndDate(parsedEnd || "");
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchSummary(1, {
+      startDate: parsedStart || "",
+      endDate: parsedEnd || "",
+      search: searchTerm,
+      category: categoryFilter,
     });
-
-    const athletesArray = Array.from(athletesMap.values());
-    const sortedDates = [...new Set(dates)].sort();
-
-    setHistoryData({ dates: sortedDates, athletes: athletesArray });
-    setFilteredData({ dates: sortedDates, athletes: athletesArray });
-  }, []);
-
-  const applyDateFilter = (start, end) => {
-    const { dates, athletes } = historyData;
-    const filteredDates = dates.filter(
-      (d) => (!start || d >= start) && (!end || d <= end)
-    );
-
-    const filteredAthletes = athletes.map((a) => {
-      const asistenciasFiltradas = {};
-      const observacionesFiltradas = {};
-      filteredDates.forEach((d) => {
-        if (Object.prototype.hasOwnProperty.call(a.asistencias, d)) {
-          asistenciasFiltradas[d] = a.asistencias[d];
-        }
-        if (
-          a.observaciones &&
-          Object.prototype.hasOwnProperty.call(a.observaciones, d)
-        ) {
-          observacionesFiltradas[d] = a.observaciones[d];
-        }
-      });
-      return {
-        ...a,
-        asistencias: asistenciasFiltradas,
-        observaciones: observacionesFiltradas,
-      };
-    });
-
-    setFilteredData({ dates: filteredDates, athletes: filteredAthletes });
-  };
-
-  /* ---------------------- Filtros ------------------------------ */
-  const handleConsult = () => {
-    applyDateFilter(startDate, endDate);
   };
 
   const handleReset = () => {
-    setStartDate("");
-    setEndDate("");
+    const today = todayISO();
+    setStartDate(today);
+    setEndDate(today);
+    setStartDateInput(formatDate(today));
+    setEndDateInput(formatDate(today));
     setSearchTerm("");
-    setFilteredData(historyData);
-  };
-
-  const formatDate = (value) => {
-    if (!value) return "";
-    const parts = value.split("-");
-    if (parts.length !== 3) return value;
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  };
-
-  const buildRecords = (data) => {
-    const rows = [];
-    data.athletes.forEach((athlete) => {
-      data.dates.forEach((date) => {
-        const asistencia = athlete.asistencias?.[date];
-        if (typeof asistencia !== "boolean") return;
-        const fechaFormateada = formatDate(date);
-        const asistenciaLabel = asistencia ? "Presente" : "Ausente";
-        rows.push({
-          fecha: date,
-          fechaFormateada,
-          documento: athlete.documento,
-          nombre: athlete.nombre,
-          categoria: athlete.categoria,
-          asistencia,
-          asistenciaLabel,
-          observacion: athlete.observaciones?.[date] || "",
-        });
-      });
-    });
-    return rows.sort((a, b) => {
-      if (a.fecha === b.fecha) {
-        return (a.nombre || "").localeCompare(b.nombre || "");
-      }
-      return a.fecha < b.fecha ? 1 : -1;
+    setCategoryFilter(ALL_CATEGORIES);
+    setPagination((prev) => ({ ...prev, page: 1 }));
+    fetchSummary(1, {
+      startDate: today,
+      endDate: today,
+      search: "",
+      category: ALL_CATEGORIES,
     });
   };
 
-  const orderedRecords = useMemo(
-    () => buildRecords(filteredData),
-    [filteredData]
-  );
+  const handlePageChange = (page) => {
+    setPagination((prev) => ({ ...prev, page }));
+    fetchSummary(page);
+  };
 
-  const visibleRecords = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) return orderedRecords;
-    return orderedRecords.filter((record) => {
-      return (
-        (record.nombre || "").toLowerCase().includes(term) ||
-        (record.documento || "").toLowerCase().includes(term) ||
-        (record.categoria || "").toLowerCase().includes(term)
+  const handleViewDetail = async (row) => {
+    if (!row?.athleteId) return;
+    setDetailAthlete(row);
+    setDetailOpen(true);
+    setDetailLoading(true);
+
+    try {
+      const params = {};
+      if (range.startDate) params.startDate = range.startDate;
+      if (range.endDate) params.endDate = range.endDate;
+
+      const response = await assistanceathletesService.getAthleteHistory(
+        row.athleteId,
+        params
       );
-    });
-  }, [orderedRecords, searchTerm]);
 
-  const summary = useMemo(() => {
-    const totalRecords = visibleRecords.length;
-    const present = visibleRecords.filter((r) => r.asistencia).length;
-    const absent = totalRecords - present;
-    const percent = totalRecords ? Math.round((present / totalRecords) * 100) : 0;
-    const athleteCount = new Set(visibleRecords.map((r) => r.documento)).size;
-    return {
-      totalRecords,
-      present,
-      absent,
-      percent,
-      athleteCount,
-      dateCount: filteredData.dates.length,
-    };
-  }, [visibleRecords, filteredData.dates.length]);
+      if (response && response.success) {
+        setDetailHistory(response.data || []);
+      } else {
+        setDetailHistory([]);
+      }
+    } catch (errorCaught) {
+      console.error("Error loading athlete history:", errorCaught);
+      setDetailHistory([]);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
-  /* ---------------------- Config Reporte ---------------------------- */
-  const reportColumns = [
-    { header: "Fecha", accessor: "fechaFormateada" },
-    { header: "Documento", accessor: "documento" },
-    { header: "Nombre", accessor: "nombre" },
-    { header: "Categoría", accessor: "categoria" },
-    { header: "Asistencia", accessor: "asistenciaLabel" },
-    { header: "Observación", accessor: "observacion" },
-  ];
+  const totalPages = pagination.pages || 0;
+  const totalRows = pagination.total || 0;
+  const startIndex = (pagination.page - 1) * pagination.limit;
 
-  const reportFileName =
-    startDate || endDate
-      ? `Historial_Asistencia_${startDate || "inicio"}_a_${endDate || "fin"}`
-      : "Historial_Asistencia";
-
-  /* ---------------------- Renderizado ------------------------------- */
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-questrial">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -256,26 +274,32 @@ export default function AssistanceHistory() {
             Historial de Asistencia
           </h1>
           <p className="text-sm text-gray-500 mt-1">
-            Consulta por rango de fechas y exporta el reporte.
+            Consulta por rango de fechas y revisa el resumen por deportista.
           </p>
         </div>
         <button
           onClick={() => navigate("/dashboard/athletes-assistance")}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+          className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
         >
           Volver a Asistencia
         </button>
       </div>
 
-      {/* Filtros */}
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[160px_160px_1fr_auto] gap-3 items-end">
+        <div className="grid grid-cols-1 lg:grid-cols-[160px_160px_1fr_180px_auto] gap-3 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Desde</label>
             <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              type="text"
+              value={startDateInput}
+              onChange={(e) => {
+                setStartDateInput(formatInputValue(e.target.value));
+                if (error) setError("");
+              }}
+              placeholder="dd/mm/aaaa"
+              inputMode="numeric"
+              maxLength={10}
+              title="Formato: dd/mm/aaaa"
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400 bg-white"
             />
           </div>
@@ -283,9 +307,16 @@ export default function AssistanceHistory() {
           <div className="flex flex-col gap-1">
             <label className="text-xs text-gray-500">Hasta</label>
             <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              type="text"
+              value={endDateInput}
+              onChange={(e) => {
+                setEndDateInput(formatInputValue(e.target.value));
+                if (error) setError("");
+              }}
+              placeholder="dd/mm/aaaa"
+              inputMode="numeric"
+              maxLength={10}
+              title="Formato: dd/mm/aaaa"
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400 bg-white"
             />
           </div>
@@ -293,22 +324,29 @@ export default function AssistanceHistory() {
           <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, documento o categoria..."
+            placeholder="Buscar por nombre, documento o categoría..."
             className="w-full"
           />
+
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400 bg-white"
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
 
           <div className="flex flex-wrap items-center gap-2 justify-start lg:justify-end">
             <button
               onClick={handleConsult}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
             >
               Consultar
             </button>
-            <ReportButton
-              data={visibleRecords}
-              columns={reportColumns}
-              fileName={reportFileName}
-            />
             {(startDate || endDate || searchTerm) && (
               <button
                 onClick={handleReset}
@@ -321,44 +359,25 @@ export default function AssistanceHistory() {
         </div>
       </div>
 
-      {/* Resumen */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Deportistas</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {summary.athleteCount}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Fechas</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {summary.dateCount}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Registros</p>
-          <p className="text-2xl font-bold text-gray-900">
-            {summary.totalRecords}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4">
-          <p className="text-xs text-gray-500">Asistencia</p>
-          <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-bold text-gray-900">
-              {summary.percent}%
-            </p>
-            <p className="text-xs text-gray-500">
-              {summary.present} presentes / {summary.absent} ausentes
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+        <span>
+          <span className="font-semibold text-gray-800">{totalRows}</span> deportistas
+        </span>
+        <span>
+          Rango consultado: <span className="font-semibold text-gray-800">{rangeLabel}</span>
+        </span>
       </div>
 
-      {/* Tabla */}
-      {visibleRecords.length === 0 ? (
-        <p className="text-center text-gray-500 mt-8">
-          No hay registros de asistencia.
-        </p>
+      {error && (
+        <div className="mb-4 text-sm text-red-600">{error}</div>
+      )}
+
+      {loading ? (
+        <div className="text-center text-gray-500 py-8">Cargando historial...</div>
+      ) : historyRows.length === 0 ? (
+        <div className="text-center text-gray-500 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          No hay registros de asistencia en el rango seleccionado.
+        </div>
       ) : (
         <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto w-full">
@@ -366,44 +385,50 @@ export default function AssistanceHistory() {
               <thead className="text-white uppercase tracking-wide bg-gradient-to-r from-primary-purple to-primary-blue text-xs">
                 <tr>
                   <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Fecha</th>
                   <th className="px-4 py-3">Documento</th>
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3">Categoría</th>
-                  <th className="px-4 py-3 text-center">Asistencia</th>
-                  <th className="px-4 py-3">Observación</th>
+                  <th className="px-4 py-3 text-center">Presentes</th>
+                  <th className="px-4 py-3 text-center">Ausentes</th>
+                  <th className="px-4 py-3 text-center">Total</th>
+                  <th className="px-4 py-3 text-center">% Asistencia</th>
+                  <th className="px-4 py-3 text-center">Detalle</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {visibleRecords.map((item, idx) => (
+                {historyRows.map((item, idx) => (
                   <tr
-                    key={`${item.documento}-${item.fecha}-${idx}`}
+                    key={`${item.athleteId}-${idx}`}
                     className="hover:bg-gray-50/50 transition"
                   >
-                    <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {item.fechaFormateada || formatDate(item.fecha)}
+                    <td className="px-4 py-3 text-gray-500">
+                      {startIndex + idx + 1}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.documento}
                     </td>
-                    <td className="px-4 py-3 font-medium text-gray-800">
+                    <td className="px-4 py-3 text-gray-800">
                       {item.nombre}
                     </td>
-                    <td className="px-4 py-3">{item.categoria || "-"}</td>
+                    <td className="px-4 py-3">
+                      {item.categoria || "Sin categoría"}
+                    </td>
+                    <td className="px-4 py-3 text-center">{item.present}</td>
+                    <td className="px-4 py-3 text-center">{item.absent}</td>
+                    <td className="px-4 py-3 text-center">{item.total}</td>
                     <td className="px-4 py-3 text-center">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          item.asistencia
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {item.asistencia ? "Presente" : "Ausente"}
+                      <span className="px-2 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700">
+                        {item.percent}%
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {item.observacion || "-"}
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => handleViewDetail(item)}
+                        className="p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-blue hover:text-white transition-colors"
+                        title="Ver detalle"
+                      >
+                        <FaEye />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -412,6 +437,29 @@ export default function AssistanceHistory() {
           </div>
         </div>
       )}
+
+      {totalPages > 1 && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={pagination.page}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalRows={totalRows}
+            rowsPerPage={pagination.limit}
+            startIndex={startIndex}
+          />
+        </div>
+      )}
+
+      <AthleteAttendanceHistoryModal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        athleteName={detailAthlete?.nombre || ""}
+        history={detailHistory}
+        loading={detailLoading}
+        rangeLabel={rangeLabel}
+      />
     </div>
   );
 }
+

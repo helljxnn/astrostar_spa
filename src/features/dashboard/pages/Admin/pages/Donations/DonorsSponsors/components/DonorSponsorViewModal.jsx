@@ -24,6 +24,9 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
   const isSponsor = donorData.tipo === "Patrocinador";
   const phoneLabel = isJuridica ? "Tel\u00e9fono de contacto" : "Tel\u00e9fono";
   const emailLabel = isJuridica ? "Correo del representante" : "Correo Electr\u00f3nico";
+  const tipoPersonaLabel = isJuridica
+    ? "Empresa / Organizacion"
+    : "Persona Natural";
 
   const formatDate = (dateString) => {
     if (!dateString) return "No especificado";
@@ -48,7 +51,7 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
 
   const fields = [
     { label: "Tipo", value: donorData.tipo },
-    { label: "Tipo de Persona", value: donorData.tipoPersona },
+    { label: "Tipo de Persona", value: tipoPersonaLabel },
     { label: isJuridica ? "Razon Social" : "Nombre completo", value: baseNombre },
     { label: isJuridica ? "NIT" : "Numero de documento", value: baseIdent },
     ...(isNatural

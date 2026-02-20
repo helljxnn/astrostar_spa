@@ -60,12 +60,77 @@ const normalizeFrequency = (value = "") => {
   return frequency || "semana";
 };
 
+const normalizeTime = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+  const hours = String(match[1]).padStart(2, "0");
+  const minutes = String(match[2]).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const parseTimeRange = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/([01]?\d|2[0-3]):([0-5]\d)\s*-\s*([01]?\d|2[0-3]):([0-5]\d)/);
+  if (!match) return null;
+  const startTime = normalizeTime(`${match[1]}:${match[2]}`);
+  const endTime = normalizeTime(`${match[3]}:${match[4]}`);
+  if (!startTime || !endTime) return null;
+  return { startTime, endTime };
+};
+
+const normalizeNovelty = (novelty, fallbackDate) => {
+  if (!novelty) return null;
+  const dateSource = novelty.date || novelty.fecha || fallbackDate;
+  const date = dateSource ? startOfDay(new Date(dateSource)) : null;
+  if (!date || Number.isNaN(date.getTime())) return null;
+
+  const rawType = String(novelty.type || novelty.tipoCancelacion || "").toLowerCase();
+  const type = rawType === "time" ? "time" : "full";
+
+  let startTime = normalizeTime(novelty.startTime || novelty.horaInicio || "");
+  let endTime = normalizeTime(novelty.endTime || novelty.horaFin || "");
+  if (!startTime || !endTime) {
+    const parsed = parseTimeRange(novelty.tiempoCancelacion || novelty.timeRange || "");
+    if (parsed) {
+      startTime = parsed.startTime;
+      endTime = parsed.endTime;
+    }
+  }
+
+  const reason =
+    novelty.reason ||
+    novelty.motivoCancelacion ||
+    novelty.explicacionTiempo ||
+    novelty.descripcion ||
+    "";
+
+  return {
+    id: novelty.id,
+    date,
+    type,
+    startTime,
+    endTime,
+    reason: reason ? String(reason).trim() : "",
+  };
+};
+
 const normalizeSchedule = (rawSchedule) => {
   if (!rawSchedule) return null;
   const dateSource = rawSchedule.scheduleDate || rawSchedule.fecha;
   const scheduleDate = dateSource ? new Date(dateSource) : null;
   if (scheduleDate && Number.isNaN(scheduleDate.getTime())) return null;
   if (scheduleDate) scheduleDate.setHours(0, 0, 0, 0);
+
+  const rawNovelties =
+    rawSchedule.novelties ||
+    rawSchedule.novedadesDetalle ||
+    rawSchedule.novedadesDetalleHorario ||
+    [];
+  const noveltiesList = Array.isArray(rawNovelties) ? rawNovelties : [rawNovelties];
+  const novelties = noveltiesList
+    .map((item) => normalizeNovelty(item, scheduleDate))
+    .filter(Boolean);
 
   return {
     id: rawSchedule.id,
@@ -75,7 +140,7 @@ const normalizeSchedule = (rawSchedule) => {
     endTime: rawSchedule.endTime || rawSchedule.horaFin || "",
     recurrence: rawSchedule.recurrence || rawSchedule.repeticion || "no",
     customRecurrence: parseCustomRecurrence(rawSchedule.customRecurrence),
-    status: rawSchedule.status || rawSchedule.estado || "Programado",
+    novelties,
   };
 };
 
@@ -93,6 +158,37 @@ const minutesToTimeString = (minutes) => {
   const hrs = String(Math.floor(minutes / 60)).padStart(2, "0");
   const mins = String(minutes % 60).padStart(2, "0");
   return `${hrs}:${mins}`;
+};
+
+const isTimeRangeOverlap = (startA, endA, startB, endB) => {
+  if ([startA, endA, startB, endB].some((value) => value === null)) return false;
+  return startA < endB && endA > startB;
+};
+
+const getNoveltiesForDate = (schedule, date) => {
+  const novelties = Array.isArray(schedule?.novelties) ? schedule.novelties : [];
+  return novelties.filter((novelty) => isSameDay(novelty.date, date));
+};
+
+const hasFullDayNovelty = (schedule, date) =>
+  getNoveltiesForDate(schedule, date).some((novelty) => novelty?.type === "full");
+
+const isTimeBlockedByNovelty = (schedule, dateTime, durationMinutes) => {
+  const novelties = getNoveltiesForDate(schedule, dateTime);
+  if (novelties.length === 0) return false;
+  if (novelties.some((novelty) => novelty?.type === "full")) return true;
+
+  const startMinutes = dateTime.getHours() * 60 + dateTime.getMinutes();
+  const duration = Number(durationMinutes || 0);
+  const endMinutes = startMinutes + duration;
+
+  return novelties.some((novelty) => {
+    if (novelty?.type !== "time") return false;
+    const noveltyStart = timeStringToMinutes(novelty.startTime);
+    const noveltyEnd = timeStringToMinutes(novelty.endTime);
+    if (noveltyStart === null || noveltyEnd === null) return true;
+    return isTimeRangeOverlap(startMinutes, endMinutes, noveltyStart, noveltyEnd);
+  });
 };
 
 const isValidScheduleWindow = (schedule) => {
@@ -213,9 +309,9 @@ const isScheduleActiveOnDate = (schedule, date) => {
 const getSchedulesForDate = (schedules, date) =>
   schedules.filter(
     (schedule) =>
-      schedule.status !== "Cancelado" &&
       isValidScheduleWindow(schedule) &&
-      isScheduleActiveOnDate(schedule, date)
+      isScheduleActiveOnDate(schedule, date) &&
+      !hasFullDayNovelty(schedule, date)
   );
 
 const getScheduleBoundsForDate = (schedules, date) => {
@@ -420,9 +516,24 @@ const AppointmentForm = ({
       .map((schedule) => `${schedule.startTime} - ${schedule.endTime}`)
       .join(" / ");
 
+    const noveltyRanges = daySchedules
+      .flatMap((schedule) =>
+        getNoveltiesForDate(schedule, values.start)
+          .filter(
+            (novelty) =>
+              novelty?.type === "time" && novelty?.startTime && novelty?.endTime
+          )
+          .map((novelty) => `${novelty.startTime} - ${novelty.endTime}`)
+      )
+      .filter(Boolean);
+    const noveltyNote =
+      noveltyRanges.length > 0
+        ? ` (Novedad en: ${noveltyRanges.join(" / ")})`
+        : "";
+
     return {
       tone: "success",
-      text: `Horario disponible: ${label}`,
+      text: `Horario disponible: ${label}${noveltyNote}`,
     };
   }, [
     values.specialistId,
@@ -523,9 +634,13 @@ const AppointmentForm = ({
       const scheduleEnd = timeStringToMinutes(schedule.endTime);
       if (scheduleStart === null || scheduleEnd === null) return false;
       if (duration && duration > 0) {
-        return startMinutes >= scheduleStart && endMinutes <= scheduleEnd;
+        const isWithin = startMinutes >= scheduleStart && endMinutes <= scheduleEnd;
+        if (!isWithin) return false;
+        return !isTimeBlockedByNovelty(schedule, dateTime, duration);
       }
-      return startMinutes >= scheduleStart && startMinutes < scheduleEnd;
+      const isWithin = startMinutes >= scheduleStart && startMinutes < scheduleEnd;
+      if (!isWithin) return false;
+      return !isTimeBlockedByNovelty(schedule, dateTime, duration);
     });
   };
 

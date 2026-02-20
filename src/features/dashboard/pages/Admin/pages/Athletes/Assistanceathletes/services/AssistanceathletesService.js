@@ -16,6 +16,10 @@ class AssistanceathletesService {
     });
   }
 
+  async getHistorySummary(params = {}) {
+    return apiClient.get("/assistance-athletes/history/summary", params);
+  }
+
   async getSportsCategories(params = {}) {
     return apiClient.get("/sports-categories", params);
   }
