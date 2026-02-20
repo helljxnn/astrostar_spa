@@ -8,7 +8,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
-import { showSuccessAlert, showErrorAlert } from '../../../../../../../shared/utils/alerts';
+import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../shared/utils/alerts';
 import materialsService from './services/MaterialsService';
 
 const MaterialsCatalog = () => {
@@ -42,10 +42,6 @@ const MaterialsCatalog = () => {
       }
     } catch (error) {
       console.error('Error al cargar materiales:', error);
-      // Si el backend no existe (404), mostrar mensaje amigable
-      if (error.message === 'Route not found') {
-        console.warn('⚠️ Backend no implementado aún. Esperando endpoints de /api/materials');
-      }
       // No mostrar alerta, solo establecer datos vacíos
       setMaterials([]);
       setTotalRows(0);
@@ -58,7 +54,7 @@ const MaterialsCatalog = () => {
   const startIndex = (currentPage - 1) * rowsPerPage;
 
   const handleCreate = () => {
-    if (!hasPermission('sportsEquipment', 'Crear')) {
+    if (!hasPermission('materials', 'Crear')) {
       showErrorAlert('Sin permisos', 'No tienes permisos para crear materiales');
       return;
     }
@@ -67,7 +63,7 @@ const MaterialsCatalog = () => {
   };
 
   const handleEdit = (material) => {
-    if (!hasPermission('sportsEquipment', 'Editar')) {
+    if (!hasPermission('materials', 'Editar')) {
       showErrorAlert('Sin permisos', 'No tienes permisos para editar materiales');
       return;
     }
@@ -78,7 +74,7 @@ const MaterialsCatalog = () => {
   const handleSave = async (materialData, materialId = null) => {
     const isEditing = !!materialId;
     
-    if (!hasPermission('sportsEquipment', isEditing ? 'Editar' : 'Crear')) {
+    if (!hasPermission('materials', isEditing ? 'Editar' : 'Crear')) {
       showErrorAlert('Sin permisos', `No tienes permisos para ${isEditing ? 'editar' : 'crear'} materiales`);
       return false;
     }
@@ -111,12 +107,47 @@ const MaterialsCatalog = () => {
   };
 
   const handleView = (material) => {
-    if (!hasPermission('sportsEquipment', 'Ver')) {
+    if (!hasPermission('materials', 'Ver')) {
       showErrorAlert('Sin permisos', 'No tienes permisos para ver detalles de materiales');
       return;
     }
     setSelectedMaterial(material);
     setIsViewModalOpen(true);
+  };
+
+  const handleDelete = async (material) => {
+    if (!hasPermission('materials', 'Eliminar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar materiales');
+      return;
+    }
+
+    const confirmResult = await showDeleteAlert(
+      "¿Estás seguro?",
+      `Se eliminará el material "${material.nombre}". Esta acción no se puede deshacer.\n\nNota: No se puede eliminar si tiene movimientos asociados o stock.`,
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+    );
+    
+    if (!confirmResult.isConfirmed) return;
+
+    try {
+      const response = await materialsService.deleteMaterial(material.id);
+      
+      if (response.success) {
+        showSuccessAlert(
+          "Material Eliminado", 
+          `El material "${material.nombre}" fue eliminado correctamente.`
+        );
+        fetchMaterials();
+      } else {
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo eliminar el material"
+        );
+      }
+    } catch (error) {
+      console.error('Error al eliminar material:', error);
+      showErrorAlert("Error", error.message || "Error al eliminar el material en el servidor");
+    }
   };
 
   // Preparar datos para tabla
@@ -151,7 +182,7 @@ const MaterialsCatalog = () => {
           />
 
           <div className="flex items-center gap-3">
-            <PermissionGuard module="sportsEquipment" action="Ver">
+            <PermissionGuard module="materials" action="Ver">
               <ReportButton
                 data={reportData}
                 fileName="Reporte_Materiales"
@@ -165,7 +196,7 @@ const MaterialsCatalog = () => {
               />
             </PermissionGuard>
 
-            <PermissionGuard module="sportsEquipment" action="Crear">
+            <PermissionGuard module="materials" action="Crear">
               <button
                 onClick={handleCreate}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
@@ -193,21 +224,24 @@ const MaterialsCatalog = () => {
             Inactivo: "bg-red-100 text-red-800",
           },
         }}
-        onView={hasPermission('sportsEquipment', 'Ver') ? handleView : null}
-        onEdit={hasPermission('sportsEquipment', 'Editar') ? handleEdit : null}
+        onView={hasPermission('materials', 'Ver') ? handleView : null}
+        onEdit={hasPermission('materials', 'Editar') ? handleEdit : null}
+        onDelete={hasPermission('materials', 'Eliminar') ? handleDelete : null}
         buttonConfig={{
           view: () => ({
-            show: hasPermission('sportsEquipment', 'Ver'),
+            show: hasPermission('materials', 'Ver'),
             disabled: false,
             title: "Ver detalles",
           }),
           edit: () => ({
-            show: hasPermission('sportsEquipment', 'Editar'),
+            show: hasPermission('materials', 'Editar'),
             disabled: false,
             title: "Editar material",
           }),
           delete: () => ({
-            show: false,
+            show: hasPermission('materials', 'Eliminar'),
+            disabled: false,
+            title: "Eliminar material",
           }),
         }}
       />
@@ -243,10 +277,11 @@ const MaterialsCatalog = () => {
         }}
         material={selectedMaterial}
         onEdit={handleEdit}
-        canEdit={hasPermission('sportsEquipment', 'Editar')}
+        canEdit={hasPermission('materials', 'Editar')}
       />
     </div>
   );
 };
 
 export default MaterialsCatalog;
+

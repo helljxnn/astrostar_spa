@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaPlus } from 'react-icons/fa';
 import CategoryModal from "./components/CategoryModal";
@@ -41,10 +41,15 @@ const MaterialCategories = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      
+      // Si hay búsqueda, traer todos los registros para filtrar localmente
+      const limit = searchTerm ? 1000 : rowsPerPage;
+      const page = searchTerm ? 1 : currentPage;
+      
       const response = await categoriesService.getCategories({
-        page: currentPage,
-        limit: rowsPerPage,
-        search: searchTerm
+        page,
+        limit,
+        search: '' // No enviar search al backend, filtraremos localmente
       });
       
       if (response.success) {
@@ -60,7 +65,38 @@ const MaterialCategories = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return categories;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return categories.filter((category) => {
+      // Campos de texto general (búsqueda por contiene)
+      const textFields = [
+        category.nombre,
+        category.descripcion,
+      ];
+
+      const textMatch = textFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower)
+      );
+
+      // Campo de estado (búsqueda exacta de palabra completa)
+      const estadoLower = category.estado?.toLowerCase();
+
+      // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
+      const statusMatch = estadoLower === searchLower;
+
+      return textMatch || statusMatch;
+    });
+  }, [categories, searchTerm]);
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = searchTerm ? filteredData : categories;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
 
   const handleCreate = () => {
@@ -131,9 +167,18 @@ const MaterialCategories = () => {
       return;
     }
 
+    // Verificar si tiene materiales asociados
+    if (category.materialsCount > 0) {
+      showErrorAlert(
+        'No se puede eliminar',
+        `Esta categoría tiene ${category.materialsCount} material(es) asociado(s). No se puede eliminar.`
+      );
+      return;
+    }
+
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
-      `Se eliminará la categoría "${category.nombre}". Esta acción no se puede deshacer.\n\nNota: No se puede eliminar si tiene materiales asociados.`,
+      `Se eliminará la categoría "${category.nombre}". Esta acción no se puede deshacer.`,
       { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
     );
     
@@ -161,8 +206,12 @@ const MaterialCategories = () => {
   };
 
   // Preparar datos para tabla
-  const tableData = categories.map(c => ({
+  const tableData = displayData.map(c => ({
     ...c,
+    nombreTruncated: c.nombre.length > 30 ? c.nombre.substring(0, 30) + '...' : c.nombre,
+    descripcionTruncated: c.descripcion 
+      ? (c.descripcion.length > 50 ? c.descripcion.substring(0, 50) + '...' : c.descripcion)
+      : 'Sin descripción',
   }));
 
   return (
@@ -201,7 +250,7 @@ const MaterialCategories = () => {
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombre", "descripcion"],
+          dataPropertys: ["nombreTruncated", "descripcionTruncated"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
@@ -222,21 +271,23 @@ const MaterialCategories = () => {
             disabled: false,
             title: "Editar categoría",
           }),
-          delete: () => ({
+          delete: (category) => ({
             show: hasPermission('materialCategories', 'Eliminar'),
-            disabled: false,
-            title: "Eliminar categoría",
+            disabled: category.materialsCount > 0,
+            title: category.materialsCount > 0 
+              ? "Tiene materiales asociados" 
+              : "Eliminar categoría",
           }),
         }}
       />
 
       {/* Paginación */}
-      {totalRows > rowsPerPage && (
+      {displayTotalRows > rowsPerPage && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          totalRows={totalRows}
+          totalRows={displayTotalRows}
           rowsPerPage={rowsPerPage}
           startIndex={startIndex}
         />

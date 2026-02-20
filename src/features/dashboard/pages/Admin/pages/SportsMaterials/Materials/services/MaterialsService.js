@@ -6,16 +6,32 @@ class MaterialsService {
   }
 
   async getMaterials(params = {}) {
-    const { page = 1, limit = 10, search = "" } = params;
+    const { page = 1, limit = 10, search = "", categoriaId = "", estado = "" } = params;
 
-    const response = await apiClient.get(this.endpoint, {
+    const queryParams = {
       page,
       limit,
       search: search.toString().trim(),
-    });
+    };
 
-    if (response.success && response.data) {
-      response.data = response.data.map(material => this.transformFromBackend(material));
+    if (categoriaId) {
+      queryParams.categoriaId = categoriaId;
+    }
+
+    if (estado) {
+      queryParams.estado = estado;
+    }
+
+    const response = await apiClient.get(this.endpoint, queryParams);
+
+    if (response.success && response.materials) {
+      response.data = response.materials.map(material => this.transformFromBackend(material));
+      response.pagination = {
+        total: response.total,
+        page: response.page,
+        limit: response.limit,
+        pages: response.pages
+      };
     }
 
     return response;
@@ -38,17 +54,16 @@ class MaterialsService {
     const payload = {
       nombre: materialData.nombre.trim(),
       categoria_id: materialData.categoriaId,
-      categoria: materialData.categoria.trim(),
-      descripcion: materialData.descripcion?.trim() || '',
-      unidad: materialData.unidad,
-      stock_minimo: materialData.stockMinimo,
-      estado: materialData.estado || 'Activo'
+      descripcion: materialData.descripcion?.trim() || ''
     };
-
-    console.log('Creando material:', payload);
 
     try {
       const response = await apiClient.post(this.endpoint, payload);
+      
+      if (response.success && response.data) {
+        response.data = this.transformFromBackend(response.data);
+      }
+      
       return response;
     } catch (error) {
       console.error('Error al crear material:', error);
@@ -64,16 +79,17 @@ class MaterialsService {
     const payload = {
       nombre: materialData.nombre.trim(),
       categoria_id: materialData.categoriaId,
-      categoria: materialData.categoria.trim(),
       descripcion: materialData.descripcion?.trim() || '',
-      unidad: materialData.unidad,
-      stock_minimo: materialData.stockMinimo,
       estado: materialData.estado
     };
 
-    console.log('Actualizando material:', { id, ...payload });
-
-    return apiClient.put(`${this.endpoint}/${id}`, payload);
+    const response = await apiClient.put(`${this.endpoint}/${id}`, payload);
+    
+    if (response.success && response.data) {
+      response.data = this.transformFromBackend(response.data);
+    }
+    
+    return response;
   }
 
   async toggleStatus(id) {
@@ -88,19 +104,78 @@ class MaterialsService {
     try {
       const params = {
         nombre: nombre.trim(),
-        categoria_id: categoriaId,
+        categoriaId: categoriaId,
       };
       
       if (excludeId) {
-        params.exclude_id = excludeId;
+        params.excludeId = excludeId;
       }
 
+      console.log('🔍 Validando nombre de material:', params);
       const response = await apiClient.get(`${this.endpoint}/check-name`, params);
+      console.log('✅ Respuesta de validación:', response);
       return response;
     } catch (error) {
       console.error('Error al verificar nombre de material:', error);
       throw error;
     }
+  }
+
+  async checkMaterialExists(nombre, excludeId = null) {
+    try {
+      const params = {
+        nombre: nombre.trim()
+      };
+
+      if (excludeId) {
+        params.excludeId = excludeId;
+      }
+
+      const response = await apiClient.get(`${this.endpoint}/check-name`, params);
+      return response;
+    } catch (error) {
+      console.error('Error al verificar material:', error);
+      throw error;
+    }
+  }
+
+  async deleteMaterial(id) {
+    if (!id) {
+      throw new Error("ID del material es requerido");
+    }
+    
+    return apiClient.delete(`${this.endpoint}/${id}`);
+  }
+
+  async getMaterialHistory(id) {
+    if (!id) {
+      throw new Error("ID del material es requerido");
+    }
+    
+    const response = await apiClient.get(`${this.endpoint}/${id}/history`);
+    
+    if (response.success && response.data) {
+      response.data = response.data.map(movement => this.transformMovementFromBackend(movement));
+    }
+    
+    return response;
+  }
+
+  transformMovementFromBackend(backendData) {
+    if (!backendData) return null;
+
+    return {
+      id: backendData.id,
+      tipoMovimiento: backendData.tipoMovimiento || backendData.tipo_movimiento || backendData.movementType || '',
+      cantidad: backendData.cantidad || backendData.quantity || 0,
+      origen: backendData.origen || backendData.origin || backendData.source || '',
+      observaciones: backendData.observaciones || backendData.notes || backendData.observations || '',
+      stockAnterior: backendData.stockAnterior || backendData.stock_anterior || backendData.previousStock || 0,
+      stockNuevo: backendData.stockNuevo || backendData.stock_nuevo || backendData.newStock || 0,
+      fecha: backendData.fecha || backendData.date || backendData.createdAt || backendData.created_at || '',
+      createdBy: backendData.createdBy || backendData.created_by || '',
+      createdByName: backendData.createdByName || backendData.created_by_name || 'Sistema',
+    };
   }
 
   transformFromBackend(backendData) {
@@ -110,16 +185,15 @@ class MaterialsService {
       id: backendData.id,
       nombre: backendData.nombre || backendData.name || '',
       categoria: backendData.categoria || backendData.category || '',
-      categoriaId: backendData.categoriaId || backendData.categoria_id || backendData.categoryId || '',
+      categoriaId: backendData.categoriaId || backendData.categoria_id || backendData.categoryId || null,
       descripcion: backendData.descripcion || backendData.description || '',
-      unidad: backendData.unidad || backendData.unit || 'Unidad',
       stockActual: backendData.stockActual || backendData.stock_actual || backendData.currentStock || 0,
-      stockMinimo: backendData.stockMinimo || backendData.stock_minimo || backendData.minStock || 0,
       estado: backendData.estado || backendData.status || 'Activo',
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',
-      createdBy: backendData.createdBy || backendData.created_by || '',
-      updatedBy: backendData.updatedBy || backendData.updated_by || '',
+      createdBy: backendData.createdBy || backendData.created_by || null,
+      updatedBy: backendData.updatedBy || backendData.updated_by || null,
+      category: backendData.category || null,
     };
   }
 }

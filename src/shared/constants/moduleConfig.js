@@ -178,8 +178,8 @@ export const MODULE_CONFIG = {
   },
 
   // === MATERIALES ===
-  sportsEquipment: {
-    id: "sportsEquipment",
+  materials: {
+    id: "materials",
     name: "Gestión de Materiales",
     path: "/dashboard/materials",
     icon: "GiWeightLiftingUp",
@@ -227,7 +227,7 @@ export const MODULE_GROUPS = {
     id: "equipment",
     name: "Materiales",
     icon: "GiWeightLiftingUp",
-    children: ["sportsEquipment", "materialCategories", "materialsRegistry", "providers"],
+    children: ["materials", "materialCategories", "materialsRegistry", "providers"],
   },
 
   services: {

@@ -21,68 +21,83 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4">
-            {/* Nombre */}
-            <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
-                Nombre del Material
-              </label>
-              <p className="text-lg font-semibold text-gray-900">{material.nombre}</p>
-            </div>
-
+        <div className="flex-1 overflow-y-auto p-3">
+          <div className="space-y-3">
             {/* Categoría */}
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Categoría
               </label>
-              <p className="text-lg text-gray-900">{material.categoria}</p>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                {material.categoria}
+              </div>
+            </div>
+
+            {/* Nombre del Material */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre del Material
+              </label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                {material.nombre}
+              </div>
+            </div>
+
+            {/* Descripción */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción
+              </label>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 min-h-[80px]">
+                {material.descripcion || 'Sin descripción'}
+              </div>
             </div>
 
             {/* Stock Actual */}
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Stock Actual
               </label>
-              <p className="text-2xl font-bold text-primary-blue">{material.stockActual || 0} unidades</p>
+              <div 
+                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
+                title="El stock solo se modifica desde Ingresos de Materiales"
+              >
+                {material.stockActual || 0} unidades
+              </div>
             </div>
 
             {/* Estado */}
             <div>
-              <label className="block text-sm font-medium text-gray-500 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Estado
               </label>
-              <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                material.estado === 'Activo' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
+              <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
                 {material.estado}
-              </span>
+              </div>
             </div>
 
-            {/* Descripción */}
-            {material.descripcion && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">
-                  Descripción
-                </label>
-                <p className="text-gray-900 whitespace-pre-wrap">{material.descripcion}</p>
-              </div>
-            )}
-
-            {/* Información de auditoría */}
-            <div className="border-t pt-4 mt-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Información del Sistema</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* Información del Sistema */}
+            <div className="border-t border-gray-200 pt-3 mt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Información del Sistema
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <span className="text-gray-500">Creado:</span>
-                  <p className="text-gray-900">{formatDate(material.createdAt)}</p>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Fecha de Creación
+                  </label>
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                    {formatDate(material.createdAt)}
+                  </div>
                 </div>
                 {material.updatedAt && (
                   <div>
-                    <span className="text-gray-500">Última actualización:</span>
-                    <p className="text-gray-900">{formatDate(material.updatedAt)}</p>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Última Actualización
+                    </label>
+                    <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm text-gray-900">
+                      {formatDate(material.updatedAt)}
+                    </div>
                   </div>
                 )}
               </div>

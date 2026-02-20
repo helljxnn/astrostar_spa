@@ -2,22 +2,38 @@ import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class CategoriesService {
   constructor() {
-    this.endpoint = "/categories";
+    this.endpoint = "/materials/categories";
   }
 
   async getCategories(params = {}) {
-    const { page = 1, limit = 10, search = "" } = params;
+    const { page = 1, limit = 10, search = "", estado = "" } = params;
 
-    const response = await apiClient.get(this.endpoint, {
+    const queryParams = {
       page,
       limit,
       search: search.toString().trim(),
-    });
+    };
+
+    if (estado) {
+      queryParams.estado = estado;
+    }
+
+    const response = await apiClient.get(this.endpoint, queryParams);
     
     if (response.success && response.data) {
       response.data = response.data.map(cat => this.transformFromBackend(cat));
       // Ordenar alfabéticamente
       response.data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
+    
+    return response;
+  }
+
+  async getActiveCategories() {
+    const response = await apiClient.get(`${this.endpoint}/active`);
+    
+    if (response.success && response.data) {
+      response.data = response.data.map(cat => this.transformFromBackend(cat));
     }
     
     return response;
@@ -52,8 +68,6 @@ class CategoriesService {
       estado: estado || 'Activo'
     };
 
-    console.log('Creando categoría:', payload);
-
     try {
       const response = await apiClient.post(this.endpoint, payload);
       
@@ -80,8 +94,6 @@ class CategoriesService {
       estado: data.estado
     };
 
-    console.log('Actualizando categoría:', { id, ...payload });
-
     const response = await apiClient.put(`${this.endpoint}/${id}`, payload);
     
     if (response.success && response.data) {
@@ -107,11 +119,15 @@ class CategoriesService {
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
-  async checkCategoryExists(nombre) {
+  async checkCategoryExists(nombre, excludeId = null) {
     try {
       const params = {
         nombre: nombre.trim()
       };
+
+      if (excludeId) {
+        params.excludeId = excludeId;
+      }
 
       const response = await apiClient.get(`${this.endpoint}/check-name`, params);
       return response;
@@ -131,8 +147,9 @@ class CategoriesService {
       estado: backendData.estado || backendData.status || 'Activo',
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',
-      createdBy: backendData.createdBy || backendData.created_by || '',
-      updatedBy: backendData.updatedBy || backendData.updated_by || '',
+      createdBy: backendData.createdBy || backendData.created_by || null,
+      updatedBy: backendData.updatedBy || backendData.updated_by || null,
+      materialsCount: backendData._count?.materials || 0,
     };
   }
 }

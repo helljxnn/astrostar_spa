@@ -54,8 +54,6 @@ class MovementsService {
       stock_nuevo: movementData.stockNuevo
     };
 
-    console.log('Creando movimiento:', payload);
-
     try {
       const response = await apiClient.post(this.endpoint, payload);
       return response;

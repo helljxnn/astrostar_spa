@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FormField } from '../../../../../../../../shared/components/FormField';
+import { useCategoryNameValidation } from '../hooks/useCategoryNameValidation';
+import { showConfirmAlert } from '../../../../../../../../shared/utils/alerts';
 
 const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   const isEditing = !!category;
+  const debounceRef = useRef(null);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -13,6 +16,13 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [initialName, setInitialName] = useState('');
+
+  const {
+    nameValidation,
+    validateCategoryName,
+    resetNameValidation,
+  } = useCategoryNameValidation(category?.id || null);
 
   const estadoOptions = [
     { value: 'Activo', label: 'Activo' },
@@ -20,25 +30,61 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   ];
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    setErrors({});
+    setTouched({});
+
     if (isEditing && category) {
+      const incomingName = category.nombre || '';
       setFormData({
-        nombre: category.nombre || '',
+        nombre: incomingName,
         descripcion: category.descripcion || '',
         estado: category.estado || 'Activo',
       });
+      setInitialName(incomingName);
     } else {
       setFormData({
         nombre: '',
         descripcion: '',
         estado: 'Activo',
       });
+      setInitialName('');
     }
-  }, [isEditing, category]);
+
+    // Limpiar validación al abrir/cerrar
+    resetNameValidation();
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, isEditing, category]);
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+
+    // Validación en tiempo real del nombre
+    if (name === 'nombre') {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      
+      const trimmed = String(value || '').trim();
+      const currentInitial = (initialName || '').trim().toLowerCase();
+
+      // Si estamos editando y el nombre es el mismo que el inicial, no validar
+      if (isEditing && trimmed.toLowerCase() === currentInitial) {
+        resetNameValidation();
+      } else if (trimmed.length >= 3) {
+        // Validar después de un delay
+        debounceRef.current = setTimeout(() => {
+          validateCategoryName(trimmed);
+        }, 500);
+      } else {
+        resetNameValidation();
+      }
     }
   };
 
@@ -59,6 +105,11 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
           error = 'El nombre debe tener al menos 3 caracteres';
         }
         break;
+      case 'estado':
+        if (!value || value === '') {
+          error = 'Debes seleccionar un estado';
+        }
+        break;
       default:
         break;
     }
@@ -73,12 +124,30 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
 
     setTouched({
       nombre: true,
+      estado: isEditing ? true : false,
     });
 
     const nombreError = validateField('nombre');
+    const estadoError = isEditing ? validateField('estado') : '';
 
-    if (nombreError) {
+    if (nombreError || estadoError || nameValidation.isDuplicate) {
       return;
+    }
+
+    // Si está editando y tiene materiales asociados, mostrar confirmación
+    if (isEditing && category?.materialsCount > 0) {
+      const result = await showConfirmAlert(
+        '¿Continuar con la edición?',
+        'Esta categoría tiene materiales asociados. Cambiar su nombre podría afectar la clasificación actual.',
+        {
+          confirmButtonText: 'Sí, continuar',
+          cancelButtonText: 'Cancelar'
+        }
+      );
+
+      if (!result.isConfirmed) {
+        return;
+      }
     }
 
     setLoading(true);
@@ -141,14 +210,28 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                   label="Nombre de la Categoría"
                   name="nombre"
                   type="text"
-                  placeholder="Ej: Balones, Uniformes, Implementos"
+                  placeholder="Ej: Balones"
                   value={formData.nombre}
                   onChange={handleChange}
                   onBlur={() => handleBlur('nombre')}
-                  error={errors.nombre}
+                  error={errors.nombre || (nameValidation.isDuplicate ? nameValidation.message : '')}
                   touched={touched.nombre}
                   required
                 />
+                {nameValidation.isChecking && (
+                  <p className="mt-1 text-gray-500 text-xs flex items-center gap-1">
+                    <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+                    <span>Verificando disponibilidad...</span>
+                  </p>
+                )}
+                {nameValidation.isAvailable && !nameValidation.isDuplicate && formData.nombre.trim().length >= 3 && (
+                  <p className="mt-1 text-green-600 text-xs flex items-center gap-1">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-green-500 text-[10px] leading-none">
+                      ✓
+                    </span>
+                    <span>Nombre disponible</span>
+                  </p>
+                )}
               </div>
 
               {/* Descripción */}
@@ -174,12 +257,12 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                     placeholder="Selecciona el estado"
                     value={formData.estado}
                     onChange={handleChange}
+                    onBlur={() => handleBlur('estado')}
+                    error={errors.estado}
+                    touched={touched.estado}
                     options={estadoOptions}
                     required
                   />
-                  <p className="mt-1 text-xs text-gray-500">
-                    ⚠️ Las categorías inactivas no se pueden usar para nuevos materiales
-                  </p>
                 </div>
               )}
             </form>
