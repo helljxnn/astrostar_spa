@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
@@ -48,7 +49,7 @@ const EmployeeModal = ({
       roleId: "",
       status: "Activo",
     },
-    employeeValidationRules
+    employeeValidationRules,
   );
 
   // Función para calcular la edad
@@ -113,12 +114,12 @@ const EmployeeModal = ({
             if (name === "identification") {
               response = await employeeService.checkIdentificationAvailability(
                 formData[name],
-                currentUserId
+                currentUserId,
               );
             } else if (name === "email") {
               response = await employeeService.checkEmailAvailability(
                 formData[name],
-                currentUserId
+                currentUserId,
               );
             }
 
@@ -182,7 +183,7 @@ const EmployeeModal = ({
       if (!isValid) {
         showErrorAlert(
           "Campos incompletos",
-          "Por favor, complete todos los campos obligatorios antes de continuar."
+          "Por favor, complete todos los campos obligatorios antes de continuar.",
         );
         return;
       }
@@ -193,7 +194,7 @@ const EmployeeModal = ({
       if (mode === "edit") {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar este empleado?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
         if (!result.isConfirmed) return;
       }
@@ -210,23 +211,24 @@ const EmployeeModal = ({
     } catch (error) {
       showErrorAlert(
         "Error al guardar",
-        "No se pudo guardar el empleado. Intenta de nuevo."
+        "No se pudo guardar el empleado. Intenta de nuevo.",
       );
     }
   };
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      style={{ zIndex: 9999 }}
+      style={{ zIndex: 10000 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="modal-container bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] relative flex flex-col overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] relative flex flex-col overflow-hidden"
+        style={{ zIndex: 10001 }}
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -244,8 +246,8 @@ const EmployeeModal = ({
             {mode === "view"
               ? "Ver Empleado"
               : mode === "edit"
-              ? "Editar Empleado"
-              : "Crear Empleado"}
+                ? "Editar Empleado"
+                : "Crear Empleado"}
           </h2>
         </div>
 
@@ -276,7 +278,7 @@ const EmployeeModal = ({
             <DocumentField
               documentType={
                 referenceData.documentTypes.find(
-                  (dt) => dt.id === parseInt(formData.documentTypeId)
+                  (dt) => dt.id === parseInt(formData.documentTypeId),
                 )?.name
               }
               value={formData.identification}
@@ -509,6 +511,8 @@ const EmployeeModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default EmployeeModal;

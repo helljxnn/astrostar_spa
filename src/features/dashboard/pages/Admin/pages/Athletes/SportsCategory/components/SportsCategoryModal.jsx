@@ -1,6 +1,8 @@
 // SportsCategoryModal.jsx
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import {
   useFormSportsCategoryValidation,
   sportsCategoryValidationRules,
@@ -31,7 +33,7 @@ const SportsCategoryModal = ({
   };
 
   const [fileName, setFileName] = useState(
-    "No se ha seleccionado ningun archivo"
+    "No se ha seleccionado ningun archivo",
   );
   const [previewUrl, setPreviewUrl] = useState("");
   const [initialName, setInitialName] = useState("");
@@ -98,7 +100,7 @@ const SportsCategoryModal = ({
         category.fileName ??
           (existingImage
             ? "Imagen actual"
-            : "No se ha seleccionado ningun archivo")
+            : "No se ha seleccionado ningun archivo"),
       );
       setPreviewUrl(existingImage);
     } else {
@@ -138,7 +140,7 @@ const SportsCategoryModal = ({
       if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
         showErrorAlert(
           "Archivo muy pesado",
-          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`
+          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`,
         );
         e.target.value = "";
         setFileName("No se ha seleccionado ningun archivo");
@@ -162,7 +164,7 @@ const SportsCategoryModal = ({
     if (Object.keys(newErrors).length > 0) {
       showErrorAlert(
         "Formulario incompleto",
-        "Revisa los campos obligatorios."
+        "Revisa los campos obligatorios.",
       );
       return;
     }
@@ -170,7 +172,7 @@ const SportsCategoryModal = ({
     if (!trimmedName) {
       showErrorAlert(
         "Nombre requerido",
-        "El nombre de la categoria es obligatorio."
+        "El nombre de la categoria es obligatorio.",
       );
       return;
     }
@@ -185,7 +187,7 @@ const SportsCategoryModal = ({
     if (Number.isNaN(minA) || Number.isNaN(maxA) || minA >= maxA) {
       showErrorAlert(
         "Error en edades",
-        "Edad maxima debe ser mayor que la minima."
+        "Edad maxima debe ser mayor que la minima.",
       );
       return;
     }
@@ -269,12 +271,16 @@ const SportsCategoryModal = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-3">
+  const modalContent = (
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-3" style={{ zIndex: 10000 }}>
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.25 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
+        style={{ zIndex: 10001 }}
+      >
         className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
@@ -310,15 +316,15 @@ const SportsCategoryModal = ({
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
                 )}
                 {nameValidation.isDuplicate && !isNameTooShort && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-lg font-semibold">
-                    Ɵ?
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                    <FaTimesCircle size={18} aria-hidden="true" />
                   </span>
                 )}
                 {!nameValidation.isDuplicate &&
                   nameValidation.isAvailable &&
                   currentTrimmedName.length >= 3 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-lg font-semibold">
-                      Ɵ?"
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                      <FaCheckCircle size={18} aria-hidden="true" />
                     </span>
                   )}
               </div>
@@ -340,7 +346,7 @@ const SportsCategoryModal = ({
                 )}
                 {nameValidation.isDuplicate && !isNameTooShort && (
                   <p className="flex items-center gap-2 text-red-600 font-semibold">
-                    <span className="text-lg leading-none">Ɵ?</span>
+                    <FaTimesCircle size={16} aria-hidden="true" />
                     {nameValidation.message || "Nombre no disponible"}
                   </p>
                 )}
@@ -348,7 +354,7 @@ const SportsCategoryModal = ({
                   nameValidation.isAvailable &&
                   currentTrimmedName.length >= 3 && (
                     <p className="flex items-center gap-2 text-green-600 font-semibold">
-                      <span className="text-lg leading-none">Ɵ?"</span>
+                      <FaCheckCircle size={16} aria-hidden="true" />
                       {nameValidation.message || "Nombre disponible"}
                     </p>
                   )}
@@ -428,37 +434,66 @@ const SportsCategoryModal = ({
                 <span>{descripcionLength}/200</span>
               </div>
             </div>
+          </div>
 
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">
+              <label className="block mb-2 font-medium text-gray-700">
                 Subir imagen {shouldRequireFile ? "*" : "(opcional en edicion)"}
               </label>
-              <div className="flex flex-wrap items-center gap-3">
-                <label className="cursor-pointer bg-[#74D5F4] text-white px-4 py-2 rounded-lg text-sm shadow-sm hover:bg-[#5fc4e3] transition">
-                  Elegir archivo
-                  <input
-                    type="file"
-                    name="archivo"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
+              <label className="group border-2 border-dashed border-purple-300 bg-purple-50 rounded-xl px-4 py-5 text-center cursor-pointer transition hover:bg-purple-100 w-full max-w-[280px] flex flex-col items-center justify-center gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  height="32"
+                  viewBox="0 0 640 512"
+                  fill="#a78bfa"
+                >
+                  <path
+                    d="M144 480C64.5 480 0 415.5 0 336c0-62.8 
+                    40.2-116.2 96.2-135.9c-.1-2.7-.2-5.4-.2-8.1
+                    c0-88.4 71.6-160 160-160c59.3 0 111 
+                    32.2 138.7 80.2C409.9 102 428.3 96 
+                    448 96c53 0 96 43 96 96c0 12.2-2.3 
+                    23.8-6.4 34.6C596 238.4 640 290.1 
+                    640 352c0 70.7-57.3 128-128 
+                    128H144zm79-217c-9.4 9.4-9.4 24.6 
+                    0 33.9s24.6 9.4 33.9 0l39-39V392c0 
+                    13.3 10.7 24 24 24s24-10.7 
+                    24-24V257.9l39 39c9.4 9.4 24.6 
+                    9.4 33.9 0s9.4-24.6 0-33.9l-80-80
+                    c-9.4-9.4-24.6-9.4-33.9 
+                    0l-80 80z"
                   />
-                </label>
-                <span className="text-xs text-gray-600 truncate">
-                  {fileName}
-                </span>
-              </div>
+                </svg>
+                <p className="text-xs text-indigo-900 leading-relaxed">
+                  Arrastra una imagen aqui
+                  <br />
+                  <span className="text-purple-500 underline">
+                    o selecciona archivo
+                  </span>
+                </p>
+                <input
+                  type="file"
+                  name="archivo"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
               <span className="text-xs text-gray-500">
                 Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
                 mantiene la actual.
               </span>
-              {previewUrl && (
-                <div className="w-full h-32 rounded-lg border overflow-hidden">
-                  <img
-                    src={previewUrl}
-                    alt="Vista previa"
-                    className="w-full h-full object-cover"
-                  />
+              {(previewUrl || values.archivo) && (
+                <div className="flex items-center gap-3 bg-purple-100 text-purple-900 px-3 py-2 rounded-lg text-xs max-w-[280px]">
+                  {previewUrl && (
+                    <img
+                      src={previewUrl}
+                      alt="Vista previa"
+                      className="w-10 h-10 rounded object-cover flex-shrink-0"
+                    />
+                  )}
+                  <span className="truncate font-medium">{fileName}</span>
                 </div>
               )}
               {values.archivo &&
@@ -467,6 +502,46 @@ const SportsCategoryModal = ({
                     Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
                   </p>
                 )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">
+                Publicar categoria
+              </label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleChange("publicar", !values.publicar)}
+                  className={`
+                    relative inline-flex h-6 w-11 items-center rounded-full
+                    transition-colors duration-200 ease-in-out
+                    focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
+                    ${values.publicar ? "bg-primary-purple" : "bg-gray-300"}
+                  `}
+                >
+                  <span
+                    className={`
+                      inline-block h-4 w-4 transform rounded-full bg-white
+                      transition-transform duration-200 ease-in-out
+                      ${values.publicar ? "translate-x-6" : "translate-x-1"}
+                    `}
+                  />
+                </button>
+                <span
+                  className={`text-sm font-medium ${
+                    values.publicar ? "text-primary-purple" : "text-gray-500"
+                  }`}
+                >
+                  {values.publicar
+                    ? "Visible para todos"
+                    : "Solo visible para administradores"}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                {values.publicar
+                  ? "La categoria sera visible en la pagina publica"
+                  : "La categoria solo sera visible en el panel de administracion"}
+              </p>
             </div>
 
             {!isNew && (
@@ -486,29 +561,6 @@ const SportsCategoryModal = ({
             )}
           </div>
 
-          <div
-            className={`mt-3 p-4 rounded-lg border flex items-start gap-3 ${
-              values.publicar ? "bg-green-50 border-green-200" : "bg-gray-50"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={values.publicar}
-              onChange={(e) => handleChange("publicar", e.target.checked)}
-              className="mt-1 w-4 h-4"
-            />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-800">
-                {values.publicar
-                  ? "Publicada en landing"
-                  : "Publicar categoria inmediatamente"}
-              </p>
-              <p className="text-xs text-gray-600">
-                Al activarlo la categoria se mostrara en la landing.
-              </p>
-            </div>
-          </div>
-
           <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
             <button
               type="button"
@@ -525,14 +577,16 @@ const SportsCategoryModal = ({
               {isSubmitting
                 ? "Guardando..."
                 : isNew
-                ? "Crear Categoria"
-                : "Actualizar Categoria"}
+                  ? "Crear Categoria"
+                  : "Actualizar Categoria"}
             </button>
           </div>
         </form>
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default SportsCategoryModal;

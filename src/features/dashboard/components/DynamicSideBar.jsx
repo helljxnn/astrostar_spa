@@ -300,7 +300,11 @@ function DynamicSideBar({
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col z-50 transition-transform duration-300 ease-in-out dynamic-sidebar"
+        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar"
+        style={{
+          zIndex: 40,
+          position: "fixed",
+        }}
         initial={{ x: isMobile ? -288 : 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >

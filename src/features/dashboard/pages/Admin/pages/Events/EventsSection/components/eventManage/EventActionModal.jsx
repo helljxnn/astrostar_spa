@@ -1,29 +1,49 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { createPortal } from "react-dom";
 
-const EventActionModal = ({ isOpen, onClose, onAction, position, eventStatus, event }) => {
-  if (!isOpen) return null;
+const EventActionModal = ({
+  isOpen,
+  onClose,
+  onAction,
+  position,
+  eventStatus,
+  event,
+}) => {
+  if (!isOpen) {
+    return null;
+  }
 
   // Verificar si el evento está finalizado
-  const isFinalized = eventStatus === "Finalizado" || eventStatus === "finalizado";
-  
+  const isFinalized =
+    eventStatus === "Finalizado" || eventStatus === "finalizado";
+
   // Verificar si el evento está cancelado y ya pasó su fecha
   const isCancelledAndPassed = () => {
-    if (!event || (eventStatus !== "Cancelado" && eventStatus !== "cancelado")) {
+    if (
+      !event ||
+      (eventStatus !== "Cancelado" && eventStatus !== "cancelado")
+    ) {
       return false;
     }
-    
+
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    
+
     // Obtener la fecha de fin del evento
-    const eventEndDate = event.end ? new Date(event.end) : new Date(event.start);
-    const endDateOnly = new Date(eventEndDate.getFullYear(), eventEndDate.getMonth(), eventEndDate.getDate());
-    
+    const eventEndDate = event.end
+      ? new Date(event.end)
+      : new Date(event.start);
+    const endDateOnly = new Date(
+      eventEndDate.getFullYear(),
+      eventEndDate.getMonth(),
+      eventEndDate.getDate(),
+    );
+
     // Verificar si el evento ya pasó su fecha
     return endDateOnly < today;
   };
-  
+
   const cannotEdit = isFinalized || isCancelledAndPassed();
 
   const allActions = [
@@ -54,27 +74,35 @@ const EventActionModal = ({ isOpen, onClose, onAction, position, eventStatus, ev
   ];
 
   // Filtrar acciones según el estado del evento
-  const actions = allActions.filter(action => action.showWhen);
+  const actions = allActions.filter((action) => action.showWhen);
 
-  return (
+  const modalContent = (
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-[60]"
+        className="fixed inset-0 z-[9998]"
         onClick={onClose}
+        style={{
+          pointerEvents: "auto",
+          zIndex: 9999998,
+          backgroundColor: "transparent",
+        }}
       />
-      
+
       {/* Modal */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: -10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: -10 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        className="fixed z-[70] bg-white rounded-xl shadow-2xl border border-gray-200 min-w-[220px] max-w-[280px]"
+        className="fixed z-[9999] bg-white rounded-xl shadow-2xl border border-gray-200 min-w-[220px] max-w-[280px]"
         style={{
           top: position?.top || "50%",
           left: position?.left || "50%",
           transform: position ? "none" : "translate(-50%, -50%)",
+          pointerEvents: "auto",
+          zIndex: 9999999,
+          position: "fixed",
         }}
       >
         <div className="p-2">
@@ -100,6 +128,9 @@ const EventActionModal = ({ isOpen, onClose, onAction, position, eventStatus, ev
       </motion.div>
     </>
   );
+
+  // Renderizar usando portal para evitar problemas de z-index
+  return createPortal(modalContent, document.body);
 };
 
 export default EventActionModal;

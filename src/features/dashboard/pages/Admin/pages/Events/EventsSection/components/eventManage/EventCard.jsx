@@ -26,7 +26,7 @@ const EventCard = ({ event, onActionClick }) => {
   return (
     <div
       className={`group relative p-2 mb-1 rounded-lg border-l-4 cursor-pointer hover:shadow-sm transition-all duration-200 ${getColorClasses(
-        event.color
+        event.color,
       )}`}
     >
       <div className="flex items-center justify-between">
@@ -45,20 +45,45 @@ const EventCard = ({ event, onActionClick }) => {
         </div>
 
         {/* Botones de acción - solo visibles en hover */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          style={{ pointerEvents: "auto", position: "relative", zIndex: 200 }}
+        >
           <button
-            onClick={(e) => handleActionClick(e, "crud")}
+            onClick={(e) => {
+              handleActionClick(e, "crud");
+            }}
             className="p-1 hover:bg-white/50 rounded transition-colors"
             title="Gestionar evento"
+            style={{
+              pointerEvents: "auto",
+              cursor: "pointer",
+              position: "relative",
+              zIndex: 201,
+            }}
           >
-            <FaCog className="w-3 h-3 text-gray-600" />
+            <FaCog
+              className="w-3 h-3 text-gray-600"
+              style={{ pointerEvents: "none" }}
+            />
           </button>
           <button
-            onClick={(e) => handleActionClick(e, "registration")}
+            onClick={(e) => {
+              handleActionClick(e, "registration");
+            }}
             className="p-1 hover:bg-white/50 rounded transition-colors"
             title="Inscripciones"
+            style={{
+              pointerEvents: "auto",
+              cursor: "pointer",
+              position: "relative",
+              zIndex: 201,
+            }}
           >
-            <FaUserPlus className="w-3 h-3 text-gray-600" />
+            <FaUserPlus
+              className="w-3 h-3 text-gray-600"
+              style={{ pointerEvents: "none" }}
+            />
           </button>
         </div>
       </div>

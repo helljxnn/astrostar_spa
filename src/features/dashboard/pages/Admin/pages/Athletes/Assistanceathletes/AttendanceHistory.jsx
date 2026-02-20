@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
 export default function AssistanceHistory() {
+  const navigate = useNavigate();
   /* ----------------------------- Estados ----------------------------- */
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [historyData, setHistoryData] = useState({ dates: [], athletes: [] });
   const [filteredData, setFilteredData] = useState({ dates: [], athletes: [] });
-
-  /* ----------------------------- Estilos ----------------------------- */
-  const gradient = "linear-gradient(90deg, #b5b9ff 0%, #94a6ff 100%)";
 
   /* ------------------------- Cargar Datos --------------------------- */
   useEffect(() => {
@@ -177,40 +176,55 @@ export default function AssistanceHistory() {
   /* ---------------------- Renderizado ------------------------------- */
   return (
     <div className="p-8 bg-gray-50 min-h-screen font-['Questrial']">
-      <h1 className="text-3xl font-semibold text-gray-800 mb-8 text-center">
-        Historial de Asistencia Deportiva
-      </h1>
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-semibold text-gray-800 text-center sm:text-left">
+            Historial de Asistencia Deportiva
+          </h1>
+          <p className="text-sm text-gray-500 mt-1 text-center sm:text-left">
+            Consulta por rango de fechas y exporta el reporte.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate("/dashboard/athletes-assistance")}
+          className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+        >
+          Volver a Asistencia
+        </button>
+      </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center justify-center gap-3 mb-8">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400"
-        />
+      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[160px_160px_auto_auto_1fr] gap-3 items-center">
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400 bg-white"
+          />
 
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400"
-        />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-indigo-400 bg-white"
+          />
 
-        <button
-          onClick={handleConsult}
-          className="text-white px-5 py-2 rounded-lg font-medium shadow hover:opacity-90 transition"
-          style={{ background: gradient }}
-        >
-          Consultar
-        </button>
+          <button
+            onClick={handleConsult}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+          >
+            Consultar
+          </button>
 
-        <div className="ml-auto">
           <ReportButton
             data={filteredData.athletes}
             columns={reportColumns}
             fileName={`Historial_Asistencia_${startDate}_a_${endDate}`}
+            buttonClassName="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors whitespace-nowrap"
+            iconClassName="text-white"
           />
+          <div className="hidden lg:block" />
         </div>
       </div>
 
@@ -220,12 +234,10 @@ export default function AssistanceHistory() {
           No hay registros de asistencia.
         </p>
       ) : (
-        <div className="bg-white shadow-md rounded-xl overflow-x-auto border border-gray-200">
-          <table className="min-w-full text-sm md:text-base text-center">
-            <thead
-              className="text-white uppercase tracking-wide"
-              style={{ background: gradient }}
-            >
+        <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto w-full">
+            <table className="min-w-full text-sm md:text-base text-center">
+              <thead className="text-white uppercase tracking-wide bg-gradient-to-r from-primary-purple to-primary-blue">
               <tr>
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Documento</th>
@@ -244,7 +256,7 @@ export default function AssistanceHistory() {
               {filteredData.athletes.map((a, idx) => {
                 const porcentaje = calcularPorcentaje(a.asistencias);
                 return (
-                  <tr key={idx} className="hover:bg-indigo-50 transition">
+                  <tr key={idx} className="hover:bg-gray-50/50 transition">
                     <td className="px-4 py-3">{idx + 1}</td>
                     <td className="px-4 py-3">{a.documento}</td>
                     <td className="px-4 py-3 font-medium text-gray-800">
@@ -272,6 +284,7 @@ export default function AssistanceHistory() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

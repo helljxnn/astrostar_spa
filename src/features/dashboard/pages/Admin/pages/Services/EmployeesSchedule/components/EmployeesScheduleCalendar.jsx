@@ -31,7 +31,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustomSchedule.css";
 
 /* ============================================================
-   🔹 CONFIGURACIÓN LOCALIZADOR Y TEXTOS
+   ðŸ”¹ CONFIGURACIÃ“N LOCALIZADOR Y TEXTOS
 ============================================================ */
 const locales = { es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -122,7 +122,7 @@ function generateRecurringEvents(event) {
       return [event];
   }
 
-  // 🔸 Si es personalizado
+  // ðŸ”¸ Si es personalizado
   if (event.repeticion === "personalizado" && event.customRecurrence) {
     const { interval, frequency, dias, endType, endDate: endCustom } =
       event.customRecurrence;
@@ -130,7 +130,7 @@ function generateRecurringEvents(event) {
       dia: addDays,
       semana: addWeeks,
       mes: addMonths,
-      año: (d, i) => addMonths(d, 12 * i),
+      anio: (d, i) => addMonths(d, 12 * i),
     };
     const addStep = freqMap[frequency] || addWeeks;
     let current = startDate;
@@ -162,7 +162,7 @@ function generateRecurringEvents(event) {
     return events;
   }
 
-  // 🔸 Si es diaria/semanal/mensual/etc
+  // ðŸ”¸ Si es diaria/semanal/mensual/etc
   let current = startDate;
   while (isBefore(current, endDate)) {
     const eventCopy = { ...event };
@@ -177,7 +177,7 @@ function generateRecurringEvents(event) {
 }
 
 /* ============================================================
-   🔹 COMPONENTE PRINCIPAL
+   ðŸ”¹ COMPONENTE PRINCIPAL
 =========================================================== */
 export default function EmployeesScheduleCalendar({
   schedules = [],
@@ -306,7 +306,7 @@ export default function EmployeesScheduleCalendar({
     );
   };
 
-  /* ---------- Navegación ---------- */
+  /* ---------- NavegaciÃ³n ---------- */
   const handleNavigate = (dir) => {
     if (view === "month") setDate(dir === "next" ? addMonths(date, 1) : subMonths(date, 1));
     else if (view === "week") setDate(dir === "next" ? addWeeks(date, 1) : subWeeks(date, 1));
@@ -351,7 +351,7 @@ export default function EmployeesScheduleCalendar({
         : [popover.horario.novedad]).filter(Boolean)
     : [];
   /* ============================================================
-     🔹 RENDER PRINCIPAL
+     ðŸ”¹ RENDER PRINCIPAL
   ============================================================ */
   return (
     <div ref={calendarRef} className="relative employees-schedule-calendar">
@@ -389,7 +389,7 @@ export default function EmployeesScheduleCalendar({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {v === "month" ? "Mes" : v === "week" ? "Semana" : "Día"}
+              {v === "month" ? "Mes" : v === "week" ? "Semana" : "DÃ­a"}
             </button>
           ))}
         </div>
