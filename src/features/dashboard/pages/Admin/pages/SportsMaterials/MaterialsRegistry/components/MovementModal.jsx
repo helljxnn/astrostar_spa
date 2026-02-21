@@ -355,6 +355,35 @@ const MovementModal = ({ isOpen, onClose, onSave }) => {
               />
             </div>
 
+            {/* Desglose de Stock (si hay material seleccionado) */}
+            {selectedMaterial && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Stock Actual del Material
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-xs text-gray-600">Disponible</p>
+                    <p className="text-lg font-semibold text-green-700">
+                      {selectedMaterial.stockDisponible || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Reservado</p>
+                    <p className="text-lg font-semibold text-yellow-700">
+                      {selectedMaterial.stockReservado || 0}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600">Total</p>
+                    <p className="text-lg font-semibold text-blue-700">
+                      {selectedMaterial.stockActual || 0}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Tipo de Movimiento y Cantidad */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

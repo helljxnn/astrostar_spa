@@ -295,7 +295,7 @@ const Enrollments = () => {
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Matrículas</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Gestión de Matrículas</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">

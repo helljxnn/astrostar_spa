@@ -147,6 +147,25 @@ class MaterialsService {
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
+  async registerDischarge(id, dischargeData) {
+    if (!id) {
+      throw new Error("ID del material es requerido");
+    }
+
+    const payload = {
+      cantidad: dischargeData.cantidad,
+      motivo: dischargeData.motivo.trim(),
+    };
+
+    try {
+      const response = await apiClient.post(`${this.endpoint}/${id}/discharge`, payload);
+      return response;
+    } catch (error) {
+      console.error('Error al registrar baja:', error);
+      throw error;
+    }
+  }
+
   async getMaterialHistory(id) {
     if (!id) {
       throw new Error("ID del material es requerido");
@@ -188,6 +207,8 @@ class MaterialsService {
       categoriaId: backendData.categoriaId || backendData.categoria_id || backendData.categoryId || null,
       descripcion: backendData.descripcion || backendData.description || '',
       stockActual: backendData.stockActual || backendData.stock_actual || backendData.currentStock || 0,
+      stockDisponible: backendData.stockDisponible || backendData.stock_disponible || backendData.availableStock || 0,
+      stockReservado: backendData.stockReservado || backendData.stock_reservado || backendData.reservedStock || 0,
       estado: backendData.estado || backendData.status || 'Activo',
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',

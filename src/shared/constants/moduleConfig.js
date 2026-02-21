@@ -117,7 +117,7 @@ export const MODULE_CONFIG = {
 
   enrollments: {
     id: "enrollments",
-    name: "Matrículas",
+    name: "Gestión de Matrículas",
     path: "/dashboard/enrollments",
     icon: "FaFileContract",
     category: "athletes",
@@ -227,7 +227,7 @@ export const MODULE_GROUPS = {
     id: "equipment",
     name: "Materiales",
     icon: "GiWeightLiftingUp",
-    children: ["materials", "materialCategories", "materialsRegistry", "providers"],
+    children: ["materialCategories", "materials", "materialsRegistry", "providers"],
   },
 
   services: {
@@ -248,9 +248,9 @@ export const MODULE_GROUPS = {
     icon: "FaClipboardList",
     children: [
       "sportsCategory",
+      "enrollments",
       "athletesSection",
       "athletesAssistance",
-      "enrollments",
     ],
   },
 

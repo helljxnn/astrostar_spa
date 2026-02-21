@@ -208,9 +208,9 @@ const MaterialCategories = () => {
   // Preparar datos para tabla
   const tableData = displayData.map(c => ({
     ...c,
-    nombreTruncated: c.nombre.length > 30 ? c.nombre.substring(0, 30) + '...' : c.nombre,
+    nombreTruncated: c.nombre.length > 50 ? c.nombre.substring(0, 50) + '...' : c.nombre,
     descripcionTruncated: c.descripcion 
-      ? (c.descripcion.length > 50 ? c.descripcion.substring(0, 50) + '...' : c.descripcion)
+      ? (c.descripcion.length > 80 ? c.descripcion.substring(0, 80) + '...' : c.descripcion)
       : 'Sin descripción',
   }));
 

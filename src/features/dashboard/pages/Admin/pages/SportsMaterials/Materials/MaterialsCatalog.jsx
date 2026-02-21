@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaMinusCircle } from 'react-icons/fa';
 import MaterialModal from "./components/MaterialModal";
 import MaterialViewModal from "./components/MaterialViewModal";
+import MaterialDischargeModal from "./components/MaterialDischargeModal";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -16,6 +17,7 @@ const MaterialsCatalog = () => {
   const [materials, setMaterials] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -150,17 +152,66 @@ const MaterialsCatalog = () => {
     }
   };
 
-  // Preparar datos para tabla
-  const tableData = materials.map(m => ({
-    ...m,
-    stockFormatted: `${m.stockActual || 0} unidades`,
-  }));
+  const handleDischarge = (material) => {
+    if (!hasPermission('materials', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para registrar bajas de materiales');
+      return;
+    }
+    setSelectedMaterial(material);
+    setIsDischargeModalOpen(true);
+  };
+
+  const handleSaveDischarge = async (dischargeData) => {
+    if (!hasPermission('materials', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para registrar bajas de materiales');
+      return false;
+    }
+
+    try {
+      const response = await materialsService.registerDischarge(selectedMaterial.id, dischargeData);
+      
+      if (response.success) {
+        showSuccessAlert(
+          "Baja Registrada", 
+          `Se registró la baja de ${dischargeData.cantidad} unidades del material "${selectedMaterial.nombre}".`
+        );
+        setIsDischargeModalOpen(false);
+        fetchMaterials();
+        return true;
+      } else {
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo registrar la baja"
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error('Error al registrar baja:', error);
+      showErrorAlert("Error", error.message || "Error al registrar la baja en el servidor");
+      return false;
+    }
+  };
+
+  // Preparar datos para tabla con truncado
+  const tableData = materials.map(m => {
+    console.log('Material:', m.nombre, 'Stock Disponible:', m.stockDisponible);
+    return {
+      ...m,
+      nombreTruncated: m.nombre.length > 40 ? m.nombre.substring(0, 40) + '...' : m.nombre,
+      categoriaTruncated: m.categoria.length > 35 ? m.categoria.substring(0, 35) + '...' : m.categoria,
+      stockDisponible: m.stockDisponible || 0,
+      stockReservado: m.stockReservado || 0,
+      stockTotal: m.stockActual || 0,
+    };
+  });
 
   // Datos para reporte
   const reportData = materials.map(m => ({
     nombre: m.nombre,
     categoria: m.categoria,
-    stock: m.stockActual || 0,
+    stockDisponible: m.stockDisponible || 0,
+    stockReservado: m.stockReservado || 0,
+    stockTotal: m.stockActual || 0,
     estado: m.estado,
     descripcion: m.descripcion || 'N/A',
   }));
@@ -189,7 +240,9 @@ const MaterialsCatalog = () => {
                 columns={[
                   { header: "Nombre", accessor: "nombre" },
                   { header: "Categoría", accessor: "categoria" },
-                  { header: "Stock", accessor: "stock" },
+                  { header: "Stock Disponible", accessor: "stockDisponible" },
+                  { header: "Stock Reservado", accessor: "stockReservado" },
+                  { header: "Stock Total", accessor: "stockTotal" },
                   { header: "Estado", accessor: "estado" },
                   { header: "Descripción", accessor: "descripcion" },
                 ]}
@@ -211,13 +264,13 @@ const MaterialsCatalog = () => {
       {/* Tabla */}
       <Table
         thead={{
-          titles: ["Nombre", "Categoría", "Stock"],
+          titles: ["Nombre", "Categoría", "Stock Disponible", "Stock Reservado", "Stock Total"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombre", "categoria", "stockFormatted"],
+          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockDisponible", "stockReservado", "stockTotal"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
@@ -227,6 +280,20 @@ const MaterialsCatalog = () => {
         onView={hasPermission('materials', 'Ver') ? handleView : null}
         onEdit={hasPermission('materials', 'Editar') ? handleEdit : null}
         onDelete={hasPermission('materials', 'Eliminar') ? handleDelete : null}
+        customActions={
+          hasPermission('materials', 'Editar')
+            ? [
+                {
+                  onClick: handleDischarge,
+                  className:
+                    'p-2 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors',
+                  label: <FaMinusCircle />,
+                  title: 'Registrar Baja',
+                  show: (item) => true, // Temporal: siempre mostrar para testing
+                },
+              ]
+            : undefined
+        }
         buttonConfig={{
           view: () => ({
             show: hasPermission('materials', 'Ver'),
@@ -278,6 +345,16 @@ const MaterialsCatalog = () => {
         material={selectedMaterial}
         onEdit={handleEdit}
         canEdit={hasPermission('materials', 'Editar')}
+      />
+
+      <MaterialDischargeModal
+        isOpen={isDischargeModalOpen}
+        onClose={() => {
+          setIsDischargeModalOpen(false);
+          setSelectedMaterial(null);
+        }}
+        onSave={handleSaveDischarge}
+        material={selectedMaterial}
       />
     </div>
   );

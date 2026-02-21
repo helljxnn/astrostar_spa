@@ -56,14 +56,37 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
             {/* Stock Actual */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stock Actual
+                Desglose de Stock
               </label>
-              <div 
-                className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
-                title="El stock solo se modifica desde Ingresos de Materiales"
-              >
-                {material.stockActual || 0} unidades
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Stock Disponible
+                  </label>
+                  <div className="px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-green-800 font-semibold">
+                    {material.stockDisponible || 0} unidades
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Stock Reservado
+                  </label>
+                  <div className="px-3 py-2 bg-yellow-50 border border-yellow-300 rounded-lg text-yellow-800 font-semibold">
+                    {material.stockReservado || 0} unidades
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Stock Total
+                  </label>
+                  <div className="px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-blue-800 font-semibold">
+                    {material.stockActual || 0} unidades
+                  </div>
+                </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                El stock solo se modifica desde Ingresos de Materiales
+              </p>
             </div>
 
             {/* Estado */}

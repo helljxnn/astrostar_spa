@@ -107,56 +107,7 @@ const Tbody = ({ options }) => {
             {/*  Acciones dinámicas */}
             {hasActions && (
               <td className="px-6 py-4 flex items-center justify-center gap-3">
-                {onEdit && (() => {
-                  const config = buttonConfig.edit ? buttonConfig.edit(item) : {};
-                  const shouldShow = config.show !== false;
-                  const isDisabled = config.disabled || false;
-                  const customClass = config.className || '';
-                  const title = config.title || 'Editar';
-
-                  if (!shouldShow) return null;
-
-                  return (
-                    <button
-                      onClick={() => !isDisabled && onEdit(item)}
-                      className={`p-2 rounded-full transition-colors ${
-                        isDisabled 
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
-                          : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
-                      }`}
-                      title={title}
-                      disabled={isDisabled}
-                    >
-                      <FaRegEdit />
-                    </button>
-                  );
-                })()}
-
-                {onDelete && (() => {
-                  const config = buttonConfig.delete ? buttonConfig.delete(item) : {};
-                  const shouldShow = config.show !== false;
-                  const isDisabled = config.disabled || false;
-                  const customClass = config.className || '';
-                  const title = config.title || 'Eliminar';
-
-                  if (!shouldShow) return null;
-
-                  return (
-                    <button
-                      onClick={() => !isDisabled && onDelete(item)}
-                      className={`p-2 rounded-full transition-colors ${
-                        isDisabled 
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
-                          : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
-                      }`}
-                      title={title}
-                      disabled={isDisabled}
-                    >
-                      <FaTrash />
-                    </button>
-                  );
-                })()}
-
+                {/* 1. Ver detalles */}
                 {onView && (() => {
                   const config = buttonConfig.view ? buttonConfig.view(item) : {};
                   const shouldShow = config.show !== false;
@@ -182,6 +133,59 @@ const Tbody = ({ options }) => {
                   );
                 })()}
 
+                {/* 2. Editar */}
+                {onEdit && (() => {
+                  const config = buttonConfig.edit ? buttonConfig.edit(item) : {};
+                  const shouldShow = config.show !== false;
+                  const isDisabled = config.disabled || false;
+                  const customClass = config.className || '';
+                  const title = config.title || 'Editar';
+
+                  if (!shouldShow) return null;
+
+                  return (
+                    <button
+                      onClick={() => !isDisabled && onEdit(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                          : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
+                      }`}
+                      title={title}
+                      disabled={isDisabled}
+                    >
+                      <FaRegEdit />
+                    </button>
+                  );
+                })()}
+
+                {/* 3. Eliminar */}
+                {onDelete && (() => {
+                  const config = buttonConfig.delete ? buttonConfig.delete(item) : {};
+                  const shouldShow = config.show !== false;
+                  const isDisabled = config.disabled || false;
+                  const customClass = config.className || '';
+                  const title = config.title || 'Eliminar';
+
+                  if (!shouldShow) return null;
+
+                  return (
+                    <button
+                      onClick={() => !isDisabled && onDelete(item)}
+                      className={`p-2 rounded-full transition-colors ${
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                          : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
+                      }`}
+                      title={title}
+                      disabled={isDisabled}
+                    >
+                      <FaTrash />
+                    </button>
+                  );
+                })()}
+
+                {/* 4. Ver Lista (si existe) */}
                 {onList && (
                   <button
                     onClick={() => onList(item)}
@@ -192,7 +196,7 @@ const Tbody = ({ options }) => {
                   </button>
                 )}
 
-                {/* Acciones personalizadas */}
+                {/* 5. Acciones personalizadas */}
                 {customActions && (
                   typeof customActions === 'function'
                     ? customActions(item)
