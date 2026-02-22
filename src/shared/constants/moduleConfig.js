@@ -74,16 +74,6 @@ export const MODULE_CONFIG = {
     description: "Gestión de citas médicas",
   },
 
-  classes: {
-    id: "classes",
-    name: "Clases",
-    path: "/dashboard/classes",
-    icon: "FaChalkboardTeacher",
-    category: "services",
-    parent: "services",
-    description: "Gestión de clases deportivas",
-  },
-
   // === DEPORTISTAS ===
   sportsCategory: {
     id: "sportsCategory",
@@ -217,12 +207,7 @@ export const MODULE_GROUPS = {
     id: "services",
     name: "Servicios",
     icon: "FaBriefcase",
-    children: [
-      "employees",
-      "employeesSchedule",
-      "appointmentManagement",
-      "classes",
-    ],
+    children: ["employees", "employeesSchedule", "appointmentManagement"],
   },
 
   athletes: {
