@@ -1,174 +1,309 @@
-// ================================
-// ================================
-import { 
-  FaTimes, 
-  FaUser, 
-  FaEnvelope, 
-  FaCalendarAlt,
-  FaIdCard
-} from "react-icons/fa";
-import { MdSports } from "react-icons/md";
+﻿import { useEffect, useMemo, useState } from "react";
+import { FaCalendarAlt, FaEnvelope, FaIdCard, FaSearch, FaTimes, FaUser } from "react-icons/fa";
+import { Modal } from "../../../../../../../../shared/components/Modal";
 
-const AthletesListModal = ({ isOpen, onClose, category, athletes }) => {
+const getFirstValue = (...values) => {
+  for (const value of values) {
+    if (value === undefined || value === null) continue;
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed) continue;
+      return trimmed;
+    }
+    return value;
+  }
+  return "";
+};
+
+const calculateAge = (birthDate) => {
+  if (!birthDate) return null;
+  const birth = new Date(birthDate);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+const normalizeCategory = (category) => {
+  const nombre = getFirstValue(
+    category?.nombre,
+    category?.name,
+    category?.Nombre,
+    "Categoría deportiva",
+  );
+  const minAgeRaw = getFirstValue(category?.edadMinima, category?.minAge, category?.EdadMinima);
+  const maxAgeRaw = getFirstValue(category?.edadMaxima, category?.maxAge, category?.EdadMaxima);
+  const minAge = Number(minAgeRaw);
+  const maxAge = Number(maxAgeRaw);
+
+  return {
+    nombre,
+    edadMinima: Number.isFinite(minAge) ? minAge : null,
+    edadMaxima: Number.isFinite(maxAge) ? maxAge : null,
+  };
+};
+
+const normalizeAthlete = (athlete, fallbackCategory) => {
+  const user = athlete?.user || athlete?.usuario || {};
+  const nameFromParts = [
+    athlete?.nombre,
+    athlete?.apellido,
+    user?.firstName,
+    user?.middleName,
+    user?.lastName,
+    user?.secondLastName,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const name = nameFromParts || getFirstValue(athlete?.name, athlete?.fullName, "Sin nombre");
+  const email = getFirstValue(athlete?.email, user?.email);
+  const document = getFirstValue(
+    athlete?.documento,
+    athlete?.identificacion,
+    athlete?.identification,
+    user?.identification,
+  );
+  const docType = getFirstValue(
+    athlete?.tipoDocumento,
+    athlete?.documentType,
+    user?.documentType?.name,
+    user?.documentTypeName,
+  );
+  const ageRaw = getFirstValue(athlete?.edad, athlete?.age, user?.age);
+  const birthDate = getFirstValue(
+    athlete?.fechaNacimiento,
+    athlete?.birthDate,
+    user?.birthDate,
+  );
+  const ageValue = Number.isFinite(Number(ageRaw)) ? Number(ageRaw) : calculateAge(birthDate);
+  const categoryName = getFirstValue(
+    athlete?.categoria,
+    athlete?.category,
+    athlete?.sportsCategory?.nombre,
+    fallbackCategory,
+  );
+
+  return {
+    id: athlete?.id ?? athlete?.athleteId ?? athlete?.userId ?? document ?? name,
+    nombre: name,
+    email: email || "",
+    documento: document || "",
+    tipoDocumento: docType || "",
+    edad: ageValue,
+    categoria: categoryName || "",
+  };
+};
+
+const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) setSearchTerm("");
+  }, [isOpen]);
+
   if (!isOpen || !category) return null;
 
-  const getAgeRangeColor = () => {
-    const min = category.EdadMinima;
-    const max = category.EdadMaxima;
-    
-    if (min <= 12) return "bg-green-100 text-green-800";
+  const categoryData = normalizeCategory(category);
+  const ageRangeClass = (() => {
+    const min = categoryData.edadMinima;
+    if (!Number.isFinite(min)) return "bg-gray-100 text-gray-700";
+    if (min <= 12) return "bg-emerald-100 text-emerald-800";
     if (min <= 17) return "bg-blue-100 text-blue-800";
     if (min <= 35) return "bg-purple-100 text-purple-800";
     return "bg-orange-100 text-orange-800";
-  };
+  })();
+
+  const ageRangeLabel =
+    categoryData.edadMinima !== null && categoryData.edadMaxima !== null
+      ? `${categoryData.edadMinima} - ${categoryData.edadMaxima} años`
+      : "Rango de edad no definido";
+
+  const normalizedAthletes = useMemo(
+    () => athletes.map((athlete) => normalizeAthlete(athlete, categoryData.nombre)),
+    [athletes, categoryData.nombre],
+  );
+
+  const filteredAthletes = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return normalizedAthletes;
+    return normalizedAthletes.filter((athlete) => {
+      const matchesName = String(athlete.nombre || "").toLowerCase().includes(term);
+      const matchesDoc = String(athlete.documento || "").toLowerCase().includes(term);
+      const matchesEmail = String(athlete.email || "").toLowerCase().includes(term);
+      const matchesCategory = String(athlete.categoria || "").toLowerCase().includes(term);
+      return matchesName || matchesDoc || matchesEmail || matchesCategory;
+    });
+  }, [normalizedAthletes, searchTerm]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        {/* Header del Modal */}
-        <div className="bg-gradient-to-r from-primary-blue to-primary-purple text-white p-6">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-4">
-              <div className="bg-white bg-opacity-20 p-3 rounded-full">
-                <MdSports size={32} />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold">
-                  Deportistas - {category.Nombre}
-                </h2>
-                <div className="flex items-center gap-4 mt-2 text-white text-opacity-90">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getAgeRangeColor()} text-gray-800`}>
-                    {category.EdadMinima} - {category.EdadMaxima} años
-                  </span>
-                  <span className="text-sm">
-                    {athletes.length} {athletes.length === 1 ? 'deportista' : 'deportistas'}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors p-2"
-            >
-              <FaTimes size={24} />
-            </button>
-          </div>
+    <Modal isOpen={isOpen} onClose={onClose} maxWidth="max-w-5xl">
+      <div className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl max-h-[90vh]">
+        <div className="flex-shrink-0 bg-white border-b border-gray-200 p-4 relative">
+          <button
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+            onClick={onClose}
+            type="button"
+            aria-label="Cerrar"
+          >
+            <FaTimes size={16} />
+          </button>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+            Deportistas por categoría
+          </h2>
+          <p className="text-center text-gray-600 mt-1 text-sm">{categoryData.nombre}</p>
         </div>
 
-        {/* Contenido del Modal */}
-        <div className="p-6 overflow-y-auto max-h-[70vh]">
-          {athletes.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                <FaUser size={32} className="text-gray-400" />
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Rango de edad
+              </p>
+              <div className="mt-2">
+                <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${ageRangeClass}`}>
+                  {ageRangeLabel}
+                </span>
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Total deportistas
+              </p>
+              <p className="mt-2 text-sm font-semibold text-gray-800">
+                {normalizedAthletes.length}{" "}
+                {normalizedAthletes.length === 1 ? "deportista" : "deportistas"}
+              </p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-xl p-3">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Coincidencias
+              </p>
+              <p className="mt-2 text-sm font-semibold text-gray-800">
+                {filteredAthletes.length} de {normalizedAthletes.length}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Buscar
+            </label>
+            <div className="relative mt-2">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nombre, documento, correo o categoría..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl bg-gray-50 focus:ring-2 focus:ring-primary-purple focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {filteredAthletes.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-2xl p-8 text-center shadow-sm">
+              <div className="bg-gray-100 rounded-2xl w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <FaUser size={28} className="text-gray-400" />
               </div>
               <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                No hay deportistas registradas
+                {searchTerm ? "No se encontraron resultados" : "No hay deportistas registrados"}
               </h3>
               <p className="text-gray-500">
-                Aún no se han registrado deportistas en la categoría "{category.Nombre}"
+                {searchTerm
+                  ? "Intenta con otro término de búsqueda."
+                  : `Aún no hay deportistas en la categoría "${categoryData.nombre}".`}
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-              {/* Encabezado de la tabla */}
-              <div className="bg-gray-50 px-6 py-3 border-b">
-                <div className="grid grid-cols-6 gap-4 text-sm font-semibold text-gray-700">
-                  <div>Nombre Completo</div>
-                  <div>Tipo Documento</div>
-                  <div>N° Identificación</div>
-                  <div>Edad</div>
-                  <div>Correo Electrónico</div>
-                  <div>Categoría</div>
-                </div>
-              </div>
-
-              {/* Filas de datos */}
-              <div className="divide-y divide-gray-200">
-                {athletes.map((athlete, index) => (
-                  <div 
-                    key={athlete.id} 
-                    className={`px-6 py-4 hover:bg-gray-50 transition-colors ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                    }`}
-                  >
-                    <div className="grid grid-cols-6 gap-4 text-sm">
-                      {/* Nombre Completo */}
-                      <div className="flex items-center gap-2">
-                        <FaUser className="text-primary-blue w-4 h-4 flex-shrink-0" />
-                        <span className="font-medium text-gray-800">
-                          {athlete.nombre} {athlete.apellido}
+            <div className="border border-gray-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+              <table className="w-full text-sm table-fixed">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[24%]">Nombre</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[16%] hidden lg:table-cell">
+                      Tipo doc
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[16%] hidden md:table-cell">
+                      Documento
+                    </th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[10%]">Edad</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[22%]">Correo</th>
+                    <th className="px-3 py-2.5 text-left font-semibold w-[12%]">Categoría</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredAthletes.map((athlete, index) => (
+                    <tr
+                      key={athlete.id ?? index}
+                      className="odd:bg-white even:bg-slate-50/50 hover:bg-slate-100 transition-colors"
+                    >
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FaUser className="text-primary-blue w-4 h-4" />
+                          <span className="font-medium text-gray-800 truncate">
+                            {athlete.nombre || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 hidden lg:table-cell">
+                        <div className="flex items-center gap-2 text-gray-700 min-w-0">
+                          <FaIdCard className="w-4 h-4 text-gray-500" />
+                          <span className="truncate">{athlete.tipoDocumento || "N/A"}</span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-gray-700 hidden md:table-cell truncate">
+                        {athlete.documento || "N/A"}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <FaCalendarAlt className="w-4 h-4 text-primary-purple" />
+                          <span>
+                            {Number.isFinite(athlete.edad) ? `${athlete.edad} años` : "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <FaEnvelope className="w-4 h-4 text-green-600" />
+                          <span className="text-blue-600 hover:text-blue-800 truncate">
+                            {athlete.email || "N/A"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${ageRangeClass}`}>
+                          {athlete.categoria || "N/A"}
                         </span>
-                      </div>
-
-                      {/* Tipo de Documento */}
-                      <div className="flex items-center gap-2">
-                        <FaIdCard className="text-gray-500 w-4 h-4" />
-                        <span className="text-gray-700">
-                          {athlete.tipoDocumento || 'CC'}
-                        </span>
-                      </div>
-
-                      {/* Número de Identificación */}
-                      <div className="text-gray-700 font-mono">
-                        {athlete.documento}
-                      </div>
-
-                      {/* Edad */}
-                      <div className="flex items-center gap-2">
-                        <FaCalendarAlt className="text-primary-purple w-4 h-4" />
-                        <span className="text-gray-700">
-                          {athlete.edad} años
-                        </span>
-                      </div>
-
-                      {/* Correo Electrónico */}
-                      <div className="flex items-center gap-2">
-                        <FaEnvelope className="text-green-600 w-4 h-4" />
-                        <span className="text-blue-600 hover:text-blue-800 cursor-pointer truncate">
-                          {athlete.email}
-                        </span>
-                      </div>
-
-                      {/* Categoría */}
-                      <div>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getAgeRangeColor()}`}>
-                          {athlete.categoria}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Estadísticas */}
-          {athletes.length > 0 && (
-            <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">
-                  Total de deportistas en {category.Nombre}:
-                </span>
-                <span className="font-semibold text-primary-blue text-lg">
-                  {athletes.length}
-                </span>
-              </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
 
-        {/* Footer del Modal */}
-        <div className="bg-gray-50 px-6 py-4 flex justify-end">
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+          <span className="text-sm text-gray-600">
+            Mostrando {filteredAthletes.length} de {normalizedAthletes.length} deportistas
+          </span>
           <button
+            type="button"
             onClick={onClose}
-            className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
+            className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
           >
             Cerrar
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 

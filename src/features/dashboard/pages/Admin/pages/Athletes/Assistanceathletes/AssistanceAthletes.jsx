@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 
+
 import AttendanceHeader from "./components/AttendanceHeader";
-import AttendanceSummary from "./components/AttendanceSummary";
 import AttendanceTable from "./components/AttendanceTable";
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import { useAssistanceAthletes } from "./hooks/useAssistanceAthletes";
 import assistanceathletesService from "./services/AssistanceathletesService";
 
+const GRADIENT = "linear-gradient(90deg, #b595ff 0%, #9be9ff 100%)";
+
+
 export default function AssistanceAthletes() {
   const navigate = useNavigate();
-  const gradient = "linear-gradient(90deg, #b595ff 0%, #9be9ff 100%)";
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyData, setHistoryData] = useState([]);
@@ -25,14 +26,11 @@ export default function AssistanceAthletes() {
     currentPage,
     rowsPerPage,
     categories,
-    filteredData,
     paginatedData,
     totalRows,
     totalPages,
     startIndex,
-    attendance,
     totalCount,
-    attendanceSummary,
     setCurrentPage,
     updateSelectedDate,
     updateSearchTerm,
@@ -43,30 +41,21 @@ export default function AssistanceAthletes() {
     handleSave,
   } = useAssistanceAthletes();
 
-  const reportColumns = [
-    { header: "Nombre", accessor: "nombre" },
-    { header: "Documento", accessor: "documento" },
-    { header: "Edad", accessor: "edad" },
-    { header: "Categoría", accessor: "categoria" },
-    {
-      header: "Asistencia",
-      accessor: "asistencia",
-      transform: (v) => (v ? "Presente" : "Ausente"),
-    },
-    { header: "Observación", accessor: "observacion" },
-  ];
-
   const goToHistory = () => {
     navigate("/dashboard/athletes-assistance/history");
   };
 
   const handleViewHistory = async (athlete) => {
+    const athleteId = athlete?.athleteId ?? athlete?.id;
+    if (!athleteId) return;
+
     setHistoryAthlete(athlete);
     setHistoryOpen(true);
     setHistoryLoading(true);
+
     try {
       const response = await assistanceathletesService.getAthleteHistory(
-        athlete.athleteId || athlete.id
+        athleteId
       );
       if (response && response.success) {
         setHistoryData(response.data || []);
@@ -95,12 +84,7 @@ export default function AssistanceAthletes() {
         categories={categories}
         onSave={handleSave}
         onHistory={goToHistory}
-        gradient={gradient}
-        reportColumns={reportColumns}
-        reportData={filteredData}
       />
-
-      <AttendanceSummary summary={attendanceSummary} />
 
       {totalRows === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200 mb-6">
@@ -119,20 +103,21 @@ export default function AssistanceAthletes() {
           <AttendanceTable
             paginatedData={paginatedData}
             startIndex={startIndex}
-            gradient={gradient}
+            gradient={GRADIENT}
             onAttendanceChange={handleAttendanceChange}
             onObservationChange={handleObservationChange}
             onViewHistory={handleViewHistory}
           />
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(p) => setCurrentPage(p)}
-            totalRows={totalRows}
-            rowsPerPage={rowsPerPage}
-            startIndex={startIndex}
-          />
+          <div className="mt-4">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={(p) => setCurrentPage(p)}
+              totalRows={totalCount}
+              rowsPerPage={rowsPerPage}
+              startIndex={startIndex}
+            />
+          </div>
         </>
       )}
 
@@ -146,3 +131,10 @@ export default function AssistanceAthletes() {
     </div>
   );
 }
+
+
+
+
+
+
+

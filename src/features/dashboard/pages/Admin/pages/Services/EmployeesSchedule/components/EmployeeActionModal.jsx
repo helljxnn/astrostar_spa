@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye, FaTimes, FaStickyNote } from "react-icons/fa";
 import { useState } from "react";
 import ScheduleDetailsModal from "./ScheduleDetailsModal";
@@ -21,7 +21,8 @@ const EmployeeActionModal = ({
 
   if (!isOpen) return null;
 
-  // === Definición de acciones disponibles ===
+  // === DefiniciÃ³n de acciones disponibles ===
+  const canManage = !disabled;
   const actions = [
     {
       id: "view",
@@ -29,7 +30,7 @@ const EmployeeActionModal = ({
       icon: <FaEye className="w-4 h-4" />,
       color: "text-blue-600",
       hover: "hover:bg-blue-50",
-      description: "Consultar información completa del horario",
+      description: "Consultar informaciÃ³n completa del horario",
       available: true,
     },
     {
@@ -38,8 +39,8 @@ const EmployeeActionModal = ({
       icon: <FaEdit className="w-4 h-4" />,
       color: "text-green-600",
       hover: "hover:bg-green-50",
-      description: "Modificar fecha, hora o área",
-      available: !disabled,
+      description: "Modificar fecha, hora o Ã¡rea",
+      available: canManage,
     },
     {
       id: "cancel",
@@ -48,7 +49,7 @@ const EmployeeActionModal = ({
       color: "text-orange-600",
       hover: "hover:bg-orange-50",
       description: "Registrar un cambio o novedad en el turno",
-      available: !disabled,
+      available: canManage,
     },
     {
       id: "delete",
@@ -57,7 +58,7 @@ const EmployeeActionModal = ({
       color: "text-red-600",
       hover: "hover:bg-red-50",
       description: "Eliminar permanentemente este horario",
-      available: !disabled,
+      available: canManage,
     },
   ].filter((a) => a.available);
 
@@ -69,19 +70,19 @@ const EmployeeActionModal = ({
       return;
     }
 
-    if (actionId === "novedad") {
+    if (actionId === "cancel" || actionId === "novedad") {
       setShowCancelModal(true);
       onClose();
       return;
     }
 
-    // 🔴 Confirmación antes de eliminar
+    // ðŸ”´ ConfirmaciÃ³n antes de eliminar
     if (actionId === "delete") {
       const confirmDelete = await showErrorAlert(
-        "¿Eliminar este horario?",
-        "Esta acción no se puede deshacer.",
+        "Â¿Eliminar este horario?",
+        "Esta acciÃ³n no se puede deshacer.",
         "warning",
-        true // botón de confirmación
+        true // botÃ³n de confirmaciÃ³n
       );
 
       // Si el usuario confirma
@@ -190,41 +191,15 @@ const EmployeeActionModal = ({
               </div>
 
               {/* === Footer === */}
-              {employee && (
-                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 text-xs">
-                  {(() => {
-                    const footerState =
-                      employee.estado === "Cancelado"
-                        ? "Programado"
-                        : employee.estado || "Sin estado";
-                    const footerStateColor =
-                      footerState === "Completado"
-                        ? "bg-blue-100 text-blue-700"
-                        : footerState === "Programado"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-700";
-                    return (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-500">Estado:</span>
-                        <span
-                          className={`px-2 py-1 rounded-full font-medium ${footerStateColor}`}
-                        >
-                          {footerState}
-                        </span>
-                      </div>
-                    );
-                  })()}
-
-                  {employee.area && (
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-gray-500">Área:</span>
-                      <span className="font-medium text-gray-700">
-                        {employee.area}
-                      </span>
-                    </div>
-                  )}
+              {employee?.area && (
+                <div className="px-4 py-3 border-t border-gray-100 bg-gray-50 text-xs flex items-center justify-between">
+                  <span className="text-gray-500">Area:</span>
+                  <span className="font-medium text-gray-700">
+                    {employee.area}
+                  </span>
                 </div>
               )}
+
             </motion.div>
           </>
         )}
@@ -249,3 +224,4 @@ const EmployeeActionModal = ({
 };
 
 export default EmployeeActionModal;
+

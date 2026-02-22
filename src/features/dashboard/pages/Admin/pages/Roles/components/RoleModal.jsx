@@ -124,6 +124,7 @@ const actions = [
   { name: "Editar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Eliminar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Listar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
 ];
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
@@ -825,3 +826,4 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 };
 
 export default RoleModal;
+

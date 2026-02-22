@@ -130,9 +130,9 @@ const SportsCategoryDetailModal = ({ isOpen, onClose, category }) => {
   const publishDot = publicar ? "bg-green-500" : "bg-yellow-500";
 
   const edadMinimaLabel =
-    edadMinima === "No especificado" ? edadMinima : `${edadMinima} anos`;
+    edadMinima === "No especificado" ? edadMinima : `${edadMinima} años`;
   const edadMaximaLabel =
-    edadMaxima === "No especificado" ? edadMaxima : `${edadMaxima} anos`;
+    edadMaxima === "No especificado" ? edadMaxima : `${edadMaxima} años`;
 
   return (
     <motion.div

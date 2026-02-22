@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Configuración centralizada de módulos del sistema
  * Este archivo define todos los módulos y se auto-mantiene
  */
@@ -247,7 +247,7 @@ export const MODULE_GROUPS = {
 /**
  * Acciones disponibles en el sistema
  */
-export const AVAILABLE_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar"];
+export const AVAILABLE_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar", "Listar"];
 
 /**
  * Funciones de utilidad auto-generadas
@@ -289,3 +289,4 @@ export const moduleExists = (moduleId) => {
 export const getModuleConfig = (moduleId) => {
   return MODULE_CONFIG[moduleId];
 };
+

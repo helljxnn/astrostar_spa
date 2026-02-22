@@ -26,7 +26,6 @@ export default function ScheduleModal({
     repeticion: "no",
     customRecurrence: null,
     descripcion: "",
-    estado: "Programado",
   });
   const [originalForm, setOriginalForm] = useState(null);
 
@@ -58,7 +57,6 @@ export default function ScheduleModal({
         schedule.detalle ||
         schedule.motivo ||
         "",
-      estado: schedule.estado || "Programado",
       id: schedule.id || null,
     };
     setForm(filledForm);
@@ -299,20 +297,6 @@ export default function ScheduleModal({
                 />
               </div>
 
-              <div className="space-y-2">
-                <FormField
-                  label="Estado"
-                  name="estado"
-                  type="select"
-                  value={form.estado}
-                  onChange={handleChange}
-                  disabled={disabledFields}
-                  options={[
-                    { value: "Programado", label: "Programado" },
-                    { value: "Completado", label: "Completado" },
-                  ]}
-                />
-              </div>
             </div>
 
             {recurrenceLabel && (

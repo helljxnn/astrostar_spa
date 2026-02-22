@@ -18,8 +18,15 @@ const STATUS_OPTIONS = [
 
 const DONATION_TYPES = {
   ECONOMICA: "Economica",
-  ESPECIE: "En Especie",
+  ESPECIE: "En especie",
 };
+
+const ECON_MODALITIES = [
+  "Unica",
+  "Mensual",
+  "Patrocinio anual",
+  "Apadrinamiento",
+];
 
 const CHANNELS = ["Transferencia", "Consignacion", "Nequi", "PSE", "Otro"];
 
@@ -34,19 +41,26 @@ const CUSTOM_METHOD_OPTION = "__CUSTOM_METHOD__";
 
 const FOOD_CLASSES = ["Granos", "Proteinas", "Verduras", "Lacteos", "Otros"];
 const GOOD_CLASSES = [
-  "Alimentos",
-  "Implemento deportivo",
-  "Ropa",
-  "Suplementos",
+  "Implementacion deportiva",
+  "Nutricion e hidratacion",
+  "Educacion y formacion",
+  "Bienestar y salud",
+  "Apoyo a las familias",
+  "Arte y expresion",
+  "Logistica y operacion",
+  "Servicios profesionales",
+  "Corporativa/Alianza",
   "Otros",
 ];
 
 const PROGRAMS = [
-  "Nutricion",
-  "Formacion deportiva",
-  "Educacion y becas",
-  "Salud y bienestar",
+  "Escuelas deportivas",
+  "Talleres de formacion integral",
   "Apoyo psicosocial",
+  "Transporte y alimentacion",
+  "Organizacion de eventos y festivales",
+  "Apoyo integral a las familias",
+  "Becas para ninas",
   "Otros",
 ];
 
@@ -79,8 +93,10 @@ const DonationsForm = () => {
     type: "ECONOMICA",
     status: "Recibida",
     program: "",
+    specificDestination: "",
     donationAt: new Date().toISOString().slice(0, 16),
     notes: "",
+    econModality: "",
     econAmount: "",
     econChannel: "",
     econComprobante: null,
@@ -123,6 +139,10 @@ const DonationsForm = () => {
     const donationState = location.state?.donation;
     if (!donationState || prefilledFromState) return;
 
+    const paymentDetail = (donationState.details || []).find(
+      (detail) => detail.recordType === "payment"
+    );
+
     setIsEditing(Boolean(location.state?.isEditing));
     setEditingDonationId(donationState.id);
     setForm((prev) => ({
@@ -134,7 +154,10 @@ const DonationsForm = () => {
       type: donationState.type || prev.type,
       status: donationState.status || prev.status,
       program: donationState.program || "",
+      specificDestination: donationState.specificDestination || "",
+      notes: donationState.notes || "",
       donationAt: donationState.donationAt || prev.donationAt,
+      econModality: paymentDetail?.classification || prev.econModality,
       econAmount: donationState.econAmount ?? prev.econAmount,
       econChannel: donationState.econChannel ?? prev.econChannel,
       isFoodPurchase: donationState.isFoodPurchase ?? false,
@@ -166,6 +189,7 @@ const DonationsForm = () => {
 
       if (field === "type" && value !== "ECONOMICA") {
         next.isFoodPurchase = false;
+        next.econModality = "";
       }
 
       if (field === "type" && value !== "ESPECIE") {
@@ -208,7 +232,7 @@ const DonationsForm = () => {
       entryErrors.especieQty = "Cantidad requerida y mayor a 0.";
     }
     if (!form.especieClass) {
-      entryErrors.especieClass = "Clasificacion del bien requerida.";
+      entryErrors.especieClass = "Categoria de la donacion requerida.";
     }
 
     if (Object.keys(entryErrors).length > 0) {
@@ -303,6 +327,8 @@ const DonationsForm = () => {
       if (!form.econAmount || Number(form.econAmount) <= 0)
         newErrors.econAmount = "Valor donado requerido y mayor a 0.";
       if (!form.econChannel) newErrors.econChannel = "Canal de pago requerido.";
+      if (!form.econModality)
+        newErrors.econModality = "Modalidad de donacion requerida.";
       if (!form.econComprobante)
         newErrors.econComprobante = "Adjunta el comprobante (PDF/JPG/PNG, 5MB).";
       if (isFood) {
@@ -344,6 +370,7 @@ const DonationsForm = () => {
         recordType: "payment",
         amount: Number(form.econAmount),
         channel: form.econChannel,
+        classification: form.econModality || null,
       });
       if (isFood) {
         details.push({
@@ -364,7 +391,7 @@ const DonationsForm = () => {
           description: item.description,
           quantity: Number.isNaN(quantityValue) ? 0 : quantityValue,
           classification: item.classification,
-          channel: item.method,
+          channel: item.method || "Donacion directa",
         });
       });
     }
@@ -379,6 +406,17 @@ const DonationsForm = () => {
 
     if (form.program) {
       payload.program = form.program;
+    }
+
+    const notesParts = [];
+    if (form.specificDestination?.trim()) {
+      notesParts.push(`Destino especifico: ${form.specificDestination.trim()}`);
+    }
+    if (form.notes?.trim()) {
+      notesParts.push(`Mensaje: ${form.notes.trim()}`);
+    }
+    if (notesParts.length) {
+      payload.notes = notesParts.join(" | ");
     }
 
     const donorId = Number(form.donorSponsorId);
@@ -500,6 +538,8 @@ const DonationsForm = () => {
       { label: "Tipo", value: typeLabel },
       { label: "Estado", value: STATUS_OPTIONS.find((s) => s.value === form.status)?.label || form.status },
       { label: "Programa", value: form.program || "N/A" },
+      { label: "Destino especifico", value: form.specificDestination || "N/A" },
+      { label: "Mensaje adicional", value: form.notes || "N/A" },
       { label: "Fecha/Hora", value: form.donationAt },
     ];
 
@@ -509,6 +549,7 @@ const DonationsForm = () => {
     if (form.type === "ECONOMICA") {
       details.push(`Valor donado: $${formatNumber(form.econAmount) || "0"}`);
       details.push(`Canal de pago: ${form.econChannel || "N/A"}`);
+      details.push(`Modalidad: ${form.econModality || "N/A"}`);
       files.push(
         form.econComprobante
           ? `Comprobante listo: ${form.econComprobante.name}`
@@ -535,7 +576,7 @@ const DonationsForm = () => {
         const segments = [
           `Descripcion: ${item.description || "N/A"}`,
           `Cantidad: ${item.quantity || "0"}`,
-          item.classification ? `Clasificacion: ${item.classification}` : null,
+          item.classification ? `Categoria: ${item.classification}` : null,
           item.method ? `Metodo de recepcion: ${item.method}` : null,
         ]
           .filter(Boolean)
@@ -643,6 +684,35 @@ const DonationsForm = () => {
               </div>
             </div>
 
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Destino especifico (opcional)
+                </label>
+                <input
+                  type="text"
+                  value={form.specificDestination}
+                  onChange={(e) =>
+                    handleChange("specificDestination", e.target.value)
+                  }
+                  placeholder="Ej: Becas para ninas, apoyo a familias..."
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                />
+              </div>
+              <div className="flex flex-col md:col-span-2">
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Mensaje adicional (opcional)
+                </label>
+                <textarea
+                  value={form.notes}
+                  onChange={(e) => handleChange("notes", e.target.value)}
+                  rows="3"
+                  placeholder="Observaciones o mensaje adicional..."
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                />
+              </div>
+            </div>
+
             <div className="grid md:grid-cols-3 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
@@ -727,7 +797,7 @@ const DonationsForm = () => {
               <h3 className="text-base font-semibold text-gray-800">
                 Donacion economica
               </h3>
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Valor donado *
@@ -742,6 +812,29 @@ const DonationsForm = () => {
                   {errors.econAmount && (
                     <span className="text-red-500 text-xs mt-1">
                       {errors.econAmount}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">
+                    Modalidad *
+                  </label>
+                  <select
+                    value={form.econModality}
+                    onChange={(e) => handleChange("econModality", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  >
+                    <option value="">Seleccionar...</option>
+                    {ECON_MODALITIES.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.econModality && (
+                    <span className="text-red-500 text-xs mt-1">
+                      {errors.econModality}
                     </span>
                   )}
                 </div>
@@ -860,7 +953,7 @@ const DonationsForm = () => {
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
-                    Clasificacion del bien *
+                    Categoria de la donacion *
                   </label>
                   <select
                     value={form.especieClass}

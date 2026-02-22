@@ -3,6 +3,12 @@ import { motion } from "framer-motion";
 import { FaSync, FaTimes, FaUpload, FaFileAlt, FaTrash, FaUserCircle, FaCalendarAlt } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import {
+  findCategoryByName,
+  resolveCategoryAgeRange,
+  isAgeWithinRange,
+  formatAgeRange,
+} from "../../../../../../../../shared/utils/categoryAgeValidation";
 
 const categoryHierarchy = ["Infantil", "Sub 15", "Juvenil"];
 
@@ -128,6 +134,24 @@ const RenewEnrollmentModal = ({
 
     if (!categoria) {
       showErrorAlert("Campo requerido", "Debes seleccionar una categoría");
+      return;
+    }
+
+    const selectedCategory = findCategoryByName(sportsCategories || [], categoria);
+    if (categoria && !selectedCategory) {
+      showErrorAlert(
+        "Categoria invalida",
+        "La categoria seleccionada no existe. Por favor, selecciona una categoria valida."
+      );
+      return;
+    }
+    const ageRange = resolveCategoryAgeRange(selectedCategory);
+    if (ageRange && !isAgeWithinRange(age, ageRange)) {
+      const rangeLabel = formatAgeRange(ageRange);
+      showErrorAlert(
+        "Edad fuera de rango",
+        `No se puede crear o editar. La edad (${age} años) no corresponde a la categoria "${selectedCategory?.name || selectedCategory?.nombre || categoria}" (${rangeLabel} años).`
+      );
       return;
     }
 
