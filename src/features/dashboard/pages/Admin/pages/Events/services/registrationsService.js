@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 /**
  * Servicio para gestionar inscripciones de equipos a eventos
@@ -14,7 +14,7 @@ export const registrationsService = {
       const response = await axios.post(`${API_URL}/registrations`, data);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al inscribir equipo' };
+      throw error.response?.data || { message: "Error al inscribir equipo" };
     }
   },
 
@@ -24,12 +24,19 @@ export const registrationsService = {
   getEventRegistrations: async (serviceId, status = null) => {
     try {
       const params = status ? { status } : {};
-      const response = await axios.get(`${API_URL}/registrations/event/${serviceId}`, {
-        params,
-      });
+      const response = await axios.get(
+        `${API_URL}/registrations/event/${serviceId}`,
+        {
+          params,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener inscripciones del evento' };
+      throw (
+        error.response?.data || {
+          message: "Error al obtener inscripciones del evento",
+        }
+      );
     }
   },
 
@@ -39,12 +46,37 @@ export const registrationsService = {
   getTeamRegistrations: async (teamId, status = null) => {
     try {
       const params = status ? { status } : {};
-      const response = await axios.get(`${API_URL}/registrations/team/${teamId}`, {
-        params,
-      });
+      const response = await axios.get(
+        `${API_URL}/registrations/team/${teamId}`,
+        {
+          params,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener inscripciones del equipo' };
+      throw (
+        error.response?.data || {
+          message: "Error al obtener inscripciones del equipo",
+        }
+      );
+    }
+  },
+
+  /**
+   * Obtener equipos disponibles filtrados por categorías del evento (optimizado)
+   */
+  getTeamsByEventCategories: async (serviceId) => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/registrations/event/${serviceId}/teams`,
+      );
+      return response.data;
+    } catch (error) {
+      throw (
+        error.response?.data || {
+          message: "Error al obtener equipos disponibles",
+        }
+      );
     }
   },
 
@@ -56,7 +88,7 @@ export const registrationsService = {
       const response = await axios.get(`${API_URL}/registrations/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener inscripción' };
+      throw error.response?.data || { message: "Error al obtener inscripción" };
     }
   },
 
@@ -65,13 +97,16 @@ export const registrationsService = {
    */
   updateRegistrationStatus: async (id, status, notes = null) => {
     try {
-      const response = await axios.patch(`${API_URL}/registrations/${id}/status`, {
-        status,
-        notes,
-      });
+      const response = await axios.patch(
+        `${API_URL}/registrations/${id}/status`,
+        {
+          status,
+          notes,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al actualizar estado' };
+      throw error.response?.data || { message: "Error al actualizar estado" };
     }
   },
 
@@ -83,7 +118,9 @@ export const registrationsService = {
       const response = await axios.delete(`${API_URL}/registrations/${id}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al cancelar inscripción' };
+      throw (
+        error.response?.data || { message: "Error al cancelar inscripción" }
+      );
     }
   },
 
@@ -95,7 +132,9 @@ export const registrationsService = {
       const response = await axios.get(`${API_URL}/registrations/stats`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener estadísticas' };
+      throw (
+        error.response?.data || { message: "Error al obtener estadísticas" }
+      );
     }
   },
 
@@ -107,12 +146,19 @@ export const registrationsService = {
   getAvailableAthletes: async (sportsCategoryId = null) => {
     try {
       const params = sportsCategoryId ? { sportsCategoryId } : {};
-      const response = await axios.get(`${API_URL}/registrations/athletes/available`, {
-        params,
-      });
+      const response = await axios.get(
+        `${API_URL}/registrations/athletes/available`,
+        {
+          params,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener deportistas disponibles' };
+      throw (
+        error.response?.data || {
+          message: "Error al obtener deportistas disponibles",
+        }
+      );
     }
   },
 
@@ -121,10 +167,15 @@ export const registrationsService = {
    */
   registerAthlete: async (data) => {
     try {
-      const response = await axios.post(`${API_URL}/registrations/athlete`, data);
+      const response = await axios.post(
+        `${API_URL}/registrations/athlete`,
+        data,
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al inscribir deportista' };
+      throw (
+        error.response?.data || { message: "Error al inscribir deportista" }
+      );
     }
   },
 
@@ -133,10 +184,15 @@ export const registrationsService = {
    */
   registerAthletesBulk: async (data) => {
     try {
-      const response = await axios.post(`${API_URL}/registrations/athletes/bulk`, data);
+      const response = await axios.post(
+        `${API_URL}/registrations/athletes/bulk`,
+        data,
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al inscribir deportistas' };
+      throw (
+        error.response?.data || { message: "Error al inscribir deportistas" }
+      );
     }
   },
 
@@ -146,12 +202,19 @@ export const registrationsService = {
   getEventAthleteRegistrations: async (serviceId, status = null) => {
     try {
       const params = status ? { status } : {};
-      const response = await axios.get(`${API_URL}/registrations/event/${serviceId}/athletes`, {
-        params,
-      });
+      const response = await axios.get(
+        `${API_URL}/registrations/event/${serviceId}/athletes`,
+        {
+          params,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener inscripciones de deportistas' };
+      throw (
+        error.response?.data || {
+          message: "Error al obtener inscripciones de deportistas",
+        }
+      );
     }
   },
 
@@ -161,12 +224,19 @@ export const registrationsService = {
   getAthleteRegistrations: async (athleteId, status = null) => {
     try {
       const params = status ? { status } : {};
-      const response = await axios.get(`${API_URL}/registrations/athlete/${athleteId}`, {
-        params,
-      });
+      const response = await axios.get(
+        `${API_URL}/registrations/athlete/${athleteId}`,
+        {
+          params,
+        },
+      );
       return response.data;
     } catch (error) {
-      throw error.response?.data || { message: 'Error al obtener inscripciones del deportista' };
+      throw (
+        error.response?.data || {
+          message: "Error al obtener inscripciones del deportista",
+        }
+      );
     }
   },
 };

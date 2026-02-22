@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -131,6 +131,14 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Hook del loader
   const { showLoader, hideLoader } = useLoader();
 
+  // Usar ref para mantener el ID del rol y evitar re-renders
+  const roleIdRef = useRef(roleData?.id);
+
+  // Actualizar el ref solo cuando cambia el roleData.id
+  useEffect(() => {
+    roleIdRef.current = roleData?.id;
+  }, [roleData?.id]);
+
   // Hook de validación
   const {
     values: formData,
@@ -149,12 +157,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     roleValidationRules,
   );
 
-  // Hook para validación de nombres duplicados
+  // Hook para validación de nombres duplicados - usar el ref
   const { nameValidation, validateRoleName, clearValidation, reloadRoles } =
-    useRoleNameValidation(roleData?.id);
+    useRoleNameValidation(roleIdRef.current);
 
   const [expandedCategories, setExpandedCategories] = useState({});
   const [permissionError, setPermissionError] = useState("");
+
+  // Flag para saber si ya se cargaron los datos iniciales
+  const dataLoadedRef = useRef(false);
 
   // Manejar cambios en el nombre con validación de duplicados
   const handleNameChange = (name, value) => {
@@ -166,7 +177,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
   // Si recibimos roleData (editar), precargamos los datos
   useEffect(() => {
-    if (roleData) {
+    if (roleData && !dataLoadedRef.current) {
       // Verificar si es el rol de Administrador
       if (roleData.name === "Administrador") {
         showErrorAlert(
@@ -186,8 +197,17 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
       // Limpiar validación de nombres al cargar datos
       clearValidation();
+
+      // Marcar que los datos ya se cargaron
+      dataLoadedRef.current = true;
     }
-  }, [roleData, setFormData, onClose]);
+
+    // Resetear el flag cuando se cierra el modal
+    if (!isOpen) {
+      dataLoadedRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleData?.id, isOpen]); // Solo ejecutar cuando cambia el ID del rol o se abre/cierra el modal
 
   // Validación de permisos
   useEffect(() => {

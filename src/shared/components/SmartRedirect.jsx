@@ -59,7 +59,6 @@ const SmartRedirect = () => {
       module: "employeesSchedule",
       label: "Horarios",
     },
-    { path: "/dashboard/classes", module: "classes", label: "Clases" },
 
     // 5. Módulos de eventos
     { path: "/dashboard/events", module: "eventsManagement", label: "Eventos" },

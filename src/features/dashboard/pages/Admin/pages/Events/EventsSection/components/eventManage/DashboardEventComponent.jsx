@@ -1,4 +1,4 @@
-import { FaCog, FaUsers, FaMapMarkerAlt } from "react-icons/fa";
+import { FaMapMarkerAlt } from "react-icons/fa";
 import { format } from "date-fns";
 import { getEventsModuleColor } from "../../adapters/eventsColorAdapter";
 
@@ -7,13 +7,7 @@ import { getEventsModuleColor } from "../../adapters/eventsColorAdapter";
  * Compatible con el calendario genérico BaseCalendar variante custom
  * ESPECÍFICO DEL MÓDULO DE EVENTOS
  */
-export const DashboardEventComponent = ({
-  event,
-  view = "month",
-  onActionClick,
-  setActionModal,
-  setRegistrationModal,
-}) => {
+export const DashboardEventComponent = ({ event, view = "month" }) => {
   // Validación defensiva
   if (!event) {
     return <div>Error: Evento no válido</div>;
@@ -21,7 +15,6 @@ export const DashboardEventComponent = ({
 
   const isMonthView = view === "month";
   const isDayView = view === "day";
-  const dashboardEvent = event.extendedProps?.dashboardEvent || event;
 
   // Obtener color usando el adaptador específico del módulo de eventos
   const getEstadoColor = () => {
@@ -34,62 +27,6 @@ export const DashboardEventComponent = ({
   // Obtener color de texto según el fondo
   const getTextColor = () => {
     return "#000000"; // Texto negro para todos los colores
-  };
-
-  const handleActionClick = (e, actionType) => {
-    let position = { top: 100, left: 100 };
-
-    try {
-      const target = e.currentTarget || e.target;
-      if (target && target.getBoundingClientRect) {
-        const rect = target.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const modalWidth = 220;
-        const modalHeight = 150;
-
-        let top = rect.bottom + 5;
-        let left = rect.left;
-
-        if (left + modalWidth > viewportWidth) {
-          left = rect.right - modalWidth;
-        }
-
-        if (top + modalHeight > viewportHeight) {
-          top = rect.top - modalHeight - 5;
-        }
-
-        if (left < 10) left = 10;
-        if (top < 10) top = rect.bottom + 5;
-
-        position = { top, left };
-      }
-    } catch (error) {
-      console.error("Error calculating position:", error);
-    }
-
-    if (setActionModal && setRegistrationModal) {
-      if (actionType === "crud") {
-        setActionModal({
-          isOpen: true,
-          position,
-          event: dashboardEvent,
-        });
-      } else if (actionType === "registration") {
-        setRegistrationModal({
-          isOpen: true,
-          position,
-          event: dashboardEvent,
-        });
-      }
-      return;
-    }
-
-    // Fallback a onActionClick
-    console.log("⚠️ Usando fallback onActionClick");
-    if (onActionClick) {
-      onActionClick(e, actionType, dashboardEvent);
-    }
   };
 
   // Renderizado para vista de día (más detallado)
@@ -125,49 +62,6 @@ export const DashboardEventComponent = ({
                 {event.extendedProps.categoria}
               </div>
             )}
-          </div>
-
-          {/* Botones de acción para vista de día */}
-          <div
-            className="flex gap-1 flex-wrap pt-2 border-t border-gray-100 mt-2"
-            style={{
-              pointerEvents: "auto",
-              zIndex: 999,
-              position: "relative",
-            }}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                handleActionClick(e, "crud");
-              }}
-              className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
-              style={{
-                pointerEvents: "auto",
-                zIndex: 1000,
-                position: "relative",
-                cursor: "pointer",
-              }}
-            >
-              <FaCog className="h-3 w-3" />
-              Gestionar
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                handleActionClick(e, "registration");
-              }}
-              className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
-              style={{
-                pointerEvents: "auto",
-                zIndex: 1000,
-                position: "relative",
-                cursor: "pointer",
-              }}
-            >
-              <FaUsers className="h-3 w-3" />
-              Inscripciones
-            </button>
           </div>
         </div>
       </div>
@@ -210,53 +104,6 @@ export const DashboardEventComponent = ({
           {format(event.multiDayEnd, "dd/MM")}
         </div>
       )}
-
-      {/* Botones de acción - mostrar en todos los días del evento */}
-      <div
-        className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-0.5"
-        style={{
-          pointerEvents: "auto",
-          zIndex: 100,
-          position: "absolute",
-        }}
-      >
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            handleActionClick(e, "crud");
-          }}
-          className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-          title="Gestionar evento"
-          style={{
-            pointerEvents: "auto",
-            zIndex: 101,
-            position: "relative",
-            cursor: "pointer",
-          }}
-        >
-          <FaCog size={8} style={{ pointerEvents: "none" }} />
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            handleActionClick(e, "registration");
-          }}
-          className="w-4 h-4 bg-black bg-opacity-70 hover:bg-opacity-90 text-white rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-          title="Inscripciones"
-          style={{
-            pointerEvents: "auto",
-            zIndex: 101,
-            position: "relative",
-            cursor: "pointer",
-          }}
-        >
-          <FaUsers size={8} />
-        </button>
-      </div>
     </div>
   );
 };

@@ -202,15 +202,26 @@ export const useEvents = () => {
     [loadEvents],
   );
 
+  // Función auxiliar para comparar arrays
+  const arraysEqual = (a, b) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  };
+
   /**
    * Actualizar evento
    */
   const updateEvent = useCallback(
-    async (id, eventData) => {
+    async (id, eventData, originalCategoryIds = []) => {
       setLoading(true);
 
       try {
         const backendData = transformEventToBackend(eventData);
+
+        // Proceder con la actualización
         const response = await eventsService.update(id, backendData);
 
         if (response.success) {
@@ -226,6 +237,7 @@ export const useEvents = () => {
           throw new Error(response.message || "Error actualizando evento");
         }
       } catch (err) {
+        console.error("❌ Error en updateEvent:", err);
         showErrorAlert(
           "Error",
           err.message || "No se pudo actualizar el evento",

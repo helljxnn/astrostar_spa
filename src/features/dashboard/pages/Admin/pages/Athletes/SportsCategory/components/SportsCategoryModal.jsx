@@ -313,13 +313,17 @@ const SportsCategoryModal = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-3" style={{ zIndex: 10000 }}>
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/40 px-3"
+      style={{ zIndex: 10000 }}
+    >
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.25 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden border border-gray-100"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
+        style={{ zIndex: 10001 }}
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-[#8aa9ff] text-center">
