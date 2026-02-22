@@ -4,7 +4,7 @@ import es from "date-fns/locale/es";
 import { FaTimes } from "react-icons/fa";
 import EventCard from "./EventCard";
 
-const DayEventsModal = ({ isOpen, onClose, date, events, onActionClick }) => {
+const DayEventsModal = ({ isOpen, onClose, date, events }) => {
   if (!isOpen || !date || !events.length) return null;
 
   return (
@@ -39,11 +39,7 @@ const DayEventsModal = ({ isOpen, onClose, date, events, onActionClick }) => {
           <div className="p-4 max-h-[60vh] overflow-y-auto">
             <div className="space-y-2">
               {events.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  onActionClick={onActionClick}
-                />
+                <EventCard key={event.id} event={event} />
               ))}
             </div>
           </div>

@@ -1,6 +1,6 @@
-import { useState, useCallback } from 'react';
-import { registrationsService } from '../services/registrationsService';
-import { toast } from 'react-toastify';
+import { useState, useCallback } from "react";
+import { registrationsService } from "../services/registrationsService";
+import { toast } from "react-toastify";
 
 /**
  * Hook personalizado para gestionar inscripciones de equipos a eventos
@@ -18,10 +18,10 @@ export const useRegistrations = () => {
     setLoading(true);
     try {
       const response = await registrationsService.registerTeamToEvent(data);
-      toast.success(response.message || 'Equipo inscrito exitosamente');
+      toast.success(response.message || "Equipo inscrito exitosamente");
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al inscribir equipo';
+      const errorMessage = error.message || "Error al inscribir equipo";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -32,14 +32,42 @@ export const useRegistrations = () => {
   /**
    * Obtener inscripciones de un evento
    */
-  const fetchEventRegistrations = useCallback(async (serviceId, status = null) => {
+  const fetchEventRegistrations = useCallback(
+    async (serviceId, status = null) => {
+      setLoading(true);
+      try {
+        const response = await registrationsService.getEventRegistrations(
+          serviceId,
+          status,
+        );
+        setRegistrations(response.data.registrations || []);
+        return { success: true, data: response.data };
+      } catch (error) {
+        const errorMessage = error.message || "Error al obtener inscripciones";
+        toast.error(errorMessage);
+        setRegistrations([]);
+        return { success: false, error: errorMessage };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Obtener inscripciones de un equipo
+   */
+  const fetchTeamRegistrations = useCallback(async (teamId, status = null) => {
     setLoading(true);
     try {
-      const response = await registrationsService.getEventRegistrations(serviceId, status);
+      const response = await registrationsService.getTeamRegistrations(
+        teamId,
+        status,
+      );
       setRegistrations(response.data.registrations || []);
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al obtener inscripciones';
+      const errorMessage = error.message || "Error al obtener inscripciones";
       toast.error(errorMessage);
       setRegistrations([]);
       return { success: false, error: errorMessage };
@@ -49,18 +77,18 @@ export const useRegistrations = () => {
   }, []);
 
   /**
-   * Obtener inscripciones de un equipo
+   * Obtener equipos disponibles filtrados por categorías del evento
    */
-  const fetchTeamRegistrations = useCallback(async (teamId, status = null) => {
+  const fetchTeamsByEventCategories = useCallback(async (serviceId) => {
     setLoading(true);
     try {
-      const response = await registrationsService.getTeamRegistrations(teamId, status);
-      setRegistrations(response.data.registrations || []);
+      const response =
+        await registrationsService.getTeamsByEventCategories(serviceId);
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al obtener inscripciones';
+      const errorMessage =
+        error.message || "Error al obtener equipos disponibles";
       toast.error(errorMessage);
-      setRegistrations([]);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
@@ -77,7 +105,7 @@ export const useRegistrations = () => {
       setRegistration(response.data);
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al obtener inscripción';
+      const errorMessage = error.message || "Error al obtener inscripción";
       toast.error(errorMessage);
       setRegistration(null);
       return { success: false, error: errorMessage };
@@ -92,11 +120,15 @@ export const useRegistrations = () => {
   const updateStatus = useCallback(async (id, status, notes = null) => {
     setLoading(true);
     try {
-      const response = await registrationsService.updateRegistrationStatus(id, status, notes);
-      toast.success(response.message || 'Estado actualizado exitosamente');
+      const response = await registrationsService.updateRegistrationStatus(
+        id,
+        status,
+        notes,
+      );
+      toast.success(response.message || "Estado actualizado exitosamente");
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al actualizar estado';
+      const errorMessage = error.message || "Error al actualizar estado";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -111,10 +143,10 @@ export const useRegistrations = () => {
     setLoading(true);
     try {
       const response = await registrationsService.cancelRegistration(id);
-      toast.success(response.message || 'Inscripción cancelada exitosamente');
+      toast.success(response.message || "Inscripción cancelada exitosamente");
       return { success: true };
     } catch (error) {
-      const errorMessage = error.message || 'Error al cancelar inscripción';
+      const errorMessage = error.message || "Error al cancelar inscripción";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -132,7 +164,7 @@ export const useRegistrations = () => {
       setStats(response.data);
       return { success: true, data: response.data };
     } catch (error) {
-      const errorMessage = error.message || 'Error al obtener estadísticas';
+      const errorMessage = error.message || "Error al obtener estadísticas";
       toast.error(errorMessage);
       setStats(null);
       return { success: false, error: errorMessage };
@@ -149,6 +181,7 @@ export const useRegistrations = () => {
     registerTeam,
     fetchEventRegistrations,
     fetchTeamRegistrations,
+    fetchTeamsByEventCategories,
     fetchRegistrationById,
     updateStatus,
     cancelRegistration,

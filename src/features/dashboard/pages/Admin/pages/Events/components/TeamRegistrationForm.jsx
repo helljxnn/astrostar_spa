@@ -6,19 +6,18 @@ import { useRegistrations } from "../hooks/useRegistrations";
  *
  * Props:
  * - events: Array de eventos disponibles
- * - teams: Array de equipos disponibles
  * - onSuccess: Callback cuando la inscripción es exitosa
  * - preselectedEventId: ID del evento preseleccionado (opcional)
  * - preselectedTeamId: ID del equipo preseleccionado (opcional)
  */
 const TeamRegistrationForm = ({
   events = [],
-  teams = [],
   onSuccess,
   preselectedEventId = null,
   preselectedTeamId = null,
 }) => {
-  const { registerTeam, loading } = useRegistrations();
+  const { registerTeam, fetchTeamsByEventCategories, loading } =
+    useRegistrations();
 
   const [formData, setFormData] = useState({
     serviceId: preselectedEventId || "",
@@ -28,15 +27,43 @@ const TeamRegistrationForm = ({
   });
 
   const [errors, setErrors] = useState({});
+  const [availableTeams, setAvailableTeams] = useState({
+    foundation: [],
+    temporary: [],
+    total: 0,
+  });
+  const [loadingTeams, setLoadingTeams] = useState(false);
 
   useEffect(() => {
     if (preselectedEventId) {
       setFormData((prev) => ({ ...prev, serviceId: preselectedEventId }));
+      loadTeamsForEvent(preselectedEventId);
     }
     if (preselectedTeamId) {
       setFormData((prev) => ({ ...prev, teamId: preselectedTeamId }));
     }
   }, [preselectedEventId, preselectedTeamId]);
+
+  // Cargar equipos cuando se selecciona un evento
+  const loadTeamsForEvent = async (eventId) => {
+    if (!eventId) {
+      setAvailableTeams({ foundation: [], temporary: [], total: 0 });
+      return;
+    }
+
+    setLoadingTeams(true);
+    try {
+      const result = await fetchTeamsByEventCategories(eventId);
+      if (result.success) {
+        setAvailableTeams(result.data);
+      }
+    } catch (error) {
+      console.error("Error al cargar equipos:", error);
+      setAvailableTeams({ foundation: [], temporary: [], total: 0 });
+    } finally {
+      setLoadingTeams(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -44,6 +71,14 @@ const TeamRegistrationForm = ({
       ...prev,
       [name]: value,
     }));
+
+    // Si cambia el evento, cargar equipos filtrados
+    if (name === "serviceId") {
+      loadTeamsForEvent(value);
+      // Limpiar equipo seleccionado
+      setFormData((prev) => ({ ...prev, teamId: "" }));
+    }
+
     // Limpiar error del campo
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -102,6 +137,11 @@ const TeamRegistrationForm = ({
       });
       setErrors({});
 
+      // Recargar equipos si hay evento preseleccionado
+      if (preselectedEventId) {
+        loadTeamsForEvent(preselectedEventId);
+      }
+
       // Llamar callback de éxito
       if (onSuccess) {
         onSuccess(result.data);
@@ -117,13 +157,18 @@ const TeamRegistrationForm = ({
       notes: "",
     });
     setErrors({});
+    if (preselectedEventId) {
+      loadTeamsForEvent(preselectedEventId);
+    } else {
+      setAvailableTeams({ foundation: [], temporary: [], total: 0 });
+    }
   };
 
   // Filtrar eventos activos (no cancelados ni finalizados)
   const activeEvents = events.filter((event) => event.status === "Programado");
 
-  // Filtrar equipos activos
-  const activeTeams = teams.filter((team) => team.status === "Active");
+  // Combinar equipos de fundación y temporales
+  const allTeams = [...availableTeams.foundation, ...availableTeams.temporary];
 
   return (
     <div className="team-registration-form">
@@ -165,18 +210,54 @@ const TeamRegistrationForm = ({
             name="teamId"
             value={formData.teamId}
             onChange={handleChange}
-            disabled={loading || !!preselectedTeamId}
+            disabled={
+              loading ||
+              loadingTeams ||
+              !formData.serviceId ||
+              !!preselectedTeamId
+            }
             className={errors.teamId ? "error" : ""}
           >
-            <option value="">Seleccione un equipo</option>
-            {activeTeams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name} {team.category ? `- ${team.category}` : ""}
-              </option>
-            ))}
+            <option value="">
+              {loadingTeams
+                ? "Cargando equipos..."
+                : !formData.serviceId
+                  ? "Primero seleccione un evento"
+                  : allTeams.length === 0
+                    ? "No hay equipos disponibles para este evento"
+                    : "Seleccione un equipo"}
+            </option>
+
+            {/* Equipos de Fundación */}
+            {availableTeams.foundation.length > 0 && (
+              <optgroup label="Equipos de Fundación">
+                {availableTeams.foundation.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} {team.category ? `- ${team.category}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+
+            {/* Equipos Temporales */}
+            {availableTeams.temporary.length > 0 && (
+              <optgroup label="Equipos Temporales">
+                {availableTeams.temporary.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} {team.category ? `- ${team.category}` : ""}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
           {errors.teamId && (
             <span className="error-message">{errors.teamId}</span>
+          )}
+          {formData.serviceId && !loadingTeams && (
+            <small className="form-text">
+              {availableTeams.total} equipo(s) disponible(s) para las categorías
+              de este evento
+            </small>
           )}
         </div>
 
