@@ -38,6 +38,7 @@ const CalendarReportGenerator = ({
       // Validar que hay eventos para exportar
       if (!events || events.length === 0) {
         toast.error("No hay datos para exportar");
+        setIsGenerating(false);
         return;
       }
 
@@ -46,7 +47,7 @@ const CalendarReportGenerator = ({
         title: `${title} - ${formatMonthYear(selectedMonth)}`,
         fileName: `${entityName}_${formatMonthYear(selectedMonth).replace(
           " ",
-          "_"
+          "_",
         )}.${format === "pdf" ? "pdf" : "xlsx"}`,
         entityName: entityName,
       };
@@ -61,12 +62,12 @@ const CalendarReportGenerator = ({
             start: new Date(
               selectedMonth.getFullYear(),
               selectedMonth.getMonth(),
-              1
+              1,
             ),
             end: new Date(
               selectedMonth.getFullYear(),
               selectedMonth.getMonth() + 1,
-              0
+              0,
             ),
           },
           customFields: customFields,
@@ -82,6 +83,10 @@ const CalendarReportGenerator = ({
         }
       }
 
+      // Mostrar alerta de éxito que se cierra automáticamente
+      toast.success("Reporte generado exitosamente", { duration: 2000 });
+
+      // Cerrar el panel después de la descarga
       setIsOpen(false);
     } catch (error) {
       console.error("Error generando reporte:", error);
@@ -136,12 +141,12 @@ const CalendarReportGenerator = ({
     const startOfMonth = new Date(
       selectedMonth.getFullYear(),
       selectedMonth.getMonth(),
-      1
+      1,
     );
     const endOfMonth = new Date(
       selectedMonth.getFullYear(),
       selectedMonth.getMonth() + 1,
-      0
+      0,
     );
 
     return events.filter((event) => {

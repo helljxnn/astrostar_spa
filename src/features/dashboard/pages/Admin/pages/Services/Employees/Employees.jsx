@@ -74,7 +74,7 @@ const Employees = () => {
       ];
 
       const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower),
       );
 
       // Campo de estado (búsqueda exacta de palabra completa)
@@ -127,21 +127,21 @@ const Employees = () => {
         if (!hasPermission("employees", "Editar")) {
           showErrorAlert(
             "Sin permisos",
-            "No tienes permisos para editar empleados"
+            "No tienes permisos para editar empleados",
           );
           return false;
         }
         await updateEmployee(editingEmployee.id, employeeData);
         showSuccessAlert(
           "Empleado Actualizado",
-          "El empleado ha sido actualizado exitosamente"
+          "El empleado ha sido actualizado exitosamente",
         );
       } else {
         // Crear - verificar permisos
         if (!hasPermission("employees", "Crear")) {
           showErrorAlert(
             "Sin permisos",
-            "No tienes permisos para crear empleados"
+            "No tienes permisos para crear empleados",
           );
           return false;
         }
@@ -152,7 +152,7 @@ const Employees = () => {
           // Mostrar alerta de éxito
           showSuccessAlert(
             "Empleado Creado",
-            "El empleado ha sido creado exitosamente"
+            "El empleado ha sido creado exitosamente",
           );
         }
       }
@@ -170,7 +170,7 @@ const Employees = () => {
     if (!hasPermission("employees", "Editar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar empleados"
+        "No tienes permisos para editar empleados",
       );
       return;
     }
@@ -179,7 +179,7 @@ const Employees = () => {
     if (employee.user?.email === "astrostar.java@gmail.com") {
       showErrorAlert(
         "No se puede editar",
-        "No se puede editar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema."
+        "No se puede editar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.",
       );
       return;
     }
@@ -202,7 +202,7 @@ const Employees = () => {
     if (!hasPermission("employees", "Eliminar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar empleados"
+        "No tienes permisos para eliminar empleados",
       );
       return;
     }
@@ -211,7 +211,7 @@ const Employees = () => {
     if (employee.user?.email === "astrostar.java@gmail.com") {
       showErrorAlert(
         "No se puede eliminar",
-        "No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema."
+        "No se puede eliminar el usuario por defecto del sistema. Este usuario es esencial para el funcionamiento del sistema.",
       );
       return;
     }
@@ -222,7 +222,7 @@ const Employees = () => {
       }`.trim();
       const result = await showDeleteAlert(
         "¿Eliminar empleado?",
-        `Se eliminará permanentemente el empleado: ${employeeName}`
+        `Se eliminará permanentemente el empleado: ${employeeName}`,
       );
 
       if (result.isConfirmed) {
@@ -276,7 +276,7 @@ const Employees = () => {
         </div>
       </div>
 
-      {loading ? (
+      {loading && employees.length === 0 ? (
         <div className="flex justify-center items-center py-8">
           <InlineLoader message="Cargando empleados..." />
         </div>

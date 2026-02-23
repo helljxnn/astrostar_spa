@@ -39,14 +39,31 @@ export const generateFallbackPDF = (events, options = {}) => {
       }
 
       // Número y título
-      doc.text(`${index + 1}. ${event.title || "Sin título"}`, 20, yPos);
+      const titulo = event.title || event.nombre || "Sin título";
+      doc.text(`${index + 1}. ${titulo}`, 20, yPos);
       yPos += lineHeight;
 
-      // Detalles
-      const fecha = formatDate(event.date || event.start) || "Sin fecha";
-      const hora = event.time || extractTime(event.start) || "Sin hora";
-      const estado = event.status || "Sin estado";
-      const ubicacion = event.location || "Sin ubicación";
+      // Detalles - soportar múltiples estructuras de datos
+      const fecha =
+        formatDate(event.fechaInicio || event.date || event.start) ||
+        "Sin fecha";
+      const hora =
+        event.horaInicio ||
+        event.time ||
+        event.extendedProps?.horaInicio ||
+        extractTime(event.start) ||
+        "Sin hora";
+      const estado =
+        event.estadoOriginal ||
+        event.estado ||
+        event.extendedProps?.estadoOriginal ||
+        event.status ||
+        "Sin estado";
+      const ubicacion =
+        event.ubicacion ||
+        event.extendedProps?.ubicacion ||
+        event.location ||
+        "Sin ubicación";
 
       doc.text(`   Fecha: ${fecha} | Hora: ${hora}`, 20, yPos);
       yPos += lineHeight;
@@ -54,6 +71,25 @@ export const generateFallbackPDF = (events, options = {}) => {
       yPos += lineHeight;
 
       // Información adicional si existe
+      const tipo = event.tipo || event.extendedProps?.tipo || event.type;
+      if (tipo) {
+        doc.text(`   Tipo: ${tipo}`, 20, yPos);
+        yPos += lineHeight;
+      }
+
+      const categoria =
+        event.categoria || event.extendedProps?.categoria || event.category;
+      if (categoria) {
+        doc.text(`   Categoría: ${categoria}`, 20, yPos);
+        yPos += lineHeight;
+      }
+
+      const telefono =
+        event.telefono || event.extendedProps?.telefono || event.phone;
+      if (telefono) {
+        doc.text(`   Teléfono: ${telefono}`, 20, yPos);
+        yPos += lineHeight;
+      }
       if (event.extendedProps?.professorName) {
         doc.text(`   Profesor: ${event.extendedProps.professorName}`, 20, yPos);
         yPos += lineHeight;
@@ -62,7 +98,7 @@ export const generateFallbackPDF = (events, options = {}) => {
         doc.text(
           `   Deportistas: ${event.extendedProps.totalAthletes}`,
           20,
-          yPos
+          yPos,
         );
         yPos += lineHeight;
       }
@@ -76,7 +112,7 @@ export const generateFallbackPDF = (events, options = {}) => {
     doc.text(
       `Generado el ${currentDate} a las ${currentTime}`,
       20,
-      pageHeight - 10
+      pageHeight - 10,
     );
 
     // Descargar
@@ -107,6 +143,21 @@ export const generateFallbackExcel = async (events, options = {}) => {
     const headers = ["#", "Título", "Fecha", "Hora", "Estado", "Ubicación"];
 
     // Agregar headers adicionales si hay datos
+    if (events.some((e) => e.tipo || e.extendedProps?.tipo || e.type)) {
+      headers.push("Tipo");
+    }
+    if (
+      events.some(
+        (e) => e.categoria || e.extendedProps?.categoria || e.category,
+      )
+    ) {
+      headers.push("Categoría");
+    }
+    if (
+      events.some((e) => e.telefono || e.extendedProps?.telefono || e.phone)
+    ) {
+      headers.push("Teléfono");
+    }
     if (events.some((e) => e.extendedProps?.professorName)) {
       headers.push("Profesor");
     }
@@ -120,13 +171,41 @@ export const generateFallbackExcel = async (events, options = {}) => {
     events.forEach((event, index) => {
       const row = [
         index + 1,
-        event.title || "Sin título",
-        formatDate(event.date || event.start) || "Sin fecha",
-        event.time || extractTime(event.start) || "Sin hora",
-        event.status || "Sin estado",
-        event.location || "Sin ubicación",
+        event.title || event.nombre || "Sin título",
+        formatDate(event.fechaInicio || event.date || event.start) ||
+          "Sin fecha",
+        event.horaInicio ||
+          event.time ||
+          event.extendedProps?.horaInicio ||
+          extractTime(event.start) ||
+          "Sin hora",
+        event.estadoOriginal ||
+          event.estado ||
+          event.extendedProps?.estadoOriginal ||
+          event.status ||
+          "Sin estado",
+        event.ubicacion ||
+          event.extendedProps?.ubicacion ||
+          event.location ||
+          "Sin ubicación",
       ];
 
+      if (headers.includes("Tipo")) {
+        row.push(event.tipo || event.extendedProps?.tipo || event.type || "");
+      }
+      if (headers.includes("Categoría")) {
+        row.push(
+          event.categoria ||
+            event.extendedProps?.categoria ||
+            event.category ||
+            "",
+        );
+      }
+      if (headers.includes("Teléfono")) {
+        row.push(
+          event.telefono || event.extendedProps?.telefono || event.phone || "",
+        );
+      }
       if (headers.includes("Profesor")) {
         row.push(event.extendedProps?.professorName || "Sin asignar");
       }
