@@ -916,11 +916,28 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         icon: Users,
         onClick: (event) => {
           const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+
+          // Determinar el tipo de participante según el tipo de evento
+          const getParticipantType = () => {
+            switch (dashboardEvent.tipo) {
+              case "Festival":
+              case "Torneo":
+                return "Equipos";
+              case "Clausura":
+              case "Taller":
+                return "Deportistas";
+              default:
+                return "Deportistas";
+            }
+          };
+
+          const participantType = getParticipantType();
+
           // Abrir modal para ver inscritos
           setInscriptionModal({
             isOpen: true,
             eventName: dashboardEvent.title,
-            participantType: "Deportistas", // Usar el formato correcto
+            participantType: participantType, // ✅ Usar el tipo correcto según el evento
             action: "viewRegistrations",
             eventId: dashboardEvent.id,
           });

@@ -12,18 +12,15 @@ import {
   providerValidationRules,
 } from "../hooks/useFormProviderValidation";
 import providersService from "../services/ProvidersService";
-
 // Datos que deberían venir de la API pero se mantienen como constantes por ser estáticos
 const entityTypes = [
   { value: "juridica", label: "Persona Jurídica" },
   { value: "natural", label: "Persona Natural" },
 ];
-
 const states = [
   { value: "Activo", label: "Activo" },
   { value: "Inactivo", label: "Inactivo" },
 ];
-
 const ProviderModal = ({
   isOpen,
   onClose,
@@ -33,7 +30,6 @@ const ProviderModal = ({
   mode = providerToEdit ? "edit" : "create",
 }) => {
   const isEditing = mode === "edit" || providerToEdit !== null;
-
   const initialValues = {
     tipoEntidad: "juridica",
     razonSocial: "",
@@ -47,10 +43,8 @@ const ProviderModal = ({
     descripcion: "",
     estado: "Activo",
   };
-
   // Obtener tipos de documento filtrados desde la API del módulo de empleados
   const [employeeDocumentTypes, setEmployeeDocumentTypes] = React.useState([]);
-
   // Usar los tipos de documento del módulo de empleados para personas naturales
   const filteredDocumentTypes = React.useMemo(() => {
     if (employeeDocumentTypes.length > 0) {
@@ -58,7 +52,6 @@ const ProviderModal = ({
     }
     return [];
   }, [employeeDocumentTypes]);
-
   const {
     values,
     errors,
@@ -79,7 +72,6 @@ const ProviderModal = ({
     isEditing,
     filteredDocumentTypes
   );
-
   // HandleChange personalizado
   const handleChange = (name, value) => {
     if (name === "tipoEntidad") {
@@ -91,10 +83,8 @@ const ProviderModal = ({
         originalNit: providerToEdit?.nit,
         originalTipoDoc: providerToEdit?.tipoDocumento,
       });
-
       // Si estamos editando y volvemos al tipo original, restaurar valores originales
       if (isEditing && value === providerToEdit?.tipoEntidad) {
-        console.log("Restaurando valores originales...");
         setValues((prev) => ({
           ...prev,
           tipoEntidad: value,
@@ -109,18 +99,15 @@ const ProviderModal = ({
       originalHandleChange(name, value);
     }
   };
-
   // HandleChange personalizado para NIT que solo permite números
   const handleNitChange = (name, value) => {
     // Solo permitir números para el campo NIT
     const numericValue = value.replace(/[^0-9]/g, "");
     handleChange(name, numericValue);
   };
-
   // Validación en tiempo real similar a empleados
   const handleCustomBlur = async (name) => {
     handleBlur(name);
-
     // Validar unicidad para campos específicos solo si pasan la validación básica
     if (
       (name === "nit" || name === "razonSocial" || name === "correo") &&
@@ -135,11 +122,9 @@ const ProviderModal = ({
           if (validationError) break;
         }
       }
-
       // Solo hacer la petición al servidor si no hay errores de validación básica
       if (!validationError) {
         const excludeId = isEditing ? providerToEdit.id : null;
-
         try {
           let response;
           if (name === "nit") {
@@ -163,7 +148,6 @@ const ProviderModal = ({
               excludeId
             );
           }
-
           // Manejar respuesta del servidor
           if (response && !response.available) {
             const errorMessage =
@@ -185,21 +169,17 @@ const ProviderModal = ({
       }
     }
   };
-
   const getCombinedError = (fieldName) => {
     if (!touched[fieldName]) {
       return null;
     }
     return errors[fieldName];
   };
-
   const isFieldTouched = (fieldName) => {
     return touched[fieldName] && errors[fieldName];
   };
-
   // Estado para mantener el tipoDocumento original durante la carga
   const [originalTipoDocumento, setOriginalTipoDocumento] = React.useState("");
-
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
       const editData = {
@@ -215,7 +195,6 @@ const ProviderModal = ({
         descripcion: providerToEdit.descripcion || "",
         estado: providerToEdit.estado || "Activo",
       };
-
       // Guardar el tipoDocumento original con más información de debug
       console.log("Datos del proveedor a editar:", {
         tipoEntidad: providerToEdit.tipoEntidad,
@@ -223,31 +202,24 @@ const ProviderModal = ({
         documentTypeId: providerToEdit.documentTypeId,
         fullProvider: providerToEdit,
       });
-
       // Guardar tanto tipoDocumento como documentTypeId por si acaso
       const originalDocType =
         providerToEdit.tipoDocumento || providerToEdit.documentTypeId || "";
       setOriginalTipoDocumento(originalDocType);
-
       // Si es persona natural y tiene tipoDocumento, asegurarse de que se mantenga
       if (providerToEdit.tipoEntidad === "natural" && originalDocType) {
         editData.tipoDocumento = originalDocType;
       }
-
       setValues(editData);
-
       // Actualizar valores originales para restauración
       updateOriginalValues(editData);
       // Limpiar validaciones al cargar datos de edición
       setTimeout(() => resetValidation(), 0);
     }
   }, [isOpen, isEditing, providerToEdit, setValues, setTouched]);
-
   const handleSubmit = async () => {
     touchAllFields();
-
     const hasValidationErrors = !validateAllFields();
-
     if (hasValidationErrors) {
       showErrorAlert(
         "Campos incompletos",
@@ -255,7 +227,6 @@ const ProviderModal = ({
       );
       return;
     }
-
     // Validar unicidad de NIT/documento antes del envío
     if (values.nit && !errors.nit) {
       try {
@@ -265,7 +236,6 @@ const ProviderModal = ({
           excludeId,
           values.tipoEntidad
         );
-
         if (!nitCheck.available) {
           showErrorAlert("Error", nitCheck.message);
           return;
@@ -274,7 +244,6 @@ const ProviderModal = ({
         console.error("Error checking NIT availability:", error);
       }
     }
-
     // Validar unicidad de razón social/nombre antes del envío (solo para jurídicas)
     if (
       values.razonSocial &&
@@ -289,7 +258,6 @@ const ProviderModal = ({
             excludeId,
             values.tipoEntidad
           );
-
         if (!businessNameCheck.available) {
           showErrorAlert("Error", businessNameCheck.message);
           return;
@@ -298,7 +266,6 @@ const ProviderModal = ({
         console.error("Error checking business name availability:", error);
       }
     }
-
     // Validar unicidad de email antes del envío
     if (values.correo && !errors.correo) {
       try {
@@ -307,7 +274,6 @@ const ProviderModal = ({
           values.correo,
           excludeId
         );
-
         if (!emailCheck.available) {
           showErrorAlert("Error", emailCheck.message);
           return;
@@ -316,7 +282,6 @@ const ProviderModal = ({
         console.error("Error checking email availability:", error);
       }
     }
-
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -330,21 +295,17 @@ const ProviderModal = ({
         return;
       }
     }
-
     try {
       const providerData = {
         ...values,
       };
-
       // Solo establecer "Activo" por defecto si estamos creando Y no hay estado definido
       if (!isEditing && !providerData.estado) {
         providerData.estado = "Activo";
       }
-
       if (values.tipoEntidad === "juridica") {
         delete providerData.tipoDocumento;
       }
-
       let result;
       if (isEditing) {
         const updatedProviderData = { ...providerData, id: providerToEdit.id };
@@ -352,7 +313,6 @@ const ProviderModal = ({
       } else {
         result = await onSave(providerData);
       }
-
       if (result && result.success) {
         showSuccessAlert(
           isEditing ? "Proveedor actualizado" : "Proveedor creado",
@@ -383,17 +343,14 @@ const ProviderModal = ({
       );
     }
   };
-
   const handleClose = () => {
     resetForm();
     setTouched({});
-
     // Limpiar tipoDocumento original y tipos de documento
     setOriginalTipoDocumento("");
     setEmployeeDocumentTypes([]);
     onClose();
   };
-
   const getDynamicLabel = (field) => {
     switch (field) {
       case "razonSocial":
@@ -408,20 +365,17 @@ const ProviderModal = ({
         return "";
     }
   };
-
   React.useEffect(() => {
     const fetchDocumentTypes = async () => {
       try {
         const response = await providersService.getDocumentTypes();
         if (response.success && response.data) {
-          console.log("Tipos de documento cargados:", response.data);
           setEmployeeDocumentTypes(response.data);
         }
       } catch (error) {
         console.error("Error fetching document types:", error);
       }
     };
-
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
     // Cargar inmediatamente cuando se abre el modal si es necesario
     if (
@@ -432,7 +386,6 @@ const ProviderModal = ({
       fetchDocumentTypes();
     }
   }, [isOpen, values.tipoEntidad, isEditing, providerToEdit?.tipoEntidad]);
-
   // Efecto para restaurar tipoDocumento cuando se cargan los tipos de documento en edición
   React.useEffect(() => {
     if (
@@ -451,7 +404,6 @@ const ProviderModal = ({
         })),
         currentTipoDoc: values.tipoDocumento,
       });
-
       // Buscar coincidencia por múltiples criterios
       const matchingType = employeeDocumentTypes.find((type) => {
         const typeId = type.id?.toString();
@@ -459,7 +411,6 @@ const ProviderModal = ({
         const typeName = type.name;
         const typeLabel = type.label;
         const originalStr = originalTipoDocumento.toString();
-
         return (
           typeId === originalStr ||
           typeValue === originalStr ||
@@ -467,7 +418,6 @@ const ProviderModal = ({
           typeLabel === originalStr
         );
       });
-
       if (matchingType) {
         // Priorizar value, luego id
         const valueToSet = matchingType.value || matchingType.id.toString();
@@ -477,7 +427,6 @@ const ProviderModal = ({
           "para tipo:",
           matchingType
         );
-
         // Solo actualizar si el valor actual es diferente para evitar loops
         if (values.tipoDocumento !== valueToSet) {
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
@@ -487,8 +436,6 @@ const ProviderModal = ({
           "No se encontró tipo matching para:",
           originalTipoDocumento
         );
-        console.log("Tipos disponibles:", employeeDocumentTypes);
-
         // Intentar buscar por coincidencia parcial o similar
         const partialMatch = employeeDocumentTypes.find((type) => {
           const originalLower = originalTipoDocumento.toString().toLowerCase();
@@ -499,7 +446,6 @@ const ProviderModal = ({
             originalLower.includes(type.label?.toLowerCase())
           );
         });
-
         if (partialMatch) {
           const valueToSet = partialMatch.value || partialMatch.id.toString();
           console.log(
@@ -510,7 +456,6 @@ const ProviderModal = ({
           );
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         } else if (!values.tipoDocumento && employeeDocumentTypes.length > 0) {
-          console.log("Usando primer tipo disponible como fallback");
           const fallbackValue =
             employeeDocumentTypes[0].value ||
             employeeDocumentTypes[0].id.toString();
@@ -524,9 +469,7 @@ const ProviderModal = ({
     originalTipoDocumento,
     values.tipoEntidad,
   ]);
-
   if (!isOpen) return null;
-
   return (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -560,7 +503,6 @@ const ProviderModal = ({
             </p>
           )}
         </div>
-
         <div className="flex-1 overflow-y-auto p-3">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -683,7 +625,6 @@ const ProviderModal = ({
               ))}
             </div>
           </motion.div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <motion.div>
               <FormField
@@ -699,7 +640,6 @@ const ProviderModal = ({
                 required
               />
             </motion.div>
-
             <AnimatePresence mode="wait">
               {values.tipoEntidad === "natural" && (
                 <motion.div
@@ -735,7 +675,6 @@ const ProviderModal = ({
                 </motion.div>
               )}
             </AnimatePresence>
-
             <motion.div>
               {values.tipoEntidad === "natural" ? (
                 <DocumentField
@@ -789,7 +728,6 @@ const ProviderModal = ({
                 />
               )}
             </motion.div>
-
             <motion.div>
               <FormField
                 label="Contacto Principal"
@@ -804,7 +742,6 @@ const ProviderModal = ({
                 required
               />
             </motion.div>
-
             <motion.div>
               <FormField
                 label="Correo Electrónico"
@@ -818,7 +755,6 @@ const ProviderModal = ({
                 touched={isFieldTouched("correo")}
               />
             </motion.div>
-
             <motion.div>
               <FormField
                 label="Número Telefónico"
@@ -834,7 +770,6 @@ const ProviderModal = ({
                 required
               />
             </motion.div>
-
             <motion.div>
               <FormField
                 label="Dirección"
@@ -849,7 +784,6 @@ const ProviderModal = ({
                 required
               />
             </motion.div>
-
             <motion.div>
               <FormField
                 label="Ciudad"
@@ -864,7 +798,6 @@ const ProviderModal = ({
                 required
               />
             </motion.div>
-
             {isEditing && (
               <motion.div>
                 <FormField
@@ -882,7 +815,6 @@ const ProviderModal = ({
                 />
               </motion.div>
             )}
-
             <motion.div className="lg:col-span-3">
               <FormField
                 label="Descripción"
@@ -899,7 +831,6 @@ const ProviderModal = ({
             </motion.div>
           </div>
         </div>
-
         <div className="flex-shrink-0 border-t border-gray-200 p-3">
           <div className="flex justify-between">
             <button
@@ -921,5 +852,4 @@ const ProviderModal = ({
     </motion.div>
   );
 };
-
 export default ProviderModal;

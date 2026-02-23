@@ -139,6 +139,30 @@ class RegistrationsService {
   }
 
   /**
+   * Obtener deportistas disponibles filtrados por categorías del evento
+   */
+  async getAthletesByEventCategories(serviceId) {
+    try {
+      const response = await apiClient.get(
+        `${this.endpoint}/event/${serviceId}/athletes/available`,
+      );
+
+      return {
+        success: response.success || false,
+        data: response.data || { athletes: [], total: 0 },
+        message: response.message,
+      };
+    } catch (error) {
+      console.error("Error getting athletes by event categories:", error);
+      return {
+        success: false,
+        data: { athletes: [], total: 0 },
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Inscribir deportista individual a un evento
    */
   async registerAthlete(data) {

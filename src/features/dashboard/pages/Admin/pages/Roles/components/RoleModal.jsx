@@ -5,7 +5,6 @@ import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
 import { useRoleNameValidation } from "../hooks/useRoleNameValidation";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { roleValidationRules } from "../hooks/useFormRoleValidation";
-import { useLoader } from "../../../../../../../shared/components/Loader";
 import {
   showSuccessAlert,
   showConfirmAlert,
@@ -128,9 +127,6 @@ const actions = [
 ];
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
-  // Hook del loader
-  const { showLoader, hideLoader } = useLoader();
-
   // Usar ref para mantener el ID del rol y evitar re-renders
   const roleIdRef = useRef(roleData?.id);
 
@@ -384,9 +380,6 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         if (!result.isConfirmed) return;
       }
 
-      // Mostrar loader durante el proceso de guardado
-      showLoader(roleData ? "Actualizando rol..." : "Creando rol...");
-
       // Guardar rol
       await onSave(roleToSave);
 
@@ -405,8 +398,6 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       }
     } catch (error) {
       console.error("Error en handleSubmit:", error);
-    } finally {
-      hideLoader();
     }
 
     setPermissionError("");
@@ -826,4 +817,3 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 };
 
 export default RoleModal;
-

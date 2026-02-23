@@ -16,7 +16,6 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
-
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -34,7 +33,6 @@ const Providers = () => {
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const rowsPerPage = 5;
   const { hasPermission } = usePermissions();
-
   const fetchProviders = async () => {
     try {
       setLoading(true);
@@ -64,13 +62,11 @@ const Providers = () => {
       setLoading(false);
     }
   };
-
   const enrichProvidersWithDocumentTypes = async (providers) => {
     try {
       const response = await providersService.getDocumentTypes();
       if (response.success && response.data) {
         const documentTypes = response.data;
-
         return providers.map((provider) => {
           if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
             const docType = documentTypes.find(
@@ -96,7 +92,6 @@ const Providers = () => {
     } catch (error) {
       console.error("Error enriching providers with document types:", error);
     }
-
     return providers.map((provider) => ({
       ...provider,
       tipoDocumentoNombre:
@@ -107,10 +102,8 @@ const Providers = () => {
           : null,
     }));
   };
-
   const checkActivePurchasesForProviders = async (providers) => {
     const purchasesCheck = {};
-
     // Usar Promise.all para llamadas paralelas en lugar de secuenciales
     const promises = providers.map(async (provider) => {
       try {
@@ -125,19 +118,15 @@ const Providers = () => {
         return { id: provider.id, hasActivePurchases: false };
       }
     });
-
     const results = await Promise.all(promises);
     results.forEach((result) => {
       purchasesCheck[result.id] = result.hasActivePurchases;
     });
-
     setActivePurchasesCheck(purchasesCheck);
   };
-
   useEffect(() => {
     fetchProviders();
   }, [currentPage, searchTerm]);
-
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
@@ -146,17 +135,14 @@ const Providers = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, navigate, location.pathname]);
-
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     // Solo limpiar espacios, guiones y paréntesis, mantener el número completo
     return phone.replace(/[\s\-\(\)]/g, "");
   };
-
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
-
   const handleSave = async (newProvider) => {
     if (!hasPermission("providers", "Crear")) {
       showErrorAlert(
@@ -171,7 +157,6 @@ const Providers = () => {
         telefono: formatPhoneNumber(newProvider.telefono),
       };
       const response = await providersService.createProvider(providerData);
-
       if (response.success) {
         showSuccessAlert(
           "Proveedor creado",
@@ -193,7 +178,6 @@ const Providers = () => {
       throw error; // ← Lanzar el error para que el modal lo capture
     }
   };
-
   const handleUpdate = async (updatedProvider) => {
     if (!hasPermission("providers", "Editar")) {
       showErrorAlert(
@@ -211,7 +195,6 @@ const Providers = () => {
         updatedProvider.id,
         providerData
       );
-
       if (response.success) {
         showSuccessAlert(
           "Proveedor actualizado",
@@ -236,7 +219,6 @@ const Providers = () => {
       throw error;
     }
   };
-
   const handleEdit = async (provider) => {
     if (!hasPermission("providers", "Editar")) {
       showErrorAlert(
@@ -246,11 +228,9 @@ const Providers = () => {
       return;
     }
     if (!provider || provider.target) return;
-
     try {
       // Obtener los datos completos del proveedor desde el backend
       const response = await providersService.getProviderById(provider.id);
-
       if (response.success && response.data) {
         console.log(
           "Datos completos del proveedor para edición:",
@@ -270,7 +250,6 @@ const Providers = () => {
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
-
   const handleView = async (provider) => {
     if (!hasPermission("providers", "Ver")) {
       showErrorAlert(
@@ -280,11 +259,9 @@ const Providers = () => {
       return;
     }
     if (!provider || provider.target) return;
-
     try {
       // Obtener los datos completos del proveedor desde el backend
       const response = await providersService.getProviderById(provider.id);
-
       if (response.success && response.data) {
         setProviderToView(response.data);
         setIsViewModalOpen(true);
@@ -299,7 +276,6 @@ const Providers = () => {
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
-
   const handleDelete = async (provider) => {
     if (!hasPermission("providers", "Eliminar")) {
       showErrorAlert(
@@ -341,7 +317,6 @@ const Providers = () => {
       showErrorAlert("Error", "Error al eliminar el proveedor en el servidor");
     }
   };
-
   const buttonConfig = {
     edit: (provider) => ({
       show: hasPermission("providers", "Editar"),
@@ -361,9 +336,7 @@ const Providers = () => {
       title: "Ver detalles",
     }),
   };
-
   const startIndex = (currentPage - 1) * rowsPerPage;
-
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -449,7 +422,6 @@ const Providers = () => {
           </div>
         </div>
       </div>
-
       {loading ? (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           Cargando proveedores...
@@ -512,7 +484,6 @@ const Providers = () => {
           No hay proveedores registrados todavía.
         </div>
       )}
-
       <ProviderModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -529,5 +500,4 @@ const Providers = () => {
     </div>
   );
 };
-
 export default Providers;

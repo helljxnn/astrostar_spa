@@ -111,13 +111,11 @@ const SmartRedirect = () => {
   // Buscar la primera página a la que tiene acceso
   for (const route of redirectPriority) {
     if (hasModuleAccess(route.module)) {
-      console.log(`🔄 Redirigiendo a: ${route.label} (${route.path})`);
       return <Navigate to={route.path} replace />;
     }
   }
 
   // Si no tiene acceso a ningún módulo, redirigir a página de no autorizado
-  console.warn("⚠️ Usuario sin acceso a ningún módulo");
   return <Navigate to="/unauthorized" replace />;
 };
 
