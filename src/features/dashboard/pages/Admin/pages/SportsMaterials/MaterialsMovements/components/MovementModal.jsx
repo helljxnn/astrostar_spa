@@ -6,6 +6,7 @@ import SearchableSelect from '../../../../../../../../shared/components/Searchab
 import ProviderModal from '../../../Providers/components/ProviderModal';
 import materialsService from '../../Materials/services/MaterialsService';
 import providersService from '../../../Providers/services/ProvidersService';
+import eventsService from '../../../Events/services/eventsService';
 import { calculateNewStock, validateMovementQuantity } from '../../shared/utils/stockCalculations';
 import { formatStock, formatNumber } from '../../../../../../../../shared/utils/numberFormat';
 
@@ -26,6 +27,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
     cantidad: '',
     fechaIngreso: getTodayLocalDate(), // Fecha de hoy por defecto
     destinoStock: '', // '' | 'USO_INTERNO' | 'EVENTOS'
+    eventoId: '', // ID del evento al que se asigna
     proveedor: '',
     observaciones: '',
   });
@@ -40,6 +42,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
 
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       if (isEditing && movement) {
@@ -51,6 +56,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
           cantidad: movement.cantidad || '',
           fechaIngreso: movement.fechaIngreso ? movement.fechaIngreso.split('T')[0] : getTodayLocalDate(),
           destinoStock: movement.destinoStock || 'USO_INTERNO',
+          eventoId: movement.eventoId || '',
           proveedor: movement.proveedorId || '',
           observaciones: movement.observaciones || '',
         });
@@ -70,6 +76,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
           cantidad: '',
           fechaIngreso: getTodayLocalDate(),
           destinoStock: '',
+          eventoId: '',
           proveedor: '',
           observaciones: '',
         });
@@ -77,6 +84,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       }
       fetchMaterials();
       fetchProviders();
+      fetchEvents();
     }
   }, [isOpen, isEditing, movement]);
 
@@ -112,6 +120,21 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
     }
   };
 
+  const fetchEvents = async () => {
+    try {
+      setLoadingEvents(true);
+      const response = await eventsService.getActiveEvents();
+      if (response.success && response.data) {
+        setEvents(response.data);
+      }
+    } catch (error) {
+      console.error('Error al cargar eventos:', error);
+      setEvents([]);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
   const handleMaterialSelect = (material) => {
     setSelectedMaterial(material);
     setFormData(prev => ({ 
@@ -127,6 +150,13 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Si cambia el destino y no es EVENTOS, limpiar eventoId
+    if (name === 'destinoStock' && value !== 'EVENTOS') {
+      setFormData(prev => ({ ...prev, eventoId: '' }));
+      setErrors(prev => ({ ...prev, eventoId: '' }));
+    }
+    
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -176,6 +206,11 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       case 'destinoStock':
         if (!value) {
           error = 'El destino es obligatorio';
+        }
+        break;
+      case 'eventoId':
+        if (formData.destinoStock === 'EVENTOS' && !value) {
+          error = 'Debes seleccionar un evento';
         }
         break;
       default:
@@ -228,6 +263,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         cantidad: true,
         fechaIngreso: true,
         destinoStock: true,
+        eventoId: formData.destinoStock === 'EVENTOS',
       });
 
       if (!selectedMaterial) {
@@ -242,8 +278,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       const cantidadError = validateField('cantidad');
       const fechaError = validateField('fechaIngreso');
       const destinoError = validateField('destinoStock');
+      const eventoError = formData.destinoStock === 'EVENTOS' ? validateField('eventoId') : '';
 
-      if (materialError || cantidadError || fechaError || destinoError) {
+      if (materialError || cantidadError || fechaError || destinoError || eventoError) {
         return;
       }
 
@@ -266,8 +303,8 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
           cantidad: cantidad,
           fechaIngreso: formData.fechaIngreso,
           destinoStock: formData.destinoStock, // 'USO_INTERNO' | 'EVENTOS'
+          eventoId: formData.destinoStock === 'EVENTOS' ? formData.eventoId : null,
           proveedor: formData.proveedor || null,
-          eventoDestino: formData.eventoDestino || null,
           observaciones: formData.observaciones || null,
           stockAnterior: stockAnterior,
           stockNuevo: stockNuevo
@@ -294,6 +331,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       cantidad: '',
       fechaIngreso: new Date().toISOString().split('T')[0],
       destinoStock: '',
+      eventoId: '',
       proveedor: '',
       observaciones: '',
     });
@@ -424,7 +462,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                 >
                   <option value="">Seleccione destino</option>
                   <option value="USO_INTERNO">Uso Interno (Fundación)</option>
-                  <option value="EVENTOS">Eventos</option>
+                  <option value="EVENTOS">Asignar a Evento</option>
                 </select>
                 {touched.destinoStock && errors.destinoStock && (
                   <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
@@ -438,7 +476,45 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                   <p className="mt-1 text-xs text-gray-500">
                     {formData.destinoStock === 'USO_INTERNO' 
                       ? 'Este material se sumará al stock disponible para uso de la fundación'
-                      : 'Este material estará disponible para asignar a eventos'}
+                      : 'Este material se reservará para el evento seleccionado (no baja del stock hasta finalizar el evento)'}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Selección de Evento (solo si destino es EVENTOS) */}
+            {!isEditing && formData.destinoStock === 'EVENTOS' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Evento <span className="text-red-500">*</span>
+                </label>
+                <SearchableSelect
+                  name="eventoId"
+                  options={events.map(e => ({
+                    value: e.id,
+                    label: `${e.nombre} - ${e.fechaInicio ? new Date(e.fechaInicio).toLocaleDateString('es-CO') : 'Sin fecha'}`
+                  }))}
+                  value={formData.eventoId}
+                  onChange={handleChange}
+                  onBlur={() => handleBlur('eventoId')}
+                  placeholder="Selecciona un evento"
+                  loading={loadingEvents}
+                  error={touched.eventoId && errors.eventoId}
+                />
+                {touched.eventoId && errors.eventoId && (
+                  <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
+                      !
+                    </span>
+                    <span>{errors.eventoId}</span>
+                  </p>
+                )}
+                {events.length === 0 && !loadingEvents && (
+                  <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
+                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
+                      ⚠
+                    </span>
+                    <span>No hay eventos activos disponibles</span>
                   </p>
                 )}
               </div>

@@ -62,28 +62,36 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Stock Disponible
-                  </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                    {formatStock(material.stockDisponible || 0)}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Stock Eventos
-                  </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                    {formatStock(material.stockReservado || 0)}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
                     Stock Total
                   </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
-                    {formatStock(material.stockTotal || 0)}
+                  <div className="px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-blue-900 font-semibold">
+                    {formatStock(material.stock || material.stockTotal || 0)}
                   </div>
+                  <p className="text-xs text-gray-500 mt-1">Total en inventario</p>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Reservado (Eventos)
+                  </label>
+                  <div className="px-3 py-2 bg-amber-50 border border-amber-300 rounded-lg text-amber-900">
+                    {formatStock(material.stockReservado || 0)}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Asignado a eventos</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    Disponible
+                  </label>
+                  <div className="px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-green-900 font-semibold">
+                    {formatStock((material.stock || material.stockTotal || 0) - (material.stockReservado || 0))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Libre para usar</p>
+                </div>
+              </div>
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  <strong>Nota:</strong> El stock reservado para eventos no se descuenta del inventario hasta que el evento finalice y se confirme su uso.
+                </p>
               </div>
             </div>
 

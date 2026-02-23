@@ -197,26 +197,37 @@ const MaterialsCatalog = () => {
 
   // Preparar datos para tabla con truncado
   const tableData = materials.map(m => {
+    // Nuevo modelo: un solo stock total, reservas virtuales
+    const stockTotal = m.stock || m.stockTotal || 0;
+    const stockReservado = m.stockReservado || 0;
+    const stockDisponible = stockTotal - stockReservado;
+    
     return {
       ...m,
       nombreTruncated: m.nombre.length > 40 ? m.nombre.substring(0, 40) + '...' : m.nombre,
       categoriaTruncated: m.categoria.length > 35 ? m.categoria.substring(0, 35) + '...' : m.categoria,
-      stockDisponible: formatNumber(m.stockDisponible || 0),
-      stockEventos: formatNumber(m.stockReservado || 0),
-      stockTotal: formatNumber(m.stockTotal || 0),
+      stockTotal: formatNumber(stockTotal),
+      stockReservado: formatNumber(stockReservado),
+      stockDisponible: formatNumber(stockDisponible),
     };
   });
 
   // Datos para reporte
-  const reportData = materials.map(m => ({
-    nombre: m.nombre,
-    categoria: m.categoria,
-    stockDisponible: m.stockDisponible || 0,
-    stockEventos: m.stockReservado || 0,
-    stockTotal: m.stockTotal || 0,
-    estado: m.estado,
-    descripcion: m.descripcion || 'N/A',
-  }));
+  const reportData = materials.map(m => {
+    const stockTotal = m.stock || m.stockTotal || 0;
+    const stockReservado = m.stockReservado || 0;
+    const stockDisponible = stockTotal - stockReservado;
+    
+    return {
+      nombre: m.nombre,
+      categoria: m.categoria,
+      stockTotal: stockTotal,
+      stockReservado: stockReservado,
+      stockDisponible: stockDisponible,
+      estado: m.estado,
+      descripcion: m.descripcion || 'N/A',
+    };
+  });
 
   return (
     <div className="p-6 font-questrial">
@@ -242,9 +253,9 @@ const MaterialsCatalog = () => {
                 columns={[
                   { header: "Nombre", accessor: "nombre" },
                   { header: "Categoría", accessor: "categoria" },
-                  { header: "Stock Disponible", accessor: "stockDisponible" },
-                  { header: "Stock Eventos", accessor: "stockEventos" },
                   { header: "Stock Total", accessor: "stockTotal" },
+                  { header: "Stock Reservado", accessor: "stockReservado" },
+                  { header: "Stock Disponible", accessor: "stockDisponible" },
                   { header: "Estado", accessor: "estado" },
                   { header: "Descripción", accessor: "descripcion" },
                 ]}
@@ -266,13 +277,13 @@ const MaterialsCatalog = () => {
       {/* Tabla */}
       <Table
         thead={{
-          titles: ["Nombre", "Categoría", "Stock Disponible", "Stock Eventos", "Stock Total"],
+          titles: ["Nombre", "Categoría", "Stock Total", "Reservado", "Disponible"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockDisponible", "stockEventos", "stockTotal"],
+          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockTotal", "stockReservado", "stockDisponible"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
