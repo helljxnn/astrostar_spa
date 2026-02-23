@@ -124,7 +124,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
             {/* Stock Disponible (readonly) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stock Disponible
+                Stock Total
               </label>
               <input
                 type="text"
@@ -134,10 +134,10 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               />
             </div>
 
-            {/* Stock Eventos (readonly) */}
+            {/* Stock Reservado (readonly) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stock Eventos
+                Stock Reservado (Eventos)
               </label>
               <input
                 type="text"
@@ -145,12 +145,15 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
                 readOnly
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Material asignado a eventos activos
+              </p>
             </div>
 
             {/* Origen del Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Origen del Stock <span className="text-red-500">*</span>
+                Tipo de Baja <span className="text-red-500">*</span>
               </label>
               <select
                 name="origenStock"
@@ -160,9 +163,9 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
                   errors.origenStock ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Seleccione origen</option>
-                <option value="USO_INTERNO">Uso Interno (Stock Disponible)</option>
-                <option value="EVENTOS">Eventos (Stock Eventos)</option>
+                <option value="">Seleccione tipo</option>
+                <option value="USO_INTERNO">Baja de Stock (Uso Interno)</option>
+                <option value="EVENTOS">Baja de Reserva (Evento)</option>
               </select>
               {errors.origenStock && (
                 <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
@@ -175,8 +178,8 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               {!errors.origenStock && formData.origenStock && (
                 <p className="mt-1 text-xs text-gray-500">
                   {formData.origenStock === 'USO_INTERNO' 
-                    ? `Se restará del stock disponible (${formatStock(material?.stockDisponible || 0)} disponibles)`
-                    : `Se restará del stock de eventos (${formatStock(material?.stockReservado || 0)} disponibles)`}
+                    ? `Baja del stock total (${formatStock(material?.stockDisponible || 0)} disponibles)`
+                    : `Baja de material reservado para eventos (${formatStock(material?.stockReservado || 0)} reservados)`}
                 </p>
               )}
             </div>
