@@ -320,7 +320,7 @@ const SelectionModal = ({
     const preparedItem = prepareItemData(item);
 
     if (isMultiSelect) {
-      const isSelected = selectedItems.some((s) => s.id === preparedItem.id);
+      const isCurrentlySelected = selectedItems.some((s) => s.id === preparedItem.id);
       let newSelection;
 
       if (isCurrentlySelected) {

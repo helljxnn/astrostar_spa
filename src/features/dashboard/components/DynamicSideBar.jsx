@@ -23,6 +23,7 @@ import {
   FaShoppingCart,
   FaDollarSign,
   FaSignOutAlt,
+  FaBoxes,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
@@ -123,6 +124,7 @@ function DynamicSideBar({
       ),
       FaRegCalendarAlt: <FaRegCalendarAlt size={size} className="shrink-0" />,
       FaShoppingCart: <FaShoppingCart size={size} className="shrink-0" />,
+      FaBoxes: <FaBoxes size={size} className="shrink-0" />,
       GiWeightLiftingUp: <GiWeightLiftingUp size={size} className="shrink-0" />,
     };
     return icons[iconName] || <FaUsers size={size} className="shrink-0" />;
@@ -359,7 +361,6 @@ function DynamicSideBar({
             {/* Módulos individuales principales */}
             {renderModule("users")}
             {renderModule("roles")}
-            {renderModule("sportsEquipment")}
 
             {/* Enlace directo a Gestión de citas para deportista y acudiente */}
             {isModuleVisible("appointmentManagement") &&
@@ -367,11 +368,11 @@ function DynamicSideBar({
               renderModule("appointmentManagement")}
 
             {/* Grupos de módulos */}
+            {renderGroup("equipment")}
             {renderGroup("services")}
             {renderGroup("athletes")}
             {renderGroup("donations")}
             {renderGroup("events")}
-            {renderGroup("purchases")}
           </div>
         </nav>
 

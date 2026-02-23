@@ -65,7 +65,6 @@ const Enrollments = () => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
-      console.log("🔄 Auto-refresh silencioso de inscripciones...");
       refresh(true); // true = silent mode
     }, 30000); // 30 segundos - balance entre actualización y rendimiento
 
@@ -105,11 +104,13 @@ const Enrollments = () => {
 
     return inscriptions.filter((inscription) => {
       const textFields = [
-        inscription.nombres,
-        inscription.apellidos,
-        inscription.correo,
-        inscription.numeroDocumento,
-        inscription.telefono,
+        inscription.firstName,
+        inscription.middleName,
+        inscription.lastName,
+        inscription.secondLastName,
+        inscription.email,
+        inscription.identification,
+        inscription.phoneNumber,
       ];
 
       return textFields.some(
@@ -294,7 +295,7 @@ const Enrollments = () => {
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Matrículas</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">Gestión de Matrículas</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -836,19 +837,19 @@ const Enrollments = () => {
                   data: paginatedData.map((inscription) => {
                     // Formatear fecha de nacimiento de forma segura (sin problemas de zona horaria)
                     let fechaNacimientoDisplay = "Fecha inválida";
-                    if (inscription.fechaNacimiento) {
+                    if (inscription.birthDate) {
                       try {
                         // Si viene en formato YYYY-MM-DD, formatear directamente
                         if (
-                          typeof inscription.fechaNacimiento === "string" &&
-                          /^\d{4}-\d{2}-\d{2}/.test(inscription.fechaNacimiento)
+                          typeof inscription.birthDate === "string" &&
+                          /^\d{4}-\d{2}-\d{2}/.test(inscription.birthDate)
                         ) {
-                          const [year, month, day] = inscription.fechaNacimiento
+                          const [year, month, day] = inscription.birthDate
                             .split("T")[0]
                             .split("-");
                           fechaNacimientoDisplay = `${day}/${month}/${year}`;
                         } else {
-                          const date = new Date(inscription.fechaNacimiento);
+                          const date = new Date(inscription.birthDate);
                           if (!isNaN(date.getTime())) {
                             fechaNacimientoDisplay =
                               date.toLocaleDateString("es-ES");
@@ -871,10 +872,19 @@ const Enrollments = () => {
                       }
                     }
 
+                    // Construir nombre completo desde los campos separados
+                    const firstName = inscription.firstName || "";
+                    const middleName = inscription.middleName || "";
+                    const lastName = inscription.lastName || "";
+                    const secondLastName = inscription.secondLastName || "";
+                    const nombreCompleto = `${firstName} ${middleName} ${lastName} ${secondLastName}`.replace(/\s+/g, ' ').trim();
+
                     return {
                       ...inscription,
-                      nombreCompleto: `${inscription.nombres} ${inscription.apellidos}`,
-                      documento: inscription.numeroDocumento || "Sin documento",
+                      nombreCompleto: nombreCompleto || "Sin nombre",
+                      documento: inscription.identification || "Sin documento",
+                      telefono: inscription.phoneNumber || "Sin teléfono",
+                      correo: inscription.email || "Sin correo",
                       fechaNacimientoDisplay,
                       fechaInscripcionDisplay,
                     };
@@ -904,9 +914,10 @@ const Enrollments = () => {
                   },
                   {
                     onClick: async (inscription) => {
+                      const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
                       const result = await showConfirmAlert(
                         "¿Rechazar inscripción?",
-                        `¿Estás seguro de rechazar la inscripción de ${inscription.nombres} ${inscription.apellidos}?`,
+                        `¿Estás seguro de rechazar la inscripción de ${fullName}?`,
                         {
                           confirmButtonText: "Sí, rechazar",
                           cancelButtonText: "Cancelar",

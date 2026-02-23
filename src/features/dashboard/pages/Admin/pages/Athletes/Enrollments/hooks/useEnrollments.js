@@ -104,7 +104,7 @@ export const useEnrollments = () => {
         // Crear un Set con los documentos de deportistas ya matriculados
         const enrolledDocuments = new Set(
           (athletesResult.data || []).map(athlete => 
-            athlete.numeroDocumento || athlete.identification
+            athlete.identification || athlete.numeroDocumento
           ).filter(Boolean)
         );
         
@@ -113,12 +113,13 @@ export const useEnrollments = () => {
         // Filtrar solo las pendientes Y que NO tengan deportista matriculado
         const pendingInscriptions = (inscriptionsResult.data || []).filter(
           (inscription) => {
-            const estado = (inscription.estado || "").toUpperCase();
+            const estado = (inscription.status || inscription.estado || "").toUpperCase();
             const isPending = estado === "PENDIENTE";
-            const documento = inscription.numeroDocumento;
+            const documento = inscription.identification || inscription.numeroDocumento;
             const isAlreadyEnrolled = enrolledDocuments.has(documento);
             
-            console.log(`📋 [useEnrollments] Inscripción ${inscription.nombres}: estado="${inscription.estado}" -> isPending=${isPending}, documento=${documento}, isAlreadyEnrolled=${isAlreadyEnrolled}`);
+            const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
+            console.log(`📋 [useEnrollments] Inscripción ${fullName}: estado="${inscription.status || inscription.estado}" -> isPending=${isPending}, documento=${documento}, isAlreadyEnrolled=${isAlreadyEnrolled}`);
             
             return isPending && !isAlreadyEnrolled;
           }

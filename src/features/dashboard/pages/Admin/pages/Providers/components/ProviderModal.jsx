@@ -1,12 +1,12 @@
 import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FormField } from "../../../../../../../../shared/components/FormField";
-import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
+import { FormField } from "../../../../../../../shared/components/FormField";
+import { DocumentField } from "../../../../../../../shared/components/DocumentField";
 import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts";
 import {
   useFormProviderValidation,
   providerValidationRules,
@@ -249,10 +249,6 @@ const ProviderModal = ({
     const hasValidationErrors = !validateAllFields();
 
     if (hasValidationErrors) {
-      showErrorAlert(
-        "Campos incompletos",
-        "Por favor completa todos los campos correctamente antes de continuar."
-      );
       return;
     }
 

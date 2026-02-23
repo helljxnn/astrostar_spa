@@ -11,113 +11,65 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
+import { MODULE_CONFIG, MODULE_GROUPS } from "../../../../../../../shared/constants/moduleConfig";
 
-// Organizar módulos por categorías para mejor visualización
-const moduleCategories = {
-  Dashboard: [
-    {
-      name: "Dashboard",
-      icon: "📊",
-      key: "dashboard",
-    },
-  ],
-  Usuarios: [
-    {
-      name: "Usuarios",
-      icon: "👤",
-      key: "users",
-    },
-  ],
-  Roles: [
-    {
-      name: "Roles",
-      icon: "🛡️",
-      key: "roles",
-    },
-  ],
-  "Material Deportivo": [
-    {
-      name: "Material Deportivo",
-      icon: "🏋️",
-      key: "sportsEquipment",
-    },
-  ],
-  Servicios: [
-    {
-      name: "Empleados",
-      icon: "👥",
-      key: "employees",
-    },
-    {
-      name: "Horario Empleados",
-      icon: "⏰",
-      key: "employeesSchedule",
-    },
-    {
-      name: "Gestión de citas",
-      icon: "📅",
-      key: "appointmentManagement",
-    },
-  ],
-  Deportistas: [
-    {
-      name: "Categoría deportiva",
-      icon: "🏆",
-      key: "sportsCategory",
-    },
-    {
-      name: "Gestión de deportistas",
-      icon: "🏃",
-      key: "athletesSection",
-    },
-    {
-      name: "Asistencia Deportistas",
-      icon: "✅",
-      key: "athletesAssistance",
-    },
-  ],
-  Donaciones: [
-    {
-      name: "Donantes/Patrocinadores",
-      icon: "🤝",
-      key: "donorsSponsors",
-    },
-    {
-      name: "Donaciones",
-      icon: "❤️",
-      key: "donationsManagement",
-    },
-  ],
-  Eventos: [
-    {
-      name: "Gestión de Eventos",
-      icon: "📅",
-      key: "eventsManagement",
-    },
-    {
-      name: "Personas temporales",
-      icon: "👷",
-      key: "temporaryWorkers",
-    },
-    {
-      name: "Equipos",
-      icon: "⚽",
-      key: "temporaryTeams",
-    },
-  ],
-  Compras: [
-    {
-      name: "Proveedores",
-      icon: "🏪",
-      key: "providers",
-    },
-    {
-      name: "Compras",
-      icon: "🛒",
-      key: "purchasesManagement",
-    },
-  ],
+// Generar categorías de módulos dinámicamente desde moduleConfig
+const generateModuleCategories = () => {
+  const categories = {};
+  
+  // Mapeo de iconos por módulo (puedes moverlo a moduleConfig si prefieres)
+  const iconMap = {
+    dashboard: "📊",
+    users: "👤",
+    roles: "🛡️",
+    materials: "🏋️",
+    materialCategories: "🏷️",
+    materialsRegistry: "📋",
+    providers: "🏪",
+    employees: "👥",
+    employeesSchedule: "⏰",
+    appointmentManagement: "📅",
+    classes: "👨‍🏫",
+    sportsCategory: "🏆",
+    athletesSection: "🏃",
+    athletesAssistance: "✅",
+    enrollments: "📝",
+    eventsManagement: "📅",
+    temporaryWorkers: "👷",
+    temporaryTeams: "⚽",
+    donorsSponsors: "🤝",
+    donationsManagement: "❤️",
+  };
+
+  // Módulos sin grupo (Dashboard, Usuarios, Roles)
+  Object.values(MODULE_CONFIG).forEach(module => {
+    if (!module.parent) {
+      const categoryName = module.name;
+      if (!categories[categoryName]) {
+        categories[categoryName] = [];
+      }
+      categories[categoryName].push({
+        name: module.name,
+        icon: iconMap[module.id] || "📄",
+        key: module.id,
+      });
+    }
+  });
+
+  // Módulos agrupados
+  Object.entries(MODULE_GROUPS).forEach(([groupId, group]) => {
+    const categoryName = group.name;
+    categories[categoryName] = group.children.map(moduleId => ({
+      name: MODULE_CONFIG[moduleId].name,
+      icon: iconMap[moduleId] || "📄",
+      key: moduleId,
+    }));
+  });
+
+  return categories;
 };
+
+const moduleCategories = generateModuleCategories();
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
