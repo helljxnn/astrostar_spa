@@ -19,12 +19,6 @@ import {
 /* -------------------------------------------------------
  * CONSTANTES
  * -----------------------------------------------------*/
-const STATUS_COLOR = {
-  Programado: "bg-[#c084fc]",
-  Completado: "bg-green-500",
-  Cancelado: "bg-gray-400",
-};
-
 const CANCEL_TYPES = {
   FULL_DAY: "full",
   TIME_RANGE: "time",
@@ -42,6 +36,73 @@ const parseCustomRecurrence = (raw) => {
     console.warn("No se pudo parsear customRecurrence", err);
     return null;
   }
+};
+
+const toDateKey = (value) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "yyyy-MM-dd");
+};
+
+const normalizeTime = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+  const hours = String(match[1]).padStart(2, "0");
+  const minutes = String(match[2]).padStart(2, "0");
+  return `${hours}:${minutes}`;
+};
+
+const parseTimeRange = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/([01]?\d|2[0-3]):([0-5]\d)\s*-\s*([01]?\d|2[0-3]):([0-5]\d)/);
+  if (!match) return null;
+  const startTime = normalizeTime(`${match[1]}:${match[2]}`);
+  const endTime = normalizeTime(`${match[3]}:${match[4]}`);
+  if (!startTime || !endTime) return null;
+  return { startTime, endTime };
+};
+
+const normalizeNoveltyFromApi = (novelty, fallbackDate) => {
+  if (!novelty) return null;
+  const dateKey = toDateKey(novelty.date || novelty.fecha || fallbackDate);
+  if (!dateKey) return null;
+
+  const rawType = String(novelty.type || novelty.tipoCancelacion || "").toLowerCase();
+  const type = rawType === "time" ? "time" : "full";
+
+  let startTime = normalizeTime(novelty.startTime || novelty.horaInicio || "");
+  let endTime = normalizeTime(novelty.endTime || novelty.horaFin || "");
+
+  if (!startTime || !endTime) {
+    const parsed = parseTimeRange(novelty.tiempoCancelacion || novelty.timeRange || "");
+    if (parsed) {
+      startTime = parsed.startTime;
+      endTime = parsed.endTime;
+    }
+  }
+
+  const reason =
+    novelty.reason ||
+    novelty.motivoCancelacion ||
+    novelty.explicacionTiempo ||
+    novelty.descripcion ||
+    "";
+
+  return {
+    id: novelty.id,
+    date: dateKey,
+    type,
+    startTime,
+    endTime,
+    reason: reason ? String(reason).trim() : "",
+  };
+};
+
+const getNoveltiesForDate = (schedule, dateKey) => {
+  const novelties = Array.isArray(schedule?.novelties) ? schedule.novelties : [];
+  return novelties.filter((novelty) => novelty?.date === dateKey);
 };
 
 /* -------------------------------------------------------
@@ -99,6 +160,18 @@ const parseCustomRecurrence = (raw) => {
       ""
   );
 
+  const rawNovelties =
+    apiSchedule.novelties ||
+    apiSchedule.novedadesDetalle ||
+    apiSchedule.novedadesDetalleHorario ||
+    [];
+  const noveltiesList = Array.isArray(rawNovelties)
+    ? rawNovelties
+    : [rawNovelties];
+  const novelties = noveltiesList
+    .map((item) => normalizeNoveltyFromApi(item, fecha))
+    .filter(Boolean);
+
   if (cancelPayloadRaw) {
     cancelPayloadRaw.motivoCancelacion = cancellationReason;
   }
@@ -144,11 +217,6 @@ const parseCustomRecurrence = (raw) => {
   ];
   const primaryNovedad = cleanedNovedades[0] || "";
 
-  const estadoRaw = apiSchedule.status || apiSchedule.estado || "Programado";
-  const estado = ["Programado", "Completado", "Cancelado"].includes(estadoRaw)
-    ? estadoRaw
-    : "Programado";
-
   return {
     id: apiSchedule.id,
     scheduleId: apiSchedule.id,
@@ -164,7 +232,7 @@ const parseCustomRecurrence = (raw) => {
     observaciones: apiSchedule.description || apiSchedule.descripcion || "",
     novedad: primaryNovedad,
     novedades: cleanedNovedades,
-    estado,
+    novelties,
     motivoCancelacion: cancellationReason,
     tipoCancelacion: cancelType,
     tiempoCancelacion:
@@ -174,8 +242,7 @@ const parseCustomRecurrence = (raw) => {
     cancelPayload: cancelPayloadRaw || null,
     start,
     end,
-    title: `Turno - ${name}${estado === "Cancelado" ? " (Cancelado)" : ""}`,
-    color: STATUS_COLOR[estado] || STATUS_COLOR.Programado,
+    title: `Turno - ${name}`,
   };
 };
 
@@ -187,6 +254,21 @@ const buildOccurrence = (schedule, date, occurrenceIndex) => {
   const start = new Date(`${dateStr}T${schedule.horaInicio}`);
   const end = new Date(`${dateStr}T${schedule.horaFin}`);
 
+  const noveltiesForDate = getNoveltiesForDate(schedule, dateStr);
+  const noveltyReasons = noveltiesForDate
+    .map((novelty) => novelty?.reason)
+    .filter(Boolean);
+  const legacyReasons = Array.isArray(schedule.novedades)
+    ? schedule.novedades
+    : schedule.novedad
+    ? [schedule.novedad]
+    : [];
+  const finalReasons = noveltyReasons.length > 0 ? noveltyReasons : legacyReasons;
+  const primaryNovedad = finalReasons[0] || "";
+  const timeNovelty = noveltiesForDate.find(
+    (novelty) => novelty?.type === "time" && novelty?.startTime && novelty?.endTime
+  );
+  const fullNovelty = noveltiesForDate.find((novelty) => novelty?.type === "full");
   return {
     ...schedule,
     fecha: dateStr,
@@ -195,12 +277,15 @@ const buildOccurrence = (schedule, date, occurrenceIndex) => {
     id: `${schedule.id}-${occurrenceIndex}`,
     scheduleId: schedule.id,
     occurrenceIndex,
-    title: `Turno - ${schedule.empleado}${
-      schedule.estado === "Cancelado" ? " (Cancelado)" : ""
-    }`,
-    color: STATUS_COLOR[schedule.estado] || STATUS_COLOR.Programado,
-    novedad: schedule.novedad,
-    novedades: schedule.novedades,
+    title: `Turno - ${schedule.empleado}`,
+    novedad: primaryNovedad,
+    novedades: finalReasons,
+    tipoCancelacion: fullNovelty ? "full" : timeNovelty ? "time" : schedule.tipoCancelacion,
+    tiempoCancelacion: timeNovelty
+      ? `${timeNovelty.startTime} - ${timeNovelty.endTime}`
+      : schedule.tiempoCancelacion,
+    explicacionTiempo: timeNovelty?.reason || schedule.explicacionTiempo,
+    noveltiesForDate,
   };
 };
 
@@ -337,6 +422,7 @@ export const useEmployeeSchedules = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
 
   const paginationRef = useRef({
     page: 1,
@@ -374,6 +460,13 @@ export const useEmployeeSchedules = () => {
 
   /* ---------- Expandir eventos con recurrencia ---------- */
   useEffect(() => {
+    const intervalId = setInterval(() => {
+      setRefreshTick((tick) => tick + 1);
+    }, 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  useEffect(() => {
     const expanded = rawSchedules.flatMap((schedule) =>
       expandScheduleOccurrences(mergeEmployeeData(schedule))
     );
@@ -386,7 +479,7 @@ export const useEmployeeSchedules = () => {
     });
 
     setSchedules(Array.from(unique.values()));
-  }, [rawSchedules, mergeEmployeeData]);
+  }, [rawSchedules, mergeEmployeeData, refreshTick]);
 
 /* -------------------------------------------------------
    * CARGA DE EMPLEADOS
@@ -492,7 +585,6 @@ export const useEmployeeSchedules = () => {
       repeticion: data.repeticion || "no",
       customRecurrence: data.customRecurrence || null,
       descripcion: data.descripcion || data.observaciones || "",
-      estado: data.estado || "Programado",
     };
   };
 

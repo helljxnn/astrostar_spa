@@ -245,108 +245,27 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     [handleDateSelect],
   );
 
-  // Manejar click en acciones de evento
-  const handleEventActionClick = useCallback(
-    (e, actionType, dashboardEvent) => {
-      // Obtener el target del evento
-      const target = e?.currentTarget || e?.target;
-
-      if (!target) {
-        console.error("No target found in event");
-        // Usar posición por defecto en el centro de la pantalla
-        const position = {
-          top: window.innerHeight / 2 - 75,
-          left: window.innerWidth / 2 - 110,
-        };
-
-        if (actionType === "crud") {
-          setActionModal({ isOpen: true, position, event: dashboardEvent });
-        } else if (actionType === "registration") {
-          setRegistrationModal({
-            isOpen: true,
-            position,
-            event: dashboardEvent,
-          });
-        }
-        return;
-      }
-
-      const rect = target.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const modalWidth = 220;
-      const modalHeight = 150;
-
-      // Posición predeterminada (abajo del botón)
-      let top = rect.bottom + 5;
-      let left = rect.left;
-
-      // Ajustar posición para evitar que se corte
-      if (left + modalWidth > viewportWidth) {
-        left = rect.right - modalWidth;
-      }
-
-      if (top + modalHeight > viewportHeight) {
-        top = rect.top - modalHeight - 5;
-      }
-
-      if (left < 10) left = 10;
-      if (top < 10) top = rect.bottom + 5;
-
-      const position = { top, left };
-
-      if (actionType === "crud") {
-        setActionModal({ isOpen: true, position, event: dashboardEvent });
-      } else if (actionType === "registration") {
-        setRegistrationModal({ isOpen: true, position, event: dashboardEvent });
-      }
-    },
-    [],
-  );
-
   // Renderizar evento personalizado
-  const renderEvent = useCallback(
-    (event, variant) => {
-      if (!event) {
-        return <div>Error: Evento inválido</div>;
-      }
+  const renderEvent = useCallback((event, variant) => {
+    if (!event) {
+      return <div>Error: Evento inválido</div>;
+    }
 
-      // Para la variante custom, necesitamos manejar diferentes tipos de vista
-      if (variant === "grid") {
-        return (
-          <DashboardEventComponent
-            event={event}
-            view="month" // Para grid siempre usamos month view
-            onActionClick={handleEventActionClick}
-            setActionModal={setActionModal}
-            setRegistrationModal={setRegistrationModal}
-          />
-        );
-      } else if (variant === "day") {
-        return (
-          <DashboardEventComponent
-            event={event}
-            view="day"
-            onActionClick={handleEventActionClick}
-            setActionModal={setActionModal}
-            setRegistrationModal={setRegistrationModal}
-          />
-        );
-      }
-
-      // Fallback para compatibilidad
+    // Para la variante custom, necesitamos manejar diferentes tipos de vista
+    if (variant === "grid") {
       return (
         <DashboardEventComponent
           event={event}
-          view="month"
-          onActionClick={handleEventActionClick}
-          setActionModal={setActionModal}
-          setRegistrationModal={setRegistrationModal}
+          view="month" // Para grid siempre usamos month view
         />
       );
-    },
-    [handleEventActionClick, setActionModal, setRegistrationModal],
-  );
+    } else if (variant === "day") {
+      return <DashboardEventComponent event={event} view="day" />;
+    }
+
+    // Fallback para compatibilidad
+    return <DashboardEventComponent event={event} view="month" />;
+  }, []);
 
   // Manejar acciones CRUD
   const handleCrudAction = useCallback(
@@ -578,7 +497,13 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         if (isNew) {
           await onCreateEvent(transformedData);
         } else {
-          await onUpdateEvent(transformedData.id, transformedData);
+          // Pasar las categorías originales para verificar cambios
+          const originalCategoryIds = selectedEvent?.categoryIds || [];
+          await onUpdateEvent(
+            transformedData.id,
+            transformedData,
+            originalCategoryIds,
+          );
         }
 
         // Cerrar modal solo si no hubo errores
@@ -592,7 +517,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         );
       }
     },
-    [isNew, onCreateEvent, onUpdateEvent],
+    [isNew, onCreateEvent, onUpdateEvent, selectedEvent],
   );
 
   // Cerrar todos los modales
@@ -803,8 +728,16 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   /**
    * Renderizar evento personalizado para la barra lateral
    */
-  const renderSidebarItem = useCallback(
-    (event, actions) => (
+  const renderSidebarItem = useCallback((event, actions) => {
+    // Separar acciones de gestión y de inscripción
+    const managementActions = actions.filter(
+      (action) => action.group === "management",
+    );
+    const registrationActions = actions.filter(
+      (action) => action.group === "registration",
+    );
+
+    return (
       <div className="space-y-2">
         <div>
           <h4 className="font-medium text-gray-800 text-sm mb-1">
@@ -854,9 +787,10 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           </div>
         </div>
 
-        {actions.length > 0 && (
+        {/* Botones de gestión (Ver, Editar, Eliminar) */}
+        {managementActions.length > 0 && (
           <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
-            {actions.map((action, actionIndex) => (
+            {managementActions.map((action, actionIndex) => (
               <button
                 key={actionIndex}
                 onClick={(e) => {
@@ -866,8 +800,33 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                 className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
                   action.variant === "danger"
                     ? "text-red-600 hover:bg-red-50"
-                    : action.variant === "warning"
-                      ? "text-yellow-600 hover:bg-yellow-50"
+                    : action.variant === "edit"
+                      ? "text-orange-600 hover:bg-orange-50"
+                      : "text-blue-600 hover:bg-blue-50"
+                }`}
+              >
+                {action.icon && <action.icon className="h-3 w-3" />}
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Botones de inscripción (Inscribir, Ver Inscritos) */}
+        {registrationActions.length > 0 && (
+          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+            {registrationActions.map((action, actionIndex) => (
+              <button
+                key={actionIndex}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.onClick(event);
+                }}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                  action.variant === "success"
+                    ? "text-green-600 hover:bg-green-50"
+                    : action.variant === "info"
+                      ? "text-purple-600 hover:bg-purple-50"
                       : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
                 }`}
               >
@@ -878,9 +837,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           </div>
         )}
       </div>
-    ),
-    [],
-  );
+    );
+  }, []);
 
   // Configuración de acciones de la barra lateral
   const sidebarActions = useMemo(
@@ -891,6 +849,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         onClick: handleSidebarEventClick,
         permission: { module: "events", action: "read" },
         variant: "primary",
+        group: "management",
       },
       ...(hasPermission("eventsManagement", "Editar")
         ? [
@@ -899,7 +858,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               icon: Edit,
               onClick: handleEditEvent,
               permission: { module: "events", action: "edit" },
-              variant: "primary",
+              variant: "edit",
+              group: "management",
             },
           ]
         : []),
@@ -911,9 +871,64 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               onClick: handleDeleteEvent,
               permission: { module: "events", action: "delete" },
               variant: "danger",
+              group: "management",
             },
           ]
         : []),
+      {
+        label: "Inscribir",
+        icon: Users,
+        onClick: (event) => {
+          const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+
+          // Determinar el tipo de participante según el tipo de evento
+          const getParticipantType = () => {
+            switch (dashboardEvent.tipo) {
+              case "Festival":
+              case "Torneo":
+                return "Equipos";
+              case "Clausura":
+              case "Taller":
+                return "Deportistas";
+              default:
+                return "Deportistas";
+            }
+          };
+
+          const participantType = getParticipantType();
+
+          // Abrir directamente el modal de inscripción
+          setRegistrationFormModal({
+            isOpen: true,
+            eventName: dashboardEvent.title,
+            participantType: participantType,
+            eventType: dashboardEvent.tipo,
+            eventId: dashboardEvent.id,
+            mode: "register",
+          });
+        },
+        permission: { module: "events", action: "register" },
+        variant: "success",
+        group: "registration",
+      },
+      {
+        label: "Ver Inscritos",
+        icon: Users,
+        onClick: (event) => {
+          const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+          // Abrir modal para ver inscritos
+          setInscriptionModal({
+            isOpen: true,
+            eventName: dashboardEvent.title,
+            participantType: "Deportistas", // Usar el formato correcto
+            action: "viewRegistrations",
+            eventId: dashboardEvent.id,
+          });
+        },
+        permission: { module: "events", action: "read" },
+        variant: "info",
+        group: "registration",
+      },
     ],
     [
       hasPermission,
@@ -1077,7 +1092,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             onClose={closeAllModals}
             date={dayEventsModal.date}
             events={dayEventsModal.events}
-            onActionClick={handleEventActionClick}
           />
         )}
       </AnimatePresence>

@@ -1,14 +1,14 @@
-import apiClient from '../../../../../../../../shared/services/apiClient';
+import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class RegistrationsService {
   constructor() {
-    this.endpoint = '/registrations';
+    this.endpoint = "/registrations";
   }
 
   /**
    * Inscribir múltiples equipos a un evento
    */
-  async registerMultipleTeams(serviceId, teamIds, notes = '') {
+  async registerMultipleTeams(serviceId, teamIds, notes = "") {
     try {
       const response = await apiClient.post(`${this.endpoint}/bulk`, {
         serviceId,
@@ -22,7 +22,7 @@ class RegistrationsService {
         message: response.message,
       };
     } catch (error) {
-      console.error('Error registering multiple teams:', error);
+      console.error("Error registering multiple teams:", error);
       return {
         success: false,
         error: error.message,
@@ -33,14 +33,17 @@ class RegistrationsService {
   /**
    * Obtener inscripciones de un evento
    */
-  async getEventRegistrations(serviceId, status = '') {
+  async getEventRegistrations(serviceId, status = "") {
     try {
       const params = {};
       if (status) {
         params.status = status;
       }
-      
-      const response = await apiClient.get(`${this.endpoint}/event/${serviceId}`, params);
+
+      const response = await apiClient.get(
+        `${this.endpoint}/event/${serviceId}`,
+        params,
+      );
 
       return {
         success: response.success || false,
@@ -49,7 +52,7 @@ class RegistrationsService {
         total: response.data?.total || 0,
       };
     } catch (error) {
-      console.error('Error getting event registrations:', error);
+      console.error("Error getting event registrations:", error);
       return {
         success: false,
         data: [],
@@ -63,16 +66,42 @@ class RegistrationsService {
    */
   async cancelRegistration(registrationId) {
     try {
-      const response = await apiClient.delete(`${this.endpoint}/${registrationId}`);
+      const response = await apiClient.delete(
+        `${this.endpoint}/${registrationId}`,
+      );
 
       return {
         success: response.success || false,
         message: response.message,
       };
     } catch (error) {
-      console.error('Error canceling registration:', error);
+      console.error("Error canceling registration:", error);
       return {
         success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Obtener equipos disponibles filtrados por categorías del evento (optimizado)
+   */
+  async getTeamsByEventCategories(serviceId) {
+    try {
+      const response = await apiClient.get(
+        `${this.endpoint}/event/${serviceId}/teams`,
+      );
+
+      return {
+        success: response.success || false,
+        data: response.data || { foundation: [], temporary: [], total: 0 },
+        message: response.message,
+      };
+    } catch (error) {
+      console.error("Error getting teams by event categories:", error);
+      return {
+        success: false,
+        data: { foundation: [], temporary: [], total: 0 },
         error: error.message,
       };
     }
@@ -90,14 +119,17 @@ class RegistrationsService {
         params.sportsCategoryId = sportsCategoryId;
       }
 
-      const response = await apiClient.get(`${this.endpoint}/athletes/available`, params);
+      const response = await apiClient.get(
+        `${this.endpoint}/athletes/available`,
+        params,
+      );
 
       return {
         success: response.success || false,
         data: response.data || { athletes: [], total: 0 },
       };
     } catch (error) {
-      console.error('Error getting available athletes:', error);
+      console.error("Error getting available athletes:", error);
       return {
         success: false,
         data: { athletes: [], total: 0 },
@@ -119,7 +151,7 @@ class RegistrationsService {
         message: response.message,
       };
     } catch (error) {
-      console.error('Error registering athlete:', error);
+      console.error("Error registering athlete:", error);
       return {
         success: false,
         error: error.message,
@@ -133,7 +165,10 @@ class RegistrationsService {
    */
   async registerAthletesBulk(data) {
     try {
-      const response = await apiClient.post(`${this.endpoint}/athletes/bulk`, data);
+      const response = await apiClient.post(
+        `${this.endpoint}/athletes/bulk`,
+        data,
+      );
 
       return {
         success: response.success || false,
@@ -141,7 +176,7 @@ class RegistrationsService {
         message: response.message,
       };
     } catch (error) {
-      console.error('Error registering athletes bulk:', error);
+      console.error("Error registering athletes bulk:", error);
       return {
         success: false,
         error: error.message,
@@ -153,14 +188,17 @@ class RegistrationsService {
   /**
    * Obtener inscripciones individuales de un evento
    */
-  async getEventAthleteRegistrations(serviceId, status = '') {
+  async getEventAthleteRegistrations(serviceId, status = "") {
     try {
       const params = {};
       if (status) {
         params.status = status;
       }
 
-      const response = await apiClient.get(`${this.endpoint}/event/${serviceId}/athletes`, params);
+      const response = await apiClient.get(
+        `${this.endpoint}/event/${serviceId}/athletes`,
+        params,
+      );
 
       return {
         success: response.success || false,
@@ -169,7 +207,7 @@ class RegistrationsService {
         total: response.data?.total || 0,
       };
     } catch (error) {
-      console.error('Error getting event athlete registrations:', error);
+      console.error("Error getting event athlete registrations:", error);
       return {
         success: false,
         data: [],
@@ -181,14 +219,17 @@ class RegistrationsService {
   /**
    * Obtener inscripciones de un deportista específico
    */
-  async getAthleteRegistrations(athleteId, status = '') {
+  async getAthleteRegistrations(athleteId, status = "") {
     try {
       const params = {};
       if (status) {
         params.status = status;
       }
 
-      const response = await apiClient.get(`${this.endpoint}/athlete/${athleteId}`, params);
+      const response = await apiClient.get(
+        `${this.endpoint}/athlete/${athleteId}`,
+        params,
+      );
 
       return {
         success: response.success || false,
@@ -197,7 +238,7 @@ class RegistrationsService {
         total: response.data?.total || 0,
       };
     } catch (error) {
-      console.error('Error getting athlete registrations:', error);
+      console.error("Error getting athlete registrations:", error);
       return {
         success: false,
         data: [],

@@ -1,26 +1,33 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import assistanceathletesService from "../services/AssistanceathletesService";
-import { showSuccessAlert } from "../../../../../../../../shared/utils/alerts";
+import {
+  showErrorAlert,
+  showSuccessAlert,
+  showWarningAlert,
+} from "../../../../../../../../shared/utils/alerts";
+
+const ALL_CATEGORIES = "Todas";
+const DEFAULT_ROWS_PER_PAGE = 10;
+
+const todayISO = () => new Date().toISOString().split("T")[0];
 
 export const useAssistanceAthletes = () => {
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [selectedDate, setSelectedDate] = useState(() => todayISO());
   const [attendance, setAttendance] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("Todas");
-  const [categories, setCategories] = useState(["Todas"]);
+  const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
+  const [categories, setCategories] = useState([ALL_CATEGORIES]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 6;
+  const rowsPerPage = DEFAULT_ROWS_PER_PAGE;
 
   useEffect(() => {
     const loadCategories = async () => {
       try {
         const response = await assistanceathletesService.getSportsCategories({
           page: 1,
-          limit: 200,
+          limit: 100,
         });
         if (response && response.success) {
           const names = (response.data || [])
@@ -29,18 +36,20 @@ export const useAssistanceAthletes = () => {
           const unique = Array.from(new Set(names)).sort((a, b) =>
             a.localeCompare(b)
           );
-          setCategories(["Todas", ...unique]);
+          setCategories([ALL_CATEGORIES, ...unique]);
         }
       } catch (error) {
         console.error("Error loading categories:", error);
       }
     };
+
     loadCategories();
   }, []);
 
   useEffect(() => {
     const loadAttendance = async () => {
       if (!selectedDate) return;
+
       setLoading(true);
       try {
         const response = await assistanceathletesService.getAttendanceByDate({
@@ -48,12 +57,14 @@ export const useAssistanceAthletes = () => {
           page: currentPage,
           limit: rowsPerPage,
           search: searchTerm.trim(),
-          categoria: categoryFilter === "Todas" ? "" : categoryFilter,
+          categoria: categoryFilter === ALL_CATEGORIES ? "" : categoryFilter,
         });
 
         if (response && response.success) {
           setAttendance(response.data || []);
-          setTotalCount(response.pagination?.total ?? response.data?.length ?? 0);
+          setTotalCount(
+            response.pagination?.total ?? response.data?.length ?? 0
+          );
         } else {
           setAttendance([]);
           setTotalCount(0);
@@ -66,12 +77,13 @@ export const useAssistanceAthletes = () => {
         setLoading(false);
       }
     };
+
     loadAttendance();
-  }, [selectedDate, currentPage, searchTerm, categoryFilter]);
+  }, [selectedDate, currentPage, searchTerm, categoryFilter, rowsPerPage]);
 
   useEffect(() => {
-    if (categoryFilter !== "Todas" && !categories.includes(categoryFilter)) {
-      setCategoryFilter("Todas");
+    if (categoryFilter !== ALL_CATEGORIES && !categories.includes(categoryFilter)) {
+      setCategoryFilter(ALL_CATEGORIES);
     }
   }, [categories, categoryFilter]);
 
@@ -92,7 +104,7 @@ export const useAssistanceAthletes = () => {
 
   const resetFilters = () => {
     setSearchTerm("");
-    setCategoryFilter("Todas");
+    setCategoryFilter(ALL_CATEGORIES);
     setCurrentPage(1);
   };
 
@@ -110,20 +122,31 @@ export const useAssistanceAthletes = () => {
 
   const handleSave = async () => {
     if (!selectedDate) {
-      showSuccessAlert("⚠️ Debes seleccionar una fecha antes de guardar.");
+      showWarningAlert("Debes seleccionar una fecha antes de guardar.");
       return;
     }
+
+    if (!attendance.length) {
+      showWarningAlert("No hay registros de asistencia para guardar.");
+      return;
+    }
+
     const items = attendance.map((item) => ({
       athleteId: item.athleteId || item.id,
       asistencia: item.asistencia,
       observacion: item.observacion || "",
     }));
-    await assistanceathletesService.saveAttendanceBulk(selectedDate, items);
-    showSuccessAlert(` Asistencia guardada para el ${selectedDate}.`);
+
+    try {
+      await assistanceathletesService.saveAttendanceBulk(selectedDate, items);
+      showSuccessAlert(`Asistencia guardada para el ${selectedDate}.`);
+    } catch (error) {
+      console.error("Error saving attendance:", error);
+      showErrorAlert("No se pudo guardar la asistencia.");
+    }
   };
 
   const filteredData = attendance;
-
   const totalRows = filteredData.length;
   const totalPages = Math.ceil(totalCount / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;

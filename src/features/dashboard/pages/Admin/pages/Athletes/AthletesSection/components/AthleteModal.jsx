@@ -9,6 +9,12 @@ import {
   showDeleteAlert,
 } from "../../../../../../../../shared/utils/alerts";
 import {
+  findCategoryByName,
+  resolveCategoryAgeRange,
+  isAgeWithinRange,
+  formatAgeRange,
+} from "../../../../../../../../shared/utils/categoryAgeValidation";
+import {
   useFormAthleteValidation,
   athleteValidationRules,
 } from "../hooks/useFormAthleteValidation";
@@ -650,6 +656,32 @@ const AthleteModal = ({
       return;
     }
 
+    const ageValue = calculateAge(values.birthDate);
+    const ageNumber =
+      ageValue !== "" && !Number.isNaN(Number(ageValue))
+        ? Number(ageValue)
+        : null;
+    const selectedCategory = findCategoryByName(
+      referenceData.sportsCategories || [],
+      values.categoria
+    );
+    if (values.categoria && !selectedCategory) {
+      showErrorAlert(
+        "Categoria invalida",
+        "La categoria seleccionada no existe. Por favor, selecciona una categoria valida."
+      );
+      return;
+    }
+    const ageRange = resolveCategoryAgeRange(selectedCategory);
+    if (ageNumber !== null && ageRange && !isAgeWithinRange(ageNumber, ageRange)) {
+      const rangeLabel = formatAgeRange(ageRange);
+      showErrorAlert(
+        "Edad fuera de rango",
+        `No se puede crear o editar. La edad (${ageNumber} años) no corresponde a la categoria "${selectedCategory?.name || selectedCategory?.nombre || values.categoria}" (${rangeLabel} años).`
+      );
+      return;
+    }
+
     console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
 
     try {
@@ -1016,18 +1048,42 @@ const AthleteModal = ({
                 />
               </div>
 
-              {/* Edad (calculada automáticamente) - Igual que empleados */}
-              <div>
-                <FormField
-                  label="Edad"
-                  name="age"
-                  type="text"
-                  placeholder="Se calcula automáticamente"
-                  required={false}
-                  disabled={true}
-                  value={values.age ? `${values.age} años` : ""}
-                  delay={0.72}
-                />
+              {/* Edad (calculada automáticamente) */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 block">
+                  Edad
+                </label>
+                <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-primary-purple/10 via-white to-primary-blue/10 px-4 py-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-gray-500">
+                        Calculada automáticamente
+                      </p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {currentAge !== null ? `${currentAge} años` : "Sin fecha"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                          currentAge === null
+                            ? "bg-gray-100 text-gray-500"
+                            : isMinor
+                            ? "bg-orange-100 text-orange-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {currentAge === null ? "Pendiente" : isMinor ? "Menor" : "Mayor"}
+                      </span>
+                      <span className="h-9 w-9 rounded-full bg-white/80 border border-gray-200 flex items-center justify-center text-primary-purple shadow-sm">
+                        <FaInfoCircle className="w-4 h-4" />
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Se actualiza con la fecha de nacimiento.
+                  </p>
+                </div>
               </div>
 
               <div>

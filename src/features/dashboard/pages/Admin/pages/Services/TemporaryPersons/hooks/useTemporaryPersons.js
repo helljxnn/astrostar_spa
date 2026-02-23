@@ -3,10 +3,10 @@
  * Proporciona estado y funciones para operaciones CRUD
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import temporaryPersonsService from '../services/temporaryPersonsService.js';
-import { showSuccessAlert, showErrorAlert } from '@shared/utils/alerts.js';
-import { useAuth } from '@shared/contexts/authContext.jsx';
+import { useState, useEffect, useCallback } from "react";
+import temporaryPersonsService from "../services/temporaryPersonsService.js";
+import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
+import { useAuth } from "@shared/contexts/authContext.jsx";
 
 export const useTemporaryPersons = () => {
   const { isAuthenticated } = useAuth();
@@ -17,39 +17,47 @@ export const useTemporaryPersons = () => {
     page: 1,
     limit: 10,
     total: 0,
-    pages: 0
+    pages: 0,
   });
   const [referenceData, setReferenceData] = useState({
-    documentTypes: []
+    documentTypes: [],
   });
 
   /**
    * Cargar personas temporales con filtros
    */
-  const loadTemporaryPersons = useCallback(async (params = {}) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await temporaryPersonsService.getAll({
-        page: pagination.page,
-        limit: pagination.limit,
-        ...params
-      });
+  const loadTemporaryPersons = useCallback(
+    async (params = {}) => {
+      setLoading(true);
+      setError(null);
 
-      if (response.success) {
-        setTemporaryPersons(response.data);
-        setPagination(response.pagination);
-      } else {
-        throw new Error(response.message || 'Error cargando personas temporales');
+      try {
+        const response = await temporaryPersonsService.getAll({
+          page: pagination.page,
+          limit: pagination.limit,
+          ...params,
+        });
+
+        if (response.success) {
+          setTemporaryPersons(response.data);
+          setPagination(response.pagination);
+        } else {
+          throw new Error(
+            response.message || "Error cargando personas temporales",
+          );
+        }
+      } catch (err) {
+        setError(err.message);
+        showErrorAlert(
+          "Error",
+          "No se pudieron cargar las personas temporales",
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-      showErrorAlert('Error', 'No se pudieron cargar las personas temporales');
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.page, pagination.limit]);
+    },
+    [pagination.page, pagination.limit],
+  );
 
   /**
    * Cargar datos de referencia
@@ -61,146 +69,169 @@ export const useTemporaryPersons = () => {
         setReferenceData(response.data);
       }
     } catch (err) {
-      console.error('Error cargando datos de referencia:', err);
+      console.error("Error cargando datos de referencia:", err);
     }
   }, []);
 
   /**
    * Crear persona temporal
    */
-  const createTemporaryPerson = useCallback(async (personData) => {
-    setLoading(true);
-    
-    try {
-      const response = await temporaryPersonsService.create(personData);
-      
-      if (response.success) {
-        showSuccessAlert(
-          'Persona Temporal Creada', 
-          response.message || 'La persona temporal ha sido creada exitosamente'
+  const createTemporaryPerson = useCallback(
+    async (personData) => {
+      try {
+        const response = await temporaryPersonsService.create(personData);
+
+        if (response.success) {
+          showSuccessAlert(
+            "Persona Temporal Creada",
+            response.message ||
+              "La persona temporal ha sido creada exitosamente",
+          );
+
+          // Recargar la lista
+          await loadTemporaryPersons();
+          return response.data;
+        } else {
+          throw new Error(response.message || "Error creando persona temporal");
+        }
+      } catch (err) {
+        showErrorAlert(
+          "Error",
+          err.message || "No se pudo crear la persona temporal",
         );
-        
-        // Recargar la lista
-        await loadTemporaryPersons();
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Error creando persona temporal');
+        throw err;
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo crear la persona temporal');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadTemporaryPersons]);
+    },
+    [loadTemporaryPersons],
+  );
 
   /**
    * Actualizar persona temporal
    */
-  const updateTemporaryPerson = useCallback(async (id, personData) => {
-    setLoading(true);
-    
-    try {
-      const response = await temporaryPersonsService.update(id, personData);
-      
-      if (response.success) {
-        showSuccessAlert(
-          'Persona Temporal Actualizada', 
-          response.message || 'La persona temporal ha sido actualizada exitosamente'
+  const updateTemporaryPerson = useCallback(
+    async (id, personData) => {
+      try {
+        const response = await temporaryPersonsService.update(id, personData);
+
+        if (response.success) {
+          showSuccessAlert(
+            "Persona Temporal Actualizada",
+            response.message ||
+              "La persona temporal ha sido actualizada exitosamente",
+          );
+
+          // Recargar la lista
+          await loadTemporaryPersons();
+          return response.data;
+        } else {
+          throw new Error(
+            response.message || "Error actualizando persona temporal",
+          );
+        }
+      } catch (err) {
+        showErrorAlert(
+          "Error",
+          err.message || "No se pudo actualizar la persona temporal",
         );
-        
-        // Recargar la lista
-        await loadTemporaryPersons();
-        return response.data;
-      } else {
-        throw new Error(response.message || 'Error actualizando persona temporal');
+        throw err;
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo actualizar la persona temporal');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadTemporaryPersons]);
+    },
+    [loadTemporaryPersons],
+  );
 
   /**
    * Eliminar persona temporal
    */
-  const deleteTemporaryPerson = useCallback(async (id, personName) => {
-    setLoading(true);
-    
-    try {
-      const response = await temporaryPersonsService.delete(id);
-      
-      if (response.success) {
-        showSuccessAlert('Persona Temporal Eliminada', response.message);
-        
-        // Recargar la lista
-        await loadTemporaryPersons();
-        return true;
-      } else {
-        throw new Error(response.message || 'Error eliminando persona temporal');
+  const deleteTemporaryPerson = useCallback(
+    async (id, personName) => {
+      try {
+        const response = await temporaryPersonsService.delete(id);
+
+        if (response.success) {
+          showSuccessAlert("Persona Temporal Eliminada", response.message);
+
+          // Recargar la lista
+          await loadTemporaryPersons();
+          return true;
+        } else {
+          throw new Error(
+            response.message || "Error eliminando persona temporal",
+          );
+        }
+      } catch (err) {
+        showErrorAlert(
+          "Error",
+          err.message || "No se pudo eliminar la persona temporal",
+        );
+        throw err;
       }
-    } catch (err) {
-      showErrorAlert('Error', err.message || 'No se pudo eliminar la persona temporal');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [loadTemporaryPersons]);
+    },
+    [loadTemporaryPersons],
+  );
 
   /**
    * Verificar disponibilidad de email
    */
-  const checkEmailAvailability = useCallback(async (email, excludeId = null) => {
-    try {
-      const response = await temporaryPersonsService.checkEmailAvailability(email, excludeId);
-      return response;
-    } catch (err) {
-      console.error('Error verificando email:', err);
-      return { available: false, message: 'Error verificando email' };
-    }
-  }, []);
+  const checkEmailAvailability = useCallback(
+    async (email, excludeId = null) => {
+      try {
+        const response = await temporaryPersonsService.checkEmailAvailability(
+          email,
+          excludeId,
+        );
+        return response;
+      } catch (err) {
+        console.error("Error verificando email:", err);
+        return { available: false, message: "Error verificando email" };
+      }
+    },
+    [],
+  );
 
   /**
    * Verificar disponibilidad de identificación
    */
-  const checkIdentificationAvailability = useCallback(async (identification, excludeId = null) => {
-    try {
-      const response = await temporaryPersonsService.checkIdentificationAvailability(identification, excludeId);
-      return response;
-    } catch (err) {
-      console.error('Error verificando identificación:', err);
-      return { available: false, message: 'Error verificando identificación' };
-    }
-  }, []);
+  const checkIdentificationAvailability = useCallback(
+    async (identification, excludeId = null) => {
+      try {
+        const response =
+          await temporaryPersonsService.checkIdentificationAvailability(
+            identification,
+            excludeId,
+          );
+        return response;
+      } catch (err) {
+        console.error("Error verificando identificación:", err);
+        return {
+          available: false,
+          message: "Error verificando identificación",
+        };
+      }
+    },
+    [],
+  );
 
   /**
    * Cambiar página
    */
   const changePage = useCallback((newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
+    setPagination((prev) => ({ ...prev, page: newPage }));
   }, []);
 
   /**
    * Cambiar límite por página
    */
   const changeLimit = useCallback((newLimit) => {
-    setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
+    setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
   // Cargar datos iniciales solo si está autenticado
   useEffect(() => {
     if (isAuthenticated) {
       loadReferenceData();
-    }
-  }, [isAuthenticated, loadReferenceData]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
       loadTemporaryPersons();
     }
-  }, [isAuthenticated, loadTemporaryPersons]);
+  }, [isAuthenticated, loadReferenceData, loadTemporaryPersons]);
 
   return {
     // Estado
@@ -209,7 +240,7 @@ export const useTemporaryPersons = () => {
     error,
     pagination,
     referenceData,
-    
+
     // Funciones
     loadTemporaryPersons,
     createTemporaryPerson,
@@ -219,8 +250,8 @@ export const useTemporaryPersons = () => {
     checkIdentificationAvailability,
     changePage,
     changeLimit,
-    
+
     // Utilidades
-    refresh: loadTemporaryPersons
+    refresh: loadTemporaryPersons,
   };
 };

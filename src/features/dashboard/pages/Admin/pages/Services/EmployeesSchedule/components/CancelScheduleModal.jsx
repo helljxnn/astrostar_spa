@@ -118,37 +118,40 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={handleOverlayClick}
         >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-xl mx-4 border border-gray-100 flex flex-col max-h-[90vh]"
-          onClick={(e) => e.stopPropagation()}
-        >
-            <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-[#6C7EFF] to-[#8AD7FF] text-white">
-            <div className="flex items-center gap-3">
-                <FaStickyNote className="w-5 h-5" />
-                <div>
-                  <p className="text-xs uppercase tracking-wide opacity-80">
-                    Crear novedad
-                  </p>
-                  <p className="text-lg font-semibold">Registrar novedad</p>
-                </div>
-              </div>
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 relative">
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-full transition"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
               >
                 <FaTimes className="w-5 h-5" />
               </button>
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+                Registrar novedad
+              </h2>
+              <p className="text-sm text-gray-500 text-center mt-1">
+                Gestiona novedades para el horario del empleado
+              </p>
             </div>
 
-            <div className="px-6 py-5 space-y-5 flex-1 min-h-0 overflow-y-auto">
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50 text-sm text-gray-700">
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="p-4 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-700">
+                <div className="flex items-center gap-2 text-primary-purple mb-2">
+                  <FaStickyNote className="w-4 h-4" />
+                  <span className="text-xs font-semibold uppercase tracking-wide">
+                    Detalle del turno
+                  </span>
+                </div>
                 <p>
                   ¿Deseas registrar una novedad para el horario de{" "}
                   <span className="font-semibold">{employee.empleado}</span>
@@ -164,7 +167,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Tipo de novedad
                 </p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {cancelOptions.map((option) => {
                     const isSelected = cancelType === option.id;
                     return (
@@ -175,9 +178,9 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                           setCancelType(option.id);
                           setTimeError("");
                         }}
-                        className={`flex flex-col gap-1 rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                        className={`flex flex-col gap-1 rounded-xl border px-4 py-3 text-left text-sm transition ${
                           isSelected
-                            ? "border-primary-purple bg-primary-purple/10 shadow"
+                            ? "border-primary-purple bg-primary-purple/10 shadow-sm"
                             : "border-gray-200 bg-white hover:border-gray-300"
                         }`}
                       >
@@ -194,8 +197,8 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
               </div>
 
               {cancelType === CANCEL_TYPES.TIME_RANGE ? (
-                <div className="space-y-3 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <div className="space-y-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Registra un tramo del turno
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -208,7 +211,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                           setTimeRangeStart(e.target.value);
                           if (timeError) setTimeError("");
                         }}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7B61FF] focus:ring-2 focus:ring-[#7B61FF] focus:outline-none"
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-purple focus:ring-2 focus:ring-primary-purple focus:outline-none"
                       />
                     </label>
                     <label className="text-xs font-semibold text-gray-500">
@@ -220,7 +223,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                           setTimeRangeEnd(e.target.value);
                           if (timeError) setTimeError("");
                         }}
-                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-[#7B61FF] focus:ring-2 focus:ring-[#7B61FF] focus:outline-none"
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-purple focus:ring-2 focus:ring-primary-purple focus:outline-none"
                       />
                     </label>
                   </div>
@@ -239,7 +242,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                       className={`w-full px-4 py-3 rounded-lg border text-sm focus:ring-2 focus:outline-none transition ${
                         timeError
                           ? "border-red-300 focus:ring-red-400 focus:border-red-400"
-                          : "border-gray-300 focus:ring-[#7B61FF] focus:border-[#7B61FF]"
+                          : "border-gray-300 focus:ring-primary-purple focus:border-primary-purple"
                       }`}
                     />
                     {timeError && (
@@ -251,12 +254,6 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                     <p className="text-xs text-gray-500 mt-2">
                       El detalle se usara como motivo de la novedad para ese tramo.
                     </p>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Estado actual:{" "}
-                    <strong className="text-gray-700">
-                      {employee.estado || "Programado"}
-                    </strong>
                   </div>
                 </div>
               ) : (
@@ -275,7 +272,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                     className={`w-full px-4 py-3 rounded-lg border text-sm focus:ring-2 focus:outline-none transition ${
                       error
                         ? "border-red-300 focus:ring-red-400 focus:border-red-400"
-                        : "border-gray-300 focus:ring-[#7B61FF] focus:border-[#7B61FF]"
+                        : "border-gray-300 focus:ring-primary-purple focus:border-primary-purple"
                     }`}
                   />
                   {error && (
@@ -286,28 +283,22 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
                   )}
                   <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
                     <span>{novedadReason.length} caracteres</span>
-                    <span>
-                      Estado actual:{" "}
-                      <strong className="text-gray-700">
-                        {employee.estado || "Programado"}
-                      </strong>
-                    </span>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3">
+            <div className="flex-shrink-0 border-t border-gray-200 p-6 flex justify-between gap-3">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg font-medium text-sm transition hover:bg-gray-100"
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-all duration-200 font-medium"
               >
-                Cerrar
+                Cancelar
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitDisabled}
-                className="px-5 py-2.5 bg-gradient-to-r from-[#6C7EFF] to-[#5B8DEF] text-white rounded-lg font-semibold text-sm transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+                className="px-6 py-3 text-white rounded-xl transition-all duration-200 font-medium shadow-lg bg-gradient-to-r from-primary-purple to-primary-blue disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Registrar novedad
               </button>

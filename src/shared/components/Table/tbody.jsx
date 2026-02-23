@@ -25,6 +25,7 @@ const Tbody = ({ options }) => {
     customActions, //  acciones personalizadas
     customRenderers = {}, // renderizadores personalizados
     buttonConfig = {}, // configuración de botones
+    cellClassNames = {}, // clases personalizadas por columna
   } = options.tbody || {};
 
   const hasActions = onEdit || onDelete || onView || onList || customActions; 
@@ -66,8 +67,12 @@ const Tbody = ({ options }) => {
             {dataPropertys.map((property, i) => {
               // Usar custom renderer si existe
               if (customRenderers[property]) {
+                const customClass = cellClassNames[property] || "";
                 return (
-                  <td key={i} className="px-6 py-4 whitespace-nowrap">
+                  <td
+                    key={i}
+                    className={`px-6 py-4 ${customClass || "whitespace-nowrap"}`}
+                  >
                     {customRenderers[property](item[property], item)}
                   </td>
                 );
@@ -87,8 +92,14 @@ const Tbody = ({ options }) => {
                 );
               }
 
+              const customClass = cellClassNames[property] || "";
               return (
-                <td key={i} className="px-6 py-4 whitespace-nowrap text-gray-700">
+                <td
+                  key={i}
+                  className={`px-6 py-4 text-gray-700 ${
+                    customClass || "whitespace-nowrap"
+                  }`}
+                >
                   {item[property] ?? "-"}
                 </td>
               );
@@ -147,8 +158,8 @@ const Tbody = ({ options }) => {
                     <button
                       onClick={() => !isDisabled && onEdit(item)}
                       className={`p-2 rounded-full transition-colors ${
-                        isDisabled 
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                        isDisabled
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
                           : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
                       }`}
                       title={title}
@@ -173,8 +184,8 @@ const Tbody = ({ options }) => {
                     <button
                       onClick={() => !isDisabled && onDelete(item)}
                       className={`p-2 rounded-full transition-colors ${
-                        isDisabled 
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
+                        isDisabled
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
                           : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
                       }`}
                       title={title}

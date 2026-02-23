@@ -78,6 +78,7 @@ const scheduleHasNovedad = (schedule = {}) => {
   return false;
 };
 
+
 const formatScheduleTime = (value) => {
   if (!value) return "";
   const date = value instanceof Date ? value : new Date(value);
@@ -157,7 +158,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
-    status: "",
     role: "",
   });
   const containerRef = useRef(null);
@@ -216,16 +216,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const filters = useMemo(
     () => [
       {
-        id: "status",
-        label: "Estado",
-        field: "estado",
-        options: [
-          { value: "Programado", label: "Programado" },
-          { value: "Completado", label: "Completado" },
-          { value: "Cancelado", label: "Cancelado" },
-        ],
-      },
-      {
         id: "role",
         label: "Cargo",
         field: "roleId",
@@ -262,7 +252,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       horaInicio: format(defaultStart, "HH:mm"),
       horaFin: format(defaultEnd, "HH:mm"),
       area: "",
-      estado: "Programado",
       repeticion: "no",
       customRecurrence: null,
       descripcion: "",
@@ -299,7 +288,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       horaInicio: format(startDate, "HH:mm"),
       horaFin: format(endDate, "HH:mm"),
       area: event.area || "",
-      estado: event.estado || "Programado",
       observaciones: event.observaciones || event.descripcion || "",
       descripcion: event.descripcion || event.observaciones || "",
       repeticion: event.repeticion || "no",
@@ -411,6 +399,13 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const handleDeleteSchedule = async (id) => {
     if (!id) return;
     try {
+      const confirmDelete = await showErrorAlert(
+        "¿Deseas eliminar este horario?",
+        "Esta acción no se puede deshacer.",
+        "warning",
+        true
+      );
+      if (!confirmDelete.isConfirmed) return;
       await removeSchedule(id);
       closeModal();
     } catch (error) {
@@ -422,10 +417,18 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const payload =
       scheduleWithReason.cancelPayload ||
       { motivoCancelacion: scheduleWithReason.motivoCancelacion || "" };
+    const payloadWithDate = {
+      ...payload,
+      fecha:
+        scheduleWithReason.fecha ||
+        scheduleWithReason.scheduleDate ||
+        scheduleWithReason.start ||
+        null,
+    };
     try {
       await registerNovelty(
         scheduleWithReason.scheduleId || scheduleWithReason.id,
-        payload
+        payloadWithDate
       );
       setShowCancelModal(false);
       setSelectedScheduleForAction(null);
@@ -497,12 +500,12 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
       return {
         id: schedule.scheduleId || schedule.id,
+        scheduleId: schedule.scheduleId || schedule.id,
         title,
         date,
         time: timeLabel,
         start: startDate,
         end: schedule.end || null,
-        estado: schedule.estado || schedule.status || "Programado",
         fecha: schedule.fecha || date,
         horaInicio: schedule.horaInicio,
         horaFin: schedule.horaFin,
@@ -536,7 +539,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         variant: "primary",
       });
       actions.push({
-        label: "Cancelar",
+        label: "Novedad",
         onClick: (event) => openCancelModal(event?.extendedProps || event),
         permission: { module: "employeesSchedule", action: "Editar" },
         variant: "warning",
@@ -578,12 +581,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const schedule = event?.extendedProps || event;
     const colors = getRoleColors(schedule.cargo || schedule.area);
     const recurrenceLabel = buildRecurrenceLabel(schedule);
-    const displayStatus =
-      schedule.estado === "Cancelado" ? "Programado" : schedule.estado;
-    const statusColor =
-      displayStatus === "Completado"
-        ? "bg-emerald-100 text-emerald-700"
-        : "bg-blue-100 text-blue-700";
 
     return (
       <div className="space-y-2">
@@ -620,12 +617,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
               {recurrenceLabel}
             </div>
           </div>
-          <span
-            className={`inline-flex mt-2 px-2 py-0.5 text-[10px] font-semibold rounded-full ${statusColor}`}
-            style={{ borderColor: colors.dot }}
-          >
-            {displayStatus}
-          </span>
         </div>
 
         {actions.length > 0 && (
@@ -769,7 +760,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                   { key: "fecha", label: "Fecha" },
                   { key: "horaInicio", label: "Hora inicio" },
                   { key: "horaFin", label: "Hora fin" },
-                  { key: "estado", label: "Estado" },
                 ]}
               />
             )}
@@ -851,7 +841,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           "empleado",
           "cargo",
           "area",
-          "estado",
           "descripcion",
           "observaciones",
         ]}

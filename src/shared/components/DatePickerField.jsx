@@ -15,12 +15,27 @@ registerLocale('es', es);
  * @param {function} props.onChange - Función que se ejecuta al cambiar la fecha.
  * @param {function} props.filterDate - Función para deshabilitar fechas.
  * @param {Date[]} props.includeTimes - Array de horas a incluir.
+ * @param {function} props.filterTime - Función para deshabilitar horas específicas.
  * @param {string} props.minTime - Hora mínima seleccionable.
  * @param {string} props.maxTime - Hora máxima seleccionable.
+ * @param {number} props.timeIntervals - Intervalos de tiempo en minutos.
  * @param {boolean} props.disabled - Si el campo está deshabilitado.
  * @param {string} props.error - Mensaje de error a mostrar.
  */
-export const DatePickerField = ({ label, selected, onChange, filterDate, includeTimes, minTime, maxTime, disabled, error, required }) => {
+export const DatePickerField = ({
+    label,
+    selected,
+    onChange,
+    filterDate,
+    includeTimes,
+    filterTime,
+    minTime,
+    maxTime,
+    timeIntervals = 30,
+    disabled,
+    error,
+    required
+}) => {
     return (
         <div className="w-full">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -31,8 +46,10 @@ export const DatePickerField = ({ label, selected, onChange, filterDate, include
                 onChange={onChange}
                 filterDate={filterDate}
                 includeTimes={includeTimes}
+                filterTime={filterTime}
                 minTime={minTime ? new Date(`1970-01-01T${minTime}`) : null}
                 maxTime={maxTime ? new Date(`1970-01-01T${maxTime}`) : null}
+                timeIntervals={timeIntervals}
                 dateFormat="dd/MM/yyyy h:mm aa"
                 className={`w-full px-3 py-2 bg-white border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple disabled:bg-gray-100 disabled:cursor-not-allowed`}
                 disabled={disabled}

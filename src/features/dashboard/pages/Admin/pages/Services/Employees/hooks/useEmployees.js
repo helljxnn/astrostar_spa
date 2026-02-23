@@ -52,7 +52,7 @@ export const useEmployees = () => {
         setLoading(false);
       }
     },
-    [pagination.page, pagination.limit]
+    [pagination.page, pagination.limit],
   );
 
   /**
@@ -74,15 +74,13 @@ export const useEmployees = () => {
    */
   const createEmployee = useCallback(
     async (employeeData) => {
-      setLoading(true);
-
       try {
         const response = await employeeService.create(employeeData);
 
         if (response.success) {
           // Recargar la lista en segundo plano (no esperar)
           loadEmployees().catch((err) =>
-            console.warn("Error recargando lista:", err)
+            console.warn("Error recargando lista:", err),
           );
 
           // Retornar toda la respuesta para que el componente pueda manejar las credenciales
@@ -99,11 +97,9 @@ export const useEmployees = () => {
       } catch (err) {
         showErrorAlert("Error", err.message || "No se pudo crear el empleado");
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadEmployees]
+    [loadEmployees],
   );
 
   /**
@@ -111,15 +107,13 @@ export const useEmployees = () => {
    */
   const updateEmployee = useCallback(
     async (id, employeeData) => {
-      setLoading(true);
-
       try {
         const response = await employeeService.update(id, employeeData);
 
         if (response.success) {
           showSuccessAlert(
             "Empleado Actualizado",
-            `${response.data.user.firstName} ${response.data.user.lastName} ha sido actualizado exitosamente`
+            `${response.data.user.firstName} ${response.data.user.lastName} ha sido actualizado exitosamente`,
           );
 
           // Recargar la lista
@@ -131,14 +125,12 @@ export const useEmployees = () => {
       } catch (err) {
         showErrorAlert(
           "Error",
-          err.message || "No se pudo actualizar el empleado"
+          err.message || "No se pudo actualizar el empleado",
         );
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadEmployees]
+    [loadEmployees],
   );
 
   /**
@@ -146,8 +138,6 @@ export const useEmployees = () => {
    */
   const deleteEmployee = useCallback(
     async (id, employeeName) => {
-      setLoading(true);
-
       try {
         const response = await employeeService.delete(id);
 
@@ -163,14 +153,12 @@ export const useEmployees = () => {
       } catch (err) {
         showErrorAlert(
           "Error",
-          err.message || "No se pudo eliminar el empleado"
+          err.message || "No se pudo eliminar el empleado",
         );
         throw err;
-      } finally {
-        setLoading(false);
       }
     },
-    [loadEmployees]
+    [loadEmployees],
   );
 
   /**
@@ -181,7 +169,7 @@ export const useEmployees = () => {
       try {
         const response = await employeeService.checkEmailAvailability(
           email,
-          excludeUserId
+          excludeUserId,
         );
         return response;
       } catch (err) {
@@ -189,7 +177,7 @@ export const useEmployees = () => {
         return { available: false, message: "Error verificando email" };
       }
     },
-    []
+    [],
   );
 
   /**
@@ -200,7 +188,7 @@ export const useEmployees = () => {
       try {
         const response = await employeeService.checkIdentificationAvailability(
           identification,
-          excludeUserId
+          excludeUserId,
         );
         return response;
       } catch (err) {
@@ -211,7 +199,7 @@ export const useEmployees = () => {
         };
       }
     },
-    []
+    [],
   );
 
   /**

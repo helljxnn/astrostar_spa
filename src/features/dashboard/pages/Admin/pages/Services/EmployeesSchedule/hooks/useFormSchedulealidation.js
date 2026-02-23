@@ -36,10 +36,6 @@ export const useFormScheduleValidation = () => {
         if (!value?.trim()) error = "El área o departamento es obligatorio.";
         break;
 
-      case "estado":
-        if (!value?.trim()) error = "Debe seleccionar un estado.";
-        break;
-
       case "descripcion":
       case "observaciones":
         if (value && value.length < 5)

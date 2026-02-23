@@ -151,7 +151,7 @@ const DonorSponsorModal = ({
                       <p className="text-sm font-medium text-gray-700">Tipo de Persona</p>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { value: "Juridica", label: "Persona Juridica", icon: <FaBuilding /> },
+                          { value: "Juridica", label: "Empresa / Organizacion", icon: <FaBuilding /> },
                           { value: "Natural", label: "Persona Natural", icon: <FaUser /> },
                         ].map((option) => {
                           const active = formData.tipoPersona === option.value;
@@ -197,7 +197,6 @@ const DonorSponsorModal = ({
                       label="Nombre completo"
                       name="nombreCompleto"
                       type="text"
-                      placeholder="Ej: Juan Perez"
                       required
                       value={formData.nombreCompleto}
                       onChange={handleChange}
@@ -223,7 +222,6 @@ const DonorSponsorModal = ({
                       label="Numero de documento"
                       name="numeroDocumento"
                       type="text"
-                      placeholder="Ej: 123456789"
                       required
                       value={formData.numeroDocumento}
                       onChange={handleChange}
@@ -247,7 +245,6 @@ const DonorSponsorModal = ({
                       label="Razon social"
                       name="razonSocial"
                       type="text"
-                      placeholder="Ej: Empresa Solidaria SAS"
                       required
                       value={formData.razonSocial}
                       onChange={handleChange}
@@ -260,7 +257,6 @@ const DonorSponsorModal = ({
                       label="NIT"
                       name="nit"
                       type="text"
-                      placeholder="Ej: 900123456"
                       required
                       value={formData.nit}
                       onChange={handleChange}
@@ -279,7 +275,6 @@ const DonorSponsorModal = ({
                       label="Representante legal"
                       name="personaContacto"
                       type="text"
-                      placeholder="Ej: Ana Garcia"
                       required
                       value={formData.personaContacto}
                       onChange={handleChange}
@@ -294,7 +289,6 @@ const DonorSponsorModal = ({
                   label={phoneLabel}
                   name="telefono"
                   type="tel"
-                  placeholder="Ej: 3001234567"
                   required
                   value={formData.telefono}
                   onChange={handleChange}
@@ -306,7 +300,6 @@ const DonorSponsorModal = ({
                   label={emailLabel}
                   name="correo"
                   type="email"
-                  placeholder="ejemplo@correo.com"
                   required
                   value={formData.correo}
                   onChange={handleChange}
@@ -319,7 +312,6 @@ const DonorSponsorModal = ({
                   label="Dirección"
                   name="direccion"
                   type="text"
-                  placeholder="Ej: Calle 10 # 20-30"
                   value={formData.direccion}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -331,7 +323,6 @@ const DonorSponsorModal = ({
                   label="Ciudad"
                   name="ciudad"
                   type="text"
-                  placeholder="Ej: Medellin"
                   value={formData.ciudad}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -343,7 +334,6 @@ const DonorSponsorModal = ({
                   label="Pais"
                   name="pais"
                   type="text"
-                  placeholder="Ej: Colombia"
                   value={formData.pais}
                   onChange={handleChange}
                   onBlur={handleBlur}

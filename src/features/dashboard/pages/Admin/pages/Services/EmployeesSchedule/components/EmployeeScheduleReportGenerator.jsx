@@ -31,19 +31,7 @@ const EmployeeScheduleReportGenerator = ({
     { key: "fecha", label: "Fecha" },
     { key: "horaInicio", label: "Hora Inicio" },
     { key: "horaFin", label: "Hora Fin" },
-    { key: "estado", label: "Estado" },
   ];
-
-  const stats = useMemo(() => {
-    const base = { total: data.length, programado: 0, completado: 0, cancelado: 0 };
-    data.forEach((item) => {
-      const estado = (item.estado || "").toLowerCase();
-      if (estado.includes("cancel")) base.cancelado += 1;
-      else if (estado.includes("complet")) base.completado += 1;
-      else base.programado += 1;
-    });
-    return base;
-  }, [data]);
 
   const monthLabel = useMemo(() => {
     const [year, month] = selectedMonth.split("-").map(Number);
@@ -255,8 +243,6 @@ const EmployeeScheduleReportGenerator = ({
               />
               <div className="flex flex-wrap gap-2 mt-3 text-[11px] text-gray-700">
                 <span className="px-2 py-1 bg-white border border-gray-200 rounded-full">{monthLabel}</span>
-                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full">Programado: {stats.programado}</span>
-                <span className="px-2 py-1 bg-green-50 text-green-700 rounded-full">Completado: {stats.completado}</span>
               </div>
             </div>
 

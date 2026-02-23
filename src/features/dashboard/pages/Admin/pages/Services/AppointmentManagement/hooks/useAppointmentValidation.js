@@ -94,15 +94,18 @@ export const useAppointmentValidation = (initialValues, validationRules) => {
   };
 };
 
-// Para evitar recalcular la fecha de hoy en cada render/validación.
-const today = new Date();
-today.setHours(0, 0, 0, 0); // Establece la hora a medianoche para comparar solo la fecha.
-
 // Reglas de validación para el formulario de citas
 export const appointmentValidationRules = {
-  athlete: [(value) => (!value ? "Debe seleccionar un deportista" : "")],
+  athleteId: [(value) => (!value ? "Debe seleccionar un deportista" : "")],
   specialty: [(value) => (!value ? "Debe seleccionar una especialidad" : "")],
-  specialist: [(value) => (!value ? "Debe seleccionar un especialista" : "")],
+  specialistId: [(value) => (!value ? "Debe seleccionar un especialista" : "")],
+  durationMinutes: [
+    (value) => (!value ? "Debe seleccionar la duración" : ""),
+    (value) =>
+      Number(value) < 15
+        ? "La duración mínima es de 15 minutos"
+        : "",
+  ],
   description: [
     (value) => (!value?.trim() ? "La descripción es obligatoria" : ""),
     (value) =>
@@ -112,5 +115,16 @@ export const appointmentValidationRules = {
   ],
   start: [
     (value) => (!value ? "Debe seleccionar una fecha y hora para la cita" : ""),
+    (value) => {
+      if (!value) return "";
+      const dateValue = value instanceof Date ? value : new Date(value);
+      if (Number.isNaN(dateValue.getTime())) {
+        return "La fecha y hora seleccionadas no son válidas";
+      }
+      if (dateValue < new Date()) {
+        return "La cita no puede programarse en el pasado";
+      }
+      return "";
+    },
   ],
 };

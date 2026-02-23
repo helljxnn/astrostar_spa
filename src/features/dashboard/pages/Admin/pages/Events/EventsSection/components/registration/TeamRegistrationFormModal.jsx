@@ -22,12 +22,40 @@ const TeamRegistrationFormModal = ({
 }) => {
   const isTeamType = participantType === "Equipos";
   const [searchResults, setSearchResults] = useState([]);
+  const [availableTeams, setAvailableTeams] = useState([]); // Equipos disponibles filtrados por categoría
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState(initialSelectedTeams);
   const [initialTeams, setInitialTeams] = useState([]); // Guardar equipos iniciales para comparar
   const [searchTerm, setSearchTerm] = useState("");
   const searchTimeoutRef = useRef(null);
+
+  // Cargar equipos disponibles filtrados por categoría del evento
+  const loadAvailableTeams = async () => {
+    if (!eventId) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response =
+        await RegistrationsService.getTeamsByEventCategories(eventId);
+
+      if (response.success) {
+        // Combinar equipos de fundación y temporales
+        const allTeams = [
+          ...(response.data.foundation || []),
+          ...(response.data.temporary || []),
+        ];
+        setAvailableTeams(allTeams);
+      }
+    } catch (error) {
+      console.error("Error cargando equipos disponibles:", error);
+      setAvailableTeams([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const searchTeams = async (term) => {
     if (!term || term.trim().length < 2) {
@@ -37,18 +65,20 @@ const TeamRegistrationFormModal = ({
 
     setSearching(true);
     try {
-      const response = await TeamsService.getTeams({
-        status: "Active",
-        search: term.trim(),
-        limit: 20,
+      // Filtrar de los equipos disponibles (ya filtrados por categoría)
+      const filtered = availableTeams.filter((team) => {
+        const searchLower = term.toLowerCase();
+        const matchesName = team.name.toLowerCase().includes(searchLower);
+        const matchesCategory = team.category
+          ?.toLowerCase()
+          .includes(searchLower);
+        const matchesCoach = team.coach?.toLowerCase().includes(searchLower);
+        const notSelected = !selectedTeams.find((st) => st.id === team.id);
+
+        return (matchesName || matchesCategory || matchesCoach) && notSelected;
       });
-      if (response.success) {
-        // Filtrar equipos que ya están seleccionados
-        const filtered = (response.data || []).filter(
-          (team) => !selectedTeams.find((st) => st.id === team.id),
-        );
-        setSearchResults(filtered);
-      }
+
+      setSearchResults(filtered);
     } catch (error) {
       console.error("Error buscando equipos:", error);
     } finally {
@@ -90,6 +120,8 @@ const TeamRegistrationFormModal = ({
     if (isOpen && isTeamType) {
       setSearchTerm("");
       setSearchResults([]);
+      // Cargar equipos disponibles filtrados por categoría
+      loadAvailableTeams();
       // Bloquear scroll del body
       document.body.classList.add("events-modal-open");
     } else {
@@ -101,10 +133,10 @@ const TeamRegistrationFormModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, isTeamType]);
+  }, [isOpen, isTeamType, eventId]);
 
   useEffect(() => {
-    // Búsqueda con debounce
+    // Búsqueda con debounce - ahora busca en availableTeams
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -118,7 +150,7 @@ const TeamRegistrationFormModal = ({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchTerm]);
+  }, [searchTerm, availableTeams, selectedTeams]);
 
   useEffect(() => {
     // Modo unificado: siempre cargar equipos inscritos cuando se abre el modal
@@ -294,7 +326,7 @@ const TeamRegistrationFormModal = ({
           <div className="relative">
             <input
               type="text"
-              placeholder="Buscar equipo por nombre o categoría..."
+              placeholder="Buscar equipo por nombre, categoría o entrenador..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
@@ -320,9 +352,82 @@ const TeamRegistrationFormModal = ({
             )}
           </div>
 
+          {/* Mostrar equipos disponibles cuando no hay búsqueda */}
+          {searchTerm.length === 0 && availableTeams.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-gray-600 mb-2 font-medium">
+                Equipos disponibles para este evento (
+                {
+                  availableTeams.filter(
+                    (t) => !selectedTeams.find((st) => st.id === t.id),
+                  ).length
+                }
+                )
+              </p>
+              <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                {availableTeams
+                  .filter(
+                    (team) => !selectedTeams.find((st) => st.id === team.id),
+                  )
+                  .map((team) => (
+                    <div
+                      key={team.id}
+                      onClick={() => handleSelectTeam(team)}
+                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <h4 className="font-semibold text-gray-900 text-sm truncate">
+                              {team.name}
+                            </h4>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                team.teamType === "Fundacion"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-orange-100 text-orange-700"
+                              }`}
+                            >
+                              {team.teamType === "Fundacion"
+                                ? "Fundación"
+                                : "Temporal"}
+                            </span>
+                            {team.category && (
+                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
+                                {team.category}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <span className="truncate">
+                              <span className="font-medium">Entrenador:</span>{" "}
+                              {team.coach || "Sin asignar"}
+                            </span>
+                          </div>
+                        </div>
+                        <svg
+                          className="w-5 h-5 text-primary-purple flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
           {/* Resultados de búsqueda */}
           <AnimatePresence>
-            {searchResults.length > 0 && (
+            {searchTerm.length >= 2 && searchResults.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -396,6 +501,33 @@ const TeamRegistrationFormModal = ({
               Escribe al menos 2 caracteres para buscar
             </p>
           )}
+
+          {searchTerm.length >= 2 &&
+            searchResults.length === 0 &&
+            !searching && (
+              <p className="text-xs text-gray-500 mt-2">
+                No se encontraron equipos que coincidan con "{searchTerm}"
+              </p>
+            )}
+
+          {loading && (
+            <div className="mt-3 flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 text-sm text-gray-600">
+                Cargando equipos disponibles...
+              </span>
+            </div>
+          )}
+
+          {!loading &&
+            searchTerm.length === 0 &&
+            availableTeams.length === 0 && (
+              <div className="mt-3 text-center py-4">
+                <p className="text-sm text-gray-600">
+                  No hay equipos disponibles para las categorías de este evento
+                </p>
+              </div>
+            )}
         </div>
 
         <div className="flex-1 overflow-auto p-6 bg-gray-50">

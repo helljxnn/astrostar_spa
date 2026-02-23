@@ -8,6 +8,12 @@ import {
 
 const API_URL = "/sports-categories";
 
+const parseCount = (value) => {
+  if (Array.isArray(value)) return value.length;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
+
 const normalizeCategory = (raw = {}) => {
   const id = raw.id ?? raw.Id ?? raw.ID ?? raw.categoryId ?? raw.categoryID;
   const name = raw.name ?? raw.nombre ?? "";
@@ -18,6 +24,40 @@ const normalizeCategory = (raw = {}) => {
   const publish = raw.publish ?? raw.publicar ?? false;
   const archivo =
     raw.archivo ?? raw.imageUrl ?? raw.file ?? raw.fileUrl ?? raw.image ?? "";
+  const rawCounts =
+    raw.associations ?? raw.asociaciones ?? raw._count ?? raw.counts ?? {};
+  const inscriptionsCount = parseCount(
+    raw.inscriptionsCount ??
+      raw.inscripcionesCount ??
+      rawCounts.inscriptions ??
+      rawCounts.inscripciones ??
+      raw.inscriptions ??
+      raw.inscripciones
+  );
+  const participantsCount = parseCount(
+    raw.participantsCount ??
+      raw.participantesCount ??
+      rawCounts.participants ??
+      rawCounts.participantes ??
+      raw.participants ??
+      raw.participantes
+  );
+  const servicesCount = parseCount(
+    raw.servicesCount ??
+      raw.serviciosCount ??
+      raw.serviceSportsCategoriesCount ??
+      rawCounts.serviceSportsCategories ??
+      rawCounts.services ??
+      raw.serviceSportsCategories
+  );
+  const associationsCount =
+    inscriptionsCount + participantsCount + servicesCount;
+  const isAssociated =
+    raw.isAssociated ??
+    raw.asociada ??
+    raw.asociado ??
+    raw.tieneAsociaciones ??
+    associationsCount > 0;
 
   return {
     ...raw,
@@ -36,6 +76,13 @@ const normalizeCategory = (raw = {}) => {
     publish,
     archivo,
     imageUrl: raw.imageUrl ?? archivo,
+    associations: {
+      inscriptions: inscriptionsCount,
+      participants: participantsCount,
+      services: servicesCount,
+    },
+    associationsCount,
+    isAssociated: Boolean(isAssociated),
   };
 };
 

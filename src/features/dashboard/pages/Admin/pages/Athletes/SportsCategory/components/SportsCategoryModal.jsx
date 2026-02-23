@@ -1,4 +1,4 @@
-// SportsCategoryModal.jsx
+﻿// SportsCategoryModal.jsx
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,6 +15,8 @@ import {
 } from "../../../../../../../../shared/utils/Alerts";
 
 const MAX_FILE_SIZE_MB = 5;
+const AGE_MIN = 5;
+const AGE_MAX = 30;
 
 const SportsCategoryModal = ({
   isOpen,
@@ -184,7 +186,28 @@ const SportsCategoryModal = ({
 
     const minA = parseInt(values.edadMinima, 10);
     const maxA = parseInt(values.edadMaxima, 10);
-    if (Number.isNaN(minA) || Number.isNaN(maxA) || minA >= maxA) {
+    if (Number.isNaN(minA) || Number.isNaN(maxA)) {
+      showErrorAlert("Error en edades", "Las edades deben ser numericas.");
+      return;
+    }
+
+    if (minA < AGE_MIN) {
+      showErrorAlert(
+        "Edad minima invalida",
+        `La edad minima debe ser mayor o igual a ${AGE_MIN} años.`
+      );
+      return;
+    }
+
+    if (maxA > AGE_MAX) {
+      showErrorAlert(
+        "Edad maxima invalida",
+        `La edad maxima debe ser menor o igual a ${AGE_MAX} años.`
+      );
+      return;
+    }
+
+    if (minA >= maxA) {
       showErrorAlert(
         "Error en edades",
         "Edad maxima debe ser mayor que la minima.",
@@ -251,6 +274,24 @@ const SportsCategoryModal = ({
   const isNameTooShort =
     currentTrimmedName.length > 0 && currentTrimmedName.length < 3;
   const descripcionLength = (values.descripcion || "").length;
+  const minAgeValue =
+    values.edadMinima === "" || values.edadMinima === null
+      ? null
+      : Number(values.edadMinima);
+  const maxAgeValue =
+    values.edadMaxima === "" || values.edadMaxima === null
+      ? null
+      : Number(values.edadMaxima);
+  const minAgeLimit = Number.isFinite(maxAgeValue)
+    ? Math.max(AGE_MIN, maxAgeValue - 1)
+    : AGE_MAX - 1;
+  const maxAgeLimit = Number.isFinite(minAgeValue)
+    ? Math.min(AGE_MAX, minAgeValue + 1)
+    : AGE_MIN + 1;
+  const isMinTooLow =
+    Number.isFinite(minAgeValue) && minAgeValue < AGE_MIN;
+  const isMaxTooHigh =
+    Number.isFinite(maxAgeValue) && maxAgeValue > AGE_MAX;
   const nameStatus = (() => {
     if (nameValidation.isChecking) return "checking";
     if (errors.nombre || nameValidation.isDuplicate || isNameTooShort)
@@ -272,7 +313,10 @@ const SportsCategoryModal = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 px-3" style={{ zIndex: 10000 }}>
+    <div
+      className="fixed inset-0 flex items-center justify-center bg-black/40 px-3"
+      style={{ zIndex: 10000 }}
+    >
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}
@@ -280,8 +324,6 @@ const SportsCategoryModal = ({
         transition={{ duration: 0.25 }}
         className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
         style={{ zIndex: 10001 }}
-      >
-        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
           <h2 className="text-2xl font-semibold text-[#8aa9ff] text-center">
@@ -298,158 +340,232 @@ const SportsCategoryModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="lg:col-span-2 space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">
-                Nombre categoria *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={values.nombre}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  onBlur={() => handleBlur("nombre")}
-                  placeholder="Ej: Infantil A"
-                  className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border bg-gray-50 ${nameInputClass}`}
-                />
-                {nameValidation.isChecking && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
-                )}
-                {nameValidation.isDuplicate && !isNameTooShort && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
-                    <FaTimesCircle size={18} aria-hidden="true" />
+          <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-6">
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-700">
+                    Datos principales
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    Campos obligatorios *
                   </span>
-                )}
-                {!nameValidation.isDuplicate &&
-                  nameValidation.isAvailable &&
-                  currentTrimmedName.length >= 3 && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
-                      <FaCheckCircle size={18} aria-hidden="true" />
-                    </span>
-                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Nombre de categoría *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={values.nombre}
+                      onChange={(e) => handleNameChange(e.target.value)}
+                      onBlur={() => handleBlur("nombre")}
+                      placeholder="Ej: Infantil A"
+                      className={`w-full rounded-xl px-4 py-3 text-sm pr-11 transition-all duration-150 outline-none border bg-gray-50 ${nameInputClass}`}
+                    />
+                    {nameValidation.isChecking && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
+                    )}
+                    {nameValidation.isDuplicate && !isNameTooShort && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                        <FaTimesCircle size={18} aria-hidden="true" />
+                      </span>
+                    )}
+                    {!nameValidation.isDuplicate &&
+                      nameValidation.isAvailable &&
+                      currentTrimmedName.length >= 3 && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                          <FaCheckCircle size={18} aria-hidden="true" />
+                        </span>
+                      )}
+                  </div>
+                  <div className="space-y-1 text-xs mt-1">
+                    {nameValidation.isChecking && (
+                      <p className="flex items-center gap-2 text-primary-purple font-medium">
+                        <span className="w-3 h-3 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
+                        Verificando disponibilidad...
+                      </p>
+                    )}
+                    {isNameTooShort && (
+                      <p className="flex items-center gap-2 text-yellow-700">
+                        <span className="text-base leading-none">!</span>
+                        Debe tener mínimo 3 caracteres.
+                      </p>
+                    )}
+                    {errors.nombre && (
+                      <p className="text-red-500">Aviso: {errors.nombre}</p>
+                    )}
+                    {nameValidation.isDuplicate && !isNameTooShort && (
+                      <p className="flex items-center gap-2 text-red-600 font-semibold">
+                        <FaTimesCircle size={16} aria-hidden="true" />
+                        {nameValidation.message || "Nombre no disponible"}
+                      </p>
+                    )}
+                    {!nameValidation.isDuplicate &&
+                      nameValidation.isAvailable &&
+                      currentTrimmedName.length >= 3 && (
+                        <p className="flex items-center gap-2 text-green-600 font-semibold">
+                          <FaCheckCircle size={16} aria-hidden="true" />
+                          {nameValidation.message || "Nombre disponible"}
+                        </p>
+                      )}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Descripción *
+                  </label>
+                  <textarea
+                    value={values.descripcion}
+                    onChange={(e) => handleChange("descripcion", e.target.value)}
+                    onBlur={() => handleBlur("descripcion")}
+                    placeholder="Breve descripción..."
+                    maxLength={200}
+                    className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
+                      errors.descripcion
+                        ? "border-red-400 bg-red-50"
+                        : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                    }`}
+                  />
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Máximo 200 caracteres</span>
+                    <span>{descripcionLength}/200</span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1 text-xs mt-1">
-                {nameValidation.isChecking && (
-                  <p className="flex items-center gap-2 text-primary-purple font-medium">
-                    <span className="w-3 h-3 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></span>
-                    Verificando disponibilidad...
-                  </p>
-                )}
-                {isNameTooShort && (
-                  <p className="flex items-center gap-2 text-yellow-700">
-                    <span className="text-base leading-none">!</span>
-                    Debe tener minimo 3 caracteres.
-                  </p>
-                )}
-                {errors.nombre && (
-                  <p className="text-red-500">Aviso: {errors.nombre}</p>
-                )}
-                {nameValidation.isDuplicate && !isNameTooShort && (
-                  <p className="flex items-center gap-2 text-red-600 font-semibold">
-                    <FaTimesCircle size={16} aria-hidden="true" />
-                    {nameValidation.message || "Nombre no disponible"}
-                  </p>
-                )}
-                {!nameValidation.isDuplicate &&
-                  nameValidation.isAvailable &&
-                  currentTrimmedName.length >= 3 && (
-                    <p className="flex items-center gap-2 text-green-600 font-semibold">
-                      <FaCheckCircle size={16} aria-hidden="true" />
-                      {nameValidation.message || "Nombre disponible"}
+
+              <div
+                className={`rounded-2xl border px-4 py-4 bg-white shadow-sm ${
+                  errors.edadMinima || errors.edadMaxima
+                    ? "border-red-200"
+                    : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      Rango de edades *
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Selecciona edad mínima y máxima
+                    </p>
+                  </div>
+                  <span
+                    className={`text-xs font-semibold px-3 py-1 rounded-full border ${
+                      Number.isFinite(minAgeValue) &&
+                      Number.isFinite(maxAgeValue)
+                        ? "bg-[#c8a9ff]/20 text-[#7f63ff] border-[#c8a9ff]/50"
+                        : "bg-gray-100 text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    {Number.isFinite(minAgeValue) &&
+                    Number.isFinite(maxAgeValue)
+                      ? `${minAgeValue} - ${maxAgeValue} años`
+                      : "Sin rango"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 block">
+                      Edad mínima *
+                    </label>
+                    <input
+                      type="number"
+                      name="edadMinima"
+                      min={AGE_MIN}
+                      max={minAgeLimit}
+                      step="1"
+                      value={values.edadMinima ?? ""}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    placeholder={`Mínimo ${AGE_MIN}`}
+                      className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
+                        errors.edadMinima || isMinTooLow
+                          ? "border-red-400 bg-red-50"
+                          : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                      }`}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Mínimo permitido: {AGE_MIN} años
+                    </p>
+                    {isMinTooLow && (
+                      <p className="text-red-500 text-xs mt-1">
+                        La edad mínima debe ser mayor o igual a {AGE_MIN} años.
+                      </p>
+                    )}
+                    {errors.edadMinima && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.edadMinima}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700 block">
+                      Edad máxima *
+                    </label>
+                    <input
+                      type="number"
+                      name="edadMaxima"
+                      min={maxAgeLimit}
+                      max={AGE_MAX}
+                      step="1"
+                      value={values.edadMaxima ?? ""}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                    placeholder={`Máximo ${AGE_MAX}`}
+                      className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
+                        errors.edadMaxima || isMaxTooHigh
+                          ? "border-red-400 bg-red-50"
+                          : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                      }`}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Máximo permitido: {AGE_MAX} años
+                    </p>
+                    {isMaxTooHigh && (
+                      <p className="text-red-500 text-xs mt-1">
+                        La edad máxima debe ser menor o igual a {AGE_MAX} años.
+                      </p>
+                    )}
+                    {errors.edadMaxima && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.edadMaxima}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {values.edadMinima &&
+                  values.edadMaxima &&
+                  parseInt(values.edadMinima, 10) >=
+                    parseInt(values.edadMaxima, 10) && (
+                    <p className="text-red-500 text-xs mt-2">
+                      Aviso: Edad máxima debe ser mayor que mínima
                     </p>
                   )}
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">
-                Edad minima *
-              </label>
-              <input
-                type="number"
-                value={values.edadMinima}
-                onChange={(e) => handleChange("edadMinima", e.target.value)}
-                onBlur={() => handleBlur("edadMinima")}
-                placeholder="Ej: 10"
-                className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
-                  errors.edadMinima
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
-                }`}
-              />
-              {values.edadMinima &&
-                values.edadMaxima &&
-                parseInt(values.edadMinima, 10) >=
-                  parseInt(values.edadMaxima, 10) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Aviso: Edad maxima debe ser mayor que minima
-                  </p>
-                )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">
-                Edad maxima *
-              </label>
-              <input
-                type="number"
-                value={values.edadMaxima}
-                onChange={(e) => handleChange("edadMaxima", e.target.value)}
-                onBlur={() => handleBlur("edadMaxima")}
-                placeholder="Ej: 15"
-                className={`w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 ${
-                  errors.edadMaxima
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
-                }`}
-              />
-              {values.edadMinima &&
-                values.edadMaxima &&
-                parseInt(values.edadMinima, 10) >=
-                  parseInt(values.edadMaxima, 10) && (
-                  <p className="text-red-500 text-xs mt-1">
-                    Aviso: Edad maxima debe ser mayor que minima
-                  </p>
-                )}
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3 space-y-2">
-              <label className="text-sm font-semibold text-gray-700 block">
-                Descripcion *
-              </label>
-              <textarea
-                value={values.descripcion}
-                onChange={(e) => handleChange("descripcion", e.target.value)}
-                onBlur={() => handleBlur("descripcion")}
-                placeholder="Breve descripcion..."
-                maxLength={200}
-                className={`w-full border rounded-xl px-4 py-3 min-h-[95px] text-sm resize-none bg-gray-50 ${
-                  errors.descripcion
-                    ? "border-red-400 bg-red-50"
-                    : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
-                }`}
-              />
-              <div className="flex justify-between text-xs text-gray-600">
-                <span>Maximo 200 caracteres</span>
-                <span>{descripcionLength}/200</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-            <div className="space-y-2">
-              <label className="block mb-2 font-medium text-gray-700">
-                Subir imagen {shouldRequireFile ? "*" : "(opcional en edicion)"}
-              </label>
-              <label className="group border-2 border-dashed border-purple-300 bg-purple-50 rounded-xl px-4 py-5 text-center cursor-pointer transition hover:bg-purple-100 w-full max-w-[280px] flex flex-col items-center justify-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="32"
-                  viewBox="0 0 640 512"
-                  fill="#a78bfa"
-                >
-                  <path
-                    d="M144 480C64.5 480 0 415.5 0 336c0-62.8 
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+                <label className="block font-medium text-gray-700">
+                  Subir imagen
+                  {shouldRequireFile ? "*" : "(opcional en edicion)"}
+                </label>
+                <label className="group border-2 border-dashed border-purple-300 bg-purple-50 rounded-xl px-4 py-5 text-center cursor-pointer transition hover:bg-purple-100 w-full flex flex-col items-center justify-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    height="32"
+                    viewBox="0 0 640 512"
+                    fill="#a78bfa"
+                  >
+                    <path
+                      d="M144 480C64.5 480 0 415.5 0 336c0-62.8 
                     40.2-116.2 96.2-135.9c-.1-2.7-.2-5.4-.2-8.1
                     c0-88.4 71.6-160 160-160c59.3 0 111 
                     32.2 138.7 80.2C409.9 102 428.3 96 
@@ -463,102 +579,103 @@ const SportsCategoryModal = ({
                     9.4 33.9 0s9.4-24.6 0-33.9l-80-80
                     c-9.4-9.4-24.6-9.4-33.9 
                     0l-80 80z"
-                  />
-                </svg>
-                <p className="text-xs text-indigo-900 leading-relaxed">
-                  Arrastra una imagen aqui
-                  <br />
-                  <span className="text-purple-500 underline">
-                    o selecciona archivo
-                  </span>
-                </p>
-                <input
-                  type="file"
-                  name="archivo"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-              <span className="text-xs text-gray-500">
-                Tamano maximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
-                mantiene la actual.
-              </span>
-              {(previewUrl || values.archivo) && (
-                <div className="flex items-center gap-3 bg-purple-100 text-purple-900 px-3 py-2 rounded-lg text-xs max-w-[280px]">
-                  {previewUrl && (
-                    <img
-                      src={previewUrl}
-                      alt="Vista previa"
-                      className="w-10 h-10 rounded object-cover flex-shrink-0"
                     />
+                  </svg>
+                  <p className="text-xs text-indigo-900 leading-relaxed">
+                    Arrastra una imagen aqui
+                    <br />
+                    <span className="text-purple-500 underline">
+                      o selecciona archivo
+                    </span>
+                  </p>
+                  <input
+                    type="file"
+                    name="archivo"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+                <span className="text-xs text-gray-500">
+                  Tamaño máximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
+                  mantiene la actual.
+                </span>
+                {(previewUrl || values.archivo) && (
+                  <div className="flex items-center gap-3 bg-purple-100 text-purple-900 px-3 py-2 rounded-lg text-xs w-full">
+                    {previewUrl && (
+                      <img
+                        src={previewUrl}
+                        alt="Vista previa"
+                        className="w-10 h-10 rounded object-cover flex-shrink-0"
+                      />
+                    )}
+                    <span className="truncate font-medium">{fileName}</span>
+                  </div>
+                )}
+                {values.archivo &&
+                  values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
+                    <p className="text-red-500 text-xs">
+                      Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
+                    </p>
                   )}
-                  <span className="truncate font-medium">{fileName}</span>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Publicar categoria
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleChange("publicar", !values.publicar)}
+                    className={`
+                      relative inline-flex h-6 w-11 items-center rounded-full
+                      transition-colors duration-200 ease-in-out
+                      focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
+                      ${values.publicar ? "bg-primary-purple" : "bg-gray-300"}
+                    `}
+                  >
+                    <span
+                      className={`
+                        inline-block h-4 w-4 transform rounded-full bg-white
+                        transition-transform duration-200 ease-in-out
+                        ${values.publicar ? "translate-x-6" : "translate-x-1"}
+                      `}
+                    />
+                  </button>
+                  <span
+                    className={`text-sm font-medium ${
+                      values.publicar ? "text-primary-purple" : "text-gray-500"
+                    }`}
+                  >
+                    {values.publicar
+                      ? "Visible para todos"
+                      : "Solo visible para administradores"}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  {values.publicar
+                    ? "La categoria sera visible en la pagina publica"
+                    : "La categoria solo sera visible en el panel de administracion"}
+                </p>
+              </div>
+
+              {!isNew && (
+                <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 block">
+                    Estado *
+                  </label>
+                  <select
+                    value={values.estado}
+                    onChange={(e) => handleChange("estado", e.target.value)}
+                    className="w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
+                  >
+                    <option value="Activo">Activo</option>
+                    <option value="Inactivo">Inactivo</option>
+                  </select>
                 </div>
               )}
-              {values.archivo &&
-                values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
-                  <p className="text-red-500 text-xs">
-                    Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
-                  </p>
-                )}
             </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">
-                Publicar categoria
-              </label>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleChange("publicar", !values.publicar)}
-                  className={`
-                    relative inline-flex h-6 w-11 items-center rounded-full
-                    transition-colors duration-200 ease-in-out
-                    focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
-                    ${values.publicar ? "bg-primary-purple" : "bg-gray-300"}
-                  `}
-                >
-                  <span
-                    className={`
-                      inline-block h-4 w-4 transform rounded-full bg-white
-                      transition-transform duration-200 ease-in-out
-                      ${values.publicar ? "translate-x-6" : "translate-x-1"}
-                    `}
-                  />
-                </button>
-                <span
-                  className={`text-sm font-medium ${
-                    values.publicar ? "text-primary-purple" : "text-gray-500"
-                  }`}
-                >
-                  {values.publicar
-                    ? "Visible para todos"
-                    : "Solo visible para administradores"}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">
-                {values.publicar
-                  ? "La categoria sera visible en la pagina publica"
-                  : "La categoria solo sera visible en el panel de administracion"}
-              </p>
-            </div>
-
-            {!isNew && (
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 block">
-                  Estado *
-                </label>
-                <select
-                  value={values.estado}
-                  onChange={(e) => handleChange("estado", e.target.value)}
-                  className="w-full border rounded-xl px-4 py-3 text-sm bg-gray-50 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
-                >
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                </select>
-              </div>
-            )}
           </div>
 
           <div className="flex items-center justify-between gap-4 mt-6 pt-4 border-t border-gray-200">
@@ -590,3 +707,4 @@ const SportsCategoryModal = ({
 };
 
 export default SportsCategoryModal;
+
