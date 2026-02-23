@@ -24,8 +24,11 @@ class MaterialsService {
 
     const response = await apiClient.get(this.endpoint, queryParams);
 
-    if (response.success && response.materials) {
-      response.data = response.materials.map(material => this.transformFromBackend(material));
+    // El backend puede devolver los materiales en response.materials o response.data
+    const materialsArray = response.materials || response.data || [];
+    
+    if (response.success && materialsArray.length > 0) {
+      response.data = materialsArray.map(material => this.transformFromBackend(material));
       response.pagination = {
         total: response.total,
         page: response.page,
@@ -54,6 +57,7 @@ class MaterialsService {
     const payload = {
       nombre: materialData.nombre.trim(),
       categoria_id: materialData.categoriaId,
+      unidad_medida: materialData.unidadMedida?.trim().toLowerCase() || 'unidad',
       descripcion: materialData.descripcion?.trim() || ''
     };
 
@@ -79,6 +83,7 @@ class MaterialsService {
     const payload = {
       nombre: materialData.nombre.trim(),
       categoria_id: materialData.categoriaId,
+      unidad_medida: materialData.unidadMedida?.trim().toLowerCase() || 'unidad',
       descripcion: materialData.descripcion?.trim() || '',
       estado: materialData.estado
     };
@@ -111,9 +116,7 @@ class MaterialsService {
         params.excludeId = excludeId;
       }
 
-      console.log('🔍 Validando nombre de material:', params);
       const response = await apiClient.get(`${this.endpoint}/check-name`, params);
-      console.log('✅ Respuesta de validación:', response);
       return response;
     } catch (error) {
       console.error('Error al verificar nombre de material:', error);
@@ -152,16 +155,27 @@ class MaterialsService {
       throw new Error("ID del material es requerido");
     }
 
+    // Validar datos antes de enviar
+    if (!dischargeData.origenStock || !['USO_INTERNO', 'EVENTOS'].includes(dischargeData.origenStock)) {
+      throw new Error("El origen del stock es obligatorio y debe ser USO_INTERNO o EVENTOS");
+    }
+
+    if (!dischargeData.cantidad || dischargeData.cantidad <= 0) {
+      throw new Error("La cantidad debe ser mayor a 0");
+    }
+
     const payload = {
-      cantidad: dischargeData.cantidad,
-      motivo: dischargeData.motivo.trim(),
+      cantidad: parseInt(dischargeData.cantidad),
+      origenStock: dischargeData.origenStock, // 'USO_INTERNO' | 'EVENTOS'
+      tipo_baja: dischargeData.tipo_baja,
+      descripcion: dischargeData.descripcion.trim(),
     };
 
     try {
       const response = await apiClient.post(`${this.endpoint}/${id}/discharge`, payload);
       return response;
     } catch (error) {
-      console.error('Error al registrar baja:', error);
+      console.error('❌ Error al registrar baja:', error);
       throw error;
     }
   }
@@ -206,9 +220,10 @@ class MaterialsService {
       categoria: backendData.categoria || backendData.category || '',
       categoriaId: backendData.categoriaId || backendData.categoria_id || backendData.categoryId || null,
       descripcion: backendData.descripcion || backendData.description || '',
-      stockActual: backendData.stockActual || backendData.stock_actual || backendData.currentStock || 0,
+      unidadMedida: backendData.unidadMedida || backendData.unidad_medida || backendData.unit || 'unidad',
+      stockTotal: backendData.stockTotal || backendData.stock_total || backendData.totalStock || 0,
       stockDisponible: backendData.stockDisponible || backendData.stock_disponible || backendData.availableStock || 0,
-      stockReservado: backendData.stockReservado || backendData.stock_reservado || backendData.reservedStock || 0,
+      stockReservado: backendData.stockEventos || backendData.stock_eventos || backendData.stockReservado || backendData.stock_reservado || backendData.reservedStock || 0,
       estado: backendData.estado || backendData.status || 'Activo',
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',

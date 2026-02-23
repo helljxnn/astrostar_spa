@@ -35,7 +35,7 @@ import TemporaryTeams from "../features/dashboard/pages/Admin/pages/Events/Tempo
 /* --- Material Deportivo --- */
 import MaterialsCatalog from "../features/dashboard/pages/Admin/pages/SportsMaterials/Materials/MaterialsCatalog.jsx";
 import MaterialCategories from "../features/dashboard/pages/Admin/pages/SportsMaterials/Categories/MaterialCategories.jsx";
-import MaterialsRegistry from "../features/dashboard/pages/Admin/pages/SportsMaterials/MaterialsRegistry/MaterialsRegistry.jsx";
+import MaterialsMovements from "../features/dashboard/pages/Admin/pages/SportsMaterials/MaterialsMovements/MaterialsMovements.jsx";
 
 /* --- Donaciones --- */
 import Donations from "../features/dashboard/pages/Admin/pages/Donations/Donations/Donations.jsx";
@@ -214,12 +214,12 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Ingresos de Materiales --- */}
+        {/* --- Módulo: Movimientos de Materiales --- */}
         <Route
-          path="materials-registry"
+          path="materials-movements"
           element={
             <PrivateRoute module="materialsRegistry" action="Ver">
-              <MaterialsRegistry />
+              <MaterialsMovements />
             </PrivateRoute>
           }
         />

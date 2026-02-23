@@ -11,6 +11,7 @@ import PermissionGuard from "../../../../../../../shared/components/PermissionGu
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../shared/utils/alerts';
 import materialsService from './services/MaterialsService';
+import { formatNumber } from '../../../../../../../shared/utils/numberFormat';
 
 const MaterialsCatalog = () => {
   const { hasPermission } = usePermissions();
@@ -157,7 +158,9 @@ const MaterialsCatalog = () => {
       showErrorAlert('Sin permisos', 'No tienes permisos para registrar bajas de materiales');
       return;
     }
-    setSelectedMaterial(material);
+    // Buscar el material original sin formatear
+    const originalMaterial = materials.find(m => m.id === material.id);
+    setSelectedMaterial(originalMaterial || material);
     setIsDischargeModalOpen(true);
   };
 
@@ -194,14 +197,13 @@ const MaterialsCatalog = () => {
 
   // Preparar datos para tabla con truncado
   const tableData = materials.map(m => {
-    console.log('Material:', m.nombre, 'Stock Disponible:', m.stockDisponible);
     return {
       ...m,
       nombreTruncated: m.nombre.length > 40 ? m.nombre.substring(0, 40) + '...' : m.nombre,
       categoriaTruncated: m.categoria.length > 35 ? m.categoria.substring(0, 35) + '...' : m.categoria,
-      stockDisponible: m.stockDisponible || 0,
-      stockReservado: m.stockReservado || 0,
-      stockTotal: m.stockActual || 0,
+      stockDisponible: formatNumber(m.stockDisponible || 0),
+      stockEventos: formatNumber(m.stockReservado || 0),
+      stockTotal: formatNumber(m.stockTotal || 0),
     };
   });
 
@@ -210,8 +212,8 @@ const MaterialsCatalog = () => {
     nombre: m.nombre,
     categoria: m.categoria,
     stockDisponible: m.stockDisponible || 0,
-    stockReservado: m.stockReservado || 0,
-    stockTotal: m.stockActual || 0,
+    stockEventos: m.stockReservado || 0,
+    stockTotal: m.stockTotal || 0,
     estado: m.estado,
     descripcion: m.descripcion || 'N/A',
   }));
@@ -241,7 +243,7 @@ const MaterialsCatalog = () => {
                   { header: "Nombre", accessor: "nombre" },
                   { header: "Categoría", accessor: "categoria" },
                   { header: "Stock Disponible", accessor: "stockDisponible" },
-                  { header: "Stock Reservado", accessor: "stockReservado" },
+                  { header: "Stock Eventos", accessor: "stockEventos" },
                   { header: "Stock Total", accessor: "stockTotal" },
                   { header: "Estado", accessor: "estado" },
                   { header: "Descripción", accessor: "descripcion" },
@@ -264,13 +266,13 @@ const MaterialsCatalog = () => {
       {/* Tabla */}
       <Table
         thead={{
-          titles: ["Nombre", "Categoría", "Stock Disponible", "Stock Reservado", "Stock Total"],
+          titles: ["Nombre", "Categoría", "Stock Disponible", "Stock Eventos", "Stock Total"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockDisponible", "stockReservado", "stockTotal"],
+          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockDisponible", "stockEventos", "stockTotal"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",

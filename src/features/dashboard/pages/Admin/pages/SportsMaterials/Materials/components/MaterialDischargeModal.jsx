@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FormField } from '../../../../../../../../shared/components/FormField';
+import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
+import { getTipoBajaOptions } from '../../shared/utils/tipoBajaLabels';
 
 const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const [formData, setFormData] = useState({
     cantidad: '',
-    motivo: '',
+    origenStock: '', // '' | 'USO_INTERNO' | 'EVENTOS'
+    tipo_baja: '',
+    descripcion: '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,7 +18,9 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     if (isOpen) {
       setFormData({
         cantidad: '',
-        motivo: '',
+        origenStock: '',
+        tipo_baja: '',
+        descripcion: '',
       });
       setErrors({});
     }
@@ -23,16 +29,31 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const validateForm = () => {
     const newErrors = {};
 
+    if (!formData.origenStock) {
+      newErrors.origenStock = 'El origen es obligatorio';
+      setErrors(newErrors);
+      return false;
+    }
+
     if (!formData.cantidad || formData.cantidad <= 0) {
       newErrors.cantidad = 'La cantidad debe ser mayor a 0';
     }
 
-    if (formData.cantidad > (material?.stockDisponible || 0)) {
-      newErrors.cantidad = `No hay suficiente stock disponible (máximo: ${material?.stockDisponible || 0})`;
+    // Validar stock suficiente según el origen
+    const stockMax = formData.origenStock === 'USO_INTERNO' 
+      ? material?.stockDisponible || 0
+      : material?.stockReservado || 0;
+    
+    if (formData.cantidad > stockMax) {
+      newErrors.cantidad = `No hay suficiente stock (máximo: ${stockMax})`;
     }
 
-    if (!formData.motivo.trim()) {
-      newErrors.motivo = 'El motivo es obligatorio';
+    if (!formData.tipo_baja) {
+      newErrors.tipo_baja = 'El tipo de baja es obligatorio';
+    }
+
+    if (!formData.descripcion.trim()) {
+      newErrors.descripcion = 'La descripción es obligatoria';
     }
 
     setErrors(newErrors);
@@ -42,13 +63,19 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
+
+    const dataToSend = {
+      cantidad: parseInt(formData.cantidad),
+      origenStock: formData.origenStock,
+      tipo_baja: formData.tipo_baja,
+      descripcion: formData.descripcion.trim(),
+    };
 
     setIsSubmitting(true);
-    const success = await onSave({
-      cantidad: parseInt(formData.cantidad),
-      motivo: formData.motivo.trim(),
-    });
+    const success = await onSave(dataToSend);
     setIsSubmitting(false);
 
     if (success) {
@@ -101,10 +128,57 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </label>
               <input
                 type="text"
-                value={`${material?.stockDisponible || 0} unidades`}
+                value={formatStock(material?.stockDisponible || 0)}
                 readOnly
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
               />
+            </div>
+
+            {/* Stock Eventos (readonly) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Stock Eventos
+              </label>
+              <input
+                type="text"
+                value={formatStock(material?.stockReservado || 0)}
+                readOnly
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
+              />
+            </div>
+
+            {/* Origen del Stock */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Origen del Stock <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="origenStock"
+                value={formData.origenStock}
+                onChange={(e) => handleChange('origenStock', e.target.value)}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
+                  errors.origenStock ? 'border-red-500' : 'border-gray-300'
+                }`}
+              >
+                <option value="">Seleccione origen</option>
+                <option value="USO_INTERNO">Uso Interno (Stock Disponible)</option>
+                <option value="EVENTOS">Eventos (Stock Eventos)</option>
+              </select>
+              {errors.origenStock && (
+                <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
+                  <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
+                    !
+                  </span>
+                  <span>{errors.origenStock}</span>
+                </p>
+              )}
+              {!errors.origenStock && formData.origenStock && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {formData.origenStock === 'USO_INTERNO' 
+                    ? `Se restará del stock disponible (${formatStock(material?.stockDisponible || 0)} disponibles)`
+                    : `Se restará del stock de eventos (${formatStock(material?.stockReservado || 0)} disponibles)`}
+                </p>
+              )}
             </div>
 
             <FormField
@@ -112,22 +186,45 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               name="cantidad"
               type="number"
               value={formData.cantidad}
-              onChange={(e) => handleChange('cantidad', e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                // Limitar a 6 dígitos
+                if (value.length <= 6) {
+                  handleChange('cantidad', value);
+                }
+              }}
               error={errors.cantidad}
               required
               min="1"
               max={material?.stockDisponible || 0}
+              maxLength={6}
             />
 
             <FormField
-              label="Motivo de la baja"
-              name="motivo"
-              type="textarea"
-              value={formData.motivo}
-              onChange={(e) => handleChange('motivo', e.target.value)}
-              error={errors.motivo}
+              label="Tipo de Baja"
+              name="tipo_baja"
+              type="select"
+              value={formData.tipo_baja}
+              onChange={(e) => handleChange('tipo_baja', e.target.value)}
+              error={errors.tipo_baja}
               required
-              placeholder="Ej: Material dañado, desgaste por uso, obsoleto, etc."
+              options={getTipoBajaOptions()}
+              placeholder="Selecciona el tipo de baja"
+            />
+
+            <FormField
+              label={formData.tipo_baja === 'OTRO' ? 'Descripción detallada (especifica el motivo)' : 'Descripción detallada'}
+              name="descripcion"
+              type="textarea"
+              value={formData.descripcion}
+              onChange={(e) => handleChange('descripcion', e.target.value)}
+              error={errors.descripcion}
+              required
+              placeholder={
+                formData.tipo_baja === 'OTRO'
+                  ? 'Ej: Ajuste de inventario, material vencido, descarte por obsolescencia'
+                  : 'Ej: Se rompió durante el torneo infantil'
+              }
               rows={4}
             />
 
@@ -163,6 +260,7 @@ MaterialDischargeModal.propTypes = {
     id: PropTypes.number,
     nombre: PropTypes.string,
     stockDisponible: PropTypes.number,
+    stockReservado: PropTypes.number,
   }),
 };
 

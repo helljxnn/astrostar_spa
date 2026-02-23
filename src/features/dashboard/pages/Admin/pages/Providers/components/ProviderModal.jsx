@@ -249,10 +249,6 @@ const ProviderModal = ({
     const hasValidationErrors = !validateAllFields();
 
     if (hasValidationErrors) {
-      showErrorAlert(
-        "Campos incompletos",
-        "Por favor completa todos los campos correctamente antes de continuar."
-      );
       return;
     }
 

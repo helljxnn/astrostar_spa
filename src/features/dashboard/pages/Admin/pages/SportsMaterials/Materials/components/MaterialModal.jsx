@@ -14,6 +14,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
   const [formData, setFormData] = useState({
     nombre: '',
     categoria: '',
+    unidadMedida: 'unidad',
     descripcion: '',
     estado: 'Activo',
   });
@@ -59,6 +60,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
       setFormData({
         nombre: incomingName,
         categoria: material.categoriaId || '',
+        unidadMedida: material.unidadMedida || 'unidad',
         descripcion: material.descripcion || '',
         estado: material.estado || 'Activo',
       });
@@ -68,6 +70,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
       setFormData({
         nombre: '',
         categoria: '',
+        unidadMedida: 'unidad',
         descripcion: '',
         estado: 'Activo',
       });
@@ -85,7 +88,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
   }, [isOpen, isEditing, material]);
 
   // Verificar si el material tiene movimientos (para bloquear cambios)
-  const hasMovements = isEditing && material && (material.stockActual > 0 || material.hasMovements);
+  const hasMovements = isEditing && material && (material.stockTotal > 0 || material.hasMovements);
 
   const fetchCategories = async () => {
     try {
@@ -217,6 +220,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
         nombre: formData.nombre.trim(),
         categoriaId: parseInt(formData.categoria),
         categoria: selectedCategory?.nombre || '',
+        unidadMedida: 'unidad',
         descripcion: formData.descripcion.trim(),
         estado: formData.estado,
       };
@@ -237,6 +241,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
     setFormData({
       nombre: '',
       categoria: '',
+      unidadMedida: 'unidad',
       descripcion: '',
       estado: 'Activo',
     });
@@ -279,7 +284,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                   Categoría <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2">
-                  <div className="flex-1">
+                  <div className="flex-1" title={hasMovements ? "No se puede editar porque tiene ingresos registrados" : ""}>
                     <SearchableSelect
                       name="categoria"
                       value={formData.categoria}
@@ -309,14 +314,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                     </button>
                   )}
                 </div>
-                {hasMovements && (
-                  <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
-                      ⚠
-                    </span>
-                    <span>No se puede cambiar la categoría porque el material tiene movimientos registrados</span>
-                  </p>
-                )}
                 {errors.categoria && touched.categoria && (
                   <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
                     <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
@@ -349,6 +346,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                   touched={touched.nombre}
                   required
                   disabled={hasMovements}
+                  title={hasMovements ? "No se puede editar porque tiene ingresos registrados" : ""}
                 />
                 {showCategoryWarning && !formData.categoria && (
                   <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
@@ -370,14 +368,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                       ✓
                     </span>
                     <span>Nombre disponible</span>
-                  </p>
-                )}
-                {hasMovements && (
-                  <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
-                      ⚠
-                    </span>
-                    <span>No se puede cambiar el nombre porque el material tiene movimientos registrados</span>
                   </p>
                 )}
               </div>

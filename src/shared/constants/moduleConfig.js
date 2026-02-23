@@ -200,12 +200,12 @@ export const MODULE_CONFIG = {
 
   materialsRegistry: {
     id: "materialsRegistry",
-    name: "Ingresos de Materiales",
-    path: "/dashboard/materials-registry",
+    name: "Movimientos de Materiales",
+    path: "/dashboard/materials-movements",
     icon: "FaClipboardList",
     category: "equipment",
     parent: "equipment",
-    description: "Registro de movimientos de inventario",
+    description: "Registro de ingresos y bajas de inventario",
   },
 
   providers: {
