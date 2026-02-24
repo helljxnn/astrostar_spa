@@ -29,6 +29,54 @@ const ViewRegistrationsModal = ({
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Helper para obtener estado RSVP
+  const getRSVPStatus = (registration) => {
+    if (
+      !registration.eventInvitations ||
+      registration.eventInvitations.length === 0
+    ) {
+      return {
+        status: "NO_SENT",
+        label: "Sin invitación",
+        color: "gray",
+        icon: "📧",
+      };
+    }
+
+    const invitation = registration.eventInvitations[0];
+
+    switch (invitation.status) {
+      case "PENDING":
+        return {
+          status: "PENDING",
+          label: "Pendiente",
+          color: "orange",
+          icon: "⏳",
+        };
+      case "CONFIRMED":
+        return {
+          status: "CONFIRMED",
+          label: "Confirmado",
+          color: "green",
+          icon: "✅",
+        };
+      case "DECLINED":
+        return {
+          status: "DECLINED",
+          label: "Declinado",
+          color: "red",
+          icon: "❌",
+        };
+      default:
+        return {
+          status: "UNKNOWN",
+          label: "Desconocido",
+          color: "gray",
+          icon: "❓",
+        };
+    }
+  };
+
   // Función para cerrar modal y limpiar scroll
   const handleClose = () => {
     document.body.classList.remove("events-modal-open");
@@ -50,7 +98,7 @@ const ViewRegistrationsModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, eventId, isTeamType]);
+  }, [isOpen, eventId]); // ✅ Removido isTeamType para evitar doble carga
 
   const loadRegistrations = async () => {
     setLoading(true);
@@ -100,6 +148,7 @@ const ViewRegistrationsModal = ({
           teamType: reg.team.teamType || "Fundacion",
           registrationId: reg.id,
           status: reg.status,
+          eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
         }))
     : registrations
         .filter((reg) => reg.athlete)
@@ -116,6 +165,7 @@ const ViewRegistrationsModal = ({
               .filter(Boolean) || [],
           registrationId: reg.id,
           status: reg.status,
+          eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
         }));
 
   // Filtrar por sección (fundación o temporal para equipos, todos para deportistas)
@@ -359,100 +409,130 @@ const ViewRegistrationsModal = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item, index) => (
-                <motion.div
-                  key={`${item.id}-${selectedSection}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-purple/30 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-lg mb-2">
-                        {item.nombre}
-                      </h3>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {isTeamType ? (
-                          <>
-                            <span
-                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                                item.teamType === "Fundacion"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : "bg-orange-100 text-orange-700"
-                              }`}
-                            >
-                              {item.teamType === "Fundacion"
-                                ? "Fundación"
-                                : "Temporal"}
-                            </span>
-                            {item.categoria && (
-                              <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
-                                {item.categoria}
+              {filteredItems.map((item, index) => {
+                const rsvpStatus = getRSVPStatus(item);
+                return (
+                  <motion.div
+                    key={`${item.id}-${selectedSection}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-primary-purple/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-900 text-lg mb-2">
+                          {item.nombre}
+                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {isTeamType ? (
+                            <>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  item.teamType === "Fundacion"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-orange-100 text-orange-700"
+                                }`}
+                              >
+                                {item.teamType === "Fundacion"
+                                  ? "Fundación"
+                                  : "Temporal"}
                               </span>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {item.categorias && item.categorias.length > 0 && (
-                              <>
+                              {item.categoria && (
                                 <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
-                                  {item.categorias[0]}
+                                  {item.categoria}
                                 </span>
-                                {item.categorias.length > 1 && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">
-                                    +{item.categorias.length - 1}
-                                  </span>
+                              )}
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  rsvpStatus.color === "gray"
+                                    ? "bg-gray-100 text-gray-700"
+                                    : rsvpStatus.color === "orange"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : rsvpStatus.color === "green"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {rsvpStatus.icon} {rsvpStatus.label}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              {item.categorias &&
+                                item.categorias.length > 0 && (
+                                  <>
+                                    <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-semibold">
+                                      {item.categorias[0]}
+                                    </span>
+                                    {item.categorias.length > 1 && (
+                                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-semibold">
+                                        +{item.categorias.length - 1}
+                                      </span>
+                                    )}
+                                  </>
                                 )}
-                              </>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {isTeamType ? (
-                    <div className="flex items-center gap-2 text-gray-600 mt-3 pt-3 border-t border-gray-100">
-                      <FaUserFriends className="w-4 h-4 text-indigo-600" />
-                      <span className="text-sm">
-                        <span className="font-semibold text-indigo-600">
-                          {item.miembros}
-                        </span>{" "}
-                        miembros
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-                      <div className="flex items-center gap-2 text-gray-600 text-sm">
-                        <span className="font-medium">ID:</span>
-                        <span>{item.identificacion}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600 text-sm">
-                        <span className="font-medium">Edad:</span>
-                        <span>{item.edad} años</span>
-                      </div>
-                      {item.categorias && item.categorias.length > 0 && (
-                        <div className="flex gap-1 flex-wrap mt-2">
-                          {item.categorias.slice(0, 2).map((cat, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
-                            >
-                              {cat}
-                            </span>
-                          ))}
-                          {item.categorias.length > 2 && (
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                              +{item.categorias.length - 2}
-                            </span>
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                  rsvpStatus.color === "gray"
+                                    ? "bg-gray-100 text-gray-700"
+                                    : rsvpStatus.color === "orange"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : rsvpStatus.color === "green"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {rsvpStatus.icon} {rsvpStatus.label}
+                              </span>
+                            </>
                           )}
                         </div>
-                      )}
+                      </div>
                     </div>
-                  )}
-                </motion.div>
-              ))}
+
+                    {isTeamType ? (
+                      <div className="flex items-center gap-2 text-gray-600 mt-3 pt-3 border-t border-gray-100">
+                        <FaUserFriends className="w-4 h-4 text-indigo-600" />
+                        <span className="text-sm">
+                          <span className="font-semibold text-indigo-600">
+                            {item.miembros}
+                          </span>{" "}
+                          miembros
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                        <div className="flex items-center gap-2 text-gray-600 text-sm">
+                          <span className="font-medium">ID:</span>
+                          <span>{item.identificacion}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-600 text-sm">
+                          <span className="font-medium">Edad:</span>
+                          <span>{item.edad} años</span>
+                        </div>
+                        {item.categorias && item.categorias.length > 0 && (
+                          <div className="flex gap-1 flex-wrap mt-2">
+                            {item.categorias.slice(0, 2).map((cat, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                              >
+                                {cat}
+                              </span>
+                            ))}
+                            {item.categorias.length > 2 && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                +{item.categorias.length - 2}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>

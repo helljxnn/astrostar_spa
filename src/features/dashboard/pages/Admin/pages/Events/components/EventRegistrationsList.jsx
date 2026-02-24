@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useRegistrations } from "../hooks/useRegistrations";
-import { InlineLoader } from "../../../../../../shared/components/Loader";
 
 /**
  * Componente para listar las inscripciones de un evento
@@ -86,10 +85,10 @@ const EventRegistrationsList = ({
     return statusLabels[status] || status;
   };
 
-  if (loading && registrations.length === 0) {
+  if (registrations.length === 0) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <InlineLoader message="Cargando inscripciones..." />
+      <div className="p-4 text-center text-gray-400 italic">
+        No hay inscripciones para mostrar.
       </div>
     );
   }
@@ -157,7 +156,7 @@ const EventRegistrationsList = ({
                   <td>
                     <span
                       className={`badge ${getStatusBadgeClass(
-                        registration.status
+                        registration.status,
                       )}`}
                     >
                       {getStatusLabel(registration.status)}
@@ -172,7 +171,7 @@ const EventRegistrationsList = ({
                         day: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
-                      }
+                      },
                     )}
                   </td>
                   <td>
