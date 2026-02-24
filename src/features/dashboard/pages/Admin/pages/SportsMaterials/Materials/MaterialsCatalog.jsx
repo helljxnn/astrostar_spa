@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { FaPlus, FaMinusCircle } from 'react-icons/fa';
+import { FaPlus, FaMinusCircle, FaExchangeAlt } from 'react-icons/fa';
 import MaterialModal from "./components/MaterialModal";
 import MaterialViewModal from "./components/MaterialViewModal";
 import MaterialDischargeModal from "./components/MaterialDischargeModal";
+import TransferModal from "./components/TransferModal";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -19,6 +20,7 @@ const MaterialsCatalog = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -195,28 +197,88 @@ const MaterialsCatalog = () => {
     }
   };
 
+  const handleTransfer = (material) => {
+    if (!hasPermission('materials', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para transferir stock');
+      return;
+    }
+    const originalMaterial = materials.find(m => m.id === material.id);
+    setSelectedMaterial(originalMaterial || material);
+    setIsTransferModalOpen(true);
+  };
+
+  const handleSaveTransfer = async (transferData) => {
+    if (!hasPermission('materials', 'Editar')) {
+      showErrorAlert('Sin permisos', 'No tienes permisos para transferir stock');
+      return false;
+    }
+
+    try {
+      const response = await materialsService.transferStock(selectedMaterial.id, transferData);
+      
+      if (response.success) {
+        showSuccessAlert(
+          "Transferencia Exitosa",
+          `Se transfirieron ${transferData.cantidad} unidades de "${selectedMaterial.nombre}" desde ${transferData.from === 'FUNDACION' ? 'Fundación' : 'Eventos'} hacia ${transferData.to === 'FUNDACION' ? 'Fundación' : 'Eventos'}.`
+        );
+        setIsTransferModalOpen(false);
+        fetchMaterials();
+        return true;
+      } else {
+        showErrorAlert(
+          "Error",
+          response.message || "No se pudo realizar la transferencia"
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error('Error al transferir:', error);
+      showErrorAlert("Error", error.message || "Error al transferir stock");
+      return false;
+    }
+  };
+
   // Preparar datos para tabla con truncado
   const tableData = materials.map(m => {
+    // Nuevo modelo: dos inventarios separados + reservado
+    const stockFundacion = m.stockFundacion || 0;
+    const stockEventos = m.stockEventos || 0;
+    const stockEventosReservado = m.stockEventosReservado || 0;
+    const stockEventosDisponible = stockEventos - stockEventosReservado;
+    const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
+    
     return {
       ...m,
       nombreTruncated: m.nombre.length > 40 ? m.nombre.substring(0, 40) + '...' : m.nombre,
       categoriaTruncated: m.categoria.length > 35 ? m.categoria.substring(0, 35) + '...' : m.categoria,
-      stockDisponible: formatNumber(m.stockDisponible || 0),
-      stockEventos: formatNumber(m.stockReservado || 0),
-      stockTotal: formatNumber(m.stockTotal || 0),
+      stockFundacion: formatNumber(stockFundacion),
+      stockEventos: formatNumber(stockEventos),
+      stockEventosReservado: formatNumber(stockEventosReservado),
+      stockEventosDisponible: formatNumber(stockEventosDisponible),
+      stockTotal: formatNumber(stockTotal),
     };
   });
 
   // Datos para reporte
-  const reportData = materials.map(m => ({
-    nombre: m.nombre,
-    categoria: m.categoria,
-    stockDisponible: m.stockDisponible || 0,
-    stockEventos: m.stockReservado || 0,
-    stockTotal: m.stockTotal || 0,
-    estado: m.estado,
-    descripcion: m.descripcion || 'N/A',
-  }));
+  const reportData = materials.map(m => {
+    const stockFundacion = m.stockFundacion || 0;
+    const stockEventos = m.stockEventos || 0;
+    const stockEventosReservado = m.stockEventosReservado || 0;
+    const stockEventosDisponible = stockEventos - stockEventosReservado;
+    const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
+    
+    return {
+      nombre: m.nombre,
+      categoria: m.categoria,
+      stockFundacion: stockFundacion,
+      stockEventos: stockEventos,
+      stockEventosReservado: stockEventosReservado,
+      stockEventosDisponible: stockEventosDisponible,
+      stockTotal: stockTotal,
+      estado: m.estado,
+      descripcion: m.descripcion || 'N/A',
+    };
+  });
 
   return (
     <div className="p-6 font-questrial">
@@ -242,8 +304,10 @@ const MaterialsCatalog = () => {
                 columns={[
                   { header: "Nombre", accessor: "nombre" },
                   { header: "Categoría", accessor: "categoria" },
-                  { header: "Stock Disponible", accessor: "stockDisponible" },
+                  { header: "Stock Fundación", accessor: "stockFundacion" },
                   { header: "Stock Eventos", accessor: "stockEventos" },
+                  { header: "Stock Reservado", accessor: "stockEventosReservado" },
+                  { header: "Stock Disponible", accessor: "stockEventosDisponible" },
                   { header: "Stock Total", accessor: "stockTotal" },
                   { header: "Estado", accessor: "estado" },
                   { header: "Descripción", accessor: "descripcion" },
@@ -266,13 +330,13 @@ const MaterialsCatalog = () => {
       {/* Tabla */}
       <Table
         thead={{
-          titles: ["Nombre", "Categoría", "Stock Disponible", "Stock Eventos", "Stock Total"],
+          titles: ["Nombre", "Categoría", "Fundación", "Eventos", "Reservado", "Disponible", "Total"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockDisponible", "stockEventos", "stockTotal"],
+          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockFundacion", "stockEventos", "stockEventosReservado", "stockEventosDisponible", "stockTotal"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
@@ -286,12 +350,20 @@ const MaterialsCatalog = () => {
           hasPermission('materials', 'Editar')
             ? [
                 {
+                  onClick: handleTransfer,
+                  className:
+                    'p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors',
+                  label: <FaExchangeAlt />,
+                  title: 'Transferir Stock',
+                  show: (item) => true,
+                },
+                {
                   onClick: handleDischarge,
                   className:
                     'p-2 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors',
                   label: <FaMinusCircle />,
                   title: 'Registrar Baja',
-                  show: (item) => true, // Temporal: siempre mostrar para testing
+                  show: (item) => true,
                 },
               ]
             : undefined
@@ -356,6 +428,16 @@ const MaterialsCatalog = () => {
           setSelectedMaterial(null);
         }}
         onSave={handleSaveDischarge}
+        material={selectedMaterial}
+      />
+
+      <TransferModal
+        isOpen={isTransferModalOpen}
+        onClose={() => {
+          setIsTransferModalOpen(false);
+          setSelectedMaterial(null);
+        }}
+        onSave={handleSaveTransfer}
         material={selectedMaterial}
       />
     </div>

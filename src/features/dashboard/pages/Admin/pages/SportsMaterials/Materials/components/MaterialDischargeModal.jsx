@@ -7,7 +7,7 @@ import { getTipoBajaOptions } from '../../shared/utils/tipoBajaLabels';
 const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const [formData, setFormData] = useState({
     cantidad: '',
-    origenStock: '', // '' | 'USO_INTERNO' | 'EVENTOS'
+    inventarioOrigen: 'FUNDACION', // 'FUNDACION' | 'EVENTOS'
     tipo_baja: '',
     descripcion: '',
   });
@@ -18,7 +18,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     if (isOpen) {
       setFormData({
         cantidad: '',
-        origenStock: '',
+        inventarioOrigen: 'FUNDACION',
         tipo_baja: '',
         descripcion: '',
       });
@@ -29,8 +29,8 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.origenStock) {
-      newErrors.origenStock = 'El origen es obligatorio';
+    if (!formData.inventarioOrigen) {
+      newErrors.inventarioOrigen = 'El origen es obligatorio';
       setErrors(newErrors);
       return false;
     }
@@ -40,9 +40,9 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     }
 
     // Validar stock suficiente según el origen
-    const stockMax = formData.origenStock === 'USO_INTERNO' 
-      ? material?.stockDisponible || 0
-      : material?.stockReservado || 0;
+    const stockMax = formData.inventarioOrigen === 'FUNDACION' 
+      ? material?.stockFundacion || 0
+      : material?.stockEventos || 0;
     
     if (formData.cantidad > stockMax) {
       newErrors.cantidad = `No hay suficiente stock (máximo: ${stockMax})`;
@@ -69,7 +69,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
 
     const dataToSend = {
       cantidad: parseInt(formData.cantidad),
-      origenStock: formData.origenStock,
+      inventarioOrigen: formData.inventarioOrigen,
       tipo_baja: formData.tipo_baja,
       descripcion: formData.descripcion.trim(),
     };
@@ -121,14 +121,14 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </div>
             </div>
 
-            {/* Stock Disponible (readonly) */}
+            {/* Stock Fundación (readonly) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Stock Disponible
+                Stock Fundación
               </label>
               <input
                 type="text"
-                value={formatStock(material?.stockDisponible || 0)}
+                value={formatStock(material?.stockFundacion || 0)}
                 readOnly
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
               />
@@ -141,7 +141,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </label>
               <input
                 type="text"
-                value={formatStock(material?.stockReservado || 0)}
+                value={formatStock(material?.stockEventos || 0)}
                 readOnly
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
               />
@@ -150,33 +150,32 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
             {/* Origen del Stock */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Origen del Stock <span className="text-red-500">*</span>
+                Inventario Origen <span className="text-red-500">*</span>
               </label>
               <select
-                name="origenStock"
-                value={formData.origenStock}
-                onChange={(e) => handleChange('origenStock', e.target.value)}
+                name="inventarioOrigen"
+                value={formData.inventarioOrigen}
+                onChange={(e) => handleChange('inventarioOrigen', e.target.value)}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
-                  errors.origenStock ? 'border-red-500' : 'border-gray-300'
+                  errors.inventarioOrigen ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
-                <option value="">Seleccione origen</option>
-                <option value="USO_INTERNO">Uso Interno (Stock Disponible)</option>
-                <option value="EVENTOS">Eventos (Stock Eventos)</option>
+                <option value="FUNDACION">Inventario Fundación</option>
+                <option value="EVENTOS">Inventario Eventos</option>
               </select>
-              {errors.origenStock && (
+              {errors.inventarioOrigen && (
                 <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
                   <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
                     !
                   </span>
-                  <span>{errors.origenStock}</span>
+                  <span>{errors.inventarioOrigen}</span>
                 </p>
               )}
-              {!errors.origenStock && formData.origenStock && (
+              {!errors.inventarioOrigen && formData.inventarioOrigen && (
                 <p className="mt-1 text-xs text-gray-500">
-                  {formData.origenStock === 'USO_INTERNO' 
-                    ? `Se restará del stock disponible (${formatStock(material?.stockDisponible || 0)} disponibles)`
-                    : `Se restará del stock de eventos (${formatStock(material?.stockReservado || 0)} disponibles)`}
+                  {formData.inventarioOrigen === 'FUNDACION' 
+                    ? `Se descontará del inventario de la fundación (${formatStock(material?.stockFundacion || 0)} disponibles)`
+                    : `Se descontará del inventario de eventos (${formatStock(material?.stockEventos || 0)} disponibles)`}
                 </p>
               )}
             </div>
@@ -259,8 +258,8 @@ MaterialDischargeModal.propTypes = {
   material: PropTypes.shape({
     id: PropTypes.number,
     nombre: PropTypes.string,
-    stockDisponible: PropTypes.number,
-    stockReservado: PropTypes.number,
+    stockFundacion: PropTypes.number,
+    stockEventos: PropTypes.number,
   }),
 };
 
