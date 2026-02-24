@@ -826,11 +826,7 @@ const TemporaryTeamModal = ({
           </div>
 
           {/* Body */}
-<<<<<<< HEAD
-          <div className="flex-1 overflow-y-auto p-3">
-=======
           <motion.div className="flex-1 overflow-y-auto p-3">
->>>>>>> origin/Dev
             {/* Información básica */}
             {/* Campo de nombre - Ancho completo */}
             <motion.div
