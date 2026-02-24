@@ -10,6 +10,11 @@ import {
   FaPlus,
   FaTrash,
 } from "react-icons/fa";
+import {
+  MODULE_CONFIG,
+  generateAdminPermissions,
+  getModuleNamesMap,
+} from "../../../../../../../shared/constants/moduleConfig";
 
 const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
   if (!isOpen) return null;

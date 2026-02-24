@@ -74,17 +74,49 @@ class InscriptionsService {
     }
   }
 
+  // Verificar si un documento ya está inscrito o matriculado
+  async checkDocumentExists(numeroDocumento) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-document/${numeroDocumento}`);
+      
+      // El backend puede retornar la respuesta de dos formas:
+      // 1. { data: { exists: true, message: "..." } }
+      // 2. { exists: true, message: "..." }
+      const exists = response.data?.exists ?? response.exists ?? false;
+      const message = response.data?.message ?? response.message ?? null;
+      const details = response.data?.details ?? response.details ?? null;
+      
+      return {
+        success: true,
+        exists: exists,
+        message: message,
+        details: details,
+      };
+    } catch (error) {
+      console.error("Error checking document:", error);
+      
+      // Si el endpoint no existe (404), retornar false
+      if (error.message.includes("404") || error.message.includes("Not Found")) {
+        return { success: true, error: "Endpoint no implementado", exists: false };
+      }
+      
+      return { success: false, error: error.message, exists: false };
+    }
+  }
+
   // Crear inscripción (desde el landing)
   async create(inscriptionData) {
     try {
+      console.log("📤 [InscriptionsService.create] Datos a enviar:", inscriptionData);
       const response = await apiClient.post(this.endpoint, inscriptionData);
+      console.log("📥 [InscriptionsService.create] Respuesta del backend:", response);
 
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error("Error creating inscription:", error);
+      console.error("❌ [InscriptionsService.create] Error:", error);
       return { success: false, error: error.message };
     }
   }

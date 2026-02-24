@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+import apiClient from "../../../../../../../shared/services/apiClient";
 
 class ProvidersService {
   constructor() {
@@ -146,7 +146,39 @@ class ProvidersService {
   }
 
   async getActiveProviders() {
-    return this.getProviders({ status: "Activo" });
+    const response = await this.getProviders({ status: "Activo" });
+    
+    // Enriquecer con nombres de tipos de documento
+    if (response.success && response.data) {
+      try {
+        const docTypesResponse = await this.getDocumentTypes();
+        if (docTypesResponse.success && docTypesResponse.data) {
+          const documentTypes = docTypesResponse.data;
+          
+          response.data = response.data.map((provider) => {
+            if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
+              const docType = documentTypes.find(
+                (dt) =>
+                  dt.id.toString() === provider.tipoDocumento.toString() ||
+                  dt.value === provider.tipoDocumento.toString()
+              );
+              return {
+                ...provider,
+                tipoDocumentoNombre: docType ? (docType.name || docType.label) : "Cédula",
+              };
+            }
+            return {
+              ...provider,
+              tipoDocumentoNombre: "NIT",
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error enriching providers with document types:", error);
+      }
+    }
+    
+    return response;
   }
 
   async getProvidersByEntityType(entityType) {

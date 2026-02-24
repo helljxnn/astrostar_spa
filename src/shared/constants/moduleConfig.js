@@ -107,7 +107,7 @@ export const MODULE_CONFIG = {
 
   enrollments: {
     id: "enrollments",
-    name: "Matrículas",
+    name: "Gestión de Matrículas",
     path: "/dashboard/enrollments",
     icon: "FaFileContract",
     category: "athletes",
@@ -167,35 +167,45 @@ export const MODULE_CONFIG = {
     description: "Gestión de donaciones",
   },
 
-  // === COMPRAS ===
+  // === MATERIALES ===
+  materials: {
+    id: "materials",
+    name: "Gestión de Materiales",
+    path: "/dashboard/materials",
+    icon: "GiWeightLiftingUp",
+    category: "equipment",
+    parent: "equipment",
+    description: "Gestión de materiales",
+  },
+
+  materialCategories: {
+    id: "materialCategories",
+    name: "Categorías de Materiales",
+    path: "/dashboard/material-categories",
+    icon: "FaTags",
+    category: "equipment",
+    parent: "equipment",
+    description: "Gestión de categorías de materiales",
+  },
+
+  materialsRegistry: {
+    id: "materialsRegistry",
+    name: "Movimientos de Materiales",
+    path: "/dashboard/materials-movements",
+    icon: "FaClipboardList",
+    category: "equipment",
+    parent: "equipment",
+    description: "Registro de ingresos y bajas de inventario",
+  },
+
   providers: {
     id: "providers",
     name: "Proveedores",
     path: "/dashboard/providers",
     icon: "FaTruck",
-    category: "purchases",
-    parent: "purchases",
-    description: "Gestión de proveedores",
-  },
-
-  purchasesManagement: {
-    id: "purchasesManagement",
-    name: "Compras",
-    path: "/dashboard/purchases",
-    icon: "FaShoppingCart",
-    category: "purchases",
-    parent: "purchases",
-    description: "Gestión de compras",
-  },
-
-  // === OTROS ===
-  sportsEquipment: {
-    id: "sportsEquipment",
-    name: "Material Deportivo",
-    path: "/dashboard/sportsequipment",
-    icon: "GiWeightLiftingUp",
     category: "equipment",
-    description: "Gestión de material deportivo",
+    parent: "equipment",
+    description: "Gestión de proveedores",
   },
 };
 
@@ -203,6 +213,13 @@ export const MODULE_CONFIG = {
  * Configuración de grupos de módulos (para el sidebar)
  */
 export const MODULE_GROUPS = {
+  equipment: {
+    id: "equipment",
+    name: "Materiales",
+    icon: "GiWeightLiftingUp",
+    children: ["materialCategories", "materials", "materialsRegistry", "providers"],
+  },
+
   services: {
     id: "services",
     name: "Servicios",
@@ -216,9 +233,9 @@ export const MODULE_GROUPS = {
     icon: "FaClipboardList",
     children: [
       "sportsCategory",
+      "enrollments",
       "athletesSection",
       "athletesAssistance",
-      "enrollments",
     ],
   },
 
@@ -235,13 +252,6 @@ export const MODULE_GROUPS = {
     icon: "FaHandHoldingHeart",
     children: ["donorsSponsors", "donationsManagement"],
   },
-
-  purchases: {
-    id: "purchases",
-    name: "Compras",
-    icon: "FaShoppingCart",
-    children: ["providers", "purchasesManagement"],
-  },
 };
 
 /**
@@ -255,6 +265,15 @@ export const AVAILABLE_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar", "Listar"
 
 // Auto-generar lista de todos los módulos
 export const ALL_MODULES = Object.keys(MODULE_CONFIG);
+
+// Auto-generar mapeo de ID a nombre (para componentes de UI)
+export const getModuleNamesMap = () => {
+  const map = {};
+  ALL_MODULES.forEach((moduleId) => {
+    map[moduleId] = MODULE_CONFIG[moduleId].name;
+  });
+  return map;
+};
 
 // Auto-generar permisos de admin
 export const generateAdminPermissions = () => {

@@ -118,6 +118,7 @@ const Tbody = ({ options }) => {
             {/*  Acciones dinámicas */}
             {hasActions && (
               <td className="px-6 py-4 flex items-center justify-center gap-3">
+                {/* 1. Ver detalles */}
                 {onView && (() => {
                   const config = buttonConfig.view ? buttonConfig.view(item) : {};
                   const shouldShow = config.show !== false;
@@ -131,8 +132,8 @@ const Tbody = ({ options }) => {
                     <button
                       onClick={() => !isDisabled && onView(item)}
                       className={`p-2 rounded-full transition-colors ${
-                        isDisabled
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
+                        isDisabled 
+                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
                           : `bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white ${customClass}`
                       }`}
                       title={title}
@@ -143,6 +144,7 @@ const Tbody = ({ options }) => {
                   );
                 })()}
 
+                {/* 2. Editar */}
                 {onEdit && (() => {
                   const config = buttonConfig.edit ? buttonConfig.edit(item) : {};
                   const shouldShow = config.show !== false;
@@ -168,6 +170,7 @@ const Tbody = ({ options }) => {
                   );
                 })()}
 
+                {/* 3. Eliminar */}
                 {onDelete && (() => {
                   const config = buttonConfig.delete ? buttonConfig.delete(item) : {};
                   const shouldShow = config.show !== false;
@@ -193,6 +196,7 @@ const Tbody = ({ options }) => {
                   );
                 })()}
 
+                {/* 4. Ver Lista (si existe) */}
                 {onList && (
                   <button
                     onClick={() => onList(item)}
@@ -203,7 +207,7 @@ const Tbody = ({ options }) => {
                   </button>
                 )}
 
-                {/* Acciones personalizadas */}
+                {/* 5. Acciones personalizadas */}
                 {customActions && (
                   typeof customActions === 'function'
                     ? customActions(item)
