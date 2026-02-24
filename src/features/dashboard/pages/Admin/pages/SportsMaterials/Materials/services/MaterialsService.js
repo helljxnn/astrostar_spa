@@ -156,8 +156,8 @@ class MaterialsService {
     }
 
     // Validar datos antes de enviar
-    if (!dischargeData.origenStock || !['USO_INTERNO', 'EVENTOS'].includes(dischargeData.origenStock)) {
-      throw new Error("El origen del stock es obligatorio y debe ser USO_INTERNO o EVENTOS");
+    if (!dischargeData.inventarioOrigen || !['FUNDACION', 'EVENTOS'].includes(dischargeData.inventarioOrigen)) {
+      throw new Error("El origen del inventario es obligatorio y debe ser FUNDACION o EVENTOS");
     }
 
     if (!dischargeData.cantidad || dischargeData.cantidad <= 0) {
@@ -166,7 +166,7 @@ class MaterialsService {
 
     const payload = {
       cantidad: parseInt(dischargeData.cantidad),
-      origenStock: dischargeData.origenStock, // 'USO_INTERNO' | 'EVENTOS'
+      inventario_origen: dischargeData.inventarioOrigen, // 'FUNDACION' | 'EVENTOS'
       tipo_baja: dischargeData.tipo_baja,
       descripcion: dischargeData.descripcion.trim(),
     };
@@ -176,6 +176,48 @@ class MaterialsService {
       return response;
     } catch (error) {
       console.error('❌ Error al registrar baja:', error);
+      throw error;
+    }
+  }
+
+  async transferStock(id, transferData) {
+    if (!id) {
+      throw new Error("ID del material es requerido");
+    }
+
+    if (!transferData.from || !['FUNDACION', 'EVENTOS'].includes(transferData.from)) {
+      throw new Error("El inventario origen es obligatorio y debe ser FUNDACION o EVENTOS");
+    }
+
+    if (!transferData.to || !['FUNDACION', 'EVENTOS'].includes(transferData.to)) {
+      throw new Error("El inventario destino es obligatorio y debe ser FUNDACION o EVENTOS");
+    }
+
+    if (transferData.from === transferData.to) {
+      throw new Error("Los inventarios origen y destino deben ser diferentes");
+    }
+
+    if (!transferData.cantidad || transferData.cantidad <= 0) {
+      throw new Error("La cantidad debe ser mayor a 0");
+    }
+
+    const payload = {
+      from: transferData.from,
+      to: transferData.to,
+      cantidad: parseInt(transferData.cantidad),
+      observaciones: transferData.observaciones?.trim() || '',
+    };
+
+    try {
+      const response = await apiClient.post(`${this.endpoint}/${id}/transfer`, payload);
+      
+      if (response.success && response.data) {
+        response.data = this.transformFromBackend(response.data);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('❌ Error al transferir stock:', error);
       throw error;
     }
   }
@@ -214,6 +256,11 @@ class MaterialsService {
   transformFromBackend(backendData) {
     if (!backendData) return null;
 
+    const stockFundacion = backendData.stockFundacion || backendData.stock_fundacion || 0;
+    const stockEventos = backendData.stockEventos || backendData.stock_eventos || 0;
+    const stockEventosReservado = backendData.stockEventosReservado || backendData.stock_eventos_reservado || 0;
+    const stockEventosDisponible = stockEventos - stockEventosReservado;
+
     return {
       id: backendData.id,
       nombre: backendData.nombre || backendData.name || '',
@@ -221,9 +268,11 @@ class MaterialsService {
       categoriaId: backendData.categoriaId || backendData.categoria_id || backendData.categoryId || null,
       descripcion: backendData.descripcion || backendData.description || '',
       unidadMedida: backendData.unidadMedida || backendData.unidad_medida || backendData.unit || 'unidad',
-      stockTotal: backendData.stockTotal || backendData.stock_total || backendData.totalStock || 0,
-      stockDisponible: backendData.stockDisponible || backendData.stock_disponible || backendData.availableStock || 0,
-      stockReservado: backendData.stockEventos || backendData.stock_eventos || backendData.stockReservado || backendData.stock_reservado || backendData.reservedStock || 0,
+      stockFundacion: stockFundacion,
+      stockEventos: stockEventos,
+      stockEventosReservado: stockEventosReservado,
+      stockEventosDisponible: stockEventosDisponible,
+      stockTotal: backendData.stockTotal || backendData.stock_total || (stockFundacion + stockEventos),
       estado: backendData.estado || backendData.status || 'Activo',
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',

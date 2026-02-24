@@ -6,7 +6,6 @@ import SearchableSelect from '../../../../../../../../shared/components/Searchab
 import ProviderModal from '../../../Providers/components/ProviderModal';
 import materialsService from '../../Materials/services/MaterialsService';
 import providersService from '../../../Providers/services/ProvidersService';
-import eventsService from '../../../Events/services/eventsService';
 import { calculateNewStock, validateMovementQuantity } from '../../shared/utils/stockCalculations';
 import { formatStock, formatNumber } from '../../../../../../../../shared/utils/numberFormat';
 
@@ -25,9 +24,8 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
     materialNombre: '',
     categoria: '',
     cantidad: '',
-    fechaIngreso: getTodayLocalDate(), // Fecha de hoy por defecto
-    destinoStock: '', // '' | 'USO_INTERNO' | 'EVENTOS'
-    eventoId: '', // ID del evento al que se asigna
+    fechaIngreso: getTodayLocalDate(),
+    inventarioDestino: '', // '' | 'FUNDACION' | 'EVENTOS'
     proveedor: '',
     observaciones: '',
   });
@@ -42,41 +40,34 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
 
-  const [events, setEvents] = useState([]);
-  const [loadingEvents, setLoadingEvents] = useState(false);
-
   useEffect(() => {
     if (isOpen) {
       if (isEditing && movement) {
-        // Cargar datos del movimiento a editar
         setFormData({
           materialId: movement.materialId || '',
           materialNombre: movement.materialNombre || '',
           categoria: movement.categoria || '',
           cantidad: movement.cantidad || '',
           fechaIngreso: movement.fechaIngreso ? movement.fechaIngreso.split('T')[0] : getTodayLocalDate(),
-          destinoStock: movement.destinoStock || 'USO_INTERNO',
-          eventoId: movement.eventoId || '',
+          inventarioDestino: movement.inventarioDestino || 'FUNDACION',
           proveedor: movement.proveedorId || '',
           observaciones: movement.observaciones || '',
         });
-        // Simular material seleccionado para modo edición
         setSelectedMaterial({
           id: movement.materialId,
           nombre: movement.materialNombre,
           categoria: movement.categoria,
-          stockDisponible: movement.stockNuevo || 0,
+          stockFundacion: movement.stockFundacion || 0,
+          stockEventos: movement.stockEventos || 0,
         });
       } else {
-        // Resetear formulario para nuevo registro
         setFormData({
           materialId: '',
           materialNombre: '',
           categoria: '',
           cantidad: '',
           fechaIngreso: getTodayLocalDate(),
-          destinoStock: '',
-          eventoId: '',
+          inventarioDestino: '',
           proveedor: '',
           observaciones: '',
         });
@@ -84,7 +75,6 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       }
       fetchMaterials();
       fetchProviders();
-      fetchEvents();
     }
   }, [isOpen, isEditing, movement]);
 
@@ -120,21 +110,6 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
     }
   };
 
-  const fetchEvents = async () => {
-    try {
-      setLoadingEvents(true);
-      const response = await eventsService.getActiveEvents();
-      if (response.success && response.data) {
-        setEvents(response.data);
-      }
-    } catch (error) {
-      console.error('Error al cargar eventos:', error);
-      setEvents([]);
-    } finally {
-      setLoadingEvents(false);
-    }
-  };
-
   const handleMaterialSelect = (material) => {
     setSelectedMaterial(material);
     setFormData(prev => ({ 
@@ -150,12 +125,6 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Si cambia el destino y no es EVENTOS, limpiar eventoId
-    if (name === 'destinoStock' && value !== 'EVENTOS') {
-      setFormData(prev => ({ ...prev, eventoId: '' }));
-      setErrors(prev => ({ ...prev, eventoId: '' }));
-    }
     
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -203,14 +172,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
           }
         }
         break;
-      case 'destinoStock':
+      case 'inventarioDestino':
         if (!value) {
           error = 'El destino es obligatorio';
-        }
-        break;
-      case 'eventoId':
-        if (formData.destinoStock === 'EVENTOS' && !value) {
-          error = 'Debes seleccionar un evento';
         }
         break;
       default:
@@ -262,8 +226,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         materialId: true,
         cantidad: true,
         fechaIngreso: true,
-        destinoStock: true,
-        eventoId: formData.destinoStock === 'EVENTOS',
+        inventarioDestino: true,
       });
 
       if (!selectedMaterial) {
@@ -277,10 +240,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       const materialError = validateField('materialId');
       const cantidadError = validateField('cantidad');
       const fechaError = validateField('fechaIngreso');
-      const destinoError = validateField('destinoStock');
-      const eventoError = formData.destinoStock === 'EVENTOS' ? validateField('eventoId') : '';
+      const destinoError = validateField('inventarioDestino');
 
-      if (materialError || cantidadError || fechaError || destinoError || eventoError) {
+      if (materialError || cantidadError || fechaError || destinoError) {
         return;
       }
 
@@ -288,22 +250,23 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
       try {
         const cantidad = parseInt(formData.cantidad);
-        const stockAnterior = selectedMaterial.stockDisponible || 0;
+        const stockAnterior = formData.inventarioDestino === 'FUNDACION' 
+          ? (selectedMaterial.stockFundacion || 0)
+          : (selectedMaterial.stockEventos || 0);
         const stockNuevo = calculateNewStock(
           stockAnterior,
           cantidad,
-          'Entrada' // Siempre es entrada en este módulo
+          'Entrada'
         );
 
         const movementData = {
           materialId: formData.materialId,
           materialNombre: formData.materialNombre,
           categoria: formData.categoria,
-          tipoMovimiento: 'Entrada', // Siempre es entrada
+          tipoMovimiento: 'Entrada',
           cantidad: cantidad,
           fechaIngreso: formData.fechaIngreso,
-          destinoStock: formData.destinoStock, // 'USO_INTERNO' | 'EVENTOS'
-          eventoId: formData.destinoStock === 'EVENTOS' ? formData.eventoId : null,
+          inventarioDestino: formData.inventarioDestino, // 'FUNDACION' | 'EVENTOS'
           proveedor: formData.proveedor || null,
           observaciones: formData.observaciones || null,
           stockAnterior: stockAnterior,
@@ -329,9 +292,8 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       materialNombre: '',
       categoria: '',
       cantidad: '',
-      fechaIngreso: new Date().toISOString().split('T')[0],
-      destinoStock: '',
-      eventoId: '',
+      fechaIngreso: getTodayLocalDate(),
+      inventarioDestino: '',
       proveedor: '',
       observaciones: '',
     });
@@ -428,18 +390,31 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
               </div>
             )}
 
-            {/* Stock Disponible (solo lectura) */}
+            {/* Stock Actual */}
             {selectedMaterial && !isEditing && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stock Disponible
-                </label>
-                <input
-                  type="text"
-                  value={formatStock(selectedMaterial.stockDisponible || 0)}
-                  readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock Fundación
+                  </label>
+                  <input
+                    type="text"
+                    value={formatStock(selectedMaterial.stockFundacion || 0)}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock Eventos
+                  </label>
+                  <input
+                    type="text"
+                    value={formatStock(selectedMaterial.stockEventos || 0)}
+                    readOnly
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                  />
+                </div>
               </div>
             )}
 
@@ -450,71 +425,33 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                   Destino del Ingreso <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="destinoStock"
-                  value={formData.destinoStock}
-                  onChange={(e) => handleChange('destinoStock', e.target.value)}
-                  onBlur={() => handleBlur('destinoStock')}
+                  name="inventarioDestino"
+                  value={formData.inventarioDestino}
+                  onChange={(e) => handleChange('inventarioDestino', e.target.value)}
+                  onBlur={() => handleBlur('inventarioDestino')}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
-                    touched.destinoStock && errors.destinoStock
+                    touched.inventarioDestino && errors.inventarioDestino
                       ? 'border-red-500'
                       : 'border-gray-300'
                   }`}
                 >
                   <option value="">Seleccione destino</option>
-                  <option value="USO_INTERNO">Uso Interno (Fundación)</option>
-                  <option value="EVENTOS">Asignar a Evento</option>
+                  <option value="FUNDACION">Inventario Fundación</option>
+                  <option value="EVENTOS">Inventario Eventos</option>
                 </select>
-                {touched.destinoStock && errors.destinoStock && (
+                {touched.inventarioDestino && errors.inventarioDestino && (
                   <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
                     <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
                       !
                     </span>
-                    <span>{errors.destinoStock}</span>
+                    <span>{errors.inventarioDestino}</span>
                   </p>
                 )}
-                {!errors.destinoStock && formData.destinoStock && (
+                {!errors.inventarioDestino && formData.inventarioDestino && (
                   <p className="mt-1 text-xs text-gray-500">
-                    {formData.destinoStock === 'USO_INTERNO' 
-                      ? 'Este material se sumará al stock disponible para uso de la fundación'
-                      : 'Este material se reservará para el evento seleccionado (no baja del stock hasta finalizar el evento)'}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Selección de Evento (solo si destino es EVENTOS) */}
-            {!isEditing && formData.destinoStock === 'EVENTOS' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Evento <span className="text-red-500">*</span>
-                </label>
-                <SearchableSelect
-                  name="eventoId"
-                  options={events.map(e => ({
-                    value: e.id,
-                    label: `${e.nombre} - ${e.fechaInicio ? new Date(e.fechaInicio).toLocaleDateString('es-CO') : 'Sin fecha'}`
-                  }))}
-                  value={formData.eventoId}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur('eventoId')}
-                  placeholder="Selecciona un evento"
-                  loading={loadingEvents}
-                  error={touched.eventoId && errors.eventoId}
-                />
-                {touched.eventoId && errors.eventoId && (
-                  <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                      !
-                    </span>
-                    <span>{errors.eventoId}</span>
-                  </p>
-                )}
-                {events.length === 0 && !loadingEvents && (
-                  <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
-                      ⚠
-                    </span>
-                    <span>No hay eventos activos disponibles</span>
+                    {formData.inventarioDestino === 'FUNDACION' 
+                      ? 'Este material se sumará al inventario de la fundación para uso interno'
+                      : 'Este material se sumará al inventario de eventos (se descuenta al asignar a un evento)'}
                   </p>
                 )}
               </div>

@@ -58,8 +58,8 @@ class MovementsService {
       categoria: movementData.categoria.trim(),
       tipo_movimiento: movementData.tipoMovimiento,
       cantidad: parseInt(movementData.cantidad),
-      fechaIngreso: movementData.fechaIngreso,
-      destinoStock: movementData.destinoStock, // Enviar en camelCase
+      fecha_ingreso: movementData.fechaIngreso,
+      inventario_destino: movementData.inventarioDestino, // FUNDACION o EVENTOS
       proveedor_id: movementData.proveedor || null,
       origen: 'Compra', // Siempre es compra en el módulo de ingresos
       observaciones: movementData.observaciones?.trim() || null,
