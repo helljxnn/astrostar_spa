@@ -6,7 +6,6 @@ import SearchInput from "../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../shared/components/Table/Pagination";
 import RoleDetailModal from "./components/RoleDetailModal";
 import { useRoles } from "./hooks/useRoles";
-import { useLoader } from "../../../../../../shared/components/Loader";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import { showErrorAlert } from "../../../../../../shared/utils/alerts";
@@ -15,7 +14,6 @@ const Roles = () => {
   const { roles, pagination, fetchRoles, createRole, updateRole, deleteRole } =
     useRoles();
 
-  const { showLoader, hideLoader } = useLoader();
   const { hasPermission } = usePermissions();
 
   // Estado para crear/editar
@@ -34,22 +32,17 @@ const Roles = () => {
   useEffect(() => {
     const delayedSearch = setTimeout(
       () => {
-        // Mostrar loader para búsquedas y paginación
-        showLoader(searchTerm ? "Buscando roles..." : "Cargando roles...");
-
         fetchRoles({
           page: currentPage,
           limit: rowsPerPage,
           search: searchTerm,
-        }).finally(() => {
-          hideLoader();
         });
       },
-      searchTerm ? 300 : 0
+      searchTerm ? 300 : 0,
     ); // Debounce only for search, immediate for pagination
 
     return () => clearTimeout(delayedSearch);
-  }, [searchTerm, currentPage, showLoader, hideLoader, fetchRoles]); // Remove fetchRoles to avoid circular dependency
+  }, [searchTerm, currentPage, fetchRoles]); // Remove fetchRoles to avoid circular dependency
 
   // Use API data directly (no local filtering since API handles search and pagination)
   const totalRows = pagination.total || 0;
@@ -61,7 +54,7 @@ const Roles = () => {
   const handleSave = async (newRole) => {
     try {
       showLoader(
-        modalMode === "create" ? "Creando rol..." : "Actualizando rol..."
+        modalMode === "create" ? "Creando rol..." : "Actualizando rol...",
       );
 
       const currentParams = {
@@ -89,7 +82,7 @@ const Roles = () => {
     if (role.name === "Administrador") {
       showErrorAlert(
         "Acción no permitida",
-        "El rol de Administrador es un rol del sistema y no puede ser editado."
+        "El rol de Administrador es un rol del sistema y no puede ser editado.",
       );
       return;
     }
@@ -111,7 +104,7 @@ const Roles = () => {
     if (role.name === "Administrador") {
       showErrorAlert(
         "Acción no permitida",
-        "El rol de Administrador es un rol del sistema y no puede ser eliminado."
+        "El rol de Administrador es un rol del sistema y no puede ser eliminado.",
       );
       return;
     }

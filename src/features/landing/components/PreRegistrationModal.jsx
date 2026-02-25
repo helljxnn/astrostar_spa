@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
@@ -6,12 +6,14 @@ import InscriptionsService from "../../dashboard/pages/Admin/pages/Athletes/Enro
 
 const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
-    nombres: "",
-    apellidos: "",
-    numeroDocumento: "",
-    fechaNacimiento: "",
-    telefono: "",
-    correo: "",
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    secondLastName: "",
+    identification: "",
+    birthDate: "",
+    phoneNumber: "",
+    email: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -24,30 +26,45 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [isResending, setIsResending] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
   const [cooldownTime, setCooldownTime] = useState(0);
+  const [isCheckingDocument, setIsCheckingDocument] = useState(false);
+  const [documentExists, setDocumentExists] = useState(false);
 
   // Validaciones
   const validateField = (name, value) => {
     switch (name) {
-      case "nombres":
-        if (!value?.trim()) return "Los nombres son obligatorios";
-        if (value.length < 2) return "Los nombres deben tener al menos 2 caracteres";
+      case "firstName":
+        if (!value?.trim()) return "El primer nombre es obligatorio";
+        if (value.length < 2) return "Debe tener al menos 2 caracteres";
         if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
         return "";
 
-      case "apellidos":
-        if (!value?.trim()) return "Los apellidos son obligatorios";
-        if (value.length < 2) return "Los apellidos deben tener al menos 2 caracteres";
+      case "middleName":
+        // Segundo nombre es opcional
+        if (value && value.length < 2) return "Debe tener al menos 2 caracteres";
+        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        return "";
+
+      case "lastName":
+        if (!value?.trim()) return "El primer apellido es obligatorio";
+        if (value.length < 2) return "Debe tener al menos 2 caracteres";
         if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
         return "";
 
-      case "numeroDocumento":
+      case "secondLastName":
+        // Segundo apellido es opcional
+        if (value && value.length < 2) return "Debe tener al menos 2 caracteres";
+        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        return "";
+
+      case "identification":
         if (!value?.trim()) return "El número de documento es obligatorio";
         if (value.length < 6) return "El documento debe tener al menos 6 caracteres";
         if (value.length > 20) return "El documento no puede exceder 20 caracteres";
         if (!/^[0-9A-Za-z\-]+$/.test(value)) return "Solo números, letras y guiones";
+        if (documentExists) return "Este documento ya está inscrito";
         return "";
 
-      case "fechaNacimiento":
+      case "birthDate":
         if (!value) return "La fecha de nacimiento es obligatoria";
         const birthDate = new Date(value);
         const today = new Date();
@@ -59,7 +76,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         if (age < 5) return "Debe tener al menos 5 años";
         return "";
 
-      case "telefono":
+      case "phoneNumber":
         if (!value?.trim()) return "El teléfono es obligatorio";
         const phoneWithCode = /^\+57\s?\d{10}$/;
         const phoneWithoutCode = /^\d{10}$/;
@@ -68,7 +85,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         }
         return "";
 
-      case "correo":
+      case "email":
         if (!value?.trim()) return "El correo es obligatorio";
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Formato de correo inválido";
         return "";
@@ -81,12 +98,64 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     
-    // Validar en tiempo real si el campo ya fue tocado
-    if (touched[field]) {
-      const error = validateField(field, value);
-      setErrors((prev) => ({ ...prev, [field]: error }));
+    // Limpiar el estado de documento existente cuando el usuario está escribiendo
+    if (field === "identification") {
+      setDocumentExists(false);
+    }
+    
+    // Validar en tiempo real SIEMPRE (no solo cuando touched)
+    const error = validateField(field, value);
+    setErrors((prev) => ({ ...prev, [field]: error }));
+    
+    // Marcar como tocado automáticamente cuando el usuario empieza a escribir
+    if (value && value.length > 0) {
+      setTouched((prev) => ({ ...prev, [field]: true }));
     }
   };
+
+  // Efecto para verificar documento con debounce
+  useEffect(() => {
+    const checkDocument = async () => {
+      const documento = formData.identification;
+      
+      // Solo verificar si el documento tiene al menos 6 caracteres y es válido
+      if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
+        setIsCheckingDocument(true);
+        
+        try {
+          const result = await InscriptionsService.checkDocumentExists(documento);
+          
+          if (result.success && result.exists) {
+            setDocumentExists(true);
+            // Usar el mensaje del backend si está disponible, sino usar mensaje genérico
+            const errorMessage = result.message || "Este documento ya está registrado";
+            setErrors((prev) => ({ ...prev, identification: errorMessage }));
+            setTouched((prev) => ({ ...prev, identification: true }));
+          } else {
+            setDocumentExists(false);
+            // Solo actualizar error si el campo ya fue tocado
+            if (touched.identification) {
+              const validationError = validateField("identification", documento);
+              setErrors((prev) => ({ ...prev, identification: validationError }));
+            }
+          }
+        } catch (error) {
+          console.error("Error checking document:", error);
+          setDocumentExists(false);
+        } finally {
+          setIsCheckingDocument(false);
+        }
+      } else {
+        setIsCheckingDocument(false);
+        setDocumentExists(false);
+      }
+    };
+
+    // Debounce de 400ms para respuesta rápida
+    const timeoutId = setTimeout(checkDocument, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [formData.identification, touched.identification]);
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -114,12 +183,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
     // Marcar todos los campos como tocados
     const allTouched = {
-      nombres: true,
-      apellidos: true,
-      numeroDocumento: true,
-      fechaNacimiento: true,
-      telefono: true,
-      correo: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      secondLastName: true,
+      identification: true,
+      birthDate: true,
+      phoneNumber: true,
+      email: true,
     };
     setTouched(allTouched);
 
@@ -140,10 +211,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
+      console.log("📤 [PreRegistrationModal] Enviando datos al backend:", formData);
+      
       const result = await InscriptionsService.create(formData);
+      
+      console.log("📥 [PreRegistrationModal] Respuesta del backend:", result);
 
       if (result.success) {
-        setSentEmail(formData.correo);
+        setSentEmail(formData.email);
         setShowSuccess(true);
         
         // Iniciar cooldown de 60 segundos
@@ -160,12 +235,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         
         // Limpiar formulario
         setFormData({
-          nombres: "",
-          apellidos: "",
-          numeroDocumento: "",
-          fechaNacimiento: "",
-          telefono: "",
-          correo: "",
+          firstName: "",
+          middleName: "",
+          lastName: "",
+          secondLastName: "",
+          identification: "",
+          birthDate: "",
+          phoneNumber: "",
+          email: "",
         });
         setErrors({});
         setTouched({});
@@ -236,12 +313,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   // Limpiar formulario cuando se cierra el modal
   const resetFormData = () => {
     setFormData({
-      nombres: "",
-      apellidos: "",
-      numeroDocumento: "",
-      fechaNacimiento: "",
-      telefono: "",
-      correo: "",
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      secondLastName: "",
+      identification: "",
+      birthDate: "",
+      phoneNumber: "",
+      email: "",
     });
     setErrors({});
     setTouched({});
@@ -250,12 +329,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setNewEmail("");
     setNewEmailError("");
     setNotification({ show: false, type: "", message: "" });
+    setDocumentExists(false);
+    setIsCheckingDocument(false);
   };
 
   // Efecto para limpiar cuando se cierra el modal
   if (!isOpen) {
     // Limpiar después de que la animación de salida termine
-    if (formData.nombres || formData.apellidos || formData.numeroDocumento || formData.fechaNacimiento || formData.telefono || formData.correo || Object.keys(errors).length > 0) {
+    if (formData.firstName || formData.middleName || formData.lastName || formData.secondLastName || formData.identification || formData.birthDate || formData.phoneNumber || formData.email || Object.keys(errors).length > 0) {
       setTimeout(resetFormData, 300);
     }
     return null;
@@ -317,86 +398,116 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
               {/* Body */}
               <form
                 onSubmit={handleSubmit}
-                className="flex-1 overflow-y-auto p-6"
+                className="p-6"
               >
                 <div className="space-y-4">
-                  <FormField
-                    label="Nombres Completos"
-                    name="nombres"
-                    type="text"
-                    value={formData.nombres}
-                    onChange={(e) => handleChange("nombres", e.target.value)}
-                    onBlur={() => handleBlur("nombres")}
-                    error={errors.nombres}
-                    touched={touched.nombres}
-                    required
-                    placeholder="Ingresa tus nombres completos"
-                  />
+                  {/* Nombres y Apellidos en Grid 2x2 */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      label="Primer Nombre"
+                      name="firstName"
+                      type="text"
+                      value={formData.firstName}
+                      onChange={(e) => handleChange("firstName", e.target.value)}
+                      onBlur={() => handleBlur("firstName")}
+                      error={errors.firstName}
+                      touched={touched.firstName}
+                      required
+                    />
 
-                  <FormField
-                    label="Apellidos Completos"
-                    name="apellidos"
-                    type="text"
-                    value={formData.apellidos}
-                    onChange={(e) => handleChange("apellidos", e.target.value)}
-                    onBlur={() => handleBlur("apellidos")}
-                    error={errors.apellidos}
-                    touched={touched.apellidos}
-                    required
-                    placeholder="Ingresa tus apellidos completos"
-                  />
+                    <FormField
+                      label="Segundo Nombre"
+                      name="middleName"
+                      type="text"
+                      value={formData.middleName}
+                      onChange={(e) => handleChange("middleName", e.target.value)}
+                      onBlur={() => handleBlur("middleName")}
+                      error={errors.middleName}
+                      touched={touched.middleName}
+                      placeholder="Opcional"
+                    />
 
-                  <FormField
-                    label="Número de Documento"
-                    name="numeroDocumento"
-                    type="text"
-                    value={formData.numeroDocumento}
-                    onChange={(e) => handleChange("numeroDocumento", e.target.value)}
-                    onBlur={() => handleBlur("numeroDocumento")}
-                    error={errors.numeroDocumento}
-                    touched={touched.numeroDocumento}
-                    required
-                    placeholder="Ingresa tu número de documento"
-                  />
+                    <FormField
+                      label="Primer Apellido"
+                      name="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={(e) => handleChange("lastName", e.target.value)}
+                      onBlur={() => handleBlur("lastName")}
+                      error={errors.lastName}
+                      touched={touched.lastName}
+                      required
+                    />
+
+                    <FormField
+                      label="Segundo Apellido"
+                      name="secondLastName"
+                      type="text"
+                      value={formData.secondLastName}
+                      onChange={(e) => handleChange("secondLastName", e.target.value)}
+                      onBlur={() => handleBlur("secondLastName")}
+                      error={errors.secondLastName}
+                      touched={touched.secondLastName}
+                      placeholder="Opcional"
+                    />
+                  </div>
+
+                  {/* Resto de campos en columna única */}
+                  <div className="relative">
+                    <FormField
+                      label="Número de Documento"
+                      name="identification"
+                      type="text"
+                      value={formData.identification}
+                      onChange={(e) => handleChange("identification", e.target.value)}
+                      onBlur={() => handleBlur("identification")}
+                      error={errors.identification}
+                      touched={touched.identification}
+                      required
+                    />
+                    {isCheckingDocument && (
+                      <div className="absolute right-3 top-9">
+                        <div className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
 
                   <FormField
                     label="Fecha de Nacimiento"
-                    name="fechaNacimiento"
+                    name="birthDate"
                     type="date"
-                    value={formData.fechaNacimiento}
+                    value={formData.birthDate}
                     onChange={(e) =>
-                      handleChange("fechaNacimiento", e.target.value)
+                      handleChange("birthDate", e.target.value)
                     }
-                    onBlur={() => handleBlur("fechaNacimiento")}
-                    error={errors.fechaNacimiento}
-                    touched={touched.fechaNacimiento}
+                    onBlur={() => handleBlur("birthDate")}
+                    error={errors.birthDate}
+                    touched={touched.birthDate}
                     required
                   />
 
                   <FormField
                     label="Teléfono"
-                    name="telefono"
+                    name="phoneNumber"
                     type="tel"
-                    value={formData.telefono}
-                    onChange={(e) => handleChange("telefono", e.target.value)}
-                    onBlur={() => handleBlur("telefono")}
-                    error={errors.telefono}
-                    touched={touched.telefono}
+                    value={formData.phoneNumber}
+                    onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                    onBlur={() => handleBlur("phoneNumber")}
+                    error={errors.phoneNumber}
+                    touched={touched.phoneNumber}
                     required
-                    placeholder="Ej: 3001234567"
                   />
 
                   <FormField
                     label="Correo Electrónico"
-                    name="correo"
+                    name="email"
                     type="email"
-                    value={formData.correo}
-                    onChange={(e) => handleChange("correo", e.target.value)}
-                    onBlur={() => handleBlur("correo")}
-                    error={errors.correo}
-                    touched={touched.correo}
+                    value={formData.email}
+                    onChange={(e) => handleChange("email", e.target.value)}
+                    onBlur={() => handleBlur("email")}
+                    error={errors.email}
+                    touched={touched.email}
                     required
-                    placeholder="ejemplo@correo.com"
                   />
                 </div>
               </form>
@@ -406,7 +517,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cooldownTime > 0}
+                  disabled={isSubmitting || cooldownTime > 0 || documentExists || isCheckingDocument}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
@@ -416,6 +527,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     </>
                   ) : cooldownTime > 0 ? (
                     `Espera ${cooldownTime}s para enviar otra inscripción`
+                  ) : documentExists ? (
+                    "Documento ya inscrito"
                   ) : (
                     "Enviar Inscripción"
                   )}

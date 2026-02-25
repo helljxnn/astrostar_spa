@@ -95,6 +95,21 @@ class EventsService {
   }
 
   /**
+   * Obtener eventos activos (para asignación de materiales)
+   */
+  async getActiveEvents() {
+    try {
+      const response = await apiClient.get(`${this.endpoint}`, {
+        estado: 'Activo',
+        limit: 1000
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Verificar inscripciones afectadas por cambio de categorías
    */
   async checkAffectedRegistrations(eventId, categoryIds) {

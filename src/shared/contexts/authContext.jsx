@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
           scheduleTokenRefresh();
         } else {
           // Si falla el refresh, cerrar sesión
-          console.log("❌ Error al refrescar token, cerrando sesión");
           logout();
         }
       } catch (error) {

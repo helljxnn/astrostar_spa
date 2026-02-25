@@ -194,7 +194,26 @@ class ApiClient {
           throw new Error(errorData.message || "Token inválido");
         }
 
-        throw new Error(errorData.message || `Error HTTP ${response.status}`);
+        // Mejorar el mensaje de error para mostrar detalles de validación
+        let errorMessage = errorData.message || `Error HTTP ${response.status}`;
+        
+        // Si hay errores de validación específicos, agregarlos al mensaje
+        if (errorData.errors && Array.isArray(errorData.errors)) {
+          const errorDetails = errorData.errors.map(err => `- ${err.field || 'Campo'}: ${err.message}`).join('\n');
+          errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
+        } else if (errorData.errors && typeof errorData.errors === 'object') {
+          const errorDetails = Object.entries(errorData.errors).map(([field, msg]) => `- ${field}: ${msg}`).join('\n');
+          errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
+        }
+        
+        console.error('Error del servidor:', {
+          status: response.status,
+          message: errorData.message,
+          errors: errorData.errors,
+          fullError: errorData
+        });
+        
+        throw new Error(errorMessage);
       }
 
       // Algunos endpoints no devuelven JSON
@@ -247,6 +266,16 @@ class ApiClient {
     const body = isFormData ? data : JSON.stringify(data);
     return this.request(endpoint, {
       method: "PUT",
+      body,
+      headers: isFormData ? {} : { "Content-Type": "application/json" },
+    });
+  }
+
+  async patch(endpoint, data = {}) {
+    const isFormData = data instanceof FormData;
+    const body = isFormData ? data : JSON.stringify(data);
+    return this.request(endpoint, {
+      method: "PATCH",
       body,
       headers: isFormData ? {} : { "Content-Type": "application/json" },
     });

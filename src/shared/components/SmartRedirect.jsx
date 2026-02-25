@@ -85,21 +85,21 @@ const SmartRedirect = () => {
       label: "Donantes/Patrocinadores",
     },
 
-    // 7. Módulos de compras
-    {
-      path: "/dashboard/purchases",
-      module: "purchasesManagement",
-      label: "Compras",
-    },
+    // 7. Proveedores
     { path: "/dashboard/providers", module: "providers", label: "Proveedores" },
 
     // 8. Módulos administrativos
     { path: "/dashboard/users", module: "users", label: "Usuarios" },
     { path: "/dashboard/roles", module: "roles", label: "Roles" },
     {
-      path: "/dashboard/sportsequipment",
+      path: "/dashboard/materials",
       module: "sportsEquipment",
-      label: "Material Deportivo",
+      label: "Materiales",
+    },
+    {
+      path: "/dashboard/material-categories",
+      module: "materialCategories",
+      label: "Categorías de Materiales",
     },
   ];
 
@@ -111,13 +111,11 @@ const SmartRedirect = () => {
   // Buscar la primera página a la que tiene acceso
   for (const route of redirectPriority) {
     if (hasModuleAccess(route.module)) {
-      console.log(`🔄 Redirigiendo a: ${route.label} (${route.path})`);
       return <Navigate to={route.path} replace />;
     }
   }
 
   // Si no tiene acceso a ningún módulo, redirigir a página de no autorizado
-  console.warn("⚠️ Usuario sin acceso a ningún módulo");
   return <Navigate to="/unauthorized" replace />;
 };
 

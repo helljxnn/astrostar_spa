@@ -30,6 +30,51 @@ const TeamRegistrationFormModal = ({
   const [searchTerm, setSearchTerm] = useState("");
   const searchTimeoutRef = useRef(null);
 
+  // Helper para obtener estado RSVP
+  const getRSVPStatus = (team) => {
+    if (!team.eventInvitations || team.eventInvitations.length === 0) {
+      return {
+        status: "NO_SENT",
+        label: "Sin invitación",
+        color: "gray",
+        icon: "📧",
+      };
+    }
+
+    const invitation = team.eventInvitations[0];
+
+    switch (invitation.status) {
+      case "PENDING":
+        return {
+          status: "PENDING",
+          label: "Pendiente",
+          color: "orange",
+          icon: "⏳",
+        };
+      case "CONFIRMED":
+        return {
+          status: "CONFIRMED",
+          label: "Confirmado",
+          color: "green",
+          icon: "✅",
+        };
+      case "DECLINED":
+        return {
+          status: "DECLINED",
+          label: "Declinado",
+          color: "red",
+          icon: "❌",
+        };
+      default:
+        return {
+          status: "UNKNOWN",
+          label: "Desconocido",
+          color: "gray",
+          icon: "❓",
+        };
+    }
+  };
+
   // Cargar equipos disponibles filtrados por categoría del evento
   const loadAvailableTeams = async () => {
     if (!eventId) {
@@ -102,6 +147,7 @@ const TeamRegistrationFormModal = ({
           .map((reg) => ({
             ...reg.team,
             registrationId: reg.id,
+            eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
           }));
 
         setSelectedTeams(registeredTeams);
@@ -369,7 +415,90 @@ const TeamRegistrationFormModal = ({
                   .filter(
                     (team) => !selectedTeams.find((st) => st.id === team.id),
                   )
-                  .map((team) => (
+                  .map((team) => {
+                    const rsvpStatus = getRSVPStatus(team);
+                    return (
+                      <div
+                        key={team.id}
+                        onClick={() => handleSelectTeam(team)}
+                        className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-semibold text-gray-900 text-sm truncate">
+                                {team.name}
+                              </h4>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                  team.teamType === "Fundacion"
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-orange-100 text-orange-700"
+                                }`}
+                              >
+                                {team.teamType === "Fundacion"
+                                  ? "Fundación"
+                                  : "Temporal"}
+                              </span>
+                              {team.category && (
+                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
+                                  {team.category}
+                                </span>
+                              )}
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                  rsvpStatus.color === "gray"
+                                    ? "bg-gray-100 text-gray-700"
+                                    : rsvpStatus.color === "orange"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : rsvpStatus.color === "green"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {rsvpStatus.icon} {rsvpStatus.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                              <span className="truncate">
+                                <span className="font-medium">Entrenador:</span>{" "}
+                                {team.coach || "Sin asignar"}
+                              </span>
+                            </div>
+                          </div>
+                          <svg
+                            className="w-5 h-5 text-primary-purple flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Resultados de búsqueda */}
+          <AnimatePresence>
+            {searchTerm.length >= 2 && searchResults.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              >
+                {searchResults.map((team) => {
+                  const rsvpStatus = getRSVPStatus(team);
+                  return (
                     <div
                       key={team.id}
                       onClick={() => handleSelectTeam(team)}
@@ -397,11 +526,30 @@ const TeamRegistrationFormModal = ({
                                 {team.category}
                               </span>
                             )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                rsvpStatus.color === "gray"
+                                  ? "bg-gray-100 text-gray-700"
+                                  : rsvpStatus.color === "orange"
+                                    ? "bg-orange-100 text-orange-700"
+                                    : rsvpStatus.color === "green"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {rsvpStatus.icon} {rsvpStatus.label}
+                            </span>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-gray-600">
                             <span className="truncate">
                               <span className="font-medium">Entrenador:</span>{" "}
                               {team.coach || "Sin asignar"}
+                            </span>
+                            <span className="flex-shrink-0">
+                              <span className="font-medium">Miembros:</span>{" "}
+                              <span className="font-semibold text-indigo-600">
+                                {team._count?.members || 0}
+                              </span>
                             </span>
                           </div>
                         </div>
@@ -420,78 +568,8 @@ const TeamRegistrationFormModal = ({
                         </svg>
                       </div>
                     </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resultados de búsqueda */}
-          <AnimatePresence>
-            {searchTerm.length >= 2 && searchResults.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
-              >
-                {searchResults.map((team) => (
-                  <div
-                    key={team.id}
-                    onClick={() => handleSelectTeam(team)}
-                    className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <h4 className="font-semibold text-gray-900 text-sm truncate">
-                            {team.name}
-                          </h4>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                              team.teamType === "Fundacion"
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-orange-100 text-orange-700"
-                            }`}
-                          >
-                            {team.teamType === "Fundacion"
-                              ? "Fundación"
-                              : "Temporal"}
-                          </span>
-                          {team.category && (
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
-                              {team.category}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-gray-600">
-                          <span className="truncate">
-                            <span className="font-medium">Entrenador:</span>{" "}
-                            {team.coach || "Sin asignar"}
-                          </span>
-                          <span className="flex-shrink-0">
-                            <span className="font-medium">Miembros:</span>{" "}
-                            <span className="font-semibold text-indigo-600">
-                              {team._count?.members || 0}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                      <svg
-                        className="w-5 h-5 text-primary-purple flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
@@ -565,66 +643,84 @@ const TeamRegistrationFormModal = ({
               </div>
               <div className="space-y-2">
                 <AnimatePresence>
-                  {selectedTeams.map((team, index) => (
-                    <motion.div
-                      key={team.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="relative bg-white rounded-lg border-2 border-primary-purple/20 overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-purple" />
+                  {selectedTeams.map((team, index) => {
+                    const rsvpStatus = getRSVPStatus(team);
+                    return (
+                      <motion.div
+                        key={team.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="relative bg-white rounded-lg border-2 border-primary-purple/20 overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-purple" />
 
-                      <div className="p-3 pl-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h4 className="font-bold text-gray-900 text-sm truncate">
-                                {team.name}
-                              </h4>
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                                  team.teamType === "Fundacion"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-orange-100 text-orange-700"
-                                }`}
-                              >
-                                {team.teamType === "Fundacion"
-                                  ? "Fundación"
-                                  : "Temporal"}
-                              </span>
-                              {team.category && (
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
-                                  {team.category}
+                        <div className="p-3 pl-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <h4 className="font-bold text-gray-900 text-sm truncate">
+                                  {team.name}
+                                </h4>
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                    team.teamType === "Fundacion"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-orange-100 text-orange-700"
+                                  }`}
+                                >
+                                  {team.teamType === "Fundacion"
+                                    ? "Fundación"
+                                    : "Temporal"}
                                 </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
-                              <span className="truncate">
-                                <span className="font-medium">Entrenador:</span>{" "}
-                                {team.coach || "Sin asignar"}
-                              </span>
-                              <span className="flex-shrink-0">
-                                <span className="font-medium">Miembros:</span>{" "}
-                                <span className="font-semibold text-indigo-600">
-                                  {team._count?.members || 0}
+                                {team.category && (
+                                  <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
+                                    {team.category}
+                                  </span>
+                                )}
+                                <span
+                                  className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                    rsvpStatus.color === "gray"
+                                      ? "bg-gray-100 text-gray-700"
+                                      : rsvpStatus.color === "orange"
+                                        ? "bg-orange-100 text-orange-700"
+                                        : rsvpStatus.color === "green"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {rsvpStatus.icon} {rsvpStatus.label}
                                 </span>
-                              </span>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs text-gray-600">
+                                <span className="truncate">
+                                  <span className="font-medium">
+                                    Entrenador:
+                                  </span>{" "}
+                                  {team.coach || "Sin asignar"}
+                                </span>
+                                <span className="flex-shrink-0">
+                                  <span className="font-medium">Miembros:</span>{" "}
+                                  <span className="font-semibold text-indigo-600">
+                                    {team._count?.members || 0}
+                                  </span>
+                                </span>
+                              </div>
                             </div>
+
+                            <button
+                              onClick={() => handleRemoveTeam(team.id)}
+                              className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Quitar equipo"
+                            >
+                              <FaTimes className="w-4 h-4" />
+                            </button>
                           </div>
-
-                          <button
-                            onClick={() => handleRemoveTeam(team.id)}
-                            className="flex-shrink-0 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Quitar equipo"
-                          >
-                            <FaTimes className="w-4 h-4" />
-                          </button>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>

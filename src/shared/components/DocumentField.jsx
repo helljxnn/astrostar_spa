@@ -145,9 +145,11 @@ export const DocumentField = ({
         <motion.p
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-sm text-red-600 flex items-center gap-1"
+          className="text-red-500 text-xs flex items-center gap-1"
         >
-          <span>⚠️</span>
+          <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
+            !
+          </span>
           <span>{error || localError}</span>
         </motion.p>
       )}

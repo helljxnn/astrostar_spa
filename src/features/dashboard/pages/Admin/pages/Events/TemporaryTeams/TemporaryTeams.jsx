@@ -1,39 +1,43 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from "react"
-import { FaPlus } from "react-icons/fa"
-import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx"
-import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx"
-import Table from "../../../../../../../shared/components/Table/table.jsx"
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx"
-import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
-import TeamsService from "./services/TeamsService.js"
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from "../../../../../../../shared/utils/alerts.js"
-import PermissionGuard from "../../../../../../../shared/components/PermissionGuard"
-import { usePermissions } from "../../../../../../../shared/hooks/usePermissions"
+import { useState, useMemo, useEffect } from "react";
+import { FaPlus } from "react-icons/fa";
+import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
+import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
+import Table from "../../../../../../../shared/components/Table/table.jsx";
+import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
+import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
+import TeamsService from "./services/TeamsService.js";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showDeleteAlert,
+} from "../../../../../../../shared/utils/alerts.js";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 const TemporaryTeams = () => {
-  const { hasPermission } = usePermissions()
-  const [data, setData] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [modalMode, setModalMode] = useState("create")
-  const [teamToEdit, setTeamToEdit] = useState(null)
-  const [teamToView, setTeamToView] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
+  const { hasPermission } = usePermissions();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("create");
+  const [teamToEdit, setTeamToEdit] = useState(null);
+  const [teamToView, setTeamToView] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 5,
     total: 0,
     totalPages: 0,
     hasNext: false,
-    hasPrev: false
-  })
-  const [eventAssignmentsCheck, setEventAssignmentsCheck] = useState({})
+    hasPrev: false,
+  });
+  const [eventAssignmentsCheck, setEventAssignmentsCheck] = useState({});
 
-  const rowsPerPage = 5
+  const rowsPerPage = 5;
 
   // Generar mensaje dinámico para el tooltip
   const generateTooltipMessage = (teamId) => {
@@ -57,58 +61,66 @@ const TemporaryTeams = () => {
 
   // Verificar asignaciones a eventos para todos los equipos
   const checkEventAssignmentsForTeams = async (teams) => {
-    const assignmentsCheck = {}
+    const assignmentsCheck = {};
 
     const promises = teams.map(async (team) => {
       try {
-        const response = await TeamsService.checkEventAssignments(team.id)
+        const response = await TeamsService.checkEventAssignments(team.id);
         return {
           id: team.id,
           isAssigned: response.isAssigned,
           count: response.count || 0,
           events: response.events || [],
-          message: response.message
-        }
+          message: response.message,
+        };
       } catch (error) {
-        return { id: team.id, isAssigned: false, count: 0, events: [], message: '' }
+        return {
+          id: team.id,
+          isAssigned: false,
+          count: 0,
+          events: [],
+          message: "",
+        };
       }
-    })
+    });
 
-    const results = await Promise.all(promises)
+    const results = await Promise.all(promises);
     results.forEach((result) => {
       assignmentsCheck[result.id] = {
         isAssigned: result.isAssigned,
         count: result.count,
         events: result.events,
-        message: result.message
-      }
-    })
+        message: result.message,
+      };
+    });
 
-    setEventAssignmentsCheck(assignmentsCheck)
-  }
+    setEventAssignmentsCheck(assignmentsCheck);
+  };
 
   // Cargar equipos TEMPORALES
   const loadTeams = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const result = await TeamsService.getTeams({
         page: currentPage,
         limit: rowsPerPage,
         search: searchTerm,
-        teamType: "Temporal"
-      })
-      
+        teamType: "Temporal",
+      });
+
       if (result.success) {
         const teamsData = result.data || [];
         setData(teamsData);
-        setPagination(result.pagination || {
-          page: currentPage, 
-          limit: rowsPerPage, 
-          total: 0, 
-          totalPages: 0, 
-          hasNext: false, 
-          hasPrev: false
-        });
+        setPagination(
+          result.pagination || {
+            page: currentPage,
+            limit: rowsPerPage,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        );
         checkEventAssignmentsForTeams(teamsData);
       } else {
         setData([]);
@@ -117,17 +129,17 @@ const TemporaryTeams = () => {
         }
       }
     } catch (error) {
-      console.error('Error cargando equipos:', error);
+      console.error("Error cargando equipos:", error);
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
     loadTeams();
-  }, [currentPage, searchTerm])
+  }, [currentPage, searchTerm]);
 
   // Formatear datos para la tabla - CORREGIDO para contar solo deportistas
   const formattedData = useMemo(() => {
@@ -135,17 +147,19 @@ const TemporaryTeams = () => {
       return [];
     }
 
-    const formatted = data.map(team => {
+    const formatted = data.map((team) => {
       // ✅ CORRECCIÓN: Contar SOLO deportistas, NO entrenadores
-      const deportistasCount = Array.isArray(team.members) ? 
-        team.members.filter(member => {
-          // Solo contar miembros que NO sean entrenadores
-          const isEntrenador = member.position === 'Entrenador' || 
-                              member.memberType === 'Employee' || 
-                              member.employeeId;
-          return !isEntrenador;
-        }).length : 0;
-      
+      const deportistasCount = Array.isArray(team.members)
+        ? team.members.filter((member) => {
+            // Solo contar miembros que NO sean entrenadores
+            const isEntrenador =
+              member.position === "Entrenador" ||
+              member.memberType === "Employee" ||
+              member.employeeId;
+            return !isEntrenador;
+          }).length
+        : 0;
+
       return {
         ...team,
         id: team.id,
@@ -153,25 +167,30 @@ const TemporaryTeams = () => {
         entrenador: team.entrenador || team.coach || "Sin entrenador",
         cantidadDeportistas: deportistasCount, // ✅ Solo deportistas
         categoria: team.categoria || team.category || "N/A",
-        estado: team.estado || (team.status === 'Active' ? 'Activo' : 'Inactivo'),
-        teamTypeForDisplay: team.teamType === "Temporal" ? "Temporales" : "Fundación",
+        estado:
+          team.estado || (team.status === "Active" ? "Activo" : "Inactivo"),
+        teamTypeForDisplay:
+          team.teamType === "Temporal" ? "Temporales" : "Fundación",
       };
     });
 
     return formatted;
-  }, [data])
+  }, [data]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
-  }
+  };
 
   // Guardar nuevo equipo
   const handleSave = async (newTeam) => {
     try {
       const result = await TeamsService.createTeam(newTeam);
-      
+
       if (result.success) {
-        showSuccessAlert("¡Éxito!", result.message || "Equipo creado correctamente");
+        showSuccessAlert(
+          "¡Éxito!",
+          result.message || "Equipo creado correctamente",
+        );
         setIsModalOpen(false);
         setCurrentPage(1);
         await loadTeams();
@@ -179,91 +198,100 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo crear el equipo");
       }
     } catch (error) {
-      console.error('Error creando equipo:', error);
+      console.error("Error creando equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo crear el equipo");
     }
-  }
+  };
 
   // Actualizar equipo
   const handleUpdate = async (updatedTeam) => {
     try {
       const result = await TeamsService.updateTeam(updatedTeam.id, updatedTeam);
-      
+
       if (result.success) {
         showSuccessAlert("¡Éxito!", result.message || "Equipo actualizado");
         setIsModalOpen(false);
         await loadTeams();
       } else {
-        showErrorAlert("Error", result.error || "No se pudo actualizar el equipo");
+        showErrorAlert(
+          "Error",
+          result.error || "No se pudo actualizar el equipo",
+        );
       }
     } catch (error) {
-      console.error('Error actualizando equipo:', error);
-      showErrorAlert("Error", error.message || "No se pudo actualizar el equipo");
+      console.error("Error actualizando equipo:", error);
+      showErrorAlert(
+        "Error",
+        error.message || "No se pudo actualizar el equipo",
+      );
     }
-  }
+  };
 
   const handleEdit = (team) => {
-    if (!hasPermission('temporaryTeams', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para editar equipos');
+    if (!hasPermission("temporaryTeams", "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar equipos");
       return;
     }
     setTeamToEdit(team);
     setModalMode("edit");
     setIsModalOpen(true);
-  }
+  };
 
   const handleView = (team) => {
-    if (!hasPermission('temporaryTeams', 'Ver')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para ver equipos');
+    if (!hasPermission("temporaryTeams", "Ver")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para ver equipos");
       return;
     }
     setTeamToView(team);
     setIsViewModalOpen(true);
-  }
+  };
 
   const handleDelete = async (team) => {
-    if (!hasPermission('temporaryTeams', 'Eliminar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar equipos');
+    if (!hasPermission("temporaryTeams", "Eliminar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar equipos",
+      );
       return;
     }
-    
+
     if (!team || !team.id) {
       return showErrorAlert("Error", "Equipo no válido");
     }
-    
+
     if (eventAssignmentsCheck[team.id]?.isAssigned) {
       const assignment = eventAssignmentsCheck[team.id];
       const events = assignment.events || [];
       const count = assignment.count || events.length;
-      
-      let eventDetails = '';
+
+      let eventDetails = "";
       if (count === 1 && events.length > 0) {
         eventDetails = ` (${events[0].name} - ${events[0].status})`;
       } else if (count > 1) {
         eventDetails = ` a ${count} eventos activos`;
       }
-      
+
       return showErrorAlert(
         "No se puede eliminar",
-        `El equipo "${team.nombre}" está asignado${eventDetails}.`
+        `El equipo "${team.nombre}" está asignado${eventDetails}.`,
       );
     }
-    
+
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará el equipo ${team.nombre}. Esta acción no se puede deshacer.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
-    
+
     if (!confirmResult.isConfirmed) return;
-    
+
     try {
       const deleteResult = await TeamsService.deleteTeam(team.id);
-      
+
       if (deleteResult.success) {
         showSuccessAlert(
           "Equipo eliminado",
-          `${team.nombre} fue eliminado correctamente.`
+          `${team.nombre} fue eliminado correctamente.`,
         );
         // Forzar recarga completa para asegurar datos actualizados
         setCurrentPage(1);
@@ -271,19 +299,21 @@ const TemporaryTeams = () => {
       } else {
         showErrorAlert(
           "Error",
-          deleteResult.error || "No se pudo eliminar el equipo"
+          deleteResult.error || "No se pudo eliminar el equipo",
         );
       }
     } catch (error) {
-      console.error('Error eliminando equipo:', error);
+      console.error("Error eliminando equipo:", error);
       showErrorAlert("Error", "Error al eliminar el equipo en el servidor");
     }
-  }
+  };
 
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Equipos Temporales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Equipos Temporales
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -312,44 +342,60 @@ const TemporaryTeams = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-center py-8 text-gray-600">Cargando equipos...</div>
-      ) : formattedData.length > 0 ? (
+      {formattedData.length > 0 ? (
         <>
           <Table
             thead={{
-              titles: ["Nombre", "Entrenador", "Deportistas", "Categoría", "Tipo"],
+              titles: [
+                "Nombre",
+                "Entrenador",
+                "Deportistas",
+                "Categoría",
+                "Tipo",
+              ],
               state: true,
               actions: true,
             }}
             tbody={{
               data: formattedData,
-              dataPropertys: ["nombre", "entrenador", "cantidadDeportistas", "categoria", "teamTypeForDisplay"],
+              dataPropertys: [
+                "nombre",
+                "entrenador",
+                "cantidadDeportistas",
+                "categoria",
+                "teamTypeForDisplay",
+              ],
               state: true,
               stateMap: {
-                Activo: "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
-                Inactivo: "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
+                Activo:
+                  "bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs",
+                Inactivo:
+                  "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
             }}
             rowsPerPage={1000}
-            onEdit={hasPermission('temporaryTeams', 'Editar') ? handleEdit : null}
-            onDelete={hasPermission('temporaryTeams', 'Eliminar') ? handleDelete : null}
-            onView={hasPermission('temporaryTeams', 'Ver') ? handleView : null}
+            onEdit={
+              hasPermission("temporaryTeams", "Editar") ? handleEdit : null
+            }
+            onDelete={
+              hasPermission("temporaryTeams", "Eliminar") ? handleDelete : null
+            }
+            onView={hasPermission("temporaryTeams", "Ver") ? handleView : null}
             buttonConfig={{
-              edit: (item) => ({ 
-                show: hasPermission('temporaryTeams', 'Editar'),
+              edit: (item) => ({
+                show: hasPermission("temporaryTeams", "Editar"),
                 disabled: false,
-                title: "Editar equipo"
+                title: "Editar equipo",
               }),
-              delete: (item) => ({ 
-                show: hasPermission('temporaryTeams', 'Eliminar'),
+              delete: (item) => ({
+                show: hasPermission("temporaryTeams", "Eliminar"),
                 disabled: eventAssignmentsCheck[item.id]?.isAssigned,
-                title: generateTooltipMessage(item.id)
+                title: generateTooltipMessage(item.id),
               }),
-              view: (item) => ({ 
-                show: hasPermission('temporaryTeams', 'Ver'),
+              view: (item) => ({
+                show: hasPermission("temporaryTeams", "Ver"),
                 disabled: false,
-                title: "Ver detalles"
+                title: "Ver detalles",
               }),
             }}
           />
@@ -368,7 +414,10 @@ const TemporaryTeams = () => {
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
-            <p>No se encontraron equipos temporales que coincidan con "{searchTerm}"</p>
+            <p>
+              No se encontraron equipos temporales que coincidan con "
+              {searchTerm}"
+            </p>
           ) : (
             <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
           )}
@@ -384,13 +433,13 @@ const TemporaryTeams = () => {
         mode={modalMode}
       />
 
-      <TemporaryTeamViewModal 
-        isOpen={isViewModalOpen} 
-        onClose={() => setIsViewModalOpen(false)} 
-        team={teamToView} 
+      <TemporaryTeamViewModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        team={teamToView}
       />
     </div>
-  )
-}
+  );
+};
 
-export default TemporaryTeams
+export default TemporaryTeams;

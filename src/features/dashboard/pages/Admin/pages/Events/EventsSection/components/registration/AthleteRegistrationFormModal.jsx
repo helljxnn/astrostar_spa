@@ -27,6 +27,51 @@ const AthleteRegistrationFormModal = ({
   const hasLoadedRef = useRef(false); // Para evitar cargas múltiples
   const lastEventIdRef = useRef(null); // Para rastrear cambios de evento
 
+  // Helper para obtener estado RSVP
+  const getRSVPStatus = (athlete) => {
+    if (!athlete.eventInvitations || athlete.eventInvitations.length === 0) {
+      return {
+        status: "NO_SENT",
+        label: "Sin invitación",
+        color: "gray",
+        icon: "📧",
+      };
+    }
+
+    const invitation = athlete.eventInvitations[0];
+
+    switch (invitation.status) {
+      case "PENDING":
+        return {
+          status: "PENDING",
+          label: "Pendiente",
+          color: "orange",
+          icon: "⏳",
+        };
+      case "CONFIRMED":
+        return {
+          status: "CONFIRMED",
+          label: "Confirmado",
+          color: "green",
+          icon: "✅",
+        };
+      case "DECLINED":
+        return {
+          status: "DECLINED",
+          label: "Declinado",
+          color: "red",
+          icon: "❌",
+        };
+      default:
+        return {
+          status: "UNKNOWN",
+          label: "Desconocido",
+          color: "gray",
+          icon: "❓",
+        };
+    }
+  };
+
   // Cargar deportistas disponibles
   const loadAvailableAthletes = useCallback(async () => {
     if (!event?.id) {
@@ -35,7 +80,9 @@ const AthleteRegistrationFormModal = ({
 
     setLoading(true);
     try {
-      const response = await RegistrationsService.getAvailableAthletes();
+      const response = await RegistrationsService.getAthletesByEventCategories(
+        event.id,
+      );
 
       if (response.success) {
         const athletesData = response.data.athletes || [];
@@ -113,6 +160,7 @@ const AthleteRegistrationFormModal = ({
           .map((reg) => ({
             ...reg.athlete,
             registrationId: reg.id,
+            eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
           }));
 
         setSelectedAthletes(registeredAthletes);
@@ -202,10 +250,6 @@ const AthleteRegistrationFormModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    console.log("=== INICIO DE INSCRIPCIÓN ===");
-    console.log("Deportistas seleccionados:", selectedAthletes);
-    console.log("Deportistas iniciales:", initialAthletes);
-
     if (selectedAthletes.length === 0) {
       setError("Debe seleccionar al menos un deportista");
       return;
@@ -219,9 +263,6 @@ const AthleteRegistrationFormModal = ({
       const initialIds = initialAthletes.map((a) => a.id);
       const currentIds = selectedAthletes.map((a) => a.id);
 
-      console.log("IDs iniciales:", initialIds);
-      console.log("IDs actuales:", currentIds);
-
       // Deportistas nuevos a inscribir
       const athletesToAdd = selectedAthletes.filter(
         (a) => !initialIds.includes(a.id),
@@ -231,9 +272,6 @@ const AthleteRegistrationFormModal = ({
       const athletesToRemove = initialAthletes.filter(
         (a) => !currentIds.includes(a.id),
       );
-
-      console.log("Deportistas a agregar:", athletesToAdd);
-      console.log("Deportistas a remover:", athletesToRemove);
 
       // Cancelar inscripciones de deportistas quitados
       if (athletesToRemove.length > 0) {
@@ -250,18 +288,10 @@ const AthleteRegistrationFormModal = ({
       if (athletesToAdd.length > 0) {
         const athleteIdsToAdd = athletesToAdd.map((a) => a.id);
 
-        console.log("Deportistas a inscribir:", athleteIdsToAdd);
-        console.log("Datos a enviar:", {
-          serviceId: event.id,
-          athleteIds: athleteIdsToAdd,
-        });
-
         const response = await RegistrationsService.registerAthletesBulk({
           serviceId: event.id,
           athleteIds: athleteIdsToAdd,
         });
-
-        console.log("Respuesta del servidor:", response);
 
         if (!response.success) {
           const errorMsg =
@@ -280,14 +310,26 @@ const AthleteRegistrationFormModal = ({
 
         if (hasErrors && successful === 0) {
           // Todos fallaron
-          setError(
-            `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`,
-          );
+          const errorDetails = response.data.errors
+            .map(
+              (err) =>
+                `${err.athleteName || `ID ${err.athleteId}`}: ${err.error}`,
+            )
+            .join("\n");
+          setError(`No se pudo inscribir ningún deportista:\n${errorDetails}`);
           showErrorAlert(
             "Error",
             `No se pudo inscribir ningún deportista. ${response.data.errors[0].error}`,
           );
           return;
+        }
+
+        if (hasErrors && successful > 0) {
+          // Algunos fallaron
+          showErrorAlert(
+            "Inscripción parcial",
+            `Se inscribieron ${successful} de ${athletesToAdd.length} deportistas. ${response.data.errors.length} fallaron.`,
+          );
         }
       }
 
@@ -426,7 +468,134 @@ const AthleteRegistrationFormModal = ({
                     (athlete) =>
                       !selectedAthletes.find((sa) => sa.id === athlete.id),
                   )
-                  .map((athlete) => (
+                  .map((athlete) => {
+                    const rsvpStatus = getRSVPStatus(athlete);
+                    return (
+                      <div
+                        key={athlete.id}
+                        onClick={() => handleSelectAthlete(athlete)}
+                        className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="font-semibold text-gray-900 text-sm truncate">
+                                {athlete.user?.firstName}{" "}
+                                {athlete.user?.lastName}
+                              </h4>
+                              {athlete.inscriptions &&
+                                athlete.inscriptions.length > 0 && (
+                                  <>
+                                    {(() => {
+                                      const uniqueCategories =
+                                        athlete.inscriptions.reduce(
+                                          (acc, inscription) => {
+                                            const categoryId =
+                                              inscription.sportsCategory?.id;
+                                            if (
+                                              categoryId &&
+                                              !acc.find(
+                                                (item) =>
+                                                  item.sportsCategory?.id ===
+                                                  categoryId,
+                                              )
+                                            ) {
+                                              acc.push(inscription);
+                                            }
+                                            return acc;
+                                          },
+                                          [],
+                                        );
+
+                                      return (
+                                        <>
+                                          {uniqueCategories
+                                            .slice(0, 1)
+                                            .map((inscription, idx) => (
+                                              <span
+                                                key={
+                                                  inscription.sportsCategory
+                                                    ?.id || idx
+                                                }
+                                                className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
+                                              >
+                                                {
+                                                  inscription.sportsCategory
+                                                    ?.nombre
+                                                }
+                                              </span>
+                                            ))}
+                                          {uniqueCategories.length > 1 && (
+                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold flex-shrink-0">
+                                              +{uniqueCategories.length - 1}
+                                            </span>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </>
+                                )}
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                  rsvpStatus.color === "gray"
+                                    ? "bg-gray-100 text-gray-700"
+                                    : rsvpStatus.color === "orange"
+                                      ? "bg-orange-100 text-orange-700"
+                                      : rsvpStatus.color === "green"
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-red-100 text-red-700"
+                                }`}
+                              >
+                                {rsvpStatus.icon} {rsvpStatus.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                              <span className="truncate">
+                                ID: {athlete.user?.identification || "N/A"}
+                              </span>
+                              {athlete.user?.age && (
+                                <>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="flex-shrink-0">
+                                    {athlete.user.age} años
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <svg
+                            className="w-5 h-5 text-primary-purple flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 4v16m8-8H4"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Resultados de búsqueda */}
+          <AnimatePresence>
+            {searchResults.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+              >
+                {searchResults.map((athlete) => {
+                  const rsvpStatus = getRSVPStatus(athlete);
+                  return (
                     <div
                       key={athlete.id}
                       onClick={() => handleSelectAthlete(athlete)}
@@ -442,6 +611,7 @@ const AthleteRegistrationFormModal = ({
                               athlete.inscriptions.length > 0 && (
                                 <>
                                   {(() => {
+                                    // Filtrar categorías únicas por ID
                                     const uniqueCategories =
                                       athlete.inscriptions.reduce(
                                         (acc, inscription) => {
@@ -472,7 +642,7 @@ const AthleteRegistrationFormModal = ({
                                                 inscription.sportsCategory
                                                   ?.id || idx
                                               }
-                                              className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
+                                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
                                             >
                                               {
                                                 inscription.sportsCategory
@@ -490,8 +660,21 @@ const AthleteRegistrationFormModal = ({
                                   })()}
                                 </>
                               )}
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                rsvpStatus.color === "gray"
+                                  ? "bg-gray-100 text-gray-700"
+                                  : rsvpStatus.color === "orange"
+                                    ? "bg-orange-100 text-orange-700"
+                                    : rsvpStatus.color === "green"
+                                      ? "bg-green-100 text-green-700"
+                                      : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {rsvpStatus.icon} {rsvpStatus.label}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
                             <span className="truncate">
                               ID: {athlete.user?.identification || "N/A"}
                             </span>
@@ -520,113 +703,8 @@ const AthleteRegistrationFormModal = ({
                         </svg>
                       </div>
                     </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* Resultados de búsqueda */}
-          <AnimatePresence>
-            {searchResults.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
-              >
-                {searchResults.map((athlete) => (
-                  <div
-                    key={athlete.id}
-                    onClick={() => handleSelectAthlete(athlete)}
-                    className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-gray-900 text-sm truncate">
-                            {athlete.user?.firstName} {athlete.user?.lastName}
-                          </h4>
-                          {athlete.inscriptions &&
-                            athlete.inscriptions.length > 0 && (
-                              <>
-                                {(() => {
-                                  // Filtrar categorías únicas por ID
-                                  const uniqueCategories =
-                                    athlete.inscriptions.reduce(
-                                      (acc, inscription) => {
-                                        const categoryId =
-                                          inscription.sportsCategory?.id;
-                                        if (
-                                          categoryId &&
-                                          !acc.find(
-                                            (item) =>
-                                              item.sportsCategory?.id ===
-                                              categoryId,
-                                          )
-                                        ) {
-                                          acc.push(inscription);
-                                        }
-                                        return acc;
-                                      },
-                                      [],
-                                    );
-
-                                  return (
-                                    <>
-                                      {uniqueCategories
-                                        .slice(0, 1)
-                                        .map((inscription, idx) => (
-                                          <span
-                                            key={
-                                              inscription.sportsCategory?.id ||
-                                              idx
-                                            }
-                                            className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
-                                          >
-                                            {inscription.sportsCategory?.nombre}
-                                          </span>
-                                        ))}
-                                      {uniqueCategories.length > 1 && (
-                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold flex-shrink-0">
-                                          +{uniqueCategories.length - 1}
-                                        </span>
-                                      )}
-                                    </>
-                                  );
-                                })()}
-                              </>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-gray-600">
-                          <span className="truncate">
-                            ID: {athlete.user?.identification || "N/A"}
-                          </span>
-                          {athlete.user?.age && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <span className="flex-shrink-0">
-                                {athlete.user.age} años
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <svg
-                        className="w-5 h-5 text-primary-purple flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 4v16m8-8H4"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </motion.div>
             )}
           </AnimatePresence>
@@ -709,98 +787,120 @@ const AthleteRegistrationFormModal = ({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 <AnimatePresence>
-                  {selectedAthletes.map((athlete, index) => (
-                    <motion.div
-                      key={athlete.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="relative bg-white rounded-lg border-2 border-primary-purple/20 overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-purple" />
+                  {selectedAthletes.map((athlete, index) => {
+                    const rsvpStatus = getRSVPStatus(athlete);
+                    return (
+                      <motion.div
+                        key={athlete.id}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ delay: index * 0.03 }}
+                        className="relative bg-white rounded-lg border-2 border-primary-purple/20 overflow-hidden hover:shadow-md transition-shadow"
+                      >
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-purple" />
 
-                      <div className="p-3 pl-4">
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-bold text-gray-900 text-sm flex-1">
-                              {athlete.user?.firstName} {athlete.user?.lastName}
-                            </h4>
-                            <button
-                              onClick={() => handleRemoveAthlete(athlete.id)}
-                              className="flex-shrink-0 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
-                              title="Quitar deportista"
-                            >
-                              <FaTimes className="w-3 h-3" />
-                            </button>
-                          </div>
-
-                          {athlete.inscriptions &&
-                            athlete.inscriptions.length > 0 && (
-                              <div className="flex items-center gap-1 flex-wrap">
-                                {(() => {
-                                  // Filtrar categorías únicas por ID
-                                  const uniqueCategories =
-                                    athlete.inscriptions.reduce(
-                                      (acc, inscription) => {
-                                        const categoryId =
-                                          inscription.sportsCategory?.id;
-                                        if (
-                                          categoryId &&
-                                          !acc.find(
-                                            (item) =>
-                                              item.sportsCategory?.id ===
-                                              categoryId,
-                                          )
-                                        ) {
-                                          acc.push(inscription);
-                                        }
-                                        return acc;
-                                      },
-                                      [],
-                                    );
-
-                                  return (
-                                    <>
-                                      {uniqueCategories
-                                        .slice(0, 2)
-                                        .map((inscription) => (
-                                          <span
-                                            key={inscription.sportsCategory?.id}
-                                            className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
-                                          >
-                                            {inscription.sportsCategory?.nombre}
-                                          </span>
-                                        ))}
-                                      {uniqueCategories.length > 2 && (
-                                        <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                                          +{uniqueCategories.length - 2}
-                                        </span>
-                                      )}
-                                    </>
-                                  );
-                                })()}
-                              </div>
-                            )}
-
-                          <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">ID:</span>
-                              <span>
-                                {athlete.user?.identification || "N/A"}
-                              </span>
+                        <div className="p-3 pl-4">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <h4 className="font-bold text-gray-900 text-sm flex-1">
+                                {athlete.user?.firstName}{" "}
+                                {athlete.user?.lastName}
+                              </h4>
+                              <button
+                                onClick={() => handleRemoveAthlete(athlete.id)}
+                                className="flex-shrink-0 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                title="Quitar deportista"
+                              >
+                                <FaTimes className="w-3 h-3" />
+                              </button>
                             </div>
-                            {athlete.user?.age && (
+
+                            {athlete.inscriptions &&
+                              athlete.inscriptions.length > 0 && (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {(() => {
+                                    // Filtrar categorías únicas por ID
+                                    const uniqueCategories =
+                                      athlete.inscriptions.reduce(
+                                        (acc, inscription) => {
+                                          const categoryId =
+                                            inscription.sportsCategory?.id;
+                                          if (
+                                            categoryId &&
+                                            !acc.find(
+                                              (item) =>
+                                                item.sportsCategory?.id ===
+                                                categoryId,
+                                            )
+                                          ) {
+                                            acc.push(inscription);
+                                          }
+                                          return acc;
+                                        },
+                                        [],
+                                      );
+
+                                    return (
+                                      <>
+                                        {uniqueCategories
+                                          .slice(0, 2)
+                                          .map((inscription) => (
+                                            <span
+                                              key={
+                                                inscription.sportsCategory?.id
+                                              }
+                                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                                            >
+                                              {
+                                                inscription.sportsCategory
+                                                  ?.nombre
+                                              }
+                                            </span>
+                                          ))}
+                                        {uniqueCategories.length > 2 && (
+                                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                                            +{uniqueCategories.length - 2}
+                                          </span>
+                                        )}
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                            rsvpStatus.color === "gray"
+                                              ? "bg-gray-100 text-gray-700"
+                                              : rsvpStatus.color === "orange"
+                                                ? "bg-orange-100 text-orange-700"
+                                                : rsvpStatus.color === "green"
+                                                  ? "bg-green-100 text-green-700"
+                                                  : "bg-red-100 text-red-700"
+                                          }`}
+                                        >
+                                          {rsvpStatus.icon} {rsvpStatus.label}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
+
+                            <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
                               <div className="flex items-center gap-2">
-                                <span className="font-medium">Edad:</span>
-                                <span>{athlete.user.age} años</span>
+                                <span className="font-medium">ID:</span>
+                                <span>
+                                  {athlete.user?.identification || "N/A"}
+                                </span>
                               </div>
-                            )}
+                              {athlete.user?.age && (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">Edad:</span>
+                                  <span>{athlete.user.age} años</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             </div>

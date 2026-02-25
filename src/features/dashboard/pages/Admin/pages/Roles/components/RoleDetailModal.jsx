@@ -10,6 +10,11 @@ import {
   FaPlus,
   FaTrash,
 } from "react-icons/fa";
+import {
+  MODULE_CONFIG,
+  generateAdminPermissions,
+  getModuleNamesMap,
+} from "../../../../../../../shared/constants/moduleConfig";
 
 const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
   if (!isOpen) return null;
@@ -48,7 +53,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     return adminPermissions;
   };
 
-  // Mapeo de nombres de módulos 
+  // Mapeo de nombres de módulos
   const moduleNamesMap = {
     dashboard: "Dashboard",
     users: "Usuarios",
@@ -69,7 +74,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     purchasesManagement: "Compras",
   };
 
-  // Función para contar permisos activos
+  // Función para contar privilegios (acciones) activos
   const countActivePermissions = (permissions) => {
     if (!permissions || typeof permissions !== "object") return 0;
 
@@ -79,7 +84,9 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         count += modulePerms.length;
       } else if (typeof modulePerms === "object" && modulePerms !== null) {
         // Solo contar permisos que están en true
-        count += Object.values(modulePerms).filter(value => value === true).length;
+        count += Object.values(modulePerms).filter(
+          (value) => value === true,
+        ).length;
       } else if (modulePerms === true) {
         count += 1;
       }
@@ -87,7 +94,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     return count;
   };
 
-  // Función para contar módulos activos
+  // Función para contar permisos (módulos) activos
   const countActiveModules = (permissions) => {
     if (!permissions || typeof permissions !== "object") return 0;
 
@@ -97,7 +104,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
       }
       if (typeof modulePerms === "object" && modulePerms !== null) {
         // Solo contar módulos que tienen al menos un permiso en true
-        return Object.values(modulePerms).some(value => value === true);
+        return Object.values(modulePerms).some((value) => value === true);
       }
       return Boolean(modulePerms);
     }).length;
@@ -118,7 +125,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
       );
     }
 
-    // Mapeo de iconos para diferentes tipos de permisos 
+    // Mapeo de iconos para diferentes tipos de permisos
     const getPermissionIcon = (permission) => {
       const lowerPerm = permission.toLowerCase();
       if (
@@ -185,17 +192,24 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     }
 
     // Filtrar solo módulos que tienen al menos un permiso activo
-    const activeModules = permissionEntries.filter(([module, modulePermissions]) => {
-      if (Array.isArray(modulePermissions)) {
-        return modulePermissions.length > 0;
-      }
-      if (typeof modulePermissions === "object" && modulePermissions !== null) {
-        // Verificar que al menos un permiso esté en true
-        const hasActivePermission = Object.values(modulePermissions).some(value => value === true);
-        return hasActivePermission;
-      }
-      return Boolean(modulePermissions);
-    });
+    const activeModules = permissionEntries.filter(
+      ([module, modulePermissions]) => {
+        if (Array.isArray(modulePermissions)) {
+          return modulePermissions.length > 0;
+        }
+        if (
+          typeof modulePermissions === "object" &&
+          modulePermissions !== null
+        ) {
+          // Verificar que al menos un permiso esté en true
+          const hasActivePermission = Object.values(modulePermissions).some(
+            (value) => value === true,
+          );
+          return hasActivePermission;
+        }
+        return Boolean(modulePermissions);
+      },
+    );
 
     if (activeModules.length === 0) {
       return (
@@ -243,7 +257,9 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
                       </span>
                     </div>
                   ))}
-                {Object.values(modulePermissions).every(val => !Boolean(val)) && (
+                {Object.values(modulePermissions).every(
+                  (val) => !Boolean(val),
+                ) && (
                   <p className="text-gray-400 italic text-sm">
                     Sin permisos activos en este módulo
                   </p>
@@ -282,7 +298,6 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         {/* Encabezado */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-gray-800">Detalle del Rol</h2>
-
         </div>
 
         {/* Info básica */}
@@ -347,10 +362,10 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
               ) : (
                 <div className="flex gap-2">
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    {countActiveModules(roleData?.permissions)} módulos activos
+                    {countActiveModules(roleData?.permissions)} permisos
                   </span>
                   <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                    {countActivePermissions(roleData?.permissions)} permisos activos
+                    {countActivePermissions(roleData?.permissions)} privilegios
                   </span>
                 </div>
               )}

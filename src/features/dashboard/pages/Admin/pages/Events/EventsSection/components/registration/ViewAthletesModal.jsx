@@ -10,6 +10,54 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Helper para obtener estado RSVP
+  const getRSVPStatus = (registration) => {
+    if (
+      !registration.eventInvitations ||
+      registration.eventInvitations.length === 0
+    ) {
+      return {
+        status: "NO_SENT",
+        label: "Sin invitación",
+        color: "gray",
+        icon: "📧",
+      };
+    }
+
+    const invitation = registration.eventInvitations[0];
+
+    switch (invitation.status) {
+      case "PENDING":
+        return {
+          status: "PENDING",
+          label: "Pendiente",
+          color: "orange",
+          icon: "⏳",
+        };
+      case "CONFIRMED":
+        return {
+          status: "CONFIRMED",
+          label: "Confirmado",
+          color: "green",
+          icon: "✅",
+        };
+      case "DECLINED":
+        return {
+          status: "DECLINED",
+          label: "Declinado",
+          color: "red",
+          icon: "❌",
+        };
+      default:
+        return {
+          status: "UNKNOWN",
+          label: "Desconocido",
+          color: "gray",
+          icon: "❓",
+        };
+    }
+  };
+
   // Función para cerrar modal y limpiar scroll
   const handleClose = () => {
     document.body.classList.remove("events-modal-open");
@@ -68,6 +116,7 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
           .filter(Boolean) || [],
       registrationId: reg.id,
       status: reg.status,
+      eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
     }));
 
   // Filtrar por búsqueda
@@ -160,11 +209,7 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
 
         {/* Lista de deportistas */}
         <div className="flex-1 overflow-y-auto p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-20 text-gray-500">
-              Cargando atletas...
-            </div>
-          ) : filteredAthletes.length === 0 ? (
+          {filteredAthletes.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🔍</div>
               <p className="text-gray-500 text-lg">
@@ -175,52 +220,68 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredAthletes.map((athlete, index) => (
-                <motion.div
-                  key={athlete.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.02 }}
-                  className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-primary-purple/40 transition-all"
-                >
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-gray-900 text-sm flex-1">
-                        {athlete.nombre}
-                      </h3>
-                    </div>
+              {filteredAthletes.map((athlete, index) => {
+                const rsvpStatus = getRSVPStatus(athlete);
+                return (
+                  <motion.div
+                    key={athlete.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-primary-purple/40 transition-all"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-gray-900 text-sm flex-1">
+                          {athlete.nombre}
+                        </h3>
+                      </div>
 
-                    {athlete.categorias && athlete.categorias.length > 0 && (
-                      <div className="flex items-center gap-1 flex-wrap">
-                        {athlete.categorias.slice(0, 2).map((cat, idx) => (
+                      {athlete.categorias && athlete.categorias.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {athlete.categorias.slice(0, 2).map((cat, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                            >
+                              {cat}
+                            </span>
+                          ))}
+                          {athlete.categorias.length > 2 && (
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                              +{athlete.categorias.length - 2}
+                            </span>
+                          )}
                           <span
-                            key={idx}
-                            className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                            className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                              rsvpStatus.color === "gray"
+                                ? "bg-gray-100 text-gray-700"
+                                : rsvpStatus.color === "orange"
+                                  ? "bg-orange-100 text-orange-700"
+                                  : rsvpStatus.color === "green"
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
+                            }`}
                           >
-                            {cat}
+                            {rsvpStatus.icon} {rsvpStatus.label}
                           </span>
-                        ))}
-                        {athlete.categorias.length > 2 && (
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                            +{athlete.categorias.length - 2}
-                          </span>
-                        )}
-                      </div>
-                    )}
+                        </div>
+                      )}
 
-                    <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">ID:</span>
-                        <span>{athlete.identificacion}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Edad:</span>
-                        <span>{athlete.edad} años</span>
+                      <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">ID:</span>
+                          <span>{athlete.identificacion}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Edad:</span>
+                          <span>{athlete.edad} años</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
