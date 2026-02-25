@@ -395,11 +395,12 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 </h2>
               </div>
 
-              {/* Body */}
-              <form
-                onSubmit={handleSubmit}
-                className="p-6"
-              >
+              {/* Body con scroll */}
+              <div className="flex-1 overflow-y-auto">
+                <form
+                  onSubmit={handleSubmit}
+                  className="p-6"
+                >
                 <div className="space-y-4">
                   {/* Nombres y Apellidos en Grid 2x2 */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -510,7 +511,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     required
                   />
                 </div>
-              </form>
+                </form>
+              </div>
 
               {/* Footer Minimalista */}
               <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">

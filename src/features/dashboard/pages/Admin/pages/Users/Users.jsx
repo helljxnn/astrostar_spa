@@ -28,7 +28,7 @@ const Users = () => {
       const response = await usersService.getUsers({
         page: currentPage,
         limit: rowsPerPage,
-        search: searchTerm,
+        search: '', // No enviar search al backend, filtraremos localmente
       });
 
       if (response.success) {
@@ -63,10 +63,32 @@ const Users = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = searchTerm
+    ? data.filter((user) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        const textFields = [
+          user.nombre,
+          user.correo,
+          user.identificacion,
+          user.rol,
+          user.telefono,
+          user.estado,
+        ];
+        return textFields.some(
+          (field) => field && String(field).toLowerCase().includes(searchLower)
+        );
+      })
+    : data;
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = filteredData;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
 
   useEffect(() => {
-    if (currentPage !== 1) setCurrentPage(1);
+    if (currentPage !== 1 && searchTerm) setCurrentPage(1);
   }, [searchTerm]);
 
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
@@ -80,7 +102,7 @@ const Users = () => {
     setUserToView(null);
   };
 
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
 
   return (
@@ -109,7 +131,7 @@ const Users = () => {
       )}
 
       {/* Sin resultados con búsqueda */}
-      {!loading && totalRows === 0 && searchTerm && (
+      {!loading && displayTotalRows === 0 && searchTerm && (
         <div className="flex justify-center items-center py-8">
           <span className="text-gray-600">
             No se encontraron usuarios que coincidan con "{searchTerm}"
@@ -124,14 +146,14 @@ const Users = () => {
       )}
 
       {/* Sin usuarios en la BD */}
-      {!loading && totalRows === 0 && !searchTerm && (
+      {!loading && displayTotalRows === 0 && !searchTerm && (
         <div className="flex justify-center items-center py-8">
           <span className="text-gray-600">No hay datos disponibles</span>
         </div>
       )}
 
       {/* Tabla con datos */}
-      {!loading && totalRows > 0 && (
+      {!loading && displayTotalRows > 0 && (
         <>
           <Table
             thead={{
@@ -140,7 +162,7 @@ const Users = () => {
               actions: true,
             }}
             tbody={{
-              data: data,
+              data: displayData,
               dataPropertys: [
                 "nombre",
                 "correo",
@@ -168,7 +190,7 @@ const Users = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-            totalRows={totalRows}
+            totalRows={displayTotalRows}
             rowsPerPage={rowsPerPage}
             startIndex={startIndex}
           />
