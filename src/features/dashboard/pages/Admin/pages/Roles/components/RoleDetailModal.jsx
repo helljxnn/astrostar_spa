@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   FaLock,
@@ -287,7 +288,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     );
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -409,6 +410,8 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default RoleDetailModal;
