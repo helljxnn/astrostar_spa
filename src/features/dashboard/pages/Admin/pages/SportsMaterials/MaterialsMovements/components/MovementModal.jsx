@@ -229,20 +229,46 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         inventarioDestino: true,
       });
 
+      // Validar todos los campos y acumular errores
+      const newErrors = {};
+      
       if (!selectedMaterial) {
-        setErrors(prev => ({ 
-          ...prev, 
-          materialId: 'Debes seleccionar un material existente de la lista' 
-        }));
-        return;
+        newErrors.materialId = 'Debes seleccionar un material existente de la lista';
+      }
+      
+      if (!formData.cantidad || parseInt(formData.cantidad) <= 0) {
+        newErrors.cantidad = 'La cantidad debe ser mayor a 0';
+      } else if (formData.cantidad.length > 6) {
+        newErrors.cantidad = 'La cantidad no puede tener más de 6 dígitos';
+      } else {
+        try {
+          validateMovementQuantity(formData.cantidad);
+        } catch (e) {
+          newErrors.cantidad = e.message;
+        }
+      }
+      
+      if (!formData.fechaIngreso) {
+        newErrors.fechaIngreso = 'La fecha de ingreso es obligatoria';
+      } else {
+        const fechaIngreso = new Date(formData.fechaIngreso);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        
+        if (fechaIngreso > hoy) {
+          newErrors.fechaIngreso = 'La fecha de ingreso no puede ser futura';
+        }
+      }
+      
+      if (!formData.inventarioDestino) {
+        newErrors.inventarioDestino = 'El destino es obligatorio';
       }
 
-      const materialError = validateField('materialId');
-      const cantidadError = validateField('cantidad');
-      const fechaError = validateField('fechaIngreso');
-      const destinoError = validateField('inventarioDestino');
+      // Actualizar todos los errores de una vez
+      setErrors(newErrors);
 
-      if (materialError || cantidadError || fechaError || destinoError) {
+      // Si hay errores, no continuar
+      if (Object.keys(newErrors).length > 0) {
         return;
       }
 
@@ -468,6 +494,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                     placeholder="0"
                     value={formData.cantidad}
                     onChange={(name, value) => {
+                      // Solo permitir números, sin e, +, -, .
                       const numericValue = value.replace(/[^0-9]/g, '');
                       // Limitar a 6 dígitos
                       if (numericValue.length <= 6) {
@@ -475,6 +502,12 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                         if (errors[name]) {
                           setErrors((prev) => ({ ...prev, [name]: '' }));
                         }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      // Bloquear e, E, +, -, .
+                      if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                        e.preventDefault();
                       }
                     }}
                     onBlur={() => handleBlur('cantidad')}

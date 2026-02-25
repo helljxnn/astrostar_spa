@@ -11,6 +11,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
     observaciones: '',
   });
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -22,12 +23,15 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
         observaciones: '',
       });
       setErrors({});
+      setTouched({});
     }
   }, [isOpen]);
 
+  // Calcular stock disponible según origen
+  // Si es EVENTOS, debe considerar el stock reservado
   const stockOrigen = formData.from === 'FUNDACION' 
     ? material?.stockFundacion || 0
-    : material?.stockEventos || 0;
+    : (material?.stockEventos || 0) - (material?.stockEventosReservado || 0);
 
   const validateForm = () => {
     const newErrors = {};
@@ -58,6 +62,12 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    setTouched({
+      from: true,
+      to: true,
+      cantidad: true,
+    });
     
     if (!validateForm()) {
       return;
@@ -90,6 +100,11 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleBlur = (field) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    validateForm();
   };
 
   if (!isOpen || !material) return null;
@@ -150,63 +165,44 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
             </div>
 
             {/* Desde */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Desde <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="from"
-                value={formData.from}
-                onChange={(e) => handleChange('from', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
-                  errors.from ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Seleccione inventario origen</option>
-                <option value="FUNDACION">Inventario Fundación</option>
-                <option value="EVENTOS">Inventario Eventos</option>
-              </select>
-              {errors.from && (
-                <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                    !
-                  </span>
-                  <span>{errors.from}</span>
-                </p>
-              )}
-            </div>
+            <FormField
+              label="Desde"
+              name="from"
+              type="select"
+              value={formData.from}
+              onChange={handleChange}
+              onBlur={() => handleBlur('from')}
+              error={errors.from}
+              touched={touched.from}
+              required
+              options={[
+                { value: 'FUNDACION', label: 'Inventario Fundación' },
+                { value: 'EVENTOS', label: 'Inventario Eventos' },
+              ]}
+              placeholder="Seleccione inventario origen"
+            />
 
             {/* Hacia */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hacia <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="to"
-                value={formData.to}
-                onChange={(e) => handleChange('to', e.target.value)}
-                disabled={!formData.from}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
-                  errors.to ? 'border-red-500' : 'border-gray-300'
-                } ${!formData.from ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              >
-                <option value="">Seleccione inventario destino</option>
-                <option value="FUNDACION" disabled={formData.from === 'FUNDACION'}>
-                  Inventario Fundación
-                </option>
-                <option value="EVENTOS" disabled={formData.from === 'EVENTOS'}>
-                  Inventario Eventos
-                </option>
-              </select>
-              {errors.to && (
-                <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                    !
-                  </span>
-                  <span>{errors.to}</span>
-                </p>
-              )}
-            </div>
+            <FormField
+              label="Hacia"
+              name="to"
+              type="select"
+              value={formData.to}
+              onChange={handleChange}
+              onBlur={() => handleBlur('to')}
+              error={errors.to}
+              touched={touched.to}
+              required
+              disabled={!formData.from}
+              options={
+                !formData.from
+                  ? []
+                  : formData.from === 'FUNDACION'
+                  ? [{ value: 'EVENTOS', label: 'Inventario Eventos' }]
+                  : [{ value: 'FUNDACION', label: 'Inventario Fundación' }]
+              }
+              placeholder="Seleccione inventario destino"
+            />
 
             {/* Stock Disponible en Origen */}
             {formData.from && (
@@ -221,7 +217,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
             <FormField
               label="Cantidad a transferir"
               name="cantidad"
-              type="number"
+              type="text"
               value={formData.cantidad}
               onChange={(name, value) => {
                 const numericValue = value.replace(/[^0-9]/g, '');
@@ -229,7 +225,14 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
                   handleChange(name, numericValue);
                 }
               }}
+              onKeyDown={(e) => {
+                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onBlur={() => handleBlur('cantidad')}
               error={errors.cantidad}
+              touched={touched.cantidad}
               required
               min="1"
               max={stockOrigen}
