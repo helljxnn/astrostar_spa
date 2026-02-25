@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
@@ -9,7 +10,6 @@ import {
 } from "../../../../../../../../shared/utils/alerts";
 import temporaryPersonsService from "../services/temporaryPersonsService";
 
-
 // Hook de validación personalizado para personas temporales
 const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -17,22 +17,22 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
   const [touched, setTouched] = useState({});
 
   const handleChange = (name, value) => {
-    setValues(prev => ({ ...prev, [name]: value }));
-    
+    setValues((prev) => ({ ...prev, [name]: value }));
+
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleBlur = (name) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
-    
+    setTouched((prev) => ({ ...prev, [name]: true }));
+
     // Validar el campo específico
     const rule = validationRules[name];
     if (rule) {
       const error = rule(values[name], values);
-      setErrors(prev => ({ ...prev, [name]: error }));
+      setErrors((prev) => ({ ...prev, [name]: error }));
     }
   };
 
@@ -40,7 +40,7 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
     const newErrors = {};
     let isValid = true;
 
-    Object.keys(validationRules).forEach(fieldName => {
+    Object.keys(validationRules).forEach((fieldName) => {
       const rule = validationRules[fieldName];
       const error = rule(values[fieldName], values);
       if (error) {
@@ -50,8 +50,13 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
     });
 
     setErrors(newErrors);
-    setTouched(Object.keys(validationRules).reduce((acc, key) => ({ ...acc, [key]: true }), {}));
-    
+    setTouched(
+      Object.keys(validationRules).reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {},
+      ),
+    );
+
     return isValid;
   };
 
@@ -64,7 +69,7 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
     validateAllFields,
     setValues,
     setErrors,
-    setTouched
+    setTouched,
   };
 };
 
@@ -72,37 +77,49 @@ const useFormTemporaryPersonValidation = (initialValues, validationRules) => {
 const temporaryPersonValidationRules = {
   firstName: (value) => {
     if (!value || !value.trim()) return "El primer nombre es requerido";
-    if (value.length < 2) return "El primer nombre debe tener al menos 2 caracteres";
-    if (value.length > 100) return "El primer nombre no puede exceder 100 caracteres";
-    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El primer nombre solo puede contener letras y espacios";
+    if (value.length < 2)
+      return "El primer nombre debe tener al menos 2 caracteres";
+    if (value.length > 100)
+      return "El primer nombre no puede exceder 100 caracteres";
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+      return "El primer nombre solo puede contener letras y espacios";
     return "";
   },
   middleName: (value) => {
     if (value && value.trim()) {
-      if (value.length < 2) return "El segundo nombre debe tener al menos 2 caracteres";
-      if (value.length > 100) return "El segundo nombre no puede exceder 100 caracteres";
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El segundo nombre solo puede contener letras y espacios";
+      if (value.length < 2)
+        return "El segundo nombre debe tener al menos 2 caracteres";
+      if (value.length > 100)
+        return "El segundo nombre no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+        return "El segundo nombre solo puede contener letras y espacios";
     }
     return "";
   },
   lastName: (value) => {
     if (!value || !value.trim()) return "El primer apellido es requerido";
-    if (value.length < 2) return "El primer apellido debe tener al menos 2 caracteres";
-    if (value.length > 100) return "El primer apellido no puede exceder 100 caracteres";
-    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El primer apellido solo puede contener letras y espacios";
+    if (value.length < 2)
+      return "El primer apellido debe tener al menos 2 caracteres";
+    if (value.length > 100)
+      return "El primer apellido no puede exceder 100 caracteres";
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+      return "El primer apellido solo puede contener letras y espacios";
     return "";
   },
   secondLastName: (value) => {
     if (value && value.trim()) {
-      if (value.length < 2) return "El segundo apellido debe tener al menos 2 caracteres";
-      if (value.length > 100) return "El segundo apellido no puede exceder 100 caracteres";
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El segundo apellido solo puede contener letras y espacios";
+      if (value.length < 2)
+        return "El segundo apellido debe tener al menos 2 caracteres";
+      if (value.length > 100)
+        return "El segundo apellido no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+        return "El segundo apellido solo puede contener letras y espacios";
     }
     return "";
   },
   personType: (value) => {
     if (!value) return "El tipo de persona es requerido";
-    const validTypes = ['Deportista', 'Entrenador'];
+    const validTypes = ["Deportista", "Entrenador"];
     if (!validTypes.includes(value)) return "Tipo de persona no válido";
     return "";
   },
@@ -118,7 +135,7 @@ const temporaryPersonValidationRules = {
   },
   phone: (value) => {
     if (!value || !value.trim()) return "El número telefónico es requerido";
-    const cleanPhone = value.replace(/[\s\-\+\(\)]/g, '');
+    const cleanPhone = value.replace(/[\s\-\+\(\)]/g, "");
     if (!/^[0-9]+$/.test(cleanPhone)) {
       return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
     }
@@ -133,7 +150,8 @@ const temporaryPersonValidationRules = {
     return "";
   },
   documentTypeId: (value) => {
-    if (!value || (typeof value === 'string' && !value.trim())) return "El tipo de documento es requerido";
+    if (!value || (typeof value === "string" && !value.trim()))
+      return "El tipo de documento es requerido";
     const numValue = parseInt(value);
     if (isNaN(numValue) || numValue < 1) {
       return "Tipo de documento no válido";
@@ -153,11 +171,19 @@ const temporaryPersonValidationRules = {
     if (isNaN(birthDate.getTime())) {
       return "Fecha de nacimiento no válida";
     }
-    
+
     const today = new Date();
-    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
-    const maxDate = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
-    
+    const minDate = new Date(
+      today.getFullYear() - 120,
+      today.getMonth(),
+      today.getDate(),
+    );
+    const maxDate = new Date(
+      today.getFullYear() - 5,
+      today.getMonth(),
+      today.getDate(),
+    );
+
     if (birthDate < minDate) {
       return "La fecha de nacimiento no puede ser anterior a 120 años";
     }
@@ -182,13 +208,13 @@ const temporaryPersonValidationRules = {
   },
   status: (value, formData, mode) => {
     // El estado solo es requerido en modo editar
-    if (mode === 'edit') {
+    if (mode === "edit") {
       if (!value) return "El estado es requerido";
-      const validStatuses = ['Active', 'Inactive'];
+      const validStatuses = ["Active", "Inactive"];
       if (!validStatuses.includes(value)) return "Estado no válido";
     }
     return "";
-  }
+  },
 };
 
 const TemporaryPersonModal = ({
@@ -225,9 +251,9 @@ const TemporaryPersonModal = ({
       documentTypeId: "",
       personType: "Deportista",
       status: "Active",
-      age: ""
+      age: "",
     },
-    temporaryPersonValidationRules
+    temporaryPersonValidationRules,
   );
 
   // Función para calcular la edad
@@ -267,31 +293,44 @@ const TemporaryPersonModal = ({
   // Función personalizada para manejar blur con validación de unicidad
   const handleCustomBlur = async (name) => {
     handleBlur(name);
-    
+
     // Validar unicidad para campos específicos solo si pasan la validación básica
-    if ((name === 'identification' || name === 'email') && formData[name]) {
+    if ((name === "identification" || name === "email") && formData[name]) {
       // Primero validar que el campo cumpla con las reglas básicas
       const validationRule = temporaryPersonValidationRules[name];
-      const validationError = validationRule ? validationRule(formData[name], formData) : "";
-      
+      const validationError = validationRule
+        ? validationRule(formData[name], formData)
+        : "";
+
       // Solo hacer la petición al servidor si no hay errores de validación básica
       if (!validationError) {
-        const currentId = person && mode === 'edit' ? person.id : null;
-        
+        const currentId = person && mode === "edit" ? person.id : null;
+
         try {
           let response;
-          if (name === 'identification') {
-            response = await temporaryPersonsService.checkIdentificationAvailability(formData[name], currentId);
-          } else if (name === 'email') {
-            response = await temporaryPersonsService.checkEmailAvailability(formData[name], currentId);
+          if (name === "identification") {
+            response =
+              await temporaryPersonsService.checkIdentificationAvailability(
+                formData[name],
+                currentId,
+              );
+          } else if (name === "email") {
+            response = await temporaryPersonsService.checkEmailAvailability(
+              formData[name],
+              currentId,
+            );
           }
 
           // Manejar diferentes estructuras de respuesta
-          const isAvailable = response?.data?.available ?? response?.available ?? true;
+          const isAvailable =
+            response?.data?.available ?? response?.available ?? true;
           if (response && !isAvailable) {
-            const errorMessage = response?.data?.message || response?.message || `Este ${name === 'identification' ? 'número de documento' : 'email'} ya está en uso`;
+            const errorMessage =
+              response?.data?.message ||
+              response?.message ||
+              `Este ${name === "identification" ? "número de documento" : "email"} ya está en uso`;
             // Establecer el error de unicidad
-            setErrors(prev => ({ ...prev, [name]: errorMessage }));
+            setErrors((prev) => ({ ...prev, [name]: errorMessage }));
           }
         } catch (error) {
           // Continuar sin bloquear si hay error en la validación
@@ -319,7 +358,7 @@ const TemporaryPersonModal = ({
         documentTypeId: person.documentTypeId?.toString() || "",
         personType: person.personType || "Deportista",
         status: person.status || "Active",
-        age: calculateAge(birthDate)
+        age: calculateAge(birthDate),
       });
       // Limpiar errores al cargar datos de edición
       setErrors({});
@@ -334,11 +373,11 @@ const TemporaryPersonModal = ({
     try {
       // Validar todos los campos
       const isValid = validateAllFields();
-      
+
       if (!isValid) {
         showErrorAlert(
           "Campos incompletos",
-          "Por favor, corrija los errores en el formulario antes de continuar."
+          "Por favor, corrija los errores en el formulario antes de continuar.",
         );
         return;
       }
@@ -348,25 +387,29 @@ const TemporaryPersonModal = ({
       if (businessValidationErrors.length > 0) {
         showErrorAlert(
           "Errores de validación",
-          businessValidationErrors.join('. ')
+          businessValidationErrors.join(". "),
         );
         return;
       }
 
       // Validar unicidad de campos críticos antes del envío (solo si pasan validación básica)
       if (formData.identification && !errors.identification) {
-        const currentId = person && mode === 'edit' ? person.id : null;
+        const currentId = person && mode === "edit" ? person.id : null;
         try {
-          const identificationCheck = await temporaryPersonsService.checkIdentificationAvailability(
-            formData.identification, 
-            currentId
-          );
+          const identificationCheck =
+            await temporaryPersonsService.checkIdentificationAvailability(
+              formData.identification,
+              currentId,
+            );
           // Manejar diferentes estructuras de respuesta
-          const isAvailable = identificationCheck?.data?.available ?? identificationCheck?.available ?? true;
+          const isAvailable =
+            identificationCheck?.data?.available ??
+            identificationCheck?.available ??
+            true;
           if (!isAvailable) {
             showErrorAlert(
               "Identificación duplicada",
-              "Este número de documento ya está en uso por otra persona temporal."
+              "Este número de documento ya está en uso por otra persona temporal.",
             );
             return;
           }
@@ -376,18 +419,20 @@ const TemporaryPersonModal = ({
       }
 
       if (formData.email && !errors.email) {
-        const currentId = person && mode === 'edit' ? person.id : null;
+        const currentId = person && mode === "edit" ? person.id : null;
         try {
-          const emailCheck = await temporaryPersonsService.checkEmailAvailability(
-            formData.email, 
-            currentId
-          );
+          const emailCheck =
+            await temporaryPersonsService.checkEmailAvailability(
+              formData.email,
+              currentId,
+            );
           // Manejar diferentes estructuras de respuesta
-          const isAvailable = emailCheck?.data?.available ?? emailCheck?.available ?? true;
+          const isAvailable =
+            emailCheck?.data?.available ?? emailCheck?.available ?? true;
           if (!isAvailable) {
             showErrorAlert(
               "Email duplicado",
-              "Este email ya está en uso por otra persona temporal."
+              "Este email ya está en uso por otra persona temporal.",
             );
             return;
           }
@@ -400,7 +445,7 @@ const TemporaryPersonModal = ({
       if (mode === "edit") {
         const result = await showConfirmAlert(
           "¿Estás seguro de actualizar esta persona temporal?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente."
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
         if (!result.isConfirmed) return;
       }
@@ -416,7 +461,7 @@ const TemporaryPersonModal = ({
     } catch (error) {
       showErrorAlert(
         "Error al guardar",
-        "No se pudo guardar la persona temporal. Intenta de nuevo."
+        "No se pudo guardar la persona temporal. Intenta de nuevo.",
       );
     }
   };
@@ -438,7 +483,7 @@ const TemporaryPersonModal = ({
       documentTypeId: "",
       personType: "Deportista",
       status: "Active",
-      age: ""
+      age: "",
     });
     // También limpiar errores y estado touched
     setErrors({});
@@ -460,7 +505,7 @@ const TemporaryPersonModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
@@ -484,14 +529,15 @@ const TemporaryPersonModal = ({
             ✕
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {mode === "edit" ? "Editar Persona Temporal" : "Crear Persona Temporal"}
+            {mode === "edit"
+              ? "Editar Persona Temporal"
+              : "Crear Persona Temporal"}
           </h2>
         </div>
 
         {/* Body */}
         <div className="modal-body flex-1 overflow-y-auto p-3 relative">
           <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
-            
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
@@ -515,7 +561,7 @@ const TemporaryPersonModal = ({
             <DocumentField
               documentType={
                 referenceData.documentTypes.find(
-                  (dt) => dt.id === parseInt(formData.documentTypeId)
+                  (dt) => dt.id === parseInt(formData.documentTypeId),
                 )?.name
               }
               value={formData.identification}
@@ -662,7 +708,8 @@ const TemporaryPersonModal = ({
             />
 
             {/* Equipo - Solo para Deportista y Entrenador */}
-            {(formData.personType === 'Deportista' || formData.personType === 'Entrenador') && (
+            {(formData.personType === "Deportista" ||
+              formData.personType === "Entrenador") && (
               <FormField
                 label="Equipo"
                 name="team"
@@ -670,7 +717,7 @@ const TemporaryPersonModal = ({
                 placeholder="(no asignado)"
                 required={false}
                 disabled={true}
-                value={formData.team || '(no asignado)'}
+                value={formData.team || "(no asignado)"}
                 error={errors.team}
                 touched={touched.team}
                 delay={0.52}
@@ -678,7 +725,8 @@ const TemporaryPersonModal = ({
             )}
 
             {/* Categoría - Solo para Deportista y Entrenador */}
-            {(formData.personType === 'Deportista' || formData.personType === 'Entrenador') && (
+            {(formData.personType === "Deportista" ||
+              formData.personType === "Entrenador") && (
               <FormField
                 label="Categoría"
                 name="category"
@@ -686,7 +734,7 @@ const TemporaryPersonModal = ({
                 placeholder="(no asignado)"
                 required={false}
                 disabled={true}
-                value={formData.category || '(no asignado)'}
+                value={formData.category || "(no asignado)"}
                 error={errors.category}
                 touched={touched.category}
                 delay={0.55}
@@ -732,7 +780,6 @@ const TemporaryPersonModal = ({
                 delay={0.6}
               />
             )}
-
           </div>
         </div>
 
@@ -757,6 +804,8 @@ const TemporaryPersonModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default TemporaryPersonModal;
