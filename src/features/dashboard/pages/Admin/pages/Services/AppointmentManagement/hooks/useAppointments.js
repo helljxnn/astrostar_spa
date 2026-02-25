@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo, useRef } from "react";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext";
 import { addMinutes, format } from "date-fns";
 import appointmentService from "../services/appointmentService";
+// Reutilizamos el cliente genérico para evitar rutas incorrectas en tiempo de build
+import apiClient from "../../../../../../../../shared/services/apiClient";
 import {
   showErrorAlert,
   showSuccessAlert,
@@ -155,9 +158,11 @@ export const useAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [athletes, setAthletes] = useState([]);
   const [specialists, setSpecialists] = useState([]);
+  const [sportsCategories, setSportsCategories] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingAthletes, setLoadingAthletes] = useState(false);
   const [loadingSpecialists, setLoadingSpecialists] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(false);
 
   const paginationRef = useRef({
     page: 1,
@@ -167,6 +172,28 @@ export const useAppointments = () => {
   });
 
   const [pagination, setPagination] = useState(paginationRef.current);
+  const { user } = useAuth();
+
+  const athleteIdFromUser = useMemo(
+    () =>
+      user?.athleteId ||
+      user?.deportistaId ||
+      user?.athlete?.id ||
+      user?.athlete?.athleteId ||
+      null,
+    [user]
+  );
+
+  const isAdminUser = useMemo(() => {
+    const roleName = (user?.role?.name || user?.rol || "").toString().toLowerCase();
+    return roleName === "admin" || roleName === "administrador";
+  }, [user]);
+
+  // Alcance deportista: cualquier usuario con athleteId que no sea admin
+  const isAthleteScope = useMemo(
+    () => !isAdminUser && Boolean(athleteIdFromUser),
+    [isAdminUser, athleteIdFromUser]
+  );
 
   const specialtyOptions = useMemo(() => {
     const map = new Map();
@@ -199,6 +226,7 @@ export const useAppointments = () => {
       const response = await appointmentService.getAll({
         page,
         limit,
+        ...(isAthleteScope ? { athleteId: athleteIdFromUser } : {}),
         ...params,
       });
 
@@ -227,28 +255,53 @@ export const useAppointments = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [athleteIdFromUser, isAthleteScope]);
 
   const loadAthletes = useCallback(async () => {
     setLoadingAthletes(true);
     try {
       const response = await appointmentService.getAthletes();
       const rawList = response?.data || response?.athletes || [];
-      const formatted = rawList.map((athlete) => ({
-        id: athlete.id || athlete.athleteId,
-        athleteId: athlete.id || athlete.athleteId,
-        label: athlete.nombre || athlete.fullName || "",
-        nombres: athlete.nombres || athlete.firstName || "",
-        apellidos: athlete.apellidos || athlete.lastName || "",
-      }));
-      setAthletes(formatted);
+      const formatted = rawList.map((athlete) => {
+        const categoryName =
+          athlete.sportsCategory?.nombre ||
+          athlete.sportsCategory?.name ||
+          athlete.category?.name ||
+          athlete.categoria ||
+          athlete.category ||
+          athlete.categoriaNombre ||
+          "Sin categoría";
+        const categoryId =
+          athlete.sportsCategoryId ||
+          athlete.sportsCategory?.id ||
+          athlete.sportsCategory?.sportsCategoryId ||
+          athlete.categoryId ||
+          athlete.categoriaId ||
+          null;
+        const categoryKey = normalizeKey(categoryId || categoryName);
+
+        return {
+          id: athlete.id || athlete.athleteId,
+          athleteId: athlete.id || athlete.athleteId,
+          label: athlete.nombre || athlete.fullName || athlete.name || "",
+          nombres: athlete.nombres || athlete.firstName || "",
+          apellidos: athlete.apellidos || athlete.lastName || "",
+          categoryId,
+          categoryName,
+          categoryKey,
+        };
+      });
+      const filtered = isAthleteScope
+        ? formatted.filter((a) => String(a.id) === String(athleteIdFromUser))
+        : formatted;
+      setAthletes(filtered);
     } catch (error) {
       console.error(error);
       showErrorAlert("Error", "No se pudieron cargar los deportistas activos");
     } finally {
       setLoadingAthletes(false);
     }
-  }, []);
+  }, [athleteIdFromUser, isAthleteScope]);
 
   const loadSpecialists = useCallback(async () => {
     setLoadingSpecialists(true);
@@ -276,11 +329,88 @@ export const useAppointments = () => {
     }
   }, []);
 
+  const loadSportsCategories = useCallback(async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await apiClient.get("/sports-categories", {
+        page: 1,
+        limit: 500,
+        status: "Active",
+      });
+
+      const items =
+        response?.data?.data?.items ||
+        response?.data?.data?.data ||
+        response?.data?.data ||
+        response?.data?.items ||
+        response?.items ||
+        response?.results ||
+        response?.data?.results ||
+        response?.data ||
+        response ||
+        [];
+
+      const normalized = Array.isArray(items)
+        ? items.map((cat) => ({
+            id:
+              cat.id ??
+              cat.categoryId ??
+              cat.categoryID ??
+              cat.CategoryId ??
+              cat.CategoryID ??
+              cat.Id ??
+              cat.ID ??
+              cat.sportsCategoryId ??
+              cat.sportsCategoryID ??
+              null,
+            name:
+              cat.name ??
+              cat.nombre ??
+              cat.nombreCategoria ??
+              cat.label ??
+              cat.descripcion ??
+              "Categoría",
+            value:
+              cat.id ??
+              cat.categoryId ??
+              cat.categoryID ??
+              cat.CategoryId ??
+              cat.CategoryID ??
+              cat.Id ??
+              cat.ID ??
+              cat.sportsCategoryId ??
+              cat.sportsCategoryID ??
+              cat.value ??
+              cat.name ??
+              cat.nombre ??
+              cat.nombreCategoria,
+            label:
+              cat.label ??
+              cat.name ??
+              cat.nombre ??
+              cat.nombreCategoria ??
+              cat.descripcion ??
+              "Categoría",
+          }))
+        : [];
+
+      setSportsCategories(normalized);
+    } catch (error) {
+      console.error("Error cargando categorías deportivas:", error);
+      setSportsCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  }, []);
+
   const createAppointment = useCallback(
     async (data) => {
       setLoading(true);
       try {
-        const payload = serializePayload(data);
+        const payload = serializePayload({
+          ...data,
+          athleteId: isAthleteScope ? athleteIdFromUser : data.athleteId,
+        });
         const response = await appointmentService.create(payload);
 
         if (!response?.success) {
@@ -298,7 +428,7 @@ export const useAppointments = () => {
         setLoading(false);
       }
     },
-    [loadAppointments]
+    [athleteIdFromUser, isAthleteScope, loadAppointments]
   );
 
   const updateAppointment = useCallback(
@@ -402,19 +532,24 @@ export const useAppointments = () => {
     appointments,
     athletes,
     specialists,
+    sportsCategories,
     specialtyOptions,
     loading,
     loadingAthletes,
     loadingSpecialists,
+    loadingCategories,
     pagination,
     loadAppointments,
     loadAthletes,
     loadSpecialists,
+    loadSportsCategories,
     createAppointment,
     updateAppointment,
     cancelAppointment,
     completeAppointment,
     deleteAppointment,
+    isAthleteScope,
+    athleteIdFromUser,
   };
 };
 

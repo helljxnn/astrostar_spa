@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { FaTimes } from "react-icons/fa";
 
 const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
@@ -74,11 +75,11 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
 
   const hasNovedades = noveltyList.length > 0;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[60]"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -176,7 +177,8 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

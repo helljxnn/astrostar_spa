@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext";
 import {
   addDays,
   addWeeks,
@@ -433,6 +434,29 @@ export const useEmployeeSchedules = () => {
 
   const [pagination, setPagination] = useState(paginationRef.current);
 
+  /* ---------- Usuario actual ---------- */
+  const { user } = useAuth();
+  const employeeIdFromUser = useMemo(
+    () =>
+      user?.employeeId ||
+      user?.empleadoId ||
+      user?.employee?.id ||
+      user?.employee?.empleadoId ||
+      null,
+    [user]
+  );
+
+  const isAdminUser = useMemo(() => {
+    const roleName = (user?.role?.name || user?.rol || user?.role || "").toString().toLowerCase();
+    return roleName === "admin" || roleName === "administrador";
+  }, [user]);
+
+  // Consideramos empleado a cualquier usuario NO admin que tenga employeeId asociado
+  const isEmployeeScope = useMemo(
+    () => !isAdminUser && Boolean(employeeIdFromUser),
+    [isAdminUser, employeeIdFromUser]
+  );
+
   /* ---------- Memo: Mapa de empleados ---------- */
   const employeeMap = useMemo(() => {
     const map = {};
@@ -507,15 +531,20 @@ export const useEmployeeSchedules = () => {
         };
       });
 
-      setEmployees(formatted);
+      const filtered = isEmployeeScope && employeeIdFromUser
+        ? formatted.filter((emp) => String(emp.value) === String(employeeIdFromUser))
+        : formatted;
+
+      setEmployees(filtered);
     } catch (error) {
       console.error(error);
       showErrorAlert("Error", "No se pudieron cargar los empleados activos");
     } finally {
       setLoadingEmployees(false);
     }
-  }, []);
+  }, [isEmployeeScope, employeeIdFromUser]);
 
+/* (resto sin cambios) */
   /* -------------------------------------------------------
    * CARGA DE HORARIOS
    * -----------------------------------------------------*/
@@ -529,6 +558,7 @@ export const useEmployeeSchedules = () => {
         const response = await scheduleService.getAll({
           page,
           limit,
+          ...(isEmployeeScope && employeeIdFromUser ? { employeeId: employeeIdFromUser } : {}),
           ...params,
         });
 
@@ -565,8 +595,10 @@ export const useEmployeeSchedules = () => {
         setLoading(false);
       }
     },
-    [buildFromApi]
+    [buildFromApi, isEmployeeScope, employeeIdFromUser]
   );
+
+      
 
   /* -------------------------------------------------------
    * SERIALIZACIÓN PARA API
@@ -703,6 +735,8 @@ export const useEmployeeSchedules = () => {
     loading,
     loadingEmployees,
     pagination,
+    isEmployeeScope,
+    employeeIdFromUser,
     loadSchedules,
     loadEmployees,
     createSchedule,
@@ -714,3 +748,4 @@ export const useEmployeeSchedules = () => {
 };
 
 export default useEmployeeSchedules;
+

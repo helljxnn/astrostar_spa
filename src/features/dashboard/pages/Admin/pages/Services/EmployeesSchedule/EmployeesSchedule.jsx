@@ -129,6 +129,20 @@ const getEmployeeKey = (schedule = {}) => {
   return raw.toString().trim().toLowerCase();
 };
 
+const isSchedulePastEditWindow = (schedule = {}) => {
+  const startDate = getScheduleStartDate(schedule);
+  if (!startDate) return false;
+  const lockDate = new Date(startDate);
+  lockDate.setDate(lockDate.getDate() + 1); // 24h after the start date
+  return new Date() >= lockDate;
+};
+
+const filterActionsForSchedule = (schedule = {}, actions = []) => {
+  if (!Array.isArray(actions) || actions.length === 0) return [];
+  if (!isSchedulePastEditWindow(schedule)) return actions;
+  return actions.filter((action) => ["view", "delete"].includes(action.id));
+};
+
 const BASE_ROLE_FILTERS = [
   { id: "entrenador", label: ROLE_LABELS.entrenador },
   { id: "fisioterapia", label: ROLE_LABELS.fisioterapia },
@@ -150,6 +164,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     updateSchedule,
     deleteSchedule: removeSchedule,
     registerNovelty,
+    isEmployeeScope,
+    employeeIdFromUser,
   } = useEmployeeSchedules();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -214,19 +230,24 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   }, [rawSchedules, employees]);
 
   const filters = useMemo(
-    () => [
-      {
-        id: "role",
-        label: "Cargo",
-        field: "roleId",
-        options: availableRoles.map((role) => ({
-          value: role.id,
-          label: role.label,
-        })),
-      },
-    ],
-    [availableRoles]
+    () =>
+      isEmployeeScope
+        ? [] // si es empleado, no mostramos filtros por cargo
+        : [
+            {
+              id: "role",
+              label: "Cargo",
+              field: "roleId",
+              options: availableRoles.map((role) => ({
+                value: role.id,
+                label: role.label,
+              })),
+            },
+          ],
+    [availableRoles, isEmployeeScope]
   );
+
+  const hasFilters = filters.length > 0;
 
   useEffect(() => {
     if (disabled) return;
@@ -239,15 +260,20 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   }, [disabled, canViewSchedules, loadSchedules]);
 
 
+  const selfEmployee = useMemo(() => {
+    if (!isEmployeeScope || !employeeIdFromUser) return null;
+    return employees.find((e) => String(e.value) === String(employeeIdFromUser)) || null;
+  }, [employees, isEmployeeScope, employeeIdFromUser]);
+
   const createDefaultSchedule = ({ start, end } = {}) => {
     const now = start ? new Date(start) : new Date();
     const defaultStart = start || now;
     const defaultEnd = end || new Date(now.getTime() + 60 * 60 * 1000);
 
     return {
-      empleadoId: "",
-      empleado: "",
-      cargo: "",
+      empleadoId: isEmployeeScope ? (selfEmployee?.value || employeeIdFromUser || "") : "",
+      empleado: isEmployeeScope ? selfEmployee?.label || "" : "",
+      cargo: isEmployeeScope ? selfEmployee?.cargo || "" : "",
       fecha: format(defaultStart, "yyyy-MM-dd"),
       horaInicio: format(defaultStart, "HH:mm"),
       horaFin: format(defaultEnd, "HH:mm"),
@@ -293,7 +319,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       repeticion: event.repeticion || "no",
       customRecurrence: event.customRecurrence || null,
       motivoCancelacion: event.motivoCancelacion || "",
-      _isReadOnly: readOnly,
+      _isReadOnly: readOnly || isSchedulePastEditWindow(event),
     };
     setSelectedSchedule(payload);
     setIsNew(false);
@@ -462,8 +488,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Mientras el modal está abierto (portal en body), ignoramos este listener
+      if (isModalOpen) return;
       if (containerRef.current && !containerRef.current.contains(event.target)) {
-        if (isModalOpen) closeModal();
+        // comportamiento previo: cerrar si hacían clic fuera del contenedor
+        // closeModal(); // ya no es necesario para el modal portaled
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -523,6 +552,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const sidebarActions = useMemo(() => {
     const actions = [
       {
+        id: "view",
         label: "Ver",
         onClick: (event) => openDetailsModal(event?.extendedProps || event),
         permission: { module: "employeesSchedule", action: "Ver" },
@@ -532,6 +562,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
     if (hasPermission("employeesSchedule", "Editar")) {
       actions.push({
+        id: "edit",
         label: "Editar",
         onClick: (event) =>
           openModalForEvent(event?.extendedProps || event, { readOnly: false }),
@@ -539,6 +570,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         variant: "primary",
       });
       actions.push({
+        id: "novelty",
         label: "Novedad",
         onClick: (event) => openCancelModal(event?.extendedProps || event),
         permission: { module: "employeesSchedule", action: "Editar" },
@@ -548,6 +580,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
     if (hasPermission("employeesSchedule", "Eliminar")) {
       actions.push({
+        id: "delete",
         label: "Eliminar",
         onClick: (event) =>
           handleDeleteSchedule(
@@ -581,6 +614,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const schedule = event?.extendedProps || event;
     const colors = getRoleColors(schedule.cargo || schedule.area);
     const recurrenceLabel = buildRecurrenceLabel(schedule);
+    const visibleActions = filterActionsForSchedule(schedule, actions);
 
     return (
       <div className="space-y-2">
@@ -619,9 +653,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
           </div>
         </div>
 
-        {actions.length > 0 && (
+        {visibleActions.length > 0 && (
           <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
-            {actions.map((action, actionIndex) => (
+            {visibleActions.map((action, actionIndex) => (
               <button
                 key={actionIndex}
                 onClick={(e) => {
@@ -733,19 +767,21 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
               </motion.button>
             )}
 
-            <motion.button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
-                showFilters
-                  ? "bg-[#B595FF] text-white border-[#B595FF]"
-                  : "text-gray-700 hover:text-[#B595FF]"
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filtros</span>
-            </motion.button>
+            {hasFilters && (
+              <motion.button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
+                  showFilters
+                    ? "bg-[#B595FF] text-white border-[#B595FF]"
+                    : "text-gray-700 hover:text-[#B595FF]"
+                }`}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Filter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtros</span>
+              </motion.button>
+            )}
 
             {canExportSchedules && (
               <CalendarReportGenerator
@@ -767,7 +803,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         </div>
       </div>
 
-      {showFilters && (
+      {hasFilters && showFilters && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
@@ -846,7 +882,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         ]}
         filters={filters}
         selectedFilters={selectedFilters}
-        onFiltersChange={handleFiltersChange}
+        onFiltersChange={hasFilters ? handleFiltersChange : undefined}
         viewTypes={["month", "week", "day"]}
         defaultView="month"
         sidebarTitle="Horarios Programados"
@@ -857,37 +893,17 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       />
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/50"
-              onClick={closeModal}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative z-10"
-            >
-              <ScheduleModal
-                schedule={selectedSchedule}
-                isNew={isNew}
-                isReadOnly={selectedSchedule?._isReadOnly}
-                onClose={closeModal}
-                onSave={handleSaveFromModal}
-                employeesOptions={employees}
-                existingSchedules={schedules}
-                isLoadingEmployees={loadingEmployees}
-              />
-            </motion.div>
-          </motion.div>
+          <ScheduleModal
+            schedule={selectedSchedule}
+            isNew={isNew}
+            isReadOnly={selectedSchedule?._isReadOnly}
+            lockEmployeeSelection={isEmployeeScope}
+            onClose={closeModal}
+            onSave={handleSaveFromModal}
+            employeesOptions={employees}
+            existingSchedules={schedules}
+            isLoadingEmployees={loadingEmployees}
+          />
         )}
       </AnimatePresence>
 

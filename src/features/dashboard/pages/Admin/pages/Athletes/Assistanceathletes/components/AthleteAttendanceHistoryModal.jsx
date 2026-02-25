@@ -1,6 +1,13 @@
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
 
+const Stat = ({ label, value, tone }) => (
+  <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
+    <p className="text-[11px] uppercase tracking-wide text-gray-500">{label}</p>
+    <p className={`text-xl font-semibold ${tone}`}>{value}</p>
+  </div>
+);
+
 const AthleteAttendanceHistoryModal = ({
   isOpen,
   onClose,
@@ -19,6 +26,14 @@ const AthleteAttendanceHistoryModal = ({
     return { total, present, absent, percent };
   }, [history]);
 
+  const sortedHistory = useMemo(
+    () =>
+      [...history].sort(
+        (a, b) => new Date(b.date || b.fecha) - new Date(a.date || a.fecha)
+      ),
+    [history]
+  );
+
   const formatDate = (value) => {
     if (!value) return "-";
     return new Date(value).toLocaleDateString("es-CO", {
@@ -29,97 +44,103 @@ const AthleteAttendanceHistoryModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800">
-              Historial de Asistencia
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+        <div className="flex items-start justify-between px-6 py-5 bg-white text-gray-800 border-b border-gray-200">
+          <div className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.12em] text-gray-500">
+              Historial de asistencia
+            </p>
+            <h3 className="text-2xl font-semibold leading-tight">
+              {athleteName || "Deportista"}
             </h3>
-            <p className="text-sm text-gray-500">{athleteName}</p>
             {rangeLabel && (
-              <p className="text-xs text-gray-400 mt-1">
-                Rango: {rangeLabel}
-              </p>
+              <p className="text-sm text-gray-500">Rango: {rangeLabel}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Cerrar historial"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="p-5">
+        <div className="space-y-4 px-6 py-5">
           {loading ? (
-            <div className="text-center text-gray-500 py-8">
+            <div className="py-10 text-center text-gray-500">
               Cargando historial...
             </div>
-          ) : history.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
+          ) : sortedHistory.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 py-8 text-center text-gray-500">
               No hay registros de asistencia.
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Total</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    {summary.total}
-                  </p>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Presentes</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    {summary.present}
-                  </p>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">Ausentes</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    {summary.absent}
-                  </p>
-                </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-xs text-gray-500">% Asistencia</p>
-                  <p className="text-lg font-semibold text-gray-800">
-                    {summary.percent}%
-                  </p>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Registros" value={summary.total} tone="text-gray-900" />
+                <Stat label="Presentes" value={summary.present} tone="text-emerald-600" />
+                <Stat label="Ausentes" value={summary.absent} tone="text-rose-600" />
+                <Stat label="% Asistencia" value={`${summary.percent}%`} tone="text-indigo-600" />
               </div>
 
-              <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                <table className="min-w-full text-sm text-left text-gray-600">
-                  <thead className="text-gray-700 text-xs uppercase tracking-wider bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3">Fecha</th>
-                      <th className="px-4 py-3 text-center">Asistencia</th>
-                      <th className="px-4 py-3">Observación</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {history.map((item) => (
-                      <tr key={item.id}>
-                        <td className="px-4 py-3">{formatDate(item.date)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              item.asistencia
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {item.asistencia ? "Presente" : "Ausente"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {item.observacion || "Sin observación"}
-                        </td>
+              <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-green-700">
+                  <span className="h-2.5 w-2.5 rounded-full bg-green-500" /> Presente
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-rose-700">
+                  <span className="h-2.5 w-2.5 rounded-full bg-rose-500" /> Ausente
+                </span>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                <div className="max-h-[55vh] overflow-auto">
+                  <table className="min-w-full text-sm text-left text-gray-700">
+                    <thead className="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                      <tr>
+                        <th className="px-4 py-3">Fecha</th>
+                        <th className="px-4 py-3 text-center">Asistencia</th>
+                        <th className="px-4 py-3">Observación</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white">
+                      {sortedHistory.map((item) => (
+                        <tr
+                          key={item.id}
+                          className="hover:bg-indigo-50/40 transition-colors"
+                        >
+                          <td className="px-4 py-3 font-medium text-gray-900">
+                            {formatDate(item.date || item.fecha)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span
+                              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${
+                                item.asistencia
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-rose-100 text-rose-700"
+                              }`}
+                            >
+                              <span
+                                className={`h-2 w-2 rounded-full ${
+                                  item.asistencia ? "bg-green-500" : "bg-rose-500"
+                                }`}
+                              />
+                              {item.asistencia ? "Presente" : "Ausente"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {item.observacion ? (
+                              item.observacion
+                            ) : (
+                              <span className="italic text-gray-400">Sin observación</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </>
           )}

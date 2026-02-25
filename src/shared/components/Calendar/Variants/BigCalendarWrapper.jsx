@@ -3,7 +3,6 @@ import { Calendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import "moment/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { InlineLoader } from "../../Loader";
 
 // Configure moment for Spanish
 moment.locale("es");
@@ -99,9 +98,7 @@ const BigCalendarWrapper = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 bg-white rounded-xl border border-gray-100">
-        <InlineLoader message="Cargando calendario..." />
-      </div>
+      <div className="h-96 bg-white rounded-xl border border-gray-100" />
     );
   }
 

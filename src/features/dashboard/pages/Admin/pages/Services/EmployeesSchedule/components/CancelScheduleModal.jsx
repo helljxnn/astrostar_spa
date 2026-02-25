@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaExclamationTriangle, FaStickyNote } from "react-icons/fa";
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 const CANCEL_TYPES = {
   FULL_DAY: "full",
@@ -111,14 +112,14 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
     if (e.target === e.currentTarget) onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={handleOverlayClick}
         >
           <motion.div
@@ -126,7 +127,7 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 relative">
@@ -306,7 +307,8 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

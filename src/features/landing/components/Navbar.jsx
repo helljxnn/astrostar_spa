@@ -56,10 +56,15 @@ export const Navbar = () => {
             />
           </NavLink>
         </div>
-
+              
         {/* Links escritorio - Centered, constrained to prevent overlap */}
         <div className="hidden md:flex justify-center w-2/4 max-w-[400px] md:max-w-[450px] lg:max-w-[600px] mx-2 sm:mx-4">
           <ul className="flex space-x-2 md:space-x-4 lg:space-x-8 xl:space-x-12 text-base lg:text-lg">
+            <li>
+              <NavLink to="/" className={linkClasses}>
+                Inicio
+              </NavLink>
+            </li>
             <li>
               <NavLink to="/about" className={linkClasses}>
                 Acerca de
@@ -78,6 +83,11 @@ export const Navbar = () => {
             <li>
               <NavLink to="/services" className={linkClasses}>
                 Servicios
+              </NavLink>
+            </li>
+            <li>
+              <NavLink to="/donacion" className={linkClasses}>
+                Donación
               </NavLink>
             </li>
           </ul>
@@ -115,6 +125,11 @@ export const Navbar = () => {
           >
             <ul className="flex flex-col space-y-4 px-6 py-4 text-base sm:text-lg">
               <li>
+                <NavLink to="/" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Inicio
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/about" className={linkClasses} onClick={() => setIsOpen(false)}>
                   Acerca de
                 </NavLink>
@@ -132,6 +147,11 @@ export const Navbar = () => {
               <li>
                 <NavLink to="/services" className={linkClasses} onClick={() => setIsOpen(false)}>
                   Servicios
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/donacion" className={linkClasses} onClick={() => setIsOpen(false)}>
+                  Donación
                 </NavLink>
               </li>
               <li className="border-t pt-4">

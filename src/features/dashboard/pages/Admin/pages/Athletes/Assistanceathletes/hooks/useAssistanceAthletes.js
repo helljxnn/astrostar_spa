@@ -14,6 +14,7 @@ const todayISO = () => new Date().toISOString().split("T")[0];
 export const useAssistanceAthletes = () => {
   const [selectedDate, setSelectedDate] = useState(() => todayISO());
   const [attendance, setAttendance] = useState([]);
+  const [attendanceCache, setAttendanceCache] = useState({});
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
@@ -61,7 +62,19 @@ export const useAssistanceAthletes = () => {
         });
 
         if (response && response.success) {
-          setAttendance(response.data || []);
+          const merged = (response.data || []).map((item) => {
+            const cached = attendanceCache[item.id];
+            return cached ? { ...item, ...cached } : item;
+          });
+
+          setAttendance(merged);
+          setAttendanceCache((prev) => {
+            const updated = { ...prev };
+            merged.forEach((item) => {
+              updated[item.id] = item;
+            });
+            return updated;
+          });
           setTotalCount(
             response.pagination?.total ?? response.data?.length ?? 0
           );
@@ -90,34 +103,56 @@ export const useAssistanceAthletes = () => {
   const updateSearchTerm = (value) => {
     setSearchTerm(value);
     setCurrentPage(1);
+    setAttendanceCache({});
+    setAttendance([]);
   };
 
   const updateCategoryFilter = (value) => {
     setCategoryFilter(value);
     setCurrentPage(1);
+    setAttendanceCache({});
+    setAttendance([]);
   };
 
   const updateSelectedDate = (value) => {
     setSelectedDate(value);
     setCurrentPage(1);
+    setAttendanceCache({});
+    setAttendance([]);
   };
 
   const resetFilters = () => {
     setSearchTerm("");
     setCategoryFilter(ALL_CATEGORIES);
     setCurrentPage(1);
+    setAttendanceCache({});
+    setAttendance([]);
   };
 
   const handleAttendanceChange = (id) => {
-    setAttendance((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, asistencia: !a.asistencia } : a))
-    );
+    setAttendance((prev) => {
+      const updated = prev.map((a) =>
+        a.id === id ? { ...a, asistencia: !a.asistencia } : a
+      );
+      return updated;
+    });
+
+    setAttendanceCache((prev) => {
+      const base = prev[id] || attendance.find((a) => a.id === id) || {};
+      const updated = { ...base, asistencia: !base.asistencia };
+      return { ...prev, [id]: updated };
+    });
   };
 
   const handleObservationChange = (id, value) => {
     setAttendance((prev) =>
       prev.map((a) => (a.id === id ? { ...a, observacion: value } : a))
     );
+    setAttendanceCache((prev) => {
+      const base = prev[id] || attendance.find((a) => a.id === id) || {};
+      const updated = { ...base, observacion: value };
+      return { ...prev, [id]: updated };
+    });
   };
 
   const handleSave = async () => {
@@ -131,15 +166,27 @@ export const useAssistanceAthletes = () => {
       return;
     }
 
-    const items = attendance.map((item) => ({
+    const cacheValues = Object.values(attendanceCache);
+    const sourceItems = cacheValues.length ? cacheValues : attendance;
+
+    const items = sourceItems.map((item) => ({
       athleteId: item.athleteId || item.id,
       asistencia: item.asistencia,
       observacion: item.observacion || "",
     }));
 
+    const formattedDate = new Date(selectedDate).toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
     try {
       await assistanceathletesService.saveAttendanceBulk(selectedDate, items);
-      showSuccessAlert(`Asistencia guardada para el ${selectedDate}.`);
+      showSuccessAlert(
+        "¡Asistencia guardada!",
+        `El pase del ${formattedDate} quedó almacenado.`
+      );
     } catch (error) {
       console.error("Error saving attendance:", error);
       showErrorAlert("No se pudo guardar la asistencia.");

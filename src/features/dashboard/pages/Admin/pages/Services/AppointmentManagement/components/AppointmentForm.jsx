@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   addMinutes,
@@ -18,6 +19,14 @@ import {
 import { DatePickerField } from "../../../../../../../../shared/components/DatePickerField";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
 import employeeScheduleService from "../../EmployeesSchedule/services/employeeScheduleService";
+import apiClient from "../../../../../../../../shared/services/apiClient";
+
+const normalize = (value) =>
+  String(value ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
 
 const DURATION_OPTIONS = [
   { value: "30", label: "30 minutos" },
@@ -343,9 +352,13 @@ const AppointmentForm = ({
   initialData,
   athleteList = [],
   specialistList = [],
+   sportsCategoryOptions = [],
   specialtyOptions = [],
   loadingAthletes = false,
   loadingSpecialists = false,
+  loadingCategories = false,
+  defaultAthleteId = "",
+  lockAthlete = false,
 }) => {
   const {
     values,
@@ -362,6 +375,125 @@ const AppointmentForm = ({
   const [scheduleItems, setScheduleItems] = useState([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [scheduleError, setScheduleError] = useState("");
+  const [athleteCategoryFilter, setAthleteCategoryFilter] = useState("");
+  const [athleteCategoryLabel, setAthleteCategoryLabel] = useState("");
+  const [categoryAthletes, setCategoryAthletes] = useState([]);
+  const [loadingCategoryAthletes, setLoadingCategoryAthletes] = useState(false);
+  const [localCategories, setLocalCategories] = useState([]);
+  const [loadingLocalCategories, setLoadingLocalCategories] = useState(false);
+
+  useEffect(() => {
+    if (sportsCategoryOptions && sportsCategoryOptions.length > 0) {
+      setLocalCategories(sportsCategoryOptions);
+    }
+  }, [sportsCategoryOptions]);
+
+  // Cargar categorías si el padre aún no las tiene (evita modal vacío)
+  useEffect(() => {
+    if (!isOpen || (sportsCategoryOptions && sportsCategoryOptions.length > 0)) {
+      return;
+    }
+
+    let isMounted = true;
+    const fetchCategories = async () => {
+      setLoadingLocalCategories(true);
+      try {
+        const response = await apiClient.get("/sports-categories", {
+          page: 1,
+          limit: 500,
+        });
+        const items =
+          response?.data?.data?.items ||
+          response?.data?.data?.data ||
+          response?.data?.data ||
+          response?.data?.items ||
+          response?.items ||
+          response?.results ||
+          response?.data?.results ||
+          response?.data ||
+          response ||
+          [];
+
+        let normalized = Array.isArray(items)
+          ? items.map((cat) => ({
+              id:
+                cat.id ??
+                cat.categoryId ??
+                cat.categoryID ??
+                cat.CategoryId ??
+                cat.CategoryID ??
+                cat.Id ??
+                cat.ID ??
+                cat.sportsCategoryId ??
+                cat.sportsCategoryID ??
+                null,
+              name:
+                cat.name ??
+                cat.nombre ??
+                cat.nombreCategoria ??
+                cat.label ??
+                "Categoría",
+              value:
+                cat.id ??
+                cat.categoryId ??
+                cat.categoryID ??
+                cat.CategoryId ??
+                cat.CategoryID ??
+                cat.Id ??
+                cat.ID ??
+                cat.sportsCategoryId ??
+                cat.sportsCategoryID ??
+                cat.value ??
+                cat.name ??
+                cat.nombre,
+              label:
+                cat.label ??
+                cat.name ??
+                cat.nombre ??
+                cat.nombreCategoria ??
+                "Categoría",
+            }))
+          : [];
+
+        // fallback: si el catálogo viene vacío, usar categorías derivadas de deportistas
+        if (normalized.length === 0 && athleteList && athleteList.length > 0) {
+          normalized = athleteList
+            .map((ath) => ({
+              id:
+                ath.categoryId ||
+                ath.category?.id ||
+                ath.sportsCategoryId ||
+                ath.categoriaId ||
+                ath.category,
+              name:
+                ath.categoryName ||
+                ath.category?.name ||
+                ath.category ||
+                "Categoría",
+            }))
+            .filter((c) => c.name);
+        }
+
+        if (isMounted) {
+          setLocalCategories(normalized);
+        }
+      } catch (error) {
+        console.error("Error cargando categorías deportivas:", error);
+      } finally {
+        if (isMounted) {
+          setLoadingLocalCategories(false);
+        }
+      }
+    };
+
+    fetchCategories();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, sportsCategoryOptions]);
+
+  const categoriesLoading = loadingCategories || loadingLocalCategories;
 
   useEffect(() => {
     let isMounted = true;
@@ -412,25 +544,108 @@ const AppointmentForm = ({
     };
   }, [isOpen, values.specialistId]);
 
-  const athleteOptions = useMemo(
-    () =>
-      athleteList.map((athlete) => {
-        const label =
-          athlete.label ||
-          athlete.nombre ||
-          athlete.fullName ||
-          `${athlete.nombres || athlete.firstName || ""} ${
-            athlete.apellidos || athlete.lastName || ""
-          }`
-            .replace(/\s+/g, " ")
-            .trim();
-        return {
-          value: athlete.id || athlete.athleteId,
-          label: label || "Deportista",
-        };
-      }),
-    [athleteList]
-  );
+  const categoryOptions = useMemo(() => {
+    // Preferir catálogo de categorías si existe (prop o cargado localmente)
+    const baseCategories =
+      (localCategories && localCategories.length > 0
+        ? localCategories
+        : sportsCategoryOptions) || [];
+
+    const source =
+      baseCategories.length > 0
+        ? baseCategories.map((cat) => ({
+            value:
+              cat.value ||
+              cat.id ||
+              cat.categoryId ||
+              cat.categoryID ||
+              cat.CategoryId ||
+              cat.CategoryID ||
+              cat.sportsCategoryId ||
+              cat.sportsCategoryID ||
+              cat.name,
+            label:
+              cat.label ||
+              cat.name ||
+              cat.nombre ||
+              cat.nombreCategoria ||
+              "Categoría",
+          }))
+        : athleteList.map((athlete) => ({
+            value:
+              athlete.categoryId ||
+              athlete.category?.id ||
+              athlete.sportsCategoryId ||
+              athlete.categoriaId ||
+              athlete.categoryName ||
+              athlete.category ||
+              "Sin categoría",
+            label:
+              athlete.categoryName ||
+              athlete.category?.name ||
+              athlete.category ||
+              "Sin categoría",
+          }));
+
+    const map = new Map();
+    source.forEach((item) => {
+      const key = String(item.value ?? "Sin categoría");
+      if (!map.has(key)) {
+        map.set(key, {
+          value: item.value ?? "Sin categoría",
+          label: item.label ?? "Sin categoría",
+        });
+      }
+    });
+
+    return [
+      { value: "", label: "Todas las categorías" },
+      ...Array.from(map.values()),
+    ];
+  }, [sportsCategoryOptions, localCategories, athleteList]);
+
+  const filteredAthletes = useMemo(() => {
+    // Si no se eligió categoría, no mostramos atletas (para obligar a filtrar).
+    if (!athleteCategoryFilter) return [];
+    return athleteList.filter((athlete) => {
+      const categoryValue =
+        athlete.categoryId || athlete.categoryName || athlete.category || "Sin categoría";
+      const targetValue = normalize(athleteCategoryFilter);
+      const targetLabel = normalize(
+        athleteCategoryLabel ||
+          categoryOptions.find((opt) => String(opt.value) === String(athleteCategoryFilter))
+            ?.label
+      );
+      const athleteKey =
+        athlete.categoryKey || normalize(categoryValue);
+      return (
+        normalize(categoryValue) === targetValue ||
+        athleteKey === targetValue ||
+        athleteKey === targetLabel
+      );
+    });
+  }, [athleteCategoryFilter, athleteCategoryLabel, athleteList, categoryOptions]);
+
+  const athleteOptions = useMemo(() => {
+    const source =
+      categoryAthletes.length > 0 ? categoryAthletes : filteredAthletes;
+    return source.map((athlete) => {
+      const label =
+        athlete.label ||
+        athlete.name ||
+        athlete.nombre ||
+        athlete.fullName ||
+        `${athlete.nombres || athlete.firstName || ""} ${
+          athlete.apellidos || athlete.lastName || ""
+        }`
+          .replace(/\s+/g, " ")
+          .trim();
+      return {
+        value: athlete.id || athlete.athleteId,
+        label: label || "Deportista",
+      };
+    });
+  }, [categoryAthletes, filteredAthletes]);
 
   const availableSpecialists = useMemo(() => {
     if (!values.specialty) return specialistList;
@@ -579,29 +794,49 @@ const AppointmentForm = ({
     }));
   };
 
+  const handleCategoryFilterChange = (e) => {
+    const { value } = e.target;
+    const option = categoryOptions.find((opt) => String(opt.value) === String(value));
+    setAthleteCategoryFilter(value);
+    setAthleteCategoryLabel(option?.label || "");
+    setValues((prev) => ({
+      ...prev,
+      athleteId: "",
+    }));
+    setCategoryAthletes([]);
+  };
+
   useEffect(() => {
     if (!isOpen) {
       resetForm();
+      setAthleteCategoryFilter("");
       return;
     }
 
     if (initialData) {
-      const startDate = initialData.start
-        ? new Date(initialData.start)
-        : null;
+      const startDate = initialData.start ? new Date(initialData.start) : null;
       const endDate = initialData.end ? new Date(initialData.end) : null;
       const duration =
         startDate && endDate
           ? Math.max(15, Math.round((endDate - startDate) / 60000))
           : initialAppointmentValues.durationMinutes;
 
+      const nextAthleteId =
+        initialData.athleteId ||
+        initialData.athlete ||
+        initialData.athlete?.id ||
+        defaultAthleteId ||
+        "";
+
+      const athleteMatch = athleteList.find(
+        (ath) => String(ath.id || ath.athleteId) === String(nextAthleteId)
+      );
+
+      setAthleteCategoryFilter(athleteMatch?.categoryId || "");
+
       setValues({
         ...initialAppointmentValues,
-        athleteId:
-          initialData.athleteId ||
-          initialData.athlete ||
-          initialData.athlete?.id ||
-          "",
+        athleteId: nextAthleteId,
         specialty: initialData.specialty || "",
         specialistId:
           initialData.specialistId ||
@@ -613,9 +848,82 @@ const AppointmentForm = ({
         durationMinutes: String(duration),
       });
     } else {
-      resetForm();
+      setValues({
+        ...initialAppointmentValues,
+        athleteId: defaultAthleteId || "",
+      });
+      setAthleteCategoryFilter("");
+      setCategoryAthletes([]);
     }
-  }, [isOpen, initialData, resetForm, setValues]);
+  }, [isOpen, initialData, resetForm, setValues, defaultAthleteId, athleteList]);
+
+  // Cargar deportistas por categoría cuando se selecciona
+  useEffect(() => {
+    const loadByCategory = async () => {
+      if (!athleteCategoryFilter || athleteCategoryFilter === "Sin categoría") {
+        setCategoryAthletes([]);
+        return;
+      }
+      setLoadingCategoryAthletes(true);
+      try {
+        const response = await apiClient.get(
+          `/sports-categories/${athleteCategoryFilter}/athletes`,
+          { page: 1, limit: 200, status: "Active" }
+        );
+        const list = response?.data?.data || response?.data || [];
+        const normalized = Array.isArray(list)
+          ? list.map((athlete) => ({
+              id: athlete.id || athlete.athleteId || athlete.athlete?.id,
+              athleteId: athlete.id || athlete.athleteId || athlete.athlete?.id,
+              label:
+                athlete.nombre ||
+                athlete.fullName ||
+                athlete.name ||
+                athlete.athlete?.name ||
+                "",
+              nombres:
+                athlete.nombres ||
+                athlete.firstName ||
+                athlete.athlete?.firstName ||
+                "",
+              apellidos:
+                athlete.apellidos ||
+                athlete.lastName ||
+                athlete.athlete?.lastName ||
+                "",
+              categoryId:
+                athlete.sportsCategoryId ||
+                athlete.categoryId ||
+                athlete.category?.id ||
+                athlete.categoriaId ||
+                athlete.category ||
+                athlete.categoria ||
+                null,
+              categoryName:
+                athlete.categoryName ||
+                athlete.category?.name ||
+                athlete.categoria ||
+                "",
+              categoryKey: normalize(
+                athlete.categoryId ||
+                  athlete.categoryName ||
+                  athlete.category?.name ||
+                  athlete.categoria ||
+                  ""
+              ),
+            }))
+          : [];
+        setCategoryAthletes(normalized);
+      } catch (error) {
+        console.error("Error cargando deportistas por categoría:", error);
+        setCategoryAthletes([]);
+      } finally {
+        setLoadingCategoryAthletes(false);
+      }
+    };
+
+    loadByCategory();
+  }, [athleteCategoryFilter]);
 
   const isTimeWithinSchedule = (dateTime, durationOverride = null) => {
     if (!values.specialistId || availableSchedules.length === 0) return false;
@@ -713,32 +1021,38 @@ const AppointmentForm = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-      style={{ zIndex: 9999 }}
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
+      onClick={onClose}
     >
       <motion.div
-        className="modal-container bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] relative flex flex-col overflow-hidden"
-        initial={{ scale: 0.8, opacity: 0, y: 50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.8, opacity: 0, y: 50 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] overflow-hidden flex flex-col"
+        style={{ zIndex: 10001 }}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.2 }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
+        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-5 text-white relative">
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+            className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
+            aria-label="Cerrar"
           >
             &times;
           </button>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-center">
             {initialData && initialData.id ? "Editar Cita" : "Crear Nueva Cita"}
           </h2>
+          <p className="text-sm text-white/80 text-center mt-1">
+            Agenda la cita seleccionando categoría, deportista y especialista.
+          </p>
         </div>
 
         <form
@@ -748,9 +1062,29 @@ const AppointmentForm = ({
           }}
           className="flex-1 flex flex-col"
         >
-          <div className="modal-body flex-1 overflow-y-auto p-3 relative">
-            <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
-              <div className="lg:col-span-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            {/* Datos del deportista */}
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+              <div className="text-sm font-semibold text-gray-700 mb-3">
+                Datos del deportista
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <FormField
+                  label="Categoría deportiva"
+                  name="athleteCategoryFilter"
+                  type="select"
+                  options={categoryOptions}
+                  value={athleteCategoryFilter}
+                  onChange={handleCategoryFilterChange}
+                  disabled={loadingAthletes || categoriesLoading || lockAthlete}
+                  placeholder={
+                    categoriesLoading
+                      ? "Cargando categorías..."
+                      : categoryOptions.length === 0
+                      ? "No hay categorías registradas"
+                      : "Seleccione categoría"
+                  }
+                />
                 <FormField
                   label="Deportista"
                   name="athleteId"
@@ -761,15 +1095,32 @@ const AppointmentForm = ({
                   onBlur={handleBlur}
                   error={touched.athleteId && errors.athleteId}
                   required
-                  disabled={loadingAthletes}
+                  disabled={
+                    loadingAthletes ||
+                    categoriesLoading ||
+                    loadingCategoryAthletes ||
+                    lockAthlete ||
+                    !athleteCategoryFilter
+                  }
                   placeholder={
-                    loadingAthletes
+                    !athleteCategoryFilter
+                      ? "Seleccione una categoría primero"
+                      : loadingAthletes || loadingCategoryAthletes
                       ? "Cargando deportistas..."
+                      : athleteOptions.length === 0
+                      ? "Sin deportistas en esta categoría"
                       : "Seleccione un deportista"
                   }
                 />
               </div>
-              <div className="lg:col-span-2">
+            </div>
+
+            {/* Especialidad y profesional */}
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+              <div className="text-sm font-semibold text-gray-700 mb-3">
+                Profesional y especialidad
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   label="Especialidad"
                   name="specialty"
@@ -782,8 +1133,6 @@ const AppointmentForm = ({
                   required
                   disabled={loadingSpecialists}
                 />
-              </div>
-              <div className="lg:col-span-2">
                 <FormField
                   label="Especialista"
                   name="specialistId"
@@ -804,7 +1153,53 @@ const AppointmentForm = ({
                   }
                 />
               </div>
-              <div className="lg:col-span-2">
+
+              {selectedSpecialist && (
+                <div className="mt-3 rounded-lg border border-[#e9e7ff] bg-[#f8f7ff] px-4 py-3 text-sm text-gray-700">
+                  <div className="font-semibold text-gray-800">
+                    Especialista seleccionado
+                  </div>
+                  <div className="mt-1">
+                    <span className="font-medium">Nombre:</span>{" "}
+                    {selectedSpecialist.nombre ||
+                      selectedSpecialist.label ||
+                      "Especialista"}
+                  </div>
+                  {selectedSpecialist.cargo && (
+                    <div>
+                      <span className="font-medium">Cargo:</span>{" "}
+                      {selectedSpecialist.cargo}
+                    </div>
+                  )}
+                  {selectedSpecialtyLabel && (
+                    <div>
+                      <span className="font-medium">Especialidad:</span>{" "}
+                      {selectedSpecialtyLabel}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Programación */}
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm space-y-3">
+              <div className="text-sm font-semibold text-gray-700">
+                Programación
+              </div>
+              <DatePickerField
+                label="Fecha y Hora de la Cita"
+                selected={values.start}
+                onChange={(date) => setFieldValue("start", date)}
+                filterDate={filterDate}
+                filterTime={filterTime}
+                minTime={minTime}
+                maxTime={maxTime}
+                timeIntervals={15}
+                disabled={!values.specialistId}
+                error={touched.start && errors.start}
+                required
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   label="Duración"
                   name="durationMinutes"
@@ -817,97 +1212,58 @@ const AppointmentForm = ({
                   required
                 />
               </div>
-
-              {selectedSpecialist && (
-                <div className="md:col-span-2 lg:col-span-4">
-                  <div className="rounded-xl border border-[#e9e7ff] bg-[#f8f7ff] px-4 py-3 text-sm text-gray-700">
-                    <div className="font-semibold text-gray-800">
-                      Especialista seleccionado
-                    </div>
-                    <div className="mt-1">
-                      <span className="font-medium">Nombre:</span>{" "}
-                      {selectedSpecialist.nombre ||
-                        selectedSpecialist.label ||
-                        "Especialista"}
-                    </div>
-                    {selectedSpecialist.cargo && (
-                      <div>
-                        <span className="font-medium">Cargo:</span>{" "}
-                        {selectedSpecialist.cargo}
-                      </div>
-                    )}
-                    {selectedSpecialtyLabel && (
-                      <div>
-                        <span className="font-medium">Especialidad:</span>{" "}
-                        {selectedSpecialtyLabel}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="md:col-span-2 lg:col-span-4">
-                <DatePickerField
-                  label="Fecha y Hora de la Cita"
-                  selected={values.start}
-                  onChange={(date) => setFieldValue("start", date)}
-                  filterDate={filterDate}
-                  filterTime={filterTime}
-                  minTime={minTime}
-                  maxTime={maxTime}
-                  timeIntervals={15}
-                  disabled={!values.specialistId}
-                  error={touched.start && errors.start}
-                  required
-                />
-              </div>
-
               {scheduleInfo?.text && (
-                <div className="md:col-span-2 lg:col-span-4">
-                  <div
-                    className={`rounded-lg border px-3 py-2 text-xs ${SCHEDULE_INFO_STYLES[scheduleInfo.tone]}`}
-                  >
-                    {scheduleInfo.text}
-                  </div>
+                <div
+                  className={`rounded-lg border px-3 py-2 text-xs ${SCHEDULE_INFO_STYLES[scheduleInfo.tone]}`}
+                >
+                  {scheduleInfo.text}
                 </div>
               )}
+            </div>
 
-              <div className="md:col-span-2 lg:col-span-4">
-                <FormField
-                  label="Descripción / Motivo"
-                  name="description"
-                  type="textarea"
-                  value={values.description}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={touched.description && errors.description}
-                  required
-                />
-              </div>
+            {/* Detalle */}
+            <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-sm">
+              <FormField
+                label="Descripción / Motivo"
+                name="description"
+                type="textarea"
+                value={values.description}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.description && errors.description}
+                required
+              />
             </div>
           </div>
 
-          <div className="flex-shrink-0 border-t border-gray-200 p-3">
-            <div className="flex justify-between">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
-              >
-                {initialData && initialData.id ? "Guardar Cambios" : "Agendar Cita"}
-              </button>
+          <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-sm text-gray-600">
+                Verifique que la fecha esté dentro del horario del especialista.
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full sm:w-auto px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
+                >
+                  {initialData && initialData.id ? "Guardar Cambios" : "Agendar Cita"}
+                </button>
+              </div>
             </div>
           </div>
         </form>
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AppointmentForm;

@@ -6,7 +6,6 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import {
   showDeleteAlert,
   showErrorAlert,
@@ -367,11 +366,7 @@ const TemporaryPersons = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-8">
-          <InlineLoader message="Cargando personas temporales..." />
-        </div>
-      ) : (
+      {!loading && (
         <>
           <Table
             thead={{

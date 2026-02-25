@@ -4,7 +4,6 @@ import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
 import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
-import { InlineLoader } from "../../../../../../../../../shared/components/Loader";
 
 const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -162,8 +161,8 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
         {/* Lista de deportistas */}
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
-            <div className="flex items-center justify-center py-20">
-              <InlineLoader message="Cargando atletas..." />
+            <div className="flex items-center justify-center py-20 text-gray-500">
+              Cargando atletas...
             </div>
           ) : filteredAthletes.length === 0 ? (
             <div className="text-center py-12">

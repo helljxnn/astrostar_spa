@@ -12,7 +12,6 @@ import {
   isToday,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { InlineLoader } from "../../Loader";
 import CalendarEvent from "./CalendarEvent";
 
 const CustomCalendarGrid = ({
@@ -177,9 +176,7 @@ const CustomCalendarGrid = ({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 bg-white rounded-xl border border-gray-100">
-        <InlineLoader message="Cargando calendario..." />
-      </div>
+      <div className="h-96 bg-white rounded-xl border border-gray-100" />
     );
   }
 

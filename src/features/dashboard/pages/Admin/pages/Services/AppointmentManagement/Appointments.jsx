@@ -30,16 +30,21 @@ function Appointments() {
     appointments,
     athletes,
     specialists,
+    sportsCategories,
     specialtyOptions,
     loading,
     loadingAthletes,
     loadingSpecialists,
+    loadingCategories,
     loadAppointments,
     loadAthletes,
     loadSpecialists,
+    loadSportsCategories,
     createAppointment,
     cancelAppointment,
     completeAppointment,
+    isAthleteScope,
+    athleteIdFromUser,
   } = useAppointments();
 
   const { hasPermission } = usePermissions();
@@ -63,7 +68,8 @@ function Appointments() {
     loadAppointments();
     loadAthletes();
     loadSpecialists();
-  }, [loadAppointments, loadAthletes, loadSpecialists]);
+    loadSportsCategories();
+  }, [loadAppointments, loadAthletes, loadSpecialists, loadSportsCategories]);
 
   const specialistFilterOptions = useMemo(
     () =>
@@ -469,9 +475,13 @@ function Appointments() {
         initialData={initialSlot}
         athleteList={athletes}
         specialistList={specialists}
+        sportsCategoryOptions={sportsCategories}
         specialtyOptions={specialtyOptions}
         loadingAthletes={loadingAthletes}
         loadingSpecialists={loadingSpecialists}
+        loadingCategories={loadingCategories}
+        defaultAthleteId={isAthleteScope ? athleteIdFromUser : ""}
+        lockAthlete={isAthleteScope}
       />
 
       <AppointmentDetails
