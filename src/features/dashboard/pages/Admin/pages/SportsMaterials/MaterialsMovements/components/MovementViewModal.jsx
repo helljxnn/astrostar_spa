@@ -5,42 +5,39 @@ import { getTipoBajaLabel } from '../../shared/utils/tipoBajaLabels';
 const MovementViewModal = ({ isOpen, onClose, movement }) => {
   if (!isOpen || !movement) return null;
 
-  // Determinar si es una baja o un ingreso
-  const esBaja = movement.tipoMovimiento === 'Salida' || 
-                 movement.tipoMovimiento === 'salida' ||
-                 movement.tipoMovimiento === 'Baja' ||
-                 movement.tipoMovimiento === 'baja' ||
-                 movement.tipo_baja;
+  // Determinar el tipo de movimiento usando el campo correcto del backend
+  const tipoMovimiento = movement.tipoMovimiento || movement.tipo_movimiento || '';
+  
+  // Detectar tipo basado en el campo "tipo" que viene del backend
+  const esBaja = tipoMovimiento === 'BAJA' || tipoMovimiento === 'Baja';
+  const esTransferencia = tipoMovimiento === 'TRANSFERENCIA' || tipoMovimiento === 'Transferencia';
+  const esSalidaEvento = tipoMovimiento === 'SALIDA_EVENTO';
+  
+  // Es ingreso si es "Entrada" o si NO es ninguno de los tipos de salida
+  const esIngreso = tipoMovimiento === 'Entrada' || (!esBaja && !esTransferencia && !esSalidaEvento);
 
-  // Validaciones defensivas para asegurar valores correctos
-  const getStockValue = (value) => {
-    // Si el valor es null, undefined o no es un número válido, retornar 0
+  // Obtener cantidad
+  const getCantidad = (value) => {
     if (value === null || value === undefined) return 0;
-    
-    // Si es string, intentar parsearlo
     if (typeof value === 'string') {
-      // Si ya está formateado (contiene puntos), limpiar y parsear
       const cleanValue = value.replace(/\./g, '');
       const parsed = parseInt(cleanValue, 10);
       return isNaN(parsed) ? 0 : parsed;
     }
-    
-    // Si es número, retornarlo
     if (typeof value === 'number') {
       return isNaN(value) ? 0 : value;
     }
-    
     return 0;
   };
 
-  // Obtener valores validados
-  const stockAnterior = getStockValue(movement.stockAnterior);
-  const stockNuevo = getStockValue(movement.stockNuevo);
-  const cantidad = getStockValue(movement.cantidad);
+  const cantidad = getCantidad(movement.cantidad);
 
-  // Validación de consistencia: Stock Nuevo debe ser Stock Anterior + Cantidad
-  const stockCalculado = stockAnterior + cantidad;
-  const stockMostrar = stockNuevo || stockCalculado; // Si stockNuevo no existe, usar el calculado
+  // Determinar título del modal
+  let titulo = 'Detalles del Movimiento';
+  if (esIngreso) titulo = 'Detalles del Ingreso';
+  else if (esBaja) titulo = 'Detalles de la Baja';
+  else if (esTransferencia) titulo = 'Detalles de la Transferencia de Inventarios';
+  else if (esSalidaEvento) titulo = 'Detalles de Salida por Evento';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -54,7 +51,7 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
             ✕
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {esBaja ? 'Detalles de la Baja' : 'Detalles del Ingreso'}
+            {titulo}
           </h2>
         </div>
 
@@ -94,31 +91,10 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {esBaja ? 'Fecha de Baja' : 'Fecha de Ingreso'}
+                  {esIngreso ? 'Fecha de Ingreso' : 'Fecha de Salida'}
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                   {formatDate(movement.fechaIngreso || movement.fecha)}
-                </div>
-              </div>
-            </div>
-
-            {/* Stock Anterior y Nuevo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stock Anterior
-                </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {formatStock(stockAnterior)}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stock Nuevo
-                </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {formatStock(stockMostrar)}
                 </div>
               </div>
             </div>
@@ -135,7 +111,80 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
               </div>
             )}
 
-            {/* Descripción (solo para bajas) */}
+            {/* Origen y Destino (para transferencias) */}
+            {esTransferencia && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Desde (Origen)
+                    </label>
+                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {movement.inventario_origen || movement.inventarioOrigen || 'No especificado'}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Hacia (Destino)
+                    </label>
+                    <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                      {movement.inventario_destino || movement.inventarioDestino || 'No especificado'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Observaciones de transferencia - Filtrar texto automático del backend */}
+                {(() => {
+                  const obs = movement.observaciones || movement.descripcion || '';
+                  // Filtrar mensajes automáticos del backend
+                  const esTextoAutomatico = obs.includes('Transfer from') || 
+                                           obs.includes('Transferencia:') ||
+                                           obs.includes('De EVENTOS a') ||
+                                           obs.includes('De FUNDACION a');
+                  
+                  // Solo mostrar si hay observaciones reales del usuario
+                  if (obs && !esTextoAutomatico) {
+                    return (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Observaciones
+                        </label>
+                        <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap min-h-[60px]">
+                          {obs}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </>
+            )}
+
+            {/* Origen (para bajas y salidas por evento) */}
+            {(esBaja || esSalidaEvento) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Inventario Origen
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  {movement.inventario_origen || movement.inventarioOrigen || 'No especificado'}
+                </div>
+              </div>
+            )}
+
+            {/* Evento (para salidas por evento) */}
+            {esSalidaEvento && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Evento
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  {movement.evento_nombre || movement.eventoNombre || 'Evento finalizado'}
+                </div>
+              </div>
+            )}
+
+            {/* Descripción (para bajas) */}
             {esBaja && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -147,8 +196,20 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
               </div>
             )}
 
+            {/* Destino (solo para ingresos) */}
+            {esIngreso && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Inventario Destino
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  {movement.inventario_destino || movement.inventarioDestino || 'No especificado'}
+                </div>
+              </div>
+            )}
+
             {/* Proveedor (solo para ingresos) */}
-            {!esBaja && (
+            {esIngreso && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Proveedor
@@ -176,13 +237,44 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
             )}
 
             {/* Observaciones (solo para ingresos) */}
-            {!esBaja && movement.observaciones && (
+            {esIngreso && movement.observaciones && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Observaciones
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap min-h-[80px]">
                   {movement.observaciones}
+                </div>
+              </div>
+            )}
+
+            {/* Información del Sistema (solo para ingresos) */}
+            {esIngreso && movement.createdAt && (
+              <div className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Información del Sistema</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                    <p className="text-gray-800">
+                      {new Date(movement.createdAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  {movement.updatedAt && (
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                      <p className="text-gray-800">
+                        {new Date(movement.updatedAt).toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

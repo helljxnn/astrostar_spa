@@ -314,22 +314,17 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                     </button>
                   )}
                 </div>
-                {errors.categoria && touched.categoria && (
-                  <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                      !
-                    </span>
-                    <span>{errors.categoria}</span>
-                  </p>
-                )}
-                {categories.length === 0 && !loadingCategories && (
-                  <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                      !
-                    </span>
-                    <span>No hay categorías disponibles. Crea una desde el módulo "Categorías de Materiales"</span>
-                  </p>
-                )}
+                {/* Espacio reservado para mensajes - altura fija para evitar saltos */}
+                <div className="mt-1 min-h-[20px]">
+                  {touched.categoria && errors.categoria && categories.length > 0 && (
+                    <p className="text-red-500 text-xs flex items-center gap-1">
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
+                        !
+                      </span>
+                      <span>{errors.categoria}</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Nombre del Material */}
@@ -348,28 +343,31 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                   disabled={hasMovements}
                   title={hasMovements ? "No se puede editar porque tiene ingresos registrados" : ""}
                 />
-                {showCategoryWarning && !formData.categoria && (
-                  <p className="mt-1 text-amber-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
-                      ⚠
-                    </span>
-                    <span>Seleccione primero una categoría</span>
-                  </p>
-                )}
-                {nameValidation.isChecking && (
-                  <p className="mt-1 text-gray-500 text-xs flex items-center gap-1">
-                    <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
-                    <span>Verificando disponibilidad...</span>
-                  </p>
-                )}
-                {nameValidation.isAvailable && !nameValidation.isDuplicate && formData.nombre.trim().length >= 3 && (
-                  <p className="mt-1 text-green-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-green-500 text-[10px] leading-none">
-                      ✓
-                    </span>
-                    <span>Nombre disponible</span>
-                  </p>
-                )}
+                {/* Espacio reservado para mensajes de validación - altura fija para evitar saltos */}
+                <div className="mt-1 min-h-[20px]">
+                  {showCategoryWarning && !formData.categoria && (
+                    <p className="text-amber-600 text-xs flex items-center gap-1">
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full border border-amber-500 text-[10px] leading-none">
+                        ⚠
+                      </span>
+                      <span>Seleccione primero una categoría</span>
+                    </p>
+                  )}
+                  {nameValidation.isChecking && (
+                    <p className="text-gray-500 text-xs flex items-center gap-1">
+                      <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+                      <span>Verificando disponibilidad...</span>
+                    </p>
+                  )}
+                  {nameValidation.isAvailable && !nameValidation.isDuplicate && formData.nombre.trim().length >= 3 && (
+                    <p className="text-green-600 text-xs flex items-center gap-1">
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full border border-green-500 text-[10px] leading-none">
+                        ✓
+                      </span>
+                      <span>Nombre disponible</span>
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Descripción */}

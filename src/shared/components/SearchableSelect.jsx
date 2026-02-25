@@ -69,7 +69,7 @@ const SearchableSelect = ({
         type="button"
         onClick={handleToggle}
         disabled={disabled || loading}
-        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all text-left flex items-center justify-between ${
+        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent text-left flex items-center justify-between ${
           error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
         } ${disabled || loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-white hover:border-gray-400'}`}
       >
@@ -77,7 +77,7 @@ const SearchableSelect = ({
           {loading ? 'Cargando...' : selectedOption ? selectedOption.label : placeholder}
         </span>
         <FaChevronDown
-          className={`text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={`text-gray-400 ${isOpen ? 'rotate-180' : ''}`}
         />
       </button>
 
@@ -107,7 +107,7 @@ const SearchableSelect = ({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full px-4 py-2 text-left hover:bg-primary-blue/10 transition-colors ${
+                  className={`w-full px-4 py-2 text-left hover:bg-primary-blue/10 ${
                     option.value === value ? 'bg-primary-blue/20 font-medium' : ''
                   }`}
                 >

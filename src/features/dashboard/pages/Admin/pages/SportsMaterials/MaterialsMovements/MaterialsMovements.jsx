@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FaPlus } from 'react-icons/fa';
+import { useState, useEffect, useMemo } from 'react';
+import { FaPlus, FaFilter } from 'react-icons/fa';
 import MovementModal from "./components/MovementModal";
 import MovementViewModal from "./components/MovementViewModal";
 import Table from "../../../../../../../shared/components/Table/table";
@@ -18,7 +18,7 @@ const MaterialsMovements = () => {
   const { hasPermission } = usePermissions();
   
   // Estado para pestañas
-  const [activeTab, setActiveTab] = useState('ingresos'); // 'ingresos' | 'bajas'
+  const [activeTab, setActiveTab] = useState('ingresos'); // 'ingresos' | 'salidas'
   
   const [movements, setMovements] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,22 +29,49 @@ const MaterialsMovements = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    tipoSalida: '',
+    inventarioDestino: '',
+    fechaDesde: '',
+    fechaHasta: '',
+  });
 
   const rowsPerPage = 10;
 
   useEffect(() => {
     fetchMovements();
-  }, [currentPage, searchTerm, activeTab]);
+  }, [currentPage, searchTerm, activeTab, filters]);
 
   const fetchMovements = async () => {
     try {
       setLoading(true);
+      
+      // Si hay búsqueda o filtros locales, traer más registros
+      const hasLocalFilters = searchTerm || filters.tipoSalida || filters.inventarioDestino;
+      const limit = hasLocalFilters ? 1000 : rowsPerPage;
+      const page = hasLocalFilters ? 1 : currentPage;
+      
       const params = {
-        page: currentPage,
-        limit: rowsPerPage,
-        search: searchTerm,
-        tipo: activeTab === 'ingresos' ? 'entrada' : 'salida',
+        page,
+        limit,
+        search: '', // No enviar search al backend, filtraremos localmente
       };
+      
+      // Filtrar por tipo según la pestaña activa
+      if (activeTab === 'ingresos') {
+        params.tipo = 'entrada';
+      } else if (activeTab === 'salidas') {
+        params.tipo = 'salida';
+      }
+      
+      // Enviar filtros de fecha al backend (mejor práctica)
+      if (filters.fechaDesde) {
+        params.dateFrom = filters.fechaDesde;
+      }
+      if (filters.fechaHasta) {
+        params.dateTo = filters.fechaHasta;
+      }
       
       const response = await movementsService.getMovements(params);
       
@@ -53,7 +80,6 @@ const MaterialsMovements = () => {
         
         setMovements(data);
         
-        // Intentar obtener el total de diferentes formas
         const total = response.pagination?.total || 
                      response.total || 
                      response.count || 
@@ -70,7 +96,90 @@ const MaterialsMovements = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Filtrar datos localmente si hay término de búsqueda o filtros locales
+  const filteredData = useMemo(() => {
+    let result = movements;
+
+    // Aplicar búsqueda local
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      result = result.filter((movement) => {
+        const textFields = [
+          movement.materialNombre,
+          movement.categoria,
+          movement.proveedor,
+          movement.observaciones,
+          movement.descripcion,
+        ];
+        const textMatch = textFields.some(
+          (field) => field && String(field).toLowerCase().includes(searchLower)
+        );
+        const cantidadMatch = movement.cantidad?.toString().includes(searchLower);
+        let dateMatch = false;
+        if (movement.fechaIngreso || movement.fecha) {
+          const fecha = new Date(movement.fechaIngreso || movement.fecha);
+          const fechaStr = fecha.toLocaleDateString('es-ES');
+          dateMatch = fechaStr.includes(searchLower);
+        }
+        let tipoMatch = false;
+        if (activeTab === 'salidas') {
+          const tipoMovimiento = movement.tipoMovimiento || movement.tipo_movimiento || '';
+          if (tipoMovimiento === 'BAJA' || movement.tipo_baja) {
+            tipoMatch = 'baja'.includes(searchLower);
+            const tipoBajaLabel = getTipoBajaLabel(movement.tipo_baja || movement.tipoBaja);
+            if (tipoBajaLabel.toLowerCase().includes(searchLower)) tipoMatch = true;
+          } else if (tipoMovimiento === 'TRANSFERENCIA') {
+            tipoMatch = 'transferencia'.includes(searchLower);
+          } else if (tipoMovimiento === 'SALIDA_EVENTO') {
+            tipoMatch = 'salida por evento'.includes(searchLower) || 'evento'.includes(searchLower);
+            const eventoNombre = movement.evento_nombre || movement.eventoNombre || '';
+            if (eventoNombre.toLowerCase().includes(searchLower)) tipoMatch = true;
+          }
+          const inventarioOrigen = movement.inventario_origen || movement.inventarioOrigen || '';
+          const inventarioDestino = movement.inventario_destino || movement.inventarioDestino || '';
+          if (inventarioOrigen.toLowerCase().includes(searchLower)) tipoMatch = true;
+          if (inventarioDestino.toLowerCase().includes(searchLower)) tipoMatch = true;
+        }
+        let destinoMatch = false;
+        if (activeTab === 'ingresos') {
+          const destino = movement.inventario_destino || movement.inventarioDestino || '';
+          destinoMatch = destino.toLowerCase().includes(searchLower);
+        }
+        return textMatch || cantidadMatch || dateMatch || tipoMatch || destinoMatch;
+      });
+    }
+
+    // Aplicar filtro de inventario destino (ingresos) - Local
+    if (activeTab === 'ingresos' && filters.inventarioDestino) {
+      result = result.filter(m => 
+        (m.inventario_destino || m.inventarioDestino) === filters.inventarioDestino
+      );
+    }
+
+    // Aplicar filtro de tipo de salida - Local
+    if (activeTab === 'salidas' && filters.tipoSalida) {
+      result = result.filter(m => {
+        const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || '';
+        if (filters.tipoSalida === 'BAJA') {
+          return tipoMovimiento === 'BAJA' || m.tipo_baja;
+        } else if (filters.tipoSalida === 'TRANSFERENCIA') {
+          return tipoMovimiento === 'TRANSFERENCIA';
+        } else if (filters.tipoSalida === 'SALIDA_EVENTO') {
+          return tipoMovimiento === 'SALIDA_EVENTO';
+        }
+        return false;
+      });
+    }
+
+    return result;
+  }, [movements, searchTerm, activeTab, filters.inventarioDestino, filters.tipoSalida]);
+
+  // Usar datos filtrados cuando hay búsqueda o filtros locales activos
+  const hasLocalFilters = searchTerm || filters.inventarioDestino || filters.tipoSalida;
+  const displayData = hasLocalFilters ? filteredData : movements;
+  const displayTotalRows = hasLocalFilters ? filteredData.length : totalRows;
+
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
 
   const handleRegister = () => {
@@ -161,49 +270,94 @@ const MaterialsMovements = () => {
   };
 
   // Preparar datos para tabla de INGRESOS con truncado
-  const ingresosTableData = movements.map(m => ({
+  const ingresosTableData = displayData.map(m => ({
     ...m,
     fechaFormatted: formatDate(m.fechaIngreso || m.fecha),
-    materialNombreTruncated: m.materialNombre && m.materialNombre.length > 50 
-      ? m.materialNombre.substring(0, 50) + '...' 
+    materialNombreTruncated: m.materialNombre && m.materialNombre.length > 35 
+      ? m.materialNombre.substring(0, 35) + '...' 
       : m.materialNombre || '',
+    categoriaTruncated: m.categoria && m.categoria.length > 25
+      ? m.categoria.substring(0, 25) + '...'
+      : m.categoria || '',
     cantidadFormatted: formatStock(m.cantidad),
     proveedorDisplay: m.proveedor || 'Sin proveedor',
   }));
 
-  // Preparar datos para tabla de BAJAS con truncado
-  const bajasTableData = movements.map(m => {
-    const descripcion = m.descripcion || m.observaciones || '';
+  // Preparar datos para tabla de SALIDAS con truncado
+  const salidasTableData = displayData.map(m => {
+    const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || '';
+    
+    // Determinar el tipo de salida de forma simple
+    let tipoDisplay = 'Otro';
+    
+    if (tipoMovimiento === 'BAJA' || m.tipo_baja) {
+      tipoDisplay = 'Baja';
+    } else if (tipoMovimiento === 'TRANSFERENCIA') {
+      tipoDisplay = 'Transferencia';
+    } else if (tipoMovimiento === 'SALIDA_EVENTO') {
+      tipoDisplay = 'Salida por Evento';
+    }
+    
     return {
       ...m,
       fechaFormatted: formatDate(m.fechaIngreso || m.fecha),
-      materialNombreTruncated: m.materialNombre && m.materialNombre.length > 50 
-        ? m.materialNombre.substring(0, 50) + '...' 
+      materialNombreTruncated: m.materialNombre && m.materialNombre.length > 35 
+        ? m.materialNombre.substring(0, 35) + '...' 
         : m.materialNombre || '',
+      categoriaTruncated: m.categoria && m.categoria.length > 25
+        ? m.categoria.substring(0, 25) + '...'
+        : m.categoria || '',
       cantidadFormatted: formatStock(m.cantidad),
-      tipoBajaDisplay: getTipoBajaLabel(m.tipo_baja || m.tipoBaja),
-      descripcionTruncated: descripcion 
-        ? (descripcion.length > 40 ? descripcion.substring(0, 40) + '...' : descripcion)
-        : 'Sin descripción',
+      tipoDisplay,
     };
   });
 
   // Datos para reporte
-  const reportData = movements.map(m => ({
-    fecha: formatDateTime(m.fechaIngreso || m.fecha),
-    material: m.materialNombre,
-    categoria: m.categoria,
-    cantidad: m.cantidad,
-    ...(activeTab === 'ingresos' 
-      ? { proveedor: m.proveedor || 'Sin proveedor' }
-      : { 
-          tipoBaja: getTipoBajaLabel(m.tipo_baja || m.tipoBaja),
-          descripcion: m.descripcion || m.observaciones || 'N/A'
-        }
-    ),
-    stockAnterior: m.stockAnterior,
-    stockNuevo: m.stockNuevo,
-  }));
+  const reportData = displayData.map(m => {
+    const baseData = {
+      fecha: formatDateTime(m.fechaIngreso || m.fecha),
+      material: m.materialNombre,
+      categoria: m.categoria,
+      cantidad: m.cantidad,
+      stockAnterior: m.stockAnterior,
+      stockNuevo: m.stockNuevo,
+    };
+    
+    if (activeTab === 'ingresos') {
+      return {
+        ...baseData,
+        proveedor: m.proveedor || 'Sin proveedor',
+        destino: m.inventario_destino || m.inventarioDestino || 'N/A',
+        observaciones: m.observaciones || 'N/A',
+      };
+    } else {
+      // Salidas
+      const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || '';
+      let tipo = 'Otro';
+      let detalles = '';
+      
+      if (tipoMovimiento === 'BAJA' || m.tipo_baja) {
+        tipo = 'Baja';
+        const tipoBaja = getTipoBajaLabel(m.tipo_baja || m.tipoBaja);
+        const origen = m.inventario_origen || m.inventarioOrigen || '';
+        detalles = `${tipoBaja} - Origen: ${origen} - ${m.descripcion || m.observaciones || 'Sin descripción'}`;
+      } else if (tipoMovimiento === 'TRANSFERENCIA') {
+        tipo = 'Transferencia';
+        const desde = m.inventario_origen || m.inventarioOrigen || 'N/A';
+        const hacia = m.inventario_destino || m.inventarioDestino || 'N/A';
+        detalles = `De ${desde} a ${hacia}${m.observaciones ? ' - ' + m.observaciones : ''}`;
+      } else if (tipoMovimiento === 'SALIDA_EVENTO') {
+        tipo = 'Salida por Evento';
+        detalles = m.evento_nombre || m.eventoNombre || 'Evento finalizado';
+      }
+      
+      return {
+        ...baseData,
+        tipo,
+        detalles,
+      };
+    }
+  });
 
   return (
     <div className="p-6 font-questrial">
@@ -218,14 +372,26 @@ const MaterialsMovements = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            placeholder={`Buscar por fecha, material, categoría${activeTab === 'ingresos' ? ', proveedor' : ', tipo de baja, descripción'}...`}
+            placeholder={`Buscar por fecha, material, categoría${activeTab === 'ingresos' ? ', proveedor' : ', tipo'}...`}
           />
+
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg font-medium transition-all ${
+              showFilters
+                ? 'bg-primary-blue text-white border-primary-blue'
+                : 'border-gray-300 text-gray-700 hover:border-primary-blue hover:text-primary-blue'
+            }`}
+          >
+            <FaFilter className="h-4 w-4" />
+            <span className="hidden sm:inline">Filtros</span>
+          </button>
 
           <div className="flex items-center gap-3">
             <PermissionGuard module="materialsRegistry" action="Ver">
               <ReportButton
                 data={reportData}
-                fileName={`Reporte_${activeTab === 'ingresos' ? 'Ingresos' : 'Bajas'}_Materiales`}
+                fileName={`Reporte_${activeTab === 'ingresos' ? 'Ingresos' : 'Salidas'}_Materiales`}
                 columns={
                   activeTab === 'ingresos'
                     ? [
@@ -233,7 +399,9 @@ const MaterialsMovements = () => {
                         { header: "Material", accessor: "material" },
                         { header: "Categoría", accessor: "categoria" },
                         { header: "Cantidad", accessor: "cantidad" },
+                        { header: "Destino", accessor: "destino" },
                         { header: "Proveedor", accessor: "proveedor" },
+                        { header: "Observaciones", accessor: "observaciones" },
                         { header: "Stock Anterior", accessor: "stockAnterior" },
                         { header: "Stock Nuevo", accessor: "stockNuevo" },
                       ]
@@ -242,8 +410,8 @@ const MaterialsMovements = () => {
                         { header: "Material", accessor: "material" },
                         { header: "Categoría", accessor: "categoria" },
                         { header: "Cantidad", accessor: "cantidad" },
-                        { header: "Tipo de Baja", accessor: "tipoBaja" },
-                        { header: "Descripción", accessor: "descripcion" },
+                        { header: "Tipo", accessor: "tipo" },
+                        { header: "Detalles", accessor: "detalles" },
                         { header: "Stock Anterior", accessor: "stockAnterior" },
                         { header: "Stock Nuevo", accessor: "stockNuevo" },
                       ]
@@ -265,6 +433,93 @@ const MaterialsMovements = () => {
         </div>
       </div>
 
+      {/* Panel de Filtros */}
+      {showFilters && (
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+            <button
+              onClick={() => {
+                setFilters({
+                  tipoSalida: '',
+                  inventarioDestino: '',
+                  fechaDesde: '',
+                  fechaHasta: '',
+                });
+                setShowFilters(false);
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Filtro por Rango de Fechas */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Desde
+              </label>
+              <input
+                type="date"
+                value={filters.fechaDesde}
+                onChange={(e) => setFilters({ ...filters, fechaDesde: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Hasta
+              </label>
+              <input
+                type="date"
+                value={filters.fechaHasta}
+                onChange={(e) => setFilters({ ...filters, fechaHasta: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              />
+            </div>
+
+            {/* Filtro por Inventario Destino (solo ingresos) */}
+            {activeTab === 'ingresos' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Inventario Destino
+                </label>
+                <select
+                  value={filters.inventarioDestino}
+                  onChange={(e) => setFilters({ ...filters, inventarioDestino: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                >
+                  <option value="">Todos los destinos</option>
+                  <option value="FUNDACION">Fundación</option>
+                  <option value="EVENTOS">Eventos</option>
+                </select>
+              </div>
+            )}
+
+            {/* Filtro por Tipo de Salida (solo salidas) */}
+            {activeTab === 'salidas' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Salida
+                </label>
+                <select
+                  value={filters.tipoSalida}
+                  onChange={(e) => setFilters({ ...filters, tipoSalida: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="BAJA">Baja</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="SALIDA_EVENTO">Salida por Evento</option>
+                </select>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Pestañas */}
       <div className="flex gap-2 mb-6 border-b border-gray-200">
         <button
@@ -272,6 +527,7 @@ const MaterialsMovements = () => {
             setActiveTab('ingresos');
             setCurrentPage(1);
             setSearchTerm('');
+            setFilters({ tipoSalida: '', inventarioDestino: '', fechaDesde: '', fechaHasta: '' });
           }}
           className={`px-6 py-3 font-medium transition-all ${
             activeTab === 'ingresos'
@@ -283,17 +539,18 @@ const MaterialsMovements = () => {
         </button>
         <button
           onClick={() => {
-            setActiveTab('bajas');
+            setActiveTab('salidas');
             setCurrentPage(1);
             setSearchTerm('');
+            setFilters({ tipoSalida: '', inventarioDestino: '', fechaDesde: '', fechaHasta: '' });
           }}
           className={`px-6 py-3 font-medium transition-all ${
-            activeTab === 'bajas'
+            activeTab === 'salidas'
               ? 'text-primary-blue border-b-2 border-primary-blue'
               : 'text-gray-500 hover:text-gray-700'
           }`}
         >
-          Bajas
+          Salidas
         </button>
       </div>
 
@@ -307,7 +564,7 @@ const MaterialsMovements = () => {
           }}
           tbody={{
             data: ingresosTableData,
-            dataPropertys: ["fechaFormatted", "materialNombreTruncated", "categoria", "cantidadFormatted", "proveedorDisplay"],
+            dataPropertys: ["fechaFormatted", "materialNombreTruncated", "categoriaTruncated", "cantidadFormatted", "proveedorDisplay"],
             state: false,
           }}
           onView={hasPermission('materialsRegistry', 'Ver') ? handleView : null}
@@ -330,17 +587,17 @@ const MaterialsMovements = () => {
         />
       )}
 
-      {/* Tabla de BAJAS */}
-      {activeTab === 'bajas' && (
+      {/* Tabla de SALIDAS */}
+      {activeTab === 'salidas' && (
         <Table
           thead={{
-            titles: ["Fecha", "Material", "Categoría", "Cantidad", "Tipo de Baja", "Descripción"],
+            titles: ["Fecha", "Material", "Categoría", "Cantidad", "Tipo"],
             state: false,
             actions: true,
           }}
           tbody={{
-            data: bajasTableData,
-            dataPropertys: ["fechaFormatted", "materialNombreTruncated", "categoria", "cantidadFormatted", "tipoBajaDisplay", "descripcionTruncated"],
+            data: salidasTableData,
+            dataPropertys: ["fechaFormatted", "materialNombreTruncated", "categoriaTruncated", "cantidadFormatted", "tipoDisplay"],
             state: false,
           }}
           onView={hasPermission('materialsRegistry', 'Ver') ? handleView : null}
@@ -361,12 +618,12 @@ const MaterialsMovements = () => {
       )}
 
       {/* Paginación */}
-      {totalRows > rowsPerPage && (
+      {displayTotalRows > rowsPerPage && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          totalRows={totalRows}
+          totalRows={displayTotalRows}
           rowsPerPage={rowsPerPage}
           startIndex={startIndex}
         />

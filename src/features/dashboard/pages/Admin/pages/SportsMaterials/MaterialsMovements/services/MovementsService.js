@@ -114,6 +114,16 @@ class MovementsService {
   transformFromBackend(backendData) {
     if (!backendData) return null;
 
+    // 🔍 DEBUG: Ver qué devuelve el backend
+    console.log('🔍 DEBUG - Datos del backend:', {
+      id: backendData.id,
+      tipo: backendData.tipoMovimiento || backendData.tipo_movimiento,
+      inventario_origen: backendData.inventario_origen,
+      inventarioOrigen: backendData.inventarioOrigen,
+      origen: backendData.origen,
+      todosLosCampos: Object.keys(backendData)
+    });
+
     // Intentar obtener información del proveedor de diferentes fuentes
     let proveedorNombre = null;
     let proveedorNit = null;
@@ -163,6 +173,34 @@ class MovementsService {
       tipoMovimiento: backendData.tipoMovimiento || backendData.tipo_movimiento || backendData.movementType || '',
       cantidad: backendData.cantidad || backendData.quantity || 0,
       origen: backendData.origen || backendData.origin || backendData.source || '',
+      
+      // Inventarios
+      inventario_origen: backendData.inventario_origen || 
+                        backendData.inventarioOrigen || 
+                        backendData.inventory_origin ||
+                        backendData.origin_inventory ||
+                        backendData.origen || // Fallback al campo "origen"
+                        null,
+      inventarioOrigen: backendData.inventario_origen || 
+                       backendData.inventarioOrigen || 
+                       backendData.inventory_origin ||
+                       backendData.origin_inventory ||
+                       backendData.origen || // Fallback al campo "origen"
+                       null,
+      inventario_destino: backendData.inventario_destino || 
+                         backendData.inventarioDestino || 
+                         backendData.inventory_destination ||
+                         backendData.destination_inventory ||
+                         backendData.destino ||
+                         null,
+      inventarioDestino: backendData.inventario_destino || 
+                        backendData.inventarioDestino || 
+                        backendData.inventory_destination ||
+                        backendData.destination_inventory ||
+                        backendData.destino ||
+                        null,
+      
+      // Proveedor
       proveedor: proveedorNombre,
       proveedorId: backendData.proveedorId || 
                    backendData.proveedor_id || 
@@ -170,18 +208,38 @@ class MovementsService {
       proveedorNit: proveedorNit,
       proveedorTipoEntidad: proveedorTipoEntidad,
       proveedorTipoDocumento: proveedorTipoDocumento,
+      
+      // Observaciones y descripciones
       observaciones: backendData.observaciones || backendData.notes || backendData.observations || '',
+      descripcion: backendData.descripcion || backendData.description || '',
+      
+      // Bajas
       tipo_baja: backendData.tipo_baja || backendData.tipoBaja || backendData.dischargetype || '',
       tipoBaja: backendData.tipo_baja || backendData.tipoBaja || backendData.dischargetype || '',
-      descripcion: backendData.descripcion || backendData.description || '',
+      
+      // Eventos
+      eventoId: backendData.eventoId || backendData.evento_id || null,
+      evento_id: backendData.eventoId || backendData.evento_id || null,
+      eventoNombre: backendData.eventoNombre || backendData.evento_nombre || 
+                    (backendData.evento && backendData.evento.nombre) || 
+                    (backendData.evento && backendData.evento.name) || '',
+      evento_nombre: backendData.eventoNombre || backendData.evento_nombre || 
+                     (backendData.evento && backendData.evento.nombre) || 
+                     (backendData.evento && backendData.evento.name) || '',
+      
+      // Stock
       stockAnterior: backendData.stockAnterior || backendData.stock_anterior || backendData.previousStock || 0,
       stockNuevo: backendData.stockNuevo || backendData.stock_nuevo || backendData.newStock || 0,
       stockReservado: backendData.stockReservado || backendData.stock_reservado || backendData.reservedStock || 0,
       puedeEditarCantidad: backendData.puedeEditarCantidad || backendData.puede_editar_cantidad || false,
+      
+      // Fechas
       fecha: backendData.fecha || backendData.date || backendData.created_at || backendData.createdAt || '',
       fechaIngreso: backendData.fechaIngreso || backendData.fecha_ingreso || backendData.fecha || '',
       createdAt: backendData.createdAt || backendData.created_at || backendData.fecha || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || backendData.fecha || '',
+      
+      // Usuario
       createdBy: backendData.createdBy || backendData.created_by || '',
       createdByName: backendData.createdByName || backendData.created_by_name || '',
     };

@@ -274,6 +274,8 @@ class MaterialsService {
       stockEventosDisponible: stockEventosDisponible,
       stockTotal: backendData.stockTotal || backendData.stock_total || (stockFundacion + stockEventos),
       estado: backendData.estado || backendData.status || 'Activo',
+      hasMovements: backendData.hasMovements || backendData.has_movements || false,
+      movementsCount: backendData.movementsCount || backendData.movements_count || 0,
       createdAt: backendData.createdAt || backendData.created_at || '',
       updatedAt: backendData.updatedAt || backendData.updated_at || '',
       createdBy: backendData.createdBy || backendData.created_by || null,
