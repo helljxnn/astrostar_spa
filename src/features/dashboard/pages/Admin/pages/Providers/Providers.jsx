@@ -40,7 +40,7 @@ const Providers = () => {
       const response = await providersService.getProviders({
         page: currentPage,
         limit: rowsPerPage,
-        search: searchTerm,
+        search: '', // No enviar search al backend, filtraremos localmente
       });
       if (response.success) {
         // Enriquecer datos con nombres de tipos de documento
@@ -127,7 +127,7 @@ const Providers = () => {
   };
   useEffect(() => {
     fetchProviders();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
@@ -337,6 +337,35 @@ const Providers = () => {
         : "Eliminar proveedor",
     }),
   };
+
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = searchTerm
+    ? data.filter((provider) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        const textFields = [
+          provider.razonSocial,
+          provider.nit,
+          provider.contactoPrincipal,
+          provider.correo,
+          provider.telefono,
+          provider.direccion,
+          provider.ciudad,
+          provider.tipoEntidad,
+          provider.estado,
+        ];
+        return textFields.some(
+          (field) => field && String(field).toLowerCase().includes(searchLower)
+        );
+      })
+    : data;
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = filteredData;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  const displayTotalPages = searchTerm
+    ? Math.ceil(filteredData.length / rowsPerPage)
+    : totalPages;
+
   const startIndex = (currentPage - 1) * rowsPerPage;
   return (
     <div className="p-6 font-questrial w-full max-w-full">
@@ -348,7 +377,10 @@ const Providers = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1);
+                // Si limpia la búsqueda, resetear a página 1
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
               }}
               placeholder="Buscar proveedor..."
             />
@@ -427,7 +459,7 @@ const Providers = () => {
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           Cargando proveedores...
         </div>
-      ) : totalRows > 0 ? (
+      ) : displayTotalRows > 0 ? (
         <>
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
@@ -444,7 +476,7 @@ const Providers = () => {
                   actions: true,
                 }}
                 tbody={{
-                  data: data,
+                  data: displayData,
                   dataPropertys: [
                     "razonSocial",
                     "nit",
@@ -472,9 +504,9 @@ const Providers = () => {
           <div className="w-full border-none shadow-none">
             <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
+              totalPages={displayTotalPages}
               onPageChange={handlePageChange}
-              totalRows={totalRows}
+              totalRows={displayTotalRows}
               rowsPerPage={rowsPerPage}
               startIndex={startIndex}
             />

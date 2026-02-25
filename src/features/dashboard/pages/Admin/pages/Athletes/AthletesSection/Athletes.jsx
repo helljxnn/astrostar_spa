@@ -420,6 +420,10 @@ const Athletes = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
+                // Si limpia la búsqueda, resetear a página 1
+                if (!e.target.value) {
+                  changePage(1);
+                }
               }}
               placeholder="Buscar deportista..."
             />

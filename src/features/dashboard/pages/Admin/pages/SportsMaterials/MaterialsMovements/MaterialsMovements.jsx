@@ -41,20 +41,15 @@ const MaterialsMovements = () => {
 
   useEffect(() => {
     fetchMovements();
-  }, [currentPage, searchTerm, activeTab, filters]);
+  }, [currentPage, activeTab, filters.fechaDesde, filters.fechaHasta]); // Solo recargar cuando cambian estos valores
 
   const fetchMovements = async () => {
     try {
       setLoading(true);
       
-      // Si hay búsqueda o filtros locales, traer más registros
-      const hasLocalFilters = searchTerm || filters.tipoSalida || filters.inventarioDestino;
-      const limit = hasLocalFilters ? 1000 : rowsPerPage;
-      const page = hasLocalFilters ? 1 : currentPage;
-      
       const params = {
-        page,
-        limit,
+        page: currentPage,
+        limit: rowsPerPage,
         search: '', // No enviar search al backend, filtraremos localmente
       };
       

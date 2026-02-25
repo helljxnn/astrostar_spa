@@ -104,7 +104,7 @@ const TemporaryTeams = () => {
       const result = await TeamsService.getTeams({
         page: currentPage,
         limit: rowsPerPage,
-        search: searchTerm,
+        search: '', // No enviar search al backend, filtraremos localmente
         teamType: "Temporal",
       });
 
@@ -139,15 +139,39 @@ const TemporaryTeams = () => {
 
   useEffect(() => {
     loadTeams();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return data.filter((team) => {
+      const textFields = [
+        team.nombre,
+        team.entrenador,
+        team.categoria,
+        team.status,
+      ];
+
+      return textFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower)
+      );
+    });
+  }, [data, searchTerm]);
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = searchTerm ? filteredData : data;
+  const displayTotalRows = searchTerm ? filteredData.length : pagination.total;
 
   // Formatear datos para la tabla - CORREGIDO para contar solo deportistas
   const formattedData = useMemo(() => {
-    if (!Array.isArray(data)) {
+    if (!Array.isArray(displayData)) {
       return [];
     }
 
-    const formatted = data.map((team) => {
+    const formatted = displayData.map((team) => {
       // ✅ CORRECCIÓN: Contar SOLO deportistas, NO entrenadores
       const deportistasCount = Array.isArray(team.members)
         ? team.members.filter((member) => {
@@ -175,7 +199,7 @@ const TemporaryTeams = () => {
     });
 
     return formatted;
-  }, [data]);
+  }, [displayData]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -321,7 +345,10 @@ const TemporaryTeams = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1);
+                // Si limpia la búsqueda, resetear a página 1
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
               }}
               placeholder="Buscar equipo..."
             />
