@@ -229,7 +229,7 @@ const Event = () => {
             {/* Generador de reportes genérico */}
             {canExportEvents && (
               <CalendarReportGenerator
-                data={events}
+                events={events}
                 title="Reportes"
                 entityName="eventos"
                 reportTypes={["pdf", "excel"]}

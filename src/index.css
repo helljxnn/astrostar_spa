@@ -7,15 +7,15 @@
    Reglas DESPUÉS de Tailwind para mayor prioridad
    =============================================== */
 
-/* Sidebar - z-index bajo (40) */
+/* Sidebar - z-index bajo (30) */
 .dynamic-sidebar,
 aside.dynamic-sidebar,
 aside[class*="dynamic-sidebar"] {
-  z-index: 40 !important;
+  z-index: 30 !important;
 }
 
 .sidebar-overlay {
-  z-index: 39 !important;
+  z-index: 25 !important;
 }
 
 /* Contenido base */
@@ -27,22 +27,28 @@ aside[class*="dynamic-sidebar"] {
   z-index: 10 !important;
 }
 
-/* MODALES - z-index ALTO (10000) para estar por encima del sidebar */
+/* MODALES - z-index ALTO para estar por encima del sidebar */
 /* MÁXIMA PRIORIDAD - Sobrescribe TODO */
-.fixed.inset-0,
+.modal-overlay,
+.fixed.inset-0.modal-overlay,
 div.fixed.inset-0,
 [class*="fixed"][class*="inset-0"],
 [class~="fixed"][class~="inset-0"] {
-  z-index: 10000 !important;
+  z-index: 500 !important;
+}
+
+.modal-content {
+  z-index: 600 !important;
+  position: relative !important;
 }
 
 /* Modales de eventos del calendario */
 .event-modal-overlay {
-  z-index: 100000 !important;
+  z-index: 999999 !important;
 }
 
 .event-modal-content {
-  z-index: 100001 !important;
+  z-index: 1000000 !important;
 }
 
 /* SweetAlert2 */

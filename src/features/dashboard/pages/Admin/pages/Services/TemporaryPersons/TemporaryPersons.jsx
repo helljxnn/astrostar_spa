@@ -6,7 +6,6 @@ import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
-import { InlineLoader } from "../../../../../../../shared/components/Loader";
 import {
   showDeleteAlert,
   showErrorAlert,
@@ -80,13 +79,13 @@ const TemporaryPersons = () => {
       ];
 
       const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
+        (field) => field && String(field).toLowerCase().includes(searchLower),
       );
 
       // Campos de estado y tipo (búsqueda exacta de palabra completa)
       const translatedStatus = translateStatus(person.status).toLowerCase();
       const translatedType = translatePersonType(
-        person.personType
+        person.personType,
       ).toLowerCase();
 
       // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
@@ -151,26 +150,26 @@ const TemporaryPersons = () => {
         if (!hasPermission("temporaryWorkers", "Editar")) {
           showErrorAlert(
             "Sin permisos",
-            "No tienes permisos para editar personas temporales"
+            "No tienes permisos para editar personas temporales",
           );
           return false;
         }
 
         const result = await updateTemporaryPerson(
           editingPerson.id,
-          personData
+          personData,
         );
 
         // Mostrar advertencias si las hay
         if (result.warnings && result.warnings.length > 0) {
           showWarningAlert(
             "Actualización completada con advertencias",
-            result.warnings.join(". ")
+            result.warnings.join(". "),
           );
         } else {
           showSuccessAlert(
             "Persona Temporal Actualizada",
-            "La persona temporal ha sido actualizada exitosamente"
+            "La persona temporal ha sido actualizada exitosamente",
           );
         }
       } else {
@@ -178,7 +177,7 @@ const TemporaryPersons = () => {
         if (!hasPermission("temporaryWorkers", "Crear")) {
           showErrorAlert(
             "Sin permisos",
-            "No tienes permisos para crear personas temporales"
+            "No tienes permisos para crear personas temporales",
           );
           return false;
         }
@@ -189,12 +188,12 @@ const TemporaryPersons = () => {
         if (result.warnings && result.warnings.length > 0) {
           showWarningAlert(
             "Persona creada con advertencias",
-            result.warnings.join(". ")
+            result.warnings.join(". "),
           );
         } else {
           showSuccessAlert(
             "Persona Temporal Creada",
-            "La persona temporal ha sido creada exitosamente"
+            "La persona temporal ha sido creada exitosamente",
           );
         }
       }
@@ -214,13 +213,13 @@ const TemporaryPersons = () => {
         } else {
           showErrorAlert(
             "Error del servidor",
-            error.response.data.message || "Error desconocido"
+            error.response.data.message || "Error desconocido",
           );
         }
       } else {
         showErrorAlert(
           "Error de conexión",
-          "No se pudo conectar con el servidor"
+          "No se pudo conectar con el servidor",
         );
       }
       return false;
@@ -231,7 +230,7 @@ const TemporaryPersons = () => {
     if (!hasPermission("temporaryWorkers", "Editar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar personas temporales"
+        "No tienes permisos para editar personas temporales",
       );
       return;
     }
@@ -245,7 +244,7 @@ const TemporaryPersons = () => {
     if (!hasPermission("temporaryWorkers", "Ver")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para ver personas temporales"
+        "No tienes permisos para ver personas temporales",
       );
       return;
     }
@@ -257,7 +256,7 @@ const TemporaryPersons = () => {
     if (!hasPermission("temporaryWorkers", "Eliminar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar personas temporales"
+        "No tienes permisos para eliminar personas temporales",
       );
       return;
     }
@@ -278,14 +277,14 @@ const TemporaryPersons = () => {
 
       const result = await showDeleteAlert(
         "¿Eliminar persona temporal?",
-        `Se eliminará permanentemente la persona temporal: ${personName}. Esta acción no se puede deshacer.`
+        `Se eliminará permanentemente la persona temporal: ${personName}. Esta acción no se puede deshacer.`,
       );
 
       if (result.isConfirmed) {
         await deleteTemporaryPerson(person.id, personName);
         showSuccessAlert(
           "Persona eliminada",
-          `La persona temporal "${personName}" ha sido eliminada exitosamente`
+          `La persona temporal "${personName}" ha sido eliminada exitosamente`,
         );
       }
     } catch (error) {
@@ -295,7 +294,7 @@ const TemporaryPersons = () => {
       } else {
         showErrorAlert(
           "Error de conexión",
-          "No se pudo eliminar la persona temporal"
+          "No se pudo eliminar la persona temporal",
         );
       }
     }
@@ -308,14 +307,14 @@ const TemporaryPersons = () => {
     // Verificar si tiene datos críticos que impidan la eliminación
     if (person.teamMembers && person.teamMembers.length > 0) {
       errors.push(
-        "Esta persona está asignada a equipos y no puede ser eliminada"
+        "Esta persona está asignada a equipos y no puede ser eliminada",
       );
     }
 
     // Verificar si es un entrenador con deportistas asignados
     if (person.personType === "Entrenador" && person.team) {
       errors.push(
-        "Los entrenadores con equipos asignados no pueden ser eliminados directamente"
+        "Los entrenadores con equipos asignados no pueden ser eliminados directamente",
       );
     }
 
@@ -367,9 +366,9 @@ const TemporaryPersons = () => {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center items-center py-8">
-          <InlineLoader message="Cargando personas temporales..." />
+      {displayData.length === 0 ? (
+        <div className="p-4 text-center text-gray-400 italic">
+          No hay personas temporales para mostrar.
         </div>
       ) : (
         <>

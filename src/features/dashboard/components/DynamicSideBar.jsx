@@ -302,7 +302,7 @@ function DynamicSideBar({
         }}
         className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar"
         style={{
-          zIndex: 40,
+          zIndex: 30,
           position: "fixed",
         }}
         initial={{ x: isMobile ? -288 : 0 }}
