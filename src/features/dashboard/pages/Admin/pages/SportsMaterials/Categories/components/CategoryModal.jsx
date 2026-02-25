@@ -1,32 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
-import { FormField } from '../../../../../../../../shared/components/FormField';
-import { useCategoryNameValidation } from '../hooks/useCategoryNameValidation';
-import { showConfirmAlert } from '../../../../../../../../shared/utils/alerts';
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { FormField } from "../../../../../../../../shared/components/FormField";
+import { useCategoryNameValidation } from "../hooks/useCategoryNameValidation";
+import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
 
 const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   const isEditing = !!category;
   const debounceRef = useRef(null);
 
   const [formData, setFormData] = useState({
-    nombre: '',
-    descripcion: '',
-    estado: 'Activo',
+    nombre: "",
+    descripcion: "",
+    estado: "Activo",
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-  const [initialName, setInitialName] = useState('');
+  const [initialName, setInitialName] = useState("");
 
-  const {
-    nameValidation,
-    validateCategoryName,
-    resetNameValidation,
-  } = useCategoryNameValidation(category?.id || null);
+  const { nameValidation, validateCategoryName, resetNameValidation } =
+    useCategoryNameValidation(category?.id || null);
 
   const estadoOptions = [
-    { value: 'Activo', label: 'Activo' },
-    { value: 'Inactivo', label: 'Inactivo' },
+    { value: "Activo", label: "Activo" },
+    { value: "Inactivo", label: "Inactivo" },
   ];
 
   useEffect(() => {
@@ -36,20 +34,20 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
     setTouched({});
 
     if (isEditing && category) {
-      const incomingName = category.nombre || '';
+      const incomingName = category.nombre || "";
       setFormData({
         nombre: incomingName,
-        descripcion: category.descripcion || '',
-        estado: category.estado || 'Activo',
+        descripcion: category.descripcion || "",
+        estado: category.estado || "Activo",
       });
       setInitialName(incomingName);
     } else {
       setFormData({
-        nombre: '',
-        descripcion: '',
-        estado: 'Activo',
+        nombre: "",
+        descripcion: "",
+        estado: "Activo",
       });
-      setInitialName('');
+      setInitialName("");
     }
 
     // Limpiar validación al abrir/cerrar
@@ -62,17 +60,17 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   }, [isOpen, isEditing, category]);
 
   const handleChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
 
     // Validación en tiempo real del nombre
-    if (name === 'nombre') {
+    if (name === "nombre") {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      
-      const trimmed = String(value || '').trim();
-      const currentInitial = (initialName || '').trim().toLowerCase();
+
+      const trimmed = String(value || "").trim();
+      const currentInitial = (initialName || "").trim().toLowerCase();
 
       // Si estamos editando y el nombre es el mismo que el inicial, no validar
       if (isEditing && trimmed.toLowerCase() === currentInitial) {
@@ -89,32 +87,32 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   };
 
   const handleBlur = (name) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
     validateField(name);
   };
 
   const validateField = (name) => {
     const value = formData[name];
-    let error = '';
+    let error = "";
 
     switch (name) {
-      case 'nombre':
+      case "nombre":
         if (!value || !value.trim()) {
-          error = 'El nombre es obligatorio';
+          error = "El nombre es obligatorio";
         } else if (value.trim().length < 3) {
-          error = 'El nombre debe tener al menos 3 caracteres';
+          error = "El nombre debe tener al menos 3 caracteres";
         }
         break;
-      case 'estado':
-        if (!value || value === '') {
-          error = 'Debes seleccionar un estado';
+      case "estado":
+        if (!value || value === "") {
+          error = "Debes seleccionar un estado";
         }
         break;
       default:
         break;
     }
 
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
@@ -127,8 +125,8 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
       estado: isEditing ? true : false,
     });
 
-    const nombreError = validateField('nombre');
-    const estadoError = isEditing ? validateField('estado') : '';
+    const nombreError = validateField("nombre");
+    const estadoError = isEditing ? validateField("estado") : "";
 
     if (nombreError || estadoError || nameValidation.isDuplicate) {
       return;
@@ -137,12 +135,12 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
     // Si está editando y tiene materiales asociados, mostrar confirmación
     if (isEditing && category?.materialsCount > 0) {
       const result = await showConfirmAlert(
-        '¿Continuar con la edición?',
-        'Esta categoría tiene materiales asociados. Cambiar su nombre podría afectar la clasificación actual.',
+        "¿Continuar con la edición?",
+        "Esta categoría tiene materiales asociados. Cambiar su nombre podría afectar la clasificación actual.",
         {
-          confirmButtonText: 'Sí, continuar',
-          cancelButtonText: 'Cancelar'
-        }
+          confirmButtonText: "Sí, continuar",
+          cancelButtonText: "Cancelar",
+        },
       );
 
       if (!result.isConfirmed) {
@@ -165,7 +163,7 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
         handleClose();
       }
     } catch (error) {
-      console.error('Error al guardar categoría:', error);
+      console.error("Error al guardar categoría:", error);
     } finally {
       setLoading(false);
     }
@@ -173,9 +171,9 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
 
   const handleClose = () => {
     setFormData({
-      nombre: '',
-      descripcion: '',
-      estado: 'Activo',
+      nombre: "",
+      descripcion: "",
+      estado: "Activo",
     });
     setErrors({});
     setTouched({});
@@ -184,10 +182,10 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <>
-      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+      <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
           {/* Header */}
           <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
             <button
@@ -197,7 +195,7 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
               ✕
             </button>
             <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-              {isEditing ? 'Editar Categoría' : 'Crear Categoría de Material'}
+              {isEditing ? "Editar Categoría" : "Crear Categoría de Material"}
             </h2>
           </div>
 
@@ -213,8 +211,11 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                   placeholder="Ej: Balones"
                   value={formData.nombre}
                   onChange={handleChange}
-                  onBlur={() => handleBlur('nombre')}
-                  error={errors.nombre || (nameValidation.isDuplicate ? nameValidation.message : '')}
+                  onBlur={() => handleBlur("nombre")}
+                  error={
+                    errors.nombre ||
+                    (nameValidation.isDuplicate ? nameValidation.message : "")
+                  }
                   touched={touched.nombre}
                   required
                 />
@@ -224,14 +225,16 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                     <span>Verificando disponibilidad...</span>
                   </p>
                 )}
-                {nameValidation.isAvailable && !nameValidation.isDuplicate && formData.nombre.trim().length >= 3 && (
-                  <p className="mt-1 text-green-600 text-xs flex items-center gap-1">
-                    <span className="flex items-center justify-center w-4 h-4 rounded-full border border-green-500 text-[10px] leading-none">
-                      ✓
-                    </span>
-                    <span>Nombre disponible</span>
-                  </p>
-                )}
+                {nameValidation.isAvailable &&
+                  !nameValidation.isDuplicate &&
+                  formData.nombre.trim().length >= 3 && (
+                    <p className="mt-1 text-green-600 text-xs flex items-center gap-1">
+                      <span className="flex items-center justify-center w-4 h-4 rounded-full border border-green-500 text-[10px] leading-none">
+                        ✓
+                      </span>
+                      <span>Nombre disponible</span>
+                    </p>
+                  )}
               </div>
 
               {/* Descripción */}
@@ -257,7 +260,7 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                     placeholder="Selecciona el estado"
                     value={formData.estado}
                     onChange={handleChange}
-                    onBlur={() => handleBlur('estado')}
+                    onBlur={() => handleBlur("estado")}
                     error={errors.estado}
                     touched={touched.estado}
                     options={estadoOptions}
@@ -285,7 +288,13 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                 className="flex items-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? (isEditing ? 'Guardando...' : 'Creando...') : (isEditing ? 'Guardar Cambios' : 'Crear Categoría')}
+                {loading
+                  ? isEditing
+                    ? "Guardando..."
+                    : "Creando..."
+                  : isEditing
+                    ? "Guardar Cambios"
+                    : "Crear Categoría"}
               </button>
             </div>
           </div>
@@ -293,6 +302,8 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
       </div>
     </>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default CategoryModal;

@@ -1,30 +1,35 @@
-import { formatDate } from '../../shared/utils/stockCalculations';
-import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
-import { getTipoBajaLabel } from '../../shared/utils/tipoBajaLabels';
+import { createPortal } from "react-dom";
+import { formatDate } from "../../shared/utils/stockCalculations";
+import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
+import { getTipoBajaLabel } from "../../shared/utils/tipoBajaLabels";
 
 const MovementViewModal = ({ isOpen, onClose, movement }) => {
   if (!isOpen || !movement) return null;
 
   // Determinar el tipo de movimiento usando el campo correcto del backend
-  const tipoMovimiento = movement.tipoMovimiento || movement.tipo_movimiento || '';
-  
+  const tipoMovimiento =
+    movement.tipoMovimiento || movement.tipo_movimiento || "";
+
   // Detectar tipo basado en el campo "tipo" que viene del backend
-  const esBaja = tipoMovimiento === 'BAJA' || tipoMovimiento === 'Baja';
-  const esTransferencia = tipoMovimiento === 'TRANSFERENCIA' || tipoMovimiento === 'Transferencia';
-  const esSalidaEvento = tipoMovimiento === 'SALIDA_EVENTO';
-  
+  const esBaja = tipoMovimiento === "BAJA" || tipoMovimiento === "Baja";
+  const esTransferencia =
+    tipoMovimiento === "TRANSFERENCIA" || tipoMovimiento === "Transferencia";
+  const esSalidaEvento = tipoMovimiento === "SALIDA_EVENTO";
+
   // Es ingreso si es "Entrada" o si NO es ninguno de los tipos de salida
-  const esIngreso = tipoMovimiento === 'Entrada' || (!esBaja && !esTransferencia && !esSalidaEvento);
+  const esIngreso =
+    tipoMovimiento === "Entrada" ||
+    (!esBaja && !esTransferencia && !esSalidaEvento);
 
   // Obtener cantidad
   const getCantidad = (value) => {
     if (value === null || value === undefined) return 0;
-    if (typeof value === 'string') {
-      const cleanValue = value.replace(/\./g, '');
+    if (typeof value === "string") {
+      const cleanValue = value.replace(/\./g, "");
       const parsed = parseInt(cleanValue, 10);
       return isNaN(parsed) ? 0 : parsed;
     }
-    if (typeof value === 'number') {
+    if (typeof value === "number") {
       return isNaN(value) ? 0 : value;
     }
     return 0;
@@ -33,15 +38,16 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
   const cantidad = getCantidad(movement.cantidad);
 
   // Determinar título del modal
-  let titulo = 'Detalles del Movimiento';
-  if (esIngreso) titulo = 'Detalles del Ingreso';
-  else if (esBaja) titulo = 'Detalles de la Baja';
-  else if (esTransferencia) titulo = 'Detalles de la Transferencia de Inventarios';
-  else if (esSalidaEvento) titulo = 'Detalles de Salida por Evento';
+  let titulo = "Detalles del Movimiento";
+  if (esIngreso) titulo = "Detalles del Ingreso";
+  else if (esBaja) titulo = "Detalles de la Baja";
+  else if (esTransferencia)
+    titulo = "Detalles de la Transferencia de Inventarios";
+  else if (esSalidaEvento) titulo = "Detalles de Salida por Evento";
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -91,7 +97,7 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {esIngreso ? 'Fecha de Ingreso' : 'Fecha de Salida'}
+                  {esIngreso ? "Fecha de Ingreso" : "Fecha de Salida"}
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                   {formatDate(movement.fechaIngreso || movement.fecha)}
@@ -120,7 +126,9 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                       Desde (Origen)
                     </label>
                     <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                      {movement.inventario_origen || movement.inventarioOrigen || 'No especificado'}
+                      {movement.inventario_origen ||
+                        movement.inventarioOrigen ||
+                        "No especificado"}
                     </div>
                   </div>
                   <div>
@@ -128,20 +136,24 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                       Hacia (Destino)
                     </label>
                     <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                      {movement.inventario_destino || movement.inventarioDestino || 'No especificado'}
+                      {movement.inventario_destino ||
+                        movement.inventarioDestino ||
+                        "No especificado"}
                     </div>
                   </div>
                 </div>
 
                 {/* Observaciones de transferencia - Filtrar texto automático del backend */}
                 {(() => {
-                  const obs = movement.observaciones || movement.descripcion || '';
+                  const obs =
+                    movement.observaciones || movement.descripcion || "";
                   // Filtrar mensajes automáticos del backend
-                  const esTextoAutomatico = obs.includes('Transfer from') || 
-                                           obs.includes('Transferencia:') ||
-                                           obs.includes('De EVENTOS a') ||
-                                           obs.includes('De FUNDACION a');
-                  
+                  const esTextoAutomatico =
+                    obs.includes("Transfer from") ||
+                    obs.includes("Transferencia:") ||
+                    obs.includes("De EVENTOS a") ||
+                    obs.includes("De FUNDACION a");
+
                   // Solo mostrar si hay observaciones reales del usuario
                   if (obs && !esTextoAutomatico) {
                     return (
@@ -167,7 +179,9 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                   Inventario Origen
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {movement.inventario_origen || movement.inventarioOrigen || 'No especificado'}
+                  {movement.inventario_origen ||
+                    movement.inventarioOrigen ||
+                    "No especificado"}
                 </div>
               </div>
             )}
@@ -179,7 +193,9 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                   Evento
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {movement.evento_nombre || movement.eventoNombre || 'Evento finalizado'}
+                  {movement.evento_nombre ||
+                    movement.eventoNombre ||
+                    "Evento finalizado"}
                 </div>
               </div>
             )}
@@ -191,7 +207,9 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                   Descripción
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap min-h-[80px]">
-                  {movement.descripcion || movement.observaciones || 'Sin descripción'}
+                  {movement.descripcion ||
+                    movement.observaciones ||
+                    "Sin descripción"}
                 </div>
               </div>
             )}
@@ -203,7 +221,9 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                   Inventario Destino
                 </label>
                 <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {movement.inventario_destino || movement.inventarioDestino || 'No especificado'}
+                  {movement.inventario_destino ||
+                    movement.inventarioDestino ||
+                    "No especificado"}
                 </div>
               </div>
             )}
@@ -220,17 +240,16 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                       <p className="font-medium">{movement.proveedor}</p>
                       {movement.proveedorNit && (
                         <p className="text-sm text-gray-600 mt-1">
-                          {movement.proveedorTipoEntidad === 'Juridica' 
+                          {movement.proveedorTipoEntidad === "Juridica"
                             ? `NIT: ${movement.proveedorNit}`
                             : movement.proveedorTipoDocumento
                               ? `${movement.proveedorTipoDocumento}: ${movement.proveedorNit}`
-                              : `Identificación: ${movement.proveedorNit}`
-                          }
+                              : `Identificación: ${movement.proveedorNit}`}
                         </p>
                       )}
                     </div>
                   ) : (
-                    'Sin proveedor'
+                    "Sin proveedor"
                   )}
                 </div>
               </div>
@@ -251,27 +270,39 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
             {/* Información del Sistema (solo para ingresos) */}
             {esIngreso && movement.createdAt && (
               <div className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Información del Sistema</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Información del Sistema
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Fecha de Creación:
+                    </span>
                     <p className="text-gray-800">
-                      {new Date(movement.createdAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {new Date(movement.createdAt).toLocaleDateString(
+                        "es-ES",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                   {movement.updatedAt && (
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                      <span className="text-sm font-medium text-gray-600">
+                        Última Actualización:
+                      </span>
                       <p className="text-gray-800">
-                        {new Date(movement.updatedAt).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {new Date(movement.updatedAt).toLocaleDateString(
+                          "es-ES",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
                       </p>
                     </div>
                   )}
@@ -296,6 +327,8 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MovementViewModal;

@@ -1,13 +1,14 @@
-import { FaEdit } from 'react-icons/fa';
-import { formatDate } from '../../shared/utils/stockCalculations';
-import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
+import { createPortal } from "react-dom";
+import { FaEdit } from "react-icons/fa";
+import { formatDate } from "../../shared/utils/stockCalculations";
+import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 
 const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
   if (!isOpen || !material) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -50,7 +51,7 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
                 Descripción
               </label>
               <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 min-h-[80px]">
-                {material.descripcion || 'Sin descripción'}
+                {material.descripcion || "Sin descripción"}
               </div>
             </div>
 
@@ -81,19 +82,34 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
                     Total
                   </label>
                   <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
-                    {formatStock(material.stockTotal || (material.stockFundacion || 0) + (material.stockEventos || 0))}
+                    {formatStock(
+                      material.stockTotal ||
+                        (material.stockFundacion || 0) +
+                          (material.stockEventos || 0),
+                    )}
                   </div>
                 </div>
               </div>
-              
+
               {/* Alerta de materiales comprometidos */}
               {material.stockEventosReservado > 0 && (
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
-                    ⚠️ <strong>{formatStock(material.stockEventosReservado)}</strong> unidades comprometidas en eventos activos
+                    ⚠️{" "}
+                    <strong>
+                      {formatStock(material.stockEventosReservado)}
+                    </strong>{" "}
+                    unidades comprometidas en eventos activos
                   </p>
                   <p className="text-xs text-amber-700 mt-1">
-                    Disponible para asignar: <strong>{formatStock((material.stockEventos || 0) - (material.stockEventosReservado || 0))}</strong> unidades
+                    Disponible para asignar:{" "}
+                    <strong>
+                      {formatStock(
+                        (material.stockEventos || 0) -
+                          (material.stockEventosReservado || 0),
+                      )}
+                    </strong>{" "}
+                    unidades
                   </p>
                 </div>
               )}
@@ -111,27 +127,36 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
 
             {/* Información del Sistema */}
             <div className="border-t border-gray-200 pt-3 mt-3">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Información del Sistema</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Información del Sistema
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Fecha de Creación:
+                  </span>
                   <p className="text-gray-800 mt-1">
-                    {new Date(material.createdAt).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                    {new Date(material.createdAt).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </p>
                 </div>
                 {material.updatedAt && (
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Última Actualización:
+                    </span>
                     <p className="text-gray-800 mt-1">
-                      {new Date(material.updatedAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {new Date(material.updatedAt).toLocaleDateString(
+                        "es-ES",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                 )}
@@ -167,6 +192,8 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MaterialViewModal;
