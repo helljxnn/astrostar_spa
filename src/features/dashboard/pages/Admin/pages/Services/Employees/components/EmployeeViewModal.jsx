@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 
@@ -62,7 +63,7 @@ const EmployeeViewModal = ({
     </motion.div>
   );
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
@@ -149,7 +150,10 @@ const EmployeeViewModal = ({
                 const birth = new Date(employee.user.birthDate);
                 let age = today.getFullYear() - birth.getFullYear();
                 const monthDiff = today.getMonth() - birth.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                if (
+                  monthDiff < 0 ||
+                  (monthDiff === 0 && today.getDate() < birth.getDate())
+                ) {
                   age--;
                 }
                 return age >= 0 ? `${age} años` : "No especificado";
@@ -174,18 +178,26 @@ const EmployeeViewModal = ({
             transition={{ delay: 0.9 }}
             className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100"
           >
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Informacion del Sistema</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Informacion del Sistema
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <span className="text-sm font-medium text-gray-600">Fecha de Creacion:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Fecha de Creacion:
+                </span>
                 <p className="text-gray-800">{formatDate(creationDate)}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-600">Ultima Actualizacion:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Ultima Actualizacion:
+                </span>
                 <p className="text-gray-800">{formatDate(updateDate)}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-600">Estado Asignado:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Estado Asignado:
+                </span>
                 <p className="text-gray-800">{formatDate(statusDate)}</p>
               </div>
             </div>
@@ -205,6 +217,8 @@ const EmployeeViewModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default EmployeeViewModal;

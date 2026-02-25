@@ -4,7 +4,19 @@
 
 Los modales que se renderizan dentro del árbol DOM del dashboard quedan "atrapados" en un **contexto de apilamiento (stacking context)** creado por el contenedor `dashboard-main-content` que tiene `position: relative` y `z-index: 1`.
 
-Esto hace que el sidebar (z-index: 30) aparezca por encima de los modales, sin importar qué tan alto sea el z-index del modal.
+Esto hace que el sidebar (z-index: 30 en desktop, 46 en móvil) aparezca por encima de los modales, sin importar qué tan alto sea el z-index del modal.
+
+## Jerarquía de Z-Index
+
+Para evitar conflictos, la aplicación usa la siguiente jerarquía:
+
+- `z-1`: Contenido principal (dashboard-main-content)
+- `z-30`: Sidebar en desktop
+- `z-40`: Overlay del sidebar en móvil
+- `z-46`: Sidebar en móvil (por encima del overlay)
+- `z-50`: Modales (siempre por encima de todo)
+
+Los modales SIEMPRE deben usar `z-50` y renderizarse con Portal para estar por encima del sidebar tanto en desktop como en móvil.
 
 ## La Solución: React Portal
 
@@ -99,10 +111,21 @@ export default ProductModal;
 - ✅ ProviderModal.jsx
 - ✅ ProviderViewModal.jsx
 
-### Roles (3 modales)
+### Roles (2 modales)
 
 - ✅ RoleModal.jsx (ya usaba Portal)
 - ✅ RoleDetailModal.jsx
+
+### Empleados (1 modal)
+
+- ✅ EmployeeViewModal.jsx
+
+### Personas Temporales (2 modales)
+
+- ✅ TemporaryPersonModal.jsx
+- ✅ TemporaryPersonViewModal.jsx
+
+**Total: 16 modales arreglados**
 
 ## Notas Importantes
 
