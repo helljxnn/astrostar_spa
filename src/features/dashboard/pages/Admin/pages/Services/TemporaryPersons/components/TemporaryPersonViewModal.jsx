@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 
 const TemporaryPersonViewModal = ({
@@ -10,15 +11,15 @@ const TemporaryPersonViewModal = ({
 
   // Función para obtener el nombre del tipo de documento
   const getDocumentTypeName = (id) => {
-    const docType = referenceData.documentTypes.find(dt => dt.id === id);
-    return docType ? docType.name : 'No especificado';
+    const docType = referenceData.documentTypes.find((dt) => dt.id === id);
+    return docType ? docType.name : "No especificado";
   };
 
   // Función para traducir estados
   const translateStatus = (status) => {
     const statusMap = {
-      'Active': 'Activo',
-      'Inactive': 'Inactivo'
+      Active: "Activo",
+      Inactive: "Inactivo",
     };
     return statusMap[status] || status;
   };
@@ -26,21 +27,21 @@ const TemporaryPersonViewModal = ({
   // Función para traducir tipo de persona
   const translatePersonType = (personType) => {
     const typeMap = {
-      'Deportista': 'Deportista',
-      'Entrenador': 'Entrenador',
-      'Participante': 'Participante'
+      Deportista: "Deportista",
+      Entrenador: "Entrenador",
+      Participante: "Participante",
     };
     return typeMap[personType] || personType;
   };
 
   // Función para formatear fecha
   const formatDate = (dateString) => {
-    if (!dateString) return 'No especificado';
+    if (!dateString) return "No especificado";
     const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -52,16 +53,14 @@ const TemporaryPersonViewModal = ({
       transition={{ delay }}
       className="form-field space-y-1"
     >
-      <label className="block text-sm font-medium text-gray-700">
-        {label}
-      </label>
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
       <div className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 min-h-[48px] flex items-center">
-        {value || 'No especificado'}
+        {value || "No especificado"}
       </div>
     </motion.div>
   );
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
       style={{ zIndex: 9999 }}
@@ -92,7 +91,6 @@ const TemporaryPersonViewModal = ({
         {/* Body */}
         <div className="modal-body flex-1 overflow-y-auto p-3 relative">
           <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
-            
             {/* Tipo Documento */}
             <ReadOnlyField
               label="Tipo de Documento"
@@ -168,33 +166,38 @@ const TemporaryPersonViewModal = ({
               label="Edad"
               value={(() => {
                 if (person.age) return `${person.age} años`;
-                if (!person.birthDate) return 'No especificado';
+                if (!person.birthDate) return "No especificado";
                 const today = new Date();
                 const birth = new Date(person.birthDate);
                 let age = today.getFullYear() - birth.getFullYear();
                 const monthDiff = today.getMonth() - birth.getMonth();
-                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+                if (
+                  monthDiff < 0 ||
+                  (monthDiff === 0 && today.getDate() < birth.getDate())
+                ) {
                   age--;
                 }
-                return age >= 0 ? `${age} años` : 'No especificado';
+                return age >= 0 ? `${age} años` : "No especificado";
               })()}
               delay={0.5}
             />
 
             {/* Equipo - Solo para Deportista y Entrenador */}
-            {(person.personType === 'Deportista' || person.personType === 'Entrenador') && (
+            {(person.personType === "Deportista" ||
+              person.personType === "Entrenador") && (
               <ReadOnlyField
                 label="Equipo"
-                value={person.team || '(no asignado)'}
+                value={person.team || "(no asignado)"}
                 delay={0.52}
               />
             )}
 
             {/* Categoría - Solo para Deportista y Entrenador */}
-            {(person.personType === 'Deportista' || person.personType === 'Entrenador') && (
+            {(person.personType === "Deportista" ||
+              person.personType === "Entrenador") && (
               <ReadOnlyField
                 label="Categoría"
-                value={person.category || '(no asignado)'}
+                value={person.category || "(no asignado)"}
                 delay={0.55}
               />
             )}
@@ -212,7 +215,6 @@ const TemporaryPersonViewModal = ({
               value={translateStatus(person.status)}
               delay={0.6}
             />
-
           </div>
 
           {/* Información adicional */}
@@ -222,14 +224,20 @@ const TemporaryPersonViewModal = ({
             transition={{ delay: 0.9 }}
             className="mt-6 p-4 bg-gray-50 rounded-xl"
           >
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Información del Sistema</h3>
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              Información del Sistema
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Fecha de Creación:
+                </span>
                 <p className="text-gray-800">{formatDate(person.createdAt)}</p>
               </div>
               <div>
-                <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  Última Actualización:
+                </span>
                 <p className="text-gray-800">{formatDate(person.updatedAt)}</p>
               </div>
             </div>
@@ -250,6 +258,8 @@ const TemporaryPersonViewModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default TemporaryPersonViewModal;

@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { FormField } from '../../../../../../../../shared/components/FormField';
-import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import PropTypes from "prop-types";
+import { FormField } from "../../../../../../../../shared/components/FormField";
+import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 
 const TransferModal = ({ isOpen, onClose, material, onSave }) => {
   const [formData, setFormData] = useState({
-    from: '',
-    to: '',
-    cantidad: '',
-    observaciones: '',
+    from: "",
+    to: "",
+    cantidad: "",
+    observaciones: "",
   });
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -17,10 +18,10 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        from: '',
-        to: '',
-        cantidad: '',
-        observaciones: '',
+        from: "",
+        to: "",
+        cantidad: "",
+        observaciones: "",
       });
       setErrors({});
       setTouched({});
@@ -29,27 +30,28 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
 
   // Calcular stock disponible según origen
   // Si es EVENTOS, debe considerar el stock reservado
-  const stockOrigen = formData.from === 'FUNDACION' 
-    ? material?.stockFundacion || 0
-    : (material?.stockEventos || 0) - (material?.stockEventosReservado || 0);
+  const stockOrigen =
+    formData.from === "FUNDACION"
+      ? material?.stockFundacion || 0
+      : (material?.stockEventos || 0) - (material?.stockEventosReservado || 0);
 
   const validateForm = () => {
     const newErrors = {};
 
     if (!formData.from) {
-      newErrors.from = 'El inventario origen es obligatorio';
+      newErrors.from = "El inventario origen es obligatorio";
     }
 
     if (!formData.to) {
-      newErrors.to = 'El inventario destino es obligatorio';
+      newErrors.to = "El inventario destino es obligatorio";
     }
 
     if (formData.from && formData.to && formData.from === formData.to) {
-      newErrors.to = 'Los inventarios origen y destino deben ser diferentes';
+      newErrors.to = "Los inventarios origen y destino deben ser diferentes";
     }
 
     if (!formData.cantidad || formData.cantidad <= 0) {
-      newErrors.cantidad = 'La cantidad debe ser mayor a 0';
+      newErrors.cantidad = "La cantidad debe ser mayor a 0";
     }
 
     if (formData.cantidad > stockOrigen) {
@@ -62,13 +64,13 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     setTouched({
       from: true,
       to: true,
       cantidad: true,
     });
-    
+
     if (!validateForm()) {
       return;
     }
@@ -90,28 +92,28 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
     // Si cambia el origen, limpiar destino si son iguales
-    if (field === 'from' && value === formData.to) {
-      setFormData(prev => ({ ...prev, to: '' }));
+    if (field === "from" && value === formData.to) {
+      setFormData((prev) => ({ ...prev, to: "" }));
     }
-    
+
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
   const handleBlur = (field) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
     validateForm();
   };
 
   if (!isOpen || !material) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 relative">
           <button
@@ -134,7 +136,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
                 Material
               </label>
               <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
-                {material?.nombre || ''}
+                {material?.nombre || ""}
               </div>
             </div>
 
@@ -171,13 +173,13 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
               type="select"
               value={formData.from}
               onChange={handleChange}
-              onBlur={() => handleBlur('from')}
+              onBlur={() => handleBlur("from")}
               error={errors.from}
               touched={touched.from}
               required
               options={[
-                { value: 'FUNDACION', label: 'Inventario Fundación' },
-                { value: 'EVENTOS', label: 'Inventario Eventos' },
+                { value: "FUNDACION", label: "Inventario Fundación" },
+                { value: "EVENTOS", label: "Inventario Eventos" },
               ]}
               placeholder="Seleccione inventario origen"
             />
@@ -189,7 +191,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
               type="select"
               value={formData.to}
               onChange={handleChange}
-              onBlur={() => handleBlur('to')}
+              onBlur={() => handleBlur("to")}
               error={errors.to}
               touched={touched.to}
               required
@@ -197,9 +199,9 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
               options={
                 !formData.from
                   ? []
-                  : formData.from === 'FUNDACION'
-                  ? [{ value: 'EVENTOS', label: 'Inventario Eventos' }]
-                  : [{ value: 'FUNDACION', label: 'Inventario Fundación' }]
+                  : formData.from === "FUNDACION"
+                    ? [{ value: "EVENTOS", label: "Inventario Eventos" }]
+                    : [{ value: "FUNDACION", label: "Inventario Fundación" }]
               }
               placeholder="Seleccione inventario destino"
             />
@@ -208,7 +210,11 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
             {formData.from && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Stock disponible en {formData.from === 'FUNDACION' ? 'Fundación' : 'Eventos'}:</strong> {formatStock(stockOrigen)}
+                  <strong>
+                    Stock disponible en{" "}
+                    {formData.from === "FUNDACION" ? "Fundación" : "Eventos"}:
+                  </strong>{" "}
+                  {formatStock(stockOrigen)}
                 </p>
               </div>
             )}
@@ -220,17 +226,17 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
               type="text"
               value={formData.cantidad}
               onChange={(name, value) => {
-                const numericValue = value.replace(/[^0-9]/g, '');
+                const numericValue = value.replace(/[^0-9]/g, "");
                 if (numericValue.length <= 6) {
                   handleChange(name, numericValue);
                 }
               }}
               onKeyDown={(e) => {
-                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                if (["e", "E", "+", "-", "."].includes(e.key)) {
                   e.preventDefault();
                 }
               }}
-              onBlur={() => handleBlur('cantidad')}
+              onBlur={() => handleBlur("cantidad")}
               error={errors.cantidad}
               touched={touched.cantidad}
               required
@@ -265,7 +271,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
                 className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50"
                 disabled={isSubmitting || !formData.from || !formData.to}
               >
-                {isSubmitting ? 'Transfiriendo...' : 'Transferir'}
+                {isSubmitting ? "Transfiriendo..." : "Transferir"}
               </button>
             </div>
           </form>
@@ -273,6 +279,8 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 TransferModal.propTypes = {

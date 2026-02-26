@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
 const ProviderViewModal = ({ isOpen, onClose, provider }) => {
@@ -12,15 +13,13 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
     return date.toLocaleDateString("es-ES", {
       year: "numeric",
       month: "long",
-      day: "numeric"
+      day: "numeric",
     });
   };
 
-
-
   // Función removida - se usa tipoDocumentoNombre directamente desde la API
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -42,8 +41,19 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                 onClick={onClose}
                 className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
               <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
@@ -212,9 +222,7 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
                     Estado
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <p className="text-gray-900">
-                      {provider.estado || "N/A"}
-                    </p>
+                    <p className="text-gray-900">{provider.estado || "N/A"}</p>
                   </div>
                 </motion.div>
 
@@ -359,6 +367,8 @@ const ProviderViewModal = ({ isOpen, onClose, provider }) => {
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ProviderViewModal;

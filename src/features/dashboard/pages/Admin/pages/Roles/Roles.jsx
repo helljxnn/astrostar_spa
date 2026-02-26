@@ -53,10 +53,6 @@ const Roles = () => {
   // Guardar rol (crear o editar)
   const handleSave = async (newRole) => {
     try {
-      showLoader(
-        modalMode === "create" ? "Creando rol..." : "Actualizando rol...",
-      );
-
       const currentParams = {
         page: currentPage,
         limit: rowsPerPage,
@@ -71,8 +67,8 @@ const Roles = () => {
 
       setIsModalOpen(false);
       setSelectedRole(null);
-    } finally {
-      hideLoader();
+    } catch (error) {
+      console.error("Error saving role:", error);
     }
   };
 
@@ -110,8 +106,6 @@ const Roles = () => {
     }
 
     try {
-      showLoader("Eliminando rol...");
-
       const currentParams = {
         page: currentPage,
         limit: rowsPerPage,
@@ -119,8 +113,8 @@ const Roles = () => {
       };
 
       await deleteRole(role, currentParams);
-    } finally {
-      hideLoader();
+    } catch (error) {
+      console.error("Error deleting role:", error);
     }
   };
 

@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   FaLock,
@@ -287,16 +288,25 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     );
   };
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
-        className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6"
+        className="bg-white rounded-2xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 relative"
       >
+        {/* Botón X para cerrar */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+          aria-label="Cerrar modal"
+        >
+          <FaTimes size={20} />
+        </button>
+
         {/* Encabezado */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 pr-8">
           <h2 className="text-2xl font-bold text-gray-800">Detalle del Rol</h2>
         </div>
 
@@ -401,7 +411,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
         <div className="flex justify-center pt-4 border-t">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-opacity"
+            className="px-6 py-2 bg-primary-purple text-white rounded-lg hover:bg-primary-blue transition-colors"
           >
             Cerrar
           </button>
@@ -409,6 +419,8 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default RoleDetailModal;

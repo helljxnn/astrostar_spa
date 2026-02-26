@@ -7,38 +7,54 @@
    Reglas DESPUÉS de Tailwind para mayor prioridad
    =============================================== */
 
-/* Sidebar - z-index bajo (30) */
+/* Sidebar - z-index bajo (30) en desktop, alto (46) en móvil */
 .dynamic-sidebar,
 aside.dynamic-sidebar,
 aside[class*="dynamic-sidebar"] {
   z-index: 30 !important;
 }
 
+/* En móvil, el sidebar debe estar por encima del overlay */
+@media (max-width: 1023px) {
+  .dynamic-sidebar,
+  aside.dynamic-sidebar,
+  aside[class*="dynamic-sidebar"] {
+    z-index: 46 !important;
+  }
+}
+
 .sidebar-overlay {
-  z-index: 25 !important;
+  z-index: 40 !important;
 }
 
 /* Contenido base */
 .dashboard-main-content {
   z-index: 1 !important;
+  position: relative !important;
+  transform: none !important;
+  will-change: auto !important;
+  isolation: auto !important;
+}
+
+/* En móvil, el contenido no debe tener margin-left */
+@media (max-width: 1023px) {
+  .dashboard-main-content {
+    margin-left: 0 !important;
+  }
 }
 
 .dashboard-main-content header {
   z-index: 10 !important;
 }
 
-/* MODALES - z-index ALTO para estar por encima del sidebar */
-/* MÁXIMA PRIORIDAD - Sobrescribe TODO */
-.modal-overlay,
-.fixed.inset-0.modal-overlay,
-div.fixed.inset-0,
-[class*="fixed"][class*="inset-0"],
-[class~="fixed"][class~="inset-0"] {
-  z-index: 500 !important;
+/* MODALES - Renderizados con Portal en document.body */
+/* No necesitan z-index especial porque están fuera del contexto de apilamiento del sidebar */
+.modal-overlay {
+  z-index: 50 !important;
 }
 
 .modal-content {
-  z-index: 600 !important;
+  z-index: 51 !important;
   position: relative !important;
 }
 
@@ -64,7 +80,6 @@ div.fixed.inset-0,
 .dynamic-sidebar,
 aside.dynamic-sidebar {
   position: fixed !important;
-  transform: translateZ(0) !important;
   will-change: transform !important;
 }
 

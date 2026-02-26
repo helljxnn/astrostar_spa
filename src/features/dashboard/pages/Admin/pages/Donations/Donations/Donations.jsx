@@ -9,7 +9,10 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import DonationViewModal from "./components/DonationViewModal";
 import CancelDonationModal from "./components/CancelDonationModal";
 import donationsService from "./services/donationsService";
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../shared/utils/alerts";
 
 const DONOR_NAME_FIELDS = [
   "nombre",
@@ -42,6 +45,7 @@ const Donations = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [cancelingDonation, setCancelingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -54,7 +58,11 @@ const Donations = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const resp = await donationsService.list({ limit: 100 });
+        const resp = await donationsService.list({
+          page: currentPage,
+          limit: rowsPerPage,
+          search: "", // No enviar search al backend, filtraremos localmente
+        });
         const records = resp?.data || resp?.data?.data || [];
 
         const normalized = records.map((d, idx) => {
@@ -76,31 +84,35 @@ const Donations = () => {
             d.type === "ECONOMICA"
               ? "Economica"
               : d.type === "ESPECIE"
-              ? "En especie"
-              : d.type === "ALIMENTOS"
-              ? "Compra de alimentos"
-              : items.find((i) => i.donationType === "item")
-              ? "En especie"
-              : "Economica";
+                ? "En especie"
+                : d.type === "ALIMENTOS"
+                  ? "Compra de alimentos"
+                  : items.find((i) => i.donationType === "item")
+                    ? "En especie"
+                    : "Economica";
 
           const statusLabel =
             d.status === "Recibida"
               ? "Recibida"
               : d.status === "EnProceso"
-              ? "En proceso"
-              : d.status === "Verificada"
-              ? "Verificada"
-              : d.status === "Ejecutada"
-              ? "Ejecutada"
-              : d.status === "Anulada"
-              ? "Anulada"
-              : d.status || "Recibida";
+                ? "En proceso"
+                : d.status === "Verificada"
+                  ? "Verificada"
+                  : d.status === "Ejecutada"
+                    ? "Ejecutada"
+                    : d.status === "Anulada"
+                      ? "Anulada"
+                      : d.status || "Recibida";
 
           return {
             id: d.id ?? idx + 1,
             donorName,
-            donationDate: d.donationAt ? new Date(d.donationAt).toLocaleString("es-CO") : "",
-            registerDate: d.createdAt ? new Date(d.createdAt).toLocaleDateString("es-CO") : "",
+            donationDate: d.donationAt
+              ? new Date(d.donationAt).toLocaleString("es-CO")
+              : "",
+            registerDate: d.createdAt
+              ? new Date(d.createdAt).toLocaleDateString("es-CO")
+              : "",
             status: statusLabel,
             typeLabel,
             descripcion: d.program ?? "",
@@ -112,11 +124,14 @@ const Donations = () => {
         });
 
         setData(normalized);
+        setTotalRows(
+          resp?.pagination?.total || resp?.total || normalized.length,
+        );
       } catch (error) {
         console.error("Error cargando donaciones", error);
         showErrorAlert(
           "No se pudieron cargar las donaciones",
-          error?.response?.data?.message || error.message || "Intenta de nuevo"
+          error?.response?.data?.message || error.message || "Intenta de nuevo",
         );
       } finally {
         setLoading(false);
@@ -124,7 +139,7 @@ const Donations = () => {
     };
 
     fetchData();
-  }, []);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
 
   /* ------------------- Filtrado ------------------- */
   const filteredData = useMemo(() => {
@@ -145,10 +160,16 @@ const Donations = () => {
   }, [data, searchTerm]);
 
   /* ------------------- Paginación ------------------- */
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = searchTerm ? filteredData : data;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+
+  // Solo paginar localmente cuando hay búsqueda
+  const paginatedData = searchTerm
+    ? filteredData.slice(startIndex, startIndex + rowsPerPage)
+    : data;
 
   const reportColumns = [
     { key: "donorName", label: "Donante" },
@@ -168,7 +189,9 @@ const Donations = () => {
     const details = raw.details || [];
 
     const payment = details.find(
-      (d) => (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") && d.recordType === "payment"
+      (d) =>
+        (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") &&
+        d.recordType === "payment",
     );
     const especieItems = details
       .filter((d) => d.kind === "ESPECIE" && d.recordType === "item")
@@ -178,7 +201,9 @@ const Donations = () => {
         classification: item.classification ?? "",
         method: item.channel ?? "",
       }));
-    const foodDetail = details.find((d) => d.kind === "ALIMENTOS" && d.recordType === "food");
+    const foodDetail = details.find(
+      (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
+    );
 
     const isFoodPurchase = raw.type === "ALIMENTOS";
 
@@ -200,7 +225,9 @@ const Donations = () => {
       foodClass: foodDetail?.classification ?? "",
     };
 
-    navigate("/dashboard/donations/form", { state: { donation: editable, isEditing: true } });
+    navigate("/dashboard/donations/form", {
+      state: { donation: editable, isEditing: true },
+    });
   };
 
   const handleView = (donation) => setSelectedDonation(donation);
@@ -217,16 +244,19 @@ const Donations = () => {
                 cancelReason: reason,
                 cancelDate: new Date().toLocaleDateString("es-CO"),
               }
-            : d
-        )
+            : d,
+        ),
       );
       showSuccessAlert(
         "Donación anulada",
-        `La donación de ${cancelingDonation.donorName} fue anulada correctamente.`
+        `La donación de ${cancelingDonation.donorName} fue anulada correctamente.`,
       );
       setCancelingDonation(null);
     } catch {
-      showErrorAlert("Error al anular", "No se pudo anular la donación. Intenta de nuevo.");
+      showErrorAlert(
+        "Error al anular",
+        "No se pudo anular la donación. Intenta de nuevo.",
+      );
     }
   };
 
@@ -241,13 +271,20 @@ const Donations = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              // Si limpia la búsqueda, resetear a página 1
+              if (!e.target.value) {
+                setCurrentPage(1);
+              }
             }}
             placeholder="Buscar donación..."
           />
 
           <div className="flex items-center gap-3">
-            <ReportButton data={filteredData} fileName="Reporte_Donaciones" columns={reportColumns} />
+            <ReportButton
+              data={filteredData}
+              fileName="Reporte_Donaciones"
+              columns={reportColumns}
+            />
 
             <button
               onClick={handleCreate}
@@ -296,14 +333,17 @@ const Donations = () => {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          totalRows={totalRows}
+          totalRows={displayTotalRows}
           rowsPerPage={rowsPerPage}
           startIndex={startIndex}
         />
       )}
 
       {selectedDonation && (
-        <DonationViewModal donation={selectedDonation} onClose={() => setSelectedDonation(null)} />
+        <DonationViewModal
+          donation={selectedDonation}
+          onClose={() => setSelectedDonation(null)}
+        />
       )}
 
       {cancelingDonation && (
@@ -314,7 +354,9 @@ const Donations = () => {
         />
       )}
 
-      {loading && <div className="text-sm text-gray-500 mt-3">Cargando donaciones...</div>}
+      {loading && (
+        <div className="text-sm text-gray-500 mt-3">Cargando donaciones...</div>
+      )}
     </div>
   );
 };

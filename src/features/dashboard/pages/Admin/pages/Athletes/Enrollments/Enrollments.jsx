@@ -119,13 +119,24 @@ const Enrollments = () => {
     });
   }, [inscriptions, searchTerm]);
 
-  // Datos según el tab activo
+  // Datos según el tab activo - usar filtrado local cuando hay búsqueda
   const currentData =
     activeTab === "matriculas" ? filteredAthletes : filteredInscriptions;
-  const totalRows = currentData.length;
+
+  // Usar paginación local cuando hay búsqueda, sino usar datos del servidor
+  const displayData = searchTerm
+    ? currentData
+    : activeTab === "matriculas"
+      ? athletes
+      : inscriptions;
+  const totalRows = searchTerm ? currentData.length : displayData.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
   const startIndex = (pagination.page - 1) * rowsPerPage;
-  const paginatedData = currentData.slice(startIndex, startIndex + rowsPerPage);
+
+  // Solo paginar localmente cuando hay búsqueda
+  const paginatedData = searchTerm
+    ? currentData.slice(startIndex, startIndex + rowsPerPage)
+    : displayData;
 
   // Ya no necesitamos aplicar estilos con JavaScript, solo el badge es suficiente
 
@@ -295,7 +306,9 @@ const Enrollments = () => {
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Gestión de Matrículas</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Gestión de Matrículas
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
@@ -870,7 +883,10 @@ const Enrollments = () => {
                     const middleName = inscription.middleName || "";
                     const lastName = inscription.lastName || "";
                     const secondLastName = inscription.secondLastName || "";
-                    const nombreCompleto = `${firstName} ${middleName} ${lastName} ${secondLastName}`.replace(/\s+/g, ' ').trim();
+                    const nombreCompleto =
+                      `${firstName} ${middleName} ${lastName} ${secondLastName}`
+                        .replace(/\s+/g, " ")
+                        .trim();
 
                     return {
                       ...inscription,
@@ -907,7 +923,10 @@ const Enrollments = () => {
                   },
                   {
                     onClick: async (inscription) => {
-                      const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
+                      const fullName =
+                        `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`
+                          .replace(/\s+/g, " ")
+                          .trim();
                       const result = await showConfirmAlert(
                         "¿Rechazar inscripción?",
                         `¿Estás seguro de rechazar la inscripción de ${fullName}?`,
