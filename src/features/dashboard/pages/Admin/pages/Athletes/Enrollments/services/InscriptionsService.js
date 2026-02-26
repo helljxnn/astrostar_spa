@@ -115,7 +115,9 @@ class InscriptionsService {
   // Crear inscripción (desde el landing)
   async create(inscriptionData) {
     try {
-      console.log("📤 [InscriptionsService.create] Datos a enviar:", inscriptionData);
+      console.log("📤 [InscriptionsService.create] Datos recibidos del formulario:", inscriptionData);
+      console.log("📤 [InscriptionsService.create] Enviando datos al backend:", inscriptionData);
+      
       const response = await apiClient.post(this.endpoint, inscriptionData);
       console.log("📥 [InscriptionsService.create] Respuesta del backend:", response);
 

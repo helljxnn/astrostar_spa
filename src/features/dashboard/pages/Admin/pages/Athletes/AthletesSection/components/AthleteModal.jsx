@@ -115,13 +115,16 @@ const AthleteModal = ({
 
   // Hook para validación de documento en tiempo real
   const excludeUserId = (isEditing && !isEnrollmentMode && athleteToEdit?.userId) ? athleteToEdit.userId : null;
+  // En modo matrícula (isEnrollmentMode), saltar la verificación de inscripciones pendientes
+  // Solo verificar si ya está matriculado como deportista
+  const skipInscriptionCheck = isEnrollmentMode;
   const {
     isChecking: isCheckingDocumentValidation,
     documentExists,
     validationMessage: documentValidationMessage,
     validateDocumentDebounced,
     clearValidation: clearDocumentValidation,
-  } = useDocumentValidation(excludeUserId);
+  } = useDocumentValidation(excludeUserId, skipInscriptionCheck);
 
   const {
     values,
@@ -664,10 +667,19 @@ const AthleteModal = ({
       ageValue !== "" && !Number.isNaN(Number(ageValue))
         ? Number(ageValue)
         : null;
+    
+    console.log('🔍 [AthleteModal] Validando categoría por edad...');
+    console.log('🔍 [AthleteModal] Edad calculada:', ageNumber);
+    console.log('🔍 [AthleteModal] Categoría seleccionada:', values.categoria);
+    console.log('🔍 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories);
+    
     const selectedCategory = findCategoryByName(
       referenceData.sportsCategories || [],
       values.categoria
     );
+    
+    console.log('🔍 [AthleteModal] Categoría encontrada:', selectedCategory);
+    
     if (values.categoria && !selectedCategory) {
       showErrorAlert(
         "Categoria invalida",
@@ -675,15 +687,22 @@ const AthleteModal = ({
       );
       return;
     }
+    
     const ageRange = resolveCategoryAgeRange(selectedCategory);
+    console.log('🔍 [AthleteModal] Rango de edad resuelto:', ageRange);
+    
     if (ageNumber !== null && ageRange && !isAgeWithinRange(ageNumber, ageRange)) {
       const rangeLabel = formatAgeRange(ageRange);
+      console.log('❌ [AthleteModal] Edad fuera de rango!');
+      console.log('❌ [AthleteModal] Edad:', ageNumber, 'Rango:', ageRange);
       showErrorAlert(
         "Edad fuera de rango",
         `No se puede crear o editar. La edad (${ageNumber} años) no corresponde a la categoria "${selectedCategory?.name || selectedCategory?.nombre || values.categoria}" (${rangeLabel} años).`
       );
       return;
     }
+    
+    console.log('✅ [AthleteModal] Validación de categoría por edad pasó correctamente');
 
     console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
 
@@ -1059,41 +1078,21 @@ const AthleteModal = ({
               </div>
 
               {/* Edad (calculada automáticamente) */}
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 block">
-                  Edad
-                </label>
-                <div className="rounded-xl border border-gray-200 bg-gradient-to-r from-primary-purple/10 via-white to-primary-blue/10 px-4 py-3 shadow-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] uppercase tracking-wide text-gray-500">
-                        Calculada automáticamente
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {currentAge !== null ? `${currentAge} años` : "Sin fecha"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                          currentAge === null
-                            ? "bg-gray-100 text-gray-500"
-                            : isMinor
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-emerald-100 text-emerald-700"
-                        }`}
-                      >
-                        {currentAge === null ? "Pendiente" : isMinor ? "Menor" : "Mayor"}
-                      </span>
-                      <span className="h-9 w-9 rounded-full bg-white/80 border border-gray-200 flex items-center justify-center text-primary-purple shadow-sm">
-                        <FaInfoCircle className="w-4 h-4" />
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Se actualiza con la fecha de nacimiento.
-                  </p>
-                </div>
+              <div>
+                <FormField
+                  label="Edad"
+                  name="age"
+                  type="text"
+                  placeholder="Calculada automáticamente"
+                  value={currentAge !== null ? `${currentAge} años` : ""}
+                  disabled
+                  helperText={
+                    currentAge !== null
+                      ? `${isMinor ? "Menor de edad" : "Mayor de edad"}`
+                      : ""
+                  }
+                  delay={0.75}
+                />
               </div>
 
               <div>

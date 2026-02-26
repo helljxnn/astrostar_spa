@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import AthletesService from '../../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService';
 import InscriptionsService from '../../features/dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService';
 
-export const useDocumentValidation = (excludeUserId = null) => {
+export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck = false) => {
   const [isChecking, setIsChecking] = useState(false);
   const [documentExists, setDocumentExists] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -39,7 +39,7 @@ export const useDocumentValidation = (excludeUserId = null) => {
     }
 
     // Verificar cache
-    const cacheKey = `${cleanDocument}_${excludeUserId || 'new'}`;
+    const cacheKey = `${cleanDocument}_${excludeUserId || 'new'}_${skipInscriptionCheck ? 'noInscription' : 'withInscription'}`;
     if (cacheRef.current.has(cacheKey)) {
       const cached = cacheRef.current.get(cacheKey);
       console.log('✅ [useDocumentValidation] Usando resultado en cache:', cached);
@@ -50,6 +50,7 @@ export const useDocumentValidation = (excludeUserId = null) => {
     }
 
     console.log('🔍 [useDocumentValidation] Validando documento (no en cache):', cleanDocument);
+    console.log('🔍 [useDocumentValidation] skipInscriptionCheck:', skipInscriptionCheck);
     setIsChecking(true);
 
     try {
@@ -58,16 +59,23 @@ export const useDocumentValidation = (excludeUserId = null) => {
         setTimeout(() => reject(new Error('Timeout')), 10000)
       );
 
-      // Verificar en paralelo: deportistas registrados + inscripciones pendientes
-      const validationPromise = Promise.all([
-        AthletesService.checkIdentificationAvailability(cleanDocument, excludeUserId),
-        InscriptionsService.checkDocumentExists(cleanDocument)
-      ]);
+      // Verificar en paralelo: deportistas registrados + inscripciones pendientes (si no se debe saltar)
+      const checks = [
+        AthletesService.checkIdentificationAvailability(cleanDocument, excludeUserId)
+      ];
+      
+      // Solo verificar inscripciones si NO se debe saltar la verificación
+      if (!skipInscriptionCheck) {
+        checks.push(InscriptionsService.checkDocumentExists(cleanDocument));
+      }
 
-      const [athleteCheck, inscriptionCheck] = await Promise.race([
-        validationPromise,
+      const results = await Promise.race([
+        Promise.all(checks),
         timeoutPromise
       ]);
+
+      const athleteCheck = results[0];
+      const inscriptionCheck = skipInscriptionCheck ? null : results[1];
 
       console.log('🔍 [useDocumentValidation] Resultado atleta:', athleteCheck);
       console.log('🔍 [useDocumentValidation] Resultado inscripción:', inscriptionCheck);
@@ -82,8 +90,8 @@ export const useDocumentValidation = (excludeUserId = null) => {
         console.log('✅ [useDocumentValidation] Documento MATRICULADO detectado');
       }
       // Prioridad 2: Ya tiene una inscripción pendiente (del landing)
-      // IMPORTANTE: Solo si NO está matriculado y el backend de inscripciones respondió correctamente
-      else if (inscriptionCheck && inscriptionCheck.exists && inscriptionCheck.success !== false) {
+      // IMPORTANTE: Solo si NO está matriculado, NO se saltó la verificación, y el backend de inscripciones respondió correctamente
+      else if (!skipInscriptionCheck && inscriptionCheck && inscriptionCheck.exists && inscriptionCheck.success !== false) {
         exists = true;
         message = 'Este número de documento ya tiene una inscripción pendiente';
         console.log('✅ [useDocumentValidation] Documento INSCRITO detectado');
@@ -109,7 +117,7 @@ export const useDocumentValidation = (excludeUserId = null) => {
     } finally {
       setIsChecking(false);
     }
-  }, [excludeUserId]);
+  }, [excludeUserId, skipInscriptionCheck]);
 
   /**
    * Validar documento con debounce
