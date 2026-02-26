@@ -5,7 +5,6 @@ import { FaPlus } from "react-icons/fa";
 import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
 import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import TeamsService from "./services/TeamsService.js";
 import {
@@ -15,6 +14,7 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const TemporaryTeams = () => {
   const { hasPermission } = usePermissions();
@@ -26,18 +26,18 @@ const TemporaryTeams = () => {
   const [teamToEdit, setTeamToEdit] = useState(null);
   const [teamToView, setTeamToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 5,
+    page: PAGINATION_CONFIG.DEFAULT_PAGE,
+    limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
     total: 0,
     totalPages: 0,
     hasNext: false,
     hasPrev: false,
   });
   const [eventAssignmentsCheck, setEventAssignmentsCheck] = useState({});
-
-  const rowsPerPage = 5;
 
   // Generar mensaje dinámico para el tooltip
   const generateTooltipMessage = (teamId) => {
@@ -103,8 +103,8 @@ const TemporaryTeams = () => {
     try {
       const result = await TeamsService.getTeams({
         page: currentPage,
-        limit: rowsPerPage,
-        search: '', // No enviar search al backend, filtraremos localmente
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
         teamType: "Temporal",
       });
 
@@ -114,7 +114,7 @@ const TemporaryTeams = () => {
         setPagination(
           result.pagination || {
             page: currentPage,
-            limit: rowsPerPage,
+            limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
             total: 0,
             totalPages: 0,
             hasNext: false,
@@ -139,31 +139,11 @@ const TemporaryTeams = () => {
 
   useEffect(() => {
     loadTeams();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return data.filter((team) => {
-      const textFields = [
-        team.nombre,
-        team.entrenador,
-        team.categoria,
-        team.status,
-      ];
-
-      return textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
-      );
-    });
-  }, [data, searchTerm]);
-
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = searchTerm ? filteredData : data;
-  const displayTotalRows = searchTerm ? filteredData.length : pagination.total;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = data;
+  const displayTotalRows = pagination.total;
 
   // Formatear datos para la tabla - CORREGIDO para contar solo deportistas
   const formattedData = useMemo(() => {
@@ -200,10 +180,6 @@ const TemporaryTeams = () => {
 
     return formatted;
   }, [displayData]);
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
 
   // Guardar nuevo equipo
   const handleSave = async (newTeam) => {
@@ -426,17 +402,6 @@ const TemporaryTeams = () => {
               }),
             }}
           />
-
-          <div className="mt-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-              totalRows={pagination.total}
-              rowsPerPage={rowsPerPage}
-              startIndex={(currentPage - 1) * rowsPerPage}
-            />
-          </div>
         </>
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">

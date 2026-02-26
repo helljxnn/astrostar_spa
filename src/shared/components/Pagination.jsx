@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PAGINATION_CONFIG } from "../constants/paginationConfig";
 
 const Pagination = ({
   currentPage,
@@ -7,7 +8,7 @@ const Pagination = ({
   onPageChange,
   showInfo = false,
   totalItems = 0,
-  itemsPerPage = 10,
+  itemsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE,
 }) => {
   if (totalPages <= 1) return null;
 

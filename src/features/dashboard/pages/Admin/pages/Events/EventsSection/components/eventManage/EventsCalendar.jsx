@@ -729,11 +729,19 @@ const EventsCalendar = forwardRef(function EventsCalendar(
    * Renderizar evento personalizado para la barra lateral
    */
   const renderSidebarItem = useCallback((event, actions) => {
+    // Filtrar acciones basándose en shouldShow
+    const filteredActions = actions.filter((action) => {
+      if (action.shouldShow) {
+        return action.shouldShow(event);
+      }
+      return true; // Si no tiene shouldShow, mostrar por defecto
+    });
+
     // Separar acciones de gestión y de inscripción
-    const managementActions = actions.filter(
+    const managementActions = filteredActions.filter(
       (action) => action.group === "management",
     );
-    const registrationActions = actions.filter(
+    const registrationActions = filteredActions.filter(
       (action) => action.group === "registration",
     );
 
@@ -910,6 +918,18 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         permission: { module: "events", action: "register" },
         variant: "success",
         group: "registration",
+        // Ocultar el botón si el evento está finalizado o cancelado
+        shouldShow: (event) => {
+          const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+          const estadoEvento =
+            dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
+          return (
+            estadoEvento !== "Finalizado" &&
+            estadoEvento !== "finalizado" &&
+            estadoEvento !== "Cancelado" &&
+            estadoEvento !== "cancelado"
+          );
+        },
       },
       {
         label: "Ver Inscritos",

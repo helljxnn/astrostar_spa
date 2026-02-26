@@ -3,12 +3,12 @@ import Table from "../../../../../../shared/components/Table/table";
 import RoleModal from "./components/RoleModal";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../shared/components/Table/Pagination";
 import RoleDetailModal from "./components/RoleDetailModal";
 import { useRoles } from "./hooks/useRoles";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import { showErrorAlert } from "../../../../../../shared/utils/alerts";
+import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
 const Roles = () => {
   const { roles, pagination, fetchRoles, createRole, updateRole, deleteRole } =
@@ -25,8 +25,9 @@ const Roles = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
 
   // Effect to handle search and pagination with API
   useEffect(() => {
@@ -34,7 +35,7 @@ const Roles = () => {
       () => {
         fetchRoles({
           page: currentPage,
-          limit: rowsPerPage,
+          limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
           search: searchTerm,
         });
       },
@@ -46,8 +47,6 @@ const Roles = () => {
 
   // Use API data directly (no local filtering since API handles search and pagination)
   const totalRows = pagination.total || 0;
-  const totalPages = pagination.pages || 0;
-  const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedData = roles; // API already returns paginated data
 
   // Guardar rol (crear o editar)
@@ -55,7 +54,7 @@ const Roles = () => {
     try {
       const currentParams = {
         page: currentPage,
-        limit: rowsPerPage,
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
         search: searchTerm,
       };
 
@@ -108,7 +107,7 @@ const Roles = () => {
     try {
       const currentParams = {
         page: currentPage,
-        limit: rowsPerPage,
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
         search: searchTerm,
       };
 
@@ -198,23 +197,6 @@ const Roles = () => {
           }}
         />
       </div>
-
-      {/* Paginación */}
-      {totalRows > 0 && (
-        <div className="mt-4">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page) => {
-              setCurrentPage(page);
-              // fetchRoles will be called automatically by useEffect when currentPage changes
-            }}
-            totalRows={totalRows}
-            rowsPerPage={rowsPerPage}
-            startIndex={startIndex}
-          />
-        </div>
-      )}
 
       {/* Modal Crear/Editar */}
       {isModalOpen && (
