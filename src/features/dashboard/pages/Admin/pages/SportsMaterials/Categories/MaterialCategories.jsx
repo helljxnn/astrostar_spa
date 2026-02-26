@@ -36,25 +36,21 @@ const MaterialCategories = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
       
-      // Si hay búsqueda, traer todos los registros para filtrar localmente
-      const limit = searchTerm ? 1000 : rowsPerPage;
-      const page = searchTerm ? 1 : currentPage;
-      
       const response = await categoriesService.getCategories({
-        page,
-        limit,
+        page: currentPage,
+        limit: rowsPerPage,
         search: '' // No enviar search al backend, filtraremos localmente
       });
       
       if (response.success) {
         setCategories(response.data || []);
-        setTotalRows(response.pagination?.total || 0);
+        setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
       console.error('Error al cargar categorías:', error);
@@ -225,7 +221,10 @@ const MaterialCategories = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+              if (!e.target.value) {
+                setCurrentPage(1);
+              }
             }}
             placeholder="Buscar categoría"
           />

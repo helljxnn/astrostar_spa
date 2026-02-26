@@ -1,28 +1,31 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { FormField } from '../../../../../../../../shared/components/FormField';
-import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
-import { getTipoBajaOptions } from '../../shared/utils/tipoBajaLabels';
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import PropTypes from "prop-types";
+import { FormField } from "../../../../../../../../shared/components/FormField";
+import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
+import { getTipoBajaOptions } from "../../shared/utils/tipoBajaLabels";
 
 const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const [formData, setFormData] = useState({
-    cantidad: '',
-    inventarioOrigen: 'FUNDACION', // 'FUNDACION' | 'EVENTOS'
-    tipo_baja: '',
-    descripcion: '',
+    cantidad: "",
+    inventarioOrigen: "FUNDACION", // 'FUNDACION' | 'EVENTOS'
+    tipo_baja: "",
+    descripcion: "",
   });
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        cantidad: '',
-        inventarioOrigen: 'FUNDACION',
-        tipo_baja: '',
-        descripcion: '',
+        cantidad: "",
+        inventarioOrigen: "FUNDACION",
+        tipo_baja: "",
+        descripcion: "",
       });
       setErrors({});
+      setTouched({});
     }
   }, [isOpen]);
 
@@ -30,39 +33,65 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     const newErrors = {};
 
     if (!formData.inventarioOrigen) {
-      newErrors.inventarioOrigen = 'El origen es obligatorio';
+      newErrors.inventarioOrigen = "El origen es obligatorio";
       setErrors(newErrors);
       return false;
     }
 
     if (!formData.cantidad || formData.cantidad <= 0) {
-      newErrors.cantidad = 'La cantidad debe ser mayor a 0';
+      newErrors.cantidad = "La cantidad debe ser mayor a 0";
     }
 
     // Validar stock suficiente según el origen
-    const stockMax = formData.inventarioOrigen === 'FUNDACION' 
-      ? material?.stockFundacion || 0
-      : material?.stockEventos || 0;
-    
+    // Si es EVENTOS, debe considerar el stock reservado
+    const stockMax =
+      formData.inventarioOrigen === "FUNDACION"
+        ? material?.stockFundacion || 0
+        : (material?.stockEventos || 0) -
+          (material?.stockEventosReservado || 0);
+
     if (formData.cantidad > stockMax) {
       newErrors.cantidad = `No hay suficiente stock (máximo: ${stockMax})`;
     }
 
     if (!formData.tipo_baja) {
-      newErrors.tipo_baja = 'El tipo de baja es obligatorio';
+      newErrors.tipo_baja = "El tipo de baja es obligatorio";
     }
 
     if (!formData.descripcion.trim()) {
-      newErrors.descripcion = 'La descripción es obligatoria';
+      newErrors.descripcion = "La descripción es obligatoria";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Calcular stock máximo disponible según el origen seleccionado
+  const getStockMaximo = () => {
+    if (!formData.inventarioOrigen) return 0;
+
+    if (formData.inventarioOrigen === "FUNDACION") {
+      return material?.stockFundacion || 0;
+    } else {
+      // Para EVENTOS, considerar stock reservado
+      return (
+        (material?.stockEventos || 0) - (material?.stockEventosReservado || 0)
+      );
+    }
+  };
+
+  const stockMaximo = getStockMaximo();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    setTouched({
+      cantidad: true,
+      inventarioOrigen: true,
+      tipo_baja: true,
+      descripcion: true,
+    });
+
     if (!validateForm()) {
       return;
     }
@@ -84,17 +113,22 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    validateForm();
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 relative">
           <button
@@ -117,7 +151,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
                 Material
               </label>
               <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
-                {material?.nombre || ''}
+                {material?.nombre || ""}
               </div>
             </div>
 
@@ -148,55 +182,51 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
             </div>
 
             {/* Origen del Stock */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Inventario Origen <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="inventarioOrigen"
-                value={formData.inventarioOrigen}
-                onChange={(e) => handleChange('inventarioOrigen', e.target.value)}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
-                  errors.inventarioOrigen ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="FUNDACION">Inventario Fundación</option>
-                <option value="EVENTOS">Inventario Eventos</option>
-              </select>
-              {errors.inventarioOrigen && (
-                <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
-                  <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
-                    !
-                  </span>
-                  <span>{errors.inventarioOrigen}</span>
-                </p>
-              )}
-              {!errors.inventarioOrigen && formData.inventarioOrigen && (
-                <p className="mt-1 text-xs text-gray-500">
-                  {formData.inventarioOrigen === 'FUNDACION' 
-                    ? `Se descontará del inventario de la fundación (${formatStock(material?.stockFundacion || 0)} disponibles)`
-                    : `Se descontará del inventario de eventos (${formatStock(material?.stockEventos || 0)} disponibles)`}
-                </p>
-              )}
-            </div>
+            <FormField
+              label="Inventario Origen"
+              name="inventarioOrigen"
+              type="select"
+              value={formData.inventarioOrigen}
+              onChange={handleChange}
+              onBlur={() => handleBlur("inventarioOrigen")}
+              error={errors.inventarioOrigen}
+              touched={touched.inventarioOrigen}
+              required
+              options={[
+                { value: "FUNDACION", label: "Inventario Fundación" },
+                { value: "EVENTOS", label: "Inventario Eventos" },
+              ]}
+              helperText={
+                formData.inventarioOrigen === "FUNDACION"
+                  ? "Se descontará del inventario de la fundación"
+                  : "Se descontará del inventario de eventos"
+              }
+            />
 
             <FormField
               label="Cantidad a dar de baja"
               name="cantidad"
-              type="number"
+              type="text"
               value={formData.cantidad}
-              onChange={(e) => {
-                const value = e.target.value;
-                // Limitar a 6 dígitos
-                if (value.length <= 6) {
-                  handleChange('cantidad', value);
+              onChange={(name, value) => {
+                const numericValue = value.replace(/[^0-9]/g, "");
+                if (numericValue.length <= 6) {
+                  handleChange(name, numericValue);
                 }
               }}
+              onKeyDown={(e) => {
+                if (["e", "E", "+", "-", "."].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onBlur={() => handleBlur("cantidad")}
               error={errors.cantidad}
+              touched={touched.cantidad}
               required
               min="1"
-              max={material?.stockDisponible || 0}
+              max={stockMaximo}
               maxLength={6}
+              placeholder="0"
             />
 
             <FormField
@@ -204,25 +234,33 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               name="tipo_baja"
               type="select"
               value={formData.tipo_baja}
-              onChange={(e) => handleChange('tipo_baja', e.target.value)}
+              onChange={handleChange}
+              onBlur={() => handleBlur("tipo_baja")}
               error={errors.tipo_baja}
+              touched={touched.tipo_baja}
               required
               options={getTipoBajaOptions()}
               placeholder="Selecciona el tipo de baja"
             />
 
             <FormField
-              label={formData.tipo_baja === 'OTRO' ? 'Descripción detallada (especifica el motivo)' : 'Descripción detallada'}
+              label={
+                formData.tipo_baja === "OTRO"
+                  ? "Descripción detallada (especifica el motivo)"
+                  : "Descripción detallada"
+              }
               name="descripcion"
               type="textarea"
               value={formData.descripcion}
-              onChange={(e) => handleChange('descripcion', e.target.value)}
+              onChange={handleChange}
+              onBlur={() => handleBlur("descripcion")}
               error={errors.descripcion}
+              touched={touched.descripcion}
               required
               placeholder={
-                formData.tipo_baja === 'OTRO'
-                  ? 'Ej: Ajuste de inventario, material vencido, descarte por obsolescencia'
-                  : 'Ej: Se rompió durante el torneo infantil'
+                formData.tipo_baja === "OTRO"
+                  ? "Ej: Ajuste de inventario, material vencido, descarte por obsolescencia"
+                  : "Ej: Se rompió durante el torneo infantil"
               }
               rows={4}
             />
@@ -241,7 +279,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
                 className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Registrando...' : 'Registrar Baja'}
+                {isSubmitting ? "Registrando..." : "Registrar Baja"}
               </button>
             </div>
           </form>
@@ -249,6 +287,8 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 MaterialDischargeModal.propTypes = {

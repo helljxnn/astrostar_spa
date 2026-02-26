@@ -1,11 +1,12 @@
-import { FormField } from '../../../../../../../../shared/components/FormField';
+import { createPortal } from "react-dom";
+import { FormField } from "../../../../../../../../shared/components/FormField";
 
 const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
   if (!isOpen || !category) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -39,7 +40,7 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
                 label="Descripción"
                 name="descripcion"
                 type="textarea"
-                value={category.descripcion || ''}
+                value={category.descripcion || ""}
                 disabled={true}
                 rows={3}
               />
@@ -71,27 +72,39 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
             {/* Información del sistema */}
             {category.createdAt && (
               <div className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Información del Sistema</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Información del Sistema
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Fecha de Creación:
+                    </span>
                     <p className="text-gray-800">
-                      {new Date(category.createdAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {new Date(category.createdAt).toLocaleDateString(
+                        "es-ES",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                   {category.updatedAt && (
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                      <span className="text-sm font-medium text-gray-600">
+                        Última Actualización:
+                      </span>
                       <p className="text-gray-800">
-                        {new Date(category.updatedAt).toLocaleDateString('es-ES', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        {new Date(category.updatedAt).toLocaleDateString(
+                          "es-ES",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          },
+                        )}
                       </p>
                     </div>
                   )}
@@ -126,6 +139,8 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default CategoryViewModal;

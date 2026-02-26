@@ -1,33 +1,46 @@
-import { useState, useEffect } from 'react';
-import { FaPlus } from 'react-icons/fa';
-import { showErrorAlert } from '../../../../../../../../shared/utils/alerts';
-import { FormField } from '../../../../../../../../shared/components/FormField';
-import SearchableSelect from '../../../../../../../../shared/components/SearchableSelect';
-import ProviderModal from '../../../Providers/components/ProviderModal';
-import materialsService from '../../Materials/services/MaterialsService';
-import providersService from '../../../Providers/services/ProvidersService';
-import { calculateNewStock, validateMovementQuantity } from '../../shared/utils/stockCalculations';
-import { formatStock, formatNumber } from '../../../../../../../../shared/utils/numberFormat';
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { FaPlus } from "react-icons/fa";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { FormField } from "../../../../../../../../shared/components/FormField";
+import SearchableSelect from "../../../../../../../../shared/components/SearchableSelect";
+import ProviderModal from "../../../Providers/components/ProviderModal";
+import materialsService from "../../Materials/services/MaterialsService";
+import providersService from "../../../Providers/services/ProvidersService";
+import {
+  calculateNewStock,
+  validateMovementQuantity,
+} from "../../shared/utils/stockCalculations";
+import {
+  formatStock,
+  formatNumber,
+} from "../../../../../../../../shared/utils/numberFormat";
 
 // Helper para obtener fecha local en formato YYYY-MM-DD
 const getTodayLocalDate = () => {
   const today = new Date();
   const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
-const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = false }) => {
+const MovementModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  movement = null,
+  isEditing = false,
+}) => {
   const [formData, setFormData] = useState({
-    materialId: '',
-    materialNombre: '',
-    categoria: '',
-    cantidad: '',
+    materialId: "",
+    materialNombre: "",
+    categoria: "",
+    cantidad: "",
     fechaIngreso: getTodayLocalDate(),
-    inventarioDestino: '', // '' | 'FUNDACION' | 'EVENTOS'
-    proveedor: '',
-    observaciones: '',
+    inventarioDestino: "", // '' | 'FUNDACION' | 'EVENTOS'
+    proveedor: "",
+    observaciones: "",
   });
   const [loading, setLoading] = useState(false);
   const [materials, setMaterials] = useState([]);
@@ -44,14 +57,16 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
     if (isOpen) {
       if (isEditing && movement) {
         setFormData({
-          materialId: movement.materialId || '',
-          materialNombre: movement.materialNombre || '',
-          categoria: movement.categoria || '',
-          cantidad: movement.cantidad || '',
-          fechaIngreso: movement.fechaIngreso ? movement.fechaIngreso.split('T')[0] : getTodayLocalDate(),
-          inventarioDestino: movement.inventarioDestino || 'FUNDACION',
-          proveedor: movement.proveedorId || '',
-          observaciones: movement.observaciones || '',
+          materialId: movement.materialId || "",
+          materialNombre: movement.materialNombre || "",
+          categoria: movement.categoria || "",
+          cantidad: movement.cantidad || "",
+          fechaIngreso: movement.fechaIngreso
+            ? movement.fechaIngreso.split("T")[0]
+            : getTodayLocalDate(),
+          inventarioDestino: movement.inventarioDestino || "FUNDACION",
+          proveedor: movement.proveedorId || "",
+          observaciones: movement.observaciones || "",
         });
         setSelectedMaterial({
           id: movement.materialId,
@@ -62,14 +77,14 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         });
       } else {
         setFormData({
-          materialId: '',
-          materialNombre: '',
-          categoria: '',
-          cantidad: '',
+          materialId: "",
+          materialNombre: "",
+          categoria: "",
+          cantidad: "",
           fechaIngreso: getTodayLocalDate(),
-          inventarioDestino: '',
-          proveedor: '',
-          observaciones: '',
+          inventarioDestino: "",
+          proveedor: "",
+          observaciones: "",
         });
         setSelectedMaterial(null);
       }
@@ -84,11 +99,13 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       const response = await materialsService.getMaterials({ limit: 1000 });
       if (response.success && response.data) {
         // Solo materiales activos
-        const activeMaterials = response.data.filter(m => m.estado === 'Activo');
+        const activeMaterials = response.data.filter(
+          (m) => m.estado === "Activo",
+        );
         setMaterials(activeMaterials);
       }
     } catch (error) {
-      console.error('Error al cargar materiales:', error);
+      console.error("Error al cargar materiales:", error);
       setMaterials([]);
     } finally {
       setLoadingMaterials(false);
@@ -103,7 +120,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         setProviders(response.data);
       }
     } catch (error) {
-      console.error('Error al cargar proveedores:', error);
+      console.error("Error al cargar proveedores:", error);
       setProviders([]);
     } finally {
       setLoadingProviders(false);
@@ -112,45 +129,45 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
   const handleMaterialSelect = (material) => {
     setSelectedMaterial(material);
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData((prev) => ({
+      ...prev,
       materialId: material.id,
       materialNombre: material.nombre,
-      categoria: material.categoria
+      categoria: material.categoria,
     }));
     if (errors.materialId) {
-      setErrors(prev => ({ ...prev, materialId: '' }));
+      setErrors((prev) => ({ ...prev, materialId: "" }));
     }
   };
 
   const handleChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleBlur = (name) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
     validateField(name);
   };
 
   const validateField = (name) => {
     const value = formData[name];
-    let error = '';
+    let error = "";
 
     switch (name) {
-      case 'materialId':
+      case "materialId":
         if (!selectedMaterial) {
-          error = 'Debes seleccionar un material de la lista';
+          error = "Debes seleccionar un material de la lista";
         }
         break;
-      case 'cantidad':
+      case "cantidad":
         if (!value || parseInt(value) <= 0) {
-          error = 'La cantidad debe ser mayor a 0';
+          error = "La cantidad debe ser mayor a 0";
         } else if (value.length > 6) {
-          error = 'La cantidad no puede tener más de 6 dígitos';
+          error = "La cantidad no puede tener más de 6 dígitos";
         } else {
           try {
             validateMovementQuantity(value);
@@ -159,29 +176,29 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
           }
         }
         break;
-      case 'fechaIngreso':
+      case "fechaIngreso":
         if (!value) {
-          error = 'La fecha de ingreso es obligatoria';
+          error = "La fecha de ingreso es obligatoria";
         } else {
           const fechaIngreso = new Date(value);
           const hoy = new Date();
           hoy.setHours(0, 0, 0, 0);
-          
+
           if (fechaIngreso > hoy) {
-            error = 'La fecha de ingreso no puede ser futura';
+            error = "La fecha de ingreso no puede ser futura";
           }
         }
         break;
-      case 'inventarioDestino':
+      case "inventarioDestino":
         if (!value) {
-          error = 'El destino es obligatorio';
+          error = "El destino es obligatorio";
         }
         break;
       default:
         break;
     }
 
-    setErrors(prev => ({ ...prev, [name]: error }));
+    setErrors((prev) => ({ ...prev, [name]: error }));
     return error;
   };
 
@@ -195,7 +212,7 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         fechaIngreso: true,
       });
 
-      const fechaError = validateField('fechaIngreso');
+      const fechaError = validateField("fechaIngreso");
 
       if (fechaError) {
         return;
@@ -211,12 +228,15 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         };
 
         const success = await onSave(movementData);
-        
+
         if (success) {
           handleClose();
         }
       } catch (error) {
-        showErrorAlert('Error', error.message || 'No se pudo actualizar el ingreso');
+        showErrorAlert(
+          "Error",
+          error.message || "No se pudo actualizar el ingreso",
+        );
       } finally {
         setLoading(false);
       }
@@ -229,20 +249,47 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         inventarioDestino: true,
       });
 
+      // Validar todos los campos y acumular errores
+      const newErrors = {};
+
       if (!selectedMaterial) {
-        setErrors(prev => ({ 
-          ...prev, 
-          materialId: 'Debes seleccionar un material existente de la lista' 
-        }));
-        return;
+        newErrors.materialId =
+          "Debes seleccionar un material existente de la lista";
       }
 
-      const materialError = validateField('materialId');
-      const cantidadError = validateField('cantidad');
-      const fechaError = validateField('fechaIngreso');
-      const destinoError = validateField('inventarioDestino');
+      if (!formData.cantidad || parseInt(formData.cantidad) <= 0) {
+        newErrors.cantidad = "La cantidad debe ser mayor a 0";
+      } else if (formData.cantidad.length > 6) {
+        newErrors.cantidad = "La cantidad no puede tener más de 6 dígitos";
+      } else {
+        try {
+          validateMovementQuantity(formData.cantidad);
+        } catch (e) {
+          newErrors.cantidad = e.message;
+        }
+      }
 
-      if (materialError || cantidadError || fechaError || destinoError) {
+      if (!formData.fechaIngreso) {
+        newErrors.fechaIngreso = "La fecha de ingreso es obligatoria";
+      } else {
+        const fechaIngreso = new Date(formData.fechaIngreso);
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        if (fechaIngreso > hoy) {
+          newErrors.fechaIngreso = "La fecha de ingreso no puede ser futura";
+        }
+      }
+
+      if (!formData.inventarioDestino) {
+        newErrors.inventarioDestino = "El destino es obligatorio";
+      }
+
+      // Actualizar todos los errores de una vez
+      setErrors(newErrors);
+
+      // Si hay errores, no continuar
+      if (Object.keys(newErrors).length > 0) {
         return;
       }
 
@@ -250,36 +297,40 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
       try {
         const cantidad = parseInt(formData.cantidad);
-        const stockAnterior = formData.inventarioDestino === 'FUNDACION' 
-          ? (selectedMaterial.stockFundacion || 0)
-          : (selectedMaterial.stockEventos || 0);
+        const stockAnterior =
+          formData.inventarioDestino === "FUNDACION"
+            ? selectedMaterial.stockFundacion || 0
+            : selectedMaterial.stockEventos || 0;
         const stockNuevo = calculateNewStock(
           stockAnterior,
           cantidad,
-          'Entrada'
+          "Entrada",
         );
 
         const movementData = {
           materialId: formData.materialId,
           materialNombre: formData.materialNombre,
           categoria: formData.categoria,
-          tipoMovimiento: 'Entrada',
+          tipoMovimiento: "Entrada",
           cantidad: cantidad,
           fechaIngreso: formData.fechaIngreso,
           inventarioDestino: formData.inventarioDestino, // 'FUNDACION' | 'EVENTOS'
           proveedor: formData.proveedor || null,
           observaciones: formData.observaciones || null,
           stockAnterior: stockAnterior,
-          stockNuevo: stockNuevo
+          stockNuevo: stockNuevo,
         };
 
         const success = await onSave(movementData);
-        
+
         if (success) {
           handleClose();
         }
       } catch (error) {
-        showErrorAlert('Error', error.message || 'No se pudo registrar el ingreso');
+        showErrorAlert(
+          "Error",
+          error.message || "No se pudo registrar el ingreso",
+        );
       } finally {
         setLoading(false);
       }
@@ -288,14 +339,14 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
 
   const handleClose = () => {
     setFormData({
-      materialId: '',
-      materialNombre: '',
-      categoria: '',
-      cantidad: '',
+      materialId: "",
+      materialNombre: "",
+      categoria: "",
+      cantidad: "",
       fechaIngreso: getTodayLocalDate(),
-      inventarioDestino: '',
-      proveedor: '',
-      observaciones: '',
+      inventarioDestino: "",
+      proveedor: "",
+      observaciones: "",
     });
     setSelectedMaterial(null);
     setErrors({});
@@ -311,22 +362,22 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
         await fetchProviders();
         // Seleccionar el nuevo proveedor
         if (response.data && response.data.id) {
-          setFormData(prev => ({ ...prev, proveedor: response.data.id }));
+          setFormData((prev) => ({ ...prev, proveedor: response.data.id }));
         }
         return response;
       }
       return response;
     } catch (error) {
-      console.error('Error al crear proveedor:', error);
+      console.error("Error al crear proveedor:", error);
       throw error;
     }
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -336,7 +387,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
             ✕
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {isEditing ? 'Editar Ingreso de Material' : 'Registrar Ingreso de Material'}
+            {isEditing
+              ? "Editar Ingreso de Material"
+              : "Registrar Ingreso de Material"}
           </h2>
         </div>
 
@@ -351,18 +404,18 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                 </label>
                 <SearchableSelect
                   name="materialId"
-                  options={materials.map(m => ({
+                  options={materials.map((m) => ({
                     value: m.id,
-                    label: m.nombre
+                    label: m.nombre,
                   }))}
                   value={formData.materialId}
                   onChange={(name, value) => {
-                    const material = materials.find(m => m.id === value);
+                    const material = materials.find((m) => m.id === value);
                     if (material) {
                       handleMaterialSelect(material);
                     }
                   }}
-                  onBlur={() => handleBlur('materialId')}
+                  onBlur={() => handleBlur("materialId")}
                   placeholder="Selecciona un material"
                   loading={loadingMaterials}
                   error={touched.materialId && errors.materialId}
@@ -427,12 +480,14 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                 <select
                   name="inventarioDestino"
                   value={formData.inventarioDestino}
-                  onChange={(e) => handleChange('inventarioDestino', e.target.value)}
-                  onBlur={() => handleBlur('inventarioDestino')}
+                  onChange={(e) =>
+                    handleChange("inventarioDestino", e.target.value)
+                  }
+                  onBlur={() => handleBlur("inventarioDestino")}
                   className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent transition-all ${
                     touched.inventarioDestino && errors.inventarioDestino
-                      ? 'border-red-500'
-                      : 'border-gray-300'
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                 >
                   <option value="">Seleccione destino</option>
@@ -449,9 +504,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                 )}
                 {!errors.inventarioDestino && formData.inventarioDestino && (
                   <p className="mt-1 text-xs text-gray-500">
-                    {formData.inventarioDestino === 'FUNDACION' 
-                      ? 'Este material se sumará al inventario de la fundación para uso interno'
-                      : 'Este material se sumará al inventario de eventos (se descuenta al asignar a un evento)'}
+                    {formData.inventarioDestino === "FUNDACION"
+                      ? "Este material se sumará al inventario de la fundación para uso interno"
+                      : "Este material se sumará al inventario de eventos (se descuenta al asignar a un evento)"}
                   </p>
                 )}
               </div>
@@ -468,16 +523,26 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                     placeholder="0"
                     value={formData.cantidad}
                     onChange={(name, value) => {
-                      const numericValue = value.replace(/[^0-9]/g, '');
+                      // Solo permitir números, sin e, +, -, .
+                      const numericValue = value.replace(/[^0-9]/g, "");
                       // Limitar a 6 dígitos
                       if (numericValue.length <= 6) {
-                        setFormData((prev) => ({ ...prev, [name]: numericValue }));
+                        setFormData((prev) => ({
+                          ...prev,
+                          [name]: numericValue,
+                        }));
                         if (errors[name]) {
-                          setErrors((prev) => ({ ...prev, [name]: '' }));
+                          setErrors((prev) => ({ ...prev, [name]: "" }));
                         }
                       }
                     }}
-                    onBlur={() => handleBlur('cantidad')}
+                    onKeyDown={(e) => {
+                      // Bloquear e, E, +, -, .
+                      if (["e", "E", "+", "-", "."].includes(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    onBlur={() => handleBlur("cantidad")}
                     error={errors.cantidad}
                     touched={touched.cantidad}
                     required
@@ -504,11 +569,11 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                   type="date"
                   value={formData.fechaIngreso}
                   onChange={handleChange}
-                  onBlur={() => handleBlur('fechaIngreso')}
+                  onBlur={() => handleBlur("fechaIngreso")}
                   error={errors.fechaIngreso}
                   touched={touched.fechaIngreso}
                   required
-                  max={new Date().toISOString().split('T')[0]}
+                  max={new Date().toISOString().split("T")[0]}
                 />
               </div>
             </div>
@@ -522,9 +587,9 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
                 <div className="flex-1">
                   <SearchableSelect
                     name="proveedor"
-                    options={providers.map(p => ({
+                    options={providers.map((p) => ({
                       value: p.id,
-                      label: `${p.razonSocial} - ${p.tipoDocumentoNombre || 'NIT'}: ${p.nit}`
+                      label: `${p.razonSocial} - ${p.tipoDocumentoNombre || "NIT"}: ${p.nit}`,
                     }))}
                     value={formData.proveedor}
                     onChange={handleChange}
@@ -575,7 +640,13 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors disabled:opacity-50"
               disabled={loading}
             >
-              {loading ? (isEditing ? 'Actualizando...' : 'Registrando...') : (isEditing ? 'Guardar Cambios' : 'Guardar Ingreso')}
+              {loading
+                ? isEditing
+                  ? "Actualizando..."
+                  : "Registrando..."
+                : isEditing
+                  ? "Guardar Cambios"
+                  : "Guardar Ingreso"}
             </button>
           </div>
         </div>
@@ -589,6 +660,8 @@ const MovementModal = ({ isOpen, onClose, onSave, movement = null, isEditing = f
       />
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MovementModal;

@@ -60,7 +60,7 @@ function DashboardLayout() {
       {/* Overlay con blur para móvil */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay z-[45]"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -74,12 +74,8 @@ function DashboardLayout() {
 
       {/* Contenido Principal */}
       <div
-        className="min-h-screen dashboard-main-content"
+        className="min-h-screen dashboard-main-content transition-all duration-300"
         data-sidebar={getSidebarState()}
-        style={{
-          zIndex: 1,
-          position: "relative",
-        }}
       >
         <TopBar
           toggleSidebar={toggleSidebar}

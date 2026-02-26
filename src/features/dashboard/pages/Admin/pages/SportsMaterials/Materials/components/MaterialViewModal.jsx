@@ -1,13 +1,14 @@
-import { FaEdit } from 'react-icons/fa';
-import { formatDate } from '../../shared/utils/stockCalculations';
-import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
+import { createPortal } from "react-dom";
+import { FaEdit } from "react-icons/fa";
+import { formatDate } from "../../shared/utils/stockCalculations";
+import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 
 const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
   if (!isOpen || !material) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -50,61 +51,68 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
                 Descripción
               </label>
               <div className="px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900 min-h-[80px]">
-                {material.descripcion || 'Sin descripción'}
+                {material.descripcion || "Sin descripción"}
               </div>
             </div>
 
-            {/* Stock Actual */}
+            {/* Inventario Actual */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Desglose de Stock
+                Inventario Actual
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Stock Fundación
+                    Fundación
                   </label>
-                  <div className="px-3 py-2 bg-blue-50 border border-blue-300 rounded-lg text-blue-900 font-semibold">
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
                     {formatStock(material.stockFundacion || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Uso interno diario</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Stock Eventos (Total)
+                    Eventos
                   </label>
-                  <div className="px-3 py-2 bg-purple-50 border border-purple-300 rounded-lg text-purple-900 font-semibold">
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
                     {formatStock(material.stockEventos || 0)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Stock físico para eventos</p>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Eventos Reservado
+                    Total
                   </label>
-                  <div className="px-3 py-2 bg-amber-50 border border-amber-300 rounded-lg text-amber-900 font-semibold">
-                    {formatStock(material.stockEventosReservado || 0)}
+                  <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-900">
+                    {formatStock(
+                      material.stockTotal ||
+                        (material.stockFundacion || 0) +
+                          (material.stockEventos || 0),
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Comprometido para eventos</p>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
-                    Eventos Disponible
-                  </label>
-                  <div className="px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-green-900 font-semibold">
-                    {formatStock((material.stockEventos || 0) - (material.stockEventosReservado || 0))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">Libre para asignar</p>
                 </div>
               </div>
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800">
-                  <strong>Stock Total:</strong> {formatStock(material.stockTotal || (material.stockFundacion || 0) + (material.stockEventos || 0))}
-                </p>
-                <p className="text-xs text-blue-700 mt-2">
-                  <strong>Nota:</strong> Los materiales reservados para eventos NO se descuentan del stock hasta que el evento se finalice. Esto permite planificación flexible y reasignaciones.
-                </p>
-              </div>
+
+              {/* Alerta de materiales comprometidos */}
+              {material.stockEventosReservado > 0 && (
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    ⚠️{" "}
+                    <strong>
+                      {formatStock(material.stockEventosReservado)}
+                    </strong>{" "}
+                    unidades comprometidas en eventos activos
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Disponible para asignar:{" "}
+                    <strong>
+                      {formatStock(
+                        (material.stockEventos || 0) -
+                          (material.stockEventosReservado || 0),
+                      )}
+                    </strong>{" "}
+                    unidades
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Estado */}
@@ -119,27 +127,36 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
 
             {/* Información del Sistema */}
             <div className="border-t border-gray-200 pt-3 mt-3">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Información del Sistema</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Información del Sistema
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm font-medium text-gray-600">Fecha de Creación:</span>
+                  <span className="text-sm font-medium text-gray-600">
+                    Fecha de Creación:
+                  </span>
                   <p className="text-gray-800 mt-1">
-                    {new Date(material.createdAt).toLocaleDateString('es-ES', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                    {new Date(material.createdAt).toLocaleDateString("es-ES", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </p>
                 </div>
                 {material.updatedAt && (
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Última Actualización:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Última Actualización:
+                    </span>
                     <p className="text-gray-800 mt-1">
-                      {new Date(material.updatedAt).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+                      {new Date(material.updatedAt).toLocaleDateString(
+                        "es-ES",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        },
+                      )}
                     </p>
                   </div>
                 )}
@@ -175,6 +192,8 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default MaterialViewModal;

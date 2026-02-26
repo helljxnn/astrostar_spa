@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { FaPlus, FaMinusCircle, FaExchangeAlt } from 'react-icons/fa';
 import MaterialModal from "./components/MaterialModal";
 import MaterialViewModal from "./components/MaterialViewModal";
@@ -30,24 +30,24 @@ const MaterialsCatalog = () => {
 
   useEffect(() => {
     fetchMaterials();
-  }, [currentPage, searchTerm]);
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
 
   const fetchMaterials = async () => {
     try {
       setLoading(true);
+      
       const response = await materialsService.getMaterials({
         page: currentPage,
         limit: rowsPerPage,
-        search: searchTerm
+        search: '' // No enviar search al backend, filtraremos localmente
       });
       
       if (response.success) {
         setMaterials(response.data || []);
-        setTotalRows(response.pagination?.total || 0);
+        setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
       console.error('Error al cargar materiales:', error);
-      // No mostrar alerta, solo establecer datos vacíos
       setMaterials([]);
       setTotalRows(0);
     } finally {
@@ -55,7 +55,51 @@ const MaterialsCatalog = () => {
     }
   };
 
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return materials;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return materials.filter((material) => {
+      // Campos de texto general (búsqueda por contiene)
+      const textFields = [
+        material.nombre,
+        material.categoria,
+        material.descripcion,
+      ];
+
+      const textMatch = textFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower)
+      );
+
+      // Campo de estado (búsqueda exacta de palabra completa)
+      const estadoLower = material.estado?.toLowerCase();
+      const statusMatch = estadoLower === searchLower;
+
+      // Buscar en stocks (convertir números a string)
+      const stockMatch = 
+        material.stockFundacion?.toString().includes(searchLower) ||
+        material.stockEventos?.toString().includes(searchLower) ||
+        material.stockTotal?.toString().includes(searchLower);
+
+      // Buscar en fechas (formato legible)
+      let dateMatch = false;
+      if (material.createdAt) {
+        const fecha = new Date(material.createdAt);
+        const fechaStr = fecha.toLocaleDateString('es-ES');
+        dateMatch = fechaStr.includes(searchLower);
+      }
+
+      return textMatch || statusMatch || stockMatch || dateMatch;
+    });
+  }, [materials, searchTerm]);
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = searchTerm ? filteredData : materials;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
 
   const handleCreate = () => {
@@ -126,9 +170,31 @@ const MaterialsCatalog = () => {
       return;
     }
 
+    // Verificar si tiene stock
+    const hasStock = (material.stockTotalNumeric || 0) > 0;
+    
+    // Verificar si tiene movimientos históricos
+    const hasMovements = material.hasMovements || false;
+    
+    if (hasStock) {
+      showErrorAlert(
+        'No se puede eliminar',
+        `Este material tiene stock registrado (${material.stockTotal} unidades). No se puede eliminar.`
+      );
+      return;
+    }
+
+    if (hasMovements) {
+      showErrorAlert(
+        'No se puede eliminar',
+        'Este material tiene movimientos históricos registrados. Para mantener la integridad del historial, márcalo como "Inactivo" en lugar de eliminarlo.'
+      );
+      return;
+    }
+
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
-      `Se eliminará el material "${material.nombre}". Esta acción no se puede deshacer.\n\nNota: No se puede eliminar si tiene movimientos asociados o stock.`,
+      `Se eliminará el material "${material.nombre}". Esta acción no se puede deshacer.`,
       { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
     );
     
@@ -238,33 +304,30 @@ const MaterialsCatalog = () => {
     }
   };
 
-  // Preparar datos para tabla con truncado
-  const tableData = materials.map(m => {
-    // Nuevo modelo: dos inventarios separados + reservado
+  // Preparar datos para tabla con truncado - SIMPLE: 3 columnas
+  const tableData = displayData.map(m => {
     const stockFundacion = m.stockFundacion || 0;
     const stockEventos = m.stockEventos || 0;
-    const stockEventosReservado = m.stockEventosReservado || 0;
-    const stockEventosDisponible = stockEventos - stockEventosReservado;
     const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
     
     return {
       ...m,
-      nombreTruncated: m.nombre.length > 40 ? m.nombre.substring(0, 40) + '...' : m.nombre,
-      categoriaTruncated: m.categoria.length > 35 ? m.categoria.substring(0, 35) + '...' : m.categoria,
+      nombreTruncated: m.nombre.length > 30 ? m.nombre.substring(0, 30) + '...' : m.nombre,
+      categoriaTruncated: m.categoria.length > 30 ? m.categoria.substring(0, 30) + '...' : m.categoria,
       stockFundacion: formatNumber(stockFundacion),
       stockEventos: formatNumber(stockEventos),
-      stockEventosReservado: formatNumber(stockEventosReservado),
-      stockEventosDisponible: formatNumber(stockEventosDisponible),
       stockTotal: formatNumber(stockTotal),
+      // Preservar valores numéricos originales para validaciones
+      stockTotalNumeric: stockTotal,
+      hasMovements: m.hasMovements,
+      movementsCount: m.movementsCount,
     };
   });
 
   // Datos para reporte
-  const reportData = materials.map(m => {
+  const reportData = displayData.map(m => {
     const stockFundacion = m.stockFundacion || 0;
     const stockEventos = m.stockEventos || 0;
-    const stockEventosReservado = m.stockEventosReservado || 0;
-    const stockEventosDisponible = stockEventos - stockEventosReservado;
     const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
     
     return {
@@ -272,8 +335,6 @@ const MaterialsCatalog = () => {
       categoria: m.categoria,
       stockFundacion: stockFundacion,
       stockEventos: stockEventos,
-      stockEventosReservado: stockEventosReservado,
-      stockEventosDisponible: stockEventosDisponible,
       stockTotal: stockTotal,
       estado: m.estado,
       descripcion: m.descripcion || 'N/A',
@@ -291,7 +352,10 @@ const MaterialsCatalog = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+              if (!e.target.value) {
+                setCurrentPage(1);
+              }
             }}
             placeholder="Buscar material"
           />
@@ -306,8 +370,6 @@ const MaterialsCatalog = () => {
                   { header: "Categoría", accessor: "categoria" },
                   { header: "Stock Fundación", accessor: "stockFundacion" },
                   { header: "Stock Eventos", accessor: "stockEventos" },
-                  { header: "Stock Reservado", accessor: "stockEventosReservado" },
-                  { header: "Stock Disponible", accessor: "stockEventosDisponible" },
                   { header: "Stock Total", accessor: "stockTotal" },
                   { header: "Estado", accessor: "estado" },
                   { header: "Descripción", accessor: "descripcion" },
@@ -330,13 +392,13 @@ const MaterialsCatalog = () => {
       {/* Tabla */}
       <Table
         thead={{
-          titles: ["Nombre", "Categoría", "Fundación", "Eventos", "Reservado", "Disponible", "Total"],
+          titles: ["Nombre", "Categoría", "Fundación", "Eventos", "Total"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockFundacion", "stockEventos", "stockEventosReservado", "stockEventosDisponible", "stockTotal"],
+          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockFundacion", "stockEventos", "stockTotal"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
@@ -360,7 +422,7 @@ const MaterialsCatalog = () => {
                 {
                   onClick: handleDischarge,
                   className:
-                    'p-2 rounded-full bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors',
+                    'p-2 rounded-full bg-[#f5ebe8] border border-[#f0e0da] text-[#c3a096] hover:text-[#a88a7f] hover:border-[#e5d5cf] transition-colors',
                   label: <FaMinusCircle />,
                   title: 'Registrar Baja',
                   show: (item) => true,
@@ -379,21 +441,30 @@ const MaterialsCatalog = () => {
             disabled: false,
             title: "Editar material",
           }),
-          delete: () => ({
-            show: hasPermission('materials', 'Eliminar'),
-            disabled: false,
-            title: "Eliminar material",
-          }),
+          delete: (material) => {
+            const hasStock = (material.stockTotalNumeric || 0) > 0;
+            const hasMovements = material.hasMovements || false;
+            
+            return {
+              show: hasPermission('materials', 'Eliminar'),
+              disabled: hasStock || hasMovements,
+              title: hasStock
+                ? "Tiene stock registrado"
+                : hasMovements
+                ? "Tiene movimientos históricos"
+                : "Eliminar material",
+            };
+          },
         }}
       />
 
       {/* Paginación */}
-      {totalRows > rowsPerPage && (
+      {displayTotalRows > rowsPerPage && (
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
-          totalRows={totalRows}
+          totalRows={displayTotalRows}
           rowsPerPage={rowsPerPage}
           startIndex={startIndex}
         />

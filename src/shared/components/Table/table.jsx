@@ -65,7 +65,7 @@ const Table = ({
         className={
           enableHorizontalScroll
             ? "overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-            : "overflow-x-hidden hidden sm:block w-full"
+            : "overflow-hidden hidden sm:block w-full"
         }
       >
         <table

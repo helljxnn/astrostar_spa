@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import SearchableSelect from '../../../../../../../../shared/components/SearchableSelect';
 import { FormField } from '../../../../../../../../shared/components/FormField';
@@ -16,6 +17,7 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
   const [loading, setLoading] = useState(false);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -27,6 +29,7 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
       });
       setSelectedMaterial(null);
       setErrors({});
+      setTouched({});
     }
   }, [isOpen]);
 
@@ -75,6 +78,11 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
     }
   };
 
+  const handleBlur = (name) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    validateForm();
+  };
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -97,6 +105,11 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    setTouched({
+      materialId: true,
+      cantidad: true,
+    });
+    
     if (!validateForm()) {
       return;
     }
@@ -118,9 +131,9 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
+  const modalContent = (
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 relative">
           <button
@@ -150,11 +163,12 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
                 }))}
                 value={formData.materialId}
                 onChange={handleMaterialChange}
+                onBlur={() => handleBlur('materialId')}
                 placeholder="Selecciona un material"
                 loading={loadingMaterials}
-                error={errors.materialId}
+                error={touched.materialId && errors.materialId}
               />
-              {errors.materialId && (
+              {touched.materialId && errors.materialId && (
                 <p className="mt-1 text-red-500 text-xs flex items-center gap-1">
                   <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
                     !
@@ -196,7 +210,7 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
             <FormField
               label="Cantidad"
               name="cantidad"
-              type="number"
+              type="text"
               value={formData.cantidad}
               onChange={(name, value) => {
                 const numericValue = value.replace(/[^0-9]/g, '');
@@ -204,10 +218,18 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
                   handleChange(name, numericValue);
                 }
               }}
+              onKeyDown={(e) => {
+                if (['e', 'E', '+', '-', '.'].includes(e.key)) {
+                  e.preventDefault();
+                }
+              }}
+              onBlur={() => handleBlur('cantidad')}
               error={errors.cantidad}
+              touched={touched.cantidad}
               required
-              min="1"
-              max={selectedMaterial ? getStockDisponible(selectedMaterial) : 0}
+              placeholder="0"
+              maxLength={6}
+            />
               maxLength={6}
               placeholder="0"
               disabled={!selectedMaterial}
@@ -246,6 +268,8 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 AssignMaterialModal.propTypes = {

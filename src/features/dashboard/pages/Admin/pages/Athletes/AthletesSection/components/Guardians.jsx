@@ -1,9 +1,9 @@
 // src/features/dashboard/pages/Admin/pages/Guardians/Guardians.jsx
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FaUsers, FaPlus } from "react-icons/fa";
-import guardiansData from "./GuardiansData"; // tus acudientes
+import GuardiansService from "../../services/GuardiansService"; // Importar el servicio real
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Table from "../../../../../../../shared/components/Table/table";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
@@ -16,43 +16,81 @@ import {
 import GuardianModal from "./components/GuardianModal";
 
 const Guardians = () => {
-  const [data, setData] = useState(guardiansData);
+  const [data, setData] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGuardian, setEditingGuardian] = useState(null);
   const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalRows, setTotalRows] = useState(0);
+  const [loading, setLoading] = useState(false);
   const rowsPerPage = 5;
 
-  // 🔹 Usar `data` en lugar de `guardians`
-const filteredData = useMemo(() => {
-  if (!searchTerm) return data;
+  // Cargar acudientes desde el backend
+  useEffect(() => {
+    const fetchGuardians = async () => {
+      setLoading(true);
+      try {
+        const response = await GuardiansService.getGuardians({
+          page: currentPage,
+          limit: rowsPerPage,
+          search: "", // No enviar search al backend, filtraremos localmente
+        });
 
-  return data.filter((item) =>
-    Object.entries(item).some(([key, value]) => {
-      const stringValue = String(value || "").trim();
-
-      // 🔹 Si es el campo Estado, comparar exacto
-      if (key.toLowerCase() === "estado") {
-        return (
-          (stringValue === "Activo" && searchTerm === "Activo") ||
-          (stringValue === "Inactivo" && searchTerm === "Inactivo")
-        );
+        if (response.success) {
+          setData(response.data || []);
+          setTotalRows(response.pagination?.total || 0);
+        } else {
+          showErrorAlert("Error", "No se pudieron cargar los acudientes");
+        }
+      } catch (error) {
+        console.error("Error cargando acudientes:", error);
+        showErrorAlert("Error", "Error al cargar los acudientes");
+      } finally {
+        setLoading(false);
       }
-      return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-    })
-  );
-}, [data, searchTerm]);
+    };
 
+    fetchGuardians();
+  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
 
-  // Paginación
-  const totalRows = filteredData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  // Filtrar datos localmente si hay término de búsqueda
+  const filteredData = useMemo(() => {
+    if (!searchTerm) return data;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return data.filter((item) => {
+      const textFields = [
+        item.nombreCompleto,
+        item.firstName,
+        item.lastName,
+        item.email,
+        item.correo,
+        item.identification,
+        item.identificacion,
+        item.phone,
+        item.telefono,
+      ];
+
+      const textMatch = textFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower),
+      );
+
+      // Campo de estado (búsqueda exacta de palabra completa)
+      const estadoLower =
+        item.estado?.toLowerCase() || item.status?.toLowerCase();
+      const statusMatch = estadoLower === searchLower;
+
+      return textMatch || statusMatch;
+    });
+  }, [data, searchTerm]);
+
+  // Usar datos filtrados cuando hay búsqueda local
+  const displayData = searchTerm ? filteredData : data;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
 
   // Columnas para reporte
   const reportColumns = [
@@ -66,26 +104,49 @@ const filteredData = useMemo(() => {
   ];
 
   // Guardar acudiente (crear o editar)
-  const handleSave = (guardian) => {
-    if (editingGuardian) {
-      // Editar
-      setData((prev) =>
-        prev.map((item) =>
-          item.id === editingGuardian.id
-            ? { ...guardian, id: editingGuardian.id }
-            : item
-        )
-      );
-    } else {
-      // Crear
-      setData((prev) => [
-        ...prev,
-        { ...guardian, id: prev.length + 1 },
-      ]);
-    }
+  const handleSave = async (guardian) => {
+    try {
+      if (editingGuardian) {
+        // Editar
+        const response = await GuardiansService.updateGuardian(
+          editingGuardian.id,
+          guardian,
+        );
+        if (response.success) {
+          showSuccessAlert(
+            "Acudiente actualizado",
+            "Los cambios se guardaron correctamente",
+          );
+          setCurrentPage(1); // Volver a la primera página
+        } else {
+          showErrorAlert(
+            "Error",
+            response.error || "No se pudo actualizar el acudiente",
+          );
+        }
+      } else {
+        // Crear
+        const response = await GuardiansService.createGuardian(guardian);
+        if (response.success) {
+          showSuccessAlert(
+            "Acudiente creado",
+            "El acudiente se creó correctamente",
+          );
+          setCurrentPage(1); // Volver a la primera página
+        } else {
+          showErrorAlert(
+            "Error",
+            response.error || "No se pudo crear el acudiente",
+          );
+        }
+      }
 
-    setEditingGuardian(null);
-    setIsModalOpen(false);
+      setEditingGuardian(null);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error guardando acudiente:", error);
+      showErrorAlert("Error", "Error al guardar el acudiente");
+    }
   };
 
   // Editar acudiente
@@ -107,21 +168,30 @@ const filteredData = useMemo(() => {
     try {
       const result = await showDeleteAlert(
         "¿Eliminar acudiente?",
-        `Se eliminará permanentemente el acudiente: ${guardian.nombreCompleto}`
+        `Se eliminará permanentemente el acudiente: ${guardian.nombreCompleto || guardian.firstName + " " + guardian.lastName}`,
       );
 
       if (result.isConfirmed) {
-        setData((prev) => prev.filter((item) => item.id !== guardian.id));
-        showSuccessAlert(
-          "Acudiente eliminado",
-          `${guardian.nombreCompleto} ha sido eliminado correctamente.`
-        );
+        const response = await GuardiansService.deleteGuardian(guardian.id);
+        if (response.success) {
+          showSuccessAlert(
+            "Acudiente eliminado",
+            `${guardian.nombreCompleto || guardian.firstName + " " + guardian.lastName} ha sido eliminado correctamente.`,
+          );
+          // Recargar datos
+          setCurrentPage(1);
+        } else {
+          showErrorAlert(
+            "Error",
+            response.error || "No se pudo eliminar el acudiente",
+          );
+        }
       }
     } catch (error) {
       console.error("Error al eliminar acudiente:", error);
       showErrorAlert(
         "Error al eliminar",
-        "No se pudo eliminar el acudiente. Intenta de nuevo."
+        "No se pudo eliminar el acudiente. Intenta de nuevo.",
       );
     }
   };
@@ -140,7 +210,10 @@ const filteredData = useMemo(() => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              // Si limpia la búsqueda, resetear a página 1
+              if (!e.target.value) {
+                setCurrentPage(1);
+              }
             }}
             placeholder="Buscar acudiente..."
           />
@@ -148,7 +221,7 @@ const filteredData = useMemo(() => {
           {/* Botones */}
           <div className="flex items-center gap-3">
             <ReportButton
-              data={filteredData}
+              data={displayData}
               fileName="Reporte_Acudientes"
               columns={reportColumns}
             />
@@ -167,43 +240,77 @@ const filteredData = useMemo(() => {
       </div>
 
       {/* Tabla */}
-      <Table
-        thead={{
-          titles: [
-            "Nombre Completo",
-            "Identificación",
-            "Correo",
-            "Teléfono",
-            "Estado",
-          ],
-          state: true,
-        }}
-        tbody={{
-          data: paginatedData,
-          dataPropertys: [
-            "nombreCompleto",
-            "identificacion",
-            "correo",
-            "telefono",
-            "estado",
-          ],
-          state: true,
-        }}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onView={handleView}
-      />
+      {loading ? (
+        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
+            <p>Cargando acudientes...</p>
+          </div>
+        </div>
+      ) : displayTotalRows > 0 ? (
+        <>
+          <Table
+            thead={{
+              titles: [
+                "Nombre Completo",
+                "Identificación",
+                "Correo",
+                "Teléfono",
+                "Estado",
+              ],
+              state: true,
+            }}
+            tbody={{
+              data: displayData.map((g) => ({
+                ...g,
+                nombreCompleto:
+                  g.nombreCompleto ||
+                  `${g.firstName || ""} ${g.lastName || ""}`.trim(),
+                identificacion: g.identification || g.identificacion,
+                correo: g.email || g.correo,
+                telefono: g.phone || g.telefono,
+                estado: g.status || g.estado,
+              })),
+              dataPropertys: [
+                "nombreCompleto",
+                "identificacion",
+                "correo",
+                "telefono",
+                "estado",
+              ],
+              state: true,
+              stateMap: {
+                Activo: "bg-green-100 text-green-800",
+                Inactivo: "bg-red-100 text-red-800",
+                Active: "bg-green-100 text-green-800",
+                Inactive: "bg-red-100 text-red-800",
+              },
+            }}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onView={handleView}
+          />
 
-      {/* Paginador */}
-      {totalRows > rowsPerPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRows={totalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
+          {/* Paginador */}
+          {displayTotalRows > rowsPerPage && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              totalRows={displayTotalRows}
+              rowsPerPage={rowsPerPage}
+              startIndex={startIndex}
+            />
+          )}
+        </>
+      ) : (
+        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
+          {searchTerm ? (
+            <p>No se encontraron acudientes que coincidan con "{searchTerm}"</p>
+          ) : (
+            <p>No hay acudientes registrados todavía.</p>
+          )}
+        </div>
       )}
 
       {/* Modal de Acudientes */}

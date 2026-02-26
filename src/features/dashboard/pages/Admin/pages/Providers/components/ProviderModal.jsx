@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../shared/components/DocumentField";
@@ -70,7 +71,7 @@ const ProviderModal = ({
     initialValues,
     providerValidationRules,
     isEditing,
-    filteredDocumentTypes
+    filteredDocumentTypes,
   );
   // HandleChange personalizado
   const handleChange = (name, value) => {
@@ -131,7 +132,7 @@ const ProviderModal = ({
             response = await providersService.checkNitAvailability(
               values[name],
               excludeId,
-              values.tipoEntidad
+              values.tipoEntidad,
             );
           } else if (
             name === "razonSocial" &&
@@ -140,12 +141,12 @@ const ProviderModal = ({
             response = await providersService.checkBusinessNameAvailability(
               values[name],
               excludeId,
-              values.tipoEntidad
+              values.tipoEntidad,
             );
           } else if (name === "correo") {
             response = await providersService.checkEmailAvailability(
               values[name],
-              excludeId
+              excludeId,
             );
           }
           // Manejar respuesta del servidor
@@ -156,8 +157,8 @@ const ProviderModal = ({
                 name === "nit"
                   ? "NIT/documento"
                   : name === "razonSocial"
-                  ? "nombre/razón social"
-                  : "correo"
+                    ? "nombre/razón social"
+                    : "correo"
               } ya está registrado`;
             // Establecer el error de unicidad
             setErrors((prev) => ({ ...prev, [name]: errorMessage }));
@@ -230,7 +231,7 @@ const ProviderModal = ({
         const nitCheck = await providersService.checkNitAvailability(
           values.nit,
           excludeId,
-          values.tipoEntidad
+          values.tipoEntidad,
         );
         if (!nitCheck.available) {
           showErrorAlert("Error", nitCheck.message);
@@ -252,7 +253,7 @@ const ProviderModal = ({
           await providersService.checkBusinessNameAvailability(
             values.razonSocial,
             excludeId,
-            values.tipoEntidad
+            values.tipoEntidad,
           );
         if (!businessNameCheck.available) {
           showErrorAlert("Error", businessNameCheck.message);
@@ -268,7 +269,7 @@ const ProviderModal = ({
         const excludeId = isEditing ? providerToEdit.id : null;
         const emailCheck = await providersService.checkEmailAvailability(
           values.correo,
-          excludeId
+          excludeId,
         );
         if (!emailCheck.available) {
           showErrorAlert("Error", emailCheck.message);
@@ -285,7 +286,7 @@ const ProviderModal = ({
         {
           confirmButtonText: "Sí, actualizar",
           cancelButtonText: "Cancelar",
-        }
+        },
       );
       if (!confirmResult.isConfirmed) {
         return;
@@ -314,7 +315,7 @@ const ProviderModal = ({
           isEditing ? "Proveedor actualizado" : "Proveedor creado",
           isEditing
             ? `Los datos de ${values.razonSocial} han sido actualizados exitosamente.`
-            : "El proveedor ha sido creado exitosamente."
+            : "El proveedor ha sido creado exitosamente.",
         );
         resetForm();
         setTouched({});
@@ -322,20 +323,20 @@ const ProviderModal = ({
       } else {
         throw new Error(
           result?.message ||
-            `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`
+            `Error al ${isEditing ? "actualizar" : "crear"} el proveedor`,
         );
       }
     } catch (error) {
       console.error(
         `Error al ${isEditing ? "actualizar" : "crear"} proveedor:`,
-        error
+        error,
       );
       showErrorAlert(
         "Error",
         error.message ||
           `Ocurrió un error al ${
             isEditing ? "actualizar" : "crear"
-          } el proveedor`
+          } el proveedor`,
       );
     }
   };
@@ -421,7 +422,7 @@ const ProviderModal = ({
           "Tipo encontrado, estableciendo:",
           valueToSet,
           "para tipo:",
-          matchingType
+          matchingType,
         );
         // Solo actualizar si el valor actual es diferente para evitar loops
         if (values.tipoDocumento !== valueToSet) {
@@ -430,7 +431,7 @@ const ProviderModal = ({
       } else {
         console.log(
           "No se encontró tipo matching para:",
-          originalTipoDocumento
+          originalTipoDocumento,
         );
         // Intentar buscar por coincidencia parcial o similar
         const partialMatch = employeeDocumentTypes.find((type) => {
@@ -448,7 +449,7 @@ const ProviderModal = ({
             "Coincidencia parcial encontrada:",
             valueToSet,
             "para tipo:",
-            partialMatch
+            partialMatch,
           );
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         } else if (!values.tipoDocumento && employeeDocumentTypes.length > 0) {
@@ -466,7 +467,8 @@ const ProviderModal = ({
     values.tipoEntidad,
   ]);
   if (!isOpen) return null;
-  return (
+
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -678,12 +680,12 @@ const ProviderModal = ({
                     filteredDocumentTypes.find(
                       (dt) =>
                         dt.id.toString() === values.tipoDocumento ||
-                        dt.value === values.tipoDocumento
+                        dt.value === values.tipoDocumento,
                     )?.name ||
                     filteredDocumentTypes.find(
                       (dt) =>
                         dt.id.toString() === values.tipoDocumento ||
-                        dt.value === values.tipoDocumento
+                        dt.value === values.tipoDocumento,
                     )?.label
                   }
                   value={values.nit}
@@ -696,12 +698,12 @@ const ProviderModal = ({
                     filteredDocumentTypes.find(
                       (dt) =>
                         dt.id.toString() === values.tipoDocumento ||
-                        dt.value === values.tipoDocumento
+                        dt.value === values.tipoDocumento,
                     )?.name === "Número de Identificación Tributaria" ||
                     filteredDocumentTypes.find(
                       (dt) =>
                         dt.id.toString() === values.tipoDocumento ||
-                        dt.value === values.tipoDocumento
+                        dt.value === values.tipoDocumento,
                     )?.label === "Número de Identificación Tributaria"
                       ? "NIT"
                       : "Documento de Identidad"
@@ -847,5 +849,7 @@ const ProviderModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 export default ProviderModal;
