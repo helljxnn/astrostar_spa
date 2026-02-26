@@ -1,6 +1,16 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, Filter } from "lucide-react";
+import {
+  Plus,
+  Filter,
+  Eye,
+  PencilLine,
+  XCircle,
+  CheckCircle2,
+  CalendarClock,
+  UserRound,
+  Stethoscope,
+} from "lucide-react";
 import Swal from "sweetalert2";
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
@@ -178,6 +188,11 @@ function Appointments() {
     setInitialSlot(null);
   };
 
+  const handleEditAppointment = (appointmentData) => {
+    setInitialSlot(appointmentData);
+    setIsCreateModalOpen(true);
+  };
+
   const handleDateSelect = useCallback((selectedDate) => {
     if (!canCreateAppointments) return;
     setInitialSlot({ start: selectedDate });
@@ -191,6 +206,45 @@ function Appointments() {
       // errores manejados por el hook
     }
   };
+
+  const handleCancelAppointment = useCallback(
+    async (appointment) => {
+      const { value: reason } = await Swal.fire({
+        title: "Motivo de cancelación",
+        input: "textarea",
+        inputLabel: "Por favor, indique el motivo de la cancelación",
+        inputPlaceholder: "Escribe el motivo aquí...",
+        inputAttributes: {
+          "aria-label": "Motivo de cancelación",
+        },
+        showCancelButton: true,
+        confirmButtonText: "Cancelar cita",
+        cancelButtonText: "Volver",
+        customClass: {
+          confirmButton:
+            "bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2",
+          cancelButton:
+            "bg-primary-blue text-white font-bold px-6 py-2 rounded-lg",
+        },
+        buttonsStyling: false,
+        inputValidator: (value) => {
+          if (!value) {
+            return "Debes ingresar un motivo";
+          }
+        },
+      });
+
+      if (reason) {
+        try {
+          await cancelAppointment(appointment.id, reason);
+          handleCloseViewModal();
+        } catch (error) {
+          // errores manejados por el hook
+        }
+      }
+    },
+    [cancelAppointment, handleCloseViewModal],
+  );
 
   const handleMarkAsCompleted = async (appointmentToComplete) => {
     const { value: conclusion } = await Swal.fire({
@@ -254,31 +308,74 @@ function Appointments() {
         ? "bg-green-100 text-green-700"
         : "bg-blue-100 text-blue-700";
 
-    const actions = event.status === "Programado"
-      ? [
-          {
-            label: "Completar",
-            onClick: () => handleMarkAsCompleted(event),
-          },
-        ]
-      : [];
+    const isEditable = event.status === "Programado";
+
+    const actions = [
+      {
+        label: "Ver",
+        icon: Eye,
+        onClick: () => handleSelectAppointment(event),
+      },
+      ...(isEditable
+        ? [
+            {
+              label: "Editar",
+              icon: PencilLine,
+              onClick: () => handleEditAppointment(event),
+            },
+            {
+              label: "Cancelar",
+              icon: XCircle,
+              onClick: () => handleCancelAppointment(event),
+            },
+            {
+              label: "Completar",
+              icon: CheckCircle2,
+              onClick: () => handleMarkAsCompleted(event),
+            },
+          ]
+        : []),
+    ];
 
     return (
       <div
-        className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition"
+        className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition flex flex-col gap-3"
         onClick={() => handleSelectAppointment(event)}
       >
         <div className="flex items-start justify-between gap-3">
-          <div>
-            <h4 className="font-semibold text-gray-900 text-sm">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-[11px] text-gray-500 uppercase tracking-wide">
+              <CalendarClock className="h-4 w-4 text-[#B595FF]" />
+              <span>{event.date || "Sin fecha"}</span>
+              {event.time && <span>• {event.time}</span>}
+            </div>
+            <h4 className="font-semibold text-gray-900 text-sm line-clamp-2">
               {event.title}
             </h4>
-            <p className="text-xs text-gray-500 mt-1">
-              {event.date} • {event.time}
-            </p>
-            <p className="text-xs text-gray-600 mt-1">
-              {event.specialistName}
-            </p>
+            <div className="flex flex-wrap gap-2 text-[11px] text-gray-600">
+              {event.athleteName && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100">
+                  <UserRound className="h-3 w-3 text-[#B595FF]" />
+                  {event.athleteName}
+                </span>
+              )}
+              {event.specialistName && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100">
+                  <Stethoscope className="h-3 w-3 text-[#9BE9FF]" />
+                  {event.specialistName}
+                </span>
+              )}
+              {event.specialtyLabel && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#F5F1FF] text-[#7C3AED]">
+                  {event.specialtyLabel}
+                </span>
+              )}
+            </div>
+            {event.description && (
+              <p className="text-xs text-gray-500 line-clamp-2">
+                {event.description}
+              </p>
+            )}
           </div>
           <span
             className={`text-xs font-semibold px-2 py-1 rounded-full ${statusStyles}`}
@@ -288,7 +385,7 @@ function Appointments() {
         </div>
 
         {actions.length > 0 && (
-          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100 mt-2">
+          <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-100 mt-auto">
             {actions.map((action, actionIndex) => (
               <button
                 key={actionIndex}
@@ -296,8 +393,9 @@ function Appointments() {
                   e.stopPropagation();
                   action.onClick(event);
                 }}
-                className="flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-gray-50 text-gray-700 hover:bg-[#9BE9FF] hover:text-white"
               >
+                {action.icon && <action.icon className="h-3.5 w-3.5" />}
                 {action.label}
               </button>
             ))}
@@ -466,6 +564,7 @@ function Appointments() {
         sidebarEmptyText="No hay citas programadas"
         colorScheme="events"
         className="appointments-calendar"
+        sidebarItemMinHeight="min-h-[190px]"
       />
 
       <AppointmentForm
@@ -491,41 +590,7 @@ function Appointments() {
         athleteList={athletes}
         specialtyOptions={specialtyOptions}
         onMarkAsCompleted={handleMarkAsCompleted}
-        onCancelAppointment={async (appointment) => {
-          const { value: reason } = await Swal.fire({
-            title: "Motivo de cancelación",
-            input: "textarea",
-            inputLabel: "Por favor, indique el motivo de la cancelación",
-            inputPlaceholder: "Escribe el motivo aquí...",
-            inputAttributes: {
-              "aria-label": "Motivo de cancelación",
-            },
-            showCancelButton: true,
-            confirmButtonText: "Cancelar cita",
-            cancelButtonText: "Volver",
-            customClass: {
-              confirmButton:
-                "bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2",
-              cancelButton:
-                "bg-primary-blue text-white font-bold px-6 py-2 rounded-lg",
-            },
-            buttonsStyling: false,
-            inputValidator: (value) => {
-              if (!value) {
-                return "Debes ingresar un motivo";
-              }
-            },
-          });
-
-          if (reason) {
-            try {
-              await cancelAppointment(appointment.id, reason);
-              handleCloseViewModal();
-            } catch (error) {
-              // errores manejados por el hook
-            }
-          }
-        }}
+        onCancelAppointment={handleCancelAppointment}
       />
     </div>
   );

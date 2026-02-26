@@ -334,8 +334,7 @@ export const useAppointments = () => {
     try {
       const response = await apiClient.get("/sports-categories", {
         page: 1,
-        limit: 500,
-        status: "Active",
+        limit: 100,
       });
 
       const items =

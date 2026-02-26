@@ -4,10 +4,79 @@ import { FaHandHoldingHeart } from "react-icons/fa";
 import donorsLandingService from "../../../services/donorsLandingService";
 import { FormField } from "../../../../../shared/components/FormField";
 
+const sanitizeDigits = (val = "") => val.replace(/[^\d]/g, "");
+const sanitizeAlnum = (val = "") => val.replace(/[^a-zA-Z0-9]/g, "");
+const sanitizeAlnumDash = (val = "") => val.replace(/[^a-zA-Z0-9-]/g, "");
+
+const DOCUMENT_RULES = {
+  "Cédula de Ciudadanía": {
+    min: 6,
+    max: 10,
+    pattern: /^[0-9]+$/,
+    sanitize: sanitizeDigits,
+    error: "La cédula debe tener entre 6 y 10 dígitos numéricos.",
+  },
+  "Cédula de Extranjería": {
+    min: 6,
+    max: 10,
+    pattern: /^[0-9]+$/,
+    sanitize: sanitizeDigits,
+    error: "La cédula de extranjería debe tener entre 6 y 10 dígitos numéricos.",
+  },
+  Pasaporte: {
+    min: 6,
+    max: 20,
+    pattern: /^[A-Za-z0-9]+$/,
+    sanitize: sanitizeAlnum,
+    error: "El pasaporte debe tener entre 6 y 20 caracteres alfanuméricos.",
+  },
+  "Permiso Especial de Permanencia": {
+    min: 6,
+    max: 15,
+    pattern: /^[A-Za-z0-9-]+$/,
+    sanitize: sanitizeAlnumDash,
+    error:
+      "El permiso especial debe tener entre 6 y 15 caracteres y puede incluir guiones.",
+  },
+  "Tarjeta de Extranjería": {
+    min: 6,
+    max: 15,
+    pattern: /^[A-Za-z0-9-]+$/,
+    sanitize: sanitizeAlnumDash,
+    error:
+      "La tarjeta de extranjería debe tener entre 6 y 15 caracteres y puede incluir guiones.",
+  },
+  "Número de Identificación Extranjero": {
+    min: 6,
+    max: 20,
+    pattern: /^[A-Za-z0-9-]+$/,
+    sanitize: sanitizeAlnumDash,
+    error:
+      "El número de identificación debe tener entre 6 y 20 caracteres alfanuméricos.",
+  },
+};
+
+const DEFAULT_DOC_RULE = {
+  min: 5,
+  max: 20,
+  pattern: /^[A-Za-z0-9-]+$/,
+  sanitize: sanitizeAlnumDash,
+  error: "El documento debe tener entre 5 y 20 caracteres alfanuméricos.",
+};
+
+const getDocRule = (type) => DOCUMENT_RULES[type] || DEFAULT_DOC_RULE;
+
+const DOCUMENT_OPTIONS = Object.keys(DOCUMENT_RULES).map((label) => ({
+  value: label,
+  label,
+}));
+
 const initialState = {
   nombreCompleto: "",
   correo: "",
   telefono: "",
+  tipoDocumento: "",
+  numeroDocumento: "",
   ciudad: "",
   pais: "",
   mensaje: "",
@@ -22,7 +91,7 @@ const DonorSection = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [cooldown, setCooldown] = useState(0);
 
-  const validate = (field, value) => {
+  const validate = (field, value, currentData = formData) => {
     const val = (value || "").trim();
     switch (field) {
       case "nombreCompleto":
@@ -37,6 +106,16 @@ const DonorSection = () => {
         if (!val) return "Teléfono obligatorio.";
         if (val.length < 7) return "Mínimo 7 dígitos.";
         return "";
+      case "tipoDocumento":
+        if (!val) return "El tipo de documento es obligatorio.";
+        return "";
+      case "numeroDocumento": {
+        if (!val) return "El número de documento es obligatorio.";
+        const rule = getDocRule(currentData.tipoDocumento);
+        if (val.length < rule.min || val.length > rule.max) return rule.error;
+        if (rule.pattern && !rule.pattern.test(val)) return rule.error;
+        return "";
+      }
       case "autorizacion":
         if (!val) return "Selecciona una opción.";
         return "";
@@ -50,28 +129,59 @@ const DonorSection = () => {
   };
 
   const handleChange = (name, value) => {
+    let nextSnapshot = formData;
     setFormData((prev) => {
       let next = { ...prev, [name]: value };
       if (name === "telefono") {
         next[name] = value.replace(/[^\d]/g, "").slice(0, 15);
       }
+      if (name === "tipoDocumento") {
+        const rule = getDocRule(value);
+        next.numeroDocumento = rule
+          .sanitize(prev.numeroDocumento || "")
+          .slice(0, rule.max);
+      }
+      if (name === "numeroDocumento") {
+        const rule = getDocRule(prev.tipoDocumento);
+        next.numeroDocumento = rule.sanitize(value).slice(0, rule.max);
+      }
+      nextSnapshot = next;
       return next;
     });
 
     if (touched[name]) {
-      setErrors((prev) => ({ ...prev, [name]: validate(name, value) }));
+      setErrors((prev) => ({
+        ...prev,
+        [name]: validate(name, nextSnapshot[name], nextSnapshot),
+      }));
+    }
+
+    if (name === "tipoDocumento" && touched.numeroDocumento) {
+      setErrors((prev) => ({
+        ...prev,
+        numeroDocumento: validate(
+          "numeroDocumento",
+          nextSnapshot.numeroDocumento,
+          nextSnapshot
+        ),
+      }));
     }
   };
 
   const handleBlur = (name) => {
     setTouched((prev) => ({ ...prev, [name]: true }));
-    setErrors((prev) => ({ ...prev, [name]: validate(name, formData[name]) }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: validate(name, formData[name], formData),
+    }));
   };
 
   const isValidForm = () => {
     const fields = [
       "correo",
       "telefono",
+      "tipoDocumento",
+      "numeroDocumento",
       "ciudad",
       "pais",
       "nombreCompleto",
@@ -79,7 +189,7 @@ const DonorSection = () => {
     ];
     const newErrors = {};
     fields.forEach((f) => {
-      const msg = validate(f, formData[f]);
+      const msg = validate(f, formData[f], formData);
       if (msg) newErrors[f] = msg;
     });
     setErrors(newErrors);
@@ -191,6 +301,40 @@ const DonorSection = () => {
             required
           />
 
+          <div className="grid md:grid-cols-2 gap-3">
+            <FormField
+              label="Tipo de documento"
+              name="tipoDocumento"
+              type="select"
+              options={DOCUMENT_OPTIONS}
+              value={formData.tipoDocumento}
+              onChange={(e) => handleChange("tipoDocumento", e.target.value)}
+              onBlur={() => handleBlur("tipoDocumento")}
+              error={errors.tipoDocumento}
+              touched={touched.tipoDocumento}
+              placeholder="Selecciona el tipo de documento"
+              required
+            />
+            <FormField
+              label="Número de documento"
+              name="numeroDocumento"
+              value={formData.numeroDocumento}
+              onChange={(e) => handleChange("numeroDocumento", e.target.value)}
+              onBlur={() => handleBlur("numeroDocumento")}
+              error={errors.numeroDocumento}
+              touched={touched.numeroDocumento}
+              placeholder="Ej: 1234567890"
+              required
+              helperText={
+                formData.tipoDocumento
+                  ? `${(formData.numeroDocumento || "").length}/${
+                      getDocRule(formData.tipoDocumento).max
+                    } caracteres`
+                  : undefined
+              }
+            />
+          </div>
+
           <FormField
             label="Correo"
             name="correo"
@@ -289,3 +433,5 @@ const DonorSection = () => {
 };
 
 export default DonorSection;
+
+

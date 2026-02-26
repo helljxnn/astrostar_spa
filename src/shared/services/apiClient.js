@@ -198,11 +198,23 @@ class ApiClient {
         let errorMessage = errorData.message || `Error HTTP ${response.status}`;
         
         // Si hay errores de validación específicos, agregarlos al mensaje
+        const normalizeError = (err) => ({
+          field: err.field ?? err.path ?? err.param ?? "Campo",
+          message: err.message ?? err.msg ?? "Valor inválido",
+        });
+
         if (errorData.errors && Array.isArray(errorData.errors)) {
-          const errorDetails = errorData.errors.map(err => `- ${err.field || 'Campo'}: ${err.message}`).join('\n');
+          const errorDetails = errorData.errors
+            .map((err) => {
+              const { field, message } = normalizeError(err);
+              return `- ${field}: ${message}`;
+            })
+            .join("\n");
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
-        } else if (errorData.errors && typeof errorData.errors === 'object') {
-          const errorDetails = Object.entries(errorData.errors).map(([field, msg]) => `- ${field}: ${msg}`).join('\n');
+        } else if (errorData.errors && typeof errorData.errors === "object") {
+          const errorDetails = Object.entries(errorData.errors)
+            .map(([field, msg]) => `- ${field}: ${msg}`)
+            .join("\n");
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
         }
         
@@ -237,15 +249,22 @@ class ApiClient {
     window.location.href = "/login";
   }
 
+  buildQuery(params = {}) {
+    const filtered = Object.entries(params).filter(
+      ([, value]) => value !== undefined && value !== null && value !== ""
+    );
+    return new URLSearchParams(Object.fromEntries(filtered)).toString();
+  }
+
   async get(endpoint, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = this.buildQuery(params);
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     return this.request(url, { method: "GET" });
   }
 
   // Método para hacer peticiones sin loader
   async getWithoutLoader(endpoint, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = this.buildQuery(params);
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
     return this.request(url, { method: "GET", skipLoader: true });
   }
