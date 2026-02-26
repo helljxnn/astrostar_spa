@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import TemporaryPersonModal from "./components/TemporaryPersonModal.jsx";
 import TemporaryPersonViewModal from "./components/TemporaryPersonViewModal.jsx";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import {
   showDeleteAlert,
@@ -58,51 +57,18 @@ const TemporaryPersons = () => {
     return typeMap[personType] || personType;
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return temporaryPersons;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return temporaryPersons.filter((person) => {
-      // Campos de texto general (búsqueda por contiene)
-      const textFields = [
-        person.firstName,
-        person.middleName,
-        person.lastName,
-        person.secondLastName,
-        person.email,
-        person.identification,
-        person.phone,
-        person.team,
-        person.category,
-      ];
-
-      const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower),
-      );
-
-      // Campos de estado y tipo (búsqueda exacta de palabra completa)
-      const translatedStatus = translateStatus(person.status).toLowerCase();
-      const translatedType = translatePersonType(
-        person.personType,
-      ).toLowerCase();
-
-      // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
-      const statusMatch =
-        translatedStatus === searchLower ||
-        person.status?.toLowerCase() === searchLower;
-      const typeMatch =
-        translatedType === searchLower ||
-        person.personType?.toLowerCase() === searchLower;
-
-      return textMatch || statusMatch || typeMatch;
+  // Cargar personas temporales cuando cambia la página o el término de búsqueda
+  useEffect(() => {
+    loadTemporaryPersons({
+      page: pagination.page,
+      limit: pagination.limit,
+      search: searchTerm, // Enviar búsqueda al backend
     });
-  }, [temporaryPersons, searchTerm]);
+  }, [pagination.page, searchTerm]);
 
-  // Usar paginación del servidor cuando no hay búsqueda local
-  const displayData = searchTerm ? filteredData : temporaryPersons;
-  const totalRows = searchTerm ? filteredData.length : pagination.total;
+  // Usar datos del servidor directamente (ya vienen filtrados y paginados)
+  const totalRows = pagination.total;
+  const displayData = temporaryPersons;
 
   // Preparar datos para reporte
   const reportData = displayData.map((person) => ({
@@ -333,10 +299,7 @@ const TemporaryPersons = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              // Si hay búsqueda, no cambiar página del servidor
-              if (!e.target.value) {
-                changePage(1);
-              }
+              changePage(1); // Resetear a la primera página al buscar
             }}
             placeholder="Buscar persona temporal..."
           />
@@ -427,17 +390,6 @@ const TemporaryPersons = () => {
               }),
             }}
           />
-
-          {totalRows > pagination.limit && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.pages}
-              onPageChange={changePage}
-              totalRows={totalRows}
-              rowsPerPage={pagination.limit}
-              startIndex={(pagination.page - 1) * pagination.limit}
-            />
-          )}
         </>
       )}
 

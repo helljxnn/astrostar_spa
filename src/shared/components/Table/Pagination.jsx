@@ -1,7 +1,15 @@
 import React from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { PAGINATION_CONFIG } from "../../constants/paginationConfig";
 
-const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerPage, startIndex }) => {
+const Pagination = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalRows,
+  rowsPerPage,
+  startIndex,
+}) => {
   const handlePrevious = () => {
     if (currentPage > 1) onPageChange(currentPage - 1);
   };
@@ -16,11 +24,14 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerP
 
   // ✅ Evitar NaN
   const safeTotalRows = totalRows || 0;
-  const safeRowsPerPage = rowsPerPage || 5;
+  const safeRowsPerPage = rowsPerPage || PAGINATION_CONFIG.ROWS_PER_PAGE;
   const safeStartIndex = startIndex >= 0 ? startIndex : 0;
 
   const startItem = safeTotalRows === 0 ? 0 : safeStartIndex + 1;
-  const endItem = safeTotalRows === 0 ? 0 : Math.min(safeStartIndex + safeRowsPerPage, safeTotalRows);
+  const endItem =
+    safeTotalRows === 0
+      ? 0
+      : Math.min(safeStartIndex + safeRowsPerPage, safeTotalRows);
 
   // Generar páginas
   const generatePageNumbers = () => {
@@ -53,8 +64,11 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerP
     <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-gray-200 gap-3">
       {/* Info resultados */}
       <div className="text-xs sm:text-sm text-gray-500">
-        Mostrando <span className="font-semibold text-gray-700">{startItem}–{endItem}</span> de{" "}
-        <span className="font-semibold text-gray-700">{safeTotalRows}</span>
+        Mostrando{" "}
+        <span className="font-semibold text-gray-700">
+          {startItem}–{endItem}
+        </span>{" "}
+        de <span className="font-semibold text-gray-700">{safeTotalRows}</span>
       </div>
 
       {/* Controles */}
@@ -71,7 +85,9 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerP
         {/* Números */}
         {pageNumbers.map((page, index) =>
           page === "..." ? (
-            <span key={index} className="px-2 text-gray-400">…</span>
+            <span key={index} className="px-2 text-gray-400">
+              …
+            </span>
           ) : (
             <button
               key={index}
@@ -84,7 +100,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalRows, rowsPerP
             >
               {page}
             </button>
-          )
+          ),
         )}
 
         {/* Botón siguiente */}

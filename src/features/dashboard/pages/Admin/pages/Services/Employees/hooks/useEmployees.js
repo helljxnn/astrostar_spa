@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import employeeService from "../services/employeeService.js";
 import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
 import { useAuth } from "@shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
 
 export const useEmployees = () => {
   const { isAuthenticated } = useAuth();
@@ -14,8 +15,8 @@ export const useEmployees = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
+    page: PAGINATION_CONFIG.DEFAULT_PAGE,
+    limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
     total: 0,
     pages: 0,
   });

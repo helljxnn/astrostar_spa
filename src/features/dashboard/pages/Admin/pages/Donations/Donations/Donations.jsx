@@ -5,7 +5,6 @@ import { FaPlus, FaBan } from "react-icons/fa";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import DonationViewModal from "./components/DonationViewModal";
 import CancelDonationModal from "./components/CancelDonationModal";
 import donationsService from "./services/donationsService";
@@ -13,6 +12,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const DONOR_NAME_FIELDS = [
   "nombre",
@@ -44,13 +44,14 @@ const getDonorDisplayName = (donation) => {
 const Donations = () => {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [totalRows, setTotalRows] = useState(0);
   const [selectedDonation, setSelectedDonation] = useState(null);
   const [cancelingDonation, setCancelingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const rowsPerPage = 5;
   const navigate = useNavigate();
 
   /* ------------------- Cargar datos desde API ------------------- */
@@ -60,8 +61,8 @@ const Donations = () => {
       try {
         const resp = await donationsService.list({
           page: currentPage,
-          limit: rowsPerPage,
-          search: "", // No enviar search al backend, filtraremos localmente
+          limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          search: searchTerm, // Enviar búsqueda al backend
         });
         const records = resp?.data || resp?.data?.data || [];
 
@@ -139,37 +140,12 @@ const Donations = () => {
     };
 
     fetchData();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
-
-  /* ------------------- Filtrado ------------------- */
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-    const lower = searchTerm.toLowerCase();
-
-    return data.filter((item) => {
-      const text = [
-        item.donorName,
-        item.descripcion,
-        ...item.items.map((i) => `${i.donationType} ${i.amount}`),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return text.includes(lower);
-    });
-  }, [data, searchTerm]);
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
   /* ------------------- Paginación ------------------- */
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = searchTerm ? filteredData : data;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
-  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-
-  // Solo paginar localmente cuando hay búsqueda
-  const paginatedData = searchTerm
-    ? filteredData.slice(startIndex, startIndex + rowsPerPage)
-    : data;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = data;
+  const paginatedData = data;
 
   const reportColumns = [
     { key: "donorName", label: "Donante" },
@@ -281,7 +257,7 @@ const Donations = () => {
 
           <div className="flex items-center gap-3">
             <ReportButton
-              data={filteredData}
+              data={displayData}
               fileName="Reporte_Donaciones"
               columns={reportColumns}
             />
@@ -327,17 +303,6 @@ const Donations = () => {
           customActions={[]}
         />
       </div>
-
-      {totalRows > rowsPerPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRows={displayTotalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
-      )}
 
       {selectedDonation && (
         <DonationViewModal

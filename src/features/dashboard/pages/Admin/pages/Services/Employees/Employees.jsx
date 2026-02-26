@@ -1,10 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import EmployeeModal from "./components/EmployeeModal";
 import EmployeeViewModal from "./components/EmployeeViewModal";
 import { FaPlus } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import {
   showDeleteAlert,
@@ -56,41 +55,18 @@ const Employees = () => {
     return statusMap[status] || status;
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return employees;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return employees.filter((employee) => {
-      // Campos de texto general (búsqueda por contiene)
-      const textFields = [
-        employee.user?.firstName,
-        employee.user?.lastName,
-        employee.user?.email,
-        employee.user?.identification,
-        employee.user?.role?.name,
-      ];
-
-      const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower),
-      );
-
-      // Campo de estado (búsqueda exacta de palabra completa)
-      const translatedStatus = translateStatus(employee.status).toLowerCase();
-
-      // Buscar como palabra completa para evitar que "activo" encuentre "desvinculado"
-      const statusMatch =
-        translatedStatus === searchLower ||
-        employee.status?.toLowerCase() === searchLower;
-
-      return textMatch || statusMatch;
+  // Cargar empleados cuando cambia la página o el término de búsqueda
+  useEffect(() => {
+    loadEmployees({
+      page: pagination.page,
+      limit: pagination.limit,
+      search: searchTerm, // Enviar búsqueda al backend
     });
-  }, [employees, searchTerm]);
+  }, [pagination.page, searchTerm]);
 
-  // Usar paginación del servidor cuando no hay búsqueda local
-  const displayData = searchTerm ? filteredData : employees;
-  const totalRows = searchTerm ? filteredData.length : pagination.total;
+  // Usar datos del servidor directamente (ya vienen filtrados y paginados)
+  const totalRows = pagination.total;
+  const displayData = employees;
 
   // Preparar datos para reporte
   const reportData = displayData.map((employee) => ({
@@ -242,10 +218,7 @@ const Employees = () => {
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              // Si hay búsqueda, no cambiar página del servidor
-              if (!e.target.value) {
-                changePage(1);
-              }
+              changePage(1); // Resetear a la primera página al buscar
             }}
             placeholder="Buscar empleado..."
           />
@@ -334,17 +307,6 @@ const Employees = () => {
               }),
             }}
           />
-
-          {totalRows > pagination.limit && (
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.pages}
-              onPageChange={changePage}
-              totalRows={totalRows}
-              rowsPerPage={pagination.limit}
-              startIndex={(pagination.page - 1) * pagination.limit}
-            />
-          )}
         </>
       )}
 

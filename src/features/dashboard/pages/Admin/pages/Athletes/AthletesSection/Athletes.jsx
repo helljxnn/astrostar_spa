@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { FaPlus, FaUserShield } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
@@ -6,7 +6,6 @@ import GuardianModal from "../../Athletes/AthletesSection/components/GuardianMod
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
@@ -23,11 +22,12 @@ import {
 
 // Hook personalizado para deportistas
 import { useAthletes } from "./hooks/useAthletes.js";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
 
 const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
-  
+
   // Usar el hook personalizado
   const {
     athletes,
@@ -42,7 +42,7 @@ const Athletes = () => {
     updateGuardian,
     deleteGuardian,
     changePage,
-    refresh
+    refresh,
   } = useAthletes();
 
   // Estados de modales
@@ -61,69 +61,29 @@ const Athletes = () => {
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
   const [currentAthleteId, setCurrentAthleteId] = useState(null); // ID del deportista actual al ver acudiente
 
-
-
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
-  const rowsPerPage = 10;
 
-  // Función auxiliar para obtener el acudiente (debe estar antes del useMemo)
+  // Función auxiliar para obtener el acudiente
   const getGuardianById = (guardianId) => {
     return guardians.find((g) => String(g.id) === String(guardianId));
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return athletes;
+  // Cargar deportistas cuando cambia la página o el término de búsqueda
+  useEffect(() => {
+    const loadData = async () => {
+      await refresh({
+        page: pagination.page,
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
+      });
+    };
+    loadData();
+  }, [pagination.page, searchTerm]);
 
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return athletes.filter((athlete) => {
-      // Obtener información del acudiente
-      const guardian = getGuardianById(athlete.acudiente);
-      
-      // Campos del deportista
-      const athleteFields = [
-        athlete.firstName,
-        athlete.lastName,
-        athlete.email,
-        athlete.identification,
-        athlete.categoria,
-        athlete.phoneNumber,
-        athlete.address,
-        athlete.status,
-        athlete.currentInscriptionStatus,
-      ];
-
-      // Campos del acudiente
-      const guardianFields = guardian ? [
-        guardian.firstName,
-        guardian.lastName,
-        guardian.email,
-        guardian.identification,
-        guardian.phone,
-        guardian.address,
-      ] : [];
-
-      // Combinar todos los campos
-      const allFields = [...athleteFields, ...guardianFields];
-
-      return allFields.some(
-        (field) =>
-          field &&
-          String(field).toLowerCase().includes(searchLower)
-      );
-    });
-  }, [athletes, searchTerm, guardians]);
-
-  // Usar paginación del servidor cuando no hay búsqueda local
-  const displayData = searchTerm ? filteredData : athletes;
-  const totalRows = searchTerm ? filteredData.length : pagination.total;
-  const totalPages = searchTerm ? Math.ceil(filteredData.length / rowsPerPage) : pagination.totalPages;
-  const startIndex = (pagination.page - 1) * rowsPerPage;
-  const paginatedData = searchTerm ? filteredData.slice(startIndex, startIndex + rowsPerPage) : athletes;
-
-  const handlePageChange = (page) => changePage(page);
+  // Usar datos del servidor directamente (ya vienen filtrados y paginados)
+  const totalRows = pagination.total;
+  const paginatedData = athletes;
 
   const handleSave = async (newAthlete) => {
     const success = await createAthlete(newAthlete);
@@ -136,10 +96,10 @@ const Athletes = () => {
   const handleUpdate = async (updatedAthlete) => {
     const { id, shouldUpdateInscription, ...athleteData } = updatedAthlete;
     const success = await updateAthlete(id, athleteData);
-    
+
     if (success) {
       setIsModalOpen(false);
-      
+
       // Actualizar la vista si estaba abierta
       if (athleteToView && athleteToView.id === id) {
         const updatedAthleteData = await AthletesService.getAthleteById(id);
@@ -151,8 +111,11 @@ const Athletes = () => {
   };
 
   const handleEdit = (athlete) => {
-    if (!hasPermission('athletesSection', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para editar deportistas');
+    if (!hasPermission("athletesSection", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar deportistas",
+      );
       return;
     }
     if (!athlete || athlete.target) return;
@@ -164,7 +127,7 @@ const Athletes = () => {
   const handleView = (athlete) => {
     if (!athlete || athlete.target) return;
     // Obtener los datos más recientes del atleta
-    const currentAthlete = athletes.find(a => a.id === athlete.id) || athlete;
+    const currentAthlete = athletes.find((a) => a.id === athlete.id) || athlete;
     setAthleteToView(currentAthlete);
     setIsViewModalOpen(true);
   };
@@ -174,61 +137,68 @@ const Athletes = () => {
     if (!athlete) return { canDelete: false, reason: "Deportista no válida" };
 
     const today = new Date();
-    
+
     // Verificar matrícula vigente
-    if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
-      return { 
-        canDelete: false, 
-        reason: "Tiene matrícula vigente" 
+    if (
+      athlete.enrollment?.estado === "Vigente" ||
+      athlete.estadoInscripcion === "Vigente"
+    ) {
+      return {
+        canDelete: false,
+        reason: "Tiene matrícula vigente",
       };
     }
-    
+
     // Verificar si la matrícula venció hace más de 1 año
-    const expirationDate = athlete.enrollment?.fechaVencimiento || athlete.fechaVencimiento;
+    const expirationDate =
+      athlete.enrollment?.fechaVencimiento || athlete.fechaVencimiento;
     if (expirationDate) {
       const expDate = new Date(expirationDate);
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-      
+
       if (expDate > oneYearAgo) {
         const monthsRemaining = Math.ceil(
-          (oneYearAgo - expDate) / (1000 * 60 * 60 * 24 * 30)
+          (oneYearAgo - expDate) / (1000 * 60 * 60 * 24 * 30),
         );
-        return { 
-          canDelete: false, 
-          reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento` 
+        return {
+          canDelete: false,
+          reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento`,
         };
       }
     } else {
       // Si no tiene fecha de vencimiento, no se puede eliminar
       return {
         canDelete: false,
-        reason: "No se puede verificar el vencimiento de la matrícula"
+        reason: "No se puede verificar el vencimiento de la matrícula",
       };
     }
-    
+
     // Verificar equipos temporales
     if (athlete.temporaryTeams && athlete.temporaryTeams.length > 0) {
-      return { 
-        canDelete: false, 
-        reason: `Está asignada a ${athlete.temporaryTeams.length} equipo(s) temporal(es)` 
+      return {
+        canDelete: false,
+        reason: `Está asignada a ${athlete.temporaryTeams.length} equipo(s) temporal(es)`,
       };
     }
-    
+
     // Verificar eventos activos
     if (athlete.activeEvents && athlete.activeEvents.length > 0) {
-      return { 
-        canDelete: false, 
-        reason: `Está asignada a ${athlete.activeEvents.length} evento(s) activo(s)` 
+      return {
+        canDelete: false,
+        reason: `Está asignada a ${athlete.activeEvents.length} evento(s) activo(s)`,
       };
     }
-    
+
     return { canDelete: true };
   };
 
   const handleDelete = async (athlete) => {
-    if (!hasPermission('athletesSection', 'Eliminar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar deportistas');
+    if (!hasPermission("athletesSection", "Eliminar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar deportistas",
+      );
       return;
     }
     if (!athlete || !athlete.id)
@@ -244,7 +214,7 @@ const Athletes = () => {
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará permanentemente a ${athlete.firstName || athlete.nombres} ${athlete.lastName || athlete.apellidos}.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
 
     if (!confirmResult.isConfirmed) return;
@@ -254,26 +224,26 @@ const Athletes = () => {
 
   const handleSaveGuardian = async (newGuardian) => {
     const guardianData = await createGuardian(newGuardian);
-    
+
     if (guardianData) {
       setIsGuardianModalOpen(false);
-      
+
       // Establecer el ID del acudiente recién creado para selección automática
       if (guardianData.id) {
         setNewlyCreatedGuardianId(guardianData.id);
       }
     }
-    
+
     return guardianData;
   };
 
   const handleUpdateGuardian = async (updatedGuardian) => {
     const { id, ...guardianData } = updatedGuardian;
     const success = await updateGuardian(id, guardianData);
-    
+
     if (success) {
       setIsGuardianModalOpen(false);
-      
+
       // Actualizar la vista del acudiente si estaba abierta
       if (guardianToView && guardianToView.id === id) {
         const updatedGuardianData = await GuardiansService.getGuardianById(id);
@@ -286,10 +256,10 @@ const Athletes = () => {
 
   const handleEditGuardian = async (updatedGuardian) => {
     if (!updatedGuardian || !updatedGuardian.id) return;
-    
+
     const { id, ...guardianData } = updatedGuardian;
     const success = await updateGuardian(id, guardianData);
-    
+
     if (success) {
       // Actualizar la vista del acudiente
       if (guardianToView && guardianToView.id === id) {
@@ -298,7 +268,7 @@ const Athletes = () => {
           setGuardianToView(updatedGuardianData.data);
         }
       }
-      
+
       // Refrescar deportistas para que se vean los cambios del acudiente
       await refresh();
     }
@@ -310,39 +280,35 @@ const Athletes = () => {
     }
 
     const success = await deleteGuardian(guardian.id);
-    
+
     if (success) {
       setIsGuardianViewOpen(false);
       setGuardianToView(null);
-      
+
       // Si necesita nuevo acudiente, abrir modal de deportista para editar
       if (needsNewGuardian && currentAthleteId) {
-        const athlete = athletes.find(a => a.id === currentAthleteId);
+        const athlete = athletes.find((a) => a.id === currentAthleteId);
         if (athlete) {
           setTimeout(() => {
             setAthleteToEdit(athlete);
             setModalMode("edit");
             setIsModalOpen(true);
             showSuccessAlert(
-              'Asignar nuevo acudiente',
-              'Por favor, asigne un nuevo acudiente a esta deportista menor de edad.'
+              "Asignar nuevo acudiente",
+              "Por favor, asigne un nuevo acudiente a esta deportista menor de edad.",
             );
           }, 500);
         }
       }
-      
+
       setCurrentAthleteId(null);
     }
   };
 
-
-
-
-
   // Nuevo: Gestionar acudiente desde la fila del deportista
   const handleManageGuardian = (athlete) => {
     if (!athlete || athlete.target) return;
-    
+
     // Si el deportista tiene acudiente, mostrarlo
     if (athlete.acudiente) {
       const guardian = getGuardianById(athlete.acudiente);
@@ -354,57 +320,68 @@ const Athletes = () => {
         showErrorAlert("Error", "No se encontró el acudiente asignado");
       }
     } else {
-      showErrorAlert("Sin Acudiente", "Este deportista no tiene un acudiente asignado");
+      showErrorAlert(
+        "Sin Acudiente",
+        "Este deportista no tiene un acudiente asignado",
+      );
     }
   };
 
   // Remover acudiente de un deportista específico
-  const handleRemoveGuardian = async (guardian, athleteId, needsNewGuardian) => {
+  const handleRemoveGuardian = async (
+    guardian,
+    athleteId,
+    needsNewGuardian,
+  ) => {
     if (!guardian || !athleteId) {
       return showErrorAlert("Error", "Datos inválidos");
     }
 
     try {
-      const response = await GuardiansService.removeGuardianFromAthlete(athleteId);
-      
+      const response =
+        await GuardiansService.removeGuardianFromAthlete(athleteId);
+
       if (response.success) {
         // Refrescar datos primero
         await refresh();
-        
+
         // Cerrar el modal del acudiente
         setIsGuardianViewOpen(false);
         setGuardianToView(null);
-        
+
         // Si necesita nuevo acudiente, abrir modal de deportista para editar
         if (needsNewGuardian) {
           setTimeout(async () => {
             const updatedAthletes = athletes;
-            const athlete = updatedAthletes.find(a => a.id === athleteId);
-            
+            const athlete = updatedAthletes.find((a) => a.id === athleteId);
+
             if (athlete) {
               setAthleteToEdit(athlete);
               setModalMode("edit");
               setIsModalOpen(true);
-              
+
               setTimeout(() => {
                 showSuccessAlert(
-                  'Asignar nuevo acudiente',
-                  'El acudiente fue removido. Por favor, asigne un nuevo acudiente a esta deportista menor de edad.'
+                  "Asignar nuevo acudiente",
+                  "El acudiente fue removido. Por favor, asigne un nuevo acudiente a esta deportista menor de edad.",
                 );
               }, 300);
             }
           }, 400);
         } else {
-          showSuccessAlert('Acudiente removido', 'El acudiente fue removido correctamente de esta deportista.');
+          showSuccessAlert(
+            "Acudiente removido",
+            "El acudiente fue removido correctamente de esta deportista.",
+          );
         }
-        
+
         setCurrentAthleteId(null);
       } else {
-        throw new Error(response.error || 'Error removiendo acudiente');
+        throw new Error(response.error || "Error removiendo acudiente");
       }
     } catch (err) {
-      console.error('Error removiendo acudiente:', err);
-      showErrorAlert('Error', err.message || 'No se pudo remover el acudiente');
+      console.error("Error removiendo acudiente:", err);
+      showErrorAlert("Error", err.message || "No se pudo remover el acudiente");
     }
   };
 
@@ -433,78 +410,104 @@ const Athletes = () => {
             <PermissionGuard module="athletesSection" action="Ver">
               <ReportButton
                 data={athletes.map((athlete) => {
-                const guardian = getGuardianById(athlete.acudiente);
-                const firstName = athlete.firstName || athlete.nombres || "";
-                const lastName = athlete.lastName || athlete.apellidos || "";
-                const email = athlete.email || athlete.correo || "";
-                const phone = athlete.phoneNumber || athlete.telefono || "";
-                const address = athlete.address || athlete.direccion || "";
-                const birthDate = athlete.birthDate || athlete.fechaNacimiento || "";
-                const identification = athlete.identification || athlete.numeroDocumento || "";
-                
-                // Obtener tipo de documento del deportista
-                let tipoDocumento = "";
-                const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
-                if (docTypeId && referenceData?.documentTypes) {
-                  const docType = referenceData.documentTypes.find(dt => dt.id === docTypeId);
-                  if (docType) {
-                    tipoDocumento = docType.name || docType.label;
-                  }
-                }
-                
-                // Obtener tipo de documento del acudiente
-                let tipoDocumentoAcudiente = "";
-                if (guardian) {
-                  const guardianDocTypeId = guardian.documentTypeId;
-                  if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
-                    const docType = referenceData.guardianDocumentTypes.find(dt => dt.id === guardianDocTypeId);
+                  const guardian = getGuardianById(athlete.acudiente);
+                  const firstName = athlete.firstName || athlete.nombres || "";
+                  const lastName = athlete.lastName || athlete.apellidos || "";
+                  const email = athlete.email || athlete.correo || "";
+                  const phone = athlete.phoneNumber || athlete.telefono || "";
+                  const address = athlete.address || athlete.direccion || "";
+                  const birthDate =
+                    athlete.birthDate || athlete.fechaNacimiento || "";
+                  const identification =
+                    athlete.identification || athlete.numeroDocumento || "";
+
+                  // Obtener tipo de documento del deportista
+                  let tipoDocumento = "";
+                  const docTypeId =
+                    athlete.user?.documentTypeId || athlete.documentTypeId;
+                  if (docTypeId && referenceData?.documentTypes) {
+                    const docType = referenceData.documentTypes.find(
+                      (dt) => dt.id === docTypeId,
+                    );
                     if (docType) {
-                      tipoDocumentoAcudiente = docType.name || docType.label;
+                      tipoDocumento = docType.name || docType.label;
                     }
                   }
-                }
-                
-                // Convertir parentesco a español
-                const parentescoMap = {
-                  'Mother': 'Madre',
-                  'Father': 'Padre',
-                  'Grandparent': 'Abuelo/a',
-                  'Uncle_Aunt': 'Tío/a',
-                  'Sibling': 'Hermano/a',
-                  'Cousin': 'Primo/a',
-                  'Legal_Guardian': 'Tutor/a Legal',
-                  'Neighbor': 'Vecino/a',
-                  'Family_Friend': 'Amigo/a de la familia',
-                  'Other': 'Otro'
-                };
-                const parentescoRaw = athlete.relationship || athlete.parentesco || "";
-                const parentesco = parentescoMap[parentescoRaw] || parentescoRaw;
-                
-                return {
-                  nombres: firstName,
-                  apellidos: lastName,
-                  nombreCompleto: `${firstName} ${lastName}`.trim(),
-                  tipoDocumento,
-                  numeroDocumento: identification,
-                  correo: email,
-                  telefono: phone,
-                  direccion: address,
-                  fechaNacimiento: birthDate,
-                  categoria: athlete.categoria || "",
-                  estado: athlete.status || athlete.estado || "",
-                  estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
-                  acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
-                  acudienteTipoDocumento: tipoDocumentoAcudiente,
-                  acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
-                  acudienteTelefono: guardian?.phone || guardian?.telefono || "",
-                  acudienteCorreo: guardian?.email || guardian?.correo || "",
-                  acudienteDireccion: guardian?.address || guardian?.direccion || "",
-                  acudienteParentesco: parentesco,
-                  fechaCreacion: athlete.createdAt ? new Date(athlete.createdAt).toLocaleDateString("es-ES") : "",
-                  ultimaActualizacion: athlete.updatedAt ? new Date(athlete.updatedAt).toLocaleDateString("es-ES") : "",
-                };
-              })}
-              fileName="Deportistas"
+
+                  // Obtener tipo de documento del acudiente
+                  let tipoDocumentoAcudiente = "";
+                  if (guardian) {
+                    const guardianDocTypeId = guardian.documentTypeId;
+                    if (
+                      guardianDocTypeId &&
+                      referenceData?.guardianDocumentTypes
+                    ) {
+                      const docType = referenceData.guardianDocumentTypes.find(
+                        (dt) => dt.id === guardianDocTypeId,
+                      );
+                      if (docType) {
+                        tipoDocumentoAcudiente = docType.name || docType.label;
+                      }
+                    }
+                  }
+
+                  // Convertir parentesco a español
+                  const parentescoMap = {
+                    Mother: "Madre",
+                    Father: "Padre",
+                    Grandparent: "Abuelo/a",
+                    Uncle_Aunt: "Tío/a",
+                    Sibling: "Hermano/a",
+                    Cousin: "Primo/a",
+                    Legal_Guardian: "Tutor/a Legal",
+                    Neighbor: "Vecino/a",
+                    Family_Friend: "Amigo/a de la familia",
+                    Other: "Otro",
+                  };
+                  const parentescoRaw =
+                    athlete.relationship || athlete.parentesco || "";
+                  const parentesco =
+                    parentescoMap[parentescoRaw] || parentescoRaw;
+
+                  return {
+                    nombres: firstName,
+                    apellidos: lastName,
+                    nombreCompleto: `${firstName} ${lastName}`.trim(),
+                    tipoDocumento,
+                    numeroDocumento: identification,
+                    correo: email,
+                    telefono: phone,
+                    direccion: address,
+                    fechaNacimiento: birthDate,
+                    categoria: athlete.categoria || "",
+                    estado: athlete.status || athlete.estado || "",
+                    estadoInscripcion:
+                      athlete.currentInscriptionStatus ||
+                      athlete.estadoInscripcion ||
+                      "",
+                    acudienteNombre: guardian
+                      ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim()
+                      : "Sin acudiente",
+                    acudienteTipoDocumento: tipoDocumentoAcudiente,
+                    acudienteDocumento:
+                      guardian?.identification ||
+                      guardian?.identificacion ||
+                      "",
+                    acudienteTelefono:
+                      guardian?.phone || guardian?.telefono || "",
+                    acudienteCorreo: guardian?.email || guardian?.correo || "",
+                    acudienteDireccion:
+                      guardian?.address || guardian?.direccion || "",
+                    acudienteParentesco: parentesco,
+                    fechaCreacion: athlete.createdAt
+                      ? new Date(athlete.createdAt).toLocaleDateString("es-ES")
+                      : "",
+                    ultimaActualizacion: athlete.updatedAt
+                      ? new Date(athlete.updatedAt).toLocaleDateString("es-ES")
+                      : "",
+                  };
+                })}
+                fileName="Deportistas"
                 columns={[
                   { header: "Nombres", accessor: "nombres" },
                   { header: "Apellidos", accessor: "apellidos" },
@@ -516,21 +519,28 @@ const Athletes = () => {
                   { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
                   { header: "Categoría", accessor: "categoria" },
                   { header: "Estado", accessor: "estado" },
-                  { header: "Estado Inscripción", accessor: "estadoInscripcion" },
+                  {
+                    header: "Estado Inscripción",
+                    accessor: "estadoInscripcion",
+                  },
                   { header: "Acudiente", accessor: "acudienteNombre" },
-                  { header: "Tipo Doc. Acudiente", accessor: "acudienteTipoDocumento" },
+                  {
+                    header: "Tipo Doc. Acudiente",
+                    accessor: "acudienteTipoDocumento",
+                  },
                   { header: "Doc. Acudiente", accessor: "acudienteDocumento" },
                   { header: "Tel. Acudiente", accessor: "acudienteTelefono" },
                   { header: "Correo Acudiente", accessor: "acudienteCorreo" },
                   { header: "Dir. Acudiente", accessor: "acudienteDireccion" },
                   { header: "Parentesco", accessor: "acudienteParentesco" },
                   { header: "Fecha Creación", accessor: "fechaCreacion" },
-                  { header: "Última Actualización", accessor: "ultimaActualizacion" },
+                  {
+                    header: "Última Actualización",
+                    accessor: "ultimaActualizacion",
+                  },
                 ]}
               />
             </PermissionGuard>
-
-
           </div>
         </div>
       </div>
@@ -560,16 +570,18 @@ const Athletes = () => {
               tbody={{
                 data: paginatedData.map((a) => {
                   const guardian = getGuardianById(a.acudiente);
-                  
+
                   // Mapear campos del backend al frontend
                   const firstName = a.firstName || a.nombres || "";
                   const lastName = a.lastName || a.apellidos || "";
 
                   return {
                     ...a,
-                    nombreCompleto: `${firstName} ${lastName}`.trim() || "Sin nombre",
+                    nombreCompleto:
+                      `${firstName} ${lastName}`.trim() || "Sin nombre",
                     telefono: a.phoneNumber || a.telefono || "Sin teléfono",
-                    acudienteNombre: guardian?.nombreCompleto || "Sin acudiente",
+                    acudienteNombre:
+                      guardian?.nombreCompleto || "Sin acudiente",
                   };
                 }),
                 dataPropertys: [
@@ -585,22 +597,34 @@ const Athletes = () => {
                   Vencida: "bg-yellow-100 text-yellow-800",
                 },
               }}
-              onEdit={hasPermission('athletesSection', 'Editar') ? handleEdit : null}
-              onDelete={hasPermission('athletesSection', 'Eliminar') ? handleDelete : null}
-              onView={hasPermission('athletesSection', 'Ver') ? handleView : null}
+              onEdit={
+                hasPermission("athletesSection", "Editar") ? handleEdit : null
+              }
+              onDelete={
+                hasPermission("athletesSection", "Eliminar")
+                  ? handleDelete
+                  : null
+              }
+              onView={
+                hasPermission("athletesSection", "Ver") ? handleView : null
+              }
               buttonConfig={{
-                edit: (item) => ({ show: hasPermission('athletesSection', 'Editar') }),
+                edit: (item) => ({
+                  show: hasPermission("athletesSection", "Editar"),
+                }),
                 delete: (item) => {
                   const validation = canDeleteAthlete(item);
                   return {
-                    show: hasPermission('athletesSection', 'Eliminar'),
+                    show: hasPermission("athletesSection", "Eliminar"),
                     disabled: !validation.canDelete,
-                    title: validation.canDelete 
-                      ? "Eliminar deportista" 
-                      : `No se puede eliminar: ${validation.reason}`
+                    title: validation.canDelete
+                      ? "Eliminar deportista"
+                      : `No se puede eliminar: ${validation.reason}`,
                   };
                 },
-                view: (item) => ({ show: hasPermission('athletesSection', 'Ver') }),
+                view: (item) => ({
+                  show: hasPermission("athletesSection", "Ver"),
+                }),
               }}
               customActions={[
                 {
@@ -608,19 +632,9 @@ const Athletes = () => {
                   label: <FaUserShield className="w-4 h-4" />,
                   className:
                     "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
-                  title: "Gestionar Acudiente"
+                  title: "Gestionar Acudiente",
                 },
               ]}
-            />
-          </div>
-          <div className="mt-4">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              totalRows={totalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
             />
           </div>
         </>
@@ -664,9 +678,7 @@ const Athletes = () => {
         onClose={() => setIsViewModalOpen(false)}
         athlete={athleteToView}
         guardian={
-          athleteToView
-            ? getGuardianById(athleteToView.acudiente)
-            : null
+          athleteToView ? getGuardianById(athleteToView.acudiente) : null
         }
         referenceData={referenceData}
       />
@@ -680,7 +692,9 @@ const Athletes = () => {
         onUpdate={handleUpdateGuardian}
         guardianToEdit={guardianToEdit}
         mode={guardianModalMode}
-        referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
+        referenceData={{
+          documentTypes: referenceData.guardianDocumentTypes || [],
+        }}
       />
 
       <GuardianViewModal
@@ -690,14 +704,17 @@ const Athletes = () => {
           setCurrentAthleteId(null);
         }}
         guardian={guardianToView}
-        athletes={athletes.filter((a) => String(a.acudiente) === String(guardianToView?.id))}
+        athletes={athletes.filter(
+          (a) => String(a.acudiente) === String(guardianToView?.id),
+        )}
         currentAthleteId={currentAthleteId}
         onEdit={handleEditGuardian}
         onDelete={handleDeleteGuardian}
         onRemove={handleRemoveGuardian}
-        referenceData={{ documentTypes: referenceData.guardianDocumentTypes || [] }}
+        referenceData={{
+          documentTypes: referenceData.guardianDocumentTypes || [],
+        }}
       />
-
     </div>
   );
 };
