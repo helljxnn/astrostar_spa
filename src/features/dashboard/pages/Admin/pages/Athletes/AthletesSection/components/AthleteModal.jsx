@@ -19,6 +19,7 @@ import {
   athleteValidationRules,
 } from "../hooks/useFormAthleteValidation";
 import AthletesService from "../services/AthletesService";
+import { useDocumentValidation } from "../../../../../../../../shared/hooks/useDocumentValidation";
 
 // Los tipos de documento y categorías ahora se reciben desde props (cargados desde la API)
 
@@ -110,8 +111,17 @@ const AthleteModal = ({
   const [otroParentesco, setOtroParentesco] = useState("");
   const [hasDateOfBirth, setHasDateOfBirth] = useState(false);
   const [asyncErrors, setAsyncErrors] = useState({});
-  const [checkingDocument, setCheckingDocument] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+
+  // Hook para validación de documento en tiempo real
+  const excludeUserId = (isEditing && !isEnrollmentMode && athleteToEdit?.userId) ? athleteToEdit.userId : null;
+  const {
+    isChecking: isCheckingDocumentValidation,
+    documentExists,
+    validationMessage: documentValidationMessage,
+    validateDocumentDebounced,
+    clearValidation: clearDocumentValidation,
+  } = useDocumentValidation(excludeUserId);
 
   const {
     values,
@@ -202,62 +212,55 @@ const AthleteModal = ({
     }
   }, [values.documentTypeId, setTouched]);
 
-  // Validación instantánea de documento
+  // Validación en tiempo real de documento (verifica deportistas + inscripciones)
   useEffect(() => {
-    const checkDocument = async () => {
-      if (!values.identification || values.identification.length < 6) {
-        setAsyncErrors(prev => ({ ...prev, identification: null }));
-        return;
+    if (!values.identification || values.identification.length < 6) {
+      clearDocumentValidation();
+      setAsyncErrors(prev => ({ ...prev, identification: null }));
+      return;
+    }
+
+    // NO VALIDAR en modo edición normal (desde tabla de deportistas)
+    // SÍ VALIDAR en modo matrícula (isEnrollmentMode) y en modo creación
+    if (isEditing && !isEnrollmentMode) {
+      console.log('⚠️ [AthleteModal] Validación de documento deshabilitada en modo edición normal');
+      clearDocumentValidation();
+      setAsyncErrors(prev => ({ ...prev, identification: null }));
+      if (errors.identification && errors.identification.includes('ya está registrado')) {
+        setErrors(prev => ({ ...prev, identification: '' }));
       }
+      return;
+    }
 
-      // NO VALIDAR SOLO en modo edición normal (desde tabla de deportistas)
-      // SÍ VALIDAR en modo matrícula (isEnrollmentMode) y en modo creación
-      if (isEditing && !isEnrollmentMode) {
-        console.log('⚠️ [AthleteModal] Validación de documento deshabilitada en modo edición normal');
-        setAsyncErrors(prev => ({ ...prev, identification: null }));
-        if (errors.identification && errors.identification.includes('ya está registrado')) {
-          setErrors(prev => ({ ...prev, identification: '' }));
-        }
-        return;
+    console.log('🔍 [AthleteModal] Validando documento - Modo:', isEnrollmentMode ? 'matrícula' : 'creación');
+    console.log('🔍 [AthleteModal] Documento a validar:', values.identification);
+    
+    // Usar el hook de validación con debounce
+    validateDocumentDebounced(values.identification, 6);
+  }, [values.identification, isEditing, isEnrollmentMode, validateDocumentDebounced, clearDocumentValidation, setErrors, errors.identification]);
+
+  // Sincronizar el resultado de la validación con asyncErrors
+  useEffect(() => {
+    // Solo actualizar si estamos validando o acabamos de terminar
+    if (documentExists) {
+      // Documento existe - mostrar error
+      setAsyncErrors(prev => ({ ...prev, identification: documentValidationMessage }));
+      setErrors(prev => ({ ...prev, identification: documentValidationMessage }));
+      setTouched(prev => ({ ...prev, identification: true }));
+    } else if (!isCheckingDocumentValidation && values.identification.length >= 6) {
+      // Validación completada y documento NO existe - limpiar error solo si es de validación async
+      setAsyncErrors(prev => ({ ...prev, identification: null }));
+      // Solo limpiar el error si es un error de documento duplicado
+      if (errors.identification && (
+        errors.identification.includes('ya está matriculado') || 
+        errors.identification.includes('ya tiene una inscripción') ||
+        errors.identification.includes('ya está registrado') ||
+        errors.identification.includes('ya está inscrito')
+      )) {
+        setErrors(prev => ({ ...prev, identification: '' }));
       }
-
-      setCheckingDocument(true);
-      try {
-        console.log('🔍 [AthleteModal] Validando documento - Modo:', isEnrollmentMode ? 'matrícula' : 'creación');
-        console.log('🔍 [AthleteModal] Documento a validar:', values.identification);
-        console.log('🔍 [AthleteModal] isEditing:', isEditing, 'isEnrollmentMode:', isEnrollmentMode);
-        
-        // Verificar en TODOS los usuarios (no solo deportistas)
-        // En modo matrícula, no excluir a nadie para detectar duplicados
-        const result = await AthletesService.checkIdentificationAvailability(
-          values.identification,
-          null
-        );
-
-        if (!result.available) {
-          const errorMsg = `Este documento ya está registrado`;
-          setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
-          setErrors(prev => ({ ...prev, identification: errorMsg }));
-          setTouched(prev => ({ ...prev, identification: true }));
-        } else {
-          setAsyncErrors(prev => ({ ...prev, identification: null }));
-          if (errors.identification && errors.identification.includes('ya está registrado')) {
-            setErrors(prev => ({ ...prev, identification: '' }));
-          }
-        }
-      } catch (error) {
-        console.error('Error verificando documento:', error);
-      } finally {
-        setCheckingDocument(false);
-      }
-    };
-
-    // Si estamos en modo matrícula y el campo está touched, validar inmediatamente
-    // De lo contrario, usar debounce de 500ms
-    const delay = (isEnrollmentMode && touched.identification) ? 0 : 500;
-    const timeoutId = setTimeout(checkDocument, delay);
-    return () => clearTimeout(timeoutId);
-  }, [values.identification, isEditing, athleteToEdit, setErrors, setTouched, errors.identification, isEnrollmentMode, touched.identification]);
+    }
+  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length, setErrors, setTouched]);
 
   // Validación instantánea de email
   useEffect(() => {
@@ -899,21 +902,28 @@ const AthleteModal = ({
               />
 
               {/* Identificación con validación por tipo de documento */}
-              <DocumentField
-                documentType={
-                  referenceData.documentTypes.find(
-                    (dt) => dt.id === parseInt(values.documentTypeId)
-                  )?.name
-                }
-                value={values.identification}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.identification || asyncErrors.identification}
-                touched={touched.identification}
-                required
-                label="Número de Documento"
-                name="identification"
-              />
+              <div className="relative">
+                <DocumentField
+                  documentType={
+                    referenceData.documentTypes.find(
+                      (dt) => dt.id === parseInt(values.documentTypeId)
+                    )?.name
+                  }
+                  value={values.identification}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  error={errors.identification || asyncErrors.identification}
+                  touched={touched.identification}
+                  required
+                  label="Número de Documento"
+                  name="identification"
+                />
+                {isCheckingDocumentValidation && (
+                  <div className="absolute right-3 top-9">
+                    <div className="w-5 h-5 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <FormField

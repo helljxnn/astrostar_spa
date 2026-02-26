@@ -237,10 +237,13 @@ class ApiClient {
     window.location.href = "/login";
   }
 
-  async get(endpoint, params = {}) {
+  async get(endpoint, options = {}) {
+    // Extraer params y skipLoader de options
+    const { params = {}, skipLoader = false, ...restOptions } = options;
+    
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    return this.request(url, { method: "GET" });
+    return this.request(url, { method: "GET", skipLoader, ...restOptions });
   }
 
   // Método para hacer peticiones sin loader

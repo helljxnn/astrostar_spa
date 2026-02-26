@@ -374,7 +374,7 @@ class AthletesService {
 
       const response = await apiClient.get(
         "/users/check-identification",
-        params
+        { params, skipLoader: true }
       );
 
       return {

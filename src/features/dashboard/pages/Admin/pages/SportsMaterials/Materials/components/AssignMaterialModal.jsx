@@ -228,9 +228,6 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
               required
               placeholder="0"
               maxLength={6}
-            />
-              maxLength={6}
-              placeholder="0"
               disabled={!selectedMaterial}
             />
 

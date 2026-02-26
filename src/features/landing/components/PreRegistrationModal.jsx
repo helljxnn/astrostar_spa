@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
 import InscriptionsService from "../../dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService";
+import { useDocumentValidation } from "../../../shared/hooks/useDocumentValidation";
 
 const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -26,8 +27,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [isResending, setIsResending] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
   const [cooldownTime, setCooldownTime] = useState(0);
-  const [isCheckingDocument, setIsCheckingDocument] = useState(false);
   const [documentExists, setDocumentExists] = useState(false);
+
+  // Hook para validación de documento en tiempo real (verifica deportistas + inscripciones)
+  const {
+    isChecking: isCheckingDocumentValidation,
+    documentExists: documentExistsValidation,
+    validationMessage: documentValidationMessage,
+    validateDocumentDebounced,
+    clearValidation: clearDocumentValidation,
+  } = useDocumentValidation(null); // null = no excluir a nadie (es una nueva inscripción)
 
   // Validaciones
   const validateField = (name, value) => {
@@ -101,6 +110,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     // Limpiar el estado de documento existente cuando el usuario está escribiendo
     if (field === "identification") {
       setDocumentExists(false);
+      clearDocumentValidation();
     }
     
     // Validar en tiempo real SIEMPRE (no solo cuando touched)
@@ -113,52 +123,45 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Efecto para verificar documento con debounce
+  // Validación en tiempo real de documento usando el hook
   useEffect(() => {
-    const checkDocument = async () => {
-      const documento = formData.identification;
-      
-      // Solo verificar si el documento tiene al menos 6 caracteres y es válido
-      if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
-        setIsCheckingDocument(true);
-        
-        try {
-          const result = await InscriptionsService.checkDocumentExists(documento);
-          
-          if (result.success && result.exists) {
-            setDocumentExists(true);
-            // Usar el mensaje del backend si está disponible, sino usar mensaje genérico
-            const errorMessage = result.message || "Este documento ya está registrado";
-            setErrors((prev) => ({ ...prev, identification: errorMessage }));
-            setTouched((prev) => ({ ...prev, identification: true }));
-          } else {
-            setDocumentExists(false);
-            // Solo actualizar error si el campo ya fue tocado
-            if (touched.identification) {
-              const validationError = validateField("identification", documento);
-              setErrors((prev) => ({ ...prev, identification: validationError }));
-            }
-          }
-        } catch (error) {
-          console.error("Error checking document:", error);
-          setDocumentExists(false);
-        } finally {
-          setIsCheckingDocument(false);
-        }
-      } else {
-        setIsCheckingDocument(false);
-        setDocumentExists(false);
+    const documento = formData.identification;
+    
+    // Solo verificar si el documento tiene al menos 6 caracteres y es válido
+    if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
+      validateDocumentDebounced(documento, 6);
+    } else {
+      clearDocumentValidation();
+      setDocumentExists(false);
+    }
+  }, [formData.identification, validateDocumentDebounced, clearDocumentValidation]);
+
+  // Sincronizar resultado de validación con estados locales
+  useEffect(() => {
+    if (documentExistsValidation) {
+      setDocumentExists(true);
+      const errorMessage = documentValidationMessage || "Este documento ya está registrado";
+      setErrors((prev) => ({ ...prev, identification: errorMessage }));
+      setTouched((prev) => ({ ...prev, identification: true }));
+    } else if (!isCheckingDocumentValidation && formData.identification.length >= 6) {
+      setDocumentExists(false);
+      // Solo actualizar error si el campo ya fue tocado
+      if (touched.identification) {
+        const validationError = validateField("identification", formData.identification);
+        setErrors((prev) => ({ ...prev, identification: validationError }));
       }
-    };
-
-    // Debounce de 400ms para respuesta rápida
-    const timeoutId = setTimeout(checkDocument, 400);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.identification, touched.identification]);
+    }
+  }, [isCheckingDocumentValidation, documentExistsValidation, documentValidationMessage, formData.identification, touched.identification]);
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+    
+    // NO validar el campo identification en blur porque ya tiene validación en tiempo real
+    // Si lo validamos aquí, sobrescribe el mensaje correcto del hook
+    if (field === "identification") {
+      return; // El hook ya maneja la validación de este campo
+    }
+    
     const error = validateField(field, formData[field]);
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
@@ -330,7 +333,6 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setNewEmailError("");
     setNotification({ show: false, type: "", message: "" });
     setDocumentExists(false);
-    setIsCheckingDocument(false);
   };
 
   // Efecto para limpiar cuando se cierra el modal
@@ -454,24 +456,18 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* Resto de campos en columna única */}
-                  <div className="relative">
-                    <FormField
-                      label="Número de Documento"
-                      name="identification"
-                      type="text"
-                      value={formData.identification}
-                      onChange={(e) => handleChange("identification", e.target.value)}
-                      onBlur={() => handleBlur("identification")}
-                      error={errors.identification}
-                      touched={touched.identification}
-                      required
-                    />
-                    {isCheckingDocument && (
-                      <div className="absolute right-3 top-9">
-                        <div className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </div>
+                  <FormField
+                    label="Número de Documento"
+                    name="identification"
+                    type="text"
+                    value={formData.identification}
+                    onChange={(e) => handleChange("identification", e.target.value)}
+                    onBlur={() => handleBlur("identification")}
+                    error={errors.identification}
+                    touched={touched.identification}
+                    required
+                    isLoading={isCheckingDocumentValidation}
+                  />
 
                   <FormField
                     label="Fecha de Nacimiento"
@@ -519,7 +515,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cooldownTime > 0 || documentExists || isCheckingDocument}
+                  disabled={isSubmitting || cooldownTime > 0 || documentExists || isCheckingDocumentValidation}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
