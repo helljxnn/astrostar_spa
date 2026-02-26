@@ -1,18 +1,22 @@
-import { useState, useEffect, useMemo } from 'react';
-import { FaPlus, FaMinusCircle, FaExchangeAlt } from 'react-icons/fa';
+import { useState, useEffect, useMemo } from "react";
+import { FaPlus, FaMinusCircle, FaExchangeAlt } from "react-icons/fa";
 import MaterialModal from "./components/MaterialModal";
 import MaterialViewModal from "./components/MaterialViewModal";
 import MaterialDischargeModal from "./components/MaterialDischargeModal";
 import TransferModal from "./components/TransferModal";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../shared/utils/alerts';
-import materialsService from './services/MaterialsService';
-import { formatNumber } from '../../../../../../../shared/utils/numberFormat';
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showDeleteAlert,
+} from "../../../../../../../shared/utils/alerts";
+import materialsService from "./services/MaterialsService";
+import { formatNumber } from "../../../../../../../shared/utils/numberFormat";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const MaterialsCatalog = () => {
   const { hasPermission } = usePermissions();
@@ -23,31 +27,32 @@ const MaterialsCatalog = () => {
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
-  const rowsPerPage = 10;
 
   useEffect(() => {
     fetchMaterials();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
   const fetchMaterials = async () => {
     try {
       setLoading(true);
-      
+
       const response = await materialsService.getMaterials({
         page: currentPage,
-        limit: rowsPerPage,
-        search: '' // No enviar search al backend, filtraremos localmente
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
       });
-      
+
       if (response.success) {
         setMaterials(response.data || []);
         setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
-      console.error('Error al cargar materiales:', error);
+      console.error("Error al cargar materiales:", error);
       setMaterials([]);
       setTotalRows(0);
     } finally {
@@ -55,56 +60,15 @@ const MaterialsCatalog = () => {
     }
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return materials;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return materials.filter((material) => {
-      // Campos de texto general (búsqueda por contiene)
-      const textFields = [
-        material.nombre,
-        material.categoria,
-        material.descripcion,
-      ];
-
-      const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
-      );
-
-      // Campo de estado (búsqueda exacta de palabra completa)
-      const estadoLower = material.estado?.toLowerCase();
-      const statusMatch = estadoLower === searchLower;
-
-      // Buscar en stocks (convertir números a string)
-      const stockMatch = 
-        material.stockFundacion?.toString().includes(searchLower) ||
-        material.stockEventos?.toString().includes(searchLower) ||
-        material.stockTotal?.toString().includes(searchLower);
-
-      // Buscar en fechas (formato legible)
-      let dateMatch = false;
-      if (material.createdAt) {
-        const fecha = new Date(material.createdAt);
-        const fechaStr = fecha.toLocaleDateString('es-ES');
-        dateMatch = fechaStr.includes(searchLower);
-      }
-
-      return textMatch || statusMatch || stockMatch || dateMatch;
-    });
-  }, [materials, searchTerm]);
-
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = searchTerm ? filteredData : materials;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
-
-  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = materials;
 
   const handleCreate = () => {
-    if (!hasPermission('materials', 'Crear')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para crear materiales');
+    if (!hasPermission("materials", "Crear")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para crear materiales",
+      );
       return;
     }
     setSelectedMaterial(null);
@@ -112,8 +76,11 @@ const MaterialsCatalog = () => {
   };
 
   const handleEdit = (material) => {
-    if (!hasPermission('materials', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para editar materiales');
+    if (!hasPermission("materials", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar materiales",
+      );
       return;
     }
     setSelectedMaterial(material);
@@ -122,21 +89,24 @@ const MaterialsCatalog = () => {
 
   const handleSave = async (materialData, materialId = null) => {
     const isEditing = !!materialId;
-    
-    if (!hasPermission('materials', isEditing ? 'Editar' : 'Crear')) {
-      showErrorAlert('Sin permisos', `No tienes permisos para ${isEditing ? 'editar' : 'crear'} materiales`);
+
+    if (!hasPermission("materials", isEditing ? "Editar" : "Crear")) {
+      showErrorAlert(
+        "Sin permisos",
+        `No tienes permisos para ${isEditing ? "editar" : "crear"} materiales`,
+      );
       return false;
     }
 
     try {
-      const response = isEditing 
+      const response = isEditing
         ? await materialsService.updateMaterial(materialId, materialData)
         : await materialsService.createMaterial(materialData);
-      
+
       if (response.success) {
         showSuccessAlert(
-          isEditing ? "Material Actualizado" : "Material Creado", 
-          `El material "${materialData.nombre}" fue ${isEditing ? 'actualizado' : 'creado'} correctamente.`
+          isEditing ? "Material Actualizado" : "Material Creado",
+          `El material "${materialData.nombre}" fue ${isEditing ? "actualizado" : "creado"} correctamente.`,
         );
         setIsModalOpen(false);
         fetchMaterials();
@@ -144,20 +114,28 @@ const MaterialsCatalog = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} el material`
+          response.message ||
+            `No se pudo ${isEditing ? "actualizar" : "crear"} el material`,
         );
         return false;
       }
     } catch (error) {
-      console.error('Error al guardar material:', error);
-      showErrorAlert("Error", error.message || `Error al ${isEditing ? 'actualizar' : 'crear'} el material en el servidor`);
+      console.error("Error al guardar material:", error);
+      showErrorAlert(
+        "Error",
+        error.message ||
+          `Error al ${isEditing ? "actualizar" : "crear"} el material en el servidor`,
+      );
       return false;
     }
   };
 
   const handleView = (material) => {
-    if (!hasPermission('materials', 'Ver')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para ver detalles de materiales');
+    if (!hasPermission("materials", "Ver")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver detalles de materiales",
+      );
       return;
     }
     setSelectedMaterial(material);
@@ -165,29 +143,32 @@ const MaterialsCatalog = () => {
   };
 
   const handleDelete = async (material) => {
-    if (!hasPermission('materials', 'Eliminar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar materiales');
+    if (!hasPermission("materials", "Eliminar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar materiales",
+      );
       return;
     }
 
     // Verificar si tiene stock
     const hasStock = (material.stockTotalNumeric || 0) > 0;
-    
+
     // Verificar si tiene movimientos históricos
     const hasMovements = material.hasMovements || false;
-    
+
     if (hasStock) {
       showErrorAlert(
-        'No se puede eliminar',
-        `Este material tiene stock registrado (${material.stockTotal} unidades). No se puede eliminar.`
+        "No se puede eliminar",
+        `Este material tiene stock registrado (${material.stockTotal} unidades). No se puede eliminar.`,
       );
       return;
     }
 
     if (hasMovements) {
       showErrorAlert(
-        'No se puede eliminar',
-        'Este material tiene movimientos históricos registrados. Para mantener la integridad del historial, márcalo como "Inactivo" en lugar de eliminarlo.'
+        "No se puede eliminar",
+        'Este material tiene movimientos históricos registrados. Para mantener la integridad del historial, márcalo como "Inactivo" en lugar de eliminarlo.',
       );
       return;
     }
@@ -195,56 +176,68 @@ const MaterialsCatalog = () => {
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará el material "${material.nombre}". Esta acción no se puede deshacer.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
-    
+
     if (!confirmResult.isConfirmed) return;
 
     try {
       const response = await materialsService.deleteMaterial(material.id);
-      
+
       if (response.success) {
         showSuccessAlert(
-          "Material Eliminado", 
-          `El material "${material.nombre}" fue eliminado correctamente.`
+          "Material Eliminado",
+          `El material "${material.nombre}" fue eliminado correctamente.`,
         );
         fetchMaterials();
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo eliminar el material"
+          response.message || "No se pudo eliminar el material",
         );
       }
     } catch (error) {
-      console.error('Error al eliminar material:', error);
-      showErrorAlert("Error", error.message || "Error al eliminar el material en el servidor");
+      console.error("Error al eliminar material:", error);
+      showErrorAlert(
+        "Error",
+        error.message || "Error al eliminar el material en el servidor",
+      );
     }
   };
 
   const handleDischarge = (material) => {
-    if (!hasPermission('materials', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para registrar bajas de materiales');
+    if (!hasPermission("materials", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para registrar bajas de materiales",
+      );
       return;
     }
     // Buscar el material original sin formatear
-    const originalMaterial = materials.find(m => m.id === material.id);
+    const originalMaterial = materials.find((m) => m.id === material.id);
     setSelectedMaterial(originalMaterial || material);
     setIsDischargeModalOpen(true);
   };
 
   const handleSaveDischarge = async (dischargeData) => {
-    if (!hasPermission('materials', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para registrar bajas de materiales');
+    if (!hasPermission("materials", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para registrar bajas de materiales",
+      );
       return false;
     }
 
     try {
-      const response = await materialsService.registerDischarge(selectedMaterial.id, dischargeData);
-      
+      const response = await materialsService.registerDischarge(
+        selectedMaterial.id,
+        dischargeData,
+      );
+
       if (response.success) {
         showSuccessAlert(
-          "Baja Registrada", 
-          `Se registró la baja de ${dischargeData.cantidad} unidades del material "${selectedMaterial.nombre}".`
+          "Baja Registrada",
+          `Se registró la baja de ${dischargeData.cantidad} unidades del material "${selectedMaterial.nombre}".`,
         );
         setIsDischargeModalOpen(false);
         fetchMaterials();
@@ -252,40 +245,52 @@ const MaterialsCatalog = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo registrar la baja"
+          response.message || "No se pudo registrar la baja",
         );
         return false;
       }
     } catch (error) {
-      console.error('Error al registrar baja:', error);
-      showErrorAlert("Error", error.message || "Error al registrar la baja en el servidor");
+      console.error("Error al registrar baja:", error);
+      showErrorAlert(
+        "Error",
+        error.message || "Error al registrar la baja en el servidor",
+      );
       return false;
     }
   };
 
   const handleTransfer = (material) => {
-    if (!hasPermission('materials', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para transferir stock');
+    if (!hasPermission("materials", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para transferir stock",
+      );
       return;
     }
-    const originalMaterial = materials.find(m => m.id === material.id);
+    const originalMaterial = materials.find((m) => m.id === material.id);
     setSelectedMaterial(originalMaterial || material);
     setIsTransferModalOpen(true);
   };
 
   const handleSaveTransfer = async (transferData) => {
-    if (!hasPermission('materials', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para transferir stock');
+    if (!hasPermission("materials", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para transferir stock",
+      );
       return false;
     }
 
     try {
-      const response = await materialsService.transferStock(selectedMaterial.id, transferData);
-      
+      const response = await materialsService.transferStock(
+        selectedMaterial.id,
+        transferData,
+      );
+
       if (response.success) {
         showSuccessAlert(
           "Transferencia Exitosa",
-          `Se transfirieron ${transferData.cantidad} unidades de "${selectedMaterial.nombre}" desde ${transferData.from === 'FUNDACION' ? 'Fundación' : 'Eventos'} hacia ${transferData.to === 'FUNDACION' ? 'Fundación' : 'Eventos'}.`
+          `Se transfirieron ${transferData.cantidad} unidades de "${selectedMaterial.nombre}" desde ${transferData.from === "FUNDACION" ? "Fundación" : "Eventos"} hacia ${transferData.to === "FUNDACION" ? "Fundación" : "Eventos"}.`,
         );
         setIsTransferModalOpen(false);
         fetchMaterials();
@@ -293,27 +298,31 @@ const MaterialsCatalog = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo realizar la transferencia"
+          response.message || "No se pudo realizar la transferencia",
         );
         return false;
       }
     } catch (error) {
-      console.error('Error al transferir:', error);
+      console.error("Error al transferir:", error);
       showErrorAlert("Error", error.message || "Error al transferir stock");
       return false;
     }
   };
 
   // Preparar datos para tabla con truncado - SIMPLE: 3 columnas
-  const tableData = displayData.map(m => {
+  const tableData = displayData.map((m) => {
     const stockFundacion = m.stockFundacion || 0;
     const stockEventos = m.stockEventos || 0;
-    const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
-    
+    const stockTotal = m.stockTotal || stockFundacion + stockEventos;
+
     return {
       ...m,
-      nombreTruncated: m.nombre.length > 30 ? m.nombre.substring(0, 30) + '...' : m.nombre,
-      categoriaTruncated: m.categoria.length > 30 ? m.categoria.substring(0, 30) + '...' : m.categoria,
+      nombreTruncated:
+        m.nombre.length > 30 ? m.nombre.substring(0, 30) + "..." : m.nombre,
+      categoriaTruncated:
+        m.categoria.length > 30
+          ? m.categoria.substring(0, 30) + "..."
+          : m.categoria,
       stockFundacion: formatNumber(stockFundacion),
       stockEventos: formatNumber(stockEventos),
       stockTotal: formatNumber(stockTotal),
@@ -325,11 +334,11 @@ const MaterialsCatalog = () => {
   });
 
   // Datos para reporte
-  const reportData = displayData.map(m => {
+  const reportData = displayData.map((m) => {
     const stockFundacion = m.stockFundacion || 0;
     const stockEventos = m.stockEventos || 0;
-    const stockTotal = m.stockTotal || (stockFundacion + stockEventos);
-    
+    const stockTotal = m.stockTotal || stockFundacion + stockEventos;
+
     return {
       nombre: m.nombre,
       categoria: m.categoria,
@@ -337,7 +346,7 @@ const MaterialsCatalog = () => {
       stockEventos: stockEventos,
       stockTotal: stockTotal,
       estado: m.estado,
-      descripcion: m.descripcion || 'N/A',
+      descripcion: m.descripcion || "N/A",
     };
   });
 
@@ -345,7 +354,9 @@ const MaterialsCatalog = () => {
     <div className="p-6 font-questrial">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Gestión de Materiales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Gestión de Materiales
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <SearchInput
@@ -398,33 +409,39 @@ const MaterialsCatalog = () => {
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "categoriaTruncated", "stockFundacion", "stockEventos", "stockTotal"],
+          dataPropertys: [
+            "nombreTruncated",
+            "categoriaTruncated",
+            "stockFundacion",
+            "stockEventos",
+            "stockTotal",
+          ],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",
             Inactivo: "bg-red-100 text-red-800",
           },
         }}
-        onView={hasPermission('materials', 'Ver') ? handleView : null}
-        onEdit={hasPermission('materials', 'Editar') ? handleEdit : null}
-        onDelete={hasPermission('materials', 'Eliminar') ? handleDelete : null}
+        onView={hasPermission("materials", "Ver") ? handleView : null}
+        onEdit={hasPermission("materials", "Editar") ? handleEdit : null}
+        onDelete={hasPermission("materials", "Eliminar") ? handleDelete : null}
         customActions={
-          hasPermission('materials', 'Editar')
+          hasPermission("materials", "Editar")
             ? [
                 {
                   onClick: handleTransfer,
                   className:
-                    'p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors',
+                    "p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors",
                   label: <FaExchangeAlt />,
-                  title: 'Transferir Stock',
+                  title: "Transferir Stock",
                   show: (item) => true,
                 },
                 {
                   onClick: handleDischarge,
                   className:
-                    'p-2 rounded-full bg-[#f5ebe8] border border-[#f0e0da] text-[#c3a096] hover:text-[#a88a7f] hover:border-[#e5d5cf] transition-colors',
+                    "p-2 rounded-full bg-[#f5ebe8] border border-[#f0e0da] text-[#c3a096] hover:text-[#a88a7f] hover:border-[#e5d5cf] transition-colors",
                   label: <FaMinusCircle />,
-                  title: 'Registrar Baja',
+                  title: "Registrar Baja",
                   show: (item) => true,
                 },
               ]
@@ -432,43 +449,31 @@ const MaterialsCatalog = () => {
         }
         buttonConfig={{
           view: () => ({
-            show: hasPermission('materials', 'Ver'),
+            show: hasPermission("materials", "Ver"),
             disabled: false,
             title: "Ver detalles",
           }),
           edit: () => ({
-            show: hasPermission('materials', 'Editar'),
+            show: hasPermission("materials", "Editar"),
             disabled: false,
             title: "Editar material",
           }),
           delete: (material) => {
             const hasStock = (material.stockTotalNumeric || 0) > 0;
             const hasMovements = material.hasMovements || false;
-            
+
             return {
-              show: hasPermission('materials', 'Eliminar'),
+              show: hasPermission("materials", "Eliminar"),
               disabled: hasStock || hasMovements,
               title: hasStock
                 ? "Tiene stock registrado"
                 : hasMovements
-                ? "Tiene movimientos históricos"
-                : "Eliminar material",
+                  ? "Tiene movimientos históricos"
+                  : "Eliminar material",
             };
           },
         }}
       />
-
-      {/* Paginación */}
-      {displayTotalRows > rowsPerPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRows={displayTotalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
-      )}
 
       {/* Modales */}
       <MaterialModal
@@ -489,7 +494,7 @@ const MaterialsCatalog = () => {
         }}
         material={selectedMaterial}
         onEdit={handleEdit}
-        canEdit={hasPermission('materials', 'Editar')}
+        canEdit={hasPermission("materials", "Editar")}
       />
 
       <MaterialDischargeModal
@@ -516,4 +521,3 @@ const MaterialsCatalog = () => {
 };
 
 export default MaterialsCatalog;
-

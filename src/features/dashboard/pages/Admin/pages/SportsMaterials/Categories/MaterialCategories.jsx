@@ -1,15 +1,19 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { FaPlus } from 'react-icons/fa';
+import { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FaPlus } from "react-icons/fa";
 import CategoryModal from "./components/CategoryModal";
 import CategoryViewModal from "./components/CategoryViewModal";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../shared/utils/alerts';
-import categoriesService from '../shared/services/CategoriesService';
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showDeleteAlert,
+} from "../../../../../../../shared/utils/alerts";
+import categoriesService from "../shared/services/CategoriesService";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const MaterialCategories = () => {
   const { hasPermission } = usePermissions();
@@ -20,10 +24,11 @@ const MaterialCategories = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
-  const rowsPerPage = 10;
 
   // Detectar si se debe abrir el modal de crear al llegar desde otra página
   useEffect(() => {
@@ -36,24 +41,24 @@ const MaterialCategories = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      
+
       const response = await categoriesService.getCategories({
         page: currentPage,
-        limit: rowsPerPage,
-        search: '' // No enviar search al backend, filtraremos localmente
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
       });
-      
+
       if (response.success) {
         setCategories(response.data || []);
         setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
-      console.error('Error al cargar categorías:', error);
+      console.error("Error al cargar categorías:", error);
       setCategories([]);
       setTotalRows(0);
     } finally {
@@ -61,43 +66,15 @@ const MaterialCategories = () => {
     }
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return categories;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return categories.filter((category) => {
-      // Campos de texto general (búsqueda por contiene)
-      const textFields = [
-        category.nombre,
-        category.descripcion,
-      ];
-
-      const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower)
-      );
-
-      // Campo de estado (búsqueda exacta de palabra completa)
-      const estadoLower = category.estado?.toLowerCase();
-
-      // Buscar como palabra completa para evitar que "activo" encuentre "inactivo"
-      const statusMatch = estadoLower === searchLower;
-
-      return textMatch || statusMatch;
-    });
-  }, [categories, searchTerm]);
-
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = searchTerm ? filteredData : categories;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
-
-  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = categories;
 
   const handleCreate = () => {
-    if (!hasPermission('materialCategories', 'Crear')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para crear categorías');
+    if (!hasPermission("materialCategories", "Crear")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para crear categorías",
+      );
       return;
     }
     setSelectedCategory(null);
@@ -105,8 +82,11 @@ const MaterialCategories = () => {
   };
 
   const handleEdit = (category) => {
-    if (!hasPermission('materialCategories', 'Editar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para editar categorías');
+    if (!hasPermission("materialCategories", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar categorías",
+      );
       return;
     }
     setSelectedCategory(category);
@@ -115,21 +95,24 @@ const MaterialCategories = () => {
 
   const handleSave = async (categoryData, categoryId = null) => {
     const isEditing = !!categoryId;
-    
-    if (!hasPermission('materialCategories', isEditing ? 'Editar' : 'Crear')) {
-      showErrorAlert('Sin permisos', `No tienes permisos para ${isEditing ? 'editar' : 'crear'} categorías`);
+
+    if (!hasPermission("materialCategories", isEditing ? "Editar" : "Crear")) {
+      showErrorAlert(
+        "Sin permisos",
+        `No tienes permisos para ${isEditing ? "editar" : "crear"} categorías`,
+      );
       return false;
     }
 
     try {
-      const response = isEditing 
+      const response = isEditing
         ? await categoriesService.updateCategory(categoryId, categoryData)
         : await categoriesService.createCategory(categoryData);
-      
+
       if (response.success) {
         showSuccessAlert(
-          isEditing ? "Categoría Actualizada" : "Categoría Creada", 
-          `La categoría "${categoryData.nombre}" fue ${isEditing ? 'actualizada' : 'creada'} correctamente.`
+          isEditing ? "Categoría Actualizada" : "Categoría Creada",
+          `La categoría "${categoryData.nombre}" fue ${isEditing ? "actualizada" : "creada"} correctamente.`,
         );
         setIsModalOpen(false);
         fetchCategories();
@@ -137,20 +120,28 @@ const MaterialCategories = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || `No se pudo ${isEditing ? 'actualizar' : 'crear'} la categoría`
+          response.message ||
+            `No se pudo ${isEditing ? "actualizar" : "crear"} la categoría`,
         );
         return false;
       }
     } catch (error) {
-      console.error('Error al guardar categoría:', error);
-      showErrorAlert("Error", error.message || `Error al ${isEditing ? 'actualizar' : 'crear'} la categoría en el servidor`);
+      console.error("Error al guardar categoría:", error);
+      showErrorAlert(
+        "Error",
+        error.message ||
+          `Error al ${isEditing ? "actualizar" : "crear"} la categoría en el servidor`,
+      );
       return false;
     }
   };
 
   const handleView = (category) => {
-    if (!hasPermission('materialCategories', 'Ver')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para ver detalles de categorías');
+    if (!hasPermission("materialCategories", "Ver")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver detalles de categorías",
+      );
       return;
     }
     setSelectedCategory(category);
@@ -158,16 +149,19 @@ const MaterialCategories = () => {
   };
 
   const handleDelete = async (category) => {
-    if (!hasPermission('materialCategories', 'Eliminar')) {
-      showErrorAlert('Sin permisos', 'No tienes permisos para eliminar categorías');
+    if (!hasPermission("materialCategories", "Eliminar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar categorías",
+      );
       return;
     }
 
     // Verificar si tiene materiales asociados
     if (category.materialsCount > 0) {
       showErrorAlert(
-        'No se puede eliminar',
-        `Esta categoría tiene ${category.materialsCount} material(es) asociado(s). No se puede eliminar.`
+        "No se puede eliminar",
+        `Esta categoría tiene ${category.materialsCount} material(es) asociado(s). No se puede eliminar.`,
       );
       return;
     }
@@ -175,46 +169,54 @@ const MaterialCategories = () => {
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará la categoría "${category.nombre}". Esta acción no se puede deshacer.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
-    
+
     if (!confirmResult.isConfirmed) return;
 
     try {
       const response = await categoriesService.deleteCategory(category.id);
-      
+
       if (response.success) {
         showSuccessAlert(
-          "Categoría Eliminada", 
-          `La categoría "${category.nombre}" fue eliminada correctamente.`
+          "Categoría Eliminada",
+          `La categoría "${category.nombre}" fue eliminada correctamente.`,
         );
         fetchCategories();
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo eliminar la categoría"
+          response.message || "No se pudo eliminar la categoría",
         );
       }
     } catch (error) {
-      console.error('Error al eliminar categoría:', error);
-      showErrorAlert("Error", error.message || "Error al eliminar la categoría en el servidor");
+      console.error("Error al eliminar categoría:", error);
+      showErrorAlert(
+        "Error",
+        error.message || "Error al eliminar la categoría en el servidor",
+      );
     }
   };
 
   // Preparar datos para tabla
-  const tableData = displayData.map(c => ({
+  const tableData = displayData.map((c) => ({
     ...c,
-    nombreTruncated: c.nombre.length > 50 ? c.nombre.substring(0, 50) + '...' : c.nombre,
-    descripcionTruncated: c.descripcion 
-      ? (c.descripcion.length > 80 ? c.descripcion.substring(0, 80) + '...' : c.descripcion)
-      : 'Sin descripción',
+    nombreTruncated:
+      c.nombre.length > 50 ? c.nombre.substring(0, 50) + "..." : c.nombre,
+    descripcionTruncated: c.descripcion
+      ? c.descripcion.length > 80
+        ? c.descripcion.substring(0, 80) + "..."
+        : c.descripcion
+      : "Sin descripción",
   }));
 
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Categorías de Materiales</h1>
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Categorías de Materiales
+        </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <SearchInput
@@ -256,41 +258,34 @@ const MaterialCategories = () => {
             Inactivo: "bg-red-100 text-red-800",
           },
         }}
-        onView={hasPermission('materialCategories', 'Ver') ? handleView : null}
-        onEdit={hasPermission('materialCategories', 'Editar') ? handleEdit : null}
-        onDelete={hasPermission('materialCategories', 'Eliminar') ? handleDelete : null}
+        onView={hasPermission("materialCategories", "Ver") ? handleView : null}
+        onEdit={
+          hasPermission("materialCategories", "Editar") ? handleEdit : null
+        }
+        onDelete={
+          hasPermission("materialCategories", "Eliminar") ? handleDelete : null
+        }
         buttonConfig={{
           view: () => ({
-            show: hasPermission('materialCategories', 'Ver'),
+            show: hasPermission("materialCategories", "Ver"),
             disabled: false,
             title: "Ver detalles",
           }),
           edit: () => ({
-            show: hasPermission('materialCategories', 'Editar'),
+            show: hasPermission("materialCategories", "Editar"),
             disabled: false,
             title: "Editar categoría",
           }),
           delete: (category) => ({
-            show: hasPermission('materialCategories', 'Eliminar'),
+            show: hasPermission("materialCategories", "Eliminar"),
             disabled: category.materialsCount > 0,
-            title: category.materialsCount > 0 
-              ? "Tiene materiales asociados" 
-              : "Eliminar categoría",
+            title:
+              category.materialsCount > 0
+                ? "Tiene materiales asociados"
+                : "Eliminar categoría",
           }),
         }}
       />
-
-      {/* Paginación */}
-      {displayTotalRows > rowsPerPage && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-          totalRows={displayTotalRows}
-          rowsPerPage={rowsPerPage}
-          startIndex={startIndex}
-        />
-      )}
 
       {/* Modales */}
       <CategoryModal
@@ -311,7 +306,7 @@ const MaterialCategories = () => {
         }}
         category={selectedCategory}
         onEdit={handleEdit}
-        canEdit={hasPermission('materialCategories', 'Editar')}
+        canEdit={hasPermission("materialCategories", "Editar")}
       />
     </div>
   );

@@ -5,7 +5,6 @@ import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
 import ProviderViewModal from "./components/ProviderViewModal.jsx";
 import Table from "../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../shared/components/ReportButton.jsx";
 import providersService from "./services/ProvidersService.js";
@@ -16,6 +15,7 @@ import {
 } from "../../../../../../shared/utils/alerts.js";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions.js";
+import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig.js";
 
 const Providers = () => {
   const location = useLocation();
@@ -28,24 +28,25 @@ const Providers = () => {
   const [providerToEdit, setProviderToEdit] = useState(null);
   const [providerToView, setProviderToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [totalPages, setTotalPages] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
-  const rowsPerPage = 5;
   const { hasPermission } = usePermissions();
   const fetchProviders = async () => {
     try {
       setLoading(true);
       const response = await providersService.getProviders({
         page: currentPage,
-        limit: rowsPerPage,
-        search: '', // No enviar search al backend, filtraremos localmente
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
       });
       if (response.success) {
         // Enriquecer datos con nombres de tipos de documento
         const enrichedData = await enrichProvidersWithDocumentTypes(
-          response.data || []
+          response.data || [],
         );
         setData(enrichedData);
         setTotalPages(response.pagination?.pages || 1);
@@ -57,7 +58,7 @@ const Providers = () => {
     } catch (error) {
       showErrorAlert(
         "Error",
-        "Error al cargar los proveedores desde el servidor"
+        "Error al cargar los proveedores desde el servidor",
       );
     } finally {
       setLoading(false);
@@ -73,7 +74,7 @@ const Providers = () => {
             const docType = documentTypes.find(
               (dt) =>
                 dt.id.toString() === provider.tipoDocumento.toString() ||
-                dt.value === provider.tipoDocumento.toString()
+                dt.value === provider.tipoDocumento.toString(),
             );
             return {
               ...provider,
@@ -109,7 +110,7 @@ const Providers = () => {
     const promises = providers.map(async (provider) => {
       try {
         const response = await providersService.checkActivePurchases(
-          provider.id
+          provider.id,
         );
         return {
           id: provider.id,
@@ -127,7 +128,7 @@ const Providers = () => {
   };
   useEffect(() => {
     fetchProviders();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
@@ -141,14 +142,11 @@ const Providers = () => {
     // Solo limpiar espacios, guiones y paréntesis, mantener el número completo
     return phone.replace(/[\s\-\(\)]/g, "");
   };
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
   const handleSave = async (newProvider) => {
     if (!hasPermission("providers", "Crear")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para crear proveedores"
+        "No tienes permisos para crear proveedores",
       );
       return { success: false }; // ← Retornar objeto con success: false
     }
@@ -161,7 +159,7 @@ const Providers = () => {
       if (response.success) {
         showSuccessAlert(
           "Proveedor creado",
-          "El proveedor se creó correctamente."
+          "El proveedor se creó correctamente.",
         );
         setIsModalOpen(false);
         fetchProviders();
@@ -169,7 +167,7 @@ const Providers = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo crear el proveedor"
+          response.message || "No se pudo crear el proveedor",
         );
         return { success: false, message: response.message }; // ← Retornar error
       }
@@ -183,7 +181,7 @@ const Providers = () => {
     if (!hasPermission("providers", "Editar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar proveedores"
+        "No tienes permisos para editar proveedores",
       );
       return { success: false }; // ← Retornar objeto con success: false
     }
@@ -194,12 +192,12 @@ const Providers = () => {
       };
       const response = await providersService.updateProvider(
         updatedProvider.id,
-        providerData
+        providerData,
       );
       if (response.success) {
         showSuccessAlert(
           "Proveedor actualizado",
-          "El proveedor se actualizó correctamente."
+          "El proveedor se actualizó correctamente.",
         );
         setIsModalOpen(false);
         fetchProviders();
@@ -207,7 +205,7 @@ const Providers = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo actualizar el proveedor"
+          response.message || "No se pudo actualizar el proveedor",
         );
         return { success: false, message: response.message }; // Retornar error
       }
@@ -215,7 +213,7 @@ const Providers = () => {
       console.error("Error updating provider:", error);
       showErrorAlert(
         "Error",
-        "Error al actualizar el proveedor en el servidor"
+        "Error al actualizar el proveedor en el servidor",
       );
       throw error;
     }
@@ -224,7 +222,7 @@ const Providers = () => {
     if (!hasPermission("providers", "Editar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar proveedores"
+        "No tienes permisos para editar proveedores",
       );
       return;
     }
@@ -235,7 +233,7 @@ const Providers = () => {
       if (response.success && response.data) {
         console.log(
           "Datos completos del proveedor para edición:",
-          response.data
+          response.data,
         );
         setProviderToEdit(response.data);
         setModalMode("edit");
@@ -243,7 +241,7 @@ const Providers = () => {
       } else {
         showErrorAlert(
           "Error",
-          "No se pudieron cargar los datos del proveedor"
+          "No se pudieron cargar los datos del proveedor",
         );
       }
     } catch (error) {
@@ -255,7 +253,7 @@ const Providers = () => {
     if (!hasPermission("providers", "Ver")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para ver detalles de proveedores"
+        "No tienes permisos para ver detalles de proveedores",
       );
       return;
     }
@@ -269,7 +267,7 @@ const Providers = () => {
       } else {
         showErrorAlert(
           "Error",
-          "No se pudieron cargar los datos del proveedor"
+          "No se pudieron cargar los datos del proveedor",
         );
       }
     } catch (error) {
@@ -281,7 +279,7 @@ const Providers = () => {
     if (!hasPermission("providers", "Eliminar")) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar proveedores"
+        "No tienes permisos para eliminar proveedores",
       );
       return;
     }
@@ -291,13 +289,13 @@ const Providers = () => {
     if (activePurchasesCheck[provider.id]) {
       return showErrorAlert(
         "No se puede eliminar",
-        `No se puede eliminar el proveedor "${provider.razonSocial}" porque tiene compras activas asociadas.`
+        `No se puede eliminar el proveedor "${provider.razonSocial}" porque tiene compras activas asociadas.`,
       );
     }
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
     );
     if (!confirmResult.isConfirmed) return;
     try {
@@ -305,13 +303,13 @@ const Providers = () => {
       if (response.success) {
         showSuccessAlert(
           "Proveedor eliminado",
-          `${provider.razonSocial} fue eliminado correctamente.`
+          `${provider.razonSocial} fue eliminado correctamente.`,
         );
         fetchProviders();
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo eliminar el proveedor"
+          response.message || "No se pudo eliminar el proveedor",
         );
       }
     } catch (error) {
@@ -338,35 +336,10 @@ const Providers = () => {
     }),
   };
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = searchTerm
-    ? data.filter((provider) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        const textFields = [
-          provider.razonSocial,
-          provider.nit,
-          provider.contactoPrincipal,
-          provider.correo,
-          provider.telefono,
-          provider.direccion,
-          provider.ciudad,
-          provider.tipoEntidad,
-          provider.estado,
-        ];
-        return textFields.some(
-          (field) => field && String(field).toLowerCase().includes(searchLower)
-        );
-      })
-    : data;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = data;
+  const displayTotalRows = totalRows;
 
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = filteredData;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
-  const displayTotalPages = searchTerm
-    ? Math.ceil(filteredData.length / rowsPerPage)
-    : totalPages;
-
-  const startIndex = (currentPage - 1) * rowsPerPage;
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -500,16 +473,6 @@ const Providers = () => {
                 buttonConfig={buttonConfig}
               />
             </div>
-          </div>
-          <div className="w-full border-none shadow-none">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={displayTotalPages}
-              onPageChange={handlePageChange}
-              totalRows={displayTotalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
-            />
           </div>
         </>
       ) : (

@@ -7,7 +7,6 @@ import RenewEnrollmentModal from "./components/RenewEnrollmentModal.jsx";
 import EnrollmentHistoryModal from "./components/EnrollmentHistoryModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../shared/components/Table/Pagination.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
@@ -21,6 +20,7 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 
 import { useEnrollments } from "./hooks/useEnrollments.js";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
 
 const Enrollments = () => {
   const { hasPermission } = usePermissions();
@@ -58,7 +58,6 @@ const Enrollments = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("matriculas"); // "matriculas" o "inscripciones"
-  const rowsPerPage = 10;
 
   // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
   useEffect(() => {
@@ -130,17 +129,17 @@ const Enrollments = () => {
       ? athletes
       : inscriptions;
   const totalRows = searchTerm ? currentData.length : displayData.length;
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const startIndex = (pagination.page - 1) * rowsPerPage;
+  const startIndex = (pagination.page - 1) * PAGINATION_CONFIG.ROWS_PER_PAGE;
 
   // Solo paginar localmente cuando hay búsqueda
   const paginatedData = searchTerm
-    ? currentData.slice(startIndex, startIndex + rowsPerPage)
+    ? currentData.slice(
+        startIndex,
+        startIndex + PAGINATION_CONFIG.ROWS_PER_PAGE,
+      )
     : displayData;
 
   // Ya no necesitamos aplicar estilos con JavaScript, solo el badge es suficiente
-
-  const handlePageChange = (page) => changePage(page);
 
   const getGuardianById = (guardianId) => {
     return guardians.find((g) => String(g.id) === String(guardianId));
@@ -954,16 +953,6 @@ const Enrollments = () => {
                 ]}
               />
             )}
-          </div>
-          <div className="mt-4">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              totalRows={totalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
-            />
           </div>
         </>
       ) : (

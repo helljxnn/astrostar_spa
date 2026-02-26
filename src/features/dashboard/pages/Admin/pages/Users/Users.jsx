@@ -2,12 +2,12 @@
 import React, { useState, useEffect } from "react";
 import UserViewModal from "./components/UserViewModal.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput";
-import Pagination from "../../../../../../shared/components/Table/Pagination.jsx";
 import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import usersService from "./services/UsersService";
+import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
 const Users = () => {
   const { hasPermission } = usePermissions();
@@ -17,8 +17,9 @@ const Users = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [userToView, setUserToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [totalRows, setTotalRows] = useState(0);
 
   // Cargar usuarios desde la API
@@ -27,8 +28,8 @@ const Users = () => {
       setLoading(true);
       const response = await usersService.getUsers({
         page: currentPage,
-        limit: rowsPerPage,
-        search: '', // No enviar search al backend, filtraremos localmente
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm, // Enviar búsqueda al backend
       });
 
       if (response.success) {
@@ -63,36 +64,17 @@ const Users = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = searchTerm
-    ? data.filter((user) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        const textFields = [
-          user.nombre,
-          user.correo,
-          user.identificacion,
-          user.rol,
-          user.telefono,
-          user.estado,
-        ];
-        return textFields.some(
-          (field) => field && String(field).toLowerCase().includes(searchLower)
-        );
-      })
-    : data;
-
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = filteredData;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = data;
+  const displayTotalRows = totalRows;
 
   useEffect(() => {
     if (currentPage !== 1 && searchTerm) setCurrentPage(1);
   }, [searchTerm]);
 
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
-  const handlePageChange = (page) => setCurrentPage(page);
   const handleView = (user) => {
     setUserToView(user);
     setIsViewModalOpen(true);
@@ -101,9 +83,6 @@ const Users = () => {
     setIsViewModalOpen(false);
     setUserToView(null);
   };
-
-  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
 
   return (
     <div className="p-6 font-questrial">
@@ -185,14 +164,6 @@ const Users = () => {
                 title: "Ver detalles del usuario",
               }),
             }}
-          />
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            totalRows={displayTotalRows}
-            rowsPerPage={rowsPerPage}
-            startIndex={startIndex}
           />
         </>
       )}

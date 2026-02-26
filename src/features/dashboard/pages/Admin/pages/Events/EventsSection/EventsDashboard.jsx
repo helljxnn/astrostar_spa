@@ -236,7 +236,10 @@ const Event = () => {
                 showDateFilter={true}
                 customFields={[
                   { key: "tipo", label: "Tipo de Evento" },
-                  { key: "categoria", label: "Categoría" },
+                  {
+                    key: "categoriasDeportivas",
+                    label: "Categorías Deportivas",
+                  },
                   { key: "ubicacion", label: "Ubicación" },
                   { key: "telefono", label: "Teléfono" },
                   { key: "estado", label: "Estado" },

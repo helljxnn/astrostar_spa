@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import Thead from "./thead";
 import Tbody from "./tbody";
 import Pagination from "./Pagination";
+import { PAGINATION_CONFIG } from "../../constants/paginationConfig";
 
 const Table = ({
   thead,
   tbody,
-  rowsPerPage = 10,
+  rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE,
   onEdit,
   onDelete,
   onView, // para vista detallada
@@ -31,7 +32,6 @@ const Table = ({
   }
 
   const totalPages = Math.ceil(totalRows / rowsPerPage);
-  const showPagination = totalPages > 1; // Mostrar paginación si hay más de una página
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -115,8 +115,8 @@ const Table = ({
                       item.estado === "Activo"
                         ? "text-primary-purple"
                         : item.estado === "Inactivo"
-                        ? "text-primary-blue"
-                        : "text-gray-400"
+                          ? "text-primary-blue"
+                          : "text-gray-400"
                     }
                   >
                     {item.estado}
@@ -208,19 +208,17 @@ const Table = ({
         })}
       </div>
 
-      {/* Paginación */}
-      {showPagination && (
-        <div className="w-full border-t border-gray-100 bg-gray-50">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            totalRows={totalRows}
-            rowsPerPage={rowsPerPage}
-            startIndex={startIndex}
-          />
-        </div>
-      )}
+      {/* Paginación - Siempre visible */}
+      <div className="w-full border-t border-gray-100 bg-gray-50">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalRows={totalRows}
+          rowsPerPage={rowsPerPage}
+          startIndex={startIndex}
+        />
+      </div>
     </div>
   );
 };

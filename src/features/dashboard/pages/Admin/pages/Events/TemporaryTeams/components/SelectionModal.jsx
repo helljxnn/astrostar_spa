@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react";
 import TeamsService from "../services/TeamsService";
 import Pagination from "../../../../../../../../shared/components/Table/Pagination";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig";
 
 const SelectionModal = ({
   isOpen,
@@ -22,11 +23,13 @@ const SelectionModal = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [selectedCategory, setSelectedCategory] = useState("");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const rowsPerPage = 5;
+  const rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE;
 
   const isMultiSelect = mode === "athletes";
   const title =
@@ -320,7 +323,9 @@ const SelectionModal = ({
     const preparedItem = prepareItemData(item);
 
     if (isMultiSelect) {
-      const isCurrentlySelected = selectedItems.some((s) => s.id === preparedItem.id);
+      const isCurrentlySelected = selectedItems.some(
+        (s) => s.id === preparedItem.id,
+      );
       let newSelection;
 
       if (isCurrentlySelected) {

@@ -7,7 +7,7 @@ const createToast = (message, type = "info", duration = 3000) => {
   // Estilos inline para el toast
   Object.assign(toast.style, {
     position: "fixed",
-    top: "20px",
+    bottom: "20px",
     right: "20px",
     padding: "16px 24px",
     borderRadius: "8px",
@@ -16,7 +16,7 @@ const createToast = (message, type = "info", duration = 3000) => {
     fontSize: "14px",
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
     zIndex: "10000",
-    animation: "slideIn 0.3s ease-out",
+    animation: "slideInBottom 0.3s ease-out",
     minWidth: "250px",
     maxWidth: "400px",
     display: "flex",
@@ -58,23 +58,23 @@ const createToast = (message, type = "info", duration = 3000) => {
     const style = document.createElement("style");
     style.id = "toast-animations";
     style.textContent = `
-      @keyframes slideIn {
+      @keyframes slideInBottom {
         from {
-          transform: translateX(400px);
+          transform: translateY(100px);
           opacity: 0;
         }
         to {
-          transform: translateX(0);
+          transform: translateY(0);
           opacity: 1;
         }
       }
-      @keyframes slideOut {
+      @keyframes slideOutBottom {
         from {
-          transform: translateX(0);
+          transform: translateY(0);
           opacity: 1;
         }
         to {
-          transform: translateX(400px);
+          transform: translateY(100px);
           opacity: 0;
         }
       }
@@ -87,7 +87,7 @@ const createToast = (message, type = "info", duration = 3000) => {
 
   // Remover después de la duración especificada
   setTimeout(() => {
-    toast.style.animation = "slideOut 0.3s ease-in";
+    toast.style.animation = "slideOutBottom 0.3s ease-in";
     setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);

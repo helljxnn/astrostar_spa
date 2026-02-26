@@ -1,20 +1,23 @@
-﻿// SportsCategory.jsx
-import React, { useState, useEffect, useMemo } from "react";
+// SportsCategory.jsx
+import React, { useState, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import SportsCategoryModal from "./components/SportsCategoryModal";
 import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
-import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 import { useSportsCategories } from "./hooks/useSportsCategories";
-import { showErrorAlert, showConfirmAlert } from "../../../../../../../shared/utils/Alerts";
-
+import {
+  showErrorAlert,
+  showConfirmAlert,
+} from "../../../../../../../shared/utils/Alerts";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
+
 const MODULE_NAME = "sportsCategory";
 
 const parseCount = (value) => {
@@ -32,7 +35,7 @@ const getAssociationMeta = (item = {}) => {
       associations.inscriptions ??
       associations.inscripciones ??
       item.inscriptions ??
-      item.inscripciones
+      item.inscripciones,
   );
   const participants = parseCount(
     item.participantsCount ??
@@ -40,7 +43,7 @@ const getAssociationMeta = (item = {}) => {
       associations.participants ??
       associations.participantes ??
       item.participants ??
-      item.participantes
+      item.participantes,
   );
   const services = parseCount(
     item.servicesCount ??
@@ -48,7 +51,7 @@ const getAssociationMeta = (item = {}) => {
       item.serviceSportsCategoriesCount ??
       associations.serviceSportsCategories ??
       associations.services ??
-      item.serviceSportsCategories
+      item.serviceSportsCategories,
   );
   const total = inscriptions + participants + services;
   const isAssociated =
@@ -70,7 +73,7 @@ const getAssociationMeta = (item = {}) => {
 const buildAssociationDetails = (association) => {
   const details = [];
   if (association.inscriptions)
-    details.push(`${association.inscriptions} inscripción(es)`);
+    details.push(`${association.inscriptions} inscripci�n(es)`);
   if (association.participants)
     details.push(`${association.participants} participante(s)`);
   if (association.services) details.push(`${association.services} evento(s)`);
@@ -78,7 +81,8 @@ const buildAssociationDetails = (association) => {
 };
 
 const SportsCategory = () => {
-  const { hasPermission } = usePermissions();
+  const { hasPermission } = usePermissions();
+
   const {
     sportsCategories,
     loading,
@@ -94,7 +98,7 @@ const SportsCategory = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -127,67 +131,43 @@ const SportsCategory = () => {
 
   const reportColumns = [
     { header: "Nombre", accessor: "nombre" },
-    { header: "Descripción", accessor: "descripcion" },
-    { header: "Edad mínima", accessor: "edadMinima" },
-    { header: "Edad máxima", accessor: "edadMaxima" },
+    { header: "Descripci�n", accessor: "descripcion" },
+    { header: "Edad m�nima", accessor: "edadMinima" },
+    { header: "Edad m�xima", accessor: "edadMaxima" },
     { header: "Estado", accessor: "estado" },
     { header: "Publicar", accessor: "publicar" },
     { header: "Imagen/Archivo", accessor: "archivo" },
-    { header: "Fecha creación", accessor: "fechaCreacion" },
-    { header: "Fecha actualización", accessor: "fechaActualizacion" },
+    { header: "Fecha creaci�n", accessor: "fechaCreacion" },
+    { header: "Fecha actualizaci�n", accessor: "fechaActualizacion" },
   ];
 
-  // fetch inicial
+  // Cargar categorías cuando cambia la página o el término de búsqueda
   useEffect(() => {
-    const term = (searchTerm || "").trim();
-    const pageToFetch = term ? 1 : currentPage;
-    const limitToFetch = term ? 1000 : rowsPerPage;
-
     fetchSportsCategories({
-      page: pageToFetch,
-      limit: limitToFetch,
-      search: term,
+      page: currentPage,
+      limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+      search: searchTerm, // Enviar búsqueda al backend
     }).catch((err) => console.error("fetch error:", err));
-  }, [currentPage, rowsPerPage, searchTerm, fetchSportsCategories]);
+  }, [currentPage, searchTerm, fetchSportsCategories]);
 
-  useEffect(() => {
-    if (searchTerm) setCurrentPage(1);
-  }, [searchTerm]);
-
-  const filteredData = useMemo(() => {
-    const term = (searchTerm || "").trim().toLowerCase();
-    if (!term) return sportsCategories;
-    return sportsCategories.filter((cat) => {
-      const name = (cat.nombre || cat.name || "").toString().toLowerCase();
-      const desc = (cat.descripcion || cat.description || "").toString().toLowerCase();
-      const estado = (cat.estado || cat.status || "").toString().toLowerCase();
-      return (
-        name.includes(term) ||
-        desc.includes(term) ||
-        estado.includes(term)
-      );
-    });
-  }, [sportsCategories, searchTerm]);
-
-  const displayData = filteredData;
-  const totalRows = displayData.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, totalRows);
-  const paginatedData = displayData.slice(startIndex, endIndex);
+  // Usar datos del servidor directamente (ya vienen filtrados y paginados)
+  const totalRows = pagination.total;
+  const paginatedData = sportsCategories;
 
   const getFetchParams = () => {
-    const term = (searchTerm || "").trim();
     return {
-      page: term ? 1 : currentPage,
-      limit: term ? 1000 : rowsPerPage,
-      search: term,
+      page: currentPage,
+      limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+      search: searchTerm,
     };
   };
 
   const handleCreate = () => {
     if (!canCreate) {
-      showErrorAlert("Sin permisos", "No tienes permisos para crear categorías deportivas");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para crear categor�as deportivas",
+      );
       return;
     }
     setSelectedCategory(null);
@@ -197,7 +177,10 @@ const SportsCategory = () => {
 
   const handleEdit = (item) => {
     if (!canEdit) {
-      showErrorAlert("Sin permisos", "No tienes permisos para editar categorías deportivas");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para editar categor�as deportivas",
+      );
       return;
     }
     setSelectedCategory(item);
@@ -213,7 +196,10 @@ const SportsCategory = () => {
 
   const handleDelete = async (item) => {
     if (!canDelete) {
-      showErrorAlert("Sin permisos", "No tienes permisos para eliminar categorías deportivas");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para eliminar categor�as deportivas",
+      );
       return;
     }
 
@@ -224,16 +210,20 @@ const SportsCategory = () => {
       showErrorAlert(
         "No se puede eliminar",
         details.length
-          ? `La categoría está asociada a ${details.join(", ")}.`
-          : "La categoría está asociada y no puede eliminarse."
+          ? `La categor�a est� asociada a ${details.join(", ")}.`
+          : "La categor�a est� asociada y no puede eliminarse.",
       );
       return;
     }
 
     try {
-      const result = await showConfirmAlert("¿Eliminar categoría?", `Se eliminará la categoría "${item.nombre ?? item.name}".`, {
-        confirmButtonText: "Sí, eliminar",
-      });
+      const result = await showConfirmAlert(
+        "�Eliminar categor�a?",
+        `Se eliminar� la categor�a "${item.nombre ?? item.name}".`,
+        {
+          confirmButtonText: "S�, eliminar",
+        },
+      );
       if (!result.isConfirmed) return;
 
       await deleteSportsCategory(item.id, {
@@ -246,7 +236,10 @@ const SportsCategory = () => {
 
   const handleView = async (item) => {
     if (!canView) {
-      showErrorAlert("Sin permisos", "No tienes permisos para ver detalles de categorías deportivas");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver detalles de categor�as deportivas",
+      );
       return;
     }
     try {
@@ -260,7 +253,10 @@ const SportsCategory = () => {
 
   const handleList = async (item) => {
     if (!canList) {
-      showErrorAlert("Sin permisos", "No tienes permisos para listar atletas de categorías deportivas");
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para listar atletas de categor�as deportivas",
+      );
       return;
     }
     try {
@@ -275,6 +271,7 @@ const SportsCategory = () => {
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
+    setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
   const handleClearSearch = () => {
@@ -286,7 +283,7 @@ const SportsCategory = () => {
     <div className="p-6 font-questrial">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Categorías Deportivas{" "}
+          Categor�as Deportivas{" "}
           {!loading && totalRows > 0 && (
             <span className="text-sm text-gray-600 ml-2">({totalRows})</span>
           )}
@@ -297,7 +294,7 @@ const SportsCategory = () => {
             <SearchInput
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar categoría..."
+              placeholder="Buscar categor�a..."
             />
           </div>
 
@@ -313,7 +310,7 @@ const SportsCategory = () => {
               disabled={loading}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FaPlus /> Crear Categoría
+              <FaPlus /> Crear Categor�a
             </button>
           </div>
         </div>
@@ -321,28 +318,32 @@ const SportsCategory = () => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          <p className="font-medium">⚠ Error al cargar categorías</p>
+          <p className="font-medium">? Error al cargar categor�as</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
 
       {!loading && totalRows === 0 && searchTerm && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 mb-6">
-          <div className="text-6xl mb-4">🔍</div>
-          <p className="text-gray-700 font-medium mb-2">No se encontraron categorías</p>
-          <p className="text-gray-600 mb-4">No hay resultados para "{searchTerm}"</p>
+          <div className="text-6xl mb-4">??</div>
+          <p className="text-gray-700 font-medium mb-2">
+            No se encontraron categor�as
+          </p>
+          <p className="text-gray-600 mb-4">
+            No hay resultados para "{searchTerm}"
+          </p>
           <button
             onClick={handleClearSearch}
             className="text-primary-purple hover:text-primary-blue font-medium underline"
           >
-            Limpiar búsqueda
+            Limpiar b�squeda
           </button>
         </div>
       )}
 
       {!loading && totalRows === 0 && !searchTerm && (
         <div className="text-center py-12 text-gray-500">
-          <p>No hay categorías registradas.</p>
+          <p>No hay categor�as registradas.</p>
         </div>
       )}
 
@@ -351,12 +352,7 @@ const SportsCategory = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <Table
               thead={{
-                titles: [
-                  "Nombre",
-                  "Descripción",
-                  "Edad mínima",
-                  "Edad máxima",
-                ],
+                titles: ["Nombre", "Descripci�n", "Edad m�nima", "Edad m�xima"],
                 state: true,
               }}
               tbody={{
@@ -379,12 +375,12 @@ const SportsCategory = () => {
                 view: () => ({
                   show: canView,
                   disabled: false,
-                  title: "Ver detalles de la categoría",
+                  title: "Ver detalles de la categor�a",
                 }),
                 edit: () => ({
                   show: canEdit,
                   disabled: false,
-                  title: "Editar categoría",
+                  title: "Editar categor�a",
                 }),
                 delete: (item) => {
                   const association = getAssociationMeta(item);
@@ -397,23 +393,11 @@ const SportsCategory = () => {
                     title: blocked
                       ? details.length
                         ? `No se puede eliminar: asociada a ${details.join(", ")}`
-                        : "No se puede eliminar: categoría asociada"
-                      : "Eliminar categoría",
+                        : "No se puede eliminar: categor�a asociada"
+                      : "Eliminar categor�a",
                   };
                 },
               }}
-            />
-          </div>
-
-          <div className="mt-6">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalRows={totalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
-              endIndex={endIndex}
             />
           </div>
         </>
@@ -456,5 +440,3 @@ const SportsCategory = () => {
 };
 
 export default SportsCategory;
-
-

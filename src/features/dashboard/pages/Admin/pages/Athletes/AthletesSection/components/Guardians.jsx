@@ -6,7 +6,6 @@ import { FaUsers, FaPlus } from "react-icons/fa";
 import GuardiansService from "../../services/GuardiansService"; // Importar el servicio real
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Table from "../../../../../../../shared/components/Table/table";
-import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import {
   showDeleteAlert,
@@ -14,6 +13,7 @@ import {
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
 import GuardianModal from "./components/GuardianModal";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const Guardians = () => {
   const [data, setData] = useState([]);
@@ -21,10 +21,11 @@ const Guardians = () => {
   const [editingGuardian, setEditingGuardian] = useState(null);
   const [modalMode, setModalMode] = useState("create"); // "create", "edit", "view"
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(
+    PAGINATION_CONFIG.DEFAULT_PAGE,
+  );
   const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(false);
-  const rowsPerPage = 5;
 
   // Cargar acudientes desde el backend
   useEffect(() => {
@@ -33,8 +34,8 @@ const Guardians = () => {
       try {
         const response = await GuardiansService.getGuardians({
           page: currentPage,
-          limit: rowsPerPage,
-          search: "", // No enviar search al backend, filtraremos localmente
+          limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          search: searchTerm, // Enviar búsqueda al backend
         });
 
         if (response.success) {
@@ -52,45 +53,11 @@ const Guardians = () => {
     };
 
     fetchGuardians();
-  }, [currentPage]); // Solo recargar cuando cambia la página, no el searchTerm
+  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
 
-  // Filtrar datos localmente si hay término de búsqueda
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-
-    return data.filter((item) => {
-      const textFields = [
-        item.nombreCompleto,
-        item.firstName,
-        item.lastName,
-        item.email,
-        item.correo,
-        item.identification,
-        item.identificacion,
-        item.phone,
-        item.telefono,
-      ];
-
-      const textMatch = textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower),
-      );
-
-      // Campo de estado (búsqueda exacta de palabra completa)
-      const estadoLower =
-        item.estado?.toLowerCase() || item.status?.toLowerCase();
-      const statusMatch = estadoLower === searchLower;
-
-      return textMatch || statusMatch;
-    });
-  }, [data, searchTerm]);
-
-  // Usar datos filtrados cuando hay búsqueda local
-  const displayData = searchTerm ? filteredData : data;
-  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
-  const totalPages = Math.ceil(displayTotalRows / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
+  // Usar datos directamente del backend (ya filtrados y paginados)
+  const displayData = data;
+  const displayTotalRows = totalRows;
 
   // Columnas para reporte
   const reportColumns = [
@@ -290,18 +257,6 @@ const Guardians = () => {
             onDelete={handleDelete}
             onView={handleView}
           />
-
-          {/* Paginador */}
-          {displayTotalRows > rowsPerPage && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              totalRows={displayTotalRows}
-              rowsPerPage={rowsPerPage}
-              startIndex={startIndex}
-            />
-          )}
         </>
       ) : (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">

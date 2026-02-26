@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUserShield, FaPlus, FaTimes } from "react-icons/fa";
 import SearchInput from "../../../../../../../../shared/components/SearchInput.jsx";
 import Table from "../../../../../../../../shared/components/Table/table.jsx";
-import Pagination from "../../../../../../../../shared/components/Table/Pagination.jsx";
 
 const GuardiansListModal = ({
   isOpen,
@@ -16,41 +15,27 @@ const GuardiansListModal = ({
   onDeleteGuardian,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 8;
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm) return guardians;
+  // Filtrar guardians localmente por el término de búsqueda
+  const filteredGuardians = searchTerm
+    ? guardians.filter((item) =>
+        Object.entries(item).some(([key, value]) => {
+          const stringValue = String(value || "").trim();
 
-    return guardians.filter((item) =>
-      Object.entries(item).some(([key, value]) => {
-        const stringValue = String(value || "").trim();
+          if (key.toLowerCase() === "estado") {
+            return (
+              (stringValue === "Activo" && searchTerm === "Activo") ||
+              (stringValue === "Inactivo" && searchTerm === "Inactivo")
+            );
+          }
 
-        if (key.toLowerCase() === "estado") {
-          return (
-            (stringValue === "Activo" && searchTerm === "Activo") ||
-            (stringValue === "Inactivo" && searchTerm === "Inactivo")
-          );
-        }
-
-        return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
-      })
-    );
-  }, [guardians, searchTerm]);
-
-  const totalRows = filteredData.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = filteredData.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
-
-  const handlePageChange = (page) => setCurrentPage(page);
+          return stringValue.toLowerCase().includes(searchTerm.toLowerCase());
+        }),
+      )
+    : guardians;
 
   const handleClose = () => {
     setSearchTerm("");
-    setCurrentPage(1);
     onClose();
   };
 
@@ -117,10 +102,7 @@ const GuardiansListModal = ({
             <div className="w-full sm:w-80">
               <SearchInput
                 value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar acudiente..."
               />
             </div>
@@ -136,68 +118,58 @@ const GuardiansListModal = ({
           </div>
 
           {/* Tabla */}
-          {totalRows > 0 ? (
-            <>
-              <div className="w-full overflow-x-auto bg-white rounded-lg">
-                <div className="w-full">
-                  <Table
-                    className="w-full table-auto"
-                    thead={{
-                      titles: [
-                        "Nombre Completo",
-                        "Identificación",
-                        "Correo",
-                        "Teléfono",
-                        "Deportistas",
-                      ],
-                      state: true,
-                      actions: true,
-                    }}
-                    tbody={{
-                      data: paginatedData.map((guardian) => {
-                        const deportistasAsociados = athletes.filter(
-                          (a) => String(a.acudiente) === String(guardian.id)
-                        );
-                        
-                        return {
-                          ...guardian,
-                          deportistasCount: deportistasAsociados.length,
-                        };
-                      }),
-                      dataPropertys: [
-                        "nombreCompleto",
-                        "identificacion",
-                        "correo",
-                        "telefono",
-                        "deportistasCount",
-                      ],
-                      state: true,
-                      stateMap: {
-                        Activo: "",
-                        Inactivo: "",
-                      },
-                    }}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                    onView={handleView}
-                  />
-                </div>
-              </div>
+          {filteredGuardians.length > 0 ? (
+            <div className="w-full overflow-x-auto bg-white rounded-lg">
+              <div className="w-full">
+                <Table
+                  className="w-full table-auto"
+                  thead={{
+                    titles: [
+                      "Nombre Completo",
+                      "Identificación",
+                      "Correo",
+                      "Teléfono",
+                      "Deportistas",
+                    ],
+                    state: true,
+                    actions: true,
+                  }}
+                  tbody={{
+                    data: filteredGuardians.map((guardian) => {
+                      const deportistasAsociados = athletes.filter(
+                        (a) => String(a.acudiente) === String(guardian.id),
+                      );
 
-              {totalPages > 1 && (
-                <div className="mt-4">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
-                </div>
-              )}
-            </>
+                      return {
+                        ...guardian,
+                        deportistasCount: deportistasAsociados.length,
+                      };
+                    }),
+                    dataPropertys: [
+                      "nombreCompleto",
+                      "identificacion",
+                      "correo",
+                      "telefono",
+                      "deportistasCount",
+                    ],
+                    state: true,
+                    stateMap: {
+                      Activo: "",
+                      Inactivo: "",
+                    },
+                  }}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onView={handleView}
+                />
+              </div>
+            </div>
           ) : (
             <div className="text-center p-8 text-gray-500">
               {searchTerm ? (
-                <p>No se encontraron acudientes que coincidan con la búsqueda.</p>
+                <p>
+                  No se encontraron acudientes que coincidan con la búsqueda.
+                </p>
               ) : (
                 <p>No hay acudientes registrados en este momento.</p>
               )}
