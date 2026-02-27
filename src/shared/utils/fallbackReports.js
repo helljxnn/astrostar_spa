@@ -44,15 +44,21 @@ export const generateFallbackPDF = (events, options = {}) => {
       yPos += lineHeight;
 
       // Detalles - soportar múltiples estructuras de datos
-      const fecha =
+      const fechaInicio =
         formatDate(event.fechaInicio || event.date || event.start) ||
         "Sin fecha";
-      const hora =
+      const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
+      const horaInicio =
         event.horaInicio ||
         event.time ||
         event.extendedProps?.horaInicio ||
         extractTime(event.start) ||
         "Sin hora";
+      const horaFin =
+        event.horaFin ||
+        event.extendedProps?.horaFin ||
+        extractTime(event.end) ||
+        horaInicio;
       const estado =
         event.estadoOriginal ||
         event.estado ||
@@ -65,9 +71,17 @@ export const generateFallbackPDF = (events, options = {}) => {
         event.location ||
         "Sin ubicación";
 
-      doc.text(`   Fecha: ${fecha} | Hora: ${hora}`, 20, yPos);
+      doc.text(
+        `   Fecha: ${fechaInicio}${fechaFin !== fechaInicio ? ` - ${fechaFin}` : ""}`,
+        20,
+        yPos,
+      );
       yPos += lineHeight;
-      doc.text(`   Estado: ${estado} | Ubicación: ${ubicacion}`, 20, yPos);
+      doc.text(`   Hora: ${horaInicio} - ${horaFin}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`   Estado: ${estado}`, 20, yPos);
+      yPos += lineHeight;
+      doc.text(`   Ubicación: ${ubicacion}`, 20, yPos);
       yPos += lineHeight;
 
       // Información adicional si existe
@@ -77,10 +91,13 @@ export const generateFallbackPDF = (events, options = {}) => {
         yPos += lineHeight;
       }
 
-      const categoria =
-        event.categoria || event.extendedProps?.categoria || event.category;
-      if (categoria) {
-        doc.text(`   Categoría: ${categoria}`, 20, yPos);
+      // Categorías deportivas (múltiples)
+      const categoriasDeportivas =
+        event.categoriasDeportivas ||
+        event.extendedProps?.categoriasDeportivas ||
+        "";
+      if (categoriasDeportivas) {
+        doc.text(`   Categorías: ${categoriasDeportivas}`, 20, yPos);
         yPos += lineHeight;
       }
 
@@ -90,6 +107,34 @@ export const generateFallbackPDF = (events, options = {}) => {
         doc.text(`   Teléfono: ${telefono}`, 20, yPos);
         yPos += lineHeight;
       }
+
+      // Descripción
+      const descripcion = event.descripcion || event.description || "";
+      if (descripcion) {
+        // Dividir descripción en líneas si es muy larga
+        const maxWidth = 170;
+        const lines = doc.splitTextToSize(
+          `   Descripción: ${descripcion}`,
+          maxWidth,
+        );
+        lines.forEach((line) => {
+          if (yPos > pageHeight - 30) {
+            doc.addPage();
+            yPos = 20;
+          }
+          doc.text(line, 20, yPos);
+          yPos += lineHeight;
+        });
+      }
+
+      // Publicado
+      const publicar =
+        event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "";
+      if (publicar) {
+        doc.text(`   Publicado: ${publicar}`, 20, yPos);
+        yPos += lineHeight;
+      }
+
       if (event.extendedProps?.professorName) {
         doc.text(`   Profesor: ${event.extendedProps.professorName}`, 20, yPos);
         yPos += lineHeight;
@@ -140,7 +185,16 @@ export const generateFallbackExcel = async (events, options = {}) => {
     const worksheet = workbook.addWorksheet("Reporte");
 
     // Headers
-    const headers = ["#", "Título", "Fecha", "Hora", "Estado", "Ubicación"];
+    const headers = [
+      "#",
+      "Título",
+      "Fecha Inicio",
+      "Fecha Fin",
+      "Hora Inicio",
+      "Hora Fin",
+      "Estado",
+      "Ubicación",
+    ];
 
     // Agregar headers adicionales si hay datos
     if (events.some((e) => e.tipo || e.extendedProps?.tipo || e.type)) {
@@ -148,15 +202,21 @@ export const generateFallbackExcel = async (events, options = {}) => {
     }
     if (
       events.some(
-        (e) => e.categoria || e.extendedProps?.categoria || e.category,
+        (e) => e.categoriasDeportivas || e.extendedProps?.categoriasDeportivas,
       )
     ) {
-      headers.push("Categoría");
+      headers.push("Categorías");
     }
     if (
       events.some((e) => e.telefono || e.extendedProps?.telefono || e.phone)
     ) {
       headers.push("Teléfono");
+    }
+    if (events.some((e) => e.descripcion || e.description)) {
+      headers.push("Descripción");
+    }
+    if (events.some((e) => e.publicar !== undefined)) {
+      headers.push("Publicado");
     }
     if (events.some((e) => e.extendedProps?.professorName)) {
       headers.push("Profesor");
@@ -169,16 +229,29 @@ export const generateFallbackExcel = async (events, options = {}) => {
 
     // Datos
     events.forEach((event, index) => {
+      const fechaInicio =
+        formatDate(event.fechaInicio || event.date || event.start) ||
+        "Sin fecha";
+      const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
+      const horaInicio =
+        event.horaInicio ||
+        event.time ||
+        event.extendedProps?.horaInicio ||
+        extractTime(event.start) ||
+        "Sin hora";
+      const horaFin =
+        event.horaFin ||
+        event.extendedProps?.horaFin ||
+        extractTime(event.end) ||
+        horaInicio;
+
       const row = [
         index + 1,
         event.title || event.nombre || "Sin título",
-        formatDate(event.fechaInicio || event.date || event.start) ||
-          "Sin fecha",
-        event.horaInicio ||
-          event.time ||
-          event.extendedProps?.horaInicio ||
-          extractTime(event.start) ||
-          "Sin hora",
+        fechaInicio,
+        fechaFin,
+        horaInicio,
+        horaFin,
         event.estadoOriginal ||
           event.estado ||
           event.extendedProps?.estadoOriginal ||
@@ -193,17 +266,24 @@ export const generateFallbackExcel = async (events, options = {}) => {
       if (headers.includes("Tipo")) {
         row.push(event.tipo || event.extendedProps?.tipo || event.type || "");
       }
-      if (headers.includes("Categoría")) {
+      if (headers.includes("Categorías")) {
         row.push(
-          event.categoria ||
-            event.extendedProps?.categoria ||
-            event.category ||
+          event.categoriasDeportivas ||
+            event.extendedProps?.categoriasDeportivas ||
             "",
         );
       }
       if (headers.includes("Teléfono")) {
         row.push(
           event.telefono || event.extendedProps?.telefono || event.phone || "",
+        );
+      }
+      if (headers.includes("Descripción")) {
+        row.push(event.descripcion || event.description || "");
+      }
+      if (headers.includes("Publicado")) {
+        row.push(
+          event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "",
         );
       }
       if (headers.includes("Profesor")) {
@@ -216,10 +296,32 @@ export const generateFallbackExcel = async (events, options = {}) => {
       worksheet.addRow(row);
     });
 
-    // Ajustar columnas
-    worksheet.columns.forEach((column) => {
-      column.width = 15;
+    // Ajustar columnas con anchos específicos
+    worksheet.columns.forEach((column, index) => {
+      if (index === 0) {
+        column.width = 5; // # (número)
+      } else if (headers[index] === "Título") {
+        column.width = 30;
+      } else if (headers[index] === "Descripción") {
+        column.width = 40;
+      } else if (headers[index] === "Categorías") {
+        column.width = 25;
+      } else if (headers[index] === "Ubicación") {
+        column.width = 25;
+      } else {
+        column.width = 15;
+      }
     });
+
+    // Aplicar estilos a los headers
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFB595FF" },
+    };
+    headerRow.alignment = { vertical: "middle", horizontal: "center" };
 
     // Generar y descargar
     const buffer = await workbook.xlsx.writeBuffer();
