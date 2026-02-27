@@ -145,13 +145,14 @@ const RenewEnrollmentModal = ({
       );
       return;
     }
-    const ageRange = resolveCategoryAgeRange(selectedCategory);
-    if (ageRange && !isAgeWithinRange(age, ageRange)) {
-      const rangeLabel = formatAgeRange(ageRange);
-      showErrorAlert(
-        "Edad fuera de rango",
-        `No se puede crear o editar. La edad (${age} años) no corresponde a la categoria "${selectedCategory?.name || selectedCategory?.nombre || categoria}" (${rangeLabel} años).`
-      );
+    
+    // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
+    const minAge = selectedCategory.minAge || 0;
+    const maxAge = selectedCategory.maxAge || 999;
+    
+    // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
+    if (age > maxAge) {
+      // NO mostrar sweet alert, el error ya está visible debajo del campo
       return;
     }
 

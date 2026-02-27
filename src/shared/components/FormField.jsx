@@ -17,6 +17,7 @@ export const FormField = ({
   delay = 0,
   disabled = false,
   helperText,
+  isLoading = false,
   ...props
 }) => {
   const isTouched = touched === undefined ? true : touched;
@@ -124,25 +125,33 @@ export const FormField = ({
           {...props}
         />
       ) : (
-        <input
-          type={type}
-          name={name}
-          value={value}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          disabled={disabled}
-          className={`
-            w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-            ${
-              hasError
-                ? "border-red-300 focus:ring-red-500"
-                : "border-gray-300 focus:ring-purple-500"
-            }
-            ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
-          `}
-          {...props}
-        />
+        <div className="relative">
+          <input
+            type={type}
+            name={name}
+            value={value}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder={placeholder}
+            disabled={disabled}
+            className={`
+              w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
+              ${
+                hasError
+                  ? "border-red-300 focus:ring-red-500"
+                  : "border-gray-300 focus:ring-purple-500"
+              }
+              ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+              ${isLoading ? "pr-10" : ""}
+            `}
+            {...props}
+          />
+          {isLoading && (
+            <div key="document-loader" className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
+              <div className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin" role="status" aria-label="Validando"></div>
+            </div>
+          )}
+        </div>
       )}
 
       <AnimatePresence>
