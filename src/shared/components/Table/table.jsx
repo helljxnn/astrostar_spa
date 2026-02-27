@@ -8,6 +8,10 @@ const Table = ({
   thead,
   tbody,
   rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE,
+  serverPagination = false,
+  totalRows: externalTotalRows,
+  currentPage: externalCurrentPage,
+  onPageChange: externalOnPageChange,
   onEdit,
   onDelete,
   onView, // para vista detallada
@@ -17,10 +21,16 @@ const Table = ({
   enableHorizontalScroll = true,
   tableClassName = "",
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [internalPage, setInternalPage] = useState(1);
 
   const allData = tbody.data || [];
-  const totalRows = allData.length;
+  const totalRows = serverPagination
+    ? externalTotalRows ?? allData.length
+    : allData.length;
+
+  const currentPage = serverPagination
+    ? externalCurrentPage || 1
+    : internalPage;
 
   // Si no hay datos
   if (totalRows === 0) {
@@ -31,16 +41,21 @@ const Table = ({
     );
   }
 
-  const totalPages = Math.ceil(totalRows / rowsPerPage);
+  const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
 
   const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+    if (page < 1 || page > totalPages) return;
+    if (serverPagination) {
+      externalOnPageChange && externalOnPageChange(page);
+    } else {
+      setInternalPage(page);
     }
   };
 
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = allData.slice(startIndex, startIndex + rowsPerPage);
+  const paginatedData = serverPagination
+    ? allData
+    : allData.slice(startIndex, startIndex + rowsPerPage);
 
   const tbodyProps = {
     ...tbody,

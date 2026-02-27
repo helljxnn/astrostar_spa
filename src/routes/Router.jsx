@@ -6,6 +6,7 @@ import About from "../features/landing/pages/About/About.jsx";
 import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
+import Donations from "../features/landing/pages/Donations/Donations.jsx";
 import Login from "../features/auth/pages/Login.jsx";
 import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
 import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
@@ -24,6 +25,7 @@ function AppRoutes() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
         <Route path="/services" element={<Services />} />
+        <Route path="/donacion" element={<Donations />} />
       </Route>
 
       {/* Rutas de autenticación sin Layout */}

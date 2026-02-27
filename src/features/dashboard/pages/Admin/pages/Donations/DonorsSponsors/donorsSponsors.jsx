@@ -14,6 +14,7 @@ function DonorsSponsors() {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const {
     donorsSponsors,
@@ -30,11 +31,15 @@ function DonorsSponsors() {
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      loadDonorsSponsors({ search: searchTerm, page: 1 });
+      loadDonorsSponsors({
+        search: searchTerm,
+        status: statusFilter || undefined,
+        page: 1,
+      });
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [searchTerm, loadDonorsSponsors]);
+  }, [searchTerm, statusFilter, loadDonorsSponsors]);
 
   const handleOpenCreateModal = () => {
     setSelectedDonor(null);
@@ -146,6 +151,25 @@ function DonorsSponsors() {
             placeholder="Buscar donante o patrocinador..."
           />
 
+          <div className="flex gap-2">
+            {[
+              { label: "Todos", value: "" },
+              { label: "Por confirmar", value: "Por confirmar" },
+            ].map((opt) => (
+              <button
+                key={opt.value || "all"}
+                onClick={() => setStatusFilter(opt.value)}
+                className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  statusFilter === opt.value
+                    ? "bg-primary-purple text-white border-primary-purple"
+                    : "border-gray-200 text-gray-700 hover:border-primary-purple"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center gap-3">
             <ReportButton
               data={reportData}
@@ -188,16 +212,16 @@ function DonorsSponsors() {
             state: true,
             actions: true,
           }}
-          tbody={{
-            data: tableData,
-            dataPropertys: [
-              "nombre",
-              "tipoIdentificacion",
-              "numeroIdentificacion",
-              "telefono",
-              "correo",
-              "tipo",
-            ],
+            tbody={{
+              data: tableData,
+              dataPropertys: [
+                "nombre",
+                "tipoIdentificacion",
+                "numeroIdentificacion",
+                "telefono",
+                "correo",
+                "tipo",
+              ],
             state: true,
             cellClassNames: {
               nombre: "whitespace-normal break-words",

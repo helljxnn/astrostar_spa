@@ -196,23 +196,35 @@ class ApiClient {
 
         // Mejorar el mensaje de error para mostrar detalles de validación
         let errorMessage = errorData.message || `Error HTTP ${response.status}`;
-        
+
         // Si hay errores de validación específicos, agregarlos al mensaje
+        const normalizeError = (err) => ({
+          field: err.field ?? err.path ?? err.param ?? "Campo",
+          message: err.message ?? err.msg ?? "Valor inválido",
+        });
+
         if (errorData.errors && Array.isArray(errorData.errors)) {
-          const errorDetails = errorData.errors.map(err => `- ${err.field || 'Campo'}: ${err.message}`).join('\n');
+          const errorDetails = errorData.errors
+            .map((err) => {
+              const { field, message } = normalizeError(err);
+              return `- ${field}: ${message}`;
+            })
+            .join("\n");
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
-        } else if (errorData.errors && typeof errorData.errors === 'object') {
-          const errorDetails = Object.entries(errorData.errors).map(([field, msg]) => `- ${field}: ${msg}`).join('\n');
+        } else if (errorData.errors && typeof errorData.errors === "object") {
+          const errorDetails = Object.entries(errorData.errors)
+            .map(([field, msg]) => `- ${field}: ${msg}`)
+            .join("\n");
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
         }
-        
-        console.error('Error del servidor:', {
+
+        console.error("Error del servidor:", {
           status: response.status,
           message: errorData.message,
           errors: errorData.errors,
-          fullError: errorData
+          fullError: errorData,
         });
-        
+
         throw new Error(errorMessage);
       }
 
@@ -222,8 +234,6 @@ class ApiClient {
         return await response.json();
       }
       return await response.text();
-    } catch (error) {
-      throw error;
     } finally {
       // Terminar loader
       this.endRequest(skipLoader);
@@ -237,19 +247,40 @@ class ApiClient {
     window.location.href = "/login";
   }
 
-  async get(endpoint, options = {}) {
-    // Extraer params y skipLoader de options
+  // Construir query string filtrando valores vacíos
+  buildQuery(params = {}) {
+    const filtered = Object.entries(params).filter(
+      ([, value]) => value !== undefined && value !== null && value !== ""
+    );
+    return new URLSearchParams(Object.fromEntries(filtered)).toString();
+  }
+
+  /**
+   * GET flexible:
+   * - Nuevo estilo: api.get("/x", { params: {...}, skipLoader: true, headers: {...} })
+   * - Estilo viejo (compat): api.get("/x", { a: 1, b: 2 })
+   */
+  async get(endpoint, optionsOrParams = {}) {
+    const isOptionsStyle =
+      Object.prototype.hasOwnProperty.call(optionsOrParams, "params") ||
+      Object.prototype.hasOwnProperty.call(optionsOrParams, "skipLoader") ||
+      Object.prototype.hasOwnProperty.call(optionsOrParams, "headers");
+
+    const options = isOptionsStyle ? optionsOrParams : { params: optionsOrParams };
+
     const { params = {}, skipLoader = false, ...restOptions } = options;
-    
-    const queryString = new URLSearchParams(params).toString();
+
+    const queryString = this.buildQuery(params);
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
     return this.request(url, { method: "GET", skipLoader, ...restOptions });
   }
 
-  // Método para hacer peticiones sin loader
+  // Método para hacer peticiones sin loader (manteniendo firma simple)
   async getWithoutLoader(endpoint, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
+    const queryString = this.buildQuery(params);
     const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
     return this.request(url, { method: "GET", skipLoader: true });
   }
 
@@ -259,7 +290,7 @@ class ApiClient {
     return this.request(endpoint, {
       method: "POST",
       body,
-      // ⚠️ No forzar headers si es FormData
+      // No forzar headers si es FormData
       headers: isFormData ? {} : { "Content-Type": "application/json" },
     });
   }

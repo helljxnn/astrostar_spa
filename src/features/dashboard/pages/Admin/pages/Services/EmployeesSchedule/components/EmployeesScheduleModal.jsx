@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
@@ -14,6 +15,7 @@ export default function ScheduleModal({
   existingSchedules = [],
   isReadOnly = false,
   isLoadingEmployees = false,
+  lockEmployeeSelection = false,
 }) {
   const [showCustomModal, setShowCustomModal] = useState(false);
   const [form, setForm] = useState({
@@ -106,11 +108,6 @@ export default function ScheduleModal({
 
     if (!validate(form)) return;
 
-    if (!form.descripcion?.trim()) {
-      showErrorAlert("La descripcion es obligatoria.");
-      return;
-    }
-
     if (isNew && form.empleadoId && form.fecha) {
       const employeeIdValue = String(form.empleadoId).trim();
       const targetDate = form.fecha;
@@ -160,15 +157,15 @@ export default function ScheduleModal({
 
   const disabledFields = isReadOnly;
 
-  return (
+  return createPortal(
     <>
-      <motion.div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <motion.div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[2000]">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 200 }}
-          className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] border border-gray-100 flex flex-col overflow-hidden"
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] border border-gray-100 flex flex-col overflow-hidden"
         >
           <div className="flex-shrink-0 relative px-6 py-5 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-primary-purple to-primary-blue text-transparent bg-clip-text">
@@ -201,7 +198,7 @@ export default function ScheduleModal({
                   onBlur={() => handleBlur("empleadoId", form.empleadoId, form)}
                   className="w-full border rounded-xl px-4 py-3 bg-gray-50 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30 outline-none disabled:bg-gray-100"
                   required
-                  disabled={disabledFields || isLoadingEmployees}
+                  disabled={disabledFields || isLoadingEmployees || lockEmployeeSelection}
                 >
                   <option value="">-- Selecciona un empleado --</option>
                   {employeesOptions.map((emp) => (
@@ -287,11 +284,6 @@ export default function ScheduleModal({
                   disabled={disabledFields}
                   options={[
                     { value: "no", label: "No se repite" },
-                    { value: "dia", label: "Cada dia" },
-                    { value: "semana", label: "Cada semana" },
-                    { value: "mes", label: "Cada mes" },
-                    { value: "anio", label: "Cada año" },
-                    { value: "laboral", label: "Dias laborales" },
                     { value: "personalizado", label: "Personalizar..." },
                   ]}
                 />
@@ -307,7 +299,7 @@ export default function ScheduleModal({
 
             <div className="space-y-2">
               <FormField
-                label="Descripcion *"
+                label="Descripcion (opcional)"
                 name="descripcion"
                 type="textarea"
                 value={form.descripcion}
@@ -316,7 +308,6 @@ export default function ScheduleModal({
                 placeholder="Notas adicionales sobre el horario..."
                 error={errors.descripcion}
                 touched={touched.descripcion}
-                required
                 readOnly={disabledFields}
               />
             </div>
@@ -356,6 +347,8 @@ export default function ScheduleModal({
           }}
         />
       )}
-    </>
+    </>,
+    document.body,
   );
 }
+
