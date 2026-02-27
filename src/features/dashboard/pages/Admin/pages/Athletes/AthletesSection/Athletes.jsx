@@ -179,8 +179,30 @@ const Athletes = () => {
     if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
       return { 
         canDelete: false, 
-        reason: "Tiene matrícula vigente" 
+        reason: "Tiene matrícula vigente. No se puede eliminar hasta que venza." 
       };
+    }
+    
+    // Verificar fecha de creación de la matrícula (no se puede eliminar hasta 1 año después)
+    const enrollmentDate = athlete.enrollment?.enrollmentDate || 
+                          athlete.enrollment?.fechaInscripcion || 
+                          athlete.fechaInscripcion ||
+                          athlete.createdAt;
+    
+    if (enrollmentDate) {
+      const enrollDate = new Date(enrollmentDate);
+      const oneYearAfterEnrollment = new Date(enrollDate);
+      oneYearAfterEnrollment.setFullYear(oneYearAfterEnrollment.getFullYear() + 1);
+      
+      if (today < oneYearAfterEnrollment) {
+        const monthsRemaining = Math.ceil(
+          (oneYearAfterEnrollment - today) / (1000 * 60 * 60 * 24 * 30)
+        );
+        return { 
+          canDelete: false, 
+          reason: `Debe esperar ${monthsRemaining} mes(es) más desde la fecha de matrícula (${enrollDate.toLocaleDateString('es-ES')})` 
+        };
+      }
     }
     
     // Verificar si la matrícula venció hace más de 1 año
@@ -199,12 +221,6 @@ const Athletes = () => {
           reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento` 
         };
       }
-    } else {
-      // Si no tiene fecha de vencimiento, no se puede eliminar
-      return {
-        canDelete: false,
-        reason: "No se puede verificar el vencimiento de la matrícula"
-      };
     }
     
     // Verificar equipos temporales

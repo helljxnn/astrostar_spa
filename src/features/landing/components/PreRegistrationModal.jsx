@@ -4,6 +4,7 @@ import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
 import InscriptionsService from "../../dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService";
 import { useDocumentValidation } from "../../../shared/hooks/useDocumentValidation";
+import { useEmailValidation } from "../../../shared/hooks/useEmailValidation";
 
 const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -22,6 +23,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
+  const [sentDocument, setSentDocument] = useState(""); // Guardar el documento también
   const [newEmail, setNewEmail] = useState("");
   const [newEmailError, setNewEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
@@ -37,6 +39,15 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     validateDocumentDebounced,
     clearValidation: clearDocumentValidation,
   } = useDocumentValidation(null); // null = no excluir a nadie (es una nueva inscripción)
+
+  // Hook para validación de email en tiempo real
+  const {
+    isChecking: isCheckingEmailValidation,
+    emailExists: emailExistsValidation,
+    validationMessage: emailValidationMessage,
+    validateEmailDebounced,
+    clearValidation: clearEmailValidation,
+  } = useEmailValidation(null); // null = no excluir a nadie (es una nueva inscripción)
 
   // Validaciones
   const validateField = (name, value) => {
@@ -113,6 +124,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       clearDocumentValidation();
     }
     
+    // Limpiar el estado de email existente cuando el usuario está escribiendo
+    if (field === "email") {
+      clearEmailValidation();
+    }
+    
     // Validar en tiempo real SIEMPRE (no solo cuando touched)
     const error = validateField(field, value);
     setErrors((prev) => ({ ...prev, [field]: error }));
@@ -136,6 +152,18 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     }
   }, [formData.identification, validateDocumentDebounced, clearDocumentValidation]);
 
+  // Validación en tiempo real de email usando el hook
+  useEffect(() => {
+    const email = formData.email;
+    
+    // Solo verificar si el email tiene formato válido
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validateEmailDebounced(email, 300);
+    } else {
+      clearEmailValidation();
+    }
+  }, [formData.email, validateEmailDebounced, clearEmailValidation]);
+
   // Sincronizar resultado de validación con estados locales
   useEffect(() => {
     if (documentExistsValidation) {
@@ -152,6 +180,21 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       }
     }
   }, [isCheckingDocumentValidation, documentExistsValidation, documentValidationMessage, formData.identification, touched.identification]);
+
+  // Sincronizar resultado de validación de email
+  useEffect(() => {
+    if (emailExistsValidation) {
+      const errorMessage = emailValidationMessage || "Este email ya está registrado";
+      setErrors((prev) => ({ ...prev, email: errorMessage }));
+      setTouched((prev) => ({ ...prev, email: true }));
+    } else if (!isCheckingEmailValidation && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      // Solo actualizar error si el campo ya fue tocado
+      if (touched.email) {
+        const validationError = validateField("email", formData.email);
+        setErrors((prev) => ({ ...prev, email: validationError }));
+      }
+    }
+  }, [isCheckingEmailValidation, emailExistsValidation, emailValidationMessage, formData.email, touched.email]);
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -214,14 +257,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      console.log("📤 [PreRegistrationModal] Enviando datos al backend:", formData);
-      
       const result = await InscriptionsService.create(formData);
-      
-      console.log("📥 [PreRegistrationModal] Respuesta del backend:", result);
 
       if (result.success) {
         setSentEmail(formData.email);
+        setSentDocument(formData.identification); // Guardar el documento también
         setShowSuccess(true);
         
         // Iniciar cooldown de 60 segundos
@@ -286,7 +326,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setNewEmailError("");
 
     try {
-      const result = await InscriptionsService.resendEmail(newEmail);
+      // Enviar email Y documento para que el backend pueda buscar correctamente
+      const result = await InscriptionsService.resendEmail(newEmail, sentDocument);
 
       if (result.success) {
         setSentEmail(newEmail);
@@ -329,6 +370,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setTouched({});
     setShowSuccess(false);
     setSentEmail("");
+    setSentDocument(""); // Limpiar también el documento
     setNewEmail("");
     setNewEmailError("");
     setNotification({ show: false, type: "", message: "" });
@@ -505,6 +547,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     error={errors.email}
                     touched={touched.email}
                     required
+                    isLoading={isCheckingEmailValidation}
                   />
                 </div>
                 </form>
@@ -515,7 +558,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cooldownTime > 0 || documentExists || isCheckingDocumentValidation}
+                  disabled={isSubmitting || cooldownTime > 0 || documentExists || emailExistsValidation || isCheckingDocumentValidation || isCheckingEmailValidation}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
@@ -527,6 +570,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     `Espera ${cooldownTime}s para enviar otra inscripción`
                   ) : documentExists ? (
                     "Documento ya inscrito"
+                  ) : emailExistsValidation ? (
+                    "Email ya registrado"
                   ) : (
                     "Enviar Inscripción"
                   )}

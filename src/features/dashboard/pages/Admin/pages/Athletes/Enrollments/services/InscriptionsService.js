@@ -14,19 +14,11 @@ class InscriptionsService {
         ...(filters.estado && { estado: filters.estado }),
       };
 
-      console.log("🌐 InscriptionsService.getAll - Endpoint:", this.endpoint);
-      console.log("🌐 InscriptionsService.getAll - Params:", params);
-
       const response = await apiClient.get(this.endpoint, params);
-      
-      console.log("📡 InscriptionsService.getAll - Respuesta completa:", response);
 
       // Manejar diferentes estructuras de respuesta
       const data = response.data?.data || response.data || [];
       const total = response.data?.total || response.total || data.length;
-
-      console.log("📊 InscriptionsService.getAll - Data extraída:", data);
-      console.log("📊 InscriptionsService.getAll - Total:", total);
 
       return {
         success: true,
@@ -35,8 +27,7 @@ class InscriptionsService {
         hasMore: response.data?.hasMore || false,
       };
     } catch (error) {
-      console.error("❌ InscriptionsService.getAll - Error:", error);
-      console.error("❌ InscriptionsService.getAll - Error message:", error.message);
+      console.error("Error getting inscriptions:", error);
       return { 
         success: false, 
         error: error.message,
@@ -103,7 +94,6 @@ class InscriptionsService {
       // Si hay error de Prisma (500), asumir que no existe para no bloquear
       // El otro servicio (atletas) ya validará si está matriculado
       if (error.message.includes("prisma") || error.message.includes("Invalid")) {
-        console.warn("⚠️ [InscriptionsService] Error de backend (Prisma), asumiendo documento no inscrito");
         return { success: true, error: "Error de backend", exists: false };
       }
       
@@ -115,18 +105,14 @@ class InscriptionsService {
   // Crear inscripción (desde el landing)
   async create(inscriptionData) {
     try {
-      console.log("📤 [InscriptionsService.create] Datos recibidos del formulario:", inscriptionData);
-      console.log("📤 [InscriptionsService.create] Enviando datos al backend:", inscriptionData);
-      
       const response = await apiClient.post(this.endpoint, inscriptionData);
-      console.log("📥 [InscriptionsService.create] Respuesta del backend:", response);
 
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error("❌ [InscriptionsService.create] Error:", error);
+      console.error("Error creating inscription:", error);
       return { success: false, error: error.message };
     }
   }
@@ -134,21 +120,13 @@ class InscriptionsService {
   // Actualizar estado de inscripción
   async updateStatus(id, newStatus) {
     try {
-      console.log("🔄 [InscriptionsService.updateStatus] Actualizando estado...");
-      console.log("🔄 [InscriptionsService.updateStatus] ID:", id);
-      console.log("🔄 [InscriptionsService.updateStatus] Nuevo estado:", newStatus);
-      console.log("🔄 [InscriptionsService.updateStatus] URL:", `${this.endpoint}/${id}/status`);
-      
       const response = await apiClient.put(`${this.endpoint}/${id}/status`, {
-        estado: newStatus,
+        status: newStatus, // Cambiar de "estado" a "status" (inglés)
       });
 
-      console.log("✅ [InscriptionsService.updateStatus] Respuesta:", response);
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("❌ [InscriptionsService.updateStatus] Error:", error);
-      console.error("❌ [InscriptionsService.updateStatus] Error message:", error.message);
-      console.error("❌ [InscriptionsService.updateStatus] Error response:", error.response);
+      console.error("Error updating inscription status:", error);
       return { success: false, error: error.message };
     }
   }
@@ -165,9 +143,14 @@ class InscriptionsService {
   }
 
   // Reenviar correo de confirmación
-  async resendEmail(email) {
+  async resendEmail(email, identification = null) {
     try {
-      const response = await apiClient.post(`${this.endpoint}/resend-email`, { email });
+      const payload = { email };
+      if (identification) {
+        payload.identification = identification;
+      }
+      
+      const response = await apiClient.post(`${this.endpoint}/resend-email`, payload);
       return {
         success: true,
         data: response.data,

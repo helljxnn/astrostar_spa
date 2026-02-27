@@ -182,6 +182,14 @@ const AthleteModal = ({
     }
   };
 
+  // Función para manejar cambio de email y marcar como touched inmediatamente
+  const handleEmailChange = (e) => {
+    // Marcar como touched PRIMERO para activar validación instantánea
+    setTouched(prev => ({ ...prev, email: true }));
+    // Luego actualizar el valor
+    handleChange(e);
+  };
+
   useEffect(() => {
     if (values.birthDate) {
       const age = calculateAge(values.birthDate);
@@ -313,30 +321,88 @@ const AthleteModal = ({
           excludeUserId
         );
 
+        console.log('🔍 [AthleteModal] Resultado validación email:', result);
+        console.log('🔍 [AthleteModal] result.available:', result.available);
+
         if (!result.available) {
           const errorMsg = `Este email ya está registrado`;
+          console.log('❌ [AthleteModal] Email duplicado, mostrando error');
           setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
           setErrors(prev => ({ ...prev, email: errorMsg }));
           setTouched(prev => ({ ...prev, email: true }));
         } else {
+          console.log('✅ [AthleteModal] Email disponible, limpiando errores');
           setAsyncErrors(prev => ({ ...prev, email: null }));
           if (errors.email && errors.email.includes('ya está registrado')) {
             setErrors(prev => ({ ...prev, email: '' }));
           }
         }
       } catch (error) {
-        console.error('Error verificando email:', error);
+        console.error('❌ [AthleteModal] Error verificando email:', error);
+        console.error('❌ [AthleteModal] Error completo:', error.message, error.stack);
       } finally {
         setCheckingEmail(false);
+        console.log('🔍 [AthleteModal] Verificación de email completada');
       }
     };
 
-    // Si estamos en modo matrícula y el campo está touched, validar inmediatamente
-    // De lo contrario, usar debounce de 500ms
-    const delay = (isEnrollmentMode && touched.email) ? 0 : 500;
+    // Validar INSTANTÁNEAMENTE si:
+    // 1. El campo ya fue tocado (touched.email)
+    // 2. Estamos en modo matrícula (isEnrollmentMode)
+    // 3. Estamos en modo edición (isEditing)
+    const shouldValidateInstantly = touched.email || isEnrollmentMode || isEditing;
+    const delay = shouldValidateInstantly ? 0 : 300;
+    
     const timeoutId = setTimeout(checkEmail, delay);
     return () => clearTimeout(timeoutId);
   }, [values.email, isEditing, athleteToEdit, setErrors, setTouched, errors.email, isEnrollmentMode, touched.email]);
+
+  // Validación de categoría vs edad en tiempo real
+  // REGLA: Puede escoger categorías MAYORES a su edad, pero NO MENORES
+  useEffect(() => {
+    // Solo validar si hay fecha de nacimiento y categoría seleccionada
+    if (!values.birthDate || !values.categoria) {
+      // Limpiar error de categoría si no hay datos para validar
+      if (errors.categoria && errors.categoria.includes('edad')) {
+        setErrors(prev => ({ ...prev, categoria: '' }));
+      }
+      return;
+    }
+
+    // Calcular edad
+    const birthDate = new Date(values.birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    // Buscar la categoría seleccionada
+    const selectedCategory = referenceData.sportsCategories?.find(
+      cat => cat.name === values.categoria
+    );
+
+    if (!selectedCategory) {
+      return;
+    }
+
+    // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
+    const minAge = selectedCategory.minAge || 0;
+    const maxAge = selectedCategory.maxAge || 999;
+
+    // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
+    if (age > maxAge) {
+      const errorMsg = `Tu edad es mayor a la edad para la categoría`;
+      setErrors(prev => ({ ...prev, categoria: errorMsg }));
+      setTouched(prev => ({ ...prev, categoria: true }));
+    } else {
+      // Limpiar error si la edad es válida (menor o igual al máximo)
+      if (errors.categoria && (errors.categoria.includes('edad') || errors.categoria.includes('mayor'))) {
+        setErrors(prev => ({ ...prev, categoria: '' }));
+      }
+    }
+  }, [values.birthDate, values.categoria, referenceData.sportsCategories, setErrors, setTouched, errors.categoria]);
 
   useEffect(() => {
     if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
@@ -447,6 +513,11 @@ const AthleteModal = ({
       setValues(newValues);
       
       setHasDateOfBirth(!!birthDate);
+      
+      // En modo edición, marcar email como touched para activar validación instantánea
+      if (isEditing && !isEnrollmentMode) {
+        setTouched(prev => ({ ...prev, email: true }));
+      }
       
       // Si el parentesco no está en las opciones, es un "Otro" personalizado
       if (parentescoFrontend && !parentescoOptions.some(opt => opt.value === parentescoFrontend)) {
@@ -688,17 +759,17 @@ const AthleteModal = ({
       return;
     }
     
-    const ageRange = resolveCategoryAgeRange(selectedCategory);
-    console.log('🔍 [AthleteModal] Rango de edad resuelto:', ageRange);
+    // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
+    const minAge = selectedCategory.minAge || 0;
+    const maxAge = selectedCategory.maxAge || 999;
     
-    if (ageNumber !== null && ageRange && !isAgeWithinRange(ageNumber, ageRange)) {
-      const rangeLabel = formatAgeRange(ageRange);
-      console.log('❌ [AthleteModal] Edad fuera de rango!');
-      console.log('❌ [AthleteModal] Edad:', ageNumber, 'Rango:', ageRange);
-      showErrorAlert(
-        "Edad fuera de rango",
-        `No se puede crear o editar. La edad (${ageNumber} años) no corresponde a la categoria "${selectedCategory?.name || selectedCategory?.nombre || values.categoria}" (${rangeLabel} años).`
-      );
+    console.log('🔍 [AthleteModal] Validando edad vs categoría');
+    console.log('🔍 [AthleteModal] Edad:', ageNumber, 'Categoría:', values.categoria, 'Rango:', minAge, '-', maxAge);
+    
+    // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
+    if (ageNumber !== null && ageNumber > maxAge) {
+      console.log('❌ [AthleteModal] Edad mayor al máximo de la categoría!');
+      // NO mostrar sweet alert, el error ya está visible debajo del campo
       return;
     }
     
@@ -718,6 +789,12 @@ const AthleteModal = ({
       console.log('🔵 [AthleteModal] Parentesco español:', finalParentesco);
       console.log('🔵 [AthleteModal] Parentesco convertido a inglés:', parentescoBackend);
       
+      // Convertir acudiente a número o null
+      const acudienteId = values.acudiente && values.acudiente.toString().trim() 
+        ? parseInt(values.acudiente) 
+        : null;
+      
+      // Preparar datos base del deportista
       const athleteData = {
         firstName: values.firstName.trim(),
         middleName: values.middleName?.trim() || "",
@@ -731,9 +808,13 @@ const AthleteModal = ({
         birthDate: values.birthDate,
         categoria: values.categoria,
         estado: values.estado,
-        acudiente: values.acudiente || null,
-        parentesco: values.acudiente ? parentescoBackend : null,
       };
+      
+      // Solo agregar acudiente y parentesco si hay un acudiente seleccionado
+      if (acudienteId) {
+        athleteData.acudiente = acudienteId;
+        athleteData.parentesco = parentescoBackend;
+      }
 
       console.log('🔵 [AthleteModal] Datos del deportista preparados:', athleteData);
 
@@ -755,6 +836,13 @@ const AthleteModal = ({
         await onUpdate(updateData);
       } else {
         console.log('🔵 [AthleteModal] Modo creación, llamando onSave...');
+        
+        // Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
+        if (isEnrollmentMode && athleteToEdit?.id) {
+          console.log('🔵 [AthleteModal] Modo matrícula desde inscripción, ID:', athleteToEdit.id);
+          athleteData.preRegistrationId = athleteToEdit.id;
+        }
+        
         await onSave(athleteData);
       }
 
@@ -934,6 +1022,7 @@ const AthleteModal = ({
                   error={errors.identification || asyncErrors.identification}
                   touched={touched.identification}
                   required
+                  disabled={false}
                   label="Número de Documento"
                   name="identification"
                 />
@@ -1008,20 +1097,25 @@ const AthleteModal = ({
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <FormField
                   label="Correo Electrónico"
                   name="email"
                   type="email"
                   placeholder="correo@ejemplo.com"
                   value={values.email}
-                  onChange={handleChange}
+                  onChange={handleEmailChange}
                   onBlur={handleBlur}
                   error={errors.email || asyncErrors.email}
                   touched={touched.email}
                   required
                   delay={0.5}
                 />
+                {checkingEmail && (
+                  <div className="absolute right-3 top-9">
+                    <div className="w-5 h-5 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                )}
               </div>
 
               <div>

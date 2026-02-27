@@ -43,11 +43,21 @@ export const useEnrollments = () => {
       
       // Cargar categorías deportivas
       const categoriesResponse = await apiClient.get("/sports-categories");
+      
+      // Eliminar categorías duplicadas basándose en el nombre
+      const uniqueCategories = (categoriesResponse.data || []).reduce((acc, category) => {
+        const categoryName = category.name || category.nombre;
+        // Solo agregar si no existe una categoría con el mismo nombre
+        if (!acc.some(c => (c.name || c.nombre) === categoryName)) {
+          acc.push(category);
+        }
+        return acc;
+      }, []);
 
       setReferenceData({
         documentTypes: athletesDocTypesResponse.success ? athletesDocTypesResponse.data : [],
         guardianDocumentTypes: guardianDocTypes,
-        sportsCategories: categoriesResponse.data || []
+        sportsCategories: uniqueCategories
       });
     } catch (error) {
       console.error("Error cargando datos de referencia:", error);
@@ -103,9 +113,11 @@ export const useEnrollments = () => {
         
         // Crear un Set con los documentos de deportistas ya matriculados
         const enrolledDocuments = new Set(
-          (athletesResult.data || []).map(athlete => 
-            athlete.identification || athlete.numeroDocumento
-          ).filter(Boolean)
+          (athletesResult.data || []).map(athlete => {
+            const doc = athlete.identification || athlete.numeroDocumento;
+            console.log('🔍 [useEnrollments] Deportista matriculada:', athlete.firstName || athlete.nombres, 'Documento:', doc);
+            return doc;
+          }).filter(Boolean)
         );
         
         console.log('📋 [useEnrollments] Documentos de deportistas matriculados:', Array.from(enrolledDocuments));
@@ -114,18 +126,21 @@ export const useEnrollments = () => {
         const pendingInscriptions = (inscriptionsResult.data || []).filter(
           (inscription) => {
             const estado = (inscription.status || inscription.estado || "").toUpperCase();
-            const isPending = estado === "PENDIENTE";
+            // Aceptar tanto "PENDING" (inglés del backend) como "PENDIENTE" (español)
+            const isPending = estado === "PENDIENTE" || estado === "PENDING";
             const documento = inscription.identification || inscription.numeroDocumento;
             const isAlreadyEnrolled = enrolledDocuments.has(documento);
             
             const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
-            console.log(`📋 [useEnrollments] Inscripción ${fullName}: estado="${inscription.status || inscription.estado}" -> isPending=${isPending}, documento=${documento}, isAlreadyEnrolled=${isAlreadyEnrolled}`);
+            console.log(`📋 [useEnrollments] Inscripción ${fullName}: estado="${inscription.status || inscription.estado}", documento="${documento}", isPending=${isPending}, isAlreadyEnrolled=${isAlreadyEnrolled}, mostrar=${isPending && !isAlreadyEnrolled}`);
             
+            // Solo mostrar si está pendiente Y NO está matriculado
             return isPending && !isAlreadyEnrolled;
           }
         );
         
         console.log('📋 [useEnrollments] Inscripciones pendientes filtradas:', pendingInscriptions.length);
+        console.log('📋 [useEnrollments] IDs de inscripciones pendientes:', pendingInscriptions.map(i => i.id));
         setInscriptions(pendingInscriptions);
       } else {
         setInscriptions([]);
@@ -197,11 +212,26 @@ export const useEnrollments = () => {
     try {
       console.log("📝 [createEnrollment] Iniciando creación de matrícula...");
       console.log("📝 [createEnrollment] enrollmentData:", enrollmentData);
-      console.log("📝 [createEnrollment] preRegistrationId:", preRegistrationId);
-      console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof preRegistrationId);
+      console.log("📝 [createEnrollment] preRegistrationId (parámetro):", preRegistrationId);
+      console.log("📝 [createEnrollment] preRegistrationId (en data):", enrollmentData.preRegistrationId);
+      
+      // Usar el preRegistrationId que viene en los datos si existe, sino usar el parámetro
+      const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
+      console.log("📝 [createEnrollment] preRegistrationId FINAL:", finalPreRegistrationId);
+      console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof finalPreRegistrationId);
+      
+      // 🚀 ELIMINACIÓN INMEDIATA: Remover la inscripción del estado local ANTES de crear la matrícula
+      if (finalPreRegistrationId) {
+        console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local INMEDIATAMENTE...");
+        setInscriptions(prevInscriptions => {
+          const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
+          console.log("✅ [createEnrollment] Inscripciones restantes:", filtered.length);
+          return filtered;
+        });
+      }
       
       // Pasar el preRegistrationId al servicio
-      const result = await EnrollmentsService.createEnrollment(enrollmentData, preRegistrationId);
+      const result = await EnrollmentsService.createEnrollment(enrollmentData, finalPreRegistrationId);
 
       if (result.success) {
         console.log("✅ [createEnrollment] Matrícula creada exitosamente");
@@ -216,16 +246,6 @@ export const useEnrollments = () => {
         console.log("🔄 [createEnrollment] Recargando datos...");
         await loadData(pagination.page);
         
-        // 🚀 ELIMINACIÓN POST-CARGA: Remover la inscripción del estado local DESPUÉS de recargar
-        // Esto asegura que incluso si el backend no actualizó el estado, no se muestre
-        if (preRegistrationId) {
-          console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local después de recargar...");
-          setInscriptions(prevInscriptions => 
-            prevInscriptions.filter(inscription => inscription.id !== preRegistrationId)
-          );
-          console.log("✅ [createEnrollment] Inscripción eliminada del estado local");
-        }
-        
         // Retornar toda la información incluyendo credenciales
         return {
           data: result.data,
@@ -234,11 +254,26 @@ export const useEnrollments = () => {
         };
       } else {
         console.error("❌ [createEnrollment] Error al crear matrícula:", result.error);
+        
+        // Si falló, restaurar la inscripción en el estado local
+        if (finalPreRegistrationId) {
+          console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
+          await loadData(pagination.page);
+        }
+        
         showErrorAlert("Error", result.error || "No se pudo crear la matrícula");
         return null;
       }
     } catch (error) {
       console.error("❌ [createEnrollment] Excepción:", error);
+      
+      // Si falló, restaurar la inscripción en el estado local
+      const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
+      if (finalPreRegistrationId) {
+        console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
+        await loadData(pagination.page);
+      }
+      
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
     }
@@ -304,7 +339,7 @@ export const useEnrollments = () => {
     try {
       const result = await InscriptionsService.updateStatus(
         id,
-        "RECHAZADA" // En mayúsculas para coincidir con el enum del backend
+        "Rejected" // Valor del enum en inglés
       );
 
       if (result.success) {
