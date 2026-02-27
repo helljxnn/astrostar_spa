@@ -1,18 +1,20 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaBan } from "react-icons/fa";
+import { FaPlus, FaRegCalendarAlt } from "react-icons/fa";
 
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import DonationViewModal from "./components/DonationViewModal";
 import CancelDonationModal from "./components/CancelDonationModal";
 import donationsService from "./services/donationsService";
+import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import {
   showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 const DONOR_NAME_FIELDS = [
   "nombre",
@@ -22,23 +24,62 @@ const DONOR_NAME_FIELDS = [
   "companyName",
   "nombreCompleto",
   "razon_social_completa",
+  "displayName",
+  "fullName",
+  "representante",
 ];
 
-const getDonorDisplayName = (donation) => {
+const DONATION_DONOR_FIELDS = [
+  "donorName",
+  "nombre",
+  "donorFullName",
+  "donor_full_name",
+  "donor",
+  "sponsorName",
+  "nombreDonante",
+  "nombreDonador",
+  "nombrePatrocinador",
+];
+
+const getDonorDisplayName = (donation, donorsMap = {}) => {
   if (!donation) return "Sin nombre";
-  if (donation.anonymous || !donation.donorSponsorId) return "Anonimo";
-  const sponsor = donation.donorSponsor || {};
+  if (donation.anonymous) return "Anonimo";
+
+  const sponsor = donation.donorSponsor || donation.sponsor || {};
   for (const key of DONOR_NAME_FIELDS) {
-    if (sponsor[key]) {
-      return sponsor[key];
+    if (sponsor?.[key]) return sponsor[key];
+  }
+
+  const idKey = donation.donorSponsorId ?? donation.donor_id ?? donation.sponsor_id;
+  if (idKey && donorsMap[String(idKey)]) {
+    return donorsMap[String(idKey)];
+  }
+
+  const donor = donation.donor || donation.persona || {};
+  const personName =
+    donor.fullName ||
+    donor.nombreCompleto ||
+    [donor.nombres, donor.apellidos].filter(Boolean).join(" ").trim();
+  if (personName) return personName;
+
+  for (const key of DONATION_DONOR_FIELDS) {
+    if (donation[key]) {
+      const val = donation[key];
+      if (typeof val === "string") return val;
+      if (typeof val === "object") {
+        const maybe =
+          val.nombre ||
+          val.name ||
+          val.displayName ||
+          [val.nombres, val.apellidos].filter(Boolean).join(" ").trim();
+        if (maybe) return maybe;
+      }
     }
   }
-  return (
-    donation.donorName ||
-    donation.nombre ||
-    sponsor?.representante ||
-    "Sin nombre"
-  );
+
+  if (idKey) return `Donante #${idKey}`;
+
+  return "Anonimo";
 };
 
 const Donations = () => {
@@ -48,26 +89,70 @@ const Donations = () => {
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
   const [totalRows, setTotalRows] = useState(0);
-  const [selectedDonation, setSelectedDonation] = useState(null);
   const [cancelingDonation, setCancelingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [donorsMap, setDonorsMap] = useState({});
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   const navigate = useNavigate();
 
+  const MonthPickerInput = forwardRef(({ value, onClick }, ref) => (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      className="px-3 py-2 rounded-lg flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-sm text-gray-700 transition-colors"
+    >
+      <FaRegCalendarAlt className="text-gray-500" />
+      <span className="whitespace-nowrap">{value || "Filtrar por mes"}</span>
+    </button>
+  ));
+
   /* ------------------- Cargar datos desde API ------------------- */
+  useEffect(() => {
+    const fetchDonors = async () => {
+      try {
+        const resp = await donorsSponsorsService.getAll({
+          limit: 2000,
+        });
+        const data = resp?.data || resp?.data?.data || [];
+        const list = Array.isArray(data) ? data : resp?.data?.data || [];
+        const map = {};
+        list.forEach((d) => {
+          const name =
+            d.nombre ||
+            d.name ||
+            d.displayName ||
+            [d.nombres, d.apellidos].filter(Boolean).join(" ").trim();
+          if (d.id && name) map[String(d.id)] = name;
+        });
+        setDonorsMap(map);
+      } catch (error) {
+        console.error("Error cargando donantes para tabla", error);
+      }
+    };
+
+    fetchDonors();
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const resp = await donationsService.list({
           page: currentPage,
-          limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          limit: 10,
           search: searchTerm, // Enviar búsqueda al backend
+          month: selectedMonth
+            ? `${selectedMonth.getFullYear()}-${String(
+                selectedMonth.getMonth() + 1,
+              ).padStart(2, "0")}`
+            : undefined,
         });
         const records = resp?.data || resp?.data?.data || [];
 
         const normalized = records.map((d, idx) => {
-          const donorName = getDonorDisplayName(d);
+          const donorName = getDonorDisplayName(d, donorsMap);
 
           const items =
             Array.isArray(d.details) && d.details.length > 0
@@ -92,11 +177,11 @@ const Donations = () => {
                     ? "En especie"
                     : "Economica";
 
-          const statusLabel =
-            d.status === "Recibida"
-              ? "Recibida"
-              : d.status === "EnProceso"
-                ? "En proceso"
+      const statusLabel =
+        d.status === "Recibida"
+          ? "Recibida"
+          : d.status === "EnProceso"
+            ? "En proceso"
                 : d.status === "Verificada"
                   ? "Verificada"
                   : d.status === "Ejecutada"
@@ -111,9 +196,12 @@ const Donations = () => {
             donationDate: d.donationAt
               ? new Date(d.donationAt).toLocaleString("es-CO")
               : "",
-            registerDate: d.createdAt
-              ? new Date(d.createdAt).toLocaleDateString("es-CO")
-              : "",
+            programLabel:
+              d.program ||
+              d.programa ||
+              d.specificDestination ||
+              d.destinoEspecifico ||
+              "N/A",
             status: statusLabel,
             typeLabel,
             descripcion: d.program ?? "",
@@ -123,6 +211,41 @@ const Donations = () => {
             _raw: d,
           };
         });
+
+        // si faltan nombres, intentar completarlos con llamadas puntuales
+        const missingIds = new Set();
+        records.forEach((d) => {
+          const idKey = d.donorSponsorId ?? d.donor_id ?? d.sponsor_id;
+          const hasName = getDonorDisplayName(d, donorsMap) !== `Donante #${idKey}`;
+          if (idKey && !donorsMap[String(idKey)] && !hasName) {
+            missingIds.add(String(idKey));
+          }
+        });
+
+        if (missingIds.size > 0) {
+          const fetched = {};
+          for (const id of missingIds) {
+            try {
+              const respId = await donorsSponsorsService.getById(id);
+              const donorData =
+                respId?.data || respId?.data?.data || respId?.donor || {};
+              const name =
+                donorData.nombre ||
+                donorData.name ||
+                donorData.displayName ||
+                [donorData.nombres, donorData.apellidos]
+                  .filter(Boolean)
+                  .join(" ")
+                  .trim();
+              if (name) fetched[id] = name;
+            } catch (e) {
+              console.warn("No se pudo obtener donante", id, e?.message || e);
+            }
+          }
+          if (Object.keys(fetched).length) {
+            setDonorsMap((prev) => ({ ...prev, ...fetched }));
+          }
+        }
 
         setData(normalized);
         setTotalRows(
@@ -140,7 +263,7 @@ const Donations = () => {
     };
 
     fetchData();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
+  }, [currentPage, searchTerm, donorsMap, selectedMonth]); // Recargar cuando cambia la página, la búsqueda o el mes
 
   /* ------------------- Paginación ------------------- */
   // Usar datos directamente del backend (ya filtrados y paginados)
@@ -150,63 +273,78 @@ const Donations = () => {
   const reportColumns = [
     { key: "donorName", label: "Donante" },
     { key: "donationType", label: "Tipo de Donación" },
+    { key: "programLabel", label: "Programa/Destino" },
     { key: "status", label: "Estado" },
     { key: "donationDate", label: "Fecha de Donación" },
-    { key: "registerDate", label: "Fecha de Registro" },
   ];
+
+  const mapDonationToFormState = (raw) => {
+    const details = raw.details || raw.detalles || [];
+    const payment = details.find(
+      (d) =>
+        (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") &&
+        d.recordType === "payment",
+    );
+    const specieItems = details
+      .filter((d) => d.kind === "ESPECIE" && d.recordType === "item")
+      .map((item) => ({
+        description: item.description ?? "",
+        quantity: item.quantity ?? item.amount ?? "",
+        classification: item.classification ?? "",
+        channel: item.channel || item.metodo || item.method || "",
+      }));
+    const foodDetail = details.find(
+      (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
+    );
+    const firstDetailKind =
+      details.find((d) => d.kind)?.kind ||
+      (details[0]?.tipo) ||
+      null;
+
+    const isFoodPurchase =
+      raw.type === "ALIMENTOS" ||
+      details.some((d) => d.kind === "ALIMENTOS" && d.recordType === "food");
+
+    return {
+      id: raw.id,
+      donorSponsorId: raw.donorSponsorId || "",
+      anonymous: raw.anonymous || false,
+      type:
+        (isFoodPurchase ? "ECONOMICA" : raw.type) ||
+        (firstDetailKind === "ESPECIE" ? "ESPECIE" : firstDetailKind) ||
+        "ECONOMICA",
+      status: raw.status || "Recibida",
+      program: raw.program || raw.programa || "",
+      eventId: raw.eventId ? String(raw.eventId) : "",
+      specificDestination: raw.specificDestination || raw.destinoEspecifico || "",
+      donationAt: raw.donationAt
+        ? new Date(raw.donationAt).toISOString().slice(0, 16)
+        : new Date().toISOString().slice(0, 16),
+      econAmount:
+        payment?.amount ?? raw.econAmount ?? raw.amount ?? raw.valor ?? "",
+      econChannel: payment?.channel ?? raw.econChannel ?? raw.canal ?? "",
+      econModality:
+        payment?.classification ?? raw.econModality ?? raw.modalidad ?? "",
+      isFoodPurchase,
+      foodQty: foodDetail?.quantity ?? raw.foodQty ?? raw.cantidadAlimentos ?? "",
+      foodClass: foodDetail?.classification ?? raw.foodClass ?? raw.clasificacionAlimentos ?? "",
+      especieItems: raw.especieItems || specieItems,
+      details,
+    };
+  };
 
   /* ------------------- Handlers ------------------- */
   const handleCreate = () => {
     navigate("/dashboard/donations/form", { state: { isEditing: false } });
   };
 
-  const handleEdit = (donation) => {
+  const handleView = (donation) => {
     const raw = donation._raw || donation;
-    const details = raw.details || [];
-
-    const payment = details.find(
-      (d) =>
-        (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") &&
-        d.recordType === "payment",
-    );
-    const especieItems = details
-      .filter((d) => d.kind === "ESPECIE" && d.recordType === "item")
-      .map((item) => ({
-        description: item.description ?? "",
-        quantity: item.quantity ?? item.amount ?? "",
-        classification: item.classification ?? "",
-        method: item.channel ?? "",
-      }));
-    const foodDetail = details.find(
-      (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
-    );
-
-    const isFoodPurchase = raw.type === "ALIMENTOS";
-
-    const editable = {
-      id: raw.id,
-      donorSponsorId: raw.donorSponsorId || "",
-      anonymous: raw.anonymous || false,
-      type: isFoodPurchase ? "ECONOMICA" : raw.type || "ECONOMICA",
-      status: raw.status || "Recibida",
-      program: raw.program || "",
-      donationAt: raw.donationAt
-        ? new Date(raw.donationAt).toISOString().slice(0, 16)
-        : new Date().toISOString().slice(0, 16),
-      econAmount: payment?.amount ?? "",
-      econChannel: payment?.channel ?? "",
-      especieItems,
-      isFoodPurchase,
-      foodQty: foodDetail?.quantity ?? "",
-      foodClass: foodDetail?.classification ?? "",
-    };
-
+    const mapped = mapDonationToFormState(raw);
     navigate("/dashboard/donations/form", {
-      state: { donation: editable, isEditing: true },
+      state: { donation: mapped, isEditing: true, statusOnly: true },
     });
   };
-
-  const handleView = (donation) => setSelectedDonation(donation);
   const handleCancel = (donation) => setCancelingDonation(donation);
 
   const handleConfirmCancel = (reason) => {
@@ -237,6 +375,31 @@ const Donations = () => {
   };
 
   /* ------------------- Render ------------------- */
+  const statusColorMap = {
+    Recibida: "bg-primary-blue/10 text-primary-blue",
+    "En proceso": "bg-primary-purple/10 text-primary-purple",
+    EnProceso: "bg-primary-purple/10 text-primary-purple",
+    Verificada: "bg-primary-purple/10 text-primary-purple",
+    Ejecutada: "bg-primary-purple/10 text-primary-purple",
+    Anulada: "bg-rose-100 text-rose-700",
+  };
+
+  const renderStatusChip = (value) => {
+    const cls =
+      statusColorMap[value] ||
+      statusColorMap[value?.replace(/\s+/g, "")] ||
+      "";
+    return (
+      <span
+        className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          cls || "text-primary-purple"
+        }`}
+      >
+        {value || "N/A"}
+      </span>
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
@@ -254,6 +417,29 @@ const Donations = () => {
             }}
             placeholder="Buscar donación..."
           />
+
+          <div className="flex items-center gap-2">
+            <DatePicker
+              selected={selectedMonth}
+              onChange={(date) => {
+                setSelectedMonth(date);
+                setCurrentPage(1);
+              }}
+              dateFormat="MMMM yyyy"
+              showMonthYearPicker
+              customInput={<MonthPickerInput />}
+              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
+              popperPlacement="bottom"
+            />
+            {selectedMonth && (
+              <button
+                className="px-2.5 py-1 text-xs bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
+                onClick={() => setSelectedMonth(null)}
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
 
           <div className="flex items-center gap-3">
             <ReportButton
@@ -278,8 +464,8 @@ const Donations = () => {
             titles: [
               "Donante",
               "Tipo de Donación",
+              "Programa / Destino",
               "Fecha de Donación",
-              "Fecha de Registro",
               "Estado",
             ],
           }}
@@ -293,23 +479,26 @@ const Donations = () => {
             dataPropertys: [
               "donorName",
               "donationType",
+              "programLabel",
               "donationDate",
-              "registerDate",
               "status",
             ],
+            customRenderers: {
+              status: (value) => renderStatusChip(value),
+            },
+            cellClassNames: {
+              status: "whitespace-nowrap",
+            },
           }}
-          onEdit={(row) => handleEdit(row._original || row)}
+          serverPagination
+          rowsPerPage={10}
+          totalRows={totalRows}
+          currentPage={currentPage}
+          onPageChange={(page) => setCurrentPage(page)}
           onView={(row) => handleView(row._original || row)}
           customActions={[]}
         />
       </div>
-
-      {selectedDonation && (
-        <DonationViewModal
-          donation={selectedDonation}
-          onClose={() => setSelectedDonation(null)}
-        />
-      )}
 
       {cancelingDonation && (
         <CancelDonationModal
@@ -327,3 +516,4 @@ const Donations = () => {
 };
 
 export default Donations;
+

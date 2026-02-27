@@ -236,174 +236,200 @@ const AppointmentForm = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-6 text-white rounded-t-2xl relative">
+        <div className="flex-shrink-0 bg-white rounded-t-3xl border-b border-gray-200 px-6 py-5 relative">
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-purple">
+              {initialData?.id ? "Editar cita" : "Nueva cita"}
+            </p>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {initialData?.id ? "Actualiza la informacion" : "Agendar cita"}
+            </h2>
+            <p className="text-sm text-gray-500">
+              Completa los datos basicos para programar la atencion.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors text-3xl leading-none"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 transition-colors text-2xl leading-none p-1 rounded-full hover:bg-gray-100"
             aria-label="Cerrar"
           >
-            ×
+            &times;
           </button>
-          <h2 className="text-2xl font-bold">
-            {initialData?.id ? "Editar Cita" : "Nueva Cita"}
-          </h2>
-          <p className="text-white/90 text-sm mt-1">
-            Complete los datos para {initialData?.id ? "actualizar" : "agendar"} la cita
-          </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Deportista */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                Información del Deportista
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  label="Categoría Deportiva"
-                  name="category"
-                  type="select"
-                  options={categoryOptions}
-                  value={selectedCategory}
-                  onChange={handleCategoryChange}
-                  disabled={loadingCategories || lockAthlete}
-                  placeholder={
-                    loadingCategories
-                      ? "Cargando categorías..."
-                      : categoryOptions.length === 0
-                      ? "No hay categorías disponibles"
-                      : "Seleccione una categoría"
-                  }
-                />
-                <FormField
-                  label="Deportista"
-                  name="athleteId"
-                  type="select"
-                  options={athleteOptions}
-                  value={formData.athleteId}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.athleteId}
-                  touched={touched.athleteId}
-                  required
-                  disabled={!selectedCategory || loadingAthletes2 || lockAthlete}
-                  placeholder={
-                    !selectedCategory
-                      ? "Seleccione una categoría primero"
-                      : loadingAthletes2
-                      ? "Cargando deportistas..."
-                      : athleteOptions.length === 0
-                      ? "No hay deportistas en esta categoría"
-                      : "Seleccione un deportista"
-                  }
-                />
-              </div>
+        <form
+          onSubmit={handleSubmit}
+          className="flex-1 flex flex-col min-h-0 bg-gray-50"
+        >
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Deportista
+                  </p>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Seleccion y categoria
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Categoria Deportiva"
+                    name="category"
+                    type="select"
+                    options={categoryOptions}
+                    value={selectedCategory}
+                    onChange={handleCategoryChange}
+                    disabled={loadingCategories || lockAthlete}
+                    placeholder={
+                      loadingCategories
+                        ? "Cargando categorias..."
+                        : categoryOptions.length === 0
+                        ? "No hay categorias disponibles"
+                        : "Seleccione una categoria"
+                    }
+                  />
+                  <FormField
+                    label="Deportista"
+                    name="athleteId"
+                    type="select"
+                    options={athleteOptions}
+                    value={formData.athleteId}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.athleteId}
+                    touched={touched.athleteId}
+                    required
+                    disabled={!selectedCategory || loadingAthletes2 || lockAthlete}
+                    placeholder={
+                      !selectedCategory
+                        ? "Seleccione una categoria primero"
+                        : loadingAthletes2
+                        ? "Cargando deportistas..."
+                        : athleteOptions.length === 0
+                        ? "No hay deportistas en esta categoria"
+                        : "Seleccione un deportista"
+                    }
+                  />
+                </div>
+              </section>
+
+              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Profesional de salud
+                  </p>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Especialidad y especialista
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    label="Especialidad"
+                    name="specialty"
+                    type="select"
+                    options={specialtyOptions}
+                    value={formData.specialty}
+                    onChange={handleSpecialtyChange}
+                    onBlur={handleBlur}
+                    error={errors.specialty}
+                    touched={touched.specialty}
+                    required
+                    disabled={loadingSpecialists}
+                    placeholder="Seleccione una especialidad"
+                  />
+                  <FormField
+                    label="Especialista"
+                    name="specialistId"
+                    type="select"
+                    options={specialistOptions}
+                    value={formData.specialistId}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    error={errors.specialistId}
+                    touched={touched.specialistId}
+                    required
+                    disabled={!formData.specialty || loadingSpecialists}
+                    placeholder={
+                      !formData.specialty
+                        ? "Seleccione una especialidad primero"
+                        : "Seleccione un especialista"
+                    }
+                  />
+                </div>
+              </section>
             </div>
 
-            {/* Especialista */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                Profesional de Salud
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Programacion
+                  </p>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Fecha y duracion
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <DatePickerField
+                    label="Fecha y Hora"
+                    selected={formData.start}
+                    onChange={handleDateChange}
+                    timeIntervals={15}
+                    error={errors.start}
+                    touched={touched.start}
+                    required
+                    placeholder="Seleccione fecha y hora"
+                  />
+                  <FormField
+                    label="Duracion"
+                    name="durationMinutes"
+                    type="select"
+                    options={DURATION_OPTIONS}
+                    value={formData.durationMinutes}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+              </section>
+
+              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                    Motivo
+                  </p>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Descripcion de la cita
+                  </h3>
+                </div>
                 <FormField
-                  label="Especialidad"
-                  name="specialty"
-                  type="select"
-                  options={specialtyOptions}
-                  value={formData.specialty}
-                  onChange={handleSpecialtyChange}
-                  onBlur={handleBlur}
-                  error={errors.specialty}
-                  touched={touched.specialty}
-                  required
-                  disabled={loadingSpecialists}
-                  placeholder="Seleccione una especialidad"
-                />
-                <FormField
-                  label="Especialista"
-                  name="specialistId"
-                  type="select"
-                  options={specialistOptions}
-                  value={formData.specialistId}
+                  label="Descripcion"
+                  name="description"
+                  type="textarea"
+                  value={formData.description}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  error={errors.specialistId}
-                  touched={touched.specialistId}
+                  error={errors.description}
+                  touched={touched.description}
                   required
-                  disabled={!formData.specialty || loadingSpecialists}
-                  placeholder={
-                    !formData.specialty
-                      ? "Seleccione una especialidad primero"
-                      : "Seleccione un especialista"
-                  }
+                  placeholder="Describa el motivo de la cita..."
                 />
-              </div>
-            </div>
-
-            {/* Programación */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                Programación de la Cita
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <DatePickerField
-                  label="Fecha y Hora"
-                  selected={formData.start}
-                  onChange={handleDateChange}
-                  timeIntervals={15}
-                  error={errors.start}
-                  touched={touched.start}
-                  required
-                  placeholder="Seleccione fecha y hora"
-                />
-                <FormField
-                  label="Duración"
-                  name="durationMinutes"
-                  type="select"
-                  options={DURATION_OPTIONS}
-                  value={formData.durationMinutes}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Descripción */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">
-                Motivo de la Cita
-              </h3>
-              <FormField
-                label="Descripción"
-                name="description"
-                type="textarea"
-                value={formData.description}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                error={errors.description}
-                touched={touched.description}
-                required
-                placeholder="Describa el motivo de la cita..."
-              />
+              </section>
             </div>
           </div>
 
-          {/* Footer con botones */}
-          <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+          <div className="px-6 py-4 border-t border-gray-200 bg-white rounded-b-3xl">
             <div className="flex flex-col sm:flex-row gap-3 justify-end">
               <button
                 type="button"
@@ -429,3 +455,6 @@ const AppointmentForm = ({
 };
 
 export default AppointmentForm;
+
+
+

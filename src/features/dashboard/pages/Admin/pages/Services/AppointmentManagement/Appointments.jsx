@@ -406,9 +406,10 @@ function Appointments() {
   };
 
   return (
-    <div className="space-y-6 p-4">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
+    <div className="space-y-6 font-monserrat p-4">
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestión de Citas</h1>
           <p className="text-gray-500 mt-1">
             Visualiza, crea y gestiona las citas
@@ -472,7 +473,7 @@ function Appointments() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
+          className="mt-4 bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-100"
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
@@ -480,7 +481,7 @@ function Appointments() {
               onClick={() => setShowFilters(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              x
+              &times;
             </button>
           </div>
 
@@ -528,6 +529,8 @@ function Appointments() {
           )}
         </motion.div>
       )}
+
+      </div>
 
       <BaseCalendar
         variant="custom"

@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaArrowLeft, FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import donationsService from "./services/donationsService";
+import eventsService from "../../Events/services/eventsService";
 import {
   showErrorAlert,
   showSuccessAlert,
@@ -16,10 +17,17 @@ const STATUS_OPTIONS = [
   { value: "Ejecutada", label: "Ejecutada" },
 ];
 
-const DONATION_TYPES = {
-  ECONOMICA: "Economica",
-  ESPECIE: "En especie",
-};
+const DONATION_TYPE_OPTIONS = [
+  { value: "ECONOMICA", apiType: "ECONOMICA", label: "Economica" },
+  { value: "ESPECIE", apiType: "ESPECIE", label: "En especie" },
+];
+
+const DONATION_TYPE_MAP = DONATION_TYPE_OPTIONS.reduce((acc, option) => {
+  acc[option.value] = option;
+  return acc;
+}, {});
+
+const getTypeMeta = (typeValue) => DONATION_TYPE_MAP[typeValue] || null;
 
 const ECON_MODALITIES = [
   "Unica",
@@ -30,16 +38,8 @@ const ECON_MODALITIES = [
 
 const CHANNELS = ["Transferencia", "Consignacion", "Nequi", "PSE", "Otro"];
 
-const RECEPTION_METHODS = [
-  "Acta de entrega",
-  "Contrato de donacion",
-  "Convenio publico",
-  "Donacion directa",
-];
-
-const CUSTOM_METHOD_OPTION = "__CUSTOM_METHOD__";
-
 const FOOD_CLASSES = ["Granos", "Proteinas", "Verduras", "Lacteos", "Otros"];
+const DEFAULT_RECEPTION_METHOD = "Donacion directa";
 const GOOD_CLASSES = [
   "Implementacion deportiva",
   "Nutricion e hidratacion",
@@ -53,16 +53,24 @@ const GOOD_CLASSES = [
   "Otros",
 ];
 
+const PROGRAM_EVENT = "Organizacion de eventos y festivales";
+
 const PROGRAMS = [
   "Escuelas deportivas",
   "Talleres de formacion integral",
   "Apoyo psicosocial",
   "Transporte y alimentacion",
-  "Organizacion de eventos y festivales",
+  PROGRAM_EVENT,
   "Apoyo integral a las familias",
   "Becas para ninas",
   "Otros",
 ];
+
+const getLocalDateTimeString = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().slice(0, 16);
+};
 
 const formatNumber = (value) => {
   if (value === "" || value === null || value === undefined) return "";
@@ -74,28 +82,26 @@ const formatNumber = (value) => {
 const DonationsForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const statusOnlyMode = Boolean(location.state?.statusOnly);
   const [donors, setDonors] = useState([]);
   const [loadingDonors, setLoadingDonors] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [eventsError, setEventsError] = useState("");
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingDonationId, setEditingDonationId] = useState(null);
   const [prefilledFromState, setPrefilledFromState] = useState(false);
-  const [customReceptionMethods, setCustomReceptionMethods] = useState([]);
-  const [isMethodModalOpen, setIsMethodModalOpen] = useState(false);
-  const [methodModalValue, setMethodModalValue] = useState("");
-  const [methodModalError, setMethodModalError] = useState("");
-
   const [form, setForm] = useState({
-    anonymous: false,
     isFoodPurchase: false,
     donorSponsorId: "",
-    type: "ECONOMICA",
+    type: "",
     status: "Recibida",
     program: "",
+    eventId: "",
     specificDestination: "",
-    donationAt: new Date().toISOString().slice(0, 16),
-    notes: "",
+    donationAt: getLocalDateTimeString(),
     econModality: "",
     econAmount: "",
     econChannel: "",
@@ -103,7 +109,6 @@ const DonationsForm = () => {
     especieDesc: "",
     especieQty: "",
     especieClass: "",
-    especieMethod: "",
     especieItems: [],
     especieSoporte: null,
     foodQty: "",
@@ -147,15 +152,14 @@ const DonationsForm = () => {
     setEditingDonationId(donationState.id);
     setForm((prev) => ({
       ...prev,
-      anonymous: donationState.anonymous ?? false,
       donorSponsorId: donationState.donorSponsorId
         ? String(donationState.donorSponsorId)
         : "",
-      type: donationState.type || prev.type,
+      type: donationState.type || prev.type || "",
       status: donationState.status || prev.status,
       program: donationState.program || "",
+      eventId: donationState.eventId ? String(donationState.eventId) : "",
       specificDestination: donationState.specificDestination || "",
-      notes: donationState.notes || "",
       donationAt: donationState.donationAt || prev.donationAt,
       econModality: paymentDetail?.classification || prev.econModality,
       econAmount: donationState.econAmount ?? prev.econAmount,
@@ -166,38 +170,61 @@ const DonationsForm = () => {
       especieItems: donationState.especieItems || [],
     }));
 
-    const customMethods = (donationState.especieItems || [])
-      .map((item) => item.method)
-      .filter((method) => method && !RECEPTION_METHODS.includes(method));
-
-    if (customMethods.length) {
-      setCustomReceptionMethods((prev) => {
-        const next = [...prev];
-        customMethods.forEach((method) => {
-          if (!next.includes(method)) next.push(method);
-        });
-        return next;
-      });
-    }
-
     setPrefilledFromState(true);
   }, [location.state, prefilledFromState]);
 
+  useEffect(() => {
+    const shouldLoadEvents = form.program === PROGRAM_EVENT;
+    if (!shouldLoadEvents) {
+      setForm((prev) => (prev.eventId ? { ...prev, eventId: "" } : prev));
+      return;
+    }
+    if (events.length > 0 || loadingEvents) return;
+
+    const fetchEvents = async () => {
+      setLoadingEvents(true);
+      setEventsError("");
+      try {
+        const resp = await eventsService.getActiveEvents();
+        const data = resp?.data || resp?.data?.data || resp?.events || [];
+        const list = Array.isArray(data) ? data : resp?.data?.events || [];
+        const active = list.filter((ev) => {
+          const status =
+            (ev.status || ev.estado || ev.state || "").toString().toLowerCase();
+          return ["activo", "active", "programado", "programada", "programado"].includes(
+            status
+          );
+        });
+        setEvents(active.length ? active : list);
+      } catch (error) {
+        console.error("Error cargando eventos activos", error);
+        setEventsError("No se pudieron cargar los eventos activos.");
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+
+    fetchEvents();
+  }, [form.program, events.length, loadingEvents]);
+
   const handleChange = (field, value) => {
+    if (statusOnlyMode && field !== "status") return;
     setForm((prev) => {
       const next = { ...prev, [field]: value };
 
-      if (field === "type" && value !== "ECONOMICA") {
-        next.isFoodPurchase = false;
-        next.econModality = "";
-      }
+      if (field === "type") {
+        const typeMeta = getTypeMeta(value);
+        if (!typeMeta || typeMeta.apiType !== "ECONOMICA") {
+          next.isFoodPurchase = false;
+          next.econModality = "";
+        }
 
-      if (field === "type" && value !== "ESPECIE") {
-        next.especieItems = [];
-        next.especieDesc = "";
-        next.especieQty = "";
-        next.especieClass = "";
-        next.especieMethod = "";
+        if (!typeMeta || typeMeta.apiType !== "ESPECIE") {
+          next.especieItems = [];
+          next.especieDesc = "";
+          next.especieQty = "";
+          next.especieClass = "";
+        }
       }
 
       if (field === "isFoodPurchase" && !value) {
@@ -219,11 +246,13 @@ const DonationsForm = () => {
   };
 
   const handleFile = (field, files) => {
+    if (statusOnlyMode) return;
     setForm((prev) => ({ ...prev, [field]: files }));
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
   const handleAddEspecieItem = () => {
+    if (statusOnlyMode) return;
     const entryErrors = {};
     if (!form.especieDesc?.trim()) {
       entryErrors.especieDesc = "Descripcion del bien requerida.";
@@ -248,13 +277,11 @@ const DonationsForm = () => {
           description: prev.especieDesc.trim(),
           quantity: prev.especieQty,
           classification: prev.especieClass,
-          method: prev.especieMethod,
         },
       ],
       especieDesc: "",
       especieQty: "",
       especieClass: "",
-      especieMethod: "",
     }));
 
     setErrors((prev) => ({
@@ -262,68 +289,44 @@ const DonationsForm = () => {
       especieDesc: undefined,
       especieQty: undefined,
       especieClass: undefined,
-      especieMethod: undefined,
       especieItems: undefined,
     }));
   };
 
   const handleRemoveEspecieItem = (index) => {
+    if (statusOnlyMode) return;
     setForm((prev) => ({
       ...prev,
       especieItems: prev.especieItems.filter((_, idx) => idx !== index),
     }));
   };
 
-  const handleMethodSelection = (value) => {
-    if (value === CUSTOM_METHOD_OPTION) {
-      setIsMethodModalOpen(true);
-      return;
-    }
-
-    handleChange("especieMethod", value);
-  };
-
-  const handleSaveCustomMethod = () => {
-    const trimmed = methodModalValue.trim();
-    if (!trimmed) {
-      setMethodModalError("Ingresa el nombre del metodo.");
-      return;
-    }
-
-    setCustomReceptionMethods((prev) => {
-      if (prev.includes(trimmed)) {
-        return prev;
-      }
-      return [...prev, trimmed];
-    });
-    setForm((prev) => ({
-      ...prev,
-      especieMethod: trimmed,
-    }));
-    setMethodModalValue("");
-    setMethodModalError("");
-    setIsMethodModalOpen(false);
-    setErrors((prev) => ({ ...prev, especieMethod: undefined }));
-  };
-
-  const handleCloseMethodModal = () => {
-    setIsMethodModalOpen(false);
-    setMethodModalValue("");
-    setMethodModalError("");
-  };
-
   const validate = () => {
+    if (statusOnlyMode) {
+      if (!form.status) {
+        setErrors({ status: "Selecciona el estado." });
+        return false;
+      }
+      setErrors({});
+      return true;
+    }
     const newErrors = {};
+    const selectedType = getTypeMeta(form.type);
+    const isEconomic = selectedType?.apiType === "ECONOMICA";
+    const isEspecie = selectedType?.apiType === "ESPECIE";
+    const isFood = isEconomic && form.isFoodPurchase;
+    const requiresEvent = form.program === PROGRAM_EVENT;
 
-    if (!form.anonymous && !form.donorSponsorId) {
-      newErrors.donorSponsorId = "Selecciona el donante o marca anonimo.";
+    if (!form.donorSponsorId) {
+      newErrors.donorSponsorId = "Selecciona el donante o patrocinador.";
     }
     if (!form.donationAt) newErrors.donationAt = "Fecha y hora requeridas.";
     if (!form.type) newErrors.type = "Selecciona el tipo de donacion.";
+    if (requiresEvent && !form.eventId) {
+      newErrors.eventId = "Selecciona el evento activo.";
+    }
 
-    const isFood = form.type === "ECONOMICA" && form.isFoodPurchase;
-
-    if (form.type === "ECONOMICA") {
+    if (isEconomic) {
       if (!form.econAmount || Number(form.econAmount) <= 0)
         newErrors.econAmount = "Valor donado requerido y mayor a 0.";
       if (!form.econChannel) newErrors.econChannel = "Canal de pago requerido.";
@@ -341,7 +344,7 @@ const DonationsForm = () => {
       }
     }
 
-    if (form.type === "ESPECIE") {
+    if (isEspecie) {
       if (!form.especieItems || form.especieItems.length === 0) {
         newErrors.especieItems = "Agrega al menos una donación en especie.";
       }
@@ -360,11 +363,16 @@ const DonationsForm = () => {
 
   const buildPayload = () => {
     const details = [];
-    const isFood = form.type === "ECONOMICA" && form.isFoodPurchase;
-    const apiType = isFood ? "ALIMENTOS" : form.type;
+    const selectedType = getTypeMeta(form.type);
+    const isEconomic = selectedType?.apiType === "ECONOMICA";
+    const isEspecie = selectedType?.apiType === "ESPECIE";
+    const isFood = isEconomic && form.isFoodPurchase;
+    const apiType = isFood
+      ? "ALIMENTOS"
+      : selectedType?.apiType || form.type || "ECONOMICA";
     const donationDate = new Date(form.donationAt);
 
-    if (form.type === "ECONOMICA") {
+    if (isEconomic) {
       details.push({
         kind: apiType,
         recordType: "payment",
@@ -382,22 +390,22 @@ const DonationsForm = () => {
       }
     }
 
-    if (form.type === "ESPECIE") {
+    if (isEspecie) {
       (form.especieItems || []).forEach((item) => {
         const quantityValue = Number(item.quantity);
         details.push({
-          kind: "ESPECIE",
+          kind: selectedType.apiType,
           recordType: "item",
           description: item.description,
           quantity: Number.isNaN(quantityValue) ? 0 : quantityValue,
           classification: item.classification,
-          channel: item.method || "Donacion directa",
+          channel: item.channel || DEFAULT_RECEPTION_METHOD,
         });
       });
     }
 
     const payload = {
-      anonymous: Boolean(form.anonymous),
+      anonymous: false,
       type: apiType,
       status: form.status,
       donationAt: donationDate.toISOString(),
@@ -409,18 +417,21 @@ const DonationsForm = () => {
     }
 
     const notesParts = [];
+    if (form.program === PROGRAM_EVENT && form.eventId) {
+      const evt =
+        events.find((e) => String(e.id) === String(form.eventId)) || null;
+      const eventLabel = evt?.name || evt?.nombre || `ID ${form.eventId}`;
+      notesParts.push(`Evento: ${eventLabel}`);
+    }
     if (form.specificDestination?.trim()) {
       notesParts.push(`Destino especifico: ${form.specificDestination.trim()}`);
-    }
-    if (form.notes?.trim()) {
-      notesParts.push(`Mensaje: ${form.notes.trim()}`);
     }
     if (notesParts.length) {
       payload.notes = notesParts.join(" | ");
     }
 
     const donorId = Number(form.donorSponsorId);
-    if (!form.anonymous && donorId) {
+    if (donorId) {
       payload.donorSponsorId = donorId;
     }
 
@@ -428,7 +439,8 @@ const DonationsForm = () => {
   };
   const uploadAllFiles = async (donationId) => {
     const uploads = [];
-    const isFood = form.type === "ECONOMICA" && form.isFoodPurchase;
+    const typeMeta = getTypeMeta(form.type);
+    const isFood = typeMeta?.apiType === "ECONOMICA" && form.isFoodPurchase;
 
     if (form.econComprobante) {
       uploads.push(
@@ -512,41 +524,41 @@ const DonationsForm = () => {
     }
   };
 
-  const receptionOptions = useMemo(() => {
-    const unique = [...RECEPTION_METHODS];
-    customReceptionMethods.forEach((method) => {
-      if (!unique.includes(method)) unique.push(method);
-    });
-    return unique;
-  }, [customReceptionMethods]);
-
   const summary = useMemo(() => {
     const donorLabel =
-      form.anonymous && !form.donorSponsorId
-        ? "Anonimo"
-        : donors.find((d) => d.id === Number(form.donorSponsorId))?.nombre ||
-          "Sin seleccionar";
+      donors.find((d) => d.id === Number(form.donorSponsorId))?.nombre ||
+      "Sin seleccionar";
 
-    const isFood = form.type === "ECONOMICA" && form.isFoodPurchase;
-    const typeLabel = isFood
-      ? "Economica (compra de alimentos)"
-      : DONATION_TYPES[form.type];
+    const selectedType = getTypeMeta(form.type);
+    const isFood =
+      selectedType?.apiType === "ECONOMICA" && form.isFoodPurchase;
+    const typeLabel = selectedType
+      ? isFood
+        ? `${selectedType.label} (compra de alimentos)`
+        : selectedType.label
+      : "Sin seleccionar";
+    const eventLabel =
+      form.program === PROGRAM_EVENT && form.eventId
+        ? events.find((e) => String(e.id) === String(form.eventId))?.name ||
+          events.find((e) => String(e.id) === String(form.eventId))?.nombre ||
+          `ID ${form.eventId}`
+        : null;
 
     const general = [
       { label: "Codigo de donacion", value: "Se genera automaticamente al guardar" },
       { label: "Donante", value: donorLabel },
       { label: "Tipo", value: typeLabel },
+      ...(eventLabel ? [{ label: "Evento", value: eventLabel }] : []),
       { label: "Estado", value: STATUS_OPTIONS.find((s) => s.value === form.status)?.label || form.status },
       { label: "Programa", value: form.program || "N/A" },
       { label: "Destino especifico", value: form.specificDestination || "N/A" },
-      { label: "Mensaje adicional", value: form.notes || "N/A" },
       { label: "Fecha/Hora", value: form.donationAt },
     ];
 
     const details = [];
     const files = [];
 
-    if (form.type === "ECONOMICA") {
+    if (selectedType?.apiType === "ECONOMICA") {
       details.push(`Valor donado: $${formatNumber(form.econAmount) || "0"}`);
       details.push(`Canal de pago: ${form.econChannel || "N/A"}`);
       details.push(`Modalidad: ${form.econModality || "N/A"}`);
@@ -571,13 +583,12 @@ const DonationsForm = () => {
       }
     }
 
-    if (form.type === "ESPECIE") {
+    if (selectedType?.apiType === "ESPECIE") {
       (form.especieItems || []).forEach((item, index) => {
         const segments = [
           `Descripcion: ${item.description || "N/A"}`,
           `Cantidad: ${item.quantity || "0"}`,
           item.classification ? `Categoria: ${item.classification}` : null,
-          item.method ? `Metodo de recepcion: ${item.method}` : null,
         ]
           .filter(Boolean)
           .join(" · ");
@@ -595,7 +606,11 @@ const DonationsForm = () => {
     }
 
     return { general, details, files };
-  }, [form, donors]);
+  }, [form, donors, events]);
+
+  const selectedType = getTypeMeta(form.type);
+  const isEconomicType = selectedType?.apiType === "ECONOMICA";
+  const isEspecieType = selectedType?.apiType === "ESPECIE";
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-questrial">
       <div className="flex items-center justify-between mb-6">
@@ -624,47 +639,77 @@ const DonationsForm = () => {
               </span>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Donante / Patrocinador
-                </label>
-                <div className="flex items-center gap-3">
-                  <select
-                    disabled={form.anonymous}
-                    value={form.donorSponsorId}
-                    onChange={(e) =>
-                      handleChange("donorSponsorId", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                  >
-                    <option value="">
-                      {loadingDonors ? "Cargando..." : "Seleccionar..."}
-                    </option>
-                    {donors.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.nombre}
-                      </option>
-                    ))}
-                  </select>
-                  <label className="flex items-center gap-2 text-sm text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={form.anonymous}
-                      onChange={(e) =>
-                        handleChange("anonymous", e.target.checked)
-                      }
-                    />
-                    Anonimo
-                  </label>
-                </div>
-                {errors.donorSponsorId && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.donorSponsorId}
-                  </span>
-                )}
-              </div>
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Donante / Patrocinador
+              </label>
+              <select
+                value={form.donorSponsorId}
+                onChange={(e) => handleChange("donorSponsorId", e.target.value)}
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                disabled={statusOnlyMode}
+              >
+                <option value="">
+                  {loadingDonors ? "Cargando..." : "Seleccionar..."}
+                </option>
+                {donors.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.donorSponsorId && (
+                <span className="text-red-500 text-xs mt-1">
+                  {errors.donorSponsorId}
+                </span>
+              )}
+            </div>
 
+            <div className="flex flex-col">
+              <label className="text-sm font-medium text-gray-700 mb-1">
+                Tipo de donacion *
+              </label>
+              <div className="grid md:grid-cols-2 gap-3">
+                {DONATION_TYPE_OPTIONS.map((option) => (
+                  <label
+                    key={option.value}
+                    className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition ${
+                      form.type === option.value
+                        ? "border-sky-300 bg-sky-50"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="type"
+                      value={option.value}
+                      checked={form.type === option.value}
+                      onChange={(e) => handleChange("type", e.target.value)}
+                      disabled={statusOnlyMode}
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.type && (
+                <span className="text-red-500 text-xs mt-1">{errors.type}</span>
+              )}
+              {isEconomicType && (
+                <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                  <input
+                    type="checkbox"
+                    checked={form.isFoodPurchase}
+                    onChange={(e) =>
+                      handleChange("isFoodPurchase", e.target.checked)
+                    }
+                    disabled={statusOnlyMode}
+                  />
+                  Esta donacion economica es para compra de alimentos
+                </label>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Programa / Destino
@@ -673,6 +718,7 @@ const DonationsForm = () => {
                   value={form.program}
                   onChange={(e) => handleChange("program", e.target.value)}
                   className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  disabled={statusOnlyMode}
                 >
                   <option value="">Seleccionar...</option>
                   {PROGRAMS.map((p) => (
@@ -682,9 +728,6 @@ const DonationsForm = () => {
                   ))}
                 </select>
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Destino especifico (opcional)
@@ -697,23 +740,43 @@ const DonationsForm = () => {
                   }
                   placeholder="Ej: Becas para ninas, apoyo a familias..."
                   className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                />
-              </div>
-              <div className="flex flex-col md:col-span-2">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Mensaje adicional (opcional)
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => handleChange("notes", e.target.value)}
-                  rows="3"
-                  placeholder="Observaciones o mensaje adicional..."
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                  disabled={statusOnlyMode}
                 />
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
+            {form.program === PROGRAM_EVENT && (
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">
+                  Evento (activo)
+                </label>
+                <select
+                  value={form.eventId}
+                  onChange={(e) => handleChange("eventId", e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  disabled={loadingEvents || statusOnlyMode}
+                >
+                  <option value="">
+                    {loadingEvents ? "Cargando eventos..." : "Seleccionar evento"}
+                  </option>
+                  {events.map((ev) => (
+                    <option key={ev.id} value={ev.id}>
+                      {ev.name || ev.nombre || `Evento ${ev.id}`}
+                    </option>
+                  ))}
+                </select>
+                {eventsError && (
+                  <span className="text-red-500 text-xs mt-1">{eventsError}</span>
+                )}
+                {errors.eventId && (
+                  <span className="text-red-500 text-xs mt-1">
+                    {errors.eventId}
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Fecha y hora de donacion *
@@ -723,6 +786,7 @@ const DonationsForm = () => {
                   value={form.donationAt}
                   onChange={(e) => handleChange("donationAt", e.target.value)}
                   className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  disabled={statusOnlyMode}
                 />
                 {errors.donationAt && (
                   <span className="text-red-500 text-xs mt-1">
@@ -747,58 +811,17 @@ const DonationsForm = () => {
                   ))}
                 </select>
               </div>
-
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Tipo de donacion *
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.entries(DONATION_TYPES).map(([value, label]) => (
-                    <label
-                      key={value}
-                      className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition ${
-                        form.type === value
-                          ? "border-sky-300 bg-sky-50"
-                          : "border-gray-200"
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="type"
-                        value={value}
-                        checked={form.type === value}
-                        onChange={(e) => handleChange("type", e.target.value)}
-                      />
-                      <span className="text-sm">{label}</span>
-                    </label>
-                  ))}
-                </div>
-                {errors.type && (
-                  <span className="text-red-500 text-xs mt-1">{errors.type}</span>
-                )}
-                {form.type === "ECONOMICA" && (
-                  <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                    <input
-                      type="checkbox"
-                      checked={form.isFoodPurchase}
-                      onChange={(e) =>
-                        handleChange("isFoodPurchase", e.target.checked)
-                      }
-                    />
-                    Esta donacion economica es para compra de alimentos
-                  </label>
-                )}
-              </div>
             </div>
-          </section>
+
+            </section>
           {/* Seccion economica */}
-          {form.type === "ECONOMICA" && (
+          {isEconomicType && (
             <section className="space-y-4">
               <h3 className="text-base font-semibold text-gray-800">
                 Donacion economica
               </h3>
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex flex-col">
+                <div className="flex flex-col hidden">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Valor donado *
                   </label>
@@ -808,6 +831,7 @@ const DonationsForm = () => {
                     value={form.econAmount}
                     onChange={(e) => handleChange("econAmount", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   />
                   {errors.econAmount && (
                     <span className="text-red-500 text-xs mt-1">
@@ -816,7 +840,7 @@ const DonationsForm = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col hidden">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Modalidad *
                   </label>
@@ -824,6 +848,7 @@ const DonationsForm = () => {
                     value={form.econModality}
                     onChange={(e) => handleChange("econModality", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
                     {ECON_MODALITIES.map((m) => (
@@ -839,7 +864,7 @@ const DonationsForm = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col">
+                <div className="flex flex-col hidden">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Canal de pago *
                   </label>
@@ -847,6 +872,7 @@ const DonationsForm = () => {
                     value={form.econChannel}
                     onChange={(e) => handleChange("econChannel", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
                     {CHANNELS.map((c) => (
@@ -867,7 +893,7 @@ const DonationsForm = () => {
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Comprobante de pago (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className="flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition">
+                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.econComprobante?.name || "Adjuntar archivo"}
@@ -879,6 +905,7 @@ const DonationsForm = () => {
                     onChange={(e) =>
                       handleFile("econComprobante", e.target.files[0])
                     }
+                    disabled={statusOnlyMode}
                   />
                 </label>
                 {errors.econComprobante && (
@@ -891,7 +918,7 @@ const DonationsForm = () => {
           )}
 
           {/* Seccion en especie */}
-          {form.type === "ESPECIE" && (
+          {isEspecieType && (
             <section className="space-y-4">
               <div className="flex items-start justify-between">
                 <div>
@@ -906,48 +933,11 @@ const DonationsForm = () => {
                 <button
                   type="button"
                   onClick={handleAddEspecieItem}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-sky-200 text-sky-600 text-xs font-medium hover:bg-sky-50 transition"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-sky-200 text-sky-600 text-xs font-medium hover:bg-sky-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={statusOnlyMode}
                 >
                   <FaPlus /> Agregar entrada
                 </button>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Descripcion del bien *
-                  </label>
-                  <input
-                    type="text"
-                    value={form.especieDesc}
-                    onChange={(e) => handleChange("especieDesc", e.target.value)}
-                    placeholder="Ej: 20 balones de futbol tamano 5"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                  />
-                  {errors.especieDesc && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieDesc}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Cantidad *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.especieQty}
-                    onChange={(e) => handleChange("especieQty", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                  />
-                  {errors.especieQty && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieQty}
-                    </span>
-                  )}
-                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
@@ -959,6 +949,7 @@ const DonationsForm = () => {
                     value={form.especieClass}
                     onChange={(e) => handleChange("especieClass", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
                     {GOOD_CLASSES.map((m) => (
@@ -973,35 +964,45 @@ const DonationsForm = () => {
                     </span>
                   )}
                 </div>
+
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
-                    Metodo de recepcion (opcional)
+                    Cantidad *
                   </label>
-                  <div className="flex gap-3">
-                    <select
-                      value={form.especieMethod}
-                      onChange={(e) => handleMethodSelection(e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                    >
-                      <option value="">Seleccionar...</option>
-                      {receptionOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                      <option value={CUSTOM_METHOD_OPTION}>Agregar otro...</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => setIsMethodModalOpen(true)}
-                      className="px-3 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition text-sm"
-                    >
-                      <FaPlus />
-                    </button>
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1">
-                    Puedes añadir un método personalizado.
-                  </span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.especieQty}
+                    onChange={(e) => handleChange("especieQty", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
+                  />
+                  {errors.especieQty && (
+                    <span className="text-red-500 text-xs mt-1">
+                      {errors.especieQty}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">
+                    Descripcion del bien *
+                  </label>
+                  <textarea
+                    rows="4"
+                    value={form.especieDesc}
+                    onChange={(e) => handleChange("especieDesc", e.target.value)}
+                    placeholder="Describe el bien donado (ej: 20 balones de futbol tamano 5, marca X)"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                    disabled={statusOnlyMode}
+                  />
+                  {errors.especieDesc && (
+                    <span className="text-red-500 text-xs mt-1">
+                      {errors.especieDesc}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -1009,7 +1010,7 @@ const DonationsForm = () => {
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Soporte (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className="flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition">
+                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.especieSoporte?.name || "Adjuntar soporte"}
@@ -1021,6 +1022,7 @@ const DonationsForm = () => {
                     onChange={(e) =>
                       handleFile("especieSoporte", e.target.files[0])
                     }
+                    disabled={statusOnlyMode}
                   />
                 </label>
                 {errors.especieSoporte && (
@@ -1048,13 +1050,13 @@ const DonationsForm = () => {
                         <p className="text-xs text-gray-500">
                           Cantidad: {item.quantity || "0"} ·{" "}
                           {item.classification || "Sin clasificacion"}
-                          {item.method ? ` · ${item.method}` : ""}
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveEspecieItem(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition"
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={statusOnlyMode}
                         aria-label="Eliminar entrada"
                       >
                         <FaTrash />
@@ -1067,7 +1069,7 @@ const DonationsForm = () => {
           )}
 
           {/* Seccion compra de alimentos (subtipo economica) */}
-          {form.type === "ECONOMICA" && form.isFoodPurchase && (
+          {isEconomicType && form.isFoodPurchase && (
             <section className="space-y-6">
               <div>
                 <h3 className="text-base font-semibold text-gray-800">
@@ -1088,6 +1090,7 @@ const DonationsForm = () => {
                     value={form.foodQty}
                     onChange={(e) => handleChange("foodQty", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   />
                   {errors.foodQty && (
                     <span className="text-red-500 text-xs mt-1">
@@ -1103,6 +1106,7 @@ const DonationsForm = () => {
                     value={form.foodClass}
                     onChange={(e) => handleChange("foodClass", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
                     {FOOD_CLASSES.map((c) => (
@@ -1123,7 +1127,7 @@ const DonationsForm = () => {
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Factura (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className="flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition">
+                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.foodFactura?.name || "Adjuntar factura"}
@@ -1135,6 +1139,7 @@ const DonationsForm = () => {
                     onChange={(e) =>
                       handleFile("foodFactura", e.target.files[0])
                     }
+                    disabled={statusOnlyMode}
                   />
                 </label>
                 {errors.foodFactura && (
@@ -1148,7 +1153,7 @@ const DonationsForm = () => {
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Evidencia fotografica (multiples JPG/PNG, max 5MB c/u)
                 </label>
-                <label className="flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition">
+                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.foodEvidence?.length
@@ -1161,6 +1166,7 @@ const DonationsForm = () => {
                     multiple
                     className="hidden"
                     onChange={(e) => handleFile("foodEvidence", e.target.files)}
+                    disabled={statusOnlyMode}
                   />
                 </label>
               </div>
@@ -1216,62 +1222,6 @@ const DonationsForm = () => {
             </div>
           </div>
         </aside>
-        {isMethodModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={handleCloseMethodModal}
-            />
-            <div
-              className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 space-y-4"
-              role="dialog"
-              aria-modal="true"
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Nuevo método de recepción
-                </h3>
-                <button
-                  type="button"
-                  onClick={handleCloseMethodModal}
-                  className="text-sm text-gray-500 hover:text-gray-800"
-                >
-                  Cerrar
-                </button>
-              </div>
-              <p className="text-sm text-gray-500">
-                Agrega un método que no aparezca en la lista para usarlo en esta
-                o futuras donaciones.
-              </p>
-              <input
-                type="text"
-                value={methodModalValue}
-                onChange={(e) => setMethodModalValue(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                placeholder="Ej: Recepción en bodega principal"
-              />
-              {methodModalError && (
-                <p className="text-red-500 text-xs">{methodModalError}</p>
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleCloseMethodModal}
-                  className="px-4 py-2 text-sm text-gray-600 rounded-xl border border-gray-200 hover:bg-gray-50 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveCustomMethod}
-                  className="px-4 py-2 text-sm text-white rounded-xl bg-sky-500 hover:bg-sky-600 transition"
-                >
-                  Guardar método
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
