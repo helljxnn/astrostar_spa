@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
 import InscriptionsService from "../../dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService";
+import { useDocumentValidation } from "../../../shared/hooks/useDocumentValidation";
+import { useEmailValidation } from "../../../shared/hooks/useEmailValidation";
 
 const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -21,13 +23,31 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
+  const [sentDocument, setSentDocument] = useState(""); // Guardar el documento también
   const [newEmail, setNewEmail] = useState("");
   const [newEmailError, setNewEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [notification, setNotification] = useState({ show: false, type: "", message: "" });
   const [cooldownTime, setCooldownTime] = useState(0);
-  const [isCheckingDocument, setIsCheckingDocument] = useState(false);
   const [documentExists, setDocumentExists] = useState(false);
+
+  // Hook para validación de documento en tiempo real (verifica deportistas + inscripciones)
+  const {
+    isChecking: isCheckingDocumentValidation,
+    documentExists: documentExistsValidation,
+    validationMessage: documentValidationMessage,
+    validateDocumentDebounced,
+    clearValidation: clearDocumentValidation,
+  } = useDocumentValidation(null); // null = no excluir a nadie (es una nueva inscripción)
+
+  // Hook para validación de email en tiempo real
+  const {
+    isChecking: isCheckingEmailValidation,
+    emailExists: emailExistsValidation,
+    validationMessage: emailValidationMessage,
+    validateEmailDebounced,
+    clearValidation: clearEmailValidation,
+  } = useEmailValidation(null); // null = no excluir a nadie (es una nueva inscripción)
 
   // Validaciones
   const validateField = (name, value) => {
@@ -101,6 +121,12 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     // Limpiar el estado de documento existente cuando el usuario está escribiendo
     if (field === "identification") {
       setDocumentExists(false);
+      clearDocumentValidation();
+    }
+    
+    // Limpiar el estado de email existente cuando el usuario está escribiendo
+    if (field === "email") {
+      clearEmailValidation();
     }
     
     // Validar en tiempo real SIEMPRE (no solo cuando touched)
@@ -113,52 +139,72 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     }
   };
 
-  // Efecto para verificar documento con debounce
+  // Validación en tiempo real de documento usando el hook
   useEffect(() => {
-    const checkDocument = async () => {
-      const documento = formData.identification;
-      
-      // Solo verificar si el documento tiene al menos 6 caracteres y es válido
-      if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
-        setIsCheckingDocument(true);
-        
-        try {
-          const result = await InscriptionsService.checkDocumentExists(documento);
-          
-          if (result.success && result.exists) {
-            setDocumentExists(true);
-            // Usar el mensaje del backend si está disponible, sino usar mensaje genérico
-            const errorMessage = result.message || "Este documento ya está registrado";
-            setErrors((prev) => ({ ...prev, identification: errorMessage }));
-            setTouched((prev) => ({ ...prev, identification: true }));
-          } else {
-            setDocumentExists(false);
-            // Solo actualizar error si el campo ya fue tocado
-            if (touched.identification) {
-              const validationError = validateField("identification", documento);
-              setErrors((prev) => ({ ...prev, identification: validationError }));
-            }
-          }
-        } catch (error) {
-          console.error("Error checking document:", error);
-          setDocumentExists(false);
-        } finally {
-          setIsCheckingDocument(false);
-        }
-      } else {
-        setIsCheckingDocument(false);
-        setDocumentExists(false);
+    const documento = formData.identification;
+    
+    // Solo verificar si el documento tiene al menos 6 caracteres y es válido
+    if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
+      validateDocumentDebounced(documento, 6);
+    } else {
+      clearDocumentValidation();
+      setDocumentExists(false);
+    }
+  }, [formData.identification, validateDocumentDebounced, clearDocumentValidation]);
+
+  // Validación en tiempo real de email usando el hook
+  useEffect(() => {
+    const email = formData.email;
+    
+    // Solo verificar si el email tiene formato válido
+    if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      validateEmailDebounced(email, 300);
+    } else {
+      clearEmailValidation();
+    }
+  }, [formData.email, validateEmailDebounced, clearEmailValidation]);
+
+  // Sincronizar resultado de validación con estados locales
+  useEffect(() => {
+    if (documentExistsValidation) {
+      setDocumentExists(true);
+      const errorMessage = documentValidationMessage || "Este documento ya está registrado";
+      setErrors((prev) => ({ ...prev, identification: errorMessage }));
+      setTouched((prev) => ({ ...prev, identification: true }));
+    } else if (!isCheckingDocumentValidation && formData.identification.length >= 6) {
+      setDocumentExists(false);
+      // Solo actualizar error si el campo ya fue tocado
+      if (touched.identification) {
+        const validationError = validateField("identification", formData.identification);
+        setErrors((prev) => ({ ...prev, identification: validationError }));
       }
-    };
+    }
+  }, [isCheckingDocumentValidation, documentExistsValidation, documentValidationMessage, formData.identification, touched.identification]);
 
-    // Debounce de 400ms para respuesta rápida
-    const timeoutId = setTimeout(checkDocument, 400);
-
-    return () => clearTimeout(timeoutId);
-  }, [formData.identification, touched.identification]);
+  // Sincronizar resultado de validación de email
+  useEffect(() => {
+    if (emailExistsValidation) {
+      const errorMessage = emailValidationMessage || "Este email ya está registrado";
+      setErrors((prev) => ({ ...prev, email: errorMessage }));
+      setTouched((prev) => ({ ...prev, email: true }));
+    } else if (!isCheckingEmailValidation && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      // Solo actualizar error si el campo ya fue tocado
+      if (touched.email) {
+        const validationError = validateField("email", formData.email);
+        setErrors((prev) => ({ ...prev, email: validationError }));
+      }
+    }
+  }, [isCheckingEmailValidation, emailExistsValidation, emailValidationMessage, formData.email, touched.email]);
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
+    
+    // NO validar el campo identification en blur porque ya tiene validación en tiempo real
+    // Si lo validamos aquí, sobrescribe el mensaje correcto del hook
+    if (field === "identification") {
+      return; // El hook ya maneja la validación de este campo
+    }
+    
     const error = validateField(field, formData[field]);
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
@@ -211,14 +257,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setIsSubmitting(true);
 
     try {
-      console.log("📤 [PreRegistrationModal] Enviando datos al backend:", formData);
-      
       const result = await InscriptionsService.create(formData);
-      
-      console.log("📥 [PreRegistrationModal] Respuesta del backend:", result);
 
       if (result.success) {
         setSentEmail(formData.email);
+        setSentDocument(formData.identification); // Guardar el documento también
         setShowSuccess(true);
         
         // Iniciar cooldown de 60 segundos
@@ -283,7 +326,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setNewEmailError("");
 
     try {
-      const result = await InscriptionsService.resendEmail(newEmail);
+      // Enviar email Y documento para que el backend pueda buscar correctamente
+      const result = await InscriptionsService.resendEmail(newEmail, sentDocument);
 
       if (result.success) {
         setSentEmail(newEmail);
@@ -326,11 +370,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setTouched({});
     setShowSuccess(false);
     setSentEmail("");
+    setSentDocument(""); // Limpiar también el documento
     setNewEmail("");
     setNewEmailError("");
     setNotification({ show: false, type: "", message: "" });
     setDocumentExists(false);
-    setIsCheckingDocument(false);
   };
 
   // Efecto para limpiar cuando se cierra el modal
@@ -454,24 +498,18 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                   </div>
 
                   {/* Resto de campos en columna única */}
-                  <div className="relative">
-                    <FormField
-                      label="Número de Documento"
-                      name="identification"
-                      type="text"
-                      value={formData.identification}
-                      onChange={(e) => handleChange("identification", e.target.value)}
-                      onBlur={() => handleBlur("identification")}
-                      error={errors.identification}
-                      touched={touched.identification}
-                      required
-                    />
-                    {isCheckingDocument && (
-                      <div className="absolute right-3 top-9">
-                        <div className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    )}
-                  </div>
+                  <FormField
+                    label="Número de Documento"
+                    name="identification"
+                    type="text"
+                    value={formData.identification}
+                    onChange={(e) => handleChange("identification", e.target.value)}
+                    onBlur={() => handleBlur("identification")}
+                    error={errors.identification}
+                    touched={touched.identification}
+                    required
+                    isLoading={isCheckingDocumentValidation}
+                  />
 
                   <FormField
                     label="Fecha de Nacimiento"
@@ -509,6 +547,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     error={errors.email}
                     touched={touched.email}
                     required
+                    isLoading={isCheckingEmailValidation}
                   />
                 </div>
                 </form>
@@ -519,7 +558,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cooldownTime > 0 || documentExists || isCheckingDocument}
+                  disabled={isSubmitting || cooldownTime > 0 || documentExists || emailExistsValidation || isCheckingDocumentValidation || isCheckingEmailValidation}
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
@@ -531,6 +570,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     `Espera ${cooldownTime}s para enviar otra inscripción`
                   ) : documentExists ? (
                     "Documento ya inscrito"
+                  ) : emailExistsValidation ? (
+                    "Email ya registrado"
                   ) : (
                     "Enviar Inscripción"
                   )}

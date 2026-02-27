@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { FaPlus, FaClipboardList, FaHistory, FaUserPlus } from "react-icons/fa";
+import { FaPlus, FaClipboardList, FaHistory, FaUserPlus, FaFilter } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
@@ -58,6 +58,13 @@ const Enrollments = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("matriculas"); // "matriculas" o "inscripciones"
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    estado: '',
+    fechaDesde: '',
+    fechaHasta: '',
+  });
+  const rowsPerPage = 10;
 
   // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
   useEffect(() => {
@@ -72,28 +79,66 @@ const Enrollments = () => {
 
   // Filtrar matrículas
   const filteredAthletes = useMemo(() => {
-    if (!searchTerm) return athletes;
+    let result = athletes;
 
-    const searchLower = searchTerm.toLowerCase().trim();
+    // Filtro de búsqueda
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase().trim();
+      result = result.filter((athlete) => {
+        const textFields = [
+          athlete.firstName,
+          athlete.lastName,
+          athlete.nombres,
+          athlete.apellidos,
+          athlete.email,
+          athlete.correo,
+          athlete.identification,
+          athlete.numeroDocumento,
+          athlete.categoria,
+        ];
 
-    return athletes.filter((athlete) => {
-      const textFields = [
-        athlete.firstName,
-        athlete.lastName,
-        athlete.nombres,
-        athlete.apellidos,
-        athlete.email,
-        athlete.correo,
-        athlete.identification,
-        athlete.numeroDocumento,
-        athlete.categoria,
-      ];
+        return textFields.some(
+          (field) => field && String(field).toLowerCase().includes(searchLower),
+        );
+      });
+    }
 
-      return textFields.some(
-        (field) => field && String(field).toLowerCase().includes(searchLower),
-      );
-    });
-  }, [athletes, searchTerm]);
+    // Filtro por estado de matrícula
+    if (filters.estado) {
+      result = result.filter((athlete) => {
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        const estado = latestEnrollment?.status || latestEnrollment?.estado || '';
+        return estado === filters.estado;
+      });
+    }
+
+    // Filtro por fecha desde
+    if (filters.fechaDesde) {
+      result = result.filter((athlete) => {
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        const fechaMatricula = latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion;
+        if (!fechaMatricula) return false;
+        const fecha = new Date(fechaMatricula);
+        const fechaDesde = new Date(filters.fechaDesde);
+        return fecha >= fechaDesde;
+      });
+    }
+
+    // Filtro por fecha hasta
+    if (filters.fechaHasta) {
+      result = result.filter((athlete) => {
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        const fechaMatricula = latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion;
+        if (!fechaMatricula) return false;
+        const fecha = new Date(fechaMatricula);
+        const fechaHasta = new Date(filters.fechaHasta);
+        fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
+        return fecha <= fechaHasta;
+      });
+    }
+
+    return result;
+  }, [athletes, searchTerm, filters]);
 
   // Filtrar inscripciones
   const filteredInscriptions = useMemo(() => {
@@ -323,6 +368,27 @@ const Enrollments = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            {/* Botón de Filtros */}
+            {activeTab === "matriculas" && (
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
+                  showFilters || filters.estado || filters.fechaDesde || filters.fechaHasta
+                    ? "bg-primary-purple text-white"
+                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                }`}
+                title="Filtros"
+              >
+                <FaFilter />
+                Filtros
+                {(filters.estado || filters.fechaDesde || filters.fechaHasta) && (
+                  <span className="bg-white text-primary-purple rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                    {[filters.estado, filters.fechaDesde, filters.fechaHasta].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            )}
+
             <PermissionGuard module="enrollments" action="Ver">
               <ReportButton
                 data={athletes.map((athlete) => {
@@ -561,15 +627,66 @@ const Enrollments = () => {
         </div>
       </div>
 
-      {/* Contenido según tab activo */}
-      {loading ? (
-        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
-            <p>Cargando matrículas...</p>
+      {/* Panel de Filtros */}
+      {showFilters && activeTab === "matriculas" && (
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            {/* Filtro por Estado */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Matrícula
+              </label>
+              <select
+                value={filters.estado}
+                onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+              >
+                <option value="">Todos los estados</option>
+                <option value="Vigente">Vigente</option>
+                <option value="Vencida">Vencida</option>
+                <option value="Suspendida">Suspendida</option>
+              </select>
+            </div>
+
+            {/* Filtro por Fecha Desde */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha Desde
+              </label>
+              <input
+                type="date"
+                value={filters.fechaDesde}
+                onChange={(e) => setFilters({ ...filters, fechaDesde: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+              />
+            </div>
+
+            {/* Filtro por Fecha Hasta */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Fecha Hasta
+              </label>
+              <input
+                type="date"
+                value={filters.fechaHasta}
+                onChange={(e) => setFilters({ ...filters, fechaHasta: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+              />
+            </div>
+
+            {/* Botón Limpiar Filtros */}
+            <button
+              onClick={() => setFilters({ estado: '', fechaDesde: '', fechaHasta: '' })}
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
+            >
+              Limpiar Filtros
+            </button>
           </div>
         </div>
-      ) : totalRows > 0 ? (
+      )}
+
+      {/* Contenido según tab activo */}
+      {totalRows > 0 ? (
         <>
           <div className="w-full bg-white rounded-lg">
             {activeTab === "matriculas" ? (
@@ -923,8 +1040,10 @@ const Enrollments = () => {
                       "p-2 text-primary-blue hover:text-primary-purple rounded transition-colors",
                     title: "Matricular",
                     show: (inscription) => {
-                      const estado = (inscription.estado || "").toUpperCase();
-                      return estado !== "PROCESADA" && estado !== "RECHAZADA";
+                      const estado = (inscription.estado || inscription.status || "").toUpperCase();
+                      // Aceptar tanto inglés como español
+                      return estado !== "PROCESADA" && estado !== "PROCESSED" && 
+                             estado !== "RECHAZADA" && estado !== "REJECTED";
                     },
                   },
                   {
@@ -959,7 +1078,7 @@ const Enrollments = () => {
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {activeTab === "matriculas"
             ? "No hay matrículas registradas todavía."
-            : "No hay inscripciones pendientes del landing."}
+            : "No hay inscripciones pendientes"}
         </div>
       )}
 

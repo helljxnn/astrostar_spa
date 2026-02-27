@@ -139,16 +139,35 @@ const Athletes = () => {
     const today = new Date();
 
     // Verificar matrícula vigente
-    if (
-      athlete.enrollment?.estado === "Vigente" ||
-      athlete.estadoInscripcion === "Vigente"
-    ) {
-      return {
-        canDelete: false,
-        reason: "Tiene matrícula vigente",
+    if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
+      return { 
+        canDelete: false, 
+        reason: "Tiene matrícula vigente. No se puede eliminar hasta que venza." 
       };
     }
-
+    
+    // Verificar fecha de creación de la matrícula (no se puede eliminar hasta 1 año después)
+    const enrollmentDate = athlete.enrollment?.enrollmentDate || 
+                          athlete.enrollment?.fechaInscripcion || 
+                          athlete.fechaInscripcion ||
+                          athlete.createdAt;
+    
+    if (enrollmentDate) {
+      const enrollDate = new Date(enrollmentDate);
+      const oneYearAfterEnrollment = new Date(enrollDate);
+      oneYearAfterEnrollment.setFullYear(oneYearAfterEnrollment.getFullYear() + 1);
+      
+      if (today < oneYearAfterEnrollment) {
+        const monthsRemaining = Math.ceil(
+          (oneYearAfterEnrollment - today) / (1000 * 60 * 60 * 24 * 30)
+        );
+        return { 
+          canDelete: false, 
+          reason: `Debe esperar ${monthsRemaining} mes(es) más desde la fecha de matrícula (${enrollDate.toLocaleDateString('es-ES')})` 
+        };
+      }
+    }
+    
     // Verificar si la matrícula venció hace más de 1 año
     const expirationDate =
       athlete.enrollment?.fechaVencimiento || athlete.fechaVencimiento;
@@ -166,12 +185,6 @@ const Athletes = () => {
           reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento`,
         };
       }
-    } else {
-      // Si no tiene fecha de vencimiento, no se puede eliminar
-      return {
-        canDelete: false,
-        reason: "No se puede verificar el vencimiento de la matrícula",
-      };
     }
 
     // Verificar equipos temporales
@@ -546,14 +559,7 @@ const Athletes = () => {
       </div>
 
       {/* Tabla */}
-      {loading ? (
-        <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
-            <p>Cargando deportistas...</p>
-          </div>
-        </div>
-      ) : totalRows > 0 ? (
+      {totalRows > 0 ? (
         <>
           <div className="w-full bg-white rounded-lg">
             <Table

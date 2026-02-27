@@ -208,7 +208,7 @@ const InscriptionSelector = ({
                 </>
               ) : (
                 <p className="text-gray-600 font-medium">
-                  No hay inscripciones pendientes del landing
+                  No hay inscripciones pendientes
                 </p>
               )}
             </div>

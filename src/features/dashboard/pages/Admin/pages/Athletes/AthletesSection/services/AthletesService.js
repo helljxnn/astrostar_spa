@@ -346,7 +346,7 @@ class AthletesService {
         params.excludeUserId = excludeId;
       }
 
-      const response = await apiClient.get("/users/check-email", params);
+      const response = await apiClient.get("/users/check-email", { params });
 
       return {
         available: response.available !== false,
@@ -372,10 +372,7 @@ class AthletesService {
         params.excludeUserId = excludeId;
       }
 
-      const response = await apiClient.get(
-        "/users/check-identification",
-        params
-      );
+      const response = await apiClient.get("/users/check-identification", { params, skipLoader: true });
 
       return {
         available: response.available !== false,
