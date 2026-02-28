@@ -3,10 +3,36 @@ import { motion } from "framer-motion";
 import { FaUserPlus } from "react-icons/fa";
 import PreRegistrationModal from "./PreRegistrationModal";
 
-export const Hero = ({ title, imageUrl, subtitle, showInscriptionButton = false }) => {
+export const Hero = ({
+  title,
+  imageUrl,
+  subtitle,
+  showInscriptionButton = false,
+  variant = "default",
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  if (!title && !subtitle) return null; 
+
+  // Variante solo imagen (sin texto ni cuadro blanco)
+  if (variant === "image-only") {
+    return (
+      <section
+        className="relative min-h-screen flex justify-center items-center"
+        style={{
+          marginLeft: "calc(-50vw + 50%)",
+          marginRight: "calc(-50vw + 50%)",
+          width: "100vw",
+          backgroundImage: imageUrl ? `url(${imageUrl})` : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Overlay muy sutil solo para mejorar contraste si es necesario */}
+        <div className="absolute inset-0 bg-black/10" />
+      </section>
+    );
+  }
+
+  if (!title && !subtitle) return null;
 
   return (
     <section
@@ -50,7 +76,7 @@ export const Hero = ({ title, imageUrl, subtitle, showInscriptionButton = false 
             {subtitle}
           </motion.p>
         )}
-        
+
         {showInscriptionButton && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}

@@ -25,6 +25,7 @@ const Employees = () => {
     loading,
     pagination,
     referenceData,
+    loadEmployees,
     createEmployee,
     updateEmployee,
     deleteEmployee,
