@@ -54,15 +54,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
       age--;
     }
-    
-    console.log('🔍 [GuardianViewModal] Verificando edad:', {
-      athleteId: currentAthleteId,
-      birthDate: birthDateStr,
-      age,
-      isMinor: age < 18
-    });
-    
-    return age < 18;
+return age < 18;
   };
 
   // Determinar si mostrar "Eliminar" o "Remover"

@@ -93,8 +93,7 @@ export const useEnrollments = () => {
       // Se cargarán bajo demanda cuando el usuario busque
 
       if (athletesResult.success) {
-        console.log('📊 [useEnrollments] Deportistas cargadas:', athletesResult.data?.length);
-        console.log('📊 [useEnrollments] Datos:', athletesResult.data);
+console.log('📊 [useEnrollments] Datos:', athletesResult.data);
         setAthletes(athletesResult.data || []);
         setPagination((prev) => ({
           ...prev,
@@ -105,24 +104,17 @@ export const useEnrollments = () => {
           ),
         }));
       } else {
-        console.log('❌ [useEnrollments] Error al cargar deportistas:', athletesResult.error);
-      }
+}
 
       if (inscriptionsResult.success) {
-        console.log('📋 [useEnrollments] Todas las inscripciones:', inscriptionsResult.data);
-        
-        // Crear un Set con los documentos de deportistas ya matriculados
+// Crear un Set con los documentos de deportistas ya matriculados
         const enrolledDocuments = new Set(
           (athletesResult.data || []).map(athlete => {
             const doc = athlete.identification || athlete.numeroDocumento;
-            console.log('🔍 [useEnrollments] Deportista matriculada:', athlete.firstName || athlete.nombres, 'Documento:', doc);
-            return doc;
+return doc;
           }).filter(Boolean)
         );
-        
-        console.log('📋 [useEnrollments] Documentos de deportistas matriculados:', Array.from(enrolledDocuments));
-        
-        // Filtrar solo las pendientes Y que NO tengan deportista matriculado
+// Filtrar solo las pendientes Y que NO tengan deportista matriculado
         const pendingInscriptions = (inscriptionsResult.data || []).filter(
           (inscription) => {
             const estado = (inscription.status || inscription.estado || "").toUpperCase();
@@ -132,15 +124,11 @@ export const useEnrollments = () => {
             const isAlreadyEnrolled = enrolledDocuments.has(documento);
             
             const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
-            console.log(`📋 [useEnrollments] Inscripción ${fullName}: estado="${inscription.status || inscription.estado}", documento="${documento}", isPending=${isPending}, isAlreadyEnrolled=${isAlreadyEnrolled}, mostrar=${isPending && !isAlreadyEnrolled}`);
-            
-            // Solo mostrar si está pendiente Y NO está matriculado
+// Solo mostrar si está pendiente Y NO está matriculado
             return isPending && !isAlreadyEnrolled;
           }
         );
-        
-        console.log('📋 [useEnrollments] Inscripciones pendientes filtradas:', pendingInscriptions.length);
-        console.log('📋 [useEnrollments] IDs de inscripciones pendientes:', pendingInscriptions.map(i => i.id));
+console.log('📋 [useEnrollments] IDs de inscripciones pendientes:', pendingInscriptions.map(i => i.id));
         setInscriptions(pendingInscriptions);
       } else {
         setInscriptions([]);
@@ -160,19 +148,13 @@ export const useEnrollments = () => {
   // Buscar acudientes bajo demanda
   const searchGuardians = async (searchTerm) => {
     try {
-      console.log('🔍 [useEnrollments] Buscando acudientes con término:', searchTerm);
-      
-      // Si el searchTerm está vacío, cargar todos los acudientes (útil después de crear uno nuevo)
+// Si el searchTerm está vacío, cargar todos los acudientes (útil después de crear uno nuevo)
       if (!searchTerm || searchTerm.length === 0) {
-        console.log('🔍 [useEnrollments] Cargando todos los acudientes...');
-        const result = await GuardiansService.getAll();
-        console.log('🔍 [useEnrollments] Resultado getAll:', result);
-        if (result.success) {
-          console.log('✅ [useEnrollments] Acudientes cargados:', result.data.length);
-          setGuardians(result.data || []);
+const result = await GuardiansService.getAll();
+if (result.success) {
+setGuardians(result.data || []);
         } else {
-          console.log('❌ [useEnrollments] Error al cargar acudientes');
-          setGuardians([]);
+setGuardians([]);
         }
         return;
       }
@@ -182,17 +164,11 @@ export const useEnrollments = () => {
         setGuardians([]);
         return;
       }
-
-      console.log('🔍 [useEnrollments] Buscando con searchGuardians...');
-      const result = await GuardiansService.searchGuardians(searchTerm, 20);
-      console.log('🔍 [useEnrollments] Resultado búsqueda:', result);
-      
-      if (result.success) {
-        console.log('✅ [useEnrollments] Acudientes encontrados:', result.data.length);
-        setGuardians(result.data || []);
+const result = await GuardiansService.searchGuardians(searchTerm, 20);
+if (result.success) {
+setGuardians(result.data || []);
       } else {
-        console.log('❌ [useEnrollments] Error en búsqueda');
-        setGuardians([]);
+setGuardians([]);
       }
     } catch (error) {
       console.error("❌ [useEnrollments] Error searching guardians:", error);
@@ -210,23 +186,18 @@ export const useEnrollments = () => {
   // Crear matrícula desde pre-inscripción
   const createEnrollment = async (enrollmentData, preRegistrationId) => {
     try {
-      console.log("📝 [createEnrollment] Iniciando creación de matrícula...");
-      console.log("📝 [createEnrollment] enrollmentData:", enrollmentData);
-      console.log("📝 [createEnrollment] preRegistrationId (parámetro):", preRegistrationId);
-      console.log("📝 [createEnrollment] preRegistrationId (en data):", enrollmentData.preRegistrationId);
+console.log("📝 [createEnrollment] enrollmentData:", enrollmentData);
+console.log("📝 [createEnrollment] preRegistrationId (en data):", enrollmentData.preRegistrationId);
       
       // Usar el preRegistrationId que viene en los datos si existe, sino usar el parámetro
       const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
-      console.log("📝 [createEnrollment] preRegistrationId FINAL:", finalPreRegistrationId);
-      console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof finalPreRegistrationId);
+console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof finalPreRegistrationId);
       
       // 🚀 ELIMINACIÓN INMEDIATA: Remover la inscripción del estado local ANTES de crear la matrícula
       if (finalPreRegistrationId) {
-        console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local INMEDIATAMENTE...");
-        setInscriptions(prevInscriptions => {
+setInscriptions(prevInscriptions => {
           const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
-          console.log("✅ [createEnrollment] Inscripciones restantes:", filtered.length);
-          return filtered;
+return filtered;
         });
       }
       
@@ -234,17 +205,12 @@ export const useEnrollments = () => {
       const result = await EnrollmentsService.createEnrollment(enrollmentData, finalPreRegistrationId);
 
       if (result.success) {
-        console.log("✅ [createEnrollment] Matrícula creada exitosamente");
-        console.log("📧 [createEnrollment] Email enviado:", result.emailSent);
-        console.log("🔑 [createEnrollment] Contraseña temporal:", result.temporaryPassword);
-        
-        showSuccessAlert(
+console.log("📧 [createEnrollment] Email enviado:", result.emailSent);
+showSuccessAlert(
           "Matrícula creada",
           "La deportista ha sido matriculada exitosamente"
         );
-        
-        console.log("🔄 [createEnrollment] Recargando datos...");
-        await loadData(pagination.page);
+await loadData(pagination.page);
         
         // Retornar toda la información incluyendo credenciales
         return {
@@ -257,8 +223,7 @@ export const useEnrollments = () => {
         
         // Si falló, restaurar la inscripción en el estado local
         if (finalPreRegistrationId) {
-          console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
-          await loadData(pagination.page);
+await loadData(pagination.page);
         }
         
         showErrorAlert("Error", result.error || "No se pudo crear la matrícula");
@@ -270,8 +235,7 @@ export const useEnrollments = () => {
       // Si falló, restaurar la inscripción en el estado local
       const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
       if (finalPreRegistrationId) {
-        console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
-        await loadData(pagination.page);
+await loadData(pagination.page);
       }
       
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
@@ -344,13 +308,10 @@ export const useEnrollments = () => {
 
       if (result.success) {
         // 🚀 ELIMINACIÓN INSTANTÁNEA: Remover la inscripción del estado local inmediatamente
-        console.log("🗑️ [rejectInscription] Eliminando inscripción del estado local instantáneamente...");
-        setInscriptions(prevInscriptions => 
+setInscriptions(prevInscriptions => 
           prevInscriptions.filter(inscription => inscription.id !== id)
         );
-        console.log("✅ [rejectInscription] Inscripción eliminada del estado local");
-        
-        showSuccessAlert(
+showSuccessAlert(
           "Inscripción rechazada",
           "La inscripción ha sido rechazada"
         );

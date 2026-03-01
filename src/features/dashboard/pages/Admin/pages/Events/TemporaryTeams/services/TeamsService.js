@@ -235,11 +235,7 @@ class TeamsService {
       // Transformar empleados (fundación) - Filtrar solo entrenadores
       if (employeesResponse?.success && Array.isArray(employeesResponse.data)) {
         if (employeesResponse.data.length > 0) {
-          console.log(
-            "📊 Primer employee COMPLETO:",
-            JSON.stringify(employeesResponse.data[0], null, 2),
-          );
-        }
+}
         const entrenadores = employeesResponse.data.filter(
           (emp) => emp.user?.role?.name === "Entrenador",
         );
@@ -257,18 +253,11 @@ class TeamsService {
       // Transformar temporales - Filtrar solo entrenadores
       if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
         if (temporalResponse.data.length > 0) {
-          console.log(
-            "📊 Primer temporal COMPLETO:",
-            JSON.stringify(temporalResponse.data[0], null, 2),
-          );
-        }
+}
         const entrenadoresTemp = temporalResponse.data.filter(
           (temp) => temp.personType === "Entrenador",
         );
-        console.log(
-          "👨‍🏫 Entrenadores temporales filtrados:",
-          entrenadoresTemp.length,
-        );
+
         const temporalTrainers = entrenadoresTemp.map((temp) => ({
           id: temp.id,
           name: `${temp.firstName || ""} ${temp.middleName || ""} ${temp.lastName || ""} ${temp.secondLastName || ""}`
@@ -300,24 +289,17 @@ class TeamsService {
       const athletes = [];
       // Transformar deportistas de fundación - Excluir inactivos
       if (athletesResponse?.success && Array.isArray(athletesResponse.data)) {
-        console.log(
-          "✅ Athletes fundación encontrados:",
-          athletesResponse.data.length,
-        );
+
         // Log de todos los status
         athletesResponse.data.forEach((ath, index) => {
           const name = `${ath.firstName || ""} ${ath.lastName || ""}`.trim();
-          console.log(
-            `📋 Athlete ${index + 1}: ${name} - status: "${ath.status}"`,
-          );
+
         });
         const foundationAthletes = athletesResponse.data
           .filter((ath) => {
             const isActive = ath.status !== "Inactivo";
             if (!isActive) {
-              console.log(
-                `❌ Filtrando: ${ath.firstName} ${ath.lastName} - status: "${ath.status}"`,
-              );
+
             }
             return isActive;
           })
@@ -331,19 +313,12 @@ class TeamsService {
             categoria: ath.sportsCategory?.name || ath.categoria,
             type: "fundacion",
           }));
-        console.log(
-          "✅ Athletes fundación activos:",
-          foundationAthletes.length,
-        );
+
         athletes.push(...foundationAthletes);
       }
       // Transformar deportistas temporales
       if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
-        console.log(
-          "📊 Primer temporal COMPLETO:",
-          JSON.stringify(temporalResponse.data[0], null, 2),
-        );
-        const deportistas = temporalResponse.data.filter(
+const deportistas = temporalResponse.data.filter(
           (temp) => temp.personType === "Deportista",
         );
         const temporalAthletes = deportistas.map((temp) => ({
@@ -355,10 +330,7 @@ class TeamsService {
           phoneNumber: temp.phone || temp.phoneNumber,
           type: "temporal",
         }));
-        console.log(
-          "✅ Deportistas temporales activos:",
-          temporalAthletes.length,
-        );
+
         athletes.push(...temporalAthletes);
       }
       return {
@@ -434,8 +406,7 @@ class TeamsService {
       if (excludeId) {
         queryParams.append("excludeId", excludeId.toString());
       }
-      console.log("🌐 Llamando al backend con params:", queryParams.toString());
-      const response = await apiClient.get(
+const response = await apiClient.get(
         `${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`,
       );
       if (response && response.success !== undefined) {
@@ -465,11 +436,7 @@ class TeamsService {
       if (excludeId) {
         queryParams.append("excludeId", excludeId.toString());
       }
-      console.log(
-        "🌐 Validando entrenador con params:",
-        queryParams.toString(),
-      );
-      const response = await apiClient.get(
+const response = await apiClient.get(
         `${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`,
       );
       if (response && response.success !== undefined) {

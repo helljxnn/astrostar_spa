@@ -736,13 +736,7 @@ const TemporaryTeamModal = ({
         teamData.segundoEntrenador = formData.segundoEntrenador;
         teamData.segundoEntrenadorData = selectedSecondTrainer;
       }
-
-      console.log(
-        "? Datots del equipo a enviar:",
-        JSON.stringify(teamData, null, 2),
-      );
-
-      if (isEditing) {
+if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
         await onUpdate(updatedTeamData);
       } else {

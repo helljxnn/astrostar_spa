@@ -10,9 +10,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import eventsService from "../../Events/services/eventsService";
 
-// Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -22,68 +20,51 @@ ChartJS.register(
   Legend,
 );
 
-const EventsGraphic = () => {
-  const [dashboardData, setDashboardData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [years, setYears] = useState([]);
+const DonationsGraphic = () => {
+  const [loading] = useState(false);
 
-  // Colores para los años
-  const yearColors = [
-    { bg: "rgba(110, 231, 249, 0.8)", hover: "rgba(110, 231, 249, 1)" }, // celeste
-    { bg: "rgba(167, 139, 250, 0.8)", hover: "rgba(167, 139, 250, 1)" }, // morado
-    { bg: "rgba(244, 114, 182, 0.8)", hover: "rgba(244, 114, 182, 1)" }, // rosado
+  // Datos de ejemplo - conectar con tu API real
+  const donationsData = [
+    { mes: "Ene", monetarias: 45000, materiales: 12000, servicios: 8000 },
+    { mes: "Feb", monetarias: 52000, materiales: 15000, servicios: 9500 },
+    { mes: "Mar", monetarias: 48000, materiales: 13500, servicios: 7800 },
+    { mes: "Abr", monetarias: 61000, materiales: 18000, servicios: 11000 },
+    { mes: "May", monetarias: 55000, materiales: 16000, servicios: 9800 },
+    { mes: "Jun", monetarias: 58000, materiales: 17500, servicios: 10500 },
   ];
 
-  useEffect(() => {
-    fetchEventsData();
-  }, []);
-
-  const fetchEventsData = async () => {
-    try {
-      setLoading(true);
-      const response = await eventsService.getByQuarter();
-
-      if (response.success && response.data) {
-        setDashboardData(response.data);
-
-        // Extraer los años dinámicamente de los datos
-        if (response.data.length > 0) {
-          const yearKeys = Object.keys(response.data[0])
-            .filter((key) => key.startsWith("año"))
-            .map((key) => key.replace("año", ""));
-          setYears(yearKeys);
-        }
-      }
-    } catch (error) {
-      console.error("Error al cargar datos de eventos:", error);
-      // Mantener datos vacíos en caso de error
-      setDashboardData([
-        { trimestre: "Trim 1" },
-        { trimestre: "Trim 2" },
-        { trimestre: "Trim 3" },
-        { trimestre: "Trim 4" },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Columnas para exportar con ReportButton (dinámicas según los años)
   const reportColumns = [
-    { key: "trimestre", label: "Trimestre" },
-    ...years.map((year) => ({ key: `año${year}`, label: year })),
+    { key: "mes", label: "Mes" },
+    { key: "monetarias", label: "Donaciones Monetarias" },
+    { key: "materiales", label: "Donaciones en Materiales" },
+    { key: "servicios", label: "Donaciones en Servicios" },
   ];
 
-  // Configuración para Chart.js
   const data = {
-    labels: dashboardData.map((item) => item.trimestre),
-    datasets: years.map((year, index) => ({
-      label: year,
-      data: dashboardData.map((item) => item[`año${year}`] || 0),
-      backgroundColor: yearColors[index % yearColors.length].bg,
-      borderRadius: 10,
-      hoverBackgroundColor: yearColors[index % yearColors.length].hover,
-    })),
+    labels: donationsData.map((item) => item.mes),
+    datasets: [
+      {
+        label: "Monetarias",
+        data: donationsData.map((item) => item.monetarias),
+        backgroundColor: "rgba(16, 185, 129, 0.8)",
+        borderRadius: 10,
+        hoverBackgroundColor: "rgba(16, 185, 129, 1)",
+      },
+      {
+        label: "Materiales",
+        data: donationsData.map((item) => item.materiales),
+        backgroundColor: "rgba(59, 130, 246, 0.8)",
+        borderRadius: 10,
+        hoverBackgroundColor: "rgba(59, 130, 246, 1)",
+      },
+      {
+        label: "Servicios",
+        data: donationsData.map((item) => item.servicios),
+        backgroundColor: "rgba(249, 115, 22, 0.8)",
+        borderRadius: 10,
+        hoverBackgroundColor: "rgba(249, 115, 22, 1)",
+      },
+    ],
   };
 
   const options = {
@@ -110,13 +91,31 @@ const EventsGraphic = () => {
         bodyColor: "#E5E7EB",
         cornerRadius: 8,
         padding: 12,
+        callbacks: {
+          label: function (context) {
+            let label = context.dataset.label || "";
+            if (label) {
+              label += ": ";
+            }
+            if (context.parsed.y !== null) {
+              label += new Intl.NumberFormat("es-CO", {
+                style: "currency",
+                currency: "COP",
+                minimumFractionDigits: 0,
+              }).format(context.parsed.y);
+            }
+            return label;
+          },
+        },
       },
     },
     scales: {
       y: {
         beginAtZero: true,
         ticks: {
-          stepSize: 5,
+          callback: function (value) {
+            return "$" + (value / 1000).toFixed(0) + "K";
+          },
           font: {
             size: window.innerWidth < 640 ? 10 : 12,
           },
@@ -140,21 +139,19 @@ const EventsGraphic = () => {
 
   return (
     <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[400px]">
-      {/* Header responsive */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-2">
         <h3 className="text-base sm:text-lg font-bold text-gray-800 order-2 sm:order-1">
-          Eventos Realizados
+          Donaciones por Tipo
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={dashboardData}
-            fileName="Reporte_Eventos"
+            data={donationsData}
+            fileName="Reporte_Donaciones"
             columns={reportColumns}
           />
         </div>
       </div>
 
-      {/* Gráfico responsive */}
       <div className="h-[220px] sm:h-[260px] lg:h-[320px]">
         {loading ? (
           <div className="flex items-center justify-center h-full">
@@ -168,4 +165,4 @@ const EventsGraphic = () => {
   );
 };
 
-export default EventsGraphic;
+export default DonationsGraphic;

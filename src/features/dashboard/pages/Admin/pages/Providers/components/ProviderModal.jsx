@@ -76,15 +76,7 @@ const ProviderModal = ({
   // HandleChange personalizado
   const handleChange = (name, value) => {
     if (name === "tipoEntidad") {
-      console.log("Cambiando tipo entidad:", {
-        from: values.tipoEntidad,
-        to: value,
-        isEditing,
-        originalType: providerToEdit?.tipoEntidad,
-        originalNit: providerToEdit?.nit,
-        originalTipoDoc: providerToEdit?.tipoDocumento,
-      });
-      // Si estamos editando y volvemos al tipo original, restaurar valores originales
+// Si estamos editando y volvemos al tipo original, restaurar valores originales
       if (isEditing && value === providerToEdit?.tipoEntidad) {
         setValues((prev) => ({
           ...prev,
@@ -197,13 +189,7 @@ const ProviderModal = ({
         estado: providerToEdit.estado || "Activo",
       };
       // Guardar el tipoDocumento original con más información de debug
-      console.log("Datos del proveedor a editar:", {
-        tipoEntidad: providerToEdit.tipoEntidad,
-        tipoDocumento: providerToEdit.tipoDocumento,
-        documentTypeId: providerToEdit.documentTypeId,
-        fullProvider: providerToEdit,
-      });
-      // Guardar tanto tipoDocumento como documentTypeId por si acaso
+// Guardar tanto tipoDocumento como documentTypeId por si acaso
       const originalDocType =
         providerToEdit.tipoDocumento || providerToEdit.documentTypeId || "";
       setOriginalTipoDocumento(originalDocType);
@@ -391,17 +377,7 @@ const ProviderModal = ({
       employeeDocumentTypes.length > 0 &&
       values.tipoEntidad === "natural"
     ) {
-      console.log("Intentando restaurar tipoDocumento:", {
-        originalTipoDocumento,
-        employeeDocumentTypes: employeeDocumentTypes.map((t) => ({
-          id: t.id,
-          name: t.name,
-          value: t.value,
-          label: t.label,
-        })),
-        currentTipoDoc: values.tipoDocumento,
-      });
-      // Buscar coincidencia por múltiples criterios
+// Buscar coincidencia por múltiples criterios
       const matchingType = employeeDocumentTypes.find((type) => {
         const typeId = type.id?.toString();
         const typeValue = type.value?.toString();
@@ -418,22 +394,12 @@ const ProviderModal = ({
       if (matchingType) {
         // Priorizar value, luego id
         const valueToSet = matchingType.value || matchingType.id.toString();
-        console.log(
-          "Tipo encontrado, estableciendo:",
-          valueToSet,
-          "para tipo:",
-          matchingType,
-        );
-        // Solo actualizar si el valor actual es diferente para evitar loops
+// Solo actualizar si el valor actual es diferente para evitar loops
         if (values.tipoDocumento !== valueToSet) {
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         }
       } else {
-        console.log(
-          "No se encontró tipo matching para:",
-          originalTipoDocumento,
-        );
-        // Intentar buscar por coincidencia parcial o similar
+// Intentar buscar por coincidencia parcial o similar
         const partialMatch = employeeDocumentTypes.find((type) => {
           const originalLower = originalTipoDocumento.toString().toLowerCase();
           return (
@@ -445,13 +411,7 @@ const ProviderModal = ({
         });
         if (partialMatch) {
           const valueToSet = partialMatch.value || partialMatch.id.toString();
-          console.log(
-            "Coincidencia parcial encontrada:",
-            valueToSet,
-            "para tipo:",
-            partialMatch,
-          );
-          setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
+setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         } else if (!values.tipoDocumento && employeeDocumentTypes.length > 0) {
           const fallbackValue =
             employeeDocumentTypes[0].value ||
