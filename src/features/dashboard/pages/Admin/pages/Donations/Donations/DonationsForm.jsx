@@ -820,7 +820,7 @@ const request = isEditing
                 Donacion economica
               </h3>
               <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex flex-col hidden">
+                <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Valor donado *
                   </label>
@@ -839,7 +839,7 @@ const request = isEditing
                   )}
                 </div>
 
-                <div className="flex flex-col hidden">
+                <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Modalidad *
                   </label>
@@ -863,7 +863,7 @@ const request = isEditing
                   )}
                 </div>
 
-                <div className="flex flex-col hidden">
+                <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Canal de pago *
                   </label>

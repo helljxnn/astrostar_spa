@@ -13,6 +13,7 @@ import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
 import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
 import Services from "../features/landing/pages/Services/Services.jsx";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
+import RescheduleResponse from "../features/public/RescheduleResponse.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx";
 
 function AppRoutes() {
@@ -33,6 +34,9 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/verify-code" element={<VerifyCode />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Ruta pública para reagendamiento de citas */}
+      <Route path="/appointments/reschedule/:token/:action" element={<RescheduleResponse />} />
 
       {/* Ruta pública para acceso no autorizado */}
       <Route path="/unauthorized" element={<Unauthorized />} />

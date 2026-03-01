@@ -1,6 +1,6 @@
 import React from "react";
-import moment from "moment";
-import "moment/locale/es";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarClock,
@@ -11,6 +11,7 @@ import {
   XCircle,
   PencilLine,
   Clock4,
+  RefreshCw,
 } from "lucide-react";
 
 const getSpecialtyLabel = (value, options = []) => {
@@ -47,19 +48,19 @@ const AppointmentDetails = ({
   onCancelAppointment,
   onMarkAsCompleted,
   onEdit,
+  onReschedule,
+  isAthleteScope = false,
 }) => {
   if (!appointmentData) return null;
-
-  moment.locale("es");
 
   const status =
     statusConfig[appointmentData.status] || statusConfig.Programado || {};
 
   const formattedDate = appointmentData.start
-    ? moment(appointmentData.start).format("dddd, D [de] MMMM [de] YYYY")
+    ? format(new Date(appointmentData.start), "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
     : "Sin fecha";
   const formattedTime = appointmentData.start
-    ? moment(appointmentData.start).format("h:mm a")
+    ? format(new Date(appointmentData.start), "h:mm a", { locale: es })
     : "Sin hora";
 
   const infoLeft = [
@@ -105,28 +106,30 @@ const AppointmentDetails = ({
   ];
 
   const canActOnAppointment = appointmentData.status === "Programado";
-
+  const canReschedule = appointmentData.status === "Cancelado" && onReschedule;
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+        <>
           <motion.div
-            className="absolute inset-0 bg-black/55 backdrop-blur-[1px]"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+            style={{ zIndex: 99998 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={onClose}
           />
-
-          <motion.div
-            className="relative w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-2xl bg-white shadow-2xl border border-gray-100"
-            initial={{ y: 28, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 230, damping: 26 }}
+          <div 
+            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
+            style={{ zIndex: 99999 }}
           >
+            <motion.div
+              className="relative w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-2xl bg-white shadow-2xl pointer-events-auto"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
               <div className="space-y-1">
@@ -229,7 +232,20 @@ const AppointmentDetails = ({
 
             {/* Footer */}
             <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
-              {canActOnAppointment && onEdit && (
+              {canReschedule && !isAthleteScope && (
+                <button
+                  onClick={() => {
+                    onReschedule(appointmentData);
+                    onClose();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-purple-200 px-4 py-2 text-sm font-semibold text-primary-purple transition hover:bg-purple-50"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Reagendar
+                </button>
+              )}
+
+              {canActOnAppointment && onEdit && !isAthleteScope && (
                 <button
                   onClick={() => {
                     onEdit(appointmentData);
@@ -255,7 +271,7 @@ const AppointmentDetails = ({
                 </button>
               )}
 
-              {canActOnAppointment && onMarkAsCompleted && (
+              {canActOnAppointment && onMarkAsCompleted && !isAthleteScope && (
                 <button
                   onClick={() => onMarkAsCompleted(appointmentData)}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary-purple px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#9d7bff]"
@@ -273,8 +289,9 @@ const AppointmentDetails = ({
                 Cerrar
               </button>
             </div>
-          </motion.div>
-        </motion.div>
+            </motion.div>
+          </div>
+        </>
       )}
     </AnimatePresence>
   );

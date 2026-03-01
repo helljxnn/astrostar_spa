@@ -52,6 +52,10 @@ class AppointmentService {
   async delete(id) {
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
+
+  async proposeReschedule(id, payload = {}) {
+    return apiClient.post(`${this.endpoint}/${id}/reschedule`, payload);
+  }
 }
 
 export default new AppointmentService();
