@@ -44,6 +44,8 @@ const AppointmentForm = ({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [athletesByCategory, setAthletesByCategory] = useState([]);
   const [loadingAthletes2, setLoadingAthletes2] = useState(false);
+  const [specialistSchedules, setSpecialistSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
 
   // Resetear formulario
   useEffect(() => {
@@ -128,6 +130,30 @@ const AppointmentForm = ({
     loadAthletes();
   }, [selectedCategory]);
 
+  // Cargar horarios del especialista seleccionado
+  useEffect(() => {
+    if (!formData.specialistId) {
+      setSpecialistSchedules([]);
+      return;
+    }
+
+    const loadSchedules = async () => {
+      setLoadingSchedules(true);
+      try {
+        const response = await apiClient.get(`/schedules/employee/${formData.specialistId}`);
+        const schedules = response?.data?.data || response?.data || [];
+        setSpecialistSchedules(Array.isArray(schedules) ? schedules : []);
+      } catch (error) {
+        console.error("Error cargando horarios:", error);
+        setSpecialistSchedules([]);
+      } finally {
+        setLoadingSchedules(false);
+      }
+    };
+
+    loadSchedules();
+  }, [formData.specialistId]);
+
   // Opciones de categorías
   const categoryOptions = useMemo(() => {
     if (!sportsCategoryOptions || sportsCategoryOptions.length === 0) {
@@ -190,6 +216,41 @@ const AppointmentForm = ({
   const handleDateChange = (date) => {
     setFormData((prev) => ({ ...prev, start: date }));
     setTouched((prev) => ({ ...prev, start: true }));
+  };
+
+  // Filtrar horas disponibles según horarios del especialista
+  const filterAvailableTimes = (time) => {
+    if (!formData.specialistId || specialistSchedules.length === 0) {
+      return true; // Si no hay especialista seleccionado, mostrar todas las horas
+    }
+
+    const selectedDate = formData.start || new Date();
+    const timeDate = new Date(time);
+    
+    // Verificar si hay algún horario activo para esta fecha
+    const hasActiveSchedule = specialistSchedules.some((schedule) => {
+      const scheduleDate = new Date(schedule.scheduleDate);
+      const isSameDay = 
+        scheduleDate.getFullYear() === selectedDate.getFullYear() &&
+        scheduleDate.getMonth() === selectedDate.getMonth() &&
+        scheduleDate.getDate() === selectedDate.getDate();
+      
+      if (!isSameDay) return false;
+
+      // Verificar si la hora está dentro del rango del horario
+      const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+      const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+      
+      const scheduleStart = new Date(selectedDate);
+      scheduleStart.setHours(startHour, startMin, 0, 0);
+      
+      const scheduleEnd = new Date(selectedDate);
+      scheduleEnd.setHours(endHour, endMin, 0, 0);
+      
+      return timeDate >= scheduleStart && timeDate <= scheduleEnd;
+    });
+
+    return hasActiveSchedule;
   };
 
   const validateForm = () => {
@@ -391,6 +452,9 @@ const AppointmentForm = ({
                     touched={touched.start}
                     required
                     placeholder="Seleccione fecha y hora"
+                    minDate={new Date()}
+                    filterTime={filterAvailableTimes}
+                    disabled={!formData.specialistId || loadingSchedules}
                   />
                   <FormField
                     label="Duracion"
@@ -402,6 +466,12 @@ const AppointmentForm = ({
                     required
                   />
                 </div>
+                {loadingSchedules && (
+                  <p className="text-xs text-gray-500">Cargando horarios disponibles...</p>
+                )}
+                {formData.specialistId && !loadingSchedules && specialistSchedules.length === 0 && (
+                  <p className="text-xs text-amber-600">El especialista no tiene horarios configurados</p>
+                )}
               </section>
 
               <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
