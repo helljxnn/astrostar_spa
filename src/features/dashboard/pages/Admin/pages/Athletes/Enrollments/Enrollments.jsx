@@ -204,49 +204,31 @@ const Enrollments = () => {
 
   // Guardar matrícula (crear deportista + matrícula)
   const handleSaveEnrollment = async (athleteData) => {
-    console.log("💾 [handleSaveEnrollment] Guardando matrícula...");
-    console.log(
+console.log(
       "💾 [handleSaveEnrollment] selectedInscription:",
       selectedInscription,
     );
-    console.log(
-      "💾 [handleSaveEnrollment] selectedInscription?.id:",
-      selectedInscription?.id,
-    );
-
-    const result = await createEnrollment(athleteData, selectedInscription?.id);
+const result = await createEnrollment(athleteData, selectedInscription?.id);
 
     if (result) {
-      console.log("✅ [handleSaveEnrollment] Matrícula guardada");
-      console.log("📧 [handleSaveEnrollment] Email enviado:", result.emailSent);
-      console.log(
-        "🔑 [handleSaveEnrollment] Contraseña temporal:",
-        result.temporaryPassword,
-      );
-
-      setIsAthleteModalOpen(false);
+console.log("📧 [handleSaveEnrollment] Email enviado:", result.emailSent);
+setIsAthleteModalOpen(false);
       setSelectedInscription(null);
 
       // No mostramos el modal de credenciales, solo el sweet alert que ya se muestra en el hook
     } else {
-      console.log("❌ [handleSaveEnrollment] Error al guardar matrícula");
-    }
+}
   };
 
   // Renovar matrícula
   const handleOpenRenew = (athlete) => {
     if (!athlete || athlete.target) return;
     const currentAthlete = athletes.find((a) => a.id === athlete.id) || athlete;
-    console.log("🔍 [handleOpenRenew] Datos del atleta:", currentAthlete);
-    console.log(
+console.log(
       "🔍 [handleOpenRenew] fechaNacimiento:",
       currentAthlete?.fechaNacimiento,
     );
-    console.log(
-      "🔍 [handleOpenRenew] inscripciones:",
-      currentAthlete?.inscripciones,
-    );
-    setSelectedAthlete(currentAthlete);
+setSelectedAthlete(currentAthlete);
     setIsRenewModalOpen(true);
   };
 
@@ -769,10 +751,7 @@ const Enrollments = () => {
                       );
                       const hoy = new Date();
                       isVencida = fechaVenc < hoy;
-                      console.log(
-                        `📅 ${firstName} ${lastName}: Fecha venc=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`,
-                      );
-                    } else if (
+} else if (
                       latestEnrollment?.enrollmentDate ||
                       latestEnrollment?.fechaInscripcion
                     ) {
@@ -785,10 +764,7 @@ const Enrollments = () => {
                       fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
                       const hoy = new Date();
                       isVencida = fechaVenc < hoy;
-                      console.log(
-                        `📅 ${firstName} ${lastName}: Fecha insc=${fechaInscripcion.toLocaleDateString()}, Fecha venc calculada=${fechaVenc.toLocaleDateString()}, Hoy=${hoy.toLocaleDateString()}, isVencida=${isVencida}`,
-                      );
-                    }
+}
 
                     const estadoMatricula =
                       latestEnrollment?.status ||
@@ -1140,14 +1116,11 @@ const Enrollments = () => {
           setIsGuardianModalOpen(false);
         }}
         onSave={async (guardianData) => {
-          console.log("📝 Intentando crear acudiente con datos:", guardianData);
-          const GuardiansService = (
+const GuardiansService = (
             await import("../AthletesSection/services/GuardiansService.js")
           ).default;
           const result = await GuardiansService.createGuardian(guardianData);
-          console.log("📡 Respuesta del servicio:", result);
-
-          if (result.success) {
+if (result.success) {
             setNewlyCreatedGuardianId(result.data.id);
             await searchGuardians(""); // Recargar lista de acudientes
             setIsGuardianModalOpen(false);

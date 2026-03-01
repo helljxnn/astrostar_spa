@@ -162,10 +162,8 @@ const AthleteModal = ({
   // Debug: Ver qué tipos de documento se están recibiendo
   useEffect(() => {
     if (isOpen && referenceData.documentTypes) {
-      console.log('🔍 AthleteModal - Tipos de documento recibidos:', referenceData.documentTypes);
-      console.log('📊 Total:', referenceData.documentTypes.length);
-      console.log('📋 Nombres:', referenceData.documentTypes.map(dt => dt.name));
-    }
+console.log('📊 Total:', referenceData.documentTypes.length);
+}
   }, [isOpen, referenceData.documentTypes]);
 
   // Función personalizada para manejar cambios (igual que empleados)
@@ -234,17 +232,14 @@ const AthleteModal = ({
     // NO VALIDAR en modo edición normal (desde tabla de deportistas)
     // SÍ VALIDAR en modo matrícula (isEnrollmentMode) y en modo creación
     if (isEditing && !isEnrollmentMode) {
-      console.log('⚠️ [AthleteModal] Validación de documento deshabilitada en modo edición normal');
-      clearDocumentValidation();
+clearDocumentValidation();
       setAsyncErrors(prev => ({ ...prev, identification: null }));
       if (errors.identification && errors.identification.includes('ya está registrado')) {
         setErrors(prev => ({ ...prev, identification: '' }));
       }
       return;
     }
-
-    console.log('🔍 [AthleteModal] Validando documento - Modo:', isEnrollmentMode ? 'matrícula' : 'creación');
-    console.log('🔍 [AthleteModal] Documento a validar:', values.identification);
+console.log('🔍 [AthleteModal] Documento a validar:', values.identification);
     
     // Usar el hook de validación con debounce
     validateDocumentDebounced(values.identification, 6);
@@ -294,8 +289,7 @@ const AthleteModal = ({
 
       // En modo edición, NO validar si el email es el mismo que el original
       if (isEditing && !isEnrollmentMode && athleteToEdit?.email === values.email) {
-        console.log('⚠️ [AthleteModal] Email no cambió, no validar');
-        setAsyncErrors(prev => ({ ...prev, email: null }));
+setAsyncErrors(prev => ({ ...prev, email: null }));
         if (errors.email && errors.email.includes('ya está registrado')) {
           setErrors(prev => ({ ...prev, email: '' }));
         }
@@ -304,35 +298,27 @@ const AthleteModal = ({
 
       setCheckingEmail(true);
       try {
-        console.log('🔍 [AthleteModal] Validando email - Modo:', isEnrollmentMode ? 'matrícula' : isEditing ? 'edición' : 'creación');
-        console.log('🔍 [AthleteModal] Email a validar:', values.email);
-        console.log('🔍 [AthleteModal] Email original:', athleteToEdit?.email);
-        console.log('🔍 [AthleteModal] isEditing:', isEditing, 'isEnrollmentMode:', isEnrollmentMode);
+console.log('🔍 [AthleteModal] Email a validar:', values.email);
+console.log('🔍 [AthleteModal] isEditing:', isEditing, 'isEnrollmentMode:', isEnrollmentMode);
         
         // En modo edición, excluir el userId del deportista actual
         // En modo matrícula o creación, no excluir a nadie
         const excludeUserId = (isEditing && !isEnrollmentMode && athleteToEdit?.userId) ? athleteToEdit.userId : null;
-        
-        console.log('🔍 [AthleteModal] excludeUserId:', excludeUserId);
-        console.log('🔍 [AthleteModal] athleteToEdit completo:', athleteToEdit);
+console.log('🔍 [AthleteModal] athleteToEdit completo:', athleteToEdit);
         
         const result = await AthletesService.checkEmailAvailability(
           values.email,
           excludeUserId
         );
-
-        console.log('🔍 [AthleteModal] Resultado validación email:', result);
-        console.log('🔍 [AthleteModal] result.available:', result.available);
+console.log('🔍 [AthleteModal] result.available:', result.available);
 
         if (!result.available) {
           const errorMsg = `Este email ya está registrado`;
-          console.log('❌ [AthleteModal] Email duplicado, mostrando error');
-          setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
+setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
           setErrors(prev => ({ ...prev, email: errorMsg }));
           setTouched(prev => ({ ...prev, email: true }));
         } else {
-          console.log('✅ [AthleteModal] Email disponible, limpiando errores');
-          setAsyncErrors(prev => ({ ...prev, email: null }));
+setAsyncErrors(prev => ({ ...prev, email: null }));
           if (errors.email && errors.email.includes('ya está registrado')) {
             setErrors(prev => ({ ...prev, email: '' }));
           }
@@ -342,8 +328,7 @@ const AthleteModal = ({
         console.error('❌ [AthleteModal] Error completo:', error.message, error.stack);
       } finally {
         setCheckingEmail(false);
-        console.log('🔍 [AthleteModal] Verificación de email completada');
-      }
+}
     };
 
     // Validar INSTANTÁNEAMENTE si:
@@ -406,37 +391,28 @@ const AthleteModal = ({
 
   useEffect(() => {
     if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
-      console.log('🔵 [AthleteModal] Cargando datos:', isEnrollmentMode ? 'para matrícula' : 'para editar', athleteToEdit);
-      console.log('🔵 [AthleteModal] isEditing:', isEditing);
-      console.log('🔵 [AthleteModal] isEnrollmentMode:', isEnrollmentMode);
-      console.log('🔵 [AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
+console.log('🔵 [AthleteModal] isEditing:', isEditing);
+console.log('🔵 [AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
       
       // Convertir fecha ISO a formato YYYY-MM-DD
       let birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
-      console.log('🔵 [AthleteModal] Fecha de nacimiento original:', birthDate, 'Tipo:', typeof birthDate);
-      
-      if (birthDate) {
+if (birthDate) {
         try {
           // Si ya está en formato YYYY-MM-DD, usarla directamente
           if (typeof birthDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-            console.log('🔵 [AthleteModal] Fecha ya está en formato correcto');
-          } 
+} 
           // Si viene en formato DD/MM/YYYY o D/M/YYYY (del landing)
           else if (typeof birthDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(birthDate)) {
-            console.log('🔵 [AthleteModal] Fecha en formato DD/MM/YYYY, convirtiendo...');
-            const [day, month, year] = birthDate.split('/');
+const [day, month, year] = birthDate.split('/');
             // Agregar ceros iniciales si es necesario
             const dayPadded = day.padStart(2, '0');
             const monthPadded = month.padStart(2, '0');
             birthDate = `${year}-${monthPadded}-${dayPadded}`;
-            console.log('🔵 [AthleteModal] Fecha convertida a:', birthDate);
-          }
+}
           // Si viene en formato ISO (YYYY-MM-DDTHH:mm:ss.sssZ), extraer solo la fecha
           else if (typeof birthDate === 'string' && birthDate.includes('T')) {
-            console.log('🔵 [AthleteModal] Fecha en formato ISO con hora, extrayendo solo fecha...');
-            birthDate = birthDate.split('T')[0];
-            console.log('🔵 [AthleteModal] Fecha extraída:', birthDate);
-          }
+birthDate = birthDate.split('T')[0];
+}
           // Si viene en otro formato, intentar convertir
           else {
             const date = new Date(birthDate);
@@ -446,8 +422,7 @@ const AthleteModal = ({
               const month = String(date.getMonth() + 1).padStart(2, '0');
               const day = String(date.getDate()).padStart(2, '0');
               birthDate = `${year}-${month}-${day}`;
-              console.log('🔵 [AthleteModal] Fecha convertida desde Date a:', birthDate);
-            } else {
+} else {
               console.error('🔴 [AthleteModal] Fecha inválida, no se puede convertir');
               birthDate = "";
             }
@@ -457,18 +432,12 @@ const AthleteModal = ({
           birthDate = "";
         }
       }
-      
-      console.log('🔵 [AthleteModal] Fecha de nacimiento final:', birthDate);
-      
-      // Convertir parentesco del backend (inglés) al frontend (español)
+// Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
       if (parentescoFrontend && parentescoBackendToFrontend[parentescoFrontend]) {
         parentescoFrontend = parentescoBackendToFrontend[parentescoFrontend];
       }
-      
-      console.log('🔵 [AthleteModal] Parentesco convertido a español:', parentescoFrontend);
-      
-      // Separar nombres y apellidos si vienen del landing (formato: "Nombre1 Nombre2" y "Apellido1 Apellido2")
+// Separar nombres y apellidos si vienen del landing (formato: "Nombre1 Nombre2" y "Apellido1 Apellido2")
       let firstName = athleteToEdit.firstName || "";
       let middleName = athleteToEdit.middleName || "";
       let lastName = athleteToEdit.lastName || "";
@@ -486,12 +455,8 @@ const AthleteModal = ({
         lastName = apellidos[0] || "";
         secondLastName = apellidos.slice(1).join(" ") || "";
       }
-      
-      console.log('🔵 [AthleteModal] Nombres procesados:', { firstName, middleName, lastName, secondLastName });
-      console.log('🔵 [AthleteModal] Categoría recibida:', athleteToEdit.categoria);
-      console.log('🔵 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories?.map(c => c.name));
-      
-      const newValues = {
+console.log('🔵 [AthleteModal] Categoría recibida:', athleteToEdit.categoria);
+const newValues = {
         firstName: firstName,
         middleName: middleName,
         lastName: lastName,
@@ -527,11 +492,8 @@ const AthleteModal = ({
       
       // ✅ VALIDACIÓN AUTOMÁTICA: Marcar todos los campos como touched y validar
       if (isEnrollmentMode) {
-        console.log('🔍 [AthleteModal] Activando validaciones automáticas para inscripción...');
-        console.log('🔍 [AthleteModal] Email a validar:', newValues.email);
-        console.log('🔍 [AthleteModal] Documento a validar:', newValues.identification);
-        
-        // Marcar todos los campos como touched INMEDIATAMENTE
+console.log('🔍 [AthleteModal] Email a validar:', newValues.email);
+// Marcar todos los campos como touched INMEDIATAMENTE
         const allTouched = {
           firstName: true,
           middleName: true,
@@ -552,28 +514,20 @@ const AthleteModal = ({
         
         // Ejecutar validaciones asíncronas INMEDIATAMENTE (sin setTimeout)
         (async () => {
-          console.log('🔍 [AthleteModal] Iniciando validaciones asíncronas...');
-          
-          // Validar documento - Verificar en TODOS los usuarios
+// Validar documento - Verificar en TODOS los usuarios
           if (newValues.identification && newValues.identification.length >= 6) {
-            console.log('🔍 [AthleteModal] Validando documento:', newValues.identification);
-            try {
+try {
               // En modo matrícula desde landing, no hay usuario previo, así que no excluir nada
               const result = await AthletesService.checkIdentificationAvailability(
                 newValues.identification,
                 null
               );
-              
-              console.log('🔍 [AthleteModal] Resultado validación documento:', result);
-              
-              if (!result.available) {
+if (!result.available) {
                 const errorMsg = `Este documento ya está registrado`;
-                console.log('❌ [AthleteModal] Documento duplicado:', errorMsg);
-                setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
+setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
                 setErrors(prev => ({ ...prev, identification: errorMsg }));
               } else {
-                console.log('✅ [AthleteModal] Documento disponible');
-                setAsyncErrors(prev => ({ ...prev, identification: null }));
+setAsyncErrors(prev => ({ ...prev, identification: null }));
               }
             } catch (error) {
               console.error('❌ [AthleteModal] Error verificando documento:', error);
@@ -586,8 +540,7 @@ const AthleteModal = ({
           const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
           
           if (newValues.email && newValues.email.includes('@')) {
-            console.log('🔍 [AthleteModal] Validando email:', newValues.email);
-            console.log('🔍 [AthleteModal] Email pasa regex?', emailRegex.test(newValues.email));
+console.log('🔍 [AthleteModal] Email pasa regex?', emailRegex.test(newValues.email));
             
             if (emailRegex.test(newValues.email)) {
               try {
@@ -596,30 +549,23 @@ const AthleteModal = ({
                   newValues.email,
                   null
                 );
-                
-                console.log('🔍 [AthleteModal] Resultado validación email:', result);
-                
-                if (!result.available) {
+if (!result.available) {
                   const errorMsg = `Este email ya está registrado`;
-                  console.log('❌ [AthleteModal] Email duplicado:', errorMsg);
-                  setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
+setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
                   setErrors(prev => ({ ...prev, email: errorMsg }));
                 } else {
-                  console.log('✅ [AthleteModal] Email disponible');
-                  setAsyncErrors(prev => ({ ...prev, email: null }));
+setAsyncErrors(prev => ({ ...prev, email: null }));
                 }
               } catch (error) {
                 console.error('❌ [AthleteModal] Error verificando email:', error);
               }
             } else {
-              console.log('❌ [AthleteModal] Email no pasa validación de formato');
-              // El error de formato ya lo maneja la validación síncrona
+// El error de formato ya lo maneja la validación síncrona
             }
           }
           
           // ✅ VALIDAR TELÉFONO INMEDIATAMENTE con los nuevos valores
-          console.log('🔍 [AthleteModal] Validando teléfono:', newValues.phoneNumber);
-          validateFields(['phoneNumber'], newValues);
+validateFields(['phoneNumber'], newValues);
         })();
       }
     } else if (isOpen && !isEditing && !isEnrollmentMode) {
@@ -648,9 +594,7 @@ const AthleteModal = ({
 
   const handleParentescoChange = (e) => {
     const { name, value } = e.target;
-    console.log('🔵 [AthleteModal] Parentesco seleccionado:', value);
-    
-    // Actualizar el valor
+// Actualizar el valor
     handleChange(e);
     
     // Limpiar el campo "Otro" si no es necesario
@@ -705,28 +649,20 @@ const AthleteModal = ({
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-
-    console.log('🔵 [AthleteModal] handleSubmit iniciado');
-    console.log('🔵 [AthleteModal] Valores actuales:', values);
+console.log('🔵 [AthleteModal] Valores actuales:', values);
 
     // Marcar todos los campos como tocados para mostrar errores
     const allTouched = {};
     Object.keys(athleteValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
-
-    console.log('🔵 [AthleteModal] Validando todos los campos...');
-    const isValid = validateAllFields();
-    console.log('🔵 [AthleteModal] Resultado de validación:', isValid);
-
-    if (!isValid) {
-      console.log('❌ [AthleteModal] Validación falló, errores:', errors);
-      return;
+const isValid = validateAllFields();
+if (!isValid) {
+return;
     }
 
     // Validación especial para "Otro" parentesco
     if (values.acudiente && values.parentesco === "Otro" && !otroParentesco.trim()) {
-      console.log('❌ [AthleteModal] Falta especificar "Otro" parentesco');
-      showErrorAlert(
+showErrorAlert(
         "Parentesco requerido",
         "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'."
       );
@@ -738,20 +674,14 @@ const AthleteModal = ({
       ageValue !== "" && !Number.isNaN(Number(ageValue))
         ? Number(ageValue)
         : null;
-    
-    console.log('🔍 [AthleteModal] Validando categoría por edad...');
-    console.log('🔍 [AthleteModal] Edad calculada:', ageNumber);
-    console.log('🔍 [AthleteModal] Categoría seleccionada:', values.categoria);
-    console.log('🔍 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories);
+console.log('🔍 [AthleteModal] Edad calculada:', ageNumber);
+console.log('🔍 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories);
     
     const selectedCategory = findCategoryByName(
       referenceData.sportsCategories || [],
       values.categoria
     );
-    
-    console.log('🔍 [AthleteModal] Categoría encontrada:', selectedCategory);
-    
-    if (values.categoria && !selectedCategory) {
+if (values.categoria && !selectedCategory) {
       showErrorAlert(
         "Categoria invalida",
         "La categoria seleccionada no existe. Por favor, selecciona una categoria valida."
@@ -762,20 +692,14 @@ const AthleteModal = ({
     // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
     const minAge = selectedCategory.minAge || 0;
     const maxAge = selectedCategory.maxAge || 999;
-    
-    console.log('🔍 [AthleteModal] Validando edad vs categoría');
-    console.log('🔍 [AthleteModal] Edad:', ageNumber, 'Categoría:', values.categoria, 'Rango:', minAge, '-', maxAge);
+console.log('🔍 [AthleteModal] Edad:', ageNumber, 'Categoría:', values.categoria, 'Rango:', minAge, '-', maxAge);
     
     // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
     if (ageNumber !== null && ageNumber > maxAge) {
-      console.log('❌ [AthleteModal] Edad mayor al máximo de la categoría!');
-      // NO mostrar sweet alert, el error ya está visible debajo del campo
+// NO mostrar sweet alert, el error ya está visible debajo del campo
       return;
     }
-    
-    console.log('✅ [AthleteModal] Validación de categoría por edad pasó correctamente');
-
-    console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
+console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
 
     try {
       const finalParentesco = getFinalParentesco();
@@ -785,9 +709,7 @@ const AthleteModal = ({
       if (parentescoBackend && parentescoFrontendToBackend[parentescoBackend]) {
         parentescoBackend = parentescoFrontendToBackend[parentescoBackend];
       }
-      
-      console.log('🔵 [AthleteModal] Parentesco español:', finalParentesco);
-      console.log('🔵 [AthleteModal] Parentesco convertido a inglés:', parentescoBackend);
+console.log('🔵 [AthleteModal] Parentesco convertido a inglés:', parentescoBackend);
       
       // Convertir acudiente a número o null
       const acudienteId = values.acudiente && values.acudiente.toString().trim() 
@@ -815,17 +737,10 @@ const AthleteModal = ({
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
       }
-
-      console.log('🔵 [AthleteModal] Datos del deportista preparados:', athleteData);
-
-      if (isEditing) {
-        console.log('🔵 [AthleteModal] Modo edición, llamando onUpdate...');
-        
-        // Detectar si cambió el email
+if (isEditing) {
+// Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
-        console.log('🔵 [AthleteModal] Email cambió?', emailChanged, 'Anterior:', athleteToEdit.email, 'Nuevo:', values.email.trim());
-        
-        const updateData = {
+const updateData = {
           ...athleteData,
           id: athleteToEdit.id,
           shouldUpdateInscription:
@@ -835,19 +750,14 @@ const AthleteModal = ({
         };
         await onUpdate(updateData);
       } else {
-        console.log('🔵 [AthleteModal] Modo creación, llamando onSave...');
-        
-        // Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
+// Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
         if (isEnrollmentMode && athleteToEdit?.id) {
-          console.log('🔵 [AthleteModal] Modo matrícula desde inscripción, ID:', athleteToEdit.id);
-          athleteData.preRegistrationId = athleteToEdit.id;
+athleteData.preRegistrationId = athleteToEdit.id;
         }
         
         await onSave(athleteData);
       }
-
-      console.log('✅ [AthleteModal] Guardado exitoso, cerrando modal...');
-      resetForm();
+resetForm();
       setOtroParentesco("");
       setHasDateOfBirth(false);
       onClose();
@@ -858,14 +768,11 @@ const AthleteModal = ({
   };
 
   const handleCreateGuardian = () => {
-    console.log("🟣 [AthleteModal] handleCreateGuardian ejecutado");
-    console.log("🟣 [AthleteModal] onCreateGuardian existe?", typeof onCreateGuardian);
+console.log("🟣 [AthleteModal] onCreateGuardian existe?", typeof onCreateGuardian);
     if (onCreateGuardian) {
-      console.log("🟣 [AthleteModal] Llamando a onCreateGuardian...");
-      onCreateGuardian();
+onCreateGuardian();
     } else {
-      console.log("❌ [AthleteModal] onCreateGuardian NO existe!");
-    }
+}
   };
 
   const handleViewGuardian = () => {

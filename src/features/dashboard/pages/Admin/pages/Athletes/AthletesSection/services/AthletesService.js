@@ -24,14 +24,6 @@ class AthletesService {
         estadoInscripcion = "",
       } = params;
 
-      console.log("🟢 [AthletesService] Obteniendo deportistas con params:", {
-        page,
-        limit,
-        search,
-        status,
-        categoria,
-        estadoInscripcion,
-      });
       const response = await apiClient.get(this.endpoint, {
         page,
         limit,
@@ -40,17 +32,7 @@ class AthletesService {
         categoria,
         estadoInscripcion,
       });
-      console.log("🟢 [AthletesService] Respuesta del backend:", response);
-      console.log(
-        "🟢 [AthletesService] Direcciones de deportistas:",
-        response?.data?.map((a) => ({
-          id: a.id,
-          nombre: a.firstName,
-          address: a.address,
-        }))
-      );
-
-      if (response && response.success) {
+if (response && response.success) {
         return {
           success: true,
           data: response.data || [],
@@ -131,12 +113,8 @@ class AthletesService {
    */
   async createAthlete(athleteData) {
     try {
-      console.log(
-        "🟢 [AthletesService] Enviando datos al backend:",
-        athleteData
-      );
+
       const response = await apiClient.post(this.endpoint, athleteData);
-      console.log("🟢 [AthletesService] Respuesta del backend:", response);
 
       if (response && response.success) {
         return {

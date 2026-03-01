@@ -144,9 +144,7 @@ const GuardianModal = ({
 
   useEffect(() => {
   if (isOpen && isEditing && guardianToEdit) {
-    console.log('📝 Editando acudiente:', guardianToEdit);
-    
-    setValues({
+setValues({
       nombreCompleto: guardianToEdit.nombreCompleto || "",
       documentTypeId: guardianToEdit.documentTypeId || "",
       identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
@@ -156,12 +154,7 @@ const GuardianModal = ({
       fechaNacimiento: guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
       estado: guardianToEdit.estado || "Activo",
     });
-    
-    console.log('✅ Valores cargados:', {
-      documentTypeId: guardianToEdit.documentTypeId,
-      fechaNacimiento: guardianToEdit.fechaNacimiento
-    });
-  } else if (isOpen && !isEditing) {
+} else if (isOpen && !isEditing) {
     setValues({
       nombreCompleto: "",
       documentTypeId: "",
@@ -177,43 +170,32 @@ const GuardianModal = ({
 }, [isOpen, isEditing, guardianToEdit, setValues]);
 
   const handleSubmit = async () => {
-    console.log("🔵 [GuardianModal] handleSubmit ejecutado");
-    console.log("🔵 [GuardianModal] Valores actuales:", values);
+console.log("🔵 [GuardianModal] Valores actuales:", values);
     
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
     
     const isValid = validateAllFields();
-    console.log("🔵 [GuardianModal] Validación:", isValid);
-    console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
-    console.log("🔵 [GuardianModal] Errores asíncronos:", JSON.stringify(asyncErrors, null, 2));
-    
-    // Verificar si hay errores asíncronos
+console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
+// Verificar si hay errores asíncronos
     const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
     
     if (!isValid || hasAsyncErrors) {
-      console.log("❌ [GuardianModal] Validación falló, no se puede guardar");
-      console.log("❌ [GuardianModal] Campos con error:");
+console.log("❌ [GuardianModal] Campos con error:");
       Object.keys(errors).forEach(key => {
         if (errors[key]) {
-          console.log(`  - ${key}: ${errors[key]}`);
-        }
+}
       });
       if (hasAsyncErrors) {
-        console.log("❌ [GuardianModal] Errores de duplicados:");
-        Object.keys(asyncErrors).forEach(key => {
+Object.keys(asyncErrors).forEach(key => {
           if (asyncErrors[key]) {
-            console.log(`  - ${key}: ${asyncErrors[key]}`);
-          }
+}
         });
       }
       return;
     }
-    
-    console.log("✅ [GuardianModal] Validación exitosa, procediendo a guardar...");
-
-    if (isEditing) {
+if (isEditing) {
       const confirm = await showConfirmAlert(
         "¿Actualizar?",
         `Actualizar datos de ${guardianToEdit.nombreCompleto}`,
@@ -232,12 +214,8 @@ const GuardianModal = ({
         address: values.address.trim(), // ✅ Dirección
         birthDate: values.fechaNacimiento, // ✅ En inglés
       };
-      
-      console.log('📤 Datos a enviar:', JSON.stringify(dataToSend, null, 2));
-      console.log('📅 Fecha de nacimiento:', values.fechaNacimiento);
-      console.log('📋 Todos los valores:', JSON.stringify(values, null, 2));
-
-      if (isEditing) {
+console.log('📅 Fecha de nacimiento:', values.fechaNacimiento);
+if (isEditing) {
         const updated = await onUpdate({ ...dataToSend, id: guardianToEdit.id });
         if (updated) {
           showSuccessAlert("Actualizado", "Acudiente actualizado exitosamente.");
@@ -265,12 +243,8 @@ const GuardianModal = ({
   };
 
   if (!isOpen) return null;
-
-  console.log("🟢 [GuardianModal] Modal abierto, mode:", mode, "isEditing:", isEditing);
-  console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
-  console.log("🟢 [GuardianModal] referenceData:", referenceData);
-
-  return (
+console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
+return (
     <motion.div 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -443,8 +417,7 @@ const GuardianModal = ({
             </button>
             <button
               onClick={() => {
-                console.log("🟡 [GuardianModal] Botón clickeado!");
-                handleSubmit();
+handleSubmit();
               }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >

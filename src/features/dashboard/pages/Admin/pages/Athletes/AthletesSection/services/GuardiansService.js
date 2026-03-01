@@ -23,19 +23,7 @@ class GuardiansService {
         search,
         status,
       });
-
-      console.log("🟢 [GuardiansService] Respuesta del backend:", response);
-      console.log(
-        "🟢 [GuardiansService] Direcciones de acudientes:",
-        response?.data?.map((g) => ({
-          id: g.id,
-          nombre: g.nombreCompleto,
-          address: g.address,
-          direccion: g.direccion,
-        }))
-      );
-
-      if (response && response.success) {
+if (response && response.success) {
         return {
           success: true,
           data: response.data || [],

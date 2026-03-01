@@ -99,8 +99,7 @@ const Event = () => {
    * Manejar generación de reportes
    */
   const handleGenerateReport = (reportData) => {
-    console.log("Generar reporte de eventos:", reportData);
-    // Aquí se implementaría la lógica de generación de reportes
+// Aquí se implementaría la lógica de generación de reportes
   };
 
   /**

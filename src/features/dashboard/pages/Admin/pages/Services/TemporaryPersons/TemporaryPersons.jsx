@@ -26,6 +26,7 @@ const TemporaryPersons = () => {
     loading,
     pagination,
     referenceData,
+    loadTemporaryPersons,
     createTemporaryPerson,
     updateTemporaryPerson,
     deleteTemporaryPerson,

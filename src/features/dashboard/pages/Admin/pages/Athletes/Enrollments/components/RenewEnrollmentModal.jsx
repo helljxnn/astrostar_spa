@@ -44,15 +44,13 @@ const RenewEnrollmentModal = ({
   // Calcular edad
   const calculateAge = () => {
     if (!athlete?.fechaNacimiento) {
-      console.log('⚠️ [RenewEnrollmentModal] No hay fechaNacimiento para el atleta:', athlete);
-      return 0;
+return 0;
     }
     try {
       const birthDate = new Date(athlete.fechaNacimiento);
       const today = new Date();
       if (isNaN(birthDate.getTime())) {
-        console.log('⚠️ [RenewEnrollmentModal] Fecha de nacimiento inválida:', athlete.fechaNacimiento);
-        return 0;
+return 0;
       }
 
       let age = today.getFullYear() - birthDate.getFullYear();
@@ -61,8 +59,7 @@ const RenewEnrollmentModal = ({
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
         age--;
       }
-      console.log('✅ [RenewEnrollmentModal] Edad calculada:', age);
-      return age;
+return age;
     } catch (error) {
       console.error('❌ [RenewEnrollmentModal] Error calculando edad:', error);
       return 0;

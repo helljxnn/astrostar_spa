@@ -482,8 +482,7 @@ const DonationsForm = () => {
     setSubmitting(true);
     try {
       const payload = buildPayload();
-      console.log("donation payload", payload);
-      const request = isEditing
+const request = isEditing
         ? donationsService.update(editingDonationId, payload)
         : donationsService.create(payload);
       const resp = await request;
