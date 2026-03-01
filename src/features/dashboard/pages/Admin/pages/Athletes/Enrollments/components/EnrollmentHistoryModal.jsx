@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
@@ -17,6 +18,7 @@ import {
   FaExpand,
   FaReceipt,
 } from "react-icons/fa";
+import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 // Helpers para iconos y colores
 const getStateIcon = (state) => {
@@ -68,7 +70,7 @@ const formatDateTime = (dateString) => {
 const ComprobanteModal = ({ comprobante, onClose }) => {
   if (!comprobante) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       initial={{ opacity: 0 }}
@@ -119,6 +121,8 @@ const ComprobanteModal = ({ comprobante, onClose }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
@@ -139,33 +143,12 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     ? safeAthlete.inscripciones 
     : [];
 
-  const calculateAge = () => {
-    if (!safeAthlete?.fechaNacimiento) return 0;
-    try {
-      const birthDate = new Date(safeAthlete.fechaNacimiento);
-      const today = new Date();
-      if (isNaN(birthDate.getTime())) return 0;
-
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-      return age;
-    } catch (error) {
-      return 0;
-    }
-  };
+  // Calcular edad usando la utilidad centralizada
+  const age = safeAthlete?.fechaNacimiento ? calculateAge(safeAthlete.fechaNacimiento) : 0;
 
   const guardian = Array.isArray(guardians) 
     ? guardians.find((g) => String(g?.id) === String(safeAthlete?.acudiente))
     : null;
-
-  const age = calculateAge();
 
   // Ordenar inscripciones por fecha - CON MÁS VALIDACIONES
   const sortedInscriptions = useMemo(() => {
@@ -241,7 +224,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -254,6 +237,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
@@ -640,6 +624,8 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default EnrollmentHistoryModal;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react";
 import TeamsService from "../services/TeamsService";
@@ -391,7 +392,7 @@ const SelectionModal = ({
   const teamInfo = getCurrentTeamInfo();
   const availabilityStats = getAvailabilityStats();
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -406,6 +407,7 @@ const SelectionModal = ({
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
@@ -797,6 +799,8 @@ const SelectionModal = ({
       </motion.div>
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default SelectionModal;

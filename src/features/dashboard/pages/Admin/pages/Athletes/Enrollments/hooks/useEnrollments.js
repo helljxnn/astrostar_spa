@@ -203,8 +203,8 @@ export const useEnrollments = () => {
   useEffect(() => {
     loadReferenceData();
     loadData();
-    // Cargar todos los acudientes al inicio
-    searchGuardians("");
+    // NO cargar todos los acudientes al inicio - se cargarán bajo demanda cuando el usuario busque
+    // searchGuardians(""); // ❌ ELIMINADO - Esto causaba lentitud
   }, []);
 
   // Crear matrícula desde pre-inscripción
@@ -220,15 +220,7 @@ export const useEnrollments = () => {
       console.log("📝 [createEnrollment] preRegistrationId FINAL:", finalPreRegistrationId);
       console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof finalPreRegistrationId);
       
-      // 🚀 ELIMINACIÓN INMEDIATA: Remover la inscripción del estado local ANTES de crear la matrícula
-      if (finalPreRegistrationId) {
-        console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local INMEDIATAMENTE...");
-        setInscriptions(prevInscriptions => {
-          const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
-          console.log("✅ [createEnrollment] Inscripciones restantes:", filtered.length);
-          return filtered;
-        });
-      }
+      // ⏳ NO ELIMINAR TODAVÍA - Esperar confirmación del backend
       
       // Pasar el preRegistrationId al servicio
       const result = await EnrollmentsService.createEnrollment(enrollmentData, finalPreRegistrationId);
@@ -237,6 +229,16 @@ export const useEnrollments = () => {
         console.log("✅ [createEnrollment] Matrícula creada exitosamente");
         console.log("📧 [createEnrollment] Email enviado:", result.emailSent);
         console.log("🔑 [createEnrollment] Contraseña temporal:", result.temporaryPassword);
+        
+        // ✅ AHORA SÍ: Eliminar la inscripción del estado local DESPUÉS del éxito
+        if (finalPreRegistrationId) {
+          console.log("🗑️ [createEnrollment] Eliminando inscripción del estado local tras éxito...");
+          setInscriptions(prevInscriptions => {
+            const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
+            console.log("✅ [createEnrollment] Inscripciones restantes:", filtered.length);
+            return filtered;
+          });
+        }
         
         showSuccessAlert(
           "Matrícula creada",
@@ -255,11 +257,8 @@ export const useEnrollments = () => {
       } else {
         console.error("❌ [createEnrollment] Error al crear matrícula:", result.error);
         
-        // Si falló, restaurar la inscripción en el estado local
-        if (finalPreRegistrationId) {
-          console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
-          await loadData(pagination.page);
-        }
+        // ❌ NO ELIMINAR - La inscripción permanece en el estado
+        console.log("⚠️ [createEnrollment] Inscripción NO eliminada debido al error");
         
         showErrorAlert("Error", result.error || "No se pudo crear la matrícula");
         return null;
@@ -267,12 +266,8 @@ export const useEnrollments = () => {
     } catch (error) {
       console.error("❌ [createEnrollment] Excepción:", error);
       
-      // Si falló, restaurar la inscripción en el estado local
-      const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
-      if (finalPreRegistrationId) {
-        console.log("⚠️ [createEnrollment] Restaurando inscripción en el estado local...");
-        await loadData(pagination.page);
-      }
+      // ❌ NO ELIMINAR - La inscripción permanece en el estado
+      console.log("⚠️ [createEnrollment] Inscripción NO eliminada debido a excepción");
       
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
@@ -383,6 +378,36 @@ export const useEnrollments = () => {
     loadData(pagination.page, silent);
   };
 
+  // Agregar inscripción al estado local instantáneamente (sin esperar al backend)
+  const addInscriptionToState = useCallback((newInscription) => {
+    console.log("➕ [addInscriptionToState] Agregando inscripción al estado local:", newInscription);
+    setInscriptions(prev => {
+      // Verificar que no exista ya (por si acaso)
+      const exists = prev.some(i => i.id === newInscription.id || i.identification === newInscription.identification);
+      if (exists) {
+        console.log("⚠️ [addInscriptionToState] La inscripción ya existe, no se agrega");
+        return prev;
+      }
+      console.log("✅ [addInscriptionToState] Inscripción agregada al estado local");
+      return [newInscription, ...prev];
+    });
+  }, []);
+
+  // Actualizar email de inscripción en el estado local instantáneamente
+  const updateInscriptionEmailInState = useCallback((identification, newEmail) => {
+    console.log("📧 [updateInscriptionEmailInState] Actualizando email en estado local:", { identification, newEmail });
+    setInscriptions(prev => {
+      const updated = prev.map(inscription => {
+        if (inscription.identification === identification) {
+          console.log("✅ [updateInscriptionEmailInState] Email actualizado en estado local");
+          return { ...inscription, email: newEmail };
+        }
+        return inscription;
+      });
+      return updated;
+    });
+  }, []);
+
   return {
     athletes,
     inscriptions,
@@ -397,5 +422,7 @@ export const useEnrollments = () => {
     changePage,
     refresh,
     searchGuardians,
+    addInscriptionToState,
+    updateInscriptionEmailInState,
   };
 };

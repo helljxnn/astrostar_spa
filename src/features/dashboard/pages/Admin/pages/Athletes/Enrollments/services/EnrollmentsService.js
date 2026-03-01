@@ -1,10 +1,73 @@
 import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
+// ============================================================================
+// CONSTANTES
+// ============================================================================
+const ENROLLMENT_STATUS = {
+  ACTIVE: "Active",
+  INACTIVE: "Inactive",
+  SUSPENDED: "Suspended",
+};
+
+const ENDPOINTS = {
+  ATHLETES: "/athletes",
+  ENROLLMENTS: "/enrollments",
+};
+
+const DEFAULT_ENROLLMENT_DURATION_YEARS = 1;
+
+// ============================================================================
+// UTILIDADES
+// ============================================================================
+
+/**
+ * Calcula la fecha de vencimiento de una matrícula
+ * @param {Date} startDate - Fecha de inicio
+ * @param {number} years - Años de duración
+ * @returns {string} Fecha de vencimiento en formato ISO
+ */
+const calculateExpirationDate = (startDate = new Date(), years = DEFAULT_ENROLLMENT_DURATION_YEARS) => {
+  const expirationDate = new Date(startDate);
+  expirationDate.setFullYear(expirationDate.getFullYear() + years);
+  return expirationDate.toISOString();
+};
+
+/**
+ * Prepara los datos de matrícula para enviar al backend
+ * @param {Object} athleteData - Datos del atleta
+ * @param {number|null} preRegistrationId - ID de pre-inscripción
+ * @returns {Object} Datos formateados para el backend
+ */
+const prepareEnrollmentData = (athleteData, preRegistrationId = null) => {
+  const now = new Date();
+  
+  return {
+    athlete: athleteData,
+    enrollment: {
+      estado: ENROLLMENT_STATUS.ACTIVE,
+      fechaMatricula: now.toISOString(),
+      fechaInicio: now.toISOString(),
+      fechaVencimiento: calculateExpirationDate(now),
+    },
+    ...(preRegistrationId && { preRegistrationId }),
+  };
+};
+
+// ============================================================================
+// SERVICIO
+// ============================================================================
+
 class EnrollmentsService {
   constructor() {
-    this.endpoint = "/athletes";
+    this.endpoint = ENDPOINTS.ATHLETES;
+    this.enrollmentsEndpoint = ENDPOINTS.ENROLLMENTS;
   }
-  // Obtener todas las deportistas con matrículas
+
+  /**
+   * Obtiene todas las deportistas con matrículas
+   * @param {Object} filters - Filtros de búsqueda
+   * @returns {Promise<Object>} Resultado con datos y metadata
+   */
   async getAll(filters = {}) {
     try {
       const params = {
@@ -22,7 +85,6 @@ class EnrollmentsService {
         response.data
       );
 
-      // El backend puede devolver un array directo o un objeto con data
       const data = Array.isArray(response.data)
         ? response.data
         : response.data.data || [];
@@ -39,12 +101,16 @@ class EnrollmentsService {
         hasMore: response.data.hasMore || false,
       };
     } catch (error) {
-      console.error("Error getting enrollments:", error);
+      console.error("❌ [EnrollmentsService.getAll] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Obtener deportista por ID
+  /**
+   * Obtiene deportista por ID
+   * @param {number} id - ID del atleta
+   * @returns {Promise<Object>} Resultado con datos del atleta
+   */
   async getById(id) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`);
@@ -54,39 +120,39 @@ class EnrollmentsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Error getting athlete:", error);
+      console.error("❌ [EnrollmentsService.getById] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Crear matrícula (convertir pre-inscripción en deportista matriculada)
+  /**
+   * Crea matrícula (convierte pre-inscripción en deportista matriculada)
+   * @param {Object} athleteData - Datos del atleta
+   * @param {number|null} preRegistrationId - ID de pre-inscripción
+   * @returns {Promise<Object>} Resultado de la operación
+   */
   async createEnrollment(athleteData, preRegistrationId = null) {
     try {
-      console.log(
-        "📤 [EnrollmentsService] Datos a enviar al backend:",
-        athleteData
-      );
-      console.log(
-        "📤 [EnrollmentsService] preRegistrationId:",
-        preRegistrationId
-      );
-      console.log("📤 [EnrollmentsService] Estado:", athleteData.estado);
-      console.log(
-        "📤 [EnrollmentsService] Tipo de estado:",
-        typeof athleteData.estado
-      );
+      console.log("📤 [EnrollmentsService.createEnrollment] Iniciando...");
+      console.log("📤 [EnrollmentsService.createEnrollment] Datos recibidos:", athleteData);
+      console.log("📤 [EnrollmentsService.createEnrollment] preRegistrationId:", preRegistrationId);
 
-      // Agregar preRegistrationId al body si existe
+      // USAR EL ENDPOINT ANTIGUO /api/athletes que SÍ funciona
+      // Enviar datos en formato plano con preRegistrationId
       const dataToSend = {
         ...athleteData,
         ...(preRegistrationId && { preRegistrationId }),
       };
 
-      console.log("📤 [EnrollmentsService] Data final a enviar:", dataToSend);
+      console.log(
+        "📤 [EnrollmentsService.createEnrollment] Data final:",
+        JSON.stringify(dataToSend, null, 2)
+      );
 
+      // Usar el endpoint de athletes (el que funciona actualmente)
       const response = await apiClient.post(this.endpoint, dataToSend);
 
-      console.log("📧 [EnrollmentsService] Respuesta del backend:", response);
+      console.log("✅ [EnrollmentsService.createEnrollment] Respuesta:", response);
 
       return {
         success: true,
@@ -96,12 +162,17 @@ class EnrollmentsService {
         message: response.message || "Deportista creada exitosamente",
       };
     } catch (error) {
-      console.error("Error creating enrollment:", error);
+      console.error("❌ [EnrollmentsService.createEnrollment] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Renovar matrícula de deportista inactivo
+  /**
+   * Renueva matrícula de deportista inactivo
+   * @param {number} athleteId - ID del atleta
+   * @param {Object} enrollmentData - Datos de la matrícula
+   * @returns {Promise<Object>} Resultado de la operación
+   */
   async renewEnrollment(athleteId, enrollmentData = {}) {
     try {
       const response = await apiClient.post(
@@ -115,12 +186,15 @@ class EnrollmentsService {
         message: "Matrícula renovada exitosamente",
       };
     } catch (error) {
-      console.error("Error renewing enrollment:", error);
+      console.error("❌ [EnrollmentsService.renewEnrollment] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Procesar matrículas vencidas manualmente
+  /**
+   * Procesa matrículas vencidas manualmente
+   * @returns {Promise<Object>} Resultado de la operación
+   */
   async processExpiredEnrollments() {
     try {
       const response = await apiClient.post("/enrollments/process-expired");
@@ -130,30 +204,39 @@ class EnrollmentsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Error processing expired enrollments:", error);
+      console.error("❌ [EnrollmentsService.processExpiredEnrollments] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Actualizar matrícula
+  /**
+   * Actualiza matrícula
+   * @param {number} id - ID del atleta
+   * @param {Object} enrollmentData - Datos a actualizar
+   * @returns {Promise<Object>} Resultado de la operación
+   */
   async updateEnrollment(id, enrollmentData) {
     try {
       await apiClient.put(`${this.endpoint}/${id}`, enrollmentData);
 
       return { success: true };
     } catch (error) {
-      console.error("Error updating enrollment:", error);
+      console.error("❌ [EnrollmentsService.updateEnrollment] Error:", error);
       return { success: false, error: error.message };
     }
   }
 
-  // Eliminar deportista
+  /**
+   * Elimina deportista
+   * @param {number} id - ID del atleta
+   * @returns {Promise<Object>} Resultado de la operación
+   */
   async delete(id) {
     try {
       await apiClient.delete(`${this.endpoint}/${id}`);
       return { success: true };
     } catch (error) {
-      console.error("Error deleting athlete:", error);
+      console.error("❌ [EnrollmentsService.delete] Error:", error);
       return { success: false, error: error.message };
     }
   }

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes, FaInfoCircle, FaExclamationCircle, FaTrash } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -20,6 +21,7 @@ import {
 } from "../hooks/useFormAthleteValidation";
 import AthletesService from "../services/AthletesService";
 import { useDocumentValidation } from "../../../../../../../../shared/hooks/useDocumentValidation";
+import { toDateInputFormat, toISOString, calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 // Los tipos de documento y categorías ahora se reciben desde props (cargados desde la API)
 
@@ -69,24 +71,7 @@ const parentescoFrontendToBackend = {
   'Otro': 'Other'
 };
 
-// Función para calcular la edad (igual que empleados)
-const calculateAge = (birthDate) => {
-  if (!birthDate) return "";
-
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-
-  if (
-    monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birth.getDate())
-  ) {
-    age--;
-  }
-
-  return age >= 0 ? age.toString() : "";
-};
+// ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
 const AthleteModal = ({
   isOpen,
@@ -103,6 +88,7 @@ const AthleteModal = ({
   newlyCreatedGuardianId = null,
   referenceData = { documentTypes: [] },
   isEnrollmentMode = false,
+  loadGuardians,
 }) => {
   const isEditing = (mode === "edit" || athleteToEdit !== null) && !isEnrollmentMode;
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
@@ -175,7 +161,7 @@ const AthleteModal = ({
       setValues((prev) => ({
         ...prev,
         [name]: value,
-        age: age,
+        age: age.toString(), // Convertir a string para el formulario
       }));
     } else {
       handleChange({ target: { name, value } });
@@ -214,6 +200,13 @@ const AthleteModal = ({
       }
     }
   }, [newlyCreatedGuardianId, guardians, isEditing]);
+
+  // Cargar acudientes cuando se abre el buscador
+  useEffect(() => {
+    if (showGuardianSearch && loadGuardians && guardians.length === 0) {
+      loadGuardians();
+    }
+  }, [showGuardianSearch, loadGuardians, guardians.length]);
 
   // Re-validar el campo de identificación INSTANTÁNEAMENTE cuando cambia el tipo de documento
   useEffect(() => {
@@ -411,54 +404,12 @@ const AthleteModal = ({
       console.log('🔵 [AthleteModal] isEnrollmentMode:', isEnrollmentMode);
       console.log('🔵 [AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
       
-      // Convertir fecha ISO a formato YYYY-MM-DD
-      let birthDate = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
-      console.log('🔵 [AthleteModal] Fecha de nacimiento original:', birthDate, 'Tipo:', typeof birthDate);
+      // Convertir fecha usando la utilidad segura
+      const birthDateRaw = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
+      console.log('🔵 [AthleteModal] Fecha de nacimiento original:', birthDateRaw, 'Tipo:', typeof birthDateRaw);
       
-      if (birthDate) {
-        try {
-          // Si ya está en formato YYYY-MM-DD, usarla directamente
-          if (typeof birthDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
-            console.log('🔵 [AthleteModal] Fecha ya está en formato correcto');
-          } 
-          // Si viene en formato DD/MM/YYYY o D/M/YYYY (del landing)
-          else if (typeof birthDate === 'string' && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(birthDate)) {
-            console.log('🔵 [AthleteModal] Fecha en formato DD/MM/YYYY, convirtiendo...');
-            const [day, month, year] = birthDate.split('/');
-            // Agregar ceros iniciales si es necesario
-            const dayPadded = day.padStart(2, '0');
-            const monthPadded = month.padStart(2, '0');
-            birthDate = `${year}-${monthPadded}-${dayPadded}`;
-            console.log('🔵 [AthleteModal] Fecha convertida a:', birthDate);
-          }
-          // Si viene en formato ISO (YYYY-MM-DDTHH:mm:ss.sssZ), extraer solo la fecha
-          else if (typeof birthDate === 'string' && birthDate.includes('T')) {
-            console.log('🔵 [AthleteModal] Fecha en formato ISO con hora, extrayendo solo fecha...');
-            birthDate = birthDate.split('T')[0];
-            console.log('🔵 [AthleteModal] Fecha extraída:', birthDate);
-          }
-          // Si viene en otro formato, intentar convertir
-          else {
-            const date = new Date(birthDate);
-            if (!isNaN(date.getTime())) {
-              // Usar la fecha local sin conversión UTC para evitar cambios de día
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              birthDate = `${year}-${month}-${day}`;
-              console.log('🔵 [AthleteModal] Fecha convertida desde Date a:', birthDate);
-            } else {
-              console.error('🔴 [AthleteModal] Fecha inválida, no se puede convertir');
-              birthDate = "";
-            }
-          }
-        } catch (error) {
-          console.error('🔴 [AthleteModal] Error procesando fecha:', error);
-          birthDate = "";
-        }
-      }
-      
-      console.log('🔵 [AthleteModal] Fecha de nacimiento final:', birthDate);
+      const birthDate = toDateInputFormat(birthDateRaw);
+      console.log('🔵 [AthleteModal] Fecha de nacimiento convertida:', birthDate);
       
       // Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
@@ -502,7 +453,7 @@ const AthleteModal = ({
         phoneNumber: athleteToEdit.phoneNumber || athleteToEdit.telefono || "",
         address: athleteToEdit.address || athleteToEdit.direccion || "",
         birthDate: birthDate,
-        age: calculateAge(birthDate),
+        age: calculateAge(birthDate).toString(),
         categoria: athleteToEdit.categoria || "",
         // Si estamos en modo matrícula, siempre usar "Activo", de lo contrario usar el estado del atleta
         estado: isEnrollmentMode ? "Activo" : (athleteToEdit.estado || "Activo"),
@@ -678,6 +629,17 @@ const AthleteModal = ({
   const isMinor = currentAge !== null && currentAge < 18;
   const isAcudienteRequired = hasDateOfBirth && isMinor;
 
+  // Limpiar error de acudiente cuando se seleccione uno
+  useEffect(() => {
+    if (values.acudiente && errors.acudiente) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.acudiente;
+        return newErrors;
+      });
+    }
+  }, [values.acudiente]);
+
   const getFinalParentesco = () => {
     if (values.parentesco === "Otro" && otroParentesco.trim()) {
       return otroParentesco.trim();
@@ -775,6 +737,28 @@ const AthleteModal = ({
     
     console.log('✅ [AthleteModal] Validación de categoría por edad pasó correctamente');
 
+    // 🔒 VALIDACIÓN CRÍTICA: Menores de edad DEBEN tener acudiente
+    if (ageNumber !== null && ageNumber < 18) {
+      const acudienteId = values.acudiente && values.acudiente.toString().trim() 
+        ? parseInt(values.acudiente) 
+        : null;
+      
+      if (!acudienteId) {
+        console.log('❌ [AthleteModal] Menor de edad sin acudiente!');
+        // Establecer error inline en el campo de acudiente
+        setErrors(prev => ({
+          ...prev,
+          acudiente: "La deportista es menor de edad. Debe asignar un acudiente antes de continuar."
+        }));
+        setTouched(prev => ({
+          ...prev,
+          acudiente: true
+        }));
+        return;
+      }
+      console.log('✅ [AthleteModal] Menor de edad con acudiente asignado:', acudienteId);
+    }
+
     console.log('✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
 
     try {
@@ -805,7 +789,7 @@ const AthleteModal = ({
         email: values.email.trim(),
         phoneNumber: values.phoneNumber,
         address: values.address.trim(),
-        birthDate: values.birthDate,
+        birthDate: toISOString(values.birthDate), // Convertir a ISO para el backend
         categoria: values.categoria,
         estado: values.estado,
       };
@@ -945,7 +929,7 @@ const AthleteModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -958,6 +942,7 @@ const AthleteModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -1162,11 +1147,7 @@ const AthleteModal = ({
                   error={errors.birthDate}
                   touched={touched.birthDate}
                   required
-                  helperText={
-                    currentAge !== null
-                      ? `Edad: ${currentAge} años ${isMinor ? "(Menor)" : "(Mayor)"}`
-                      : "Ingresa la fecha para determinar si requiere acudiente"
-                  }
+                  helperText=""
                   delay={0.7}
                 />
               </div>
@@ -1224,11 +1205,7 @@ const AthleteModal = ({
                     error={errors.estado}
                     touched={touched.estado}
                     required
-                    helperText={
-                      values.estado === "Activo"
-                        ? "Participa normalmente en actividades"
-                        : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá"
-                    }
+                    helperText=""
                     delay={0.9}
                   />
                 </div>
@@ -1319,11 +1296,31 @@ const AthleteModal = ({
                     >
                       {filteredGuardians.length > 0 ? (
                         filteredGuardians.map((guardian) => {
-                          const athleteCount = athletes.filter(
+                          // Contar deportistas asignados a este acudiente
+                          const assignedAthletes = athletes.filter(
                             a => a.acudiente?.toString() === guardian.id?.toString()
-                          ).length;
-                          const canDelete = athleteCount === 0 || 
-                            (athleteCount === 1 && values.acudiente === guardian.id?.toString());
+                          );
+                          const athleteCount = assignedAthletes.length;
+                          
+                          // Verificar si alguna deportista asignada es menor de edad
+                          const hasMinorAthletes = assignedAthletes.some(athlete => {
+                            const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
+                            if (!birthDateStr) return false;
+                            
+                            const today = new Date();
+                            const birthDate = new Date(birthDateStr);
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                              age--;
+                            }
+                            return age < 18;
+                          });
+                          
+                          // Solo se puede eliminar si:
+                          // - No tiene deportistas asignados, O
+                          // - Solo tiene deportistas mayores de edad
+                          const canDelete = athleteCount === 0 || !hasMinorAthletes;
                           
                           return (
                             <div
@@ -1351,7 +1348,7 @@ const AthleteModal = ({
                                   } else {
                                     showErrorAlert(
                                       "No se puede eliminar",
-                                      `Este acudiente tiene ${athleteCount} deportistas asignados.`
+                                      `Este acudiente está asignado a deportistas menores de edad.`
                                     );
                                   }
                                 }}
@@ -1392,7 +1389,19 @@ const AthleteModal = ({
                   type="text"
                   value={
                     values.acudiente 
-                      ? guardians.find(g => String(g.id) === String(values.acudiente))?.nombreCompleto || "Acudiente seleccionado"
+                      ? (() => {
+                          // Buscar en la lista local primero
+                          const localGuardian = guardians.find(g => String(g.id) === String(values.acudiente));
+                          if (localGuardian) return localGuardian.nombreCompleto;
+                          
+                          // Si no está en la lista local, usar el guardian del athleteToEdit
+                          if (athleteToEdit?.guardian) {
+                            return athleteToEdit.guardian.nombreCompleto || 
+                                   `${athleteToEdit.guardian.firstName} ${athleteToEdit.guardian.lastName}`.trim();
+                          }
+                          
+                          return "Acudiente seleccionado";
+                        })()
                       : !hasDateOfBirth 
                         ? "Primero ingresa la fecha de nacimiento"
                         : "Sin acudiente asignado"
@@ -1420,7 +1429,7 @@ const AthleteModal = ({
                       error={errors.parentesco}
                       touched={touched.parentesco}
                       required
-                      helperText="Relación del acudiente con el deportista"
+                      helperText=""
                     />
                   </div>
 
@@ -1601,6 +1610,8 @@ const AthleteModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AthleteModal;

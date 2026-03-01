@@ -1,6 +1,7 @@
 /* "use client" */
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   UserCheck,
@@ -782,7 +783,7 @@ const TemporaryTeamModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <>
       <motion.div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
@@ -796,6 +797,7 @@ const TemporaryTeamModal = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
@@ -1405,6 +1407,8 @@ const TemporaryTeamModal = ({
       />
     </>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default TemporaryTeamModal;

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { FaTimes, FaEdit, FaEye, FaTrash } from "react-icons/fa"
 import { FormField } from "../../../../../../../../shared/components/FormField"
@@ -37,6 +38,35 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     direccion: ""
   })
 
+  // Función para obtener el nombre del tipo de documento
+  const getDocumentTypeName = () => {
+    if (!guardian) return "N/A";
+    
+    // Si tiene documentTypeId, buscar en referenceData
+    const docTypeId = guardian.documentTypeId || guardian.tipoDocumento;
+    if (docTypeId && referenceData.documentTypes) {
+      const docType = referenceData.documentTypes.find(dt => dt.id === docTypeId);
+      if (docType) {
+        return docType.name || docType.label;
+      }
+    }
+    
+    // Fallback: si tiene tipoDocumento como string
+    if (guardian.tipoDocumento) {
+      const typeMap = {
+        "cedula": "Cédula de Ciudadanía",
+        "tarjeta_identidad": "Tarjeta de Identidad",
+        "cedula_extranjeria": "Cédula de Extranjería",
+        "pasaporte": "Pasaporte"
+      };
+      return typeMap[guardian.tipoDocumento] || guardian.tipoDocumento;
+    }
+    
+    // ⚠️ TEMPORAL: El backend no está enviando documentTypeId
+    // Mostrar "N/A" hasta que el backend lo incluya
+    return "N/A (Pendiente del backend)";
+  };
+
   // Calcular si el deportista actual es menor de edad
   const isCurrentAthleteMinor = () => {
     if (!currentAthleteId || !athletes) return false;
@@ -71,9 +101,14 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   useEffect(() => {
     if (guardian && isOpen && referenceData.documentTypes) {
-      // Si tipoDocumento es un ID numérico, usarlo directamente
-      // Si es un string (nombre antiguo), buscar el ID correspondiente
-      let documentTypeId = guardian.tipoDocumento || "";
+      // Obtener el nombre completo (soportar ambos formatos)
+      const nombreCompleto = guardian.nombreCompleto || 
+        (guardian.firstName && guardian.lastName 
+          ? `${guardian.firstName} ${guardian.lastName}`.trim() 
+          : "");
+      
+      // Obtener el tipo de documento (soportar ambos formatos)
+      let documentTypeId = guardian.tipoDocumento || guardian.documentTypeId || "";
       
       // Si no es un número, buscar el ID por nombre
       if (documentTypeId && isNaN(documentTypeId)) {
@@ -87,11 +122,11 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
       }
       
       setEditForm({
-        nombreCompleto: guardian.nombreCompleto || "",
+        nombreCompleto: nombreCompleto,
         tipoDocumento: documentTypeId,
-        identificacion: guardian.identificacion || "",
-        telefono: guardian.telefono || "",
-        correo: guardian.correo || "",
+        identificacion: guardian.identificacion || guardian.identification || "",
+        telefono: guardian.telefono || guardian.phone || "",
+        correo: guardian.correo || guardian.email || "",
         direccion: guardian.direccion || guardian.address || ""
       })
     }
@@ -123,16 +158,30 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
     setIsProcessing(true)
     try {
-      // Enviar tanto 'direccion' como 'address' para compatibilidad con el backend
+      // Separar el nombre completo en firstName y lastName
+      const nameParts = editForm.nombreCompleto.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Preparar datos en el formato que espera el backend (inglés)
       const updatedData = { 
-        ...guardian, 
-        ...editForm,
-        address: editForm.direccion // Asegurar que el backend reciba el campo 'address'
+        id: guardian.id,
+        firstName: firstName,
+        lastName: lastName,
+        documentTypeId: editForm.tipoDocumento,
+        identification: editForm.identificacion,
+        phone: editForm.telefono,
+        email: editForm.correo,
+        address: editForm.direccion
       };
+      
+      console.log('📝 [GuardianViewModal] Enviando datos al backend:', updatedData);
+      
       await onEdit(updatedData)
       showSuccessAlert("Acudiente actualizado", "Los cambios se guardaron correctamente")
       setActiveTab("view")
     } catch (error) {
+      console.error('❌ [GuardianViewModal] Error al guardar:', error);
       showErrorAlert("Error", error.message || "No se pudo actualizar el acudiente")
     } finally {
       setIsProcessing(false)
@@ -221,7 +270,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   if (!isOpen || !guardian) return null
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -234,6 +283,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
@@ -308,7 +358,10 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Nombre Completo</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {guardian.nombreCompleto || "N/A"}
+                    {guardian.nombreCompleto || 
+                     (guardian.firstName && guardian.lastName 
+                       ? `${guardian.firstName} ${guardian.lastName}`.trim() 
+                       : "N/A")}
                   </p>
                 </motion.div>
 
@@ -321,17 +374,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Tipo de Documento</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {guardian.tipoDocumento
-                      ? guardian.tipoDocumento === "cedula"
-                        ? "Cédula de Ciudadanía"
-                        : guardian.tipoDocumento === "tarjeta_identidad"
-                          ? "Tarjeta de Identidad"
-                          : guardian.tipoDocumento === "cedula_extranjeria"
-                            ? "Cédula de Extranjería"
-                            : guardian.tipoDocumento === "pasaporte"
-                              ? "Pasaporte"
-                              : guardian.tipoDocumento
-                      : "N/A"}
+                    {getDocumentTypeName()}
                   </p>
                 </motion.div>
 
@@ -344,7 +387,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Número de Documento</label>
                   <p className="text-gray-900 font-mono p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {guardian.identificacion || "N/A"}
+                    {guardian.identificacion || guardian.identification || "N/A"}
                   </p>
                 </motion.div>
 
@@ -372,7 +415,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Teléfono</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {guardian.telefono || "N/A"}
+                    {guardian.telefono || guardian.phone || "N/A"}
                   </p>
                 </motion.div>
 
@@ -385,7 +428,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Correo Electrónico</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px] break-all">
-                    {guardian.correo || "N/A"}
+                    {guardian.correo || guardian.email || "N/A"}
                   </p>
                 </motion.div>
 
@@ -595,6 +638,8 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   </motion.div>
 </motion.div>
   )
+
+  return createPortal(modalContent, document.body)
 }
 
 export default GuardianViewModal

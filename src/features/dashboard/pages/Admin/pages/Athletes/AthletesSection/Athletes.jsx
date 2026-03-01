@@ -35,6 +35,7 @@ const Athletes = () => {
     loading,
     pagination,
     referenceData,
+    loadGuardians,
     createAthlete,
     updateAthlete,
     deleteAthlete,
@@ -142,7 +143,7 @@ const Athletes = () => {
     if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
       return { 
         canDelete: false, 
-        reason: "Tiene matrícula vigente. No se puede eliminar hasta que venza." 
+        reason: "Tiene matrícula vigente" 
       };
     }
     
@@ -324,7 +325,9 @@ const Athletes = () => {
 
     // Si el deportista tiene acudiente, mostrarlo
     if (athlete.acudiente) {
-      const guardian = getGuardianById(athlete.acudiente);
+      // Priorizar el guardian que viene del backend
+      const guardian = athlete.guardian || getGuardianById(athlete.acudiente);
+      
       if (guardian) {
         setCurrentAthleteId(athlete.id); // Guardar el ID del deportista actual
         setGuardianToView(guardian);
@@ -423,7 +426,8 @@ const Athletes = () => {
             <PermissionGuard module="athletesSection" action="Ver">
               <ReportButton
                 data={athletes.map((athlete) => {
-                  const guardian = getGuardianById(athlete.acudiente);
+                  // Priorizar el guardian que viene del backend
+                  const guardian = athlete.guardian || getGuardianById(athlete.acudiente);
                   const firstName = athlete.firstName || athlete.nombres || "";
                   const lastName = athlete.lastName || athlete.apellidos || "";
                   const email = athlete.email || athlete.correo || "";
@@ -575,7 +579,8 @@ const Athletes = () => {
               }}
               tbody={{
                 data: paginatedData.map((a) => {
-                  const guardian = getGuardianById(a.acudiente);
+                  // Priorizar el guardian que viene del backend
+                  const guardian = a.guardian || getGuardianById(a.acudiente);
 
                   // Mapear campos del backend al frontend
                   const firstName = a.firstName || a.nombres || "";
@@ -665,6 +670,7 @@ const Athletes = () => {
         mode={modalMode}
         newlyCreatedGuardianId={newlyCreatedGuardianId}
         referenceData={referenceData}
+        loadGuardians={loadGuardians}
         onCreateGuardian={() => {
           setGuardianToEdit(null);
           setGuardianModalMode("create");
@@ -684,7 +690,9 @@ const Athletes = () => {
         onClose={() => setIsViewModalOpen(false)}
         athlete={athleteToView}
         guardian={
-          athleteToView ? getGuardianById(athleteToView.acudiente) : null
+          athleteToView 
+            ? (athleteToView.guardian || getGuardianById(athleteToView.acudiente))
+            : null
         }
         referenceData={referenceData}
       />

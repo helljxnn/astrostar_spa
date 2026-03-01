@@ -102,6 +102,36 @@ class InscriptionsService {
     }
   }
 
+  // Verificar si un email ya está inscrito o matriculado
+  async checkEmailExists(email) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-email/${email}`, { skipLoader: true });
+      
+      const exists = response.data?.exists ?? response.exists ?? false;
+      const message = response.data?.message ?? response.message ?? null;
+      const details = response.data?.details ?? response.details ?? null;
+      
+      return {
+        success: true,
+        exists: exists,
+        message: message,
+        details: details,
+      };
+    } catch (error) {
+      console.error("Error checking email:", error);
+      
+      if (error.message.includes("404") || error.message.includes("Not Found")) {
+        return { success: true, error: "Endpoint no implementado", exists: false };
+      }
+      
+      if (error.message.includes("prisma") || error.message.includes("Invalid")) {
+        return { success: true, error: "Error de backend", exists: false };
+      }
+      
+      return { success: true, error: error.message, exists: false };
+    }
+  }
+
   // Crear inscripción (desde el landing)
   async create(inscriptionData) {
     try {

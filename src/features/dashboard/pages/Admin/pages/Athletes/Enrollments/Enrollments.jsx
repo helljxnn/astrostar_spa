@@ -11,6 +11,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
+import { useEnrollmentsContext } from "../../../../../../../shared/contexts/EnrollmentsContext.jsx";
 
 import {
   showSuccessAlert,
@@ -24,6 +25,7 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 
 const Enrollments = () => {
   const { hasPermission } = usePermissions();
+  const { registerListener } = useEnrollmentsContext();
 
   const {
     athletes,
@@ -39,6 +41,8 @@ const Enrollments = () => {
     changePage,
     refresh,
     searchGuardians,
+    addInscriptionToState,
+    updateInscriptionEmailInState,
   } = useEnrollments();
 
   // Estados de modales
@@ -66,16 +70,32 @@ const Enrollments = () => {
   });
   const rowsPerPage = 10;
 
-  // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
+  // Auto-refresh cada 5 segundos cuando estamos en la pestaña de inscripciones
   useEffect(() => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
       refresh(true); // true = silent mode
-    }, 30000); // 30 segundos - balance entre actualización y rendimiento
+    }, 5000); // 5 segundos - actualización casi en tiempo real
 
     return () => clearInterval(interval);
   }, [activeTab, refresh]);
+
+  // Escuchar notificaciones de nuevas inscripciones y actualizaciones de email
+  useEffect(() => {
+    const unregister = registerListener({
+      onNewInscription: (inscription) => {
+        console.log("🎉 [Enrollments] Nueva inscripción recibida:", inscription);
+        addInscriptionToState(inscription);
+      },
+      onEmailUpdate: (identification, newEmail) => {
+        console.log("📧 [Enrollments] Actualización de email recibida:", { identification, newEmail });
+        updateInscriptionEmailInState(identification, newEmail);
+      },
+    });
+
+    return unregister;
+  }, [registerListener, addInscriptionToState, updateInscriptionEmailInState]);
 
   // Filtrar matrículas
   const filteredAthletes = useMemo(() => {
@@ -205,6 +225,9 @@ const Enrollments = () => {
   // Guardar matrícula (crear deportista + matrícula)
   const handleSaveEnrollment = async (athleteData) => {
     console.log("💾 [handleSaveEnrollment] Guardando matrícula...");
+    console.log("💾 [handleSaveEnrollment] Datos del deportista:", athleteData);
+    console.log("💾 [handleSaveEnrollment] Acudiente ID:", athleteData.acudiente);
+    console.log("💾 [handleSaveEnrollment] Parentesco:", athleteData.parentesco);
     console.log(
       "💾 [handleSaveEnrollment] selectedInscription:",
       selectedInscription,
@@ -214,6 +237,8 @@ const Enrollments = () => {
       selectedInscription?.id,
     );
 
+    // El backend ya NO valida la categoría cuando viene de matrícula
+    // Enviar los datos tal como vienen
     const result = await createEnrollment(athleteData, selectedInscription?.id);
 
     if (result) {
@@ -1098,6 +1123,7 @@ const Enrollments = () => {
         referenceData={referenceData}
         isEnrollmentMode={true}
         newlyCreatedGuardianId={newlyCreatedGuardianId}
+        loadGuardians={() => searchGuardians("")}
         onCreateGuardian={() => {
           setIsGuardianModalOpen(true);
         }}

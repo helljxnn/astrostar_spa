@@ -138,12 +138,12 @@ export const MODULE_CONFIG = {
 
   temporaryTeams: {
     id: "temporaryTeams",
-    name: "Equipos Temporales",
+    name: "Equipos",
     path: "/dashboard/temporary-teams",
     icon: "FaUsers",
     category: "events",
     parent: "events",
-    description: "Equipos temporales para eventos",
+    description: "Equipos para eventos",
   },
 
   // === DONACIONES ===

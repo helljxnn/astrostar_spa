@@ -47,6 +47,13 @@ export const useAthletes = () => {
 
       if (response.success) {
         console.log('✅ [useAthletes] Deportistas cargados:', response.data.length);
+        console.log('🔍 [useAthletes] Primer deportista:', response.data[0]);
+        console.log('🔍 [useAthletes] Acudientes en deportistas:', response.data.map(a => ({
+          id: a.id,
+          nombre: a.firstName || a.nombres,
+          acudiente: a.acudiente,
+          guardian: a.guardian
+        })));
         setAthletes(response.data);
         setPagination(response.pagination);
       } else {
@@ -401,9 +408,10 @@ export const useAthletes = () => {
   useEffect(() => {
     if (isAuthenticated) {
       loadReferenceData();
-      loadGuardians();
+      // NO cargar todos los acudientes al inicio - se cargarán bajo demanda
+      // loadGuardians(); // ❌ ELIMINADO - Esto causaba lentitud
     }
-  }, [isAuthenticated, loadReferenceData, loadGuardians]);
+  }, [isAuthenticated, loadReferenceData]);
 
   useEffect(() => {
     if (isAuthenticated) {

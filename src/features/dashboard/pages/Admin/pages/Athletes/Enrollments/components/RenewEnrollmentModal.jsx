@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FaSync, FaTimes, FaUpload, FaFileAlt, FaTrash, FaUserCircle, FaCalendarAlt } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -9,6 +10,7 @@ import {
   isAgeWithinRange,
   formatAgeRange,
 } from "../../../../../../../../shared/utils/categoryAgeValidation";
+import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 const categoryHierarchy = ["Infantil", "Sub 15", "Juvenil"];
 
@@ -41,35 +43,8 @@ const RenewEnrollmentModal = ({
   // Obtener la matrícula más reciente
   const currentEnrollment = athlete?.inscripciones?.[0] || athlete?.enrollments?.[0];
 
-  // Calcular edad
-  const calculateAge = () => {
-    if (!athlete?.fechaNacimiento) {
-      console.log('⚠️ [RenewEnrollmentModal] No hay fechaNacimiento para el atleta:', athlete);
-      return 0;
-    }
-    try {
-      const birthDate = new Date(athlete.fechaNacimiento);
-      const today = new Date();
-      if (isNaN(birthDate.getTime())) {
-        console.log('⚠️ [RenewEnrollmentModal] Fecha de nacimiento inválida:', athlete.fechaNacimiento);
-        return 0;
-      }
-
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      console.log('✅ [RenewEnrollmentModal] Edad calculada:', age);
-      return age;
-    } catch (error) {
-      console.error('❌ [RenewEnrollmentModal] Error calculando edad:', error);
-      return 0;
-    }
-  };
-
-  const age = calculateAge();
+  // Calcular edad usando la utilidad centralizada
+  const age = athlete?.fechaNacimiento ? calculateAge(athlete.fechaNacimiento) : 0;
 
   // Obtener categorías disponibles según la categoría actual
   const availableCategories = getAvailableCategories(athlete?.categoria, sportsCategories);
@@ -191,7 +166,7 @@ const RenewEnrollmentModal = ({
     }
   };
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -203,6 +178,7 @@ const RenewEnrollmentModal = ({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="bg-white border-b border-gray-200 p-6 relative">
@@ -411,6 +387,8 @@ const RenewEnrollmentModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default RenewEnrollmentModal;

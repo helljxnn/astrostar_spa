@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FaTimes, FaUserShield
@@ -61,7 +62,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
     });
   };
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -76,6 +77,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.8, opacity: 0, y: 50 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
@@ -386,6 +388,8 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AthleteViewModal;
