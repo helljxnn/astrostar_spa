@@ -4,6 +4,7 @@ import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import TeamsService from "../../../TemporaryTeams/services/TeamsService";
 import RegistrationsService from "../../services/RegistrationsService";
+import SportsCategoriesService from "../../../../Athletes/SportsCategory/services/sportsCategoriesService";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -28,6 +29,10 @@ const TeamRegistrationFormModal = ({
   const [selectedTeams, setSelectedTeams] = useState(initialSelectedTeams);
   const [initialTeams, setInitialTeams] = useState([]); // Guardar equipos iniciales para comparar
   const [searchTerm, setSearchTerm] = useState("");
+  const [displayLimit, setDisplayLimit] = useState(6); // Límite inicial de equipos a mostrar
+  const [selectedCategories, setSelectedCategories] = useState([]); // Categorías seleccionadas
+  const [selectedTeamTypes, setSelectedTeamTypes] = useState([]); // Tipos seleccionados (Fundacion/Temporal)
+  const [availableCategories, setAvailableCategories] = useState([]); // Categorías disponibles
   const searchTimeoutRef = useRef(null);
 
   // Helper para obtener estado RSVP
@@ -102,6 +107,32 @@ const TeamRegistrationFormModal = ({
     }
   };
 
+  // Cargar categorías deportivas desde el módulo de categorías
+  const loadSportsCategories = async () => {
+    try {
+      const response = await SportsCategoriesService.getAll({
+        status: "Activo", // Backend espera "Activo" o "Inactivo" en español
+        limit: 100, // Traer todas las categorías activas
+      });
+
+      // Manejar diferentes formatos de respuesta
+      let categories = [];
+      if (response && response.success && response.data) {
+        categories = response.data.map((cat) => cat.name);
+      } else if (response && Array.isArray(response)) {
+        // Si la respuesta es directamente un array
+        categories = response.map((cat) => cat.name);
+      } else if (response && response.data && Array.isArray(response.data)) {
+        categories = response.data.map((cat) => cat.name);
+      }
+
+      setAvailableCategories(categories);
+    } catch (error) {
+      console.error("Error cargando categorías deportivas:", error);
+      setAvailableCategories([]);
+    }
+  };
+
   const searchTeams = async (term) => {
     if (!term || term.trim().length < 2) {
       setSearchResults([]);
@@ -166,8 +197,12 @@ const TeamRegistrationFormModal = ({
     if (isOpen && isTeamType) {
       setSearchTerm("");
       setSearchResults([]);
-      // Cargar equipos disponibles filtrados por categoría
+      setDisplayLimit(6); // Reset al abrir
+      setSelectedCategories([]); // Reset filtros
+      setSelectedTeamTypes([]); // Reset filtros de tipo
+      // Cargar equipos disponibles y categorías deportivas
       loadAvailableTeams();
+      loadSportsCategories();
       // Bloquear scroll del body
       document.body.classList.add("events-modal-open");
     } else {
@@ -180,6 +215,78 @@ const TeamRegistrationFormModal = ({
       document.body.classList.remove("events-modal-open");
     };
   }, [isOpen, isTeamType, eventId]);
+
+  const handleLoadMore = () => {
+    setDisplayLimit((prev) => prev + 6);
+  };
+
+  const toggleCategory = (category) => {
+    setSelectedCategories((prev) =>
+      prev.includes(category)
+        ? prev.filter((c) => c !== category)
+        : [...prev, category],
+    );
+    setDisplayLimit(6);
+  };
+
+  const selectAllCategories = () => {
+    if (selectedCategories.length === availableCategories.length) {
+      // Si todas están seleccionadas, deseleccionar todas
+      setSelectedCategories([]);
+    } else {
+      // Seleccionar todas
+      setSelectedCategories([...availableCategories]);
+    }
+    setDisplayLimit(6);
+  };
+
+  const selectAllTeamTypes = () => {
+    if (selectedTeamTypes.length === 2) {
+      // Si ambos están seleccionados, deseleccionar todos
+      setSelectedTeamTypes([]);
+    } else {
+      // Seleccionar ambos
+      setSelectedTeamTypes(["Fundacion", "Temporal"]);
+    }
+    setDisplayLimit(6);
+  };
+
+  const toggleTeamType = (type) => {
+    setSelectedTeamTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+    );
+    setDisplayLimit(6);
+  };
+
+  const selectAllFiltered = () => {
+    const filtered = getFilteredTeams();
+    const newSelections = filtered.filter(
+      (team) => !selectedTeams.find((st) => st.id === team.id),
+    );
+    setSelectedTeams((prev) => [...prev, ...newSelections]);
+  };
+
+  const getFilteredTeams = () => {
+    let filtered = availableTeams.filter(
+      (team) => !selectedTeams.find((st) => st.id === team.id),
+    );
+
+    // Filtrar por categorías
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((team) =>
+        selectedCategories.includes(team.category),
+      );
+    }
+
+    // Filtrar por tipo
+    if (selectedTeamTypes.length > 0) {
+      filtered = filtered.filter((team) =>
+        selectedTeamTypes.includes(team.teamType),
+      );
+    }
+
+    return filtered;
+  };
 
   useEffect(() => {
     // Búsqueda con debounce - ahora busca en availableTeams
@@ -341,14 +448,14 @@ const TeamRegistrationFormModal = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
           margin: "auto",
           maxHeight: "90vh",
           width: "100%",
-          maxWidth: "64rem",
+          maxWidth: "80rem",
         }}
       >
         <div className="bg-primary-purple p-6 text-white">
@@ -369,7 +476,7 @@ const TeamRegistrationFormModal = ({
         </div>
 
         <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="relative">
+          <div className="relative mb-3">
             <input
               type="text"
               placeholder="Buscar equipo por nombre, categoría o entrenador..."
@@ -398,94 +505,232 @@ const TeamRegistrationFormModal = ({
             )}
           </div>
 
-          {/* Mostrar equipos disponibles cuando no hay búsqueda */}
-          {searchTerm.length === 0 && availableTeams.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs text-gray-600 mb-2 font-medium">
-                Equipos disponibles para este evento (
-                {
-                  availableTeams.filter(
-                    (t) => !selectedTeams.find((st) => st.id === t.id),
-                  ).length
-                }
-                )
-              </p>
-              <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                {availableTeams
-                  .filter(
-                    (team) => !selectedTeams.find((st) => st.id === team.id),
-                  )
-                  .map((team) => {
-                    const rsvpStatus = getRSVPStatus(team);
-                    return (
-                      <div
-                        key={team.id}
-                        onClick={() => handleSelectTeam(team)}
-                        className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <h4 className="font-semibold text-gray-900 text-sm truncate">
-                                {team.name}
-                              </h4>
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                                  team.teamType === "Fundacion"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-orange-100 text-orange-700"
-                                }`}
-                              >
-                                {team.teamType === "Fundacion"
-                                  ? "Fundación"
-                                  : "Temporal"}
-                              </span>
-                              {team.category && (
-                                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
-                                  {team.category}
-                                </span>
-                              )}
-                              <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                                  rsvpStatus.color === "gray"
-                                    ? "bg-gray-100 text-gray-700"
-                                    : rsvpStatus.color === "orange"
-                                      ? "bg-orange-100 text-orange-700"
-                                      : rsvpStatus.color === "green"
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
-                                }`}
-                              >
-                                {rsvpStatus.icon} {rsvpStatus.label}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
-                              <span className="truncate">
-                                <span className="font-medium">Entrenador:</span>{" "}
-                                {team.coach || "Sin asignar"}
-                              </span>
-                            </div>
-                          </div>
-                          <svg
-                            className="w-5 h-5 text-primary-purple flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 4v16m8-8H4"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
+          {/* Filtros reorganizados */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs font-semibold text-gray-700">Filtros</div>
+              {(selectedCategories.length > 0 ||
+                selectedTeamTypes.length > 0) && (
+                <button
+                  onClick={() => {
+                    setSelectedCategories([]);
+                    setSelectedTeamTypes([]);
+                  }}
+                  className="text-xs text-red-600 hover:text-red-700 font-medium"
+                >
+                  Limpiar filtros
+                </button>
+              )}
             </div>
-          )}
+
+            <div className="flex flex-wrap gap-4 items-start">
+              {/* Filtros de tipo */}
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-gray-700">
+                  Filtrar por tipo:
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={selectAllTeamTypes}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedTeamTypes.length === 2
+                        ? "bg-primary-purple text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => toggleTeamType("Fundacion")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedTeamTypes.includes("Fundacion")
+                        ? "bg-blue-600 text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-300 hover:border-blue-600"
+                    }`}
+                  >
+                    Fundación
+                  </button>
+                  <button
+                    onClick={() => toggleTeamType("Temporal")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedTeamTypes.includes("Temporal")
+                        ? "bg-orange-600 text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-300 hover:border-orange-600"
+                    }`}
+                  >
+                    Temporal
+                  </button>
+                </div>
+              </div>
+
+              {/* Filtros de categoría */}
+              {availableCategories.length > 0 && (
+                <div className="flex flex-col gap-2 flex-1">
+                  <p className="text-xs font-semibold text-gray-700">
+                    Filtrar por categoría:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={selectAllCategories}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        selectedCategories.length === availableCategories.length
+                          ? "bg-primary-purple text-white shadow-md"
+                          : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    {availableCategories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => toggleCategory(category)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedCategories.includes(category)
+                            ? "bg-primary-purple text-white shadow-md"
+                            : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Botón seleccionar todos filtrados */}
+          {(selectedCategories.length > 0 || selectedTeamTypes.length > 0) &&
+            getFilteredTeams().length > 0 && (
+              <button
+                onClick={selectAllFiltered}
+                className="w-full mb-3 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold"
+              >
+                ✓ Seleccionar todos ({getFilteredTeams().length})
+              </button>
+            )}
+
+          {/* Mostrar equipos disponibles cuando no hay búsqueda */}
+          {searchTerm.length === 0 &&
+            (selectedCategories.length > 0 || selectedTeamTypes.length > 0) && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-600 mb-2 font-medium">
+                  Equipos disponibles ({getFilteredTeams().length})
+                </p>
+                <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {getFilteredTeams()
+                    .slice(0, displayLimit)
+                    .map((team) => {
+                      const rsvpStatus = getRSVPStatus(team);
+                      return (
+                        <div
+                          key={team.id}
+                          onClick={() => handleSelectTeam(team)}
+                          className="p-2.5 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                                <h4 className="font-semibold text-gray-900 text-sm truncate">
+                                  {team.name}
+                                </h4>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
+                                    team.teamType === "Fundacion"
+                                      ? "bg-blue-100 text-blue-700"
+                                      : "bg-orange-100 text-orange-700"
+                                  }`}
+                                >
+                                  {team.teamType === "Fundacion"
+                                    ? "Fundación"
+                                    : "Temporal"}
+                                </span>
+                                {team.category && (
+                                  <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold flex-shrink-0">
+                                    {team.category}
+                                  </span>
+                                )}
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
+                                    rsvpStatus.color === "gray"
+                                      ? "bg-gray-100 text-gray-700"
+                                      : rsvpStatus.color === "orange"
+                                        ? "bg-orange-100 text-orange-700"
+                                        : rsvpStatus.color === "green"
+                                          ? "bg-green-100 text-green-700"
+                                          : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {rsvpStatus.icon} {rsvpStatus.label}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <span className="truncate">
+                                  <span className="font-medium">
+                                    Entrenador:
+                                  </span>{" "}
+                                  {team.coach || "Sin asignar"}
+                                </span>
+                              </div>
+                            </div>
+                            <svg
+                              className="w-5 h-5 text-primary-purple flex-shrink-0"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {/* Botón Ver más */}
+                  {getFilteredTeams().length > displayLimit && (
+                    <button
+                      onClick={handleLoadMore}
+                      className="w-full p-2.5 text-sm font-semibold text-primary-purple hover:bg-purple-50 transition-colors border-t border-gray-200"
+                    >
+                      Ver más equipos (
+                      {getFilteredTeams().length - displayLimit} restantes)
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+          {/* Mensaje cuando no hay filtros seleccionados */}
+          {searchTerm.length === 0 &&
+            selectedCategories.length === 0 &&
+            selectedTeamTypes.length === 0 &&
+            !loading && (
+              <div className="mt-3 text-center py-6 bg-white border border-gray-200 rounded-lg">
+                <svg
+                  className="w-12 h-12 text-gray-300 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
+                <p className="text-sm text-gray-600 font-medium">
+                  Selecciona un tipo o categoría para ver equipos
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  O usa el buscador para encontrar equipos específicos
+                </p>
+              </div>
+            )}
 
           {/* Resultados de búsqueda */}
           <AnimatePresence>
@@ -494,7 +739,7 @@ const TeamRegistrationFormModal = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
               >
                 {searchResults.map((team) => {
                   const rsvpStatus = getRSVPStatus(team);
@@ -502,16 +747,16 @@ const TeamRegistrationFormModal = ({
                     <div
                       key={team.id}
                       onClick={() => handleSelectTeam(team)}
-                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                      className="p-2.5 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <h4 className="font-semibold text-gray-900 text-sm truncate">
                               {team.name}
                             </h4>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                              className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
                                 team.teamType === "Fundacion"
                                   ? "bg-blue-100 text-blue-700"
                                   : "bg-orange-100 text-orange-700"
@@ -522,12 +767,12 @@ const TeamRegistrationFormModal = ({
                                 : "Temporal"}
                             </span>
                             {team.category && (
-                              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0">
+                              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold flex-shrink-0">
                                 {team.category}
                               </span>
                             )}
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                              className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
                                 rsvpStatus.color === "gray"
                                   ? "bg-gray-100 text-gray-700"
                                   : rsvpStatus.color === "orange"
@@ -540,7 +785,7 @@ const TeamRegistrationFormModal = ({
                               {rsvpStatus.icon} {rsvpStatus.label}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
                             <span className="truncate">
                               <span className="font-medium">Entrenador:</span>{" "}
                               {team.coach || "Sin asignar"}
@@ -596,16 +841,6 @@ const TeamRegistrationFormModal = ({
               </span>
             </div>
           )}
-
-          {!loading &&
-            searchTerm.length === 0 &&
-            availableTeams.length === 0 && (
-              <div className="mt-3 text-center py-4">
-                <p className="text-sm text-gray-600">
-                  No hay equipos disponibles para las categorías de este evento
-                </p>
-              </div>
-            )}
         </div>
 
         <div className="flex-1 overflow-auto p-6 bg-gray-50">
@@ -641,7 +876,7 @@ const TeamRegistrationFormModal = ({
                   Equipos seleccionados ({selectedTeams.length})
                 </h3>
               </div>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 <AnimatePresence>
                   {selectedTeams.map((team, index) => {
                     const rsvpStatus = getRSVPStatus(team);

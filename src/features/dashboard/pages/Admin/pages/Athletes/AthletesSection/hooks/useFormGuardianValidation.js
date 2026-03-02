@@ -6,7 +6,7 @@ const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
 const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
 const isValidEmail = (email) =>
   /^[a-zA-Z0-9]([a-zA-Z0-9._-])*[a-zA-Z0-9]@[a-zA-Z0-9]([a-zA-Z0-9.-])*[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(
-    email || ""
+    email || "",
   );
 const cleanPhone = (phone) => phone.replace(/[\s\-\(\)]/g, "");
 const isOnlyNumbers = (value) => /^\d+$/.test(value);
@@ -45,60 +45,64 @@ const validatePhone = (value) => {
 
 // Validación de documento de identidad (igual que proveedores y empleados)
 const getDocumentValidation = (documentTypeName, value) => {
-  if (!documentTypeName || !value?.trim()) return '';
-  
+  if (!documentTypeName || !value?.trim()) return "";
+
   const docName = documentTypeName.toLowerCase();
-  
+
   // Cédula de Ciudadanía
-  if (docName.includes('cédula') || docName.includes('cedula') || docName.includes('ciudadanía')) {
+  if (
+    docName.includes("cédula") ||
+    docName.includes("cedula") ||
+    docName.includes("ciudadanía")
+  ) {
     if (!/^\d+$/.test(value)) {
       return "La cédula solo puede contener números.";
     }
     if (value.length < 6 || value.length > 10) {
       return "La cédula debe tener entre 6 y 10 dígitos.";
     }
-    return '';
+    return "";
   }
-  
+
   // Cédula de Extranjería
-  if (docName.includes('extranjería') || docName.includes('extranjeria')) {
+  if (docName.includes("extranjería") || docName.includes("extranjeria")) {
     if (!/^\d+$/.test(value)) {
       return "La cédula de extranjería solo puede contener números.";
     }
     if (value.length < 6 || value.length > 12) {
       return "La cédula de extranjería debe tener entre 6 y 12 dígitos.";
     }
-    return '';
+    return "";
   }
-  
+
   // Pasaporte
-  if (docName.includes('pasaporte')) {
+  if (docName.includes("pasaporte")) {
     if (!/^[A-Za-z0-9]+$/.test(value)) {
       return "El pasaporte solo puede contener letras y números.";
     }
     if (value.length < 6 || value.length > 15) {
       return "El pasaporte debe tener entre 6 y 15 caracteres.";
     }
-    return '';
+    return "";
   }
-  
+
   // Tarjeta de Identidad
-  if (docName.includes('tarjeta') && docName.includes('identidad')) {
+  if (docName.includes("tarjeta") && docName.includes("identidad")) {
     if (!/^\d+$/.test(value)) {
       return "La tarjeta de identidad solo puede contener números.";
     }
     if (value.length < 8 || value.length > 11) {
       return "La tarjeta de identidad debe tener entre 8 y 11 dígitos.";
     }
-    return '';
+    return "";
   }
-  
+
   // Validación genérica para otros tipos
   if (value.length > 20) {
     return "El documento no puede exceder los 20 caracteres.";
   }
-  
-  return '';
+
+  return "";
 };
 
 // Reglas de validación específicas para acudientes (EXACTAMENTE IGUALES A EMPLEADOS)
@@ -115,16 +119,26 @@ export const guardianValidationRules = {
         : "",
     (v) => (hasDoubleSpaces(v) ? "No se permiten espacios dobles" : ""),
   ],
-  documentTypeId: [(value) => (!value ? "Debe seleccionar el tipo de documento" : "")],
+  documentTypeId: [
+    (value) => (!value ? "Debe seleccionar el tipo de documento" : ""),
+  ],
   identification: [
     (value) => (!value?.trim() ? "La identificación es obligatoria" : ""),
-    (value) => value?.length < 6 ? "La identificación debe tener al menos 6 caracteres" : "",
-    (value) => !/^[0-9A-Za-z\-]+$/.test(value || "") ? "Solo números, letras y guiones" : "",
+    (value) =>
+      value?.length < 6
+        ? "La identificación debe tener al menos 6 caracteres"
+        : "",
+    (value) =>
+      !/^[0-9A-Za-z\-]+$/.test(value || "")
+        ? "Solo números, letras y guiones"
+        : "",
   ],
   email: [
     (value) => (!value?.trim() ? "El correo es obligatorio" : ""),
     (value) =>
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "") ? "Formato de correo inválido" : "",
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value || "")
+        ? "Formato de correo inválido"
+        : "",
   ],
   phoneNumber: [
     (value) => (!value?.trim() ? "El número telefónico es obligatorio" : ""),
@@ -133,7 +147,7 @@ export const guardianValidationRules = {
       // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
       const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
       const phoneWithoutCode = /^\d{10}$/; // 3226758060
-      
+
       if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
         return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
       }
@@ -145,14 +159,24 @@ export const guardianValidationRules = {
     (v) => {
       if (!v) return "";
       const birthDate = new Date(v);
+      if (isNaN(birthDate.getTime())) {
+        return "Fecha de nacimiento no válida";
+      }
+
       const today = new Date();
-      const minDate = new Date();
-      minDate.setFullYear(today.getFullYear() - 100);
-      const maxDate = new Date();
-      maxDate.setFullYear(today.getFullYear() - 18);
+      const minDate = new Date(
+        today.getFullYear() - 100,
+        today.getMonth(),
+        today.getDate(),
+      );
+      const maxDate = new Date(
+        today.getFullYear() - 18,
+        today.getMonth(),
+        today.getDate(),
+      );
 
       if (birthDate < minDate)
-        return "La fecha de nacimiento no puede ser anterior a 100 años";
+        return "La fecha de nacimiento no puede ser anterior a 100 años atrás";
       if (birthDate > maxDate) return "El acudiente debe ser mayor de 18 años";
       if (birthDate > today)
         return "La fecha de nacimiento no puede ser futura";
@@ -161,8 +185,12 @@ export const guardianValidationRules = {
   ],
   address: [
     (value) => (!value?.trim() ? "La dirección es obligatoria" : ""),
-    (value) => value?.length < 10 ? "La dirección debe tener al menos 10 caracteres" : "",
-    (value) => value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
+    (value) =>
+      value?.length < 10
+        ? "La dirección debe tener al menos 10 caracteres"
+        : "",
+    (value) =>
+      value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
   ],
   estado: [(v) => (!v ? "Debe seleccionar un estado" : "")],
 };
@@ -199,15 +227,15 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
         ? { name: nameOrEvent, val: value }
         : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
     setValues((prev) => ({ ...prev, [name]: val }));
-    
+
     // Campos que SIEMPRE se validan instantáneamente (sin esperar touched)
-    const alwaysValidateFields = ['phoneNumber', 'email', 'identification'];
-    
+    const alwaysValidateFields = ["phoneNumber", "email", "identification"];
+
     // Si es un campo de validación instantánea, validar SIEMPRE
     if (alwaysValidateFields.includes(name)) {
       const error = validateField(name, val);
-      setErrors(prev => ({ ...prev, [name]: error }));
-      setTouched(prev => ({ ...prev, [name]: true }));
+      setErrors((prev) => ({ ...prev, [name]: error }));
+      setTouched((prev) => ({ ...prev, [name]: true }));
     }
     // Para otros campos, solo validar si ya están touched
     else if (touched[name]) {
