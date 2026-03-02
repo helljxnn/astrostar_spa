@@ -737,12 +737,6 @@ const TemporaryTeamModal = ({
         teamData.segundoEntrenador = formData.segundoEntrenador;
         teamData.segundoEntrenadorData = selectedSecondTrainer;
       }
-
-      console.log(
-        "? Datots del equipo a enviar:",
-        JSON.stringify(teamData, null, 2),
-      );
-
       if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
         await onUpdate(updatedTeamData);
@@ -1004,10 +998,6 @@ const TemporaryTeamModal = ({
 
               {duplicateWarnings.trainer && (
                 <>
-                  {console.log(
-                    "?? Renderizando warning de entrenador:",
-                    duplicateWarnings.trainer,
-                  )}
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1213,10 +1203,6 @@ const TemporaryTeamModal = ({
 
                 {duplicateWarnings.athletes && (
                   <>
-                    {console.log(
-                      "?? Renderizando warning de deportistas:",
-                      duplicateWarnings.athletes,
-                    )}
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}

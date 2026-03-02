@@ -37,8 +37,7 @@ export const useAthletes = () => {
     setError(null);
     
     try {
-      console.log('🔄 [useAthletes] Cargando deportistas con params:', params);
-      const response = await AthletesService.getAthletes({
+const response = await AthletesService.getAthletes({
         page: pagination.page,
         limit: pagination.limit,
         ...params
@@ -74,16 +73,11 @@ export const useAthletes = () => {
    */
   const loadGuardians = useCallback(async () => {
     try {
-      console.log('🔄 Cargando acudientes...');
-      const response = await GuardiansService.getGuardians({
+const response = await GuardiansService.getGuardians({
         limit: 100 // Límite máximo permitido por el backend
       });
-
-      console.log('📋 Respuesta de acudientes:', response);
-      
-      if (response.success) {
-        console.log('✅ Acudientes cargados:', response.data.length);
-        setGuardians(response.data);
+if (response.success) {
+setGuardians(response.data);
       } else {
         console.error('❌ Error en respuesta de acudientes:', response);
       }
@@ -101,24 +95,20 @@ export const useAthletes = () => {
       const apiClient = (await import('../../../../../../../../shared/services/apiClient.js')).default;
       
       // Cargar tipos de documento desde el endpoint de deportistas (incluye RC)
-      console.log('📋 Cargando tipos de documento para deportistas...');
-      const athletesDocTypesResponse = await AthletesService.getDocumentTypes();
+const athletesDocTypesResponse = await AthletesService.getDocumentTypes();
       
       // Cargar TODOS los tipos de documento para acudientes
-      console.log('📋 Cargando todos los tipos de documento...');
-      let allDocTypesResponse = await apiClient.get('/document-types');
+let allDocTypesResponse = await apiClient.get('/document-types');
       
       // Si falla, usar el endpoint de empleados
       if (!allDocTypesResponse || !allDocTypesResponse.success) {
-        console.log('⚠️ Endpoint /document-types no disponible, usando /employees/reference-data');
-        allDocTypesResponse = await apiClient.get('/employees/reference-data');
+allDocTypesResponse = await apiClient.get('/employees/reference-data');
       }
       
       if (allDocTypesResponse && allDocTypesResponse.success) {
         // Obtener los tipos de documento de la respuesta
         const allDocTypes = allDocTypesResponse.data?.documentTypes || allDocTypesResponse.data || [];
-        console.log('📋 Todos los tipos de documento disponibles:', allDocTypes);
-        console.log('📊 Total tipos:', allDocTypes.length);
+console.log('📊 Total tipos:', allDocTypes.length);
         
         // Para DEPORTISTAS: Usar los tipos del endpoint específico de deportistas
         let athleteDocTypes = [];
@@ -132,13 +122,9 @@ export const useAthletes = () => {
             name: dt.name,
             description: dt.description
           }));
-          
-          console.log('✅ Tipos para DEPORTISTAS (del endpoint específico):', athleteDocTypes);
-          console.log('📊 Total deportistas:', athleteDocTypes.length);
-          console.log('📋 Nombres deportistas:', athleteDocTypes.map(dt => dt.name));
-        } else {
-          console.log('⚠️ No se pudieron cargar tipos de deportistas, usando filtro manual');
-          // Fallback: filtrar manualmente
+console.log('📊 Total deportistas:', athleteDocTypes.length);
+} else {
+// Fallback: filtrar manualmente
           athleteDocTypes = allDocTypes.filter(dt => {
             if (!dt || !dt.label) return false;
             
@@ -171,12 +157,8 @@ export const useAthletes = () => {
           );
           return !isExcluded;
         });
-        
-        console.log('✅ Tipos para ACUDIENTES (sin RC, TI ni NIT):', guardianDocTypes);
-        console.log('📊 Total acudientes:', guardianDocTypes.length);
-        console.log('📋 Nombres acudientes:', guardianDocTypes.map(dt => dt.label));
-        
-        // Transformar acudientes a la estructura que esperan los componentes
+console.log('📊 Total acudientes:', guardianDocTypes.length);
+// Transformar acudientes a la estructura que esperan los componentes
         const guardianDocTypesWithName = guardianDocTypes.map(dt => ({
           ...dt,
           name: dt.label || dt.name // Agregar propiedad 'name' para compatibilidad
@@ -200,8 +182,7 @@ export const useAthletes = () => {
           ...prev,
           sportsCategories: categoriesResponse.data || []
         }));
-        console.log('✅ Categorías deportivas cargadas:', categoriesResponse.data);
-      }
+}
     } catch (err) {
       console.error('❌ Error cargando datos de referencia:', err);
     }
@@ -214,11 +195,8 @@ export const useAthletes = () => {
     setLoading(true);
     
     try {
-      console.log('🔵 [useAthletes] Creando deportista con datos:', athleteData);
-      const response = await AthletesService.createAthlete(athleteData);
-      console.log('🔵 [useAthletes] Respuesta del servicio:', response);
-      
-      if (response.success) {
+const response = await AthletesService.createAthlete(athleteData);
+if (response.success) {
         showSuccessAlert(
           'Deportista creado',
           response.message || 'El deportista fue creado correctamente.'

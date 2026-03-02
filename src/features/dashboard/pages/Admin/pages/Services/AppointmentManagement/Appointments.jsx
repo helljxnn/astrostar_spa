@@ -15,12 +15,16 @@ import Swal from "sweetalert2";
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
+import CancelAppointmentModal from "./components/CancelAppointmentModal";
+import CompleteAppointmentModal from "./components/CompleteAppointmentModal";
+import RescheduleAppointmentModal from "./components/RescheduleAppointmentModal";
 import {
   BaseCalendar,
   CalendarReportGenerator,
 } from "../../../../../../../shared/components/Calendar";
 import { useAppointments } from "./hooks/useAppointments";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useAuth } from "../../../../../../../shared/contexts/authContext";
 
 const specialtyColors = {
   psicologia: "#EAB308",
@@ -53,23 +57,43 @@ function Appointments() {
     createAppointment,
     cancelAppointment,
     completeAppointment,
+    proposeReschedule,
     isAthleteScope,
     athleteIdFromUser,
   } = useAppointments();
 
   const { hasPermission } = usePermissions();
+  
+  // Verificar si el usuario es deportista directamente
+  const { user } = useAuth();
+  const userRole = (user?.role?.name || user?.rol || "").toString().toLowerCase();
+  const isAthleteView = userRole === "athlete" || userRole === "deportista" || isAthleteScope;
+  
   const canViewAppointments = hasPermission("appointmentManagement", "Ver") || true;
   const canCreateAppointments =
     hasPermission("appointmentManagement", "Crear") || true;
 
+  // Debug: verificar el alcance del deportista
+  useEffect(() => {
+    console.log("🔍 Debug Appointments - userRole:", userRole);
+    console.log("🔍 Debug Appointments - isAthleteView:", isAthleteView);
+    console.log("🔍 Debug Appointments - isAthleteScope:", isAthleteScope);
+    console.log("🔍 Debug Appointments - athleteIdFromUser:", athleteIdFromUser);
+  }, [isAthleteView, isAthleteScope, athleteIdFromUser, userRole]);
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [appointmentToCancel, setAppointmentToCancel] = useState(null);
+  const [appointmentToComplete, setAppointmentToComplete] = useState(null);
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState(null);
   const [initialSlot, setInitialSlot] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
-    specialty: "",
     specialistId: "",
     status: "",
   });
@@ -93,12 +117,6 @@ function Appointments() {
   const filters = useMemo(
     () => [
       {
-        id: "specialty",
-        label: "Especialidad",
-        field: "specialty",
-        options: specialtyOptions,
-      },
-      {
         id: "specialistId",
         label: "Especialista",
         field: "specialistId",
@@ -115,7 +133,7 @@ function Appointments() {
         ],
       },
     ],
-    [specialtyOptions, specialistFilterOptions]
+    [specialistFilterOptions]
   );
 
   const handleFiltersChange = (nextFilters) => {
@@ -209,72 +227,54 @@ function Appointments() {
 
   const handleCancelAppointment = useCallback(
     async (appointment) => {
-      const { value: reason } = await Swal.fire({
-        title: "Motivo de cancelación",
-        input: "textarea",
-        inputLabel: "Por favor, indique el motivo de la cancelación",
-        inputPlaceholder: "Escribe el motivo aquí...",
-        inputAttributes: {
-          "aria-label": "Motivo de cancelación",
-        },
-        showCancelButton: true,
-        confirmButtonText: "Cancelar cita",
-        cancelButtonText: "Volver",
-        customClass: {
-          confirmButton:
-            "bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2",
-          cancelButton:
-            "bg-primary-blue text-white font-bold px-6 py-2 rounded-lg",
-        },
-        buttonsStyling: false,
-        inputValidator: (value) => {
-          if (!value) {
-            return "Debes ingresar un motivo";
-          }
-        },
-      });
-
-      if (reason) {
-        try {
-          await cancelAppointment(appointment.id, reason);
-          handleCloseViewModal();
-        } catch (error) {
-          // errores manejados por el hook
-        }
-      }
+      setAppointmentToCancel(appointment);
+      setIsCancelModalOpen(true);
     },
-    [cancelAppointment, handleCloseViewModal],
+    [],
   );
 
-  const handleMarkAsCompleted = async (appointmentToComplete) => {
-    const { value: conclusion } = await Swal.fire({
-      title: "Conclusión de la Cita",
-      input: "textarea",
-      inputLabel: "Por favor, registre la conclusión o los resultados de la cita",
-      inputPlaceholder: "Escribe la conclusión aquí...",
-      inputAttributes: {
-        "aria-label": "Conclusión de la cita",
-      },
-      showCancelButton: true,
-      confirmButtonText: "Guardar y Completar",
-      cancelButtonText: "Volver",
-      customClass: {
-        confirmButton:
-          "bg-primary-purple text-white font-bold px-6 py-2 rounded-lg mr-2",
-        cancelButton:
-          "bg-primary-blue text-white font-bold px-6 py-2 rounded-lg",
-      },
-      buttonsStyling: false,
-      inputValidator: (value) => {
-        if (!value) {
-          return "Debes ingresar una conclusión para completar la cita.";
-        }
-      },
-    });
+  const handleConfirmCancel = async (reason) => {
+    if (appointmentToCancel) {
+      try {
+        await cancelAppointment(appointmentToCancel.id, reason);
+        setIsCancelModalOpen(false);
+        setAppointmentToCancel(null);
+        handleCloseViewModal();
+      } catch (error) {
+        // errores manejados por el hook
+      }
+    }
+  };
 
-    if (conclusion) {
+  const handleMarkAsCompleted = async (appointmentToComplete) => {
+    setAppointmentToComplete(appointmentToComplete);
+    setIsCompleteModalOpen(true);
+  };
+
+  const handleConfirmComplete = async (conclusion) => {
+    if (appointmentToComplete) {
       try {
         await completeAppointment(appointmentToComplete.id, conclusion);
+        setIsCompleteModalOpen(false);
+        setAppointmentToComplete(null);
+        handleCloseViewModal();
+      } catch (error) {
+        // errores manejados por el hook
+      }
+    }
+  };
+
+  const handleReschedule = (appointment) => {
+    setAppointmentToReschedule(appointment);
+    setIsRescheduleModalOpen(true);
+  };
+
+  const handleConfirmReschedule = async (rescheduleData) => {
+    if (appointmentToReschedule) {
+      try {
+        await proposeReschedule(appointmentToReschedule.id, rescheduleData);
+        setIsRescheduleModalOpen(false);
+        setAppointmentToReschedule(null);
         handleCloseViewModal();
       } catch (error) {
         // errores manejados por el hook
@@ -310,111 +310,100 @@ function Appointments() {
 
     const isEditable = event.status === "Programado";
 
-    const actions = [
-      {
-        label: "Ver",
-        icon: Eye,
-        onClick: () => handleSelectAppointment(event),
-      },
-      ...(isEditable
-        ? [
-            {
-              label: "Editar",
-              icon: PencilLine,
-              onClick: () => handleEditAppointment(event),
-            },
-            {
-              label: "Cancelar",
-              icon: XCircle,
-              onClick: () => handleCancelAppointment(event),
-            },
-            {
-              label: "Completar",
-              icon: CheckCircle2,
-              onClick: () => handleMarkAsCompleted(event),
-            },
-          ]
-        : []),
-    ];
-
     return (
-      <div
-        className="p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition flex flex-col gap-3"
-        onClick={() => handleSelectAppointment(event)}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-[11px] text-gray-500 uppercase tracking-wide">
-              <CalendarClock className="h-4 w-4 text-[#B595FF]" />
-              <span>{event.date || "Sin fecha"}</span>
-              {event.time && <span>• {event.time}</span>}
-            </div>
-            <h4 className="font-semibold text-gray-900 text-sm line-clamp-2">
-              {event.title}
+      <div className="space-y-1.5">
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-medium text-gray-800 text-sm">
+              {event.athleteName || "Deportista"}
             </h4>
-            <div className="flex flex-wrap gap-2 text-[11px] text-gray-600">
-              {event.athleteName && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100">
-                  <UserRound className="h-3 w-3 text-[#B595FF]" />
-                  {event.athleteName}
-                </span>
-              )}
-              {event.specialistName && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100">
-                  <Stethoscope className="h-3 w-3 text-[#9BE9FF]" />
-                  {event.specialistName}
-                </span>
-              )}
-              {event.specialtyLabel && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#F5F1FF] text-[#7C3AED]">
-                  {event.specialtyLabel}
-                </span>
-              )}
-            </div>
-            {event.description && (
-              <p className="text-xs text-gray-500 line-clamp-2">
-                {event.description}
-              </p>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${statusStyles}`}>
+              {statusLabel}
+            </span>
+          </div>
+          <div className="space-y-0.5 text-xs text-gray-600 mt-1">
+            {event.specialistName && (
+              <div className="flex items-center gap-1">
+                <Stethoscope className="h-3 w-3" />
+                <span className="text-[11px]">{event.specialistName}</span>
+              </div>
+            )}
+            {event.specialtyLabel && (
+              <div className="text-[11px] text-gray-600">
+                {event.specialtyLabel}
+              </div>
+            )}
+            {event.time && (
+              <div className="text-[11px] text-gray-600">
+                {event.time}
+              </div>
             )}
           </div>
-          <span
-            className={`text-xs font-semibold px-2 py-1 rounded-full ${statusStyles}`}
-          >
-            {statusLabel}
-          </span>
         </div>
 
-        {actions.length > 0 && (
-          <div className="flex gap-2 flex-wrap pt-2 border-t border-gray-100 mt-auto">
-            {actions.map((action, actionIndex) => (
+        <div className="flex gap-1 flex-wrap pt-1.5 border-t border-gray-100">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectAppointment(event);
+            }}
+            className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+          >
+            Ver
+          </button>
+          {isEditable && !isAthleteView && (
+            <>
               <button
-                key={actionIndex}
                 onClick={(e) => {
                   e.stopPropagation();
-                  action.onClick(event);
+                  handleEditAppointment(event);
                 }}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors bg-gray-50 text-gray-700 hover:bg-[#9BE9FF] hover:text-white"
+                className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-blue-600 hover:bg-blue-50"
               >
-                {action.icon && <action.icon className="h-3.5 w-3.5" />}
-                {action.label}
+                Editar
               </button>
-            ))}
-          </div>
-        )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMarkAsCompleted(event);
+                }}
+                className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-green-600 hover:bg-green-50"
+              >
+                Completar
+              </button>
+            </>
+          )}
+          {isEditable && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelAppointment(event);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-red-600 hover:bg-red-50"
+            >
+              Cancelar
+            </button>
+          )}
+          {event.status === "Cancelado" && !isAthleteView && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReschedule(event);
+              }}
+              className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-purple-600 hover:bg-purple-50"
+            >
+              Reagendar
+            </button>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
     <div className="space-y-6 font-monserrat p-4">
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 sm:p-5">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Citas</h1>
-          <p className="text-gray-500 mt-1">
-            Visualiza, crea y gestiona las citas
-          </p>
-        </div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">Gestión de Citas</h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="w-full sm:w-auto">
@@ -427,7 +416,7 @@ function Appointments() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {canCreateAppointments && (
+            {canCreateAppointments && !isAthleteView && (
               <motion.button
                 onClick={handleOpenCreateModal}
                 className="flex items-center gap-2 px-4 py-2 bg-[#B595FF] text-white rounded-lg font-medium hover:bg-[#9BE9FF] transition-all duration-300"
@@ -473,7 +462,7 @@ function Appointments() {
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
-          className="mt-4 bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-100"
+          className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
         >
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
@@ -509,14 +498,12 @@ function Appointments() {
             ))}
           </div>
 
-          {(selectedFilters.specialty ||
-            selectedFilters.specialistId ||
+          {(selectedFilters.specialistId ||
             selectedFilters.status) && (
             <div className="mt-4">
               <button
                 onClick={() =>
                   setSelectedFilters({
-                    specialty: "",
                     specialistId: "",
                     status: "",
                   })
@@ -529,8 +516,6 @@ function Appointments() {
           )}
         </motion.div>
       )}
-
-      </div>
 
       <BaseCalendar
         variant="custom"
@@ -567,7 +552,7 @@ function Appointments() {
         sidebarEmptyText="No hay citas programadas"
         colorScheme="events"
         className="appointments-calendar"
-        sidebarItemMinHeight="min-h-[190px]"
+        sidebarItemMinHeight="min-h-[120px]"
       />
 
       <AppointmentForm
@@ -594,6 +579,38 @@ function Appointments() {
         specialtyOptions={specialtyOptions}
         onMarkAsCompleted={handleMarkAsCompleted}
         onCancelAppointment={handleCancelAppointment}
+        onReschedule={handleReschedule}
+        isAthleteScope={isAthleteView}
+      />
+
+      <CancelAppointmentModal
+        isOpen={isCancelModalOpen}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setAppointmentToCancel(null);
+        }}
+        onConfirm={handleConfirmCancel}
+        appointmentData={appointmentToCancel}
+      />
+
+      <CompleteAppointmentModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => {
+          setIsCompleteModalOpen(false);
+          setAppointmentToComplete(null);
+        }}
+        onConfirm={handleConfirmComplete}
+        appointmentData={appointmentToComplete}
+      />
+
+      <RescheduleAppointmentModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => {
+          setIsRescheduleModalOpen(false);
+          setAppointmentToReschedule(null);
+        }}
+        onConfirm={handleConfirmReschedule}
+        appointmentData={appointmentToReschedule}
       />
     </div>
   );

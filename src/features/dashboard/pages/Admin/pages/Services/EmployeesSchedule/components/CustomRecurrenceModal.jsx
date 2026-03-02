@@ -34,7 +34,7 @@ export default function CustomRecurrenceModal({ onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50 px-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-[2100] px-4">
       <motion.div
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: 1, y: 0 }}

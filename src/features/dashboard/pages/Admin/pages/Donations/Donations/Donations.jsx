@@ -330,6 +330,16 @@ const Donations = () => {
       foodClass: foodDetail?.classification ?? raw.foodClass ?? raw.clasificacionAlimentos ?? "",
       especieItems: raw.especieItems || specieItems,
       details,
+      files:
+        raw.files ||
+        raw.archivos ||
+        raw.attachments ||
+        raw.soportes ||
+        raw.evidencias ||
+        raw.supports ||
+        raw.documents ||
+        raw.documentos ||
+        [],
     };
   };
 

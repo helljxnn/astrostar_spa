@@ -61,43 +61,65 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       case "firstName":
         if (!value?.trim()) return "El primer nombre es obligatorio";
         if (value.length < 2) return "Debe tener al menos 2 caracteres";
-        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value))
+          return "Solo se permiten letras";
         return "";
 
       case "middleName":
         // Segundo nombre es opcional
-        if (value && value.length < 2) return "Debe tener al menos 2 caracteres";
-        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        if (value && value.length < 2)
+          return "Debe tener al menos 2 caracteres";
+        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value))
+          return "Solo se permiten letras";
         return "";
 
       case "lastName":
         if (!value?.trim()) return "El primer apellido es obligatorio";
         if (value.length < 2) return "Debe tener al menos 2 caracteres";
-        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        if (!/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value))
+          return "Solo se permiten letras";
         return "";
 
       case "secondLastName":
         // Segundo apellido es opcional
-        if (value && value.length < 2) return "Debe tener al menos 2 caracteres";
-        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value)) return "Solo se permiten letras";
+        if (value && value.length < 2)
+          return "Debe tener al menos 2 caracteres";
+        if (value && !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value))
+          return "Solo se permiten letras";
         return "";
 
       case "identification":
         if (!value?.trim()) return "El número de documento es obligatorio";
-        if (value.length < 6) return "El documento debe tener al menos 6 caracteres";
-        if (value.length > 20) return "El documento no puede exceder 20 caracteres";
-        if (!/^[0-9A-Za-z\-]+$/.test(value)) return "Solo números, letras y guiones";
+        if (value.length < 6)
+          return "El documento debe tener al menos 6 caracteres";
+        if (value.length > 20)
+          return "El documento no puede exceder 20 caracteres";
+        if (!/^[0-9A-Za-z\-]+$/.test(value))
+          return "Solo números, letras y guiones";
         if (documentExists) return "Este documento ya está inscrito";
         return "";
 
       case "birthDate":
         if (!value) return "La fecha de nacimiento es obligatoria";
         const birthDate = new Date(value);
+        if (isNaN(birthDate.getTime())) {
+          return "Fecha de nacimiento no válida";
+        }
+
         const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
+        const minDate = new Date(
+          today.getFullYear() - 100,
+          today.getMonth(),
+          today.getDate(),
+        );
+        const maxDate = new Date(
+          today.getFullYear() - 5,
+          today.getMonth(),
+          today.getDate(),
+        );
+
+        if (birthDate < minDate) {
+          return "La fecha de nacimiento no puede ser anterior a 100 años atrás";
         }
         if (age < 5) return "Debe tener al menos 5 años";
         if (age > 100) return "La edad no puede ser mayor a 100 años";
@@ -114,7 +136,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
       case "email":
         if (!value?.trim()) return "El correo es obligatorio";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Formato de correo inválido";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+          return "Formato de correo inválido";
         return "";
 
       default:
@@ -124,22 +147,22 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    
+
     // Limpiar el estado de documento existente cuando el usuario está escribiendo
     if (field === "identification") {
       setDocumentExists(false);
       clearDocumentValidation();
     }
-    
+
     // Limpiar el estado de email existente cuando el usuario está escribiendo
     if (field === "email") {
       clearEmailValidation();
     }
-    
+
     // Validar en tiempo real SIEMPRE (no solo cuando touched)
     const error = validateField(field, value);
     setErrors((prev) => ({ ...prev, [field]: error }));
-    
+
     // Marcar como tocado automáticamente cuando el usuario empieza a escribir
     if (value && value.length > 0) {
       setTouched((prev) => ({ ...prev, [field]: true }));
@@ -156,20 +179,28 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   // Validación en tiempo real de documento usando el hook
   useEffect(() => {
     const documento = formData.identification;
-    
+
     // Solo verificar si el documento tiene al menos 6 caracteres y es válido
-    if (documento && documento.length >= 6 && /^[0-9A-Za-z\-]+$/.test(documento)) {
+    if (
+      documento &&
+      documento.length >= 6 &&
+      /^[0-9A-Za-z\-]+$/.test(documento)
+    ) {
       validateDocumentDebounced(documento, 6);
     } else {
       clearDocumentValidation();
       setDocumentExists(false);
     }
-  }, [formData.identification, validateDocumentDebounced, clearDocumentValidation]);
+  }, [
+    formData.identification,
+    validateDocumentDebounced,
+    clearDocumentValidation,
+  ]);
 
   // Validación en tiempo real de email usando el hook
   useEffect(() => {
     const email = formData.email;
-    
+
     // Solo verificar si el email tiene formato válido
     if (email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       validateEmailDebounced(email, 300);
@@ -182,33 +213,57 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (documentExistsValidation) {
       setDocumentExists(true);
-      const errorMessage = documentValidationMessage || "Este documento ya está registrado";
+      const errorMessage =
+        documentValidationMessage || "Este documento ya está registrado";
       setErrors((prev) => ({ ...prev, identification: errorMessage }));
       setTouched((prev) => ({ ...prev, identification: true }));
-    } else if (!isCheckingDocumentValidation && formData.identification.length >= 6) {
+    } else if (
+      !isCheckingDocumentValidation &&
+      formData.identification.length >= 6
+    ) {
       setDocumentExists(false);
       // Solo actualizar error si el campo ya fue tocado
       if (touched.identification) {
-        const validationError = validateField("identification", formData.identification);
+        const validationError = validateField(
+          "identification",
+          formData.identification,
+        );
         setErrors((prev) => ({ ...prev, identification: validationError }));
       }
     }
-  }, [isCheckingDocumentValidation, documentExistsValidation, documentValidationMessage, formData.identification, touched.identification]);
+  }, [
+    isCheckingDocumentValidation,
+    documentExistsValidation,
+    documentValidationMessage,
+    formData.identification,
+    touched.identification,
+  ]);
 
   // Sincronizar resultado de validación de email
   useEffect(() => {
     if (emailExistsValidation) {
-      const errorMessage = emailValidationMessage || "Este email ya está registrado";
+      const errorMessage =
+        emailValidationMessage || "Este email ya está registrado";
       setErrors((prev) => ({ ...prev, email: errorMessage }));
       setTouched((prev) => ({ ...prev, email: true }));
-    } else if (!isCheckingEmailValidation && formData.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (
+      !isCheckingEmailValidation &&
+      formData.email &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)
+    ) {
       // Solo actualizar error si el campo ya fue tocado
       if (touched.email) {
         const validationError = validateField("email", formData.email);
         setErrors((prev) => ({ ...prev, email: validationError }));
       }
     }
-  }, [isCheckingEmailValidation, emailExistsValidation, emailValidationMessage, formData.email, touched.email]);
+  }, [
+    isCheckingEmailValidation,
+    emailExistsValidation,
+    emailValidationMessage,
+    formData.email,
+    touched.email,
+  ]);
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
@@ -218,12 +273,10 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     if (field === "identification" || field === "email") {
       return; // El hook ya maneja la validación de estos campos
     }
-    
+
     const error = validateField(field, formData[field]);
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
-
-
 
   const showNotification = (type, message) => {
     setNotification({ show: true, type, message });
@@ -237,7 +290,10 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
     // Verificar cooldown
     if (cooldownTime > 0) {
-      showNotification("error", `Por favor espera ${cooldownTime} segundos antes de enviar otra inscripción.`);
+      showNotification(
+        "error",
+        `Por favor espera ${cooldownTime} segundos antes de enviar otra inscripción.`,
+      );
       return;
     }
 
@@ -320,7 +376,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
             return prev - 1;
           });
         }, 1000);
-        
+
         // Limpiar formulario
         setFormData({
           firstName: "",
@@ -335,11 +391,17 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         setErrors({});
         setTouched({});
       } else {
-        showNotification("error", "Error al enviar la inscripción. Por favor intenta de nuevo.");
+        showNotification(
+          "error",
+          "Error al enviar la inscripción. Por favor intenta de nuevo.",
+        );
       }
     } catch (error) {
       console.error("Error:", error);
-      showNotification("error", "Error al enviar la inscripción. Por favor intenta de nuevo.");
+      showNotification(
+        "error",
+        "Error al enviar la inscripción. Por favor intenta de nuevo.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -460,7 +522,10 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
     try {
       // Enviar email Y documento para que el backend pueda buscar correctamente
-      const result = await InscriptionsService.resendEmail(newEmail, sentDocument);
+      const result = await InscriptionsService.resendEmail(
+        newEmail,
+        sentDocument,
+      );
 
       if (result.success) {
         setSentEmail(newEmail);
@@ -472,11 +537,18 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         
         showNotification("success", "¡Correo reenviado exitosamente!");
       } else {
-        showNotification("error", result.error || "Error al reenviar el correo. Por favor intenta de nuevo.");
+        showNotification(
+          "error",
+          result.error ||
+            "Error al reenviar el correo. Por favor intenta de nuevo.",
+        );
       }
     } catch (error) {
       console.error("Error:", error);
-      showNotification("error", "Error al reenviar el correo. Por favor intenta de nuevo.");
+      showNotification(
+        "error",
+        "Error al reenviar el correo. Por favor intenta de nuevo.",
+      );
     } finally {
       setIsResending(false);
     }
@@ -518,7 +590,17 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   // Efecto para limpiar cuando se cierra el modal
   if (!isOpen) {
     // Limpiar después de que la animación de salida termine
-    if (formData.firstName || formData.middleName || formData.lastName || formData.secondLastName || formData.identification || formData.birthDate || formData.phoneNumber || formData.email || Object.keys(errors).length > 0) {
+    if (
+      formData.firstName ||
+      formData.middleName ||
+      formData.lastName ||
+      formData.secondLastName ||
+      formData.identification ||
+      formData.birthDate ||
+      formData.phoneNumber ||
+      formData.email ||
+      Object.keys(errors).length > 0
+    ) {
       setTimeout(resetFormData, 300);
     }
     return null;
@@ -579,115 +661,126 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
               {/* Body con scroll */}
               <div className="flex-1 overflow-y-auto">
-                <form
-                  onSubmit={handleSubmit}
-                  className="p-6"
-                >
-                <div className="space-y-4">
-                  {/* Nombres y Apellidos en Grid 2x2 */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="p-6">
+                  <div className="space-y-4">
+                    {/* Nombres y Apellidos en Grid 2x2 */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        label="Primer Nombre"
+                        name="firstName"
+                        type="text"
+                        value={formData.firstName}
+                        onChange={(e) =>
+                          handleChange("firstName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("firstName")}
+                        error={errors.firstName}
+                        touched={touched.firstName}
+                        required
+                      />
+
+                      <FormField
+                        label="Segundo Nombre"
+                        name="middleName"
+                        type="text"
+                        value={formData.middleName}
+                        onChange={(e) =>
+                          handleChange("middleName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("middleName")}
+                        error={errors.middleName}
+                        touched={touched.middleName}
+                        placeholder="Opcional"
+                      />
+
+                      <FormField
+                        label="Primer Apellido"
+                        name="lastName"
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) =>
+                          handleChange("lastName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("lastName")}
+                        error={errors.lastName}
+                        touched={touched.lastName}
+                        required
+                      />
+
+                      <FormField
+                        label="Segundo Apellido"
+                        name="secondLastName"
+                        type="text"
+                        value={formData.secondLastName}
+                        onChange={(e) =>
+                          handleChange("secondLastName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("secondLastName")}
+                        error={errors.secondLastName}
+                        touched={touched.secondLastName}
+                        placeholder="Opcional"
+                      />
+                    </div>
+
+                    {/* Resto de campos en columna única */}
                     <FormField
-                      label="Primer Nombre"
-                      name="firstName"
+                      label="Número de Documento"
+                      name="identification"
                       type="text"
-                      value={formData.firstName}
-                      onChange={(e) => handleChange("firstName", e.target.value)}
-                      onBlur={() => handleBlur("firstName")}
-                      error={errors.firstName}
-                      touched={touched.firstName}
+                      value={formData.identification}
+                      onChange={(e) =>
+                        handleChange("identification", e.target.value)
+                      }
+                      onBlur={() => handleBlur("identification")}
+                      error={errors.identification}
+                      touched={touched.identification}
+                      required
+                      isLoading={isCheckingDocumentValidation}
+                    />
+
+                    <FormField
+                      label="Fecha de Nacimiento"
+                      name="birthDate"
+                      type="date"
+                      value={formData.birthDate}
+                      onChange={(e) =>
+                        handleChange("birthDate", e.target.value)
+                      }
+                      onBlur={() => handleBlur("birthDate")}
+                      error={errors.birthDate}
+                      touched={touched.birthDate}
+                      required
+                      minAge={5}
+                      maxAge={100}
+                    />
+
+                    <FormField
+                      label="Teléfono"
+                      name="phoneNumber"
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) =>
+                        handleChange("phoneNumber", e.target.value)
+                      }
+                      onBlur={() => handleBlur("phoneNumber")}
+                      error={errors.phoneNumber}
+                      touched={touched.phoneNumber}
                       required
                     />
 
                     <FormField
-                      label="Segundo Nombre"
-                      name="middleName"
-                      type="text"
-                      value={formData.middleName}
-                      onChange={(e) => handleChange("middleName", e.target.value)}
-                      onBlur={() => handleBlur("middleName")}
-                      error={errors.middleName}
-                      touched={touched.middleName}
-                      placeholder="Opcional"
-                    />
-
-                    <FormField
-                      label="Primer Apellido"
-                      name="lastName"
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => handleChange("lastName", e.target.value)}
-                      onBlur={() => handleBlur("lastName")}
-                      error={errors.lastName}
-                      touched={touched.lastName}
+                      label="Correo Electrónico"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleChange("email", e.target.value)}
+                      onBlur={() => handleBlur("email")}
+                      error={errors.email}
+                      touched={touched.email}
                       required
-                    />
-
-                    <FormField
-                      label="Segundo Apellido"
-                      name="secondLastName"
-                      type="text"
-                      value={formData.secondLastName}
-                      onChange={(e) => handleChange("secondLastName", e.target.value)}
-                      onBlur={() => handleBlur("secondLastName")}
-                      error={errors.secondLastName}
-                      touched={touched.secondLastName}
-                      placeholder="Opcional"
+                      isLoading={isCheckingEmailValidation}
                     />
                   </div>
-
-                  {/* Resto de campos en columna única */}
-                  <FormField
-                    label="Número de Documento"
-                    name="identification"
-                    type="text"
-                    value={formData.identification}
-                    onChange={(e) => handleChange("identification", e.target.value)}
-                    onBlur={() => handleBlur("identification")}
-                    error={errors.identification}
-                    touched={touched.identification}
-                    required
-                    isLoading={isCheckingDocumentValidation}
-                  />
-
-                  <FormField
-                    label="Fecha de Nacimiento"
-                    name="birthDate"
-                    type="date"
-                    value={formData.birthDate}
-                    onChange={(e) =>
-                      handleChange("birthDate", e.target.value)
-                    }
-                    onBlur={() => handleBlur("birthDate")}
-                    error={errors.birthDate}
-                    touched={touched.birthDate}
-                    required
-                  />
-
-                  <FormField
-                    label="Teléfono"
-                    name="phoneNumber"
-                    type="tel"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                    onBlur={() => handleBlur("phoneNumber")}
-                    error={errors.phoneNumber}
-                    touched={touched.phoneNumber}
-                    required
-                  />
-
-                  <FormField
-                    label="Correo Electrónico"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    onBlur={() => handleBlur("email")}
-                    error={errors.email}
-                    touched={touched.email}
-                    required
-                    isLoading={isCheckingEmailValidation}
-                  />
-                </div>
                 </form>
               </div>
 
@@ -696,7 +789,14 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   onClick={handleSubmit}
-                  disabled={isSubmitting || cooldownTime > 0 || documentExists || emailExistsValidation || isCheckingDocumentValidation || isCheckingEmailValidation}
+                  disabled={
+                    isSubmitting ||
+                    cooldownTime > 0 ||
+                    documentExists ||
+                    emailExistsValidation ||
+                    isCheckingDocumentValidation ||
+                    isCheckingEmailValidation
+                  }
                   className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
@@ -734,7 +834,9 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                   ¡Inscripción Exitosa!
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Hemos enviado un correo a <strong className="text-[#B595FF]">{sentEmail}</strong> con toda la información necesaria.
+                  Hemos enviado un correo a{" "}
+                  <strong className="text-[#B595FF]">{sentEmail}</strong> con
+                  toda la información necesaria.
                 </p>
                 <p className="text-sm text-gray-500">
                   Por favor revisa tu bandeja de entrada y spam.

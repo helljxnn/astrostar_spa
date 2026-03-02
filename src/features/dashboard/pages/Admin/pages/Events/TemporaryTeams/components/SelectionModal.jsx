@@ -65,15 +65,10 @@ const SelectionModal = ({
       } else {
         response = await TeamsService.getAthletes();
       }
-
-      console.log("📥 Respuesta del servicio:", response);
-
       // FIX CRÍTICO: Asegurar que siempre tengamos un array
       if (response && response.success && Array.isArray(response.data)) {
-        console.log("✅ Datos cargados:", response.data.length, "elementos");
         setData(response.data);
       } else {
-        console.warn("⚠️ Respuesta inválida o sin datos:", response);
         setData([]);
       }
     } catch (error) {
@@ -93,17 +88,12 @@ const SelectionModal = ({
 
   const groupedData = useMemo(() => {
     if (!data || data.length === 0) {
-      console.log("⚠️ No hay datos para agrupar");
       return [];
     }
-
-    console.log("📊 Agrupando datos:", data.length, "elementos");
-    console.log("📊 Primer elemento:", data[0]);
 
     // Si forceFoundationType está activo, solo mostrar fundación
     if (forceFoundationType) {
       const fundacion = data.filter((item) => item.type === "fundacion");
-      console.log("🔵 Fundación (forzado):", fundacion.length);
       return fundacion.length > 0
         ? [
             {
@@ -120,9 +110,6 @@ const SelectionModal = ({
 
     const fundacion = data.filter((item) => item.type === "fundacion");
     const temporal = data.filter((item) => item.type === "temporal");
-
-    console.log("🔵 Fundación:", fundacion.length);
-    console.log("🟡 Temporal:", temporal.length);
 
     const groups = [];
 
@@ -147,9 +134,6 @@ const SelectionModal = ({
         items: temporal,
       });
     }
-
-    console.log("📦 Grupos creados:", groups.length);
-
     return groups;
   }, [data, mode, forceFoundationType]);
 
@@ -250,8 +234,6 @@ const SelectionModal = ({
         return item.categoria === selectedCategory;
       });
     }
-
-    console.log("🔍 Elementos filtrados:", filtered);
     return filtered;
   }, [availableItems, searchTerm, selectedCategory, mode]);
 

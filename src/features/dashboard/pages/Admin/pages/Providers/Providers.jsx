@@ -274,11 +274,7 @@ const Providers = () => {
       // Obtener los datos completos del proveedor desde el backend
       const response = await providersService.getProviderById(provider.id);
       if (response.success && response.data) {
-        console.log(
-          "Datos completos del proveedor para edición:",
-          response.data,
-        );
-        setProviderToEdit(response.data);
+setProviderToEdit(response.data);
         setModalMode("edit");
         setIsModalOpen(true);
       } else {

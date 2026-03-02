@@ -89,11 +89,6 @@ class EnrollmentsService {
         ? response.data
         : response.data.data || [];
 
-      console.log(
-        "📡 [EnrollmentsService.getAll] Total de deportistas:",
-        data.length
-      );
-
       return {
         success: true,
         data: data,

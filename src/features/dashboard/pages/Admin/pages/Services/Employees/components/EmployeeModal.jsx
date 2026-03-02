@@ -418,6 +418,8 @@ const EmployeeModal = ({
               touched={touched.birthDate}
               onChange={handleCustomChange}
               onBlur={handleBlur}
+              minAge={16}
+              maxAge={100}
               delay={0.65}
             />
 

@@ -166,7 +166,7 @@ const SportsCategory = () => {
     if (!canCreate) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para crear categor�as deportivas",
+        "No tienes permisos para crear categorías deportivas",
       );
       return;
     }
@@ -179,7 +179,7 @@ const SportsCategory = () => {
     if (!canEdit) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar categor�as deportivas",
+        "No tienes permisos para editar categorías deportivas",
       );
       return;
     }
@@ -198,7 +198,7 @@ const SportsCategory = () => {
     if (!canDelete) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar categor�as deportivas",
+        "No tienes permisos para eliminar categorías deportivas",
       );
       return;
     }
@@ -210,18 +210,18 @@ const SportsCategory = () => {
       showErrorAlert(
         "No se puede eliminar",
         details.length
-          ? `La categor�a est� asociada a ${details.join(", ")}.`
-          : "La categor�a est� asociada y no puede eliminarse.",
+          ? `La categoría está asociada a ${details.join(", ")}.`
+          : "La categoría está asociada y no puede eliminarse.",
       );
       return;
     }
 
     try {
       const result = await showConfirmAlert(
-        "�Eliminar categor�a?",
-        `Se eliminar� la categor�a "${item.nombre ?? item.name}".`,
+        "¿Eliminar categoría?",
+        `Se eliminará la categoría "${item.nombre ?? item.name}".`,
         {
-          confirmButtonText: "S�, eliminar",
+          confirmButtonText: "Sí, eliminar",
         },
       );
       if (!result.isConfirmed) return;
@@ -238,7 +238,7 @@ const SportsCategory = () => {
     if (!canView) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para ver detalles de categor�as deportivas",
+        "No tienes permisos para ver detalles de categorías deportivas",
       );
       return;
     }
@@ -255,7 +255,7 @@ const SportsCategory = () => {
     if (!canList) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para listar atletas de categor�as deportivas",
+        "No tienes permisos para listar atletas de categorías deportivas",
       );
       return;
     }
@@ -283,7 +283,7 @@ const SportsCategory = () => {
     <div className="p-6 font-questrial">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Categor�as Deportivas{" "}
+          Categorías Deportivas{" "}
           {!loading && totalRows > 0 && (
             <span className="text-sm text-gray-600 ml-2">({totalRows})</span>
           )}

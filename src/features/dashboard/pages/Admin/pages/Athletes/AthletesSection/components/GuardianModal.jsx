@@ -3,8 +3,15 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
-import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
-import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showConfirmAlert,
+} from "../../../../../../../../shared/utils/alerts";
+import {
+  useFormGuardianValidation,
+  guardianValidationRules,
+} from "../hooks/useFormGuardianValidation";
 import GuardiansService from "../services/GuardiansService";
 import { toDateInputFormat, toISOString, calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
@@ -67,7 +74,7 @@ const GuardianModal = ({
   useEffect(() => {
     const checkDocument = async () => {
       if (!values.identification || values.identification.length < 6) {
-        setAsyncErrors(prev => ({ ...prev, identification: null }));
+        setAsyncErrors((prev) => ({ ...prev, identification: null }));
         return;
       }
 
@@ -75,23 +82,26 @@ const GuardianModal = ({
       try {
         // Obtener todos los acudientes
         const result = await GuardiansService.getAll();
-        
+
         if (result.success) {
           // Buscar si existe un acudiente con el mismo documento
-          const existingGuardian = result.data.find(g => {
+          const existingGuardian = result.data.find((g) => {
             const guardianId = g.identificacion || g.identification;
-            const isSameDocument = guardianId && guardianId.toLowerCase() === values.identification.toLowerCase();
-            const isDifferentGuardian = !isEditing || g.id !== guardianToEdit?.id;
+            const isSameDocument =
+              guardianId &&
+              guardianId.toLowerCase() === values.identification.toLowerCase();
+            const isDifferentGuardian =
+              !isEditing || g.id !== guardianToEdit?.id;
             return isSameDocument && isDifferentGuardian;
           });
 
           if (existingGuardian) {
             const errorMsg = `Este documento ya está registrado`;
-            setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
-            setErrors(prev => ({ ...prev, identification: errorMsg }));
-            setTouched(prev => ({ ...prev, identification: true }));
+            setAsyncErrors((prev) => ({ ...prev, identification: errorMsg }));
+            setErrors((prev) => ({ ...prev, identification: errorMsg }));
+            setTouched((prev) => ({ ...prev, identification: true }));
           } else {
-            setAsyncErrors(prev => ({ ...prev, identification: null }));
+            setAsyncErrors((prev) => ({ ...prev, identification: null }));
             // Solo limpiar el error si es un error de duplicado
             setErrors(prev => {
               if (prev.identification && prev.identification.includes('ya está registrado')) {
@@ -103,7 +113,7 @@ const GuardianModal = ({
           }
         }
       } catch (error) {
-        console.error('Error verificando documento:', error);
+        console.error("Error verificando documento:", error);
       } finally {
         setCheckingDocument(false);
       }
@@ -212,47 +222,38 @@ const GuardianModal = ({
   }, [isOpen, isEditing, guardianToEdit, setValues, setTouched, setErrors]);
 
   const handleSubmit = async () => {
-    console.log("🔵 [GuardianModal] handleSubmit ejecutado");
     console.log("🔵 [GuardianModal] Valores actuales:", values);
-    
+
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
-    
+
     const isValid = validateAllFields();
-    console.log("🔵 [GuardianModal] Validación:", isValid);
     console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
-    console.log("🔵 [GuardianModal] Errores asíncronos:", JSON.stringify(asyncErrors, null, 2));
-    
     // Verificar si hay errores asíncronos
-    const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
-    
+    const hasAsyncErrors = Object.values(asyncErrors).some(
+      (error) => error !== null && error !== "",
+    );
+
     if (!isValid || hasAsyncErrors) {
-      console.log("❌ [GuardianModal] Validación falló, no se puede guardar");
       console.log("❌ [GuardianModal] Campos con error:");
-      Object.keys(errors).forEach(key => {
+      Object.keys(errors).forEach((key) => {
         if (errors[key]) {
-          console.log(`  - ${key}: ${errors[key]}`);
         }
       });
       if (hasAsyncErrors) {
-        console.log("❌ [GuardianModal] Errores de duplicados:");
-        Object.keys(asyncErrors).forEach(key => {
+        Object.keys(asyncErrors).forEach((key) => {
           if (asyncErrors[key]) {
-            console.log(`  - ${key}: ${asyncErrors[key]}`);
           }
         });
       }
       return;
     }
-    
-    console.log("✅ [GuardianModal] Validación exitosa, procediendo a guardar...");
-
     if (isEditing) {
       const confirm = await showConfirmAlert(
         "¿Actualizar?",
         `Actualizar datos de ${guardianToEdit.nombreCompleto}`,
-        { confirmButtonText: "Sí, actualizar", cancelButtonText: "Cancelar" }
+        { confirmButtonText: "Sí, actualizar", cancelButtonText: "Cancelar" },
       );
       if (!confirm.isConfirmed) return;
     }
@@ -267,15 +268,17 @@ const GuardianModal = ({
         address: values.address.trim(), // ✅ Dirección
         birthDate: toISOString(values.fechaNacimiento), // ✅ Convertir a ISO para el backend
       };
-      
-      console.log('📤 Datos a enviar:', JSON.stringify(dataToSend, null, 2));
-      console.log('📅 Fecha de nacimiento:', values.fechaNacimiento);
-      console.log('📋 Todos los valores:', JSON.stringify(values, null, 2));
-
+      console.log("📅 Fecha de nacimiento:", values.fechaNacimiento);
       if (isEditing) {
-        const updated = await onUpdate({ ...dataToSend, id: guardianToEdit.id });
+        const updated = await onUpdate({
+          ...dataToSend,
+          id: guardianToEdit.id,
+        });
         if (updated) {
-          showSuccessAlert("Actualizado", "Acudiente actualizado exitosamente.");
+          showSuccessAlert(
+            "Actualizado",
+            "Acudiente actualizado exitosamente.",
+          );
           resetForm();
           onClose();
         }
@@ -366,7 +369,7 @@ const GuardianModal = ({
             <DocumentField
               documentType={
                 (referenceData?.documentTypes || []).find(
-                  (dt) => dt.id === parseInt(values.documentTypeId)
+                  (dt) => dt.id === parseInt(values.documentTypeId),
                 )?.label
               }
               value={values.identification}
@@ -378,7 +381,7 @@ const GuardianModal = ({
               label="Número de Documento"
               name="identification"
             />
-            
+
             <FormField
               label="Nombre Completo"
               name="nombreCompleto"
@@ -392,7 +395,7 @@ const GuardianModal = ({
               required
               delay={0.3}
             />
-            
+
             <FormField
               label="Correo Electrónico"
               name="email"
@@ -406,7 +409,7 @@ const GuardianModal = ({
               required
               delay={0.4}
             />
-            
+
             <FormField
               label="Número Telefónico"
               name="phoneNumber"
@@ -420,7 +423,7 @@ const GuardianModal = ({
               required
               delay={0.5}
             />
-            
+
             <FormField
               label="Dirección"
               name="address"
@@ -434,7 +437,7 @@ const GuardianModal = ({
               required
               delay={0.6}
             />
-            
+
             <FormField
               label="Fecha de Nacimiento"
               name="fechaNacimiento"
@@ -446,9 +449,11 @@ const GuardianModal = ({
               error={errors.fechaNacimiento || asyncErrors.fechaNacimiento}
               touched={touched.fechaNacimiento}
               required
+              minAge={18}
+              maxAge={100}
               delay={0.6}
             />
-            
+
             {/* Estado - Solo visible en modo editar */}
             {isEditing && (
               <FormField
@@ -481,7 +486,6 @@ const GuardianModal = ({
             </button>
             <button
               onClick={() => {
-                console.log("🟡 [GuardianModal] Botón clickeado!");
                 handleSubmit();
               }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"

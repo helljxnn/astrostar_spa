@@ -83,6 +83,18 @@ class EventsService {
   }
 
   /**
+   * Obtener eventos agrupados por trimestre
+   */
+  async getByQuarter() {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/by-quarter`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Obtener datos de referencia (categorías, tipos y patrocinadores)
    */
   async getReferenceData() {
@@ -100,8 +112,8 @@ class EventsService {
   async getActiveEvents() {
     try {
       const response = await apiClient.get(`${this.endpoint}`, {
-        estado: 'Activo',
-        limit: 1000
+        estado: "Activo",
+        limit: 1000,
       });
       return response;
     } catch (error) {

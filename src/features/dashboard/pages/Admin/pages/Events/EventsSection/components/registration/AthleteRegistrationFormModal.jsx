@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
+import SportsCategoriesService from "../../../../Athletes/SportsCategory/services/sportsCategoriesService";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -23,6 +24,9 @@ const AthleteRegistrationFormModal = ({
   const [initialAthletes, setInitialAthletes] = useState([]); // Guardar deportistas iniciales para comparar
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
+  const [displayLimit, setDisplayLimit] = useState(6); // Límite inicial de deportistas a mostrar
+  const [selectedCategories, setSelectedCategories] = useState([]); // Categorías seleccionadas para filtrar
+  const [availableCategories, setAvailableCategories] = useState([]); // Categorías disponibles
   const searchTimeoutRef = useRef(null);
   const hasLoadedRef = useRef(false); // Para evitar cargas múltiples
   const lastEventIdRef = useRef(null); // Para rastrear cambios de evento
@@ -95,6 +99,41 @@ const AthleteRegistrationFormModal = ({
       setLoading(false);
     }
   }, [event?.id]);
+
+  // Cargar categorías deportivas desde el módulo de categorías
+  const loadSportsCategories = useCallback(async () => {
+    try {
+      const response = await SportsCategoriesService.getAll({
+        status: "Activo", // Backend espera "Activo" o "Inactivo" en español
+        limit: 100, // Traer todas las categorías activas
+      });
+
+      // Manejar diferentes formatos de respuesta
+      let categories = [];
+      if (response && response.success && response.data) {
+        categories = response.data.map((cat) => ({
+          id: cat.id,
+          nombre: cat.name,
+        }));
+      } else if (response && Array.isArray(response)) {
+        // Si la respuesta es directamente un array
+        categories = response.map((cat) => ({
+          id: cat.id,
+          nombre: cat.name,
+        }));
+      } else if (response && response.data && Array.isArray(response.data)) {
+        categories = response.data.map((cat) => ({
+          id: cat.id,
+          nombre: cat.name,
+        }));
+      }
+
+      setAvailableCategories(categories);
+    } catch (error) {
+      console.error("Error cargando categorías deportivas:", error);
+      setAvailableCategories([]);
+    }
+  }, []);
 
   // Declarar searchAthletes antes de los useEffect que lo usan
   const searchAthletes = useCallback(
@@ -185,8 +224,9 @@ const AthleteRegistrationFormModal = ({
         setSearchResults([]);
         lastEventIdRef.current = event.id;
 
-        // Cargar deportistas disponibles
+        // Cargar deportistas disponibles y categorías deportivas
         loadAvailableAthletes();
+        loadSportsCategories();
 
         // Modo unificado: siempre cargar deportistas inscritos
         hasLoadedRef.current = true;
@@ -210,7 +250,13 @@ const AthleteRegistrationFormModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, event?.id, loadRegisteredAthletes, loadAvailableAthletes]);
+  }, [
+    isOpen,
+    event?.id,
+    loadRegisteredAthletes,
+    loadAvailableAthletes,
+    loadSportsCategories,
+  ]);
 
   useEffect(() => {
     // Búsqueda con debounce - ahora busca en availableAthletes
@@ -363,7 +409,58 @@ const AthleteRegistrationFormModal = ({
     setSelectedAthletes([]);
     setSearchTerm("");
     setError(null);
+    setDisplayLimit(6); // Reset al cerrar
+    setSelectedCategories([]); // Reset filtros
     onClose();
+  };
+
+  const handleLoadMore = () => {
+    setDisplayLimit((prev) => prev + 6);
+  };
+
+  const toggleCategory = (categoryId) => {
+    setSelectedCategories((prev) =>
+      prev.includes(categoryId)
+        ? prev.filter((id) => id !== categoryId)
+        : [...prev, categoryId],
+    );
+    setDisplayLimit(6); // Reset limit al cambiar filtro
+  };
+
+  const selectAllCategories = () => {
+    if (selectedCategories.length === availableCategories.length) {
+      // Si todas están seleccionadas, deseleccionar todas
+      setSelectedCategories([]);
+    } else {
+      // Seleccionar todas
+      setSelectedCategories(availableCategories.map((cat) => cat.id));
+    }
+    setDisplayLimit(6);
+  };
+
+  const selectAllFiltered = () => {
+    const filtered = getFilteredAthletes();
+    const newSelections = filtered.filter(
+      (athlete) => !selectedAthletes.find((sa) => sa.id === athlete.id),
+    );
+    setSelectedAthletes((prev) => [...prev, ...newSelections]);
+  };
+
+  const getFilteredAthletes = () => {
+    let filtered = availableAthletes.filter(
+      (athlete) => !selectedAthletes.find((sa) => sa.id === athlete.id),
+    );
+
+    // Filtrar por categorías seleccionadas
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((athlete) =>
+        athlete.inscriptions?.some((inscription) =>
+          selectedCategories.includes(inscription.sportsCategory?.id),
+        ),
+      );
+    }
+
+    return filtered;
   };
 
   if (!isOpen) return null;
@@ -390,14 +487,14 @@ const AthleteRegistrationFormModal = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
           margin: "auto",
           maxHeight: "90vh",
           width: "100%",
-          maxWidth: "64rem",
+          maxWidth: "80rem",
         }}
       >
         {/* Header */}
@@ -418,7 +515,7 @@ const AthleteRegistrationFormModal = ({
 
         {/* Search Bar */}
         <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 mb-3">
             {/* Search */}
             <div className="relative flex-1">
               <input
@@ -450,35 +547,82 @@ const AthleteRegistrationFormModal = ({
             </div>
           </div>
 
+          {/* Filtros por categoría */}
+          {availableCategories.length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-gray-700">
+                  Filtrar por categoría:
+                </p>
+                {selectedCategories.length > 0 && (
+                  <button
+                    onClick={() => setSelectedCategories([])}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {/* Botón Todas */}
+                <button
+                  onClick={selectAllCategories}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    selectedCategories.length === availableCategories.length
+                      ? "bg-primary-purple text-white shadow-md"
+                      : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
+                  }`}
+                >
+                  Todas
+                </button>
+                {availableCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => toggleCategory(category.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      selectedCategories.includes(category.id)
+                        ? "bg-primary-purple text-white shadow-md"
+                        : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
+                    }`}
+                  >
+                    {category.nombre}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Botón seleccionar todos filtrados */}
+          {selectedCategories.length > 0 &&
+            getFilteredAthletes().length > 0 && (
+              <button
+                onClick={selectAllFiltered}
+                className="w-full mb-3 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold"
+              >
+                ✓ Seleccionar todos ({getFilteredAthletes().length})
+              </button>
+            )}
+
           {/* Mostrar deportistas disponibles cuando no hay búsqueda */}
-          {searchTerm.length === 0 && availableAthletes.length > 0 && (
+          {searchTerm.length === 0 && selectedCategories.length > 0 && (
             <div className="mt-3">
               <p className="text-xs text-gray-600 mb-2 font-medium">
-                Deportistas disponibles (
-                {
-                  availableAthletes.filter(
-                    (a) => !selectedAthletes.find((sa) => sa.id === a.id),
-                  ).length
-                }
-                )
+                Deportistas disponibles ({getFilteredAthletes().length})
               </p>
-              <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
-                {availableAthletes
-                  .filter(
-                    (athlete) =>
-                      !selectedAthletes.find((sa) => sa.id === athlete.id),
-                  )
+              <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                {getFilteredAthletes()
+                  .slice(0, displayLimit)
                   .map((athlete) => {
                     const rsvpStatus = getRSVPStatus(athlete);
                     return (
                       <div
                         key={athlete.id}
                         onClick={() => handleSelectAthlete(athlete)}
-                        className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                        className="p-2.5 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                               <h4 className="font-semibold text-gray-900 text-sm truncate">
                                 {athlete.user?.firstName}{" "}
                                 {athlete.user?.lastName}
@@ -517,7 +661,7 @@ const AthleteRegistrationFormModal = ({
                                                   inscription.sportsCategory
                                                     ?.id || idx
                                                 }
-                                                className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
+                                                className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-xs font-semibold flex-shrink-0"
                                               >
                                                 {
                                                   inscription.sportsCategory
@@ -526,7 +670,7 @@ const AthleteRegistrationFormModal = ({
                                               </span>
                                             ))}
                                           {uniqueCategories.length > 1 && (
-                                            <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold flex-shrink-0">
+                                            <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold flex-shrink-0">
                                               +{uniqueCategories.length - 1}
                                             </span>
                                           )}
@@ -536,7 +680,7 @@ const AthleteRegistrationFormModal = ({
                                   </>
                                 )}
                               <span
-                                className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
                                   rsvpStatus.color === "gray"
                                     ? "bg-gray-100 text-gray-700"
                                     : rsvpStatus.color === "orange"
@@ -549,7 +693,7 @@ const AthleteRegistrationFormModal = ({
                                 {rsvpStatus.icon} {rsvpStatus.label}
                               </span>
                             </div>
-                            <div className="flex items-center gap-3 text-xs text-gray-600">
+                            <div className="flex items-center gap-2 text-xs text-gray-600">
                               <span className="truncate">
                                 ID: {athlete.user?.identification || "N/A"}
                               </span>
@@ -580,9 +724,46 @@ const AthleteRegistrationFormModal = ({
                       </div>
                     );
                   })}
+                {/* Botón Ver más */}
+                {getFilteredAthletes().length > displayLimit && (
+                  <button
+                    onClick={handleLoadMore}
+                    className="w-full p-2.5 text-sm font-semibold text-primary-purple hover:bg-purple-50 transition-colors border-t border-gray-200"
+                  >
+                    Ver más deportistas (
+                    {getFilteredAthletes().length - displayLimit} restantes)
+                  </button>
+                )}
               </div>
             </div>
           )}
+
+          {/* Mensaje cuando no hay filtros seleccionados */}
+          {searchTerm.length === 0 &&
+            selectedCategories.length === 0 &&
+            !loading && (
+              <div className="mt-3 text-center py-6 bg-white border border-gray-200 rounded-lg">
+                <svg
+                  className="w-12 h-12 text-gray-300 mx-auto mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
+                <p className="text-sm text-gray-600 font-medium">
+                  Selecciona una categoría para ver deportistas
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  O usa el buscador para encontrar deportistas específicos
+                </p>
+              </div>
+            )}
 
           {/* Resultados de búsqueda */}
           <AnimatePresence>
@@ -591,7 +772,7 @@ const AthleteRegistrationFormModal = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+                className="mt-3 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
               >
                 {searchResults.map((athlete) => {
                   const rsvpStatus = getRSVPStatus(athlete);
@@ -599,11 +780,11 @@ const AthleteRegistrationFormModal = ({
                     <div
                       key={athlete.id}
                       onClick={() => handleSelectAthlete(athlete)}
-                      className="p-3 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                      className="p-2.5 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                             <h4 className="font-semibold text-gray-900 text-sm truncate">
                               {athlete.user?.firstName} {athlete.user?.lastName}
                             </h4>
@@ -642,7 +823,7 @@ const AthleteRegistrationFormModal = ({
                                                 inscription.sportsCategory
                                                   ?.id || idx
                                               }
-                                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-semibold flex-shrink-0"
+                                              className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-xs font-semibold flex-shrink-0"
                                             >
                                               {
                                                 inscription.sportsCategory
@@ -651,7 +832,7 @@ const AthleteRegistrationFormModal = ({
                                             </span>
                                           ))}
                                         {uniqueCategories.length > 1 && (
-                                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-semibold flex-shrink-0">
+                                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-semibold flex-shrink-0">
                                             +{uniqueCategories.length - 1}
                                           </span>
                                         )}
@@ -661,7 +842,7 @@ const AthleteRegistrationFormModal = ({
                                 </>
                               )}
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                              className={`px-1.5 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${
                                 rsvpStatus.color === "gray"
                                   ? "bg-gray-100 text-gray-700"
                                   : rsvpStatus.color === "orange"
@@ -731,16 +912,6 @@ const AthleteRegistrationFormModal = ({
               </span>
             </div>
           )}
-
-          {!loading &&
-            searchTerm.length === 0 &&
-            availableAthletes.length === 0 && (
-              <div className="mt-3 text-center py-4">
-                <p className="text-sm text-gray-600">
-                  No hay deportistas disponibles
-                </p>
-              </div>
-            )}
         </div>
 
         {/* Content */}
@@ -785,7 +956,7 @@ const AthleteRegistrationFormModal = ({
                   Deportistas seleccionados ({selectedAthletes.length})
                 </h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
                 <AnimatePresence>
                   {selectedAthletes.map((athlete, index) => {
                     const rsvpStatus = getRSVPStatus(athlete);
@@ -800,16 +971,16 @@ const AthleteRegistrationFormModal = ({
                       >
                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary-purple" />
 
-                        <div className="p-3 pl-4">
-                          <div className="flex flex-col gap-2">
+                        <div className="p-2.5 pl-3.5">
+                          <div className="flex flex-col gap-1.5">
                             <div className="flex items-start justify-between gap-2">
-                              <h4 className="font-bold text-gray-900 text-sm flex-1">
+                              <h4 className="font-bold text-gray-900 text-xs flex-1 leading-tight">
                                 {athlete.user?.firstName}{" "}
                                 {athlete.user?.lastName}
                               </h4>
                               <button
                                 onClick={() => handleRemoveAthlete(athlete.id)}
-                                className="flex-shrink-0 p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                className="flex-shrink-0 p-0.5 text-red-500 hover:bg-red-50 rounded transition-colors"
                                 title="Quitar deportista"
                               >
                                 <FaTimes className="w-3 h-3" />
@@ -844,13 +1015,17 @@ const AthleteRegistrationFormModal = ({
                                     return (
                                       <>
                                         {uniqueCategories
-                                          .slice(0, 2)
+                                          .slice(0, 1)
                                           .map((inscription) => (
                                             <span
                                               key={
                                                 inscription.sportsCategory?.id
                                               }
-                                              className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full text-xs font-medium"
+                                              className="px-1.5 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-medium truncate max-w-[120px]"
+                                              title={
+                                                inscription.sportsCategory
+                                                  ?.nombre
+                                              }
                                             >
                                               {
                                                 inscription.sportsCategory
@@ -858,13 +1033,13 @@ const AthleteRegistrationFormModal = ({
                                               }
                                             </span>
                                           ))}
-                                        {uniqueCategories.length > 2 && (
-                                          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                                            +{uniqueCategories.length - 2}
+                                        {uniqueCategories.length > 1 && (
+                                          <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+                                            +{uniqueCategories.length - 1}
                                           </span>
                                         )}
                                         <span
-                                          className={`px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
+                                          className={`px-1.5 py-0.5 rounded text-[10px] font-semibold flex-shrink-0 ${
                                             rsvpStatus.color === "gray"
                                               ? "bg-gray-100 text-gray-700"
                                               : rsvpStatus.color === "orange"
@@ -882,15 +1057,15 @@ const AthleteRegistrationFormModal = ({
                                 </div>
                               )}
 
-                            <div className="flex flex-col gap-1 text-xs text-gray-600 pt-2 border-t border-gray-100">
-                              <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-0.5 text-[10px] text-gray-600 pt-1.5 border-t border-gray-100">
+                              <div className="flex items-center gap-1.5">
                                 <span className="font-medium">ID:</span>
-                                <span>
+                                <span className="truncate">
                                   {athlete.user?.identification || "N/A"}
                                 </span>
                               </div>
                               {athlete.user?.age && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-1.5">
                                   <span className="font-medium">Edad:</span>
                                   <span>{athlete.user.age} años</span>
                                 </div>

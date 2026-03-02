@@ -18,6 +18,8 @@ export const FormField = ({
   disabled = false,
   helperText,
   isLoading = false,
+  minAge = 5, // Edad mínima por defecto para fechas de nacimiento
+  maxAge = 100, // Edad máxima por defecto para fechas de nacimiento
   ...props
 }) => {
   const isTouched = touched === undefined ? true : touched;
@@ -134,6 +136,22 @@ export const FormField = ({
             onBlur={handleBlur}
             placeholder={placeholder}
             disabled={disabled}
+            // Agregar validación de rango de fechas para campos de fecha de nacimiento
+            {...(type === "date" &&
+            (name === "birthDate" || name === "fechaNacimiento")
+              ? {
+                  min: (() => {
+                    const date = new Date();
+                    date.setFullYear(date.getFullYear() - maxAge);
+                    return date.toISOString().split("T")[0];
+                  })(),
+                  max: (() => {
+                    const date = new Date();
+                    date.setFullYear(date.getFullYear() - minAge);
+                    return date.toISOString().split("T")[0];
+                  })(),
+                }
+              : {})}
             className={`
               w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
               ${
@@ -147,8 +165,15 @@ export const FormField = ({
             {...props}
           />
           {isLoading && (
-            <div key="document-loader" className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none">
-              <div className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin" role="status" aria-label="Validando"></div>
+            <div
+              key="document-loader"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none"
+            >
+              <div
+                className="w-5 h-5 border-2 border-[#B595FF] border-t-transparent rounded-full animate-spin"
+                role="status"
+                aria-label="Validando"
+              ></div>
             </div>
           )}
         </div>

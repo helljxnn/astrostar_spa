@@ -1,7 +1,16 @@
 import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaUserShield, FaPlus, FaSearch, FaEye, FaTimes, FaInfoCircle, FaExclamationCircle, FaTrash } from "react-icons/fa";
+import {
+  FaUserShield,
+  FaPlus,
+  FaSearch,
+  FaEye,
+  FaTimes,
+  FaInfoCircle,
+  FaExclamationCircle,
+  FaTrash,
+} from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import {
@@ -45,30 +54,30 @@ const parentescoOptions = [
 
 // Mapeo de parentesco del backend (inglés) al frontend (español)
 const parentescoBackendToFrontend = {
-  'Mother': 'Madre',
-  'Father': 'Padre',
-  'Grandparent': 'Abuelo/a',
-  'Uncle_Aunt': 'Tío/a',
-  'Sibling': 'Hermano/a',
-  'Cousin': 'Primo/a',
-  'Legal_Guardian': 'Tutor/a Legal',
-  'Neighbor': 'Vecino/a',
-  'Family_Friend': 'Amigo/a de la familia',
-  'Other': 'Otro'
+  Mother: "Madre",
+  Father: "Padre",
+  Grandparent: "Abuelo/a",
+  Uncle_Aunt: "Tío/a",
+  Sibling: "Hermano/a",
+  Cousin: "Primo/a",
+  Legal_Guardian: "Tutor/a Legal",
+  Neighbor: "Vecino/a",
+  Family_Friend: "Amigo/a de la familia",
+  Other: "Otro",
 };
 
 // Mapeo inverso: del frontend (español) al backend (inglés)
 const parentescoFrontendToBackend = {
-  'Madre': 'Mother',
-  'Padre': 'Father',
-  'Abuelo/a': 'Grandparent',
-  'Tío/a': 'Uncle_Aunt',
-  'Hermano/a': 'Sibling',
-  'Primo/a': 'Cousin',
-  'Tutor/a Legal': 'Legal_Guardian',
-  'Vecino/a': 'Neighbor',
-  'Amigo/a de la familia': 'Family_Friend',
-  'Otro': 'Other'
+  Madre: "Mother",
+  Padre: "Father",
+  "Abuelo/a": "Grandparent",
+  "Tío/a": "Uncle_Aunt",
+  "Hermano/a": "Sibling",
+  "Primo/a": "Cousin",
+  "Tutor/a Legal": "Legal_Guardian",
+  "Vecino/a": "Neighbor",
+  "Amigo/a de la familia": "Family_Friend",
+  Otro: "Other",
 };
 
 // ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
@@ -90,7 +99,8 @@ const AthleteModal = ({
   isEnrollmentMode = false,
   loadGuardians,
 }) => {
-  const isEditing = (mode === "edit" || athleteToEdit !== null) && !isEnrollmentMode;
+  const isEditing =
+    (mode === "edit" || athleteToEdit !== null) && !isEnrollmentMode;
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
   const [currentAge, setCurrentAge] = useState(null);
@@ -100,7 +110,10 @@ const AthleteModal = ({
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   // Hook para validación de documento en tiempo real
-  const excludeUserId = (isEditing && !isEnrollmentMode && athleteToEdit?.userId) ? athleteToEdit.userId : null;
+  const excludeUserId =
+    isEditing && !isEnrollmentMode && athleteToEdit?.userId
+      ? athleteToEdit.userId
+      : null;
   // En modo matrícula (isEnrollmentMode), saltar la verificación de inscripciones pendientes
   // Solo verificar si ya está matriculado como deportista
   const skipInscriptionCheck = isEnrollmentMode;
@@ -142,15 +155,13 @@ const AthleteModal = ({
       acudiente: "",
       parentesco: "",
     },
-    athleteValidationRules
+    athleteValidationRules,
   );
 
   // Debug: Ver qué tipos de documento se están recibiendo
   useEffect(() => {
     if (isOpen && referenceData.documentTypes) {
-      console.log('🔍 AthleteModal - Tipos de documento recibidos:', referenceData.documentTypes);
-      console.log('📊 Total:', referenceData.documentTypes.length);
-      console.log('📋 Nombres:', referenceData.documentTypes.map(dt => dt.name));
+      console.log("📊 Total:", referenceData.documentTypes.length);
     }
   }, [isOpen, referenceData.documentTypes]);
 
@@ -171,7 +182,7 @@ const AthleteModal = ({
   // Función para manejar cambio de email y marcar como touched inmediatamente
   const handleEmailChange = (e) => {
     // Marcar como touched PRIMERO para activar validación instantánea
-    setTouched(prev => ({ ...prev, email: true }));
+    setTouched((prev) => ({ ...prev, email: true }));
     // Luego actualizar el valor
     handleChange(e);
   };
@@ -193,9 +204,9 @@ const AthleteModal = ({
       if (guardianExists) {
         console.log('✅ [AthleteModal] Asignando acudiente recién creado:', newlyCreatedGuardianId);
         handleChange({
-          target: { 
-            name: "acudiente", 
-            value: newlyCreatedGuardianId.toString() 
+          target: {
+            name: "acudiente",
+            value: newlyCreatedGuardianId.toString(),
           },
         });
       }
@@ -214,7 +225,7 @@ const AthleteModal = ({
   useEffect(() => {
     if (values.documentTypeId && values.identification) {
       // Marcar el campo como touched para que se muestre el error
-      setTouched(prev => ({ ...prev, identification: true }));
+      setTouched((prev) => ({ ...prev, identification: true }));
     }
   }, [values.documentTypeId, setTouched]);
 
@@ -222,25 +233,28 @@ const AthleteModal = ({
   useEffect(() => {
     if (!values.identification || values.identification.length < 6) {
       clearDocumentValidation();
-      setAsyncErrors(prev => ({ ...prev, identification: null }));
+      setAsyncErrors((prev) => ({ ...prev, identification: null }));
       return;
     }
 
     // NO VALIDAR en modo edición normal (desde tabla de deportistas)
     // SÍ VALIDAR en modo matrícula (isEnrollmentMode) y en modo creación
     if (isEditing && !isEnrollmentMode) {
-      console.log('⚠️ [AthleteModal] Validación de documento deshabilitada en modo edición normal');
       clearDocumentValidation();
-      setAsyncErrors(prev => ({ ...prev, identification: null }));
-      if (errors.identification && errors.identification.includes('ya está registrado')) {
-        setErrors(prev => ({ ...prev, identification: '' }));
+      setAsyncErrors((prev) => ({ ...prev, identification: null }));
+      if (
+        errors.identification &&
+        errors.identification.includes("ya está registrado")
+      ) {
+        setErrors((prev) => ({ ...prev, identification: "" }));
       }
       return;
     }
+    console.log(
+      "🔍 [AthleteModal] Documento a validar:",
+      values.identification,
+    );
 
-    console.log('🔍 [AthleteModal] Validando documento - Modo:', isEnrollmentMode ? 'matrícula' : 'creación');
-    console.log('🔍 [AthleteModal] Documento a validar:', values.identification);
-    
     // Usar el hook de validación con debounce
     validateDocumentDebounced(values.identification, 6);
   }, [values.identification, isEditing, isEnrollmentMode]); // ✅ Removidas dependencias problemáticas
@@ -250,12 +264,21 @@ const AthleteModal = ({
     // Solo actualizar si estamos validando o acabamos de terminar
     if (documentExists) {
       // Documento existe - mostrar error
-      setAsyncErrors(prev => ({ ...prev, identification: documentValidationMessage }));
-      setErrors(prev => ({ ...prev, identification: documentValidationMessage }));
-      setTouched(prev => ({ ...prev, identification: true }));
-    } else if (!isCheckingDocumentValidation && values.identification.length >= 6) {
+      setAsyncErrors((prev) => ({
+        ...prev,
+        identification: documentValidationMessage,
+      }));
+      setErrors((prev) => ({
+        ...prev,
+        identification: documentValidationMessage,
+      }));
+      setTouched((prev) => ({ ...prev, identification: true }));
+    } else if (
+      !isCheckingDocumentValidation &&
+      values.identification.length >= 6
+    ) {
       // Validación completada y documento NO existe - limpiar error solo si es de validación async
-      setAsyncErrors(prev => ({ ...prev, identification: null }));
+      setAsyncErrors((prev) => ({ ...prev, identification: null }));
       // Solo limpiar el error si es un error de documento duplicado
       setErrors(prev => {
         if (prev.identification && (
@@ -276,8 +299,8 @@ const AthleteModal = ({
   useEffect(() => {
     const checkEmail = async () => {
       // No validar si el email está vacío o no tiene formato básico de email
-      if (!values.email || !values.email.includes('@')) {
-        setAsyncErrors(prev => ({ ...prev, email: null }));
+      if (!values.email || !values.email.includes("@")) {
+        setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
 
@@ -287,7 +310,7 @@ const AthleteModal = ({
       if (!emailRegex.test(values.email)) {
         // Si el formato es inválido, no hacer la consulta al backend
         // El error de formato ya lo maneja la validación síncrona
-        setAsyncErrors(prev => ({ ...prev, email: null }));
+        setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
 
@@ -300,32 +323,33 @@ const AthleteModal = ({
 
       setCheckingEmail(true);
       try {
-        console.log('🔍 [AthleteModal] Validando email - Modo:', isEnrollmentMode ? 'matrícula' : isEditing ? 'edición' : 'creación');
-        console.log('🔍 [AthleteModal] Email a validar:', values.email);
-        console.log('🔍 [AthleteModal] Email original:', athleteToEdit?.email);
-        console.log('🔍 [AthleteModal] isEditing:', isEditing, 'isEnrollmentMode:', isEnrollmentMode);
-        
-        // En modo edición, excluir el userId del deportista actual
-        // En modo matrícula o creación, no excluir a nadie
-        const excludeUserId = (isEditing && !isEnrollmentMode && athleteToEdit?.userId) ? athleteToEdit.userId : null;
-        
-        console.log('🔍 [AthleteModal] excludeUserId:', excludeUserId);
-        console.log('🔍 [AthleteModal] athleteToEdit completo:', athleteToEdit);
-        
-        const result = await AthletesService.checkEmailAvailability(
-          values.email,
-          excludeUserId
+        console.log("🔍 [AthleteModal] Email a validar:", values.email);
+        console.log(
+          "🔍 [AthleteModal] isEditing:",
+          isEditing,
+          "isEnrollmentMode:",
+          isEnrollmentMode,
         );
 
-        console.log('🔍 [AthleteModal] Resultado validación email:', result);
-        console.log('🔍 [AthleteModal] result.available:', result.available);
+        // En modo edición, excluir el userId del deportista actual
+        // En modo matrícula o creación, no excluir a nadie
+        const excludeUserId =
+          isEditing && !isEnrollmentMode && athleteToEdit?.userId
+            ? athleteToEdit.userId
+            : null;
+        console.log("🔍 [AthleteModal] athleteToEdit completo:", athleteToEdit);
+
+        const result = await AthletesService.checkEmailAvailability(
+          values.email,
+          excludeUserId,
+        );
+        console.log("🔍 [AthleteModal] result.available:", result.available);
 
         if (!result.available) {
           const errorMsg = `Este email ya está registrado`;
-          console.log('❌ [AthleteModal] Email duplicado, mostrando error');
-          setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
-          setErrors(prev => ({ ...prev, email: errorMsg }));
-          setTouched(prev => ({ ...prev, email: true }));
+          setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
+          setErrors((prev) => ({ ...prev, email: errorMsg }));
+          setTouched((prev) => ({ ...prev, email: true }));
         } else {
           console.log('✅ [AthleteModal] Email disponible, limpiando errores');
           setAsyncErrors(prev => ({ ...prev, email: null }));
@@ -339,11 +363,14 @@ const AthleteModal = ({
           });
         }
       } catch (error) {
-        console.error('❌ [AthleteModal] Error verificando email:', error);
-        console.error('❌ [AthleteModal] Error completo:', error.message, error.stack);
+        console.error("❌ [AthleteModal] Error verificando email:", error);
+        console.error(
+          "❌ [AthleteModal] Error completo:",
+          error.message,
+          error.stack,
+        );
       } finally {
         setCheckingEmail(false);
-        console.log('🔍 [AthleteModal] Verificación de email completada');
       }
     };
 
@@ -351,9 +378,10 @@ const AthleteModal = ({
     // 1. El campo ya fue tocado (touched.email)
     // 2. Estamos en modo matrícula (isEnrollmentMode)
     // 3. Estamos en modo edición (isEditing)
-    const shouldValidateInstantly = touched.email || isEnrollmentMode || isEditing;
+    const shouldValidateInstantly =
+      touched.email || isEnrollmentMode || isEditing;
     const delay = shouldValidateInstantly ? 0 : 300;
-    
+
     const timeoutId = setTimeout(checkEmail, delay);
     return () => clearTimeout(timeoutId);
   }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // ✅ Removidas dependencias problemáticas
@@ -377,42 +405,43 @@ const AthleteModal = ({
       
       // Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
-      if (parentescoFrontend && parentescoBackendToFrontend[parentescoFrontend]) {
+      if (
+        parentescoFrontend &&
+        parentescoBackendToFrontend[parentescoFrontend]
+      ) {
         parentescoFrontend = parentescoBackendToFrontend[parentescoFrontend];
       }
-      
-      console.log('🔵 [AthleteModal] Parentesco convertido a español:', parentescoFrontend);
-      
       // Separar nombres y apellidos si vienen del landing (formato: "Nombre1 Nombre2" y "Apellido1 Apellido2")
       let firstName = athleteToEdit.firstName || "";
       let middleName = athleteToEdit.middleName || "";
       let lastName = athleteToEdit.lastName || "";
       let secondLastName = athleteToEdit.secondLastName || "";
-      
+
       // Si viene del landing (tiene "nombres" y "apellidos" en lugar de firstName/lastName)
       if (athleteToEdit.nombres && !athleteToEdit.firstName) {
         const nombres = athleteToEdit.nombres.trim().split(/\s+/);
         firstName = nombres[0] || "";
         middleName = nombres.slice(1).join(" ") || "";
       }
-      
+
       if (athleteToEdit.apellidos && !athleteToEdit.lastName) {
         const apellidos = athleteToEdit.apellidos.trim().split(/\s+/);
         lastName = apellidos[0] || "";
         secondLastName = apellidos.slice(1).join(" ") || "";
       }
-      
-      console.log('🔵 [AthleteModal] Nombres procesados:', { firstName, middleName, lastName, secondLastName });
-      console.log('🔵 [AthleteModal] Categoría recibida:', athleteToEdit.categoria);
-      console.log('🔵 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories?.map(c => c.name));
-      
+      console.log(
+        "🔵 [AthleteModal] Categoría recibida:",
+        athleteToEdit.categoria,
+      );
       const newValues = {
         firstName: firstName,
         middleName: middleName,
         lastName: lastName,
         secondLastName: secondLastName,
-        documentTypeId: athleteToEdit.documentTypeId || athleteToEdit.tipoDocumento || "",
-        identification: athleteToEdit.identification || athleteToEdit.numeroDocumento || "",
+        documentTypeId:
+          athleteToEdit.documentTypeId || athleteToEdit.tipoDocumento || "",
+        identification:
+          athleteToEdit.identification || athleteToEdit.numeroDocumento || "",
         email: athleteToEdit.email || athleteToEdit.correo || "",
         phoneNumber: athleteToEdit.phoneNumber || athleteToEdit.telefono || "",
         address: athleteToEdit.address || athleteToEdit.direccion || "",
@@ -420,32 +449,32 @@ const AthleteModal = ({
         age: calculateAge(birthDate).toString(),
         categoria: athleteToEdit.categoria || "",
         // Si estamos en modo matrícula, siempre usar "Activo", de lo contrario usar el estado del atleta
-        estado: isEnrollmentMode ? "Activo" : (athleteToEdit.estado || "Activo"),
+        estado: isEnrollmentMode ? "Activo" : athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
         parentesco: parentescoFrontend,
       };
-      
+
       setValues(newValues);
-      
+
       setHasDateOfBirth(!!birthDate);
-      
+
       // En modo edición, marcar email como touched para activar validación instantánea
       if (isEditing && !isEnrollmentMode) {
-        setTouched(prev => ({ ...prev, email: true }));
+        setTouched((prev) => ({ ...prev, email: true }));
       }
-      
+
       // Si el parentesco no está en las opciones, es un "Otro" personalizado
-      if (parentescoFrontend && !parentescoOptions.some(opt => opt.value === parentescoFrontend)) {
+      if (
+        parentescoFrontend &&
+        !parentescoOptions.some((opt) => opt.value === parentescoFrontend)
+      ) {
         setOtroParentesco(parentescoFrontend);
-        setValues(prev => ({ ...prev, parentesco: "Otro" }));
+        setValues((prev) => ({ ...prev, parentesco: "Otro" }));
       }
-      
+
       // ✅ VALIDACIÓN AUTOMÁTICA: Marcar todos los campos como touched y validar
       if (isEnrollmentMode) {
-        console.log('🔍 [AthleteModal] Activando validaciones automáticas para inscripción...');
-        console.log('🔍 [AthleteModal] Email a validar:', newValues.email);
-        console.log('🔍 [AthleteModal] Documento a validar:', newValues.identification);
-        
+        console.log("🔍 [AthleteModal] Email a validar:", newValues.email);
         // Marcar todos los campos como touched INMEDIATAMENTE
         const allTouched = {
           firstName: true,
@@ -462,79 +491,79 @@ const AthleteModal = ({
           acudiente: true,
           parentesco: true,
         };
-        
+
         setTouched(allTouched);
-        
+
         // Ejecutar validaciones asíncronas INMEDIATAMENTE (sin setTimeout)
         (async () => {
-          console.log('🔍 [AthleteModal] Iniciando validaciones asíncronas...');
-          
           // Validar documento - Verificar en TODOS los usuarios
-          if (newValues.identification && newValues.identification.length >= 6) {
-            console.log('🔍 [AthleteModal] Validando documento:', newValues.identification);
+          if (
+            newValues.identification &&
+            newValues.identification.length >= 6
+          ) {
             try {
               // En modo matrícula desde landing, no hay usuario previo, así que no excluir nada
-              const result = await AthletesService.checkIdentificationAvailability(
-                newValues.identification,
-                null
-              );
-              
-              console.log('🔍 [AthleteModal] Resultado validación documento:', result);
-              
+              const result =
+                await AthletesService.checkIdentificationAvailability(
+                  newValues.identification,
+                  null,
+                );
               if (!result.available) {
                 const errorMsg = `Este documento ya está registrado`;
-                console.log('❌ [AthleteModal] Documento duplicado:', errorMsg);
-                setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
-                setErrors(prev => ({ ...prev, identification: errorMsg }));
+                setAsyncErrors((prev) => ({
+                  ...prev,
+                  identification: errorMsg,
+                }));
+                setErrors((prev) => ({ ...prev, identification: errorMsg }));
               } else {
-                console.log('✅ [AthleteModal] Documento disponible');
-                setAsyncErrors(prev => ({ ...prev, identification: null }));
+                setAsyncErrors((prev) => ({ ...prev, identification: null }));
               }
             } catch (error) {
-              console.error('❌ [AthleteModal] Error verificando documento:', error);
+              console.error(
+                "❌ [AthleteModal] Error verificando documento:",
+                error,
+              );
             }
           }
-          
+
           // Validar email - Verificar en TODOS los usuarios
           // Primero validar formato antes de consultar al backend
           // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
           const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-          
-          if (newValues.email && newValues.email.includes('@')) {
-            console.log('🔍 [AthleteModal] Validando email:', newValues.email);
-            console.log('🔍 [AthleteModal] Email pasa regex?', emailRegex.test(newValues.email));
-            
+
+          if (newValues.email && newValues.email.includes("@")) {
+            console.log(
+              "🔍 [AthleteModal] Email pasa regex?",
+              emailRegex.test(newValues.email),
+            );
+
             if (emailRegex.test(newValues.email)) {
               try {
                 // En modo matrícula desde landing, no hay usuario previo, así que no excluir nada
                 const result = await AthletesService.checkEmailAvailability(
                   newValues.email,
-                  null
+                  null,
                 );
-                
-                console.log('🔍 [AthleteModal] Resultado validación email:', result);
-                
                 if (!result.available) {
                   const errorMsg = `Este email ya está registrado`;
-                  console.log('❌ [AthleteModal] Email duplicado:', errorMsg);
-                  setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
-                  setErrors(prev => ({ ...prev, email: errorMsg }));
+                  setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
+                  setErrors((prev) => ({ ...prev, email: errorMsg }));
                 } else {
-                  console.log('✅ [AthleteModal] Email disponible');
-                  setAsyncErrors(prev => ({ ...prev, email: null }));
+                  setAsyncErrors((prev) => ({ ...prev, email: null }));
                 }
               } catch (error) {
-                console.error('❌ [AthleteModal] Error verificando email:', error);
+                console.error(
+                  "❌ [AthleteModal] Error verificando email:",
+                  error,
+                );
               }
             } else {
-              console.log('❌ [AthleteModal] Email no pasa validación de formato');
               // El error de formato ya lo maneja la validación síncrona
             }
           }
-          
+
           // ✅ VALIDAR TELÉFONO INMEDIATAMENTE con los nuevos valores
-          console.log('🔍 [AthleteModal] Validando teléfono:', newValues.phoneNumber);
-          validateFields(['phoneNumber'], newValues);
+          validateFields(["phoneNumber"], newValues);
         })();
       }
     } else if (isOpen && !isEditing && !isEnrollmentMode) {
@@ -563,31 +592,25 @@ const AthleteModal = ({
 
   const handleParentescoChange = (e) => {
     const { name, value } = e.target;
-    console.log('🔵 [AthleteModal] Parentesco seleccionado:', value);
-    
     // Actualizar el valor
     handleChange(e);
-    
+
     // Limpiar el campo "Otro" si no es necesario
     if (value !== "Otro") {
       setOtroParentesco("");
     }
   };
 
-
-
-
-
   const filteredGuardians = guardians.filter(
     (guardian) =>
       guardian.nombreCompleto
         ?.toLowerCase()
         .includes(guardianSearchTerm.toLowerCase()) ||
-      guardian.identificacion?.includes(guardianSearchTerm)
+      guardian.identificacion?.includes(guardianSearchTerm),
   );
 
   const selectedGuardian = guardians.find(
-    (g) => g.id?.toString() === values.acudiente?.toString()
+    (g) => g.id?.toString() === values.acudiente?.toString(),
   );
 
   const isMinor = currentAge !== null && currentAge < 18;
@@ -620,10 +643,7 @@ const AthleteModal = ({
     }));
 
     if (hasDateOfBirth && !isAcudienteRequired) {
-      return [
-        { value: "", label: "Sin acudiente" },
-        ...baseOptions
-      ];
+      return [{ value: "", label: "Sin acudiente" }, ...baseOptions];
     }
 
     return baseOptions;
@@ -633,30 +653,26 @@ const AthleteModal = ({
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-
-    console.log('🔵 [AthleteModal] handleSubmit iniciado');
-    console.log('🔵 [AthleteModal] Valores actuales:', values);
+    console.log("🔵 [AthleteModal] Valores actuales:", values);
 
     // Marcar todos los campos como tocados para mostrar errores
     const allTouched = {};
     Object.keys(athleteValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
-
-    console.log('🔵 [AthleteModal] Validando todos los campos...');
     const isValid = validateAllFields();
-    console.log('🔵 [AthleteModal] Resultado de validación:', isValid);
-
     if (!isValid) {
-      console.log('❌ [AthleteModal] Validación falló, errores:', errors);
       return;
     }
 
     // Validación especial para "Otro" parentesco
-    if (values.acudiente && values.parentesco === "Otro" && !otroParentesco.trim()) {
-      console.log('❌ [AthleteModal] Falta especificar "Otro" parentesco');
+    if (
+      values.acudiente &&
+      values.parentesco === "Otro" &&
+      !otroParentesco.trim()
+    ) {
       showErrorAlert(
         "Parentesco requerido",
-        "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'."
+        "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'.",
       );
       return;
     }
@@ -666,23 +682,20 @@ const AthleteModal = ({
       ageValue !== "" && !Number.isNaN(Number(ageValue))
         ? Number(ageValue)
         : null;
-    
-    console.log('🔍 [AthleteModal] Validando categoría por edad...');
-    console.log('🔍 [AthleteModal] Edad calculada:', ageNumber);
-    console.log('🔍 [AthleteModal] Categoría seleccionada:', values.categoria);
-    console.log('🔍 [AthleteModal] Categorías disponibles:', referenceData.sportsCategories);
-    
+    console.log("🔍 [AthleteModal] Edad calculada:", ageNumber);
+    console.log(
+      "🔍 [AthleteModal] Categorías disponibles:",
+      referenceData.sportsCategories,
+    );
+
     const selectedCategory = findCategoryByName(
       referenceData.sportsCategories || [],
-      values.categoria
+      values.categoria,
     );
-    
-    console.log('🔍 [AthleteModal] Categoría encontrada:', selectedCategory);
-    
     if (values.categoria && !selectedCategory) {
       showErrorAlert(
         "Categoria invalida",
-        "La categoria seleccionada no existe. Por favor, selecciona una categoria valida."
+        "La categoria seleccionada no existe. Por favor, selecciona una categoria valida.",
       );
       return;
     }
@@ -770,21 +783,23 @@ const AthleteModal = ({
 
     try {
       const finalParentesco = getFinalParentesco();
-      
+
       // Convertir parentesco del frontend (español) al backend (inglés)
       let parentescoBackend = finalParentesco;
       if (parentescoBackend && parentescoFrontendToBackend[parentescoBackend]) {
         parentescoBackend = parentescoFrontendToBackend[parentescoBackend];
       }
-      
-      console.log('🔵 [AthleteModal] Parentesco español:', finalParentesco);
-      console.log('🔵 [AthleteModal] Parentesco convertido a inglés:', parentescoBackend);
-      
+      console.log(
+        "🔵 [AthleteModal] Parentesco convertido a inglés:",
+        parentescoBackend,
+      );
+
       // Convertir acudiente a número o null
-      const acudienteId = values.acudiente && values.acudiente.toString().trim() 
-        ? parseInt(values.acudiente) 
-        : null;
-      
+      const acudienteId =
+        values.acudiente && values.acudiente.toString().trim()
+          ? parseInt(values.acudiente)
+          : null;
+
       // Preparar datos base del deportista
       const athleteData = {
         firstName: values.firstName.trim(),
@@ -800,44 +815,31 @@ const AthleteModal = ({
         categoria: values.categoria,
         estado: values.estado,
       };
-      
+
       // Solo agregar acudiente y parentesco si hay un acudiente seleccionado
       if (acudienteId) {
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
       }
-
-      console.log('🔵 [AthleteModal] Datos del deportista preparados:', athleteData);
-
       if (isEditing) {
-        console.log('🔵 [AthleteModal] Modo edición, llamando onUpdate...');
-        
         // Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
-        console.log('🔵 [AthleteModal] Email cambió?', emailChanged, 'Anterior:', athleteToEdit.email, 'Nuevo:', values.email.trim());
-        
         const updateData = {
           ...athleteData,
           id: athleteToEdit.id,
           shouldUpdateInscription:
-            values.estado === "Inactivo" &&
-            athleteToEdit.estado !== "Inactivo",
+            values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo",
           emailChanged, // Indicar si cambió el email para reenviar credenciales
         };
         await onUpdate(updateData);
       } else {
-        console.log('🔵 [AthleteModal] Modo creación, llamando onSave...');
-        
         // Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
         if (isEnrollmentMode && athleteToEdit?.id) {
-          console.log('🔵 [AthleteModal] Modo matrícula desde inscripción, ID:', athleteToEdit.id);
           athleteData.preRegistrationId = athleteToEdit.id;
         }
-        
+
         await onSave(athleteData);
       }
-
-      console.log('✅ [AthleteModal] Guardado exitoso, cerrando modal...');
       resetForm();
       setOtroParentesco("");
       setHasDateOfBirth(false);
@@ -849,13 +851,13 @@ const AthleteModal = ({
   };
 
   const handleCreateGuardian = () => {
-    console.log("🟣 [AthleteModal] handleCreateGuardian ejecutado");
-    console.log("🟣 [AthleteModal] onCreateGuardian existe?", typeof onCreateGuardian);
+    console.log(
+      "🟣 [AthleteModal] onCreateGuardian existe?",
+      typeof onCreateGuardian,
+    );
     if (onCreateGuardian) {
-      console.log("🟣 [AthleteModal] Llamando a onCreateGuardian...");
       onCreateGuardian();
     } else {
-      console.log("❌ [AthleteModal] onCreateGuardian NO existe!");
     }
   };
 
@@ -867,7 +869,7 @@ const AthleteModal = ({
 
   const handleDeleteGuardianClick = async (guardianToDelete = null) => {
     const guardian = guardianToDelete || selectedGuardian;
-    
+
     if (!guardian || !onDeleteGuardian) return;
 
     // Verificar si el acudiente tiene deportistas menores asignados ANTES de mostrar el diálogo
@@ -899,37 +901,37 @@ const AthleteModal = ({
     }
 
     const isCurrentGuardian = values.acudiente === guardian.id?.toString();
-    
+
     // Mensaje simple y directo
     const confirmMessage = `¿Eliminar a ${guardian.nombreCompleto}?`;
 
     // Confirmar eliminación
     const result = await showDeleteAlert(
       "Confirmar eliminación",
-      confirmMessage
+      confirmMessage,
     );
 
     if (result.isConfirmed) {
       // Intentar eliminar
       const success = await onDeleteGuardian(guardian);
-      
+
       if (success) {
         // Si era el acudiente actual, desvincularlo
         if (isCurrentGuardian) {
           handleChange({
             target: {
               name: "acudiente",
-              value: ""
-            }
+              value: "",
+            },
           });
-          
+
           handleChange({
             target: {
               name: "parentesco",
-              value: ""
-            }
+              value: "",
+            },
           });
-          
+
           setOtroParentesco("");
           
           // Si es menor de edad, marcar campo como touched y mostrar error
@@ -1057,10 +1059,10 @@ const AthleteModal = ({
             <FaTimes size={16} />
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-            {isEditing 
-              ? "Editar Deportista" 
-              : isEnrollmentMode 
-                ? "Crear Matrícula" 
+            {isEditing
+              ? "Editar Deportista"
+              : isEnrollmentMode
+                ? "Crear Matrícula"
                 : "Crear Deportista"}
           </h2>
           {isEditing && (
@@ -1103,7 +1105,7 @@ const AthleteModal = ({
                 <DocumentField
                   documentType={
                     referenceData.documentTypes.find(
-                      (dt) => dt.id === parseInt(values.documentTypeId)
+                      (dt) => dt.id === parseInt(values.documentTypeId),
                     )?.name
                   }
                   value={values.identification}
@@ -1281,9 +1283,9 @@ const AthleteModal = ({
                   name="categoria"
                   type="select"
                   placeholder="Selecciona la categoría"
-                  options={referenceData.sportsCategories.map(cat => ({
+                  options={referenceData.sportsCategories.map((cat) => ({
                     value: cat.name,
-                    label: cat.name
+                    label: cat.name,
                   }))}
                   value={values.categoria}
                   onChange={handleChange}
@@ -1323,10 +1325,10 @@ const AthleteModal = ({
               !hasDateOfBirth
                 ? "bg-gray-50 border-gray-200"
                 : isAcudienteRequired
-                ? "bg-blue-50 border-blue-200"
-                : values.acudiente
-                ? "bg-purple-50 border-purple-200"
-                : "bg-green-50 border-green-200"
+                  ? "bg-blue-50 border-blue-200"
+                  : values.acudiente
+                    ? "bg-purple-50 border-purple-200"
+                    : "bg-green-50 border-green-200"
             }`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1434,14 +1436,18 @@ const AthleteModal = ({
                             >
                               <button
                                 type="button"
-                                onClick={() => handleSelectGuardianFromSearch(guardian)}
+                                onClick={() =>
+                                  handleSelectGuardianFromSearch(guardian)
+                                }
                                 className="flex-1 text-left"
                               >
                                 <div className="font-medium text-gray-800 text-sm">
                                   {guardian.nombreCompleto}
                                 </div>
                                 <div className="text-xs text-gray-600">
-                                  {guardian.tipoDocumento}: {guardian.identificacion} • {athleteCount} deportista(s)
+                                  {guardian.tipoDocumento}:{" "}
+                                  {guardian.identificacion} • {athleteCount}{" "}
+                                  deportista(s)
                                 </div>
                               </button>
                               <button
@@ -1463,7 +1469,11 @@ const AthleteModal = ({
                                     ? "text-red-500 hover:bg-red-50"
                                     : "text-gray-300 cursor-not-allowed"
                                 }`}
-                                title={canDelete ? "Eliminar acudiente" : `Tiene ${athleteCount} deportistas asignados`}
+                                title={
+                                  canDelete
+                                    ? "Eliminar acudiente"
+                                    : `Tiene ${athleteCount} deportistas asignados`
+                                }
                               >
                                 <FaTrash size={12} />
                               </button>
@@ -1488,7 +1498,10 @@ const AthleteModal = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Acudiente {isAcudienteRequired && <span className="text-red-500">*</span>}
+                  Acudiente{" "}
+                  {isAcudienteRequired && (
+                    <span className="text-red-500">*</span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -1579,8 +1592,13 @@ const AthleteModal = ({
                           animate={{ opacity: 1, y: 0 }}
                           className="mt-1 flex items-start gap-1 p-2 bg-red-50 border border-red-200 rounded"
                         >
-                          <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0" size={12} />
-                          <p className="text-red-600 text-xs">Debes especificar el tipo de parentesco</p>
+                          <FaExclamationCircle
+                            className="text-red-500 mt-0.5 flex-shrink-0"
+                            size={12}
+                          />
+                          <p className="text-red-600 text-xs">
+                            Debes especificar el tipo de parentesco
+                          </p>
                         </motion.div>
                       )}
                     </motion.div>
@@ -1600,10 +1618,12 @@ const AthleteModal = ({
                   <div className="flex justify-between items-start">
                     <div className="space-y-1 text-xs flex-1">
                       <div>
-                        <strong>Nombre:</strong> {selectedGuardian.nombreCompleto}
+                        <strong>Nombre:</strong>{" "}
+                        {selectedGuardian.nombreCompleto}
                       </div>
                       <div>
-                        <strong>Documento:</strong> {selectedGuardian.tipoDocumento} -{" "}
+                        <strong>Documento:</strong>{" "}
+                        {selectedGuardian.tipoDocumento} -{" "}
                         {selectedGuardian.identificacion}
                       </div>
                       <div>
@@ -1615,9 +1635,7 @@ const AthleteModal = ({
                       {values.parentesco && (
                         <div>
                           <strong>Parentesco:</strong>{" "}
-                          <span>
-                            {getFinalParentesco()}
-                          </span>
+                          <span>{getFinalParentesco()}</span>
                         </div>
                       )}
                     </div>
@@ -1632,7 +1650,8 @@ const AthleteModal = ({
                 animate={{ opacity: 1 }}
                 className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800"
               >
-                Esta deportista es mayor de edad. El acudiente es opcional pero puede ser asignado si es necesario.
+                Esta deportista es mayor de edad. El acudiente es opcional pero
+                puede ser asignado si es necesario.
               </motion.div>
             )}
           </motion.div>
@@ -1663,14 +1682,15 @@ const AthleteModal = ({
                     Creación automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la deportista, se generará automáticamente con estado <strong>"Activo"</strong> y una
-                    matrícula inicial con estado <strong>"Vigente"</strong>.
+                    Al crear la deportista, se generará automáticamente con
+                    estado <strong>"Activo"</strong> y una matrícula inicial con
+                    estado <strong>"Vigente"</strong>.
                   </p>
                 </div>
               </div>
             </motion.div>
           )}
-          
+
           {!isEditing && isEnrollmentMode && (
             <motion.div
               className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3"
@@ -1697,7 +1717,8 @@ const AthleteModal = ({
                     Matrícula automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la matrícula, se generará automáticamente la deportista con estado <strong>"Activo"</strong> y una
+                    Al crear la matrícula, se generará automáticamente la
+                    deportista con estado <strong>"Activo"</strong> y una
                     matrícula con estado <strong>"Vigente"</strong>.
                   </p>
                 </div>
@@ -1726,10 +1747,10 @@ const AthleteModal = ({
               }`}
               title={isAcudienteRequired && !values.acudiente ? 'Debes asignar un acudiente antes de guardar' : ''}
             >
-              {isEditing 
-                ? "Actualizar Deportista" 
-                : isEnrollmentMode 
-                  ? "Crear Matrícula" 
+              {isEditing
+                ? "Actualizar Deportista"
+                : isEnrollmentMode
+                  ? "Crear Matrícula"
                   : "Crear Deportista"}
             </button>
           </div>

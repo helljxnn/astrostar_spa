@@ -3,8 +3,8 @@
  * Centraliza todas las validaciones del frontend
  */
 
-import { useState, useCallback } from 'react';
-import temporaryPersonsService from '../services/temporaryPersonsService';
+import { useState, useCallback } from "react";
+import temporaryPersonsService from "../services/temporaryPersonsService";
 
 export const useTemporaryPersonValidation = () => {
   const [validationErrors, setValidationErrors] = useState({});
@@ -15,26 +15,31 @@ export const useTemporaryPersonValidation = () => {
     firstName: (value) => {
       if (!value || !value.trim()) return "El nombre es requerido";
       if (value.length < 2) return "El nombre debe tener al menos 2 caracteres";
-      if (value.length > 100) return "El nombre no puede exceder 100 caracteres";
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El nombre solo puede contener letras y espacios";
+      if (value.length > 100)
+        return "El nombre no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+        return "El nombre solo puede contener letras y espacios";
       return "";
     },
-    
+
     lastName: (value) => {
       if (!value || !value.trim()) return "El apellido es requerido";
-      if (value.length < 2) return "El apellido debe tener al menos 2 caracteres";
-      if (value.length > 100) return "El apellido no puede exceder 100 caracteres";
-      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value)) return "El apellido solo puede contener letras y espacios";
+      if (value.length < 2)
+        return "El apellido debe tener al menos 2 caracteres";
+      if (value.length > 100)
+        return "El apellido no puede exceder 100 caracteres";
+      if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value))
+        return "El apellido solo puede contener letras y espacios";
       return "";
     },
-    
+
     personType: (value) => {
       if (!value) return "El tipo de persona es requerido";
-      const validTypes = ['Deportista', 'Entrenador'];
+      const validTypes = ["Deportista", "Entrenador"];
       if (!validTypes.includes(value)) return "Tipo de persona no válido";
       return "";
     },
-    
+
     email: (value) => {
       if (value && value.trim()) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
@@ -46,20 +51,20 @@ export const useTemporaryPersonValidation = () => {
       }
       return "";
     },
-    
+
     phone: (value) => {
       if (value && value.trim()) {
         // Validar formato: +57 seguido de 10 dígitos o solo 10 dígitos
         const phoneWithCode = /^\+57\s?\d{10}$/; // +57 3225658901 o +573225658901
         const phoneWithoutCode = /^\d{10}$/; // 3226758060
-        
+
         if (!phoneWithCode.test(value) && !phoneWithoutCode.test(value)) {
           return "Ingrese un número válido: 10 dígitos (ej: 3225658901) o con indicativo (ej: +57 3225658901)";
         }
       }
       return "";
     },
-    
+
     identification: (value) => {
       if (value && value.trim()) {
         if (value.length < 6) {
@@ -74,20 +79,28 @@ export const useTemporaryPersonValidation = () => {
       }
       return "";
     },
-    
+
     birthDate: (value) => {
       if (value && value.trim()) {
         const birthDate = new Date(value);
         if (isNaN(birthDate.getTime())) {
           return "Fecha de nacimiento no válida";
         }
-        
+
         const today = new Date();
-        const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
-        const maxDate = new Date(today.getFullYear() - 5, today.getMonth(), today.getDate());
-        
+        const minDate = new Date(
+          today.getFullYear() - 100,
+          today.getMonth(),
+          today.getDate(),
+        );
+        const maxDate = new Date(
+          today.getFullYear() - 5,
+          today.getMonth(),
+          today.getDate(),
+        );
+
         if (birthDate < minDate) {
-          return "La fecha de nacimiento no puede ser anterior a 120 años";
+          return "La fecha de nacimiento no puede ser anterior a 100 años";
         }
         if (birthDate > maxDate) {
           return "La persona debe tener al menos 5 años de edad";
@@ -95,17 +108,21 @@ export const useTemporaryPersonValidation = () => {
       }
       return "";
     },
-    
+
     address: (value) => {
       if (value && value.trim() && value.length > 200) {
         return "La dirección no puede exceder 200 caracteres";
       }
       return "";
     },
-    
+
     team: (value, allValues) => {
       const personType = allValues?.personType;
-      if ((personType === 'Deportista' || personType === 'Entrenador') && value && value.trim() === '') {
+      if (
+        (personType === "Deportista" || personType === "Entrenador") &&
+        value &&
+        value.trim() === ""
+      ) {
         return "Si se especifica un equipo, no puede estar vacío";
       }
       if (value && value.length > 100) {
@@ -113,10 +130,14 @@ export const useTemporaryPersonValidation = () => {
       }
       return "";
     },
-    
+
     category: (value, allValues) => {
       const personType = allValues?.personType;
-      if ((personType === 'Deportista' || personType === 'Entrenador') && value && value.trim() === '') {
+      if (
+        (personType === "Deportista" || personType === "Entrenador") &&
+        value &&
+        value.trim() === ""
+      ) {
         return "Si se especifica una categoría, no puede estar vacía";
       }
       if (value && value.length > 100) {
@@ -124,87 +145,106 @@ export const useTemporaryPersonValidation = () => {
       }
       return "";
     },
-    
+
     documentTypeId: (value) => {
       if (value && (isNaN(parseInt(value)) || parseInt(value) < 1)) {
         return "Tipo de documento no válido";
       }
       return "";
-    }
+    },
   };
 
   // Validar un campo específico
   const validateField = useCallback((fieldName, value, allValues = {}) => {
     const rule = validationRules[fieldName];
     if (!rule) return "";
-    
+
     return rule(value, allValues);
   }, []);
 
   // Validar todos los campos
-  const validateAllFields = useCallback((formData) => {
-    const errors = {};
-    let isValid = true;
+  const validateAllFields = useCallback(
+    (formData) => {
+      const errors = {};
+      let isValid = true;
 
-    Object.keys(validationRules).forEach(fieldName => {
-      const error = validateField(fieldName, formData[fieldName], formData);
-      if (error) {
-        errors[fieldName] = error;
-        isValid = false;
-      }
-    });
+      Object.keys(validationRules).forEach((fieldName) => {
+        const error = validateField(fieldName, formData[fieldName], formData);
+        if (error) {
+          errors[fieldName] = error;
+          isValid = false;
+        }
+      });
 
-    setValidationErrors(errors);
-    return { isValid, errors };
-  }, [validateField]);
+      setValidationErrors(errors);
+      return { isValid, errors };
+    },
+    [validateField],
+  );
 
   // Validar unicidad de identificación
-  const validateIdentificationUniqueness = useCallback(async (identification, excludeId = null) => {
-    if (!identification || !identification.trim()) return { isUnique: true, message: "" };
+  const validateIdentificationUniqueness = useCallback(
+    async (identification, excludeId = null) => {
+      if (!identification || !identification.trim())
+        return { isUnique: true, message: "" };
 
-    setIsValidating(true);
-    try {
-      const response = await temporaryPersonsService.checkIdentificationAvailability(identification, excludeId);
-      const isUnique = response.data.available;
-      const message = isUnique ? "" : "Este número de documento ya está en uso";
-      
-      setValidationErrors(prev => ({
-        ...prev,
-        identification: message
-      }));
+      setIsValidating(true);
+      try {
+        const response =
+          await temporaryPersonsService.checkIdentificationAvailability(
+            identification,
+            excludeId,
+          );
+        const isUnique = response.data.available;
+        const message = isUnique
+          ? ""
+          : "Este número de documento ya está en uso";
 
-      return { isUnique, message };
-    } catch (error) {
-      console.error('Error validating identification uniqueness:', error);
-      return { isUnique: true, message: "" };
-    } finally {
-      setIsValidating(false);
-    }
-  }, []);
+        setValidationErrors((prev) => ({
+          ...prev,
+          identification: message,
+        }));
+
+        return { isUnique, message };
+      } catch (error) {
+        console.error("Error validating identification uniqueness:", error);
+        return { isUnique: true, message: "" };
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [],
+  );
 
   // Validar unicidad de email
-  const validateEmailUniqueness = useCallback(async (email, excludeId = null) => {
-    if (!email || !email.trim()) return { isUnique: true, message: "" };
+  const validateEmailUniqueness = useCallback(
+    async (email, excludeId = null) => {
+      if (!email || !email.trim()) return { isUnique: true, message: "" };
 
-    setIsValidating(true);
-    try {
-      const response = await temporaryPersonsService.checkEmailAvailability(email, excludeId);
-      const isUnique = response.data.available;
-      const message = isUnique ? "" : "Este email ya está en uso";
-      
-      setValidationErrors(prev => ({
-        ...prev,
-        email: message
-      }));
+      setIsValidating(true);
+      try {
+        const response = await temporaryPersonsService.checkEmailAvailability(
+          email,
+          excludeId,
+        );
+        const isUnique = response.data.available;
+        const message = isUnique ? "" : "Este email ya está en uso";
 
-      return { isUnique, message };
-    } catch (error) {
-      console.error('Error validating email uniqueness:', error);
-      return { isUnique: true, message: "" };
-    } finally {
-      setIsValidating(false);
-    }
-  }, []);
+        setValidationErrors((prev) => ({
+          ...prev,
+          email: message,
+        }));
+
+        return { isUnique, message };
+      } catch (error) {
+        console.error("Error validating email uniqueness:", error);
+        return { isUnique: true, message: "" };
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [],
+  );
 
   // Validar lógica de negocio
   const validateBusinessLogic = useCallback((formData) => {
@@ -214,17 +254,22 @@ export const useTemporaryPersonValidation = () => {
     if (formData.birthDate && formData.age) {
       const calculatedAge = calculateAge(formData.birthDate);
       if (Math.abs(calculatedAge - parseInt(formData.age)) > 1) {
-        errors.push('La edad proporcionada no coincide con la fecha de nacimiento');
+        errors.push(
+          "La edad proporcionada no coincide con la fecha de nacimiento",
+        );
       }
     }
 
     // Validar que deportistas y entrenadores tengan información coherente
-    if (formData.personType === 'Deportista' || formData.personType === 'Entrenador') {
-      if (formData.team && formData.team.trim() === '') {
-        errors.push('Si se especifica un equipo, no puede estar vacío');
+    if (
+      formData.personType === "Deportista" ||
+      formData.personType === "Entrenador"
+    ) {
+      if (formData.team && formData.team.trim() === "") {
+        errors.push("Si se especifica un equipo, no puede estar vacío");
       }
-      if (formData.category && formData.category.trim() === '') {
-        errors.push('Si se especifica una categoría, no puede estar vacía');
+      if (formData.category && formData.category.trim() === "") {
+        errors.push("Si se especifica una categoría, no puede estar vacía");
       }
     }
 
@@ -232,58 +277,70 @@ export const useTemporaryPersonValidation = () => {
   }, []);
 
   // Validación completa antes del envío
-  const validateForSubmission = useCallback(async (formData, excludeId = null) => {
-    // Validar campos básicos
-    const { isValid, errors } = validateAllFields(formData);
-    
-    if (!isValid) {
-      return {
-        isValid: false,
-        errors,
-        message: "Por favor, corrija los errores en el formulario"
-      };
-    }
+  const validateForSubmission = useCallback(
+    async (formData, excludeId = null) => {
+      // Validar campos básicos
+      const { isValid, errors } = validateAllFields(formData);
 
-    // Validar lógica de negocio
-    const businessErrors = validateBusinessLogic(formData);
-    if (businessErrors.length > 0) {
-      return {
-        isValid: false,
-        errors: {},
-        message: businessErrors.join('. ')
-      };
-    }
+      if (!isValid) {
+        return {
+          isValid: false,
+          errors,
+          message: "Por favor, corrija los errores en el formulario",
+        };
+      }
 
-    // Validar unicidad de campos críticos
-    const uniquenessChecks = [];
-    
-    if (formData.identification) {
-      uniquenessChecks.push(validateIdentificationUniqueness(formData.identification, excludeId));
-    }
-    
-    if (formData.email) {
-      uniquenessChecks.push(validateEmailUniqueness(formData.email, excludeId));
-    }
-
-    if (uniquenessChecks.length > 0) {
-      const results = await Promise.all(uniquenessChecks);
-      const uniquenessErrors = results.filter(result => !result.isUnique);
-      
-      if (uniquenessErrors.length > 0) {
+      // Validar lógica de negocio
+      const businessErrors = validateBusinessLogic(formData);
+      if (businessErrors.length > 0) {
         return {
           isValid: false,
           errors: {},
-          message: uniquenessErrors.map(error => error.message).join('. ')
+          message: businessErrors.join(". "),
         };
       }
-    }
 
-    return {
-      isValid: true,
-      errors: {},
-      message: ""
-    };
-  }, [validateAllFields, validateBusinessLogic, validateIdentificationUniqueness, validateEmailUniqueness]);
+      // Validar unicidad de campos críticos
+      const uniquenessChecks = [];
+
+      if (formData.identification) {
+        uniquenessChecks.push(
+          validateIdentificationUniqueness(formData.identification, excludeId),
+        );
+      }
+
+      if (formData.email) {
+        uniquenessChecks.push(
+          validateEmailUniqueness(formData.email, excludeId),
+        );
+      }
+
+      if (uniquenessChecks.length > 0) {
+        const results = await Promise.all(uniquenessChecks);
+        const uniquenessErrors = results.filter((result) => !result.isUnique);
+
+        if (uniquenessErrors.length > 0) {
+          return {
+            isValid: false,
+            errors: {},
+            message: uniquenessErrors.map((error) => error.message).join(". "),
+          };
+        }
+      }
+
+      return {
+        isValid: true,
+        errors: {},
+        message: "",
+      };
+    },
+    [
+      validateAllFields,
+      validateBusinessLogic,
+      validateIdentificationUniqueness,
+      validateEmailUniqueness,
+    ],
+  );
 
   // Limpiar errores de validación
   const clearValidationErrors = useCallback(() => {
@@ -292,7 +349,7 @@ export const useTemporaryPersonValidation = () => {
 
   // Limpiar error de un campo específico
   const clearFieldError = useCallback((fieldName) => {
-    setValidationErrors(prev => {
+    setValidationErrors((prev) => {
       const newErrors = { ...prev };
       delete newErrors[fieldName];
       return newErrors;
@@ -309,7 +366,7 @@ export const useTemporaryPersonValidation = () => {
     validateBusinessLogic,
     validateForSubmission,
     clearValidationErrors,
-    clearFieldError
+    clearFieldError,
   };
 };
 

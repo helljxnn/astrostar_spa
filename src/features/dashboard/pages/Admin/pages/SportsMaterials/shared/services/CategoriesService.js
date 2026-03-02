@@ -19,23 +19,27 @@ class CategoriesService {
     }
 
     const response = await apiClient.get(this.endpoint, queryParams);
-    
+
     if (response.success && response.data) {
-      response.data = response.data.map(cat => this.transformFromBackend(cat));
+      response.data = response.data.map((cat) =>
+        this.transformFromBackend(cat),
+      );
       // Ordenar alfabéticamente
       response.data.sort((a, b) => a.nombre.localeCompare(b.nombre));
     }
-    
+
     return response;
   }
 
   async getActiveCategories() {
     const response = await apiClient.get(`${this.endpoint}/active`);
-    
+
     if (response.success && response.data) {
-      response.data = response.data.map(cat => this.transformFromBackend(cat));
+      response.data = response.data.map((cat) =>
+        this.transformFromBackend(cat),
+      );
     }
-    
+
     return response;
   }
 
@@ -44,41 +48,39 @@ class CategoriesService {
       throw new Error("ID de la categoría es requerido");
     }
     const response = await apiClient.get(`${this.endpoint}/${id}`);
-    
+
     if (response.success && response.data) {
       response.data = this.transformFromBackend(response.data);
     }
-    
+
     return response;
   }
 
   async createCategory(data) {
     // Aceptar tanto string como objeto
-    const nombre = typeof data === 'string' ? data : data.nombre;
-    const descripcion = typeof data === 'object' ? data.descripcion : '';
-    const estado = typeof data === 'object' ? data.estado : 'Activo';
-    
+    const nombre = typeof data === "string" ? data : data.nombre;
+    const descripcion = typeof data === "object" ? data.descripcion : "";
+    const estado = typeof data === "object" ? data.estado : "Activo";
+
     if (!nombre || !nombre.trim()) {
       throw new Error("El nombre de la categoría es requerido");
     }
 
     const payload = {
       nombre: nombre.trim(),
-      descripcion: descripcion?.trim() || '',
-      estado: estado || 'Activo'
+      descripcion: descripcion?.trim() || "",
+      estado: estado || "Activo",
     };
 
     try {
       const response = await apiClient.post(this.endpoint, payload);
-      
-      // Transformar respuesta si viene del backend
+
       if (response.success && response.data) {
         response.data = this.transformFromBackend(response.data);
       }
-      
+
       return response;
     } catch (error) {
-      console.error('Error al crear categoría:', error);
       throw error;
     }
   }
@@ -90,16 +92,16 @@ class CategoriesService {
 
     const payload = {
       nombre: data.nombre.trim(),
-      descripcion: data.descripcion?.trim() || '',
-      estado: data.estado
+      descripcion: data.descripcion?.trim() || "",
+      estado: data.estado,
     };
 
     const response = await apiClient.put(`${this.endpoint}/${id}`, payload);
-    
+
     if (response.success && response.data) {
       response.data = this.transformFromBackend(response.data);
     }
-    
+
     return response;
   }
 
@@ -107,7 +109,7 @@ class CategoriesService {
     if (!id) {
       throw new Error("ID de la categoría es requerido");
     }
-    
+
     return apiClient.patch(`${this.endpoint}/${id}/status`);
   }
 
@@ -115,24 +117,26 @@ class CategoriesService {
     if (!id) {
       throw new Error("ID de la categoría es requerido");
     }
-    
+
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
   async checkCategoryExists(nombre, excludeId = null) {
     try {
       const params = {
-        nombre: nombre.trim()
+        nombre: nombre.trim(),
       };
 
       if (excludeId) {
         params.excludeId = excludeId;
       }
 
-      const response = await apiClient.get(`${this.endpoint}/check-name`, params);
+      const response = await apiClient.get(
+        `${this.endpoint}/check-name`,
+        params,
+      );
       return response;
     } catch (error) {
-      console.error('Error al verificar categoría:', error);
       throw error;
     }
   }
@@ -142,11 +146,11 @@ class CategoriesService {
 
     return {
       id: backendData.id,
-      nombre: backendData.nombre || backendData.name || '',
-      descripcion: backendData.descripcion || backendData.description || '',
-      estado: backendData.estado || backendData.status || 'Activo',
-      createdAt: backendData.createdAt || backendData.created_at || '',
-      updatedAt: backendData.updatedAt || backendData.updated_at || '',
+      nombre: backendData.nombre || backendData.name || "",
+      descripcion: backendData.descripcion || backendData.description || "",
+      estado: backendData.estado || backendData.status || "Activo",
+      createdAt: backendData.createdAt || backendData.created_at || "",
+      updatedAt: backendData.updatedAt || backendData.updated_at || "",
       createdBy: backendData.createdBy || backendData.created_by || null,
       updatedBy: backendData.updatedBy || backendData.updated_by || null,
       materialsCount: backendData._count?.materials || 0,

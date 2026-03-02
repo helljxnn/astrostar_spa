@@ -1,4 +1,4 @@
-
+import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -10,53 +10,80 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import eventsService from "../../Events/services/eventsService";
 
 // Registrar componentes de Chart.js
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+);
 
 const EventsGraphic = () => {
-  // Datos del gráfico
-  const dashboardData = [
-    { trimestre: "Trim 1", año2023: 21, año2024: 13, año2025: 18 },
-    { trimestre: "Trim 2", año2023: 22, año2024: 12, año2025: 10 },
-    { trimestre: "Trim 3", año2023: 24, año2024: 23, año2025: 15 },
-    { trimestre: "Trim 4", año2023: 23, año2024: 7, año2025: 5 },
+  const [dashboardData, setDashboardData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [years, setYears] = useState([]);
+
+  // Colores para los años
+  const yearColors = [
+    { bg: "rgba(110, 231, 249, 0.8)", hover: "rgba(110, 231, 249, 1)" }, // celeste
+    { bg: "rgba(167, 139, 250, 0.8)", hover: "rgba(167, 139, 250, 1)" }, // morado
+    { bg: "rgba(244, 114, 182, 0.8)", hover: "rgba(244, 114, 182, 1)" }, // rosado
   ];
 
-  // Columnas para exportar con ReportButton
+  useEffect(() => {
+    fetchEventsData();
+  }, []);
+
+  const fetchEventsData = async () => {
+    try {
+      setLoading(true);
+      const response = await eventsService.getByQuarter();
+
+      if (response.success && response.data) {
+        setDashboardData(response.data);
+
+        // Extraer los años dinámicamente de los datos
+        if (response.data.length > 0) {
+          const yearKeys = Object.keys(response.data[0])
+            .filter((key) => key.startsWith("año"))
+            .map((key) => key.replace("año", ""));
+          setYears(yearKeys);
+        }
+      }
+    } catch (error) {
+      console.error("Error al cargar datos de eventos:", error);
+      // Mantener datos vacíos en caso de error
+      setDashboardData([
+        { trimestre: "Trim 1" },
+        { trimestre: "Trim 2" },
+        { trimestre: "Trim 3" },
+        { trimestre: "Trim 4" },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Columnas para exportar con ReportButton (dinámicas según los años)
   const reportColumns = [
     { key: "trimestre", label: "Trimestre" },
-    { key: "año2023", label: "2023" },
-    { key: "año2024", label: "2024" },
-    { key: "año2025", label: "2025" },
+    ...years.map((year) => ({ key: `año${year}`, label: year })),
   ];
 
   // Configuración para Chart.js
   const data = {
     labels: dashboardData.map((item) => item.trimestre),
-    datasets: [
-      {
-        label: "2023",
-        data: dashboardData.map((item) => item.año2023),
-        backgroundColor: "rgba(110, 231, 249, 0.8)", // celeste
-        borderRadius: 10,
-        hoverBackgroundColor: "rgba(110, 231, 249, 1)",
-      },
-      {
-        label: "2024",
-        data: dashboardData.map((item) => item.año2024),
-        backgroundColor: "rgba(167, 139, 250, 0.8)", // morado
-        borderRadius: 10,
-        hoverBackgroundColor: "rgba(167, 139, 250, 1)",
-      },
-      {
-        label: "2025",
-        data: dashboardData.map((item) => item.año2025),
-        backgroundColor: "rgba(244, 114, 182, 0.8)", // rosado
-        borderRadius: 10,
-        hoverBackgroundColor: "rgba(244, 114, 182, 1)",
-      },
-    ],
+    datasets: years.map((year, index) => ({
+      label: year,
+      data: dashboardData.map((item) => item[`año${year}`] || 0),
+      backgroundColor: yearColors[index % yearColors.length].bg,
+      borderRadius: 10,
+      hoverBackgroundColor: yearColors[index % yearColors.length].hover,
+    })),
   };
 
   const options = {
@@ -75,7 +102,7 @@ const EventsGraphic = () => {
         },
       },
       title: {
-        display: false, // Removemos el título del gráfico ya que lo tenemos en el header
+        display: false,
       },
       tooltip: {
         backgroundColor: "#111827",
@@ -88,7 +115,7 @@ const EventsGraphic = () => {
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { 
+        ticks: {
           stepSize: 5,
           font: {
             size: window.innerWidth < 640 ? 10 : 12,
@@ -126,10 +153,16 @@ const EventsGraphic = () => {
           />
         </div>
       </div>
-      
+
       {/* Gráfico responsive */}
       <div className="h-[220px] sm:h-[260px] lg:h-[320px]">
-        <Bar data={data} options={options} />
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <Bar data={data} options={options} />
+        )}
       </div>
     </div>
   );

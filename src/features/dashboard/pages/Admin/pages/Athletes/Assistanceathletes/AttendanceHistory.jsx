@@ -1,22 +1,16 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import assistanceathletesService from "./services/AssistanceathletesService";
+import { showWarningAlert } from "../../../../../../../shared/utils/Alerts";
 
 const DEFAULT_ROWS_PER_PAGE = 10;
 const ALL_CATEGORIES = "Todas";
 const todayISO = () => new Date().toISOString().split("T")[0];
-const formatInputValue = (value) => {
-  const digits = value.replace(/\D/g, "").slice(0, 8);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 4) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-};
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -25,35 +19,13 @@ const formatDate = (value) => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 };
 
-const parseDisplayDate = (value) => {
-  if (!value) return "";
-  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (!match) return null;
-  const [, day, month, year] = match;
-  const iso = `${year}-${month}-${day}`;
-  const date = new Date(`${iso}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) return null;
-  if (
-    date.getUTCFullYear().toString() !== year ||
-    String(date.getUTCMonth() + 1).padStart(2, "0") !== month ||
-    String(date.getUTCDate()).padStart(2, "0") !== day
-  ) {
-    return null;
-  }
-  return iso;
-};
-
 export default function AssistanceHistory() {
   const navigate = useNavigate();
 
   const [startDate, setStartDate] = useState(() => todayISO());
   const [endDate, setEndDate] = useState(() => todayISO());
-  const [startDateInput, setStartDateInput] = useState(() =>
-    formatDate(todayISO())
-  );
-  const [endDateInput, setEndDateInput] = useState(() =>
-    formatDate(todayISO())
-  );
+  const [startDateInput, setStartDateInput] = useState(() => todayISO());
+  const [endDateInput, setEndDateInput] = useState(() => todayISO());
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
@@ -92,6 +64,38 @@ export default function AssistanceHistory() {
     return `Hasta ${formatDate(rangeEnd)}`;
   }, [range, startDate, endDate]);
 
+  const reportFileName = useMemo(
+    () => `Historial_Asistencia_${rangeLabel.replace(/\s+/g, "_")}`,
+    [rangeLabel]
+  );
+
+  const reportColumns = useMemo(
+    () => [
+      { header: "Documento", accessor: "documento" },
+      { header: "Nombre", accessor: "nombre" },
+      { header: "Categoría", accessor: "categoria" },
+      { header: "Presentes", accessor: "present" },
+      { header: "Ausentes", accessor: "absent" },
+      { header: "Total", accessor: "total" },
+      { header: "% Asistencia", accessor: "percentDisplay" },
+    ],
+    []
+  );
+
+  const reportData = useMemo(
+    () =>
+      historyRows.map((item) => ({
+        documento: item.documento,
+        nombre: item.nombre,
+        categoria: item.categoria || "Sin categoría",
+        present: item.present,
+        absent: item.absent,
+        total: item.total,
+        percentDisplay: `${item.percent}%`,
+      })),
+    [historyRows]
+  );
+
   const fetchSummary = async (page = 1, override = {}) => {
     setLoading(true);
     setError("");
@@ -120,7 +124,8 @@ export default function AssistanceHistory() {
       const response = await assistanceathletesService.getHistorySummary(params);
 
       if (response && response.success) {
-        setHistoryRows(response.data || []);
+        const rows = response.data || [];
+        setHistoryRows(rows);
         setPagination(
           response.pagination || {
             page,
@@ -135,6 +140,12 @@ export default function AssistanceHistory() {
             endDate: effectiveEndDate || "",
           }
         );
+        if (rows.length === 0) {
+          showWarningAlert(
+            "Sin asistencia",
+            "No hay registros de asistencia en el rango seleccionado."
+          );
+        }
       } else {
         setHistoryRows([]);
         setPagination((prev) => ({ ...prev, page, total: 0, pages: 0 }));
@@ -187,25 +198,21 @@ export default function AssistanceHistory() {
   }, []);
 
   const handleConsult = () => {
-    const parsedStart = parseDisplayDate(startDateInput);
-    const parsedEnd = parseDisplayDate(endDateInput);
-
-    if (parsedStart === null || parsedEnd === null) {
-      setError("Fecha inválida. Usa el formato dd/mm/aaaa.");
-      return;
-    }
+    const parsedStart = startDateInput || "";
+    const parsedEnd = endDateInput || "";
 
     if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
       setError("La fecha inicial no puede ser mayor a la fecha final.");
       return;
     }
 
-    setStartDate(parsedStart || "");
-    setEndDate(parsedEnd || "");
+    setError("");
+    setStartDate(parsedStart);
+    setEndDate(parsedEnd);
     setPagination((prev) => ({ ...prev, page: 1 }));
     fetchSummary(1, {
-      startDate: parsedStart || "",
-      endDate: parsedEnd || "",
+      startDate: parsedStart,
+      endDate: parsedEnd,
       search: searchTerm,
       category: categoryFilter,
     });
@@ -215,8 +222,8 @@ export default function AssistanceHistory() {
     const today = todayISO();
     setStartDate(today);
     setEndDate(today);
-    setStartDateInput(formatDate(today));
-    setEndDateInput(formatDate(today));
+    setStartDateInput(today);
+    setEndDateInput(today);
     setSearchTerm("");
     setCategoryFilter(ALL_CATEGORIES);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -277,12 +284,19 @@ export default function AssistanceHistory() {
             Consulta por rango de fechas y revisa el resumen por deportista.
           </p>
         </div>
-        <button
-          onClick={() => navigate("/dashboard/athletes-assistance")}
-          className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
-        >
-          Volver a Asistencia
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          <ReportButton
+            data={reportData}
+            fileName={reportFileName}
+            columns={reportColumns}
+          />
+          <button
+            onClick={() => navigate("/dashboard/athletes-assistance")}
+            className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
+          >
+            Volver a Asistencia
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm mb-6">

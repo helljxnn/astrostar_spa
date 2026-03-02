@@ -136,6 +136,12 @@ const BigCalendarWrapper = ({
               `${moment(start).format("HH:mm")} - ${moment(end).format(
                 "HH:mm"
               )}`,
+            agendaDateFormat: "DD/MM/YYYY",
+            agendaTimeFormat: "HH:mm",
+            agendaTimeRangeFormat: ({ start, end }) =>
+              `${moment(start).format("HH:mm")} - ${moment(end).format(
+                "HH:mm"
+              )}`,
           }}
           culture="es"
           {...props}

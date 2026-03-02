@@ -21,6 +21,8 @@ registerLocale('es', es);
  * @param {number} props.timeIntervals - Intervalos de tiempo en minutos.
  * @param {boolean} props.disabled - Si el campo está deshabilitado.
  * @param {string} props.error - Mensaje de error a mostrar.
+ * @param {Date} props.minDate - Fecha mínima seleccionable.
+ * @param {string} props.placeholder - Texto placeholder.
  */
 export const DatePickerField = ({
     label,
@@ -34,7 +36,9 @@ export const DatePickerField = ({
     timeIntervals = 30,
     disabled,
     error,
-    required
+    required,
+    minDate,
+    placeholder
 }) => {
     return (
         <div className="w-full">
@@ -47,15 +51,16 @@ export const DatePickerField = ({
                 filterDate={filterDate}
                 includeTimes={includeTimes}
                 filterTime={filterTime}
+                minDate={minDate || new Date()}
                 minTime={minTime ? new Date(`1970-01-01T${minTime}`) : null}
                 maxTime={maxTime ? new Date(`1970-01-01T${maxTime}`) : null}
                 timeIntervals={timeIntervals}
-                dateFormat="dd/MM/yyyy h:mm aa"
+                dateFormat="EEEE, d 'de' MMMM 'de' yyyy h:mm aa"
                 className={`w-full px-3 py-2 bg-white border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-purple focus:border-primary-purple disabled:bg-gray-100 disabled:cursor-not-allowed`}
                 disabled={disabled}
                 locale="es"
                 showTimeSelect
-                placeholderText="Seleccione fecha y hora"
+                placeholderText={placeholder || "Seleccione fecha y hora"}
             />
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         </div>
