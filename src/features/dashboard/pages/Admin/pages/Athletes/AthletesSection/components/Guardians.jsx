@@ -12,7 +12,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts";
-import GuardianModal from "./components/GuardianModal";
+import GuardianModal from "./GuardianModal";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const Guardians = () => {
@@ -277,9 +277,10 @@ const Guardians = () => {
           setModalMode("create");
         }}
         onSave={handleSave}
-        onDelete={handleDelete}
-        guardian={editingGuardian}
-        mode={modalMode}
+onUpdate={handleSave}
+onDelete={handleDelete}
+guardianToEdit={editingGuardian}
+mode={modalMode}
       />
     </div>
   );

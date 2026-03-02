@@ -23,15 +23,20 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
     return documentTypesLabels[type] || type;
   };
 
-  const formatDate = (date) => {
-    if (!date) return "No especificado";
-    const d = new Date(date);
-    return `${d.toLocaleDateString("es-ES")} ${d.toLocaleTimeString("es-ES")}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return "No especificado";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+      style={{ zIndex: 9999 }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

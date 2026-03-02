@@ -52,6 +52,7 @@ const Athletes = () => {
   const [modalMode, setModalMode] = useState("create");
   const [athleteToEdit, setAthleteToEdit] = useState(null);
   const [athleteToView, setAthleteToView] = useState(null);
+  const [requiresGuardianChange, setRequiresGuardianChange] = useState(false); // Nuevo: indica que DEBE cambiar acudiente
 
   // Estados de acudientes
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -293,6 +294,34 @@ const Athletes = () => {
       return showErrorAlert("Error", "Acudiente no válido");
     }
 
+    // ✅ VALIDAR SI TIENE DEPORTISTAS MENORES ASIGNADOS ANTES DE ELIMINAR
+    const assignedAthletes = athletes.filter(
+      a => a.acudiente?.toString() === guardian.id?.toString()
+    );
+    
+    const hasMinorAthletes = assignedAthletes.some(athlete => {
+      const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
+      if (!birthDateStr) return false;
+      
+      const today = new Date();
+      const birthDate = new Date(birthDateStr);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age < 18;
+    });
+    
+    // Si tiene deportistas menores, NO permitir eliminar
+    if (hasMinorAthletes) {
+      showErrorAlert(
+        "No se puede eliminar",
+        "Este acudiente está asignado a deportistas menores de edad"
+      );
+      return false;
+    }
+
     const success = await deleteGuardian(guardian.id);
 
     if (success) {
@@ -317,6 +346,8 @@ const Athletes = () => {
 
       setCurrentAthleteId(null);
     }
+    
+    return success;
   };
 
   // Nuevo: Gestionar acudiente desde la fila del deportista
@@ -354,8 +385,40 @@ const Athletes = () => {
     }
 
     try {
-      const response =
-        await GuardiansService.removeGuardianFromAthlete(athleteId);
+      // Si es menor de edad, abrir directamente el modal de edición para cambiar acudiente
+      if (needsNewGuardian) {
+        // Cerrar el modal del acudiente
+        setIsGuardianViewOpen(false);
+        setGuardianToView(null);
+        
+        // Buscar el deportista
+        const athlete = athletes.find((a) => a.id === athleteId);
+        
+        if (athlete) {
+          // Activar modo de cambio obligatorio
+          setRequiresGuardianChange(true);
+          
+          // Abrir modal de edición del deportista
+          setTimeout(() => {
+            setAthleteToEdit(athlete);
+            setModalMode("edit");
+            setIsModalOpen(true);
+            
+            setTimeout(() => {
+              showSuccessAlert(
+                "Cambiar acudiente",
+                "Seleccione el nuevo acudiente para esta deportista.",
+              );
+            }, 300);
+          }, 400);
+        }
+        
+        setCurrentAthleteId(null);
+        return;
+      }
+
+      // Si NO es menor de edad, proceder con la remoción normal
+      const response = await GuardiansService.removeGuardianFromAthlete(athleteId);
 
       if (response.success) {
         // Refrescar datos primero
@@ -365,39 +428,31 @@ const Athletes = () => {
         setIsGuardianViewOpen(false);
         setGuardianToView(null);
 
-        // Si necesita nuevo acudiente, abrir modal de deportista para editar
-        if (needsNewGuardian) {
-          setTimeout(async () => {
-            const updatedAthletes = athletes;
-            const athlete = updatedAthletes.find((a) => a.id === athleteId);
-
-            if (athlete) {
-              setAthleteToEdit(athlete);
-              setModalMode("edit");
-              setIsModalOpen(true);
-
-              setTimeout(() => {
-                showSuccessAlert(
-                  "Asignar nuevo acudiente",
-                  "El acudiente fue removido. Por favor, asigne un nuevo acudiente a esta deportista menor de edad.",
-                );
-              }, 300);
-            }
-          }, 400);
-        } else {
-          showSuccessAlert(
-            "Acudiente removido",
-            "El acudiente fue removido correctamente de esta deportista.",
-          );
-        }
+        showSuccessAlert(
+          "Acudiente removido",
+          "El acudiente fue removido correctamente de esta deportista.",
+        );
 
         setCurrentAthleteId(null);
       } else {
+        // El backend rechazó la operación
         throw new Error(response.error || "Error removiendo acudiente");
       }
     } catch (err) {
       console.error("Error removiendo acudiente:", err);
-      showErrorAlert("Error", err.message || "No se pudo remover el acudiente");
+      
+      // Mostrar el error del backend al usuario
+      let errorMessage = err.message || "No se pudo remover el acudiente";
+      
+      // Si es un error 500, dar más contexto
+      if (errorMessage.includes("Error interno del servidor")) {
+        errorMessage = "Ocurrió un error al validar la deportista. Por favor, verifica que tenga fecha de nacimiento registrada y contacta al administrador del sistema.";
+      }
+      
+      showErrorAlert(
+        "No se puede remover el acudiente", 
+        errorMessage
+      );
     }
   };
 
@@ -583,13 +638,19 @@ const Athletes = () => {
                   const guardian = a.guardian || getGuardianById(a.acudiente);
 
                   // Mapear campos del backend al frontend
-                  const firstName = a.firstName || a.nombres || "";
-                  const lastName = a.lastName || a.apellidos || "";
+                  const firstName = a.firstName || "";
+                  const middleName = a.middleName || "";
+                  const lastName = a.lastName || "";
+                  const secondLastName = a.secondLastName || "";
+                  
+                  const nombreCompleto = [firstName, middleName, lastName, secondLastName]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() || "Sin nombre";
 
                   return {
                     ...a,
-                    nombreCompleto:
-                      `${firstName} ${lastName}`.trim() || "Sin nombre",
+                    nombreCompleto,
                     telefono: a.phoneNumber || a.telefono || "Sin teléfono",
                     acudienteNombre:
                       guardian?.nombreCompleto || "Sin acudiente",

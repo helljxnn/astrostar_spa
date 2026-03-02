@@ -70,13 +70,14 @@ const Enrollments = () => {
   });
   const rowsPerPage = 10;
 
-  // Auto-refresh cada 5 segundos cuando estamos en la pestaña de inscripciones
+  // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
+  // (reducido de 5 segundos para mejorar rendimiento)
   useEffect(() => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
       refresh(true); // true = silent mode
-    }, 5000); // 5 segundos - actualización casi en tiempo real
+    }, 30000); // 30 segundos - balance entre actualización y rendimiento
 
     return () => clearInterval(interval);
   }, [activeTab, refresh]);
@@ -105,6 +106,7 @@ const Enrollments = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase().trim();
       result = result.filter((athlete) => {
+        // Campos de texto del deportista
         const textFields = [
           athlete.firstName,
           athlete.lastName,
@@ -115,11 +117,54 @@ const Enrollments = () => {
           athlete.identification,
           athlete.numeroDocumento,
           athlete.categoria,
+          athlete.phoneNumber,
+          athlete.telefono,
+          athlete.address,
+          athlete.direccion,
+          athlete.estado,
+          athlete.status,
         ];
 
-        return textFields.some(
+        // Buscar en campos de texto
+        const textMatch = textFields.some(
           (field) => field && String(field).toLowerCase().includes(searchLower),
         );
+
+        // Buscar en estado de matrícula
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || '';
+        const estadoMatch = estadoMatricula.toLowerCase().includes(searchLower);
+
+        // Buscar en fecha de matrícula
+        let fechaMatriculaMatch = false;
+        if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+          const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+          if (!isNaN(fecha.getTime())) {
+            const fechaStr = fecha.toLocaleDateString("es-ES");
+            fechaMatriculaMatch = fechaStr.includes(searchLower);
+          }
+        }
+
+        // Buscar en fecha de vencimiento
+        let fechaVencimientoMatch = false;
+        if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
+          const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+          if (!isNaN(fecha.getTime())) {
+            const fechaStr = fecha.toLocaleDateString("es-ES");
+            fechaVencimientoMatch = fechaStr.includes(searchLower);
+          }
+        } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+          // Calcular fecha de vencimiento (1 año después)
+          const fechaInscripcion = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+          if (!isNaN(fechaInscripcion.getTime())) {
+            const fechaVenc = new Date(fechaInscripcion);
+            fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
+            const fechaStr = fechaVenc.toLocaleDateString("es-ES");
+            fechaVencimientoMatch = fechaStr.includes(searchLower);
+          }
+        }
+
+        return textMatch || estadoMatch || fechaMatriculaMatch || fechaVencimientoMatch;
       });
     }
 
@@ -127,6 +172,29 @@ const Enrollments = () => {
     if (filters.estado) {
       result = result.filter((athlete) => {
         const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        
+        // Calcular si está vencida (misma lógica que en la tabla)
+        let isVencida = false;
+        if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
+          const fechaVenc = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+          const hoy = new Date();
+          isVencida = fechaVenc < hoy;
+        } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+          const fechaInscripcion = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+          const fechaVenc = new Date(fechaInscripcion);
+          fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
+          const hoy = new Date();
+          isVencida = fechaVenc < hoy;
+        }
+        
+        // Comparar con el filtro seleccionado
+        if (filters.estado === 'Vencida') {
+          return isVencida;
+        } else if (filters.estado === 'Vigente') {
+          return !isVencida;
+        }
+        
+        // Si no es Vigente ni Vencida, buscar en el estado original
         const estado = latestEnrollment?.status || latestEnrollment?.estado || '';
         return estado === filters.estado;
       });
@@ -397,20 +465,14 @@ const Enrollments = () => {
             {activeTab === "matriculas" && (
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
-                  showFilters || filters.estado || filters.fechaDesde || filters.fechaHasta
-                    ? "bg-primary-purple text-white"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg font-medium transition-all ${
+                  showFilters
+                    ? "bg-primary-blue text-white border-primary-blue"
+                    : "border-gray-300 text-gray-700 hover:border-primary-blue hover:text-primary-blue"
                 }`}
-                title="Filtros"
               >
-                <FaFilter />
-                Filtros
-                {(filters.estado || filters.fechaDesde || filters.fechaHasta) && (
-                  <span className="bg-white text-primary-purple rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {[filters.estado, filters.fechaDesde, filters.fechaHasta].filter(Boolean).length}
-                  </span>
-                )}
+                <FaFilter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtros</span>
               </button>
             )}
 
@@ -654,58 +716,66 @@ const Enrollments = () => {
 
       {/* Panel de Filtros */}
       {showFilters && activeTab === "matriculas" && (
-        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+            <button
+              onClick={() => {
+                setFilters({
+                  estado: '',
+                  fechaDesde: '',
+                  fechaHasta: '',
+                });
+                setShowFilters(false);
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Filtro por Estado */}
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Estado de Matrícula
               </label>
               <select
                 value={filters.estado}
                 onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               >
                 <option value="">Todos los estados</option>
                 <option value="Vigente">Vigente</option>
                 <option value="Vencida">Vencida</option>
-                <option value="Suspendida">Suspendida</option>
               </select>
             </div>
 
             {/* Filtro por Fecha Desde */}
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Desde
+                Desde
               </label>
               <input
                 type="date"
                 value={filters.fechaDesde}
                 onChange={(e) => setFilters({ ...filters, fechaDesde: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               />
             </div>
 
             {/* Filtro por Fecha Hasta */}
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Hasta
+                Hasta
               </label>
               <input
                 type="date"
                 value={filters.fechaHasta}
                 onChange={(e) => setFilters({ ...filters, fechaHasta: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               />
             </div>
-
-            {/* Botón Limpiar Filtros */}
-            <button
-              onClick={() => setFilters({ estado: '', fechaDesde: '', fechaHasta: '' })}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
-            >
-              Limpiar Filtros
-            </button>
           </div>
         </div>
       )}

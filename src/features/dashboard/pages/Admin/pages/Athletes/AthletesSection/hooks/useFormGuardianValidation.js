@@ -194,33 +194,33 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
   };
 
   const handleChange = (nameOrEvent, value) => {
+    // VERSIÓN ACTUALIZADA - 2024
     const { name, val } =
       typeof nameOrEvent === "string"
         ? { name: nameOrEvent, val: value }
         : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
+    
+    console.log('🔥🔥🔥 [handleChange] EJECUTADO:', name, val);
+    console.log('🔥🔥🔥 [handleChange] touched[name]:', touched[name]);
+    
     setValues((prev) => ({ ...prev, [name]: val }));
+    setTouched((prev) => ({ ...prev, [name]: true }));
     
-    // Campos que SIEMPRE se validan instantáneamente (sin esperar touched)
-    const alwaysValidateFields = ['phoneNumber', 'email', 'identification'];
-    
-    // Si es un campo de validación instantánea, validar SIEMPRE
-    if (alwaysValidateFields.includes(name)) {
-      const error = validateField(name, val);
-      setErrors(prev => ({ ...prev, [name]: error }));
-      setTouched(prev => ({ ...prev, [name]: true }));
-    }
-    // Para otros campos, solo validar si ya están touched
-    else if (touched[name]) {
-      const error = validateField(name, val);
-      setErrors((prev) => ({ ...prev, [name]: error }));
-    }
+    // Validar inmediatamente
+    const error = validateField(name, val);
+    console.log('🔥🔥🔥 [handleChange] Error calculado:', error);
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleBlur = (nameOrEvent) => {
     const name =
       typeof nameOrEvent === "string" ? nameOrEvent : nameOrEvent?.target?.name;
     if (!name) return;
+    
+    // Marcar como touched
     setTouched((prev) => ({ ...prev, [name]: true }));
+    
+    // Validar inmediatamente
     const error = validateField(name, values[name]);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };

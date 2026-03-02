@@ -31,7 +31,7 @@ const GuardianModal = ({
   // ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
   
-  const { values, errors, touched, handleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues, setErrors } =
+  const { values, errors, touched, handleChange: hookHandleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues, setErrors } =
     useFormGuardianValidation(
       {
         nombreCompleto: "",
@@ -45,6 +45,21 @@ const GuardianModal = ({
       },
       guardianValidationRules
     );
+
+  // Wrapper para asegurar que siempre se llame con 2 parámetros - V3 FINAL
+  const handleChange = function(nameOrEvent, value) {
+    console.log('✅✅✅ WRAPPER V3 EJECUTÁNDOSE', nameOrEvent, value);
+    if (typeof nameOrEvent === 'string') {
+      // Ya viene con 2 parámetros
+      hookHandleChange(nameOrEvent, value);
+    } else if (nameOrEvent?.target) {
+      // Es un evento, extraer name y value
+      const { name, value: val } = nameOrEvent.target;
+      hookHandleChange(name, val);
+    }
+  };
+  
+  console.log('🎯🎯🎯 handleChange.length:', handleChange.length);
 
 
 
@@ -78,9 +93,13 @@ const GuardianModal = ({
           } else {
             setAsyncErrors(prev => ({ ...prev, identification: null }));
             // Solo limpiar el error si es un error de duplicado
-            if (errors.identification && errors.identification.includes('ya está registrado')) {
-              setErrors(prev => ({ ...prev, identification: '' }));
-            }
+            setErrors(prev => {
+              if (prev.identification && prev.identification.includes('ya está registrado')) {
+                const { identification, ...rest } = prev;
+                return rest;
+              }
+              return prev;
+            });
           }
         }
       } catch (error) {
@@ -93,7 +112,7 @@ const GuardianModal = ({
     // Debounce de 500ms
     const timeoutId = setTimeout(checkDocument, 500);
     return () => clearTimeout(timeoutId);
-  }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
+  }, [values.identification, isEditing, guardianToEdit?.id]); // ✅ Removidas dependencias problemáticas
 
   // ❌ VALIDACIÓN DE EMAIL ELIMINADA PARA ACUDIENTES
   // Los acudientes pueden compartir email con deportistas o entre ellos
@@ -104,10 +123,6 @@ const GuardianModal = ({
     if (!values.fechaNacimiento) {
       setGuardianAge(null);
       setAsyncErrors(prev => ({ ...prev, fechaNacimiento: null }));
-      // Limpiar error de edad si existe
-      if (errors.fechaNacimiento && errors.fechaNacimiento.includes('18 años')) {
-        setErrors(prev => ({ ...prev, fechaNacimiento: '' }));
-      }
       return;
     }
 
@@ -124,49 +139,77 @@ const GuardianModal = ({
     } else {
       setAsyncErrors(prev => ({ ...prev, fechaNacimiento: null }));
       // Solo limpiar el error si es un error de edad
-      if (errors.fechaNacimiento && errors.fechaNacimiento.includes('18 años')) {
-        setErrors(prev => ({ ...prev, fechaNacimiento: '' }));
-      }
+      setErrors(prev => {
+        if (prev.fechaNacimiento && prev.fechaNacimiento.includes('18 años')) {
+          const { fechaNacimiento, ...rest } = prev;
+          return rest;
+        }
+        return prev;
+      });
     }
-  }, [values.fechaNacimiento, setErrors, setTouched, errors.fechaNacimiento]);
+  }, [values.fechaNacimiento]); // ✅ Removida dependencia problemática
 
   useEffect(() => {
-  if (isOpen && isEditing && guardianToEdit) {
-    console.log('📝 Editando acudiente:', guardianToEdit);
-    
-    // Convertir fecha usando la utilidad segura
-    const birthDateRaw = guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "";
-    const birthDate = toDateInputFormat(birthDateRaw);
-    
-    setValues({
-      nombreCompleto: guardianToEdit.nombreCompleto || "",
-      documentTypeId: guardianToEdit.documentTypeId || "",
-      identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
-      email: guardianToEdit.correo || guardianToEdit.email || "",
-      phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
-      address: guardianToEdit.address || guardianToEdit.direccion || "",
-      fechaNacimiento: birthDate,
-      estado: guardianToEdit.estado || "Activo",
-    });
-    
-    console.log('✅ Valores cargados:', {
-      documentTypeId: guardianToEdit.documentTypeId,
-      fechaNacimiento: birthDate
-    });
-  } else if (isOpen && !isEditing) {
-    setValues({
-      nombreCompleto: "",
-      documentTypeId: "",
-      identification: "",
-      email: "",
-      phoneNumber: "",
-      address: "",
-      fechaNacimiento: "",
-      estado: "Activo",
-    });
-    setAsyncErrors({});
-  }
-}, [isOpen, isEditing, guardianToEdit, setValues]);
+    if (isOpen && isEditing && guardianToEdit) {
+      const birthDateRaw = guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "";
+      const birthDate = toDateInputFormat(birthDateRaw);
+      
+      const newValues = {
+        nombreCompleto: guardianToEdit.nombreCompleto || "",
+        documentTypeId: guardianToEdit.documentTypeId || "",
+        identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
+        email: guardianToEdit.correo || guardianToEdit.email || "",
+        phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
+        address: guardianToEdit.address || guardianToEdit.direccion || "",
+        fechaNacimiento: birthDate,
+        estado: guardianToEdit.estado || "Activo",
+      };
+      
+      // Calcular errores iniciales con los valores cargados
+      const initialErrors = {};
+      Object.keys(guardianValidationRules).forEach((fieldName) => {
+        const rules = guardianValidationRules[fieldName];
+        if (rules) {
+          for (const rule of rules) {
+            const error = rule(newValues[fieldName], newValues);
+            if (error) {
+              initialErrors[fieldName] = error;
+              break;
+            }
+          }
+        }
+      });
+      
+      // Establecer valores, touched y errores AL MISMO TIEMPO
+      setValues(newValues);
+      setTouched({
+        nombreCompleto: true,
+        documentTypeId: true,
+        identification: true,
+        email: true,
+        phoneNumber: true,
+        address: true,
+        fechaNacimiento: true,
+        estado: true,
+      });
+      setErrors(initialErrors);
+      
+    } else if (isOpen && !isEditing) {
+      setValues({
+        nombreCompleto: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
+        address: "",
+        fechaNacimiento: "",
+        estado: "Activo",
+      });
+      setAsyncErrors({});
+      setErrors({});
+      setTouched({});
+    }
+  }, [isOpen, isEditing, guardianToEdit, setValues, setTouched, setErrors]);
 
   const handleSubmit = async () => {
     console.log("🔵 [GuardianModal] handleSubmit ejecutado");
@@ -257,20 +300,22 @@ const GuardianModal = ({
   };
 
   if (!isOpen) return null;
+  console.log("VERSIÓN NUEVA", guardianToEdit, mode);
 
   console.log("🟢 [GuardianModal] Modal abierto, mode:", mode, "isEditing:", isEditing);
   console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
   console.log("🟢 [GuardianModal] referenceData:", referenceData);
 
   const modalContent = (
-    <motion.div 
+    <motion.div
+      key={`guardian-modal-${isEditing ? guardianToEdit?.id || 'edit' : 'create'}`} 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}

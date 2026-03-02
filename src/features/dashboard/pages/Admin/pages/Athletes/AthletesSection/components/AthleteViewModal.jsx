@@ -11,11 +11,14 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
   if (!isOpen || !athlete) return null;
 
   // Mapear campos del backend al frontend
-  const firstName = athlete.firstName || athlete.nombres || "";
-  const lastName = athlete.lastName || athlete.apellidos || "";
+  const firstName = athlete.firstName || "";
+  const middleName = athlete.middleName || "";
+  const lastName = athlete.lastName || "";
+  const secondLastName = athlete.secondLastName || "";
   const documento = athlete.identification || athlete.numeroDocumento || "N/A";
   const correo = athlete.email || athlete.correo || "N/A";
   const telefono = athlete.phoneNumber || athlete.telefono || "N/A";
+  const direccion = athlete.address || athlete.direccion || "N/A";
   const fechaNacimiento = athlete.birthDate || athlete.fechaNacimiento || "";
   const categoria = athlete.categoria || "N/A";
   const estado = athlete.estado || "N/A";
@@ -93,7 +96,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
               <p className="text-center text-gray-600 mt-2">
                 Información completa de:{" "}
                 <span className="font-semibold text-primary-purple">
-                  {firstName} {lastName}
+                  {[firstName, middleName, lastName, secondLastName].filter(Boolean).join(' ')}
                 </span>
               </p>
             </div>
@@ -101,7 +104,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-3">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Nombres */}
+                {/* Primer Nombre */}
                 <motion.div
                   className="space-y-2"
                   initial={{ opacity: 0, y: 10 }}
@@ -109,14 +112,29 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                   transition={{ delay: 0.1, duration: 0.4 }}
                 >
                   <label className="text-sm font-medium text-gray-600">
-                    Nombres
+                    Primer Nombre
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
                     {firstName || "N/A"}
                   </p>
                 </motion.div>
 
-                {/* Apellidos */}
+                {/* Segundo Nombre */}
+                <motion.div
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15, duration: 0.4 }}
+                >
+                  <label className="text-sm font-medium text-gray-600">
+                    Segundo Nombre
+                  </label>
+                  <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                    {middleName || "N/A"}
+                  </p>
+                </motion.div>
+
+                {/* Primer Apellido */}
                 <motion.div
                   className="space-y-2"
                   initial={{ opacity: 0, y: 10 }}
@@ -124,10 +142,25 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                   transition={{ delay: 0.2, duration: 0.4 }}
                 >
                   <label className="text-sm font-medium text-gray-600">
-                    Apellidos
+                    Primer Apellido
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
                     {lastName || "N/A"}
+                  </p>
+                </motion.div>
+
+                {/* Segundo Apellido */}
+                <motion.div
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25, duration: 0.4 }}
+                >
+                  <label className="text-sm font-medium text-gray-600">
+                    Segundo Apellido
+                  </label>
+                  <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                    {secondLastName || "N/A"}
                   </p>
                 </motion.div>
 
