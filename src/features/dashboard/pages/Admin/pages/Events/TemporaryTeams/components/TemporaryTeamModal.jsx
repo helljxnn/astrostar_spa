@@ -736,7 +736,7 @@ const TemporaryTeamModal = ({
         teamData.segundoEntrenador = formData.segundoEntrenador;
         teamData.segundoEntrenadorData = selectedSecondTrainer;
       }
-if (isEditing) {
+      if (isEditing) {
         const updatedTeamData = { ...teamData, id: teamToEdit.id };
         await onUpdate(updatedTeamData);
       } else {
@@ -996,10 +996,6 @@ if (isEditing) {
 
               {duplicateWarnings.trainer && (
                 <>
-                  {console.log(
-                    "?? Renderizando warning de entrenador:",
-                    duplicateWarnings.trainer,
-                  )}
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1205,10 +1201,6 @@ if (isEditing) {
 
                 {duplicateWarnings.athletes && (
                   <>
-                    {console.log(
-                      "?? Renderizando warning de deportistas:",
-                      duplicateWarnings.athletes,
-                    )}
                     <motion.div
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}

@@ -2,8 +2,15 @@ import React, { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
-import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
-import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+  showConfirmAlert,
+} from "../../../../../../../../shared/utils/alerts";
+import {
+  useFormGuardianValidation,
+  guardianValidationRules,
+} from "../hooks/useFormGuardianValidation";
 import GuardiansService from "../services/GuardiansService";
 
 const GuardianModal = ({
@@ -20,29 +27,36 @@ const GuardianModal = ({
   const [checkingDocument, setCheckingDocument] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
 
-  
-  const { values, errors, touched, handleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues, setErrors } =
-    useFormGuardianValidation(
-      {
-        nombreCompleto: "",
-        documentTypeId: "",
-        identification: "",
-        email: "",
-        phoneNumber: "",
-        address: "",
-        fechaNacimiento: "",
-        estado: "Activo",
-      },
-      guardianValidationRules
-    );
-
-
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateAllFields,
+    resetForm,
+    setTouched,
+    setValues,
+    setErrors,
+  } = useFormGuardianValidation(
+    {
+      nombreCompleto: "",
+      documentTypeId: "",
+      identification: "",
+      email: "",
+      phoneNumber: "",
+      address: "",
+      fechaNacimiento: "",
+      estado: "Activo",
+    },
+    guardianValidationRules,
+  );
 
   // Validación instantánea de documento
   useEffect(() => {
     const checkDocument = async () => {
       if (!values.identification || values.identification.length < 6) {
-        setAsyncErrors(prev => ({ ...prev, identification: null }));
+        setAsyncErrors((prev) => ({ ...prev, identification: null }));
         return;
       }
 
@@ -50,31 +64,37 @@ const GuardianModal = ({
       try {
         // Obtener todos los acudientes
         const result = await GuardiansService.getAll();
-        
+
         if (result.success) {
           // Buscar si existe un acudiente con el mismo documento
-          const existingGuardian = result.data.find(g => {
+          const existingGuardian = result.data.find((g) => {
             const guardianId = g.identificacion || g.identification;
-            const isSameDocument = guardianId && guardianId.toLowerCase() === values.identification.toLowerCase();
-            const isDifferentGuardian = !isEditing || g.id !== guardianToEdit?.id;
+            const isSameDocument =
+              guardianId &&
+              guardianId.toLowerCase() === values.identification.toLowerCase();
+            const isDifferentGuardian =
+              !isEditing || g.id !== guardianToEdit?.id;
             return isSameDocument && isDifferentGuardian;
           });
 
           if (existingGuardian) {
             const errorMsg = `Este documento ya está registrado`;
-            setAsyncErrors(prev => ({ ...prev, identification: errorMsg }));
-            setErrors(prev => ({ ...prev, identification: errorMsg }));
-            setTouched(prev => ({ ...prev, identification: true }));
+            setAsyncErrors((prev) => ({ ...prev, identification: errorMsg }));
+            setErrors((prev) => ({ ...prev, identification: errorMsg }));
+            setTouched((prev) => ({ ...prev, identification: true }));
           } else {
-            setAsyncErrors(prev => ({ ...prev, identification: null }));
+            setAsyncErrors((prev) => ({ ...prev, identification: null }));
             // Solo limpiar el error si es un error de duplicado
-            if (errors.identification && errors.identification.includes('ya está registrado')) {
-              setErrors(prev => ({ ...prev, identification: '' }));
+            if (
+              errors.identification &&
+              errors.identification.includes("ya está registrado")
+            ) {
+              setErrors((prev) => ({ ...prev, identification: "" }));
             }
           }
         }
       } catch (error) {
-        console.error('Error verificando documento:', error);
+        console.error("Error verificando documento:", error);
       } finally {
         setCheckingDocument(false);
       }
@@ -83,13 +103,19 @@ const GuardianModal = ({
     // Debounce de 500ms
     const timeoutId = setTimeout(checkDocument, 500);
     return () => clearTimeout(timeoutId);
-  }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
+  }, [
+    values.identification,
+    isEditing,
+    guardianToEdit?.id,
+    setErrors,
+    setTouched,
+  ]);
 
   // Validación instantánea de email
   useEffect(() => {
     const checkEmail = async () => {
-      if (!values.email || !values.email.includes('@')) {
-        setAsyncErrors(prev => ({ ...prev, email: null }));
+      if (!values.email || !values.email.includes("@")) {
+        setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
 
@@ -99,7 +125,7 @@ const GuardianModal = ({
       if (!emailRegex.test(values.email)) {
         // Si el formato es inválido, no hacer la consulta al backend
         // El error de formato ya lo maneja la validación síncrona
-        setAsyncErrors(prev => ({ ...prev, email: null }));
+        setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
 
@@ -107,31 +133,34 @@ const GuardianModal = ({
       try {
         // Obtener todos los acudientes
         const result = await GuardiansService.getAll();
-        
+
         if (result.success) {
           // Buscar si existe un acudiente con el mismo email
-          const existingGuardian = result.data.find(g => {
+          const existingGuardian = result.data.find((g) => {
             const guardianEmail = g.correo || g.email;
-            const isSameEmail = guardianEmail && guardianEmail.toLowerCase() === values.email.toLowerCase();
-            const isDifferentGuardian = !isEditing || g.id !== guardianToEdit?.id;
+            const isSameEmail =
+              guardianEmail &&
+              guardianEmail.toLowerCase() === values.email.toLowerCase();
+            const isDifferentGuardian =
+              !isEditing || g.id !== guardianToEdit?.id;
             return isSameEmail && isDifferentGuardian;
           });
 
           if (existingGuardian) {
             const errorMsg = `Este email ya está registrado`;
-            setAsyncErrors(prev => ({ ...prev, email: errorMsg }));
-            setErrors(prev => ({ ...prev, email: errorMsg }));
-            setTouched(prev => ({ ...prev, email: true }));
+            setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
+            setErrors((prev) => ({ ...prev, email: errorMsg }));
+            setTouched((prev) => ({ ...prev, email: true }));
           } else {
-            setAsyncErrors(prev => ({ ...prev, email: null }));
+            setAsyncErrors((prev) => ({ ...prev, email: null }));
             // Solo limpiar el error si es un error de duplicado
-            if (errors.email && errors.email.includes('ya está registrado')) {
-              setErrors(prev => ({ ...prev, email: '' }));
+            if (errors.email && errors.email.includes("ya está registrado")) {
+              setErrors((prev) => ({ ...prev, email: "" }));
             }
           }
         }
       } catch (error) {
-        console.error('Error verificando email:', error);
+        console.error("Error verificando email:", error);
       } finally {
         setCheckingEmail(false);
       }
@@ -143,63 +172,68 @@ const GuardianModal = ({
   }, [values.email, isEditing, guardianToEdit?.id, setErrors, setTouched]);
 
   useEffect(() => {
-  if (isOpen && isEditing && guardianToEdit) {
-setValues({
-      nombreCompleto: guardianToEdit.nombreCompleto || "",
-      documentTypeId: guardianToEdit.documentTypeId || "",
-      identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
-      email: guardianToEdit.correo || guardianToEdit.email || "",
-      phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
-      address: guardianToEdit.address || guardianToEdit.direccion || "",
-      fechaNacimiento: guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
-      estado: guardianToEdit.estado || "Activo",
-    });
-} else if (isOpen && !isEditing) {
-    setValues({
-      nombreCompleto: "",
-      documentTypeId: "",
-      identification: "",
-      email: "",
-      phoneNumber: "",
-      address: "",
-      fechaNacimiento: "",
-      estado: "Activo",
-    });
-    setAsyncErrors({});
-  }
-}, [isOpen, isEditing, guardianToEdit, setValues]);
+    if (isOpen && isEditing && guardianToEdit) {
+      setValues({
+        nombreCompleto: guardianToEdit.nombreCompleto || "",
+        documentTypeId: guardianToEdit.documentTypeId || "",
+        identification:
+          guardianToEdit.identificacion || guardianToEdit.identification || "",
+        email: guardianToEdit.correo || guardianToEdit.email || "",
+        phoneNumber:
+          guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
+        address: guardianToEdit.address || guardianToEdit.direccion || "",
+        fechaNacimiento:
+          guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
+        estado: guardianToEdit.estado || "Activo",
+      });
+    } else if (isOpen && !isEditing) {
+      setValues({
+        nombreCompleto: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
+        address: "",
+        fechaNacimiento: "",
+        estado: "Activo",
+      });
+      setAsyncErrors({});
+    }
+  }, [isOpen, isEditing, guardianToEdit, setValues]);
 
   const handleSubmit = async () => {
-console.log("🔵 [GuardianModal] Valores actuales:", values);
-    
+    console.log("🔵 [GuardianModal] Valores actuales:", values);
+
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
-    
+
     const isValid = validateAllFields();
-console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
-// Verificar si hay errores asíncronos
-    const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
-    
+    console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
+    // Verificar si hay errores asíncronos
+    const hasAsyncErrors = Object.values(asyncErrors).some(
+      (error) => error !== null && error !== "",
+    );
+
     if (!isValid || hasAsyncErrors) {
-console.log("❌ [GuardianModal] Campos con error:");
-      Object.keys(errors).forEach(key => {
+      console.log("❌ [GuardianModal] Campos con error:");
+      Object.keys(errors).forEach((key) => {
         if (errors[key]) {
-}
+        }
       });
       if (hasAsyncErrors) {
-Object.keys(asyncErrors).forEach(key => {
+        Object.keys(asyncErrors).forEach((key) => {
           if (asyncErrors[key]) {
-}
+          }
         });
       }
       return;
     }
-if (isEditing) {
+    if (isEditing) {
       const confirm = await showConfirmAlert(
         "¿Actualizar?",
         `Actualizar datos de ${guardianToEdit.nombreCompleto}`,
-        { confirmButtonText: "Sí, actualizar", cancelButtonText: "Cancelar" }
+        { confirmButtonText: "Sí, actualizar", cancelButtonText: "Cancelar" },
       );
       if (!confirm.isConfirmed) return;
     }
@@ -214,11 +248,17 @@ if (isEditing) {
         address: values.address.trim(), // ✅ Dirección
         birthDate: values.fechaNacimiento, // ✅ En inglés
       };
-console.log('📅 Fecha de nacimiento:', values.fechaNacimiento);
-if (isEditing) {
-        const updated = await onUpdate({ ...dataToSend, id: guardianToEdit.id });
+      console.log("📅 Fecha de nacimiento:", values.fechaNacimiento);
+      if (isEditing) {
+        const updated = await onUpdate({
+          ...dataToSend,
+          id: guardianToEdit.id,
+        });
         if (updated) {
-          showSuccessAlert("Actualizado", "Acudiente actualizado exitosamente.");
+          showSuccessAlert(
+            "Actualizado",
+            "Acudiente actualizado exitosamente.",
+          );
           resetForm();
           onClose();
         }
@@ -243,9 +283,9 @@ if (isEditing) {
   };
 
   if (!isOpen) return null;
-console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
-return (
-    <motion.div 
+  console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
+  return (
+    <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -302,7 +342,7 @@ return (
             <DocumentField
               documentType={
                 (referenceData?.documentTypes || []).find(
-                  (dt) => dt.id === parseInt(values.documentTypeId)
+                  (dt) => dt.id === parseInt(values.documentTypeId),
                 )?.label
               }
               value={values.identification}
@@ -314,7 +354,7 @@ return (
               label="Número de Documento"
               name="identification"
             />
-            
+
             <FormField
               label="Nombre Completo"
               name="nombreCompleto"
@@ -328,7 +368,7 @@ return (
               required
               delay={0.3}
             />
-            
+
             <FormField
               label="Correo Electrónico"
               name="email"
@@ -342,7 +382,7 @@ return (
               required
               delay={0.4}
             />
-            
+
             <FormField
               label="Número Telefónico"
               name="phoneNumber"
@@ -356,7 +396,7 @@ return (
               required
               delay={0.5}
             />
-            
+
             <FormField
               label="Dirección"
               name="address"
@@ -370,7 +410,7 @@ return (
               required
               delay={0.6}
             />
-            
+
             <FormField
               label="Fecha de Nacimiento"
               name="fechaNacimiento"
@@ -382,9 +422,11 @@ return (
               error={errors.fechaNacimiento}
               touched={touched.fechaNacimiento}
               required
+              minAge={18}
+              maxAge={100}
               delay={0.6}
             />
-            
+
             {/* Estado - Solo visible en modo editar */}
             {isEditing && (
               <FormField
@@ -417,7 +459,7 @@ return (
             </button>
             <button
               onClick={() => {
-handleSubmit();
+                handleSubmit();
               }}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
             >

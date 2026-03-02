@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { registrationsService } from "../services/registrationsService";
+import RegistrationsService from "../EventsSection/services/RegistrationsService";
 import { toast } from "react-toastify";
 
 /**
@@ -9,39 +9,50 @@ export const useRegistrations = () => {
   const [loading, setLoading] = useState(false);
   const [registrations, setRegistrations] = useState([]);
   const [registration, setRegistration] = useState(null);
-  const [stats, setStats] = useState(null);
 
   /**
-   * Inscribir equipo a evento
+   * Inscribir múltiples equipos a evento
    */
-  const registerTeam = useCallback(async (data) => {
-    setLoading(true);
-    try {
-      const response = await registrationsService.registerTeamToEvent(data);
-      toast.success(response.message || "Equipo inscrito exitosamente");
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = error.message || "Error al inscribir equipo";
-      toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const registerMultipleTeams = useCallback(
+    async (serviceId, teamIds, notes = "") => {
+      setLoading(true);
+      try {
+        const response = await RegistrationsService.registerMultipleTeams(
+          serviceId,
+          teamIds,
+          notes,
+        );
+        if (response.success) {
+          toast.success(response.message || "Equipos inscritos exitosamente");
+          return { success: true, data: response.data };
+        } else {
+          toast.error(response.error || "Error al inscribir equipos");
+          return { success: false, error: response.error };
+        }
+      } catch (error) {
+        const errorMessage = error.message || "Error al inscribir equipos";
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   /**
    * Obtener inscripciones de un evento
    */
   const fetchEventRegistrations = useCallback(
-    async (serviceId, status = null) => {
+    async (serviceId, status = "") => {
       setLoading(true);
       try {
-        const response = await registrationsService.getEventRegistrations(
+        const response = await RegistrationsService.getEventRegistrations(
           serviceId,
           status,
         );
-        setRegistrations(response.data.registrations || []);
-        return { success: true, data: response.data };
+        setRegistrations(response.data || []);
+        return { success: response.success, data: response.data };
       } catch (error) {
         const errorMessage = error.message || "Error al obtener inscripciones";
         toast.error(errorMessage);
@@ -55,80 +66,17 @@ export const useRegistrations = () => {
   );
 
   /**
-   * Obtener inscripciones de un equipo
-   */
-  const fetchTeamRegistrations = useCallback(async (teamId, status = null) => {
-    setLoading(true);
-    try {
-      const response = await registrationsService.getTeamRegistrations(
-        teamId,
-        status,
-      );
-      setRegistrations(response.data.registrations || []);
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = error.message || "Error al obtener inscripciones";
-      toast.error(errorMessage);
-      setRegistrations([]);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
    * Obtener equipos disponibles filtrados por categorías del evento
    */
   const fetchTeamsByEventCategories = useCallback(async (serviceId) => {
     setLoading(true);
     try {
       const response =
-        await registrationsService.getTeamsByEventCategories(serviceId);
-      return { success: true, data: response.data };
+        await RegistrationsService.getTeamsByEventCategories(serviceId);
+      return { success: response.success, data: response.data };
     } catch (error) {
       const errorMessage =
         error.message || "Error al obtener equipos disponibles";
-      toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Obtener inscripción por ID
-   */
-  const fetchRegistrationById = useCallback(async (id) => {
-    setLoading(true);
-    try {
-      const response = await registrationsService.getRegistrationById(id);
-      setRegistration(response.data);
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = error.message || "Error al obtener inscripción";
-      toast.error(errorMessage);
-      setRegistration(null);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Actualizar estado de inscripción
-   */
-  const updateStatus = useCallback(async (id, status, notes = null) => {
-    setLoading(true);
-    try {
-      const response = await registrationsService.updateRegistrationStatus(
-        id,
-        status,
-        notes,
-      );
-      toast.success(response.message || "Estado actualizado exitosamente");
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = error.message || "Error al actualizar estado";
       toast.error(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -142,31 +90,17 @@ export const useRegistrations = () => {
   const cancelRegistration = useCallback(async (id) => {
     setLoading(true);
     try {
-      const response = await registrationsService.cancelRegistration(id);
-      toast.success(response.message || "Inscripción cancelada exitosamente");
-      return { success: true };
+      const response = await RegistrationsService.cancelRegistration(id);
+      if (response.success) {
+        toast.success(response.message || "Inscripción cancelada exitosamente");
+        return { success: true };
+      } else {
+        toast.error(response.error || "Error al cancelar inscripción");
+        return { success: false, error: response.error };
+      }
     } catch (error) {
       const errorMessage = error.message || "Error al cancelar inscripción";
       toast.error(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Obtener estadísticas
-   */
-  const fetchStats = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await registrationsService.getRegistrationStats();
-      setStats(response.data);
-      return { success: true, data: response.data };
-    } catch (error) {
-      const errorMessage = error.message || "Error al obtener estadísticas";
-      toast.error(errorMessage);
-      setStats(null);
       return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
@@ -177,15 +111,10 @@ export const useRegistrations = () => {
     loading,
     registrations,
     registration,
-    stats,
-    registerTeam,
+    registerMultipleTeams,
     fetchEventRegistrations,
-    fetchTeamRegistrations,
     fetchTeamsByEventCategories,
-    fetchRegistrationById,
-    updateStatus,
     cancelRegistration,
-    fetchStats,
   };
 };
 

@@ -174,7 +174,7 @@ const temporaryPersonValidationRules = {
 
     const today = new Date();
     const minDate = new Date(
-      today.getFullYear() - 120,
+      today.getFullYear() - 100,
       today.getMonth(),
       today.getDate(),
     );
@@ -185,10 +185,13 @@ const temporaryPersonValidationRules = {
     );
 
     if (birthDate < minDate) {
-      return "La fecha de nacimiento no puede ser anterior a 120 años";
+      return "La fecha de nacimiento no puede ser anterior a 100 años atrás";
     }
     if (birthDate > maxDate) {
       return "La persona debe tener al menos 5 años de edad";
+    }
+    if (birthDate > today) {
+      return "La fecha de nacimiento no puede ser futura";
     }
     return "";
   },
@@ -692,6 +695,8 @@ const TemporaryPersonModal = ({
               touched={touched.birthDate}
               onChange={handleCustomChange}
               onBlur={handleBlur}
+              minAge={5}
+              maxAge={100}
               delay={0.47}
             />
 
