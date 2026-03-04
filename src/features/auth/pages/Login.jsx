@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { FiMail, FiLock } from "react-icons/fi";
+import { FiMail, FiLock, FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "../../../shared/contexts/authContext";
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css";
@@ -10,6 +10,7 @@ import logo from "../../../../public/assets/images/astrostar.png"; // Importar e
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -89,19 +90,33 @@ function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Correo electrónico"
                 autoComplete="email"
+                name="email"
+                id="email"
               />
             </div>
 
             <div className="relative">
               <FiLock className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
               <input
-                className="w-full h-11 pl-10 pr-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
-                type="password"
+                className="w-full h-11 pl-10 pr-12 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Contraseña"
                 autoComplete="current-password"
+                name="password"
+                id="password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-primary-purple transition-colors"
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
             </div>
 
             <div className="text-right -mt-2">
