@@ -130,7 +130,18 @@ class ProvidersService {
   }
 
   async checkActivePurchases(providerId) {
-    return apiClient.get(`${this.endpoint}/${providerId}/active-purchases`);
+    // Usar el endpoint correcto del backend: check-ingresos
+    const response = await apiClient.get(`${this.endpoint}/${providerId}/check-ingresos`);
+    
+    // Transformar la respuesta para mantener compatibilidad con el código existente
+    if (response.success && response.hasIngresos !== undefined) {
+      return {
+        ...response,
+        hasActivePurchases: response.hasIngresos
+      };
+    }
+    
+    return response;
   }
 
   async getProviderStats() {

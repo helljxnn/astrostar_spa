@@ -325,12 +325,30 @@ setProviderToEdit(response.data);
     if (!provider || !provider.id) {
       return showErrorAlert("Error", "Proveedor no válido");
     }
+    
+    // Verificar si el proveedor tiene ingresos asociados
     if (activePurchasesCheck[provider.id]) {
       return showErrorAlert(
         "No se puede eliminar",
-        `No se puede eliminar el proveedor "${provider.razonSocial}" porque tiene compras activas asociadas.`,
+        `No se puede eliminar el proveedor "${provider.razonSocial}" porque está asociado a ingresos.`,
       );
     }
+    
+    // Verificar nuevamente en el backend antes de eliminar
+    try {
+      const purchasesCheck = await providersService.checkActivePurchases(provider.id);
+      if (purchasesCheck.hasActivePurchases) {
+        // Actualizar el estado local
+        setActivePurchasesCheck(prev => ({ ...prev, [provider.id]: true }));
+        return showErrorAlert(
+          "No se puede eliminar",
+          `No se puede eliminar el proveedor "${provider.razonSocial}" porque está asociado a ingresos.`,
+        );
+      }
+    } catch (error) {
+      console.error("Error checking active purchases:", error);
+    }
+    
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
@@ -370,7 +388,7 @@ setProviderToEdit(response.data);
       show: hasPermission("providers", "Eliminar"),
       disabled: activePurchasesCheck[provider.id],
       title: activePurchasesCheck[provider.id]
-        ? "No se puede eliminar con compras activas"
+        ? "Proveedor está asociado a ingresos"
         : "Eliminar proveedor",
     }),
   };

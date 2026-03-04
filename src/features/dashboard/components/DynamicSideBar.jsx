@@ -60,7 +60,7 @@ function DynamicSideBar({
   }, []);
 
   const location = useLocation();
-  const { userRole, logout } = useAuth();
+  const { user, userRole, logout } = useAuth();
   const {
     visibleModules,
     visibleGroups,
@@ -68,6 +68,10 @@ function DynamicSideBar({
     isGroupVisible,
     getVisibleChildModules,
   } = useSidebarVisibility();
+
+  // Normalizar el rol del usuario
+  const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
 
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -360,12 +364,12 @@ function DynamicSideBar({
 
             {/* Enlace directo a Gestión de citas para deportista y acudiente */}
             {isModuleVisible("appointmentManagement") &&
-              (userRole === "deportista" || userRole === "acudiente") &&
+              isAthleteOrGuardian &&
               renderModule("appointmentManagement")}
 
-            {/* Grupos de módulos */}
+            {/* Grupos de módulos - Ocultar "services" para deportistas y acudientes */}
             {renderGroup("equipment")}
-            {renderGroup("services")}
+            {!isAthleteOrGuardian && renderGroup("services")}
             {renderGroup("athletes")}
             {renderGroup("donations")}
             {renderGroup("events")}

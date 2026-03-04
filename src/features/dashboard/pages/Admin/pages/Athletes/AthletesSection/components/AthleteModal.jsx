@@ -700,62 +700,8 @@ const AthleteModal = ({
       return;
     }
     
-    // REGLA: Permitir menores en categorías mayores, BLOQUEAR mayores en categorías menores
-    const minAge = selectedCategory.minAge || 0;
-    const maxAge = selectedCategory.maxAge || 999;
-    
-    console.log('🔍 [AthleteModal] Validando edad vs categoría');
-    console.log('🔍 [AthleteModal] Edad:', ageNumber, 'Categoría:', values.categoria, 'Rango:', minAge, '-', maxAge);
-    
-    // SOLO bloquear si la edad es MAYOR al máximo de la categoría
-    if (ageNumber !== null && ageNumber > maxAge) {
-      console.log('⚠️ [AthleteModal] Edad mayor al máximo de la categoría');
-      
-      // En modo EDICIÓN: Mostrar advertencia y pedir confirmación
-      if (isEditing) {
-        const Swal = (await import('sweetalert2')).default;
-        const result = await Swal.fire({
-          title: '⚠️ Advertencia: Edad Mayor al Rango',
-          html: `
-            <div style="text-align: left;">
-              <p><strong>Edad de la deportista:</strong> ${ageNumber} años</p>
-              <p><strong>Categoría seleccionada:</strong> ${values.categoria}</p>
-              <p><strong>Rango de edad de la categoría:</strong> ${minAge} - ${maxAge} años</p>
-              <br>
-              <p>La deportista es mayor al rango de edad de la categoría seleccionada.</p>
-              <p><strong>¿Deseas continuar de todos modos?</strong></p>
-              <p style="color: #666; font-size: 0.9em;">Esto puede ser necesario para casos especiales o corrección de errores.</p>
-            </div>
-          `,
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, continuar',
-          cancelButtonText: 'No, revisar',
-          confirmButtonColor: '#f59e0b',
-          cancelButtonColor: '#6b7280',
-        });
-        
-        if (!result.isConfirmed) {
-          console.log('❌ [AthleteModal] Usuario canceló el cambio de categoría');
-          return;
-        }
-        
-        console.log('✅ [AthleteModal] Usuario confirmó el cambio de categoría fuera de rango');
-      } else {
-        // En modo CREACIÓN o MATRÍCULA: NO permitir si es MAYOR
-        console.log('❌ [AthleteModal] Edad mayor al rango en modo creación!');
-        showErrorAlert(
-          "Categoría no válida",
-          `La edad de la deportista (${ageNumber} años) es mayor al rango de la categoría "${values.categoria}" (${minAge}-${maxAge} años). Por favor, selecciona una categoría apropiada.`
-        );
-        return;
-      }
-    } else if (ageNumber !== null && ageNumber < minAge) {
-      // Si es MENOR al mínimo, permitir pero mostrar info
-      console.log('ℹ️ [AthleteModal] Edad menor al mínimo de la categoría - PERMITIDO');
-    } else {
-      console.log('✅ [AthleteModal] Validación de categoría por edad pasó correctamente');
-    }
+    // NO HAY VALIDACIÓN DE EDAD VS CATEGORÍA - Se permite cualquier combinación
+    console.log('ℹ️ [AthleteModal] Sin validación de edad vs categoría - permitiendo cualquier combinación');
 
     // 🔒 VALIDACIÓN CRÍTICA: Menores de edad DEBEN tener acudiente
     if (ageNumber !== null && ageNumber < 18) {

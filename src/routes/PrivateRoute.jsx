@@ -16,7 +16,7 @@ const PrivateRoute = ({
   showFallback = true,
   children,
 }) => {
-  const { isAuthenticated, userRole, isLoading } = useAuth();
+  const { isAuthenticated, userRole, isLoading, user } = useAuth();
   const { hasPermission, hasModuleAccess, loading, isAdmin } = usePermissions();
 
   // Mostrar loading mientras se verifica la autenticación
@@ -36,6 +36,14 @@ const PrivateRoute = ({
 
   // Si es admin, permitir acceso a todo
   if (isAdmin) {
+    return children ? children : <Outlet />;
+  }
+
+  // EXCEPCIÓN: Deportistas y acudientes siempre tienen acceso a Gestión de Citas
+  const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
+  
+  if (module === "appointmentManagement" && isAthleteOrGuardian) {
     return children ? children : <Outlet />;
   }
 

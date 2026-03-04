@@ -130,7 +130,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                     Segundo Nombre
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {middleName || "N/A"}
+                    {middleName || "No especificado"}
                   </p>
                 </motion.div>
 
@@ -160,7 +160,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                     Segundo Apellido
                   </label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {secondLastName || "N/A"}
+                    {secondLastName || "No especificado"}
                   </p>
                 </motion.div>
 

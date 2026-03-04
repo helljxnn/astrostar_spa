@@ -147,7 +147,11 @@ export default ProductModal;
 - ✅ AthleteViewModal.jsx
 - ✅ GuardianViewModal.jsx
 
-**Total: 26 modales arreglados**
+### Usuarios (1 modal)
+
+- ✅ UserViewModal.jsx
+
+**Total: 27 modales arreglados**
 
 ## Notas Importantes
 

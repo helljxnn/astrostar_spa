@@ -121,8 +121,12 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         if (birthDate < minDate) {
           return "La fecha de nacimiento no puede ser anterior a 100 años atrás";
         }
-        if (age < 5) return "Debe tener al menos 5 años";
-        if (age > 100) return "La edad no puede ser mayor a 100 años";
+        if (birthDate > maxDate) {
+          return "El deportista debe tener al menos 5 años de edad";
+        }
+        if (birthDate > today) {
+          return "La fecha de nacimiento no puede ser futura";
+        }
         return "";
 
       case "phoneNumber":

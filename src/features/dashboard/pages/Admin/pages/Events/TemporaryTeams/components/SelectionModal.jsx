@@ -267,15 +267,16 @@ const SelectionModal = ({
 
     // Si no hay selecciones, todo está disponible
     if (selectedItems.length === 0) {
-      // EXCEPCIÓN: Si viene currentCategoria de props (editando equipo), aplicar restricción
-      if (
-        mode === "athletes" &&
-        item.type === "fundacion" &&
-        currentCategoria &&
-        item.categoria
-      ) {
-        return item.categoria === currentCategoria;
-      }
+      // CAMBIO: Eliminada restricción de categoría para equipos de fundación
+      // Ahora permitimos deportistas de diferentes categorías
+      // if (
+      //   mode === "athletes" &&
+      //   item.type === "fundacion" &&
+      //   currentCategoria &&
+      //   item.categoria
+      // ) {
+      //   return item.categoria === currentCategoria;
+      // }
       return true;
     }
 
@@ -283,19 +284,20 @@ const SelectionModal = ({
     const firstSelectedType = selectedItems[0].type;
     if (item.type !== firstSelectedType) return false;
 
-    // Para deportistas de fundación, verificar categoría solo si hay deportistas de fundación seleccionados
-    if (mode === "athletes" && item.type === "fundacion") {
-      const hasFoundationAthletesSelected = selectedItems.some(
-        (s) => s.type === "fundacion" && s.categoria,
-      );
-      if (
-        hasFoundationAthletesSelected &&
-        autoSelectedCategory &&
-        item.categoria
-      ) {
-        return item.categoria === autoSelectedCategory;
-      }
-    }
+    // CAMBIO: Eliminada restricción de categoría para deportistas de fundación
+    // Ahora permitimos deportistas de diferentes categorías en el mismo equipo
+    // if (mode === "athletes" && item.type === "fundacion") {
+    //   const hasFoundationAthletesSelected = selectedItems.some(
+    //     (s) => s.type === "fundacion" && s.categoria,
+    //   );
+    //   if (
+    //     hasFoundationAthletesSelected &&
+    //     autoSelectedCategory &&
+    //     item.categoria
+    //   ) {
+    //     return item.categoria === autoSelectedCategory;
+    //   }
+    // }
 
     return true;
   };
@@ -558,14 +560,15 @@ const SelectionModal = ({
                           ) {
                             return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
                           }
-                          if (
-                            mode === "athletes" &&
-                            item.type === "fundacion" &&
-                            currentCategoria &&
-                            item.categoria !== currentCategoria
-                          ) {
-                            return "Solo se pueden seleccionar deportistas de la misma categoría";
-                          }
+                          // CAMBIO: Eliminado mensaje de categoría mixta
+                          // if (
+                          //   mode === "athletes" &&
+                          //   item.type === "fundacion" &&
+                          //   currentCategoria &&
+                          //   item.categoria !== currentCategoria
+                          // ) {
+                          //   return "Solo se pueden seleccionar deportistas de la misma categoría";
+                          // }
                           return "No disponible";
                         };
 

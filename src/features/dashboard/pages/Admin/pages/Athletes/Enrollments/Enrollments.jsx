@@ -106,6 +106,16 @@ const Enrollments = () => {
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase().trim();
       result = result.filter((athlete) => {
+        // Construir nombre completo para búsqueda
+        const firstName = athlete.firstName || athlete.nombres || '';
+        const lastName = athlete.lastName || athlete.apellidos || '';
+        const nombreCompleto = `${firstName} ${lastName}`.toLowerCase().trim();
+        
+        // Buscar en nombre completo primero
+        if (nombreCompleto.includes(searchLower)) {
+          return true;
+        }
+        
         // Campos de texto del deportista
         const textFields = [
           athlete.firstName,

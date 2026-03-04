@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { usePermissions } from "./usePermissions";
+import { useAuth } from "../contexts/authContext";
 import {
   MODULE_CONFIG,
   MODULE_GROUPS,
@@ -12,6 +13,16 @@ import {
  */
 export const useSidebarVisibility = () => {
   const { hasModuleAccess, isAdmin } = usePermissions();
+  const { user, userRole } = useAuth();
+
+  // Normalizar el rol del usuario
+  const normalizedRole = useMemo(() => {
+    return (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  }, [user, userRole]);
+
+  const isAthleteOrGuardian = useMemo(() => {
+    return normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
+  }, [normalizedRole]);
 
   /**
    * Calcula qué módulos individuales son visibles
@@ -21,11 +32,16 @@ export const useSidebarVisibility = () => {
 
     // Iterar sobre todos los módulos configurados
     Object.keys(MODULE_CONFIG).forEach((moduleId) => {
-      visible[moduleId] = isAdmin || hasModuleAccess(moduleId);
+      // Excepción: Deportistas y acudientes siempre ven Gestión de Citas
+      if (moduleId === "appointmentManagement" && isAthleteOrGuardian) {
+        visible[moduleId] = true;
+      } else {
+        visible[moduleId] = isAdmin || hasModuleAccess(moduleId);
+      }
     });
 
     return visible;
-  }, [hasModuleAccess, isAdmin]);
+  }, [hasModuleAccess, isAdmin, isAthleteOrGuardian]);
 
   /**
    * Calcula qué grupos de módulos son visibles

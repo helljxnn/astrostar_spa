@@ -71,11 +71,17 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   )
 
   // Wrapper para asegurar que siempre se llame con 2 parámetros
-  const handleChange = function(nameOrEvent, value) {
+  const handleChange = (nameOrEvent, value) => {
+    console.log('🎯🎯🎯 [GuardianViewModal.handleChange] nameOrEvent:', nameOrEvent, 'value:', value);
+    
     if (typeof nameOrEvent === 'string') {
+      // Llamada directa: handleChange('field', 'value')
+      console.log('🎯 [GuardianViewModal] Llamada directa:', nameOrEvent, value);
       hookHandleChange(nameOrEvent, value);
     } else if (nameOrEvent?.target) {
+      // Llamada desde evento: handleChange(event)
       const { name, value: val } = nameOrEvent.target;
+      console.log('🎯 [GuardianViewModal] Llamada desde evento:', name, val);
       hookHandleChange(name, val);
     }
   }
@@ -304,6 +310,22 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
       console.log("❌ [GuardianViewModal] Validación falló");
       console.log("❌ Errores:", errors);
       console.log("❌ Errores asíncronos:", asyncErrors);
+      console.log("❌ Valores actuales:", values);
+      console.log("❌ isValid:", isValid);
+      console.log("❌ hasAsyncErrors:", hasAsyncErrors);
+      
+      // Mostrar cada error específicamente
+      Object.keys(errors).forEach(key => {
+        if (errors[key]) {
+          console.log(`❌ Error en ${key}:`, errors[key]);
+        }
+      });
+      Object.keys(asyncErrors).forEach(key => {
+        if (asyncErrors[key]) {
+          console.log(`❌ Error asíncrono en ${key}:`, asyncErrors[key]);
+        }
+      });
+      
       return;
     }
 

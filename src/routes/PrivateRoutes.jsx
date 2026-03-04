@@ -187,7 +187,7 @@ const PrivateRoutes = () => {
         <Route
           path="materials"
           element={
-            <PrivateRoute module="sportsEquipment" action="Ver">
+            <PrivateRoute module="materials" action="Ver">
               <MaterialsCatalog />
             </PrivateRoute>
           }
