@@ -101,13 +101,14 @@ export const Team = () => {
   const galleryItems = teamMembers.map((member) => ({
     image: member.image,
     text: member.name,
+    role: member.role,
     id: member.id,
     memberData: member, // Pasar todos los datos del miembro
   }));
 
   // Manejar clic en imagen con useCallback para evitar re-renders
   const handleImageClick = useCallback(
-    (itemData, index) => {
+    (itemData) => {
       const member = teamMembers.find((m) => m.id === itemData.id);
       if (member) {
         setSelectedMember(member);
@@ -137,12 +138,23 @@ export const Team = () => {
             grandes oportunidades y cumplir con los objetivos de la fundación,
             contribuyendo al desarrollo interno de la entidad.
           </p>
-          <p className="text-sm text-gray-500 italic">
-            Haz clic en cualquier imagen para ver más detalles
-          </p>
+          <motion.p
+            animate={{
+              opacity: [0.4, 1, 0.4],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="text-sm text-[#B595FF] font-medium"
+          >
+            Desliza para ver más • Haz clic en cualquier imagen para ver más
+            detalles
+          </motion.p>
         </motion.div>
 
-        {/* Circular Gallery de ReactBits */}
+        {/* Circular Gallery */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
