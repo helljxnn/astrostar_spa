@@ -73,7 +73,7 @@ const getAssociationMeta = (item = {}) => {
 const buildAssociationDetails = (association) => {
   const details = [];
   if (association.inscriptions)
-    details.push(`${association.inscriptions} inscripci�n(es)`);
+    details.push(`${association.inscriptions} inscripción(es)`);
   if (association.participants)
     details.push(`${association.participants} participante(s)`);
   if (association.services) details.push(`${association.services} evento(s)`);
@@ -131,14 +131,14 @@ const SportsCategory = () => {
 
   const reportColumns = [
     { header: "Nombre", accessor: "nombre" },
-    { header: "Descripci�n", accessor: "descripcion" },
-    { header: "Edad m�nima", accessor: "edadMinima" },
-    { header: "Edad m�xima", accessor: "edadMaxima" },
+    { header: "Descripción", accessor: "descripcion" },
+    { header: "Edad mínima", accessor: "edadMinima" },
+    { header: "Edad máxima", accessor: "edadMaxima" },
     { header: "Estado", accessor: "estado" },
     { header: "Publicar", accessor: "publicar" },
     { header: "Imagen/Archivo", accessor: "archivo" },
-    { header: "Fecha creaci�n", accessor: "fechaCreacion" },
-    { header: "Fecha actualizaci�n", accessor: "fechaActualizacion" },
+    { header: "Fecha creación", accessor: "fechaCreacion" },
+    { header: "Fecha actualización", accessor: "fechaActualizacion" },
   ];
 
   // Cargar categorías cuando cambia la página o el término de búsqueda
@@ -147,7 +147,10 @@ const SportsCategory = () => {
       page: currentPage,
       limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
       search: searchTerm, // Enviar búsqueda al backend
-    }).catch((err) => console.error("fetch error:", err));
+    }).catch((err) => {
+      console.error("Error al cargar categorías:", err);
+      // El error ya se maneja en el hook, no necesitamos hacer nada aquí
+    });
   }, [currentPage, searchTerm, fetchSportsCategories]);
 
   // Usar datos del servidor directamente (ya vienen filtrados y paginados)
@@ -294,7 +297,7 @@ const SportsCategory = () => {
             <SearchInput
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar categor�a..."
+              placeholder="Buscar categoría..."
             />
           </div>
 
@@ -310,7 +313,7 @@ const SportsCategory = () => {
               disabled={loading}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FaPlus /> Crear Categor�a
+              <FaPlus /> Crear Categoría
             </button>
           </div>
         </div>
@@ -318,16 +321,16 @@ const SportsCategory = () => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          <p className="font-medium">? Error al cargar categor�as</p>
+          <p className="font-medium">⚠ Error al cargar categorías</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
 
       {!loading && totalRows === 0 && searchTerm && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 mb-6">
-          <div className="text-6xl mb-4">??</div>
+          <div className="text-6xl mb-4">🔍</div>
           <p className="text-gray-700 font-medium mb-2">
-            No se encontraron categor�as
+            No se encontraron categorías
           </p>
           <p className="text-gray-600 mb-4">
             No hay resultados para "{searchTerm}"
@@ -336,14 +339,14 @@ const SportsCategory = () => {
             onClick={handleClearSearch}
             className="text-primary-purple hover:text-primary-blue font-medium underline"
           >
-            Limpiar b�squeda
+            Limpiar búsqueda
           </button>
         </div>
       )}
 
       {!loading && totalRows === 0 && !searchTerm && (
         <div className="text-center py-12 text-gray-500">
-          <p>No hay categor�as registradas.</p>
+          <p>No hay categorías registradas.</p>
         </div>
       )}
 
@@ -352,7 +355,7 @@ const SportsCategory = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <Table
               thead={{
-                titles: ["Nombre", "Descripci�n", "Edad m�nima", "Edad m�xima"],
+                titles: ["Nombre", "Descripción", "Edad mínima", "Edad máxima"],
                 state: true,
               }}
               tbody={{
@@ -375,12 +378,12 @@ const SportsCategory = () => {
                 view: () => ({
                   show: canView,
                   disabled: false,
-                  title: "Ver detalles de la categor�a",
+                  title: "Ver detalles de la categoría",
                 }),
                 edit: () => ({
                   show: canEdit,
                   disabled: false,
-                  title: "Editar categor�a",
+                  title: "Editar categoría",
                 }),
                 delete: (item) => {
                   const association = getAssociationMeta(item);
@@ -393,8 +396,8 @@ const SportsCategory = () => {
                     title: blocked
                       ? details.length
                         ? `No se puede eliminar: asociada a ${details.join(", ")}`
-                        : "No se puede eliminar: categor�a asociada"
-                      : "Eliminar categor�a",
+                        : "No se puede eliminar: categoría asociada"
+                      : "Eliminar categoría",
                   };
                 },
               }}

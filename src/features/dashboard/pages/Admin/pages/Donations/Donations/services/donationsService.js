@@ -23,6 +23,10 @@ class DonationsService {
       formData
     );
   }
+
+  async getStatistics() {
+    return apiClient.get("/donations", { params: { limit: 10000 } });
+  }
 }
 
 export default new DonationsService();

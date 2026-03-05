@@ -101,9 +101,9 @@ const Donations = () => {
       ref={ref}
       type="button"
       onClick={onClick}
-      className="px-3 py-2 rounded-lg flex items-center gap-2 bg-gray-200 hover:bg-gray-300 text-sm text-gray-700 transition-colors"
+      className="px-3 py-2 rounded-lg flex items-center gap-2 bg-primary-purple/10 hover:bg-primary-purple/20 text-sm text-primary-purple transition-colors"
     >
-      <FaRegCalendarAlt className="text-gray-500" />
+      <FaRegCalendarAlt className="text-primary-purple" />
       <span className="whitespace-nowrap">{value || "Filtrar por mes"}</span>
     </button>
   ));
@@ -443,7 +443,7 @@ const Donations = () => {
             />
             {selectedMonth && (
               <button
-                className="px-2.5 py-1 text-xs bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300"
+                className="px-2.5 py-1 text-xs bg-primary-blue/20 text-primary-blue rounded-lg hover:bg-primary-blue/30"
                 onClick={() => setSelectedMonth(null)}
               >
                 Limpiar
@@ -460,7 +460,7 @@ const Donations = () => {
 
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-sky-300 to-sky-400 hover:from-sky-400 hover:to-sky-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-[1.03]"
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple-light hover:to-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-[1.03]"
             >
               <FaPlus /> Crear
             </button>

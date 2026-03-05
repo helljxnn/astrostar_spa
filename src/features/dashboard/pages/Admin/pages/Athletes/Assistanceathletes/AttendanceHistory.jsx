@@ -5,6 +5,7 @@ import ReportButton from "../../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
+import DateRangePickerCalendar from "./components/DateRangePickerCalendar";
 import assistanceathletesService from "./services/AssistanceathletesService";
 import { showWarningAlert } from "../../../../../../../shared/utils/Alerts";
 
@@ -24,8 +25,6 @@ export default function AssistanceHistory() {
 
   const [startDate, setStartDate] = useState(() => todayISO());
   const [endDate, setEndDate] = useState(() => todayISO());
-  const [startDateInput, setStartDateInput] = useState(() => todayISO());
-  const [endDateInput, setEndDateInput] = useState(() => todayISO());
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
