@@ -116,7 +116,7 @@ export const useDonorSponsorForm = ({
           record.identificacion || record.nit || record.numeroDocumento || "",
       };
     },
-    [docMaxLength]
+    [docMaxLength],
   );
 
   useEffect(() => {
@@ -201,7 +201,7 @@ export const useDonorSponsorForm = ({
 
       return "";
     },
-    [docMaxLength, formData]
+    [docMaxLength, formData],
   );
   const validateForm = useCallback(() => {
     const fieldsToCheck = [];
@@ -240,12 +240,13 @@ export const useDonorSponsorForm = ({
               nit: "",
               personaContacto: "",
             };
-          } else {
+          } else if (value === "Juridica") {
             updated = {
               ...updated,
               nombreCompleto: "",
               tipoDocumento: "",
               numeroDocumento: "",
+              nit: "", // Ensure nit is initialized
             };
           }
         }
@@ -258,8 +259,8 @@ export const useDonorSponsorForm = ({
             name === "telefono"
               ? 15
               : name === "numeroDocumento"
-              ? nextDocLength
-              : NIT_MAX;
+                ? nextDocLength
+                : NIT_MAX;
           updated[name] = numeric.slice(0, maxLen);
         }
 
@@ -267,7 +268,7 @@ export const useDonorSponsorForm = ({
         const fieldError = computeFieldError(
           name,
           updated[name],
-          validationContext
+          validationContext,
         );
 
         setErrors((prevErrors) => {
@@ -299,7 +300,7 @@ export const useDonorSponsorForm = ({
         return updated;
       });
     },
-    [computeFieldError, docMaxLength]
+    [computeFieldError, docMaxLength],
   );
   const handleBlur = useCallback(
     async (e) => {
@@ -347,11 +348,12 @@ export const useDonorSponsorForm = ({
       }
     },
     [
+      formData,
       checkEmailAvailability,
       checkIdentificationAvailability,
       initialData?.id,
       computeFieldError,
-    ]
+    ],
   );
 
   const handleSubmit = useCallback(async () => {

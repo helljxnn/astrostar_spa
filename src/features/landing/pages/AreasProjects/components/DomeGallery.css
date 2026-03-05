@@ -1,0 +1,190 @@
+﻿.dg-scroll-lock {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.sphere-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  --radius: 620px;
+  --viewer-pad: 18px;
+  --overlay-blur-color: #140b2d;
+  --tile-radius: 22px;
+  --enlarge-radius: 26px;
+  --image-filter: none;
+}
+
+.sphere-main {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  perspective: 2200px;
+  transform-style: preserve-3d;
+  touch-action: pan-y;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform-style: preserve-3d;
+}
+
+.sphere {
+  width: 0;
+  height: 0;
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.item {
+  --unit: calc(360deg / var(--segments-x) / 2);
+  position: absolute;
+  transform-style: preserve-3d;
+  transition: transform 280ms ease;
+  transform:
+    rotateY(calc(var(--unit) * (var(--offset-x) + (var(--item-size-x) - 1) / 2)))
+    rotateX(calc(var(--unit) * (var(--offset-y) - (var(--item-size-y) - 1) / 2)))
+    translateZ(var(--radius));
+}
+
+.item__image {
+  width: clamp(48px, 4.2vw, 70px);
+  aspect-ratio: 3 / 4;
+  border-radius: var(--tile-radius);
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  transform: translate3d(-50%, -50%, 0);
+  box-shadow: 0 8px 18px rgba(12, 12, 18, 0.28);
+  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: transform 260ms ease, box-shadow 260ms ease, filter 260ms ease;
+}
+
+.item__image:hover {
+  transform: translate3d(-50%, -50%, 0) scale(1.06);
+  box-shadow: 0 14px 30px rgba(11, 10, 26, 0.36);
+}
+
+.item__image img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  pointer-events: none;
+  filter: var(--image-filter);
+}
+
+.item__image--reference {
+  pointer-events: none;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.overlay--blur {
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  background:
+    radial-gradient(90% 50% at 50% 50%, transparent 36%, rgba(10, 10, 20, 0.14) 72%, rgba(9, 8, 20, 0.42) 100%),
+    linear-gradient(to top, color-mix(in srgb, var(--overlay-blur-color) 40%, transparent), transparent 45%);
+}
+
+.edge-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.edge-fade--top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(248, 244, 255, 0.95), rgba(248, 244, 255, 0));
+}
+
+.edge-fade--bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(248, 244, 255, 0.95), rgba(248, 244, 255, 0));
+}
+
+.viewer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 8, 16, 0.5);
+  opacity: 0;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.frame {
+  position: absolute;
+  left: var(--viewer-pad);
+  right: var(--viewer-pad);
+  top: var(--viewer-pad);
+  bottom: var(--viewer-pad);
+  pointer-events: none;
+}
+
+.sphere-root[data-enlarging="true"] .scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.enlarge,
+.enlarge-closing {
+  border-radius: var(--enlarge-radius);
+  overflow: hidden;
+  box-shadow: 0 14px 36px rgba(8, 7, 19, 0.48);
+  background: #fff;
+}
+
+.enlarge img,
+.enlarge-closing img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .sphere-root,
+  .sphere-main {
+    min-height: 360px;
+  }
+
+  .item__image {
+    width: clamp(40px, 5.8vw, 60px);
+  }
+}
+
+@media (max-width: 640px) {
+  .sphere-root,
+  .sphere-main {
+    min-height: 320px;
+  }
+
+  .frame {
+    left: 10px;
+    right: 10px;
+    top: 10px;
+    bottom: 10px;
+  }
+}

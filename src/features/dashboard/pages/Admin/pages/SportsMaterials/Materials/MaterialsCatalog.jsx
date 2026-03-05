@@ -326,15 +326,6 @@ const MaterialsCatalog = () => {
       return;
     }
 
-    // Solo mostrar para materiales reutilizables
-    if (!material.esReutilizable) {
-      showErrorAlert(
-        "Material no reutilizable",
-        "Solo los materiales reutilizables tienen asignaciones por evento",
-      );
-      return;
-    }
-
     const originalMaterial = materials.find((m) => m.id === material.id);
     setSelectedMaterial(originalMaterial || material);
     setIsAssignmentsModalOpen(true);
@@ -359,8 +350,11 @@ const MaterialsCatalog = () => {
       stockTotal: formatNumber(stockTotal),
       // Preservar valores numéricos originales para validaciones
       stockTotalNumeric: stockTotal,
+      stockEventosNumeric: stockEventos,
       hasMovements: m.hasMovements,
       movementsCount: m.movementsCount,
+      hasActiveAssignments: m.hasActiveAssignments || false,
+      activeAssignmentsCount: m.activeAssignmentsCount || 0,
     };
   });
 
@@ -466,7 +460,7 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-green-50 border border-green-200 text-green-600 hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-colors",
                   label: <FaCalendarAlt />,
                   title: "Ver Asignaciones a Eventos",
-                  show: (item) => item.esReutilizable === true,
+                  // Siempre mostrar el botón (sin condición show)
                 },
                 {
                   onClick: handleTransfer,
@@ -515,20 +509,26 @@ const MaterialsCatalog = () => {
           customActions: {
             0: (material) => {
               // Botón de asignaciones (índice 0 en customActions)
-              // Debe estar deshabilitado si:
-              // 1. No es reutilizable
-              // 2. No tiene stock en fundación
               const isReusable = material.esReutilizable === true;
-              const hasStock = (material.stockFundacion || 0) > 0;
-              const canViewAssignments = isReusable && hasStock;
+              const hasActiveAssignments =
+                material.hasActiveAssignments === true;
+
+              // El botón está habilitado solo si es reutilizable Y tiene asignaciones activas
+              const isEnabled = isReusable && hasActiveAssignments;
+
+              // Mensajes más claros y específicos
+              let tooltipMessage = "Ver Asignaciones a Eventos";
+
+              if (!isReusable) {
+                tooltipMessage =
+                  "Material consumible - No tiene asignaciones por evento";
+              } else if (!hasActiveAssignments) {
+                tooltipMessage = "Sin eventos asignados actualmente";
+              }
 
               return {
-                disabled: !canViewAssignments,
-                title: !isReusable
-                  ? "Solo materiales reutilizables tienen asignaciones"
-                  : !hasStock
-                    ? "Sin stock disponible para asignar"
-                    : "Ver Asignaciones a Eventos",
+                disabled: !isEnabled,
+                title: tooltipMessage,
               };
             },
           },
