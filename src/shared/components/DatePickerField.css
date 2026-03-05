@@ -1,0 +1,50 @@
+/* Estilos personalizados para DatePicker con z-index alto */
+.react-datepicker-popper {
+    z-index: 99999 !important;
+}
+
+.react-datepicker__portal {
+    z-index: 99999 !important;
+}
+
+.datepicker-popper-high-z {
+    z-index: 99999 !important;
+}
+
+/* Asegurar que el calendario esté por encima de todo */
+.react-datepicker {
+    z-index: 99999 !important;
+}
+
+.react-datepicker__tab-loop {
+    z-index: 99999 !important;
+}
+
+/* Mejorar la apariencia del calendario */
+.react-datepicker__header {
+    background-color: #B595FF;
+    border-bottom: none;
+}
+
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+    color: white;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+    background-color: #B595FF;
+}
+
+.react-datepicker__day--selected:hover,
+.react-datepicker__day--keyboard-selected:hover {
+    background-color: #9BE9FF;
+}
+
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+    background-color: #B595FF;
+}
+
+.react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected:hover {
+    background-color: #9BE9FF;
+}
