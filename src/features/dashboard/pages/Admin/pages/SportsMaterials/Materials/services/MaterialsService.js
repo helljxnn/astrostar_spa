@@ -376,6 +376,14 @@ class MaterialsService {
         backendData.hasMovements || backendData.has_movements || false,
       movementsCount:
         backendData.movementsCount || backendData.movements_count || 0,
+      hasActiveAssignments:
+        backendData.hasActiveAssignments ||
+        backendData.has_active_assignments ||
+        false,
+      activeAssignmentsCount:
+        backendData.activeAssignmentsCount ||
+        backendData.active_assignments_count ||
+        0,
       createdAt: backendData.createdAt || backendData.created_at || "",
       updatedAt: backendData.updatedAt || backendData.updated_at || "",
       createdBy: backendData.createdBy || backendData.created_by || null,

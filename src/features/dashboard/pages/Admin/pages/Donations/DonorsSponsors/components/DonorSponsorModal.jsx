@@ -47,10 +47,11 @@ const DonorSponsorModal = ({
   const isNatural = formData.tipoPersona === "Natural";
   const isJuridica = formData.tipoPersona === "Juridica";
 
-  const estadoOptions = referenceData.estados?.map((item) => ({
-    value: item.value || item,
-    label: item.label || item,
-  })) || [];
+  const estadoOptions =
+    referenceData.estados?.map((item) => ({
+      value: item.value || item,
+      label: item.label || item,
+    })) || [];
 
   if (typeof document === "undefined") return null;
 
@@ -80,7 +81,9 @@ const DonorSponsorModal = ({
                 <IoClose size={20} />
               </button>
               <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
-                {mode === "edit" ? "Editar Donante/Patrocinador" : "Crear Donante/Patrocinador"}
+                {mode === "edit"
+                  ? "Editar Donante/Patrocinador"
+                  : "Crear Donante/Patrocinador"}
               </h2>
             </div>
 
@@ -96,7 +99,11 @@ const DonorSponsorModal = ({
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => handleChange({ target: { name: "tipo", value: option.value } })}
+                      onClick={() =>
+                        handleChange({
+                          target: { name: "tipo", value: option.value },
+                        })
+                      }
                       className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm transition-all relative ${
                         active
                           ? "text-primary-blue border-b-2 border-primary-blue"
@@ -132,7 +139,12 @@ const DonorSponsorModal = ({
                         key={option.value}
                         type="button"
                         onClick={() =>
-                          handleChange({ target: { name: "tipoPersona", value: option.value } })
+                          handleChange({
+                            target: {
+                              name: "tipoPersona",
+                              value: option.value,
+                            },
+                          })
                         }
                         className={`px-6 py-4 rounded-xl font-semibold text-sm transition-all border-2 ${
                           active
@@ -161,26 +173,62 @@ const DonorSponsorModal = ({
                         onBlur={handleBlur}
                         error={errors.nombreCompleto}
                         touched={touched.nombreCompleto}
-                        helperText={!errors.nombreCompleto ? nameHelperText : undefined}
+                        helperText={
+                          !errors.nombreCompleto ? nameHelperText : undefined
+                        }
                       />
-                      <div className="space-y-2">
+                      <FormField
+                        label="Tipo de Documento"
+                        name="tipoDocumento"
+                        type="select"
+                        placeholder="Seleccione tipo"
+                        required
+                        value={formData.tipoDocumento}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={errors.tipoDocumento}
+                        touched={touched.tipoDocumento}
+                        options={[
+                          { value: "", label: "Seleccione tipo" },
+                          {
+                            value: "Cédula de Ciudadanía",
+                            label: "Cédula de Ciudadanía",
+                          },
+                          {
+                            value: "Tarjeta de Identidad",
+                            label: "Tarjeta de Identidad",
+                          },
+                          {
+                            value: "Cédula de Extranjería",
+                            label: "Cédula de Extranjería",
+                          },
+                          { value: "Pasaporte", label: "Pasaporte" },
+                          {
+                            value: "Permiso de Permanencia",
+                            label: "Permiso de Permanencia",
+                          },
+                        ]}
+                      />
+                      <div className="space-y-2 md:col-span-2">
                         <FormField
-                          label="Documento de Identidad"
+                          label="Número de Documento"
                           name="numeroDocumento"
                           type="text"
-                          placeholder="00.000.000-0"
+                          placeholder="Ingrese el número"
                           required
                           value={formData.numeroDocumento}
                           onChange={handleChange}
                           onBlur={handleBlur}
-                          error={errors.numeroDocumento || errors.identificacion}
+                          error={
+                            errors.numeroDocumento || errors.identificacion
+                          }
                           touched={touched.numeroDocumento}
                           helperText={
                             checkingId
                               ? "Verificando disponibilidad..."
                               : errors.identificacion || errors.numeroDocumento
-                              ? undefined
-                              : `${formData.numeroDocumento.length}/${docMaxLength} caracteres`
+                                ? undefined
+                                : `${formData.numeroDocumento.length}/${docMaxLength} caracteres`
                           }
                         />
                         {(errors.numeroDocumento || errors.identificacion) && (
@@ -195,24 +243,28 @@ const DonorSponsorModal = ({
                   {isJuridica && (
                     <>
                       <FormField
-                        label="Nombre Completo / Razón Social"
+                        label="Razón Social"
                         name="razonSocial"
                         type="text"
-                        placeholder="Ej: Juan Pérez o Empresa S.A."
+                        placeholder="Ej: Empresa S.A."
                         required
                         value={formData.razonSocial}
                         onChange={handleChange}
                         onBlur={handleBlur}
                         error={errors.razonSocial}
                         touched={touched.razonSocial}
-                        helperText={!errors.razonSocial ? razonSocialHelperText : undefined}
+                        helperText={
+                          !errors.razonSocial
+                            ? razonSocialHelperText
+                            : undefined
+                        }
                       />
                       <div className="space-y-2">
                         <FormField
-                          label="Documento de Identidad"
+                          label="NIT"
                           name="nit"
                           type="text"
-                          placeholder="00.000.000-0"
+                          placeholder="000000000-0"
                           required
                           value={formData.nit}
                           onChange={handleChange}
@@ -223,8 +275,8 @@ const DonorSponsorModal = ({
                             checkingId
                               ? "Verificando disponibilidad..."
                               : errors.identificacion || errors.nit
-                              ? undefined
-                              : `${formData.nit.length}/${nitMaxLength} caracteres`
+                                ? undefined
+                                : `${formData.nit.length}/${nitMaxLength} caracteres`
                           }
                         />
                         {(errors.nit || errors.identificacion) && (
@@ -270,7 +322,11 @@ const DonorSponsorModal = ({
                     onBlur={handleBlur}
                     error={errors.correo}
                     touched={touched.correo}
-                    helperText={checkingEmail ? "Verificando disponibilidad..." : undefined}
+                    helperText={
+                      checkingEmail
+                        ? "Verificando disponibilidad..."
+                        : undefined
+                    }
                   />
                   <FormField
                     label="Teléfono Móvil"
@@ -354,8 +410,12 @@ const DonorSponsorModal = ({
                   onClick={async () => {
                     const result = await handleSubmit();
                     if (result?.valid) {
-                      const baseNombre = isJuridica ? formData.razonSocial : formData.nombreCompleto;
-                      const baseIdentificacion = isJuridica ? formData.nit : formData.numeroDocumento;
+                      const baseNombre = isJuridica
+                        ? formData.razonSocial
+                        : formData.nombreCompleto;
+                      const baseIdentificacion = isJuridica
+                        ? formData.nit
+                        : formData.numeroDocumento;
                       const payload = {
                         ...formData,
                         nombre: baseNombre,
@@ -376,7 +436,7 @@ const DonorSponsorModal = ({
                     } else {
                       showErrorAlert(
                         "Campos incompletos",
-                        "Por favor, complete todos los campos obligatorios antes de continuar."
+                        "Por favor, complete todos los campos obligatorios antes de continuar.",
                       );
                     }
                   }}
