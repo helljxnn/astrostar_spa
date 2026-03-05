@@ -7,7 +7,7 @@ import {
 } from "react";
 import { AnimatePresence } from "framer-motion";
 import { FaPlus } from "react-icons/fa";
-import { Users, MapPin, Clock, Edit, Eye, Trash2 } from "lucide-react";
+import { Users, MapPin, Clock, Edit, Eye, Trash2, Package } from "lucide-react";
 import BaseCalendar from "../../../../../../../../../shared/components/Calendar/BaseCalendar/BaseCalendar";
 import { DashboardEventComponent } from "./DashboardEventComponent";
 import { EventModal } from "./EventModal";
@@ -16,6 +16,7 @@ import EventRegistrationOptionsModal from "../registration/EventRegistrationOpti
 import { TeamRegistrationFormModal } from "../registration";
 import ViewRegistrationsModal from "../registration/ViewRegistrationsModal";
 import DayEventsModal from "./DayEventsModal";
+import { EventMaterialsModal } from "../eventMaterials";
 import {
   transformEventsForBaseCalendar,
   createCalendarFilters,
@@ -89,6 +90,11 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     isOpen: false,
     date: null,
     events: [],
+  });
+
+  const [materialsModal, setMaterialsModal] = useState({
+    isOpen: false,
+    event: null,
   });
 
   // Transformar eventos para el calendario genérico
@@ -393,6 +399,13 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           } catch (error) {
             // El error ya se maneja en el hook
           }
+          break;
+
+        case "materials":
+          setMaterialsModal({
+            isOpen: true,
+            event: dashboardEvent,
+          });
           break;
 
         case "view":
@@ -810,7 +823,9 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                     ? "text-red-600 hover:bg-red-50"
                     : action.variant === "edit"
                       ? "text-orange-600 hover:bg-orange-50"
-                      : "text-blue-600 hover:bg-blue-50"
+                      : action.variant === "materials"
+                        ? "text-green-600 hover:bg-green-50"
+                        : "text-blue-600 hover:bg-blue-50"
                 }`}
               >
                 {action.icon && <action.icon className="h-3 w-3" />}
@@ -883,6 +898,20 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             },
           ]
         : []),
+      {
+        label: "Materiales",
+        icon: Package,
+        onClick: (event) => {
+          const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+          setMaterialsModal({
+            isOpen: true,
+            event: dashboardEvent,
+          });
+        },
+        permission: { module: "events", action: "read" },
+        variant: "materials",
+        group: "management",
+      },
       {
         label: "Inscribir",
         icon: Users,
@@ -1129,6 +1158,17 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             onClose={closeAllModals}
             date={dayEventsModal.date}
             events={dayEventsModal.events}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modal de materiales del evento */}
+      <AnimatePresence>
+        {materialsModal.isOpen && (
+          <EventMaterialsModal
+            isOpen={materialsModal.isOpen}
+            onClose={() => setMaterialsModal({ isOpen: false, event: null })}
+            event={materialsModal.event}
           />
         )}
       </AnimatePresence>

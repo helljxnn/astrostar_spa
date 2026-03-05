@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
-import { FaPlus, FaMinusCircle, FaExchangeAlt } from "react-icons/fa";
+import {
+  FaPlus,
+  FaMinusCircle,
+  FaExchangeAlt,
+  FaCalendarAlt,
+} from "react-icons/fa";
 import MaterialModal from "./components/MaterialModal";
 import MaterialViewModal from "./components/MaterialViewModal";
 import MaterialDischargeModal from "./components/MaterialDischargeModal";
 import TransferModal from "./components/TransferModal";
+import MaterialAssignmentsModal from "./components/MaterialAssignmentsModal";
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
@@ -25,6 +31,7 @@ const MaterialsCatalog = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isDischargeModalOpen, setIsDischargeModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+  const [isAssignmentsModalOpen, setIsAssignmentsModalOpen] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(
@@ -44,12 +51,13 @@ const MaterialsCatalog = () => {
       const response = await materialsService.getMaterials({
         page: currentPage,
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm, // Enviar búsqueda al backend
+        search: searchTerm,
       });
 
       if (response.success) {
         setMaterials(response.data || []);
-        setTotalRows(response.pagination?.total || response.data?.length || 0);
+        const total = response.pagination?.total || response.data?.length || 0;
+        setTotalRows(total);
       }
     } catch (error) {
       console.error("Error al cargar materiales:", error);
@@ -309,6 +317,29 @@ const MaterialsCatalog = () => {
     }
   };
 
+  const handleViewAssignments = (material) => {
+    if (!hasPermission("materials", "Ver")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver asignaciones",
+      );
+      return;
+    }
+
+    // Solo mostrar para materiales reutilizables
+    if (!material.esReutilizable) {
+      showErrorAlert(
+        "Material no reutilizable",
+        "Solo los materiales reutilizables tienen asignaciones por evento",
+      );
+      return;
+    }
+
+    const originalMaterial = materials.find((m) => m.id === material.id);
+    setSelectedMaterial(originalMaterial || material);
+    setIsAssignmentsModalOpen(true);
+  };
+
   // Preparar datos para tabla con truncado - SIMPLE: 3 columnas
   const tableData = displayData.map((m) => {
     const stockFundacion = m.stockFundacion || 0;
@@ -426,15 +457,24 @@ const MaterialsCatalog = () => {
         onEdit={hasPermission("materials", "Editar") ? handleEdit : null}
         onDelete={hasPermission("materials", "Eliminar") ? handleDelete : null}
         customActions={
-          hasPermission("materials", "Editar")
+          hasPermission("materials", "Editar") ||
+          hasPermission("materials", "Ver")
             ? [
+                {
+                  onClick: handleViewAssignments,
+                  className:
+                    "p-2 rounded-full bg-green-50 border border-green-200 text-green-600 hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-colors",
+                  label: <FaCalendarAlt />,
+                  title: "Ver Asignaciones a Eventos",
+                  show: (item) => item.esReutilizable === true,
+                },
                 {
                   onClick: handleTransfer,
                   className:
                     "p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors",
                   label: <FaExchangeAlt />,
                   title: "Transferir Stock",
-                  show: (item) => true,
+                  show: (item) => hasPermission("materials", "Editar"),
                 },
                 {
                   onClick: handleDischarge,
@@ -442,7 +482,7 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-[#f5ebe8] border border-[#f0e0da] text-[#c3a096] hover:text-[#a88a7f] hover:border-[#e5d5cf] transition-colors",
                   label: <FaMinusCircle />,
                   title: "Registrar Baja",
-                  show: (item) => true,
+                  show: (item) => hasPermission("materials", "Editar"),
                 },
               ]
             : undefined
@@ -472,7 +512,33 @@ const MaterialsCatalog = () => {
                   : "Eliminar material",
             };
           },
+          customActions: {
+            0: (material) => {
+              // Botón de asignaciones (índice 0 en customActions)
+              // Debe estar deshabilitado si:
+              // 1. No es reutilizable
+              // 2. No tiene stock en fundación
+              const isReusable = material.esReutilizable === true;
+              const hasStock = (material.stockFundacion || 0) > 0;
+              const canViewAssignments = isReusable && hasStock;
+
+              return {
+                disabled: !canViewAssignments,
+                title: !isReusable
+                  ? "Solo materiales reutilizables tienen asignaciones"
+                  : !hasStock
+                    ? "Sin stock disponible para asignar"
+                    : "Ver Asignaciones a Eventos",
+              };
+            },
+          },
         }}
+        serverPagination={true}
+        currentPage={currentPage}
+        totalRows={totalRows}
+        rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+        onPageChange={setCurrentPage}
+        loading={loading}
       />
 
       {/* Modales */}
@@ -514,6 +580,15 @@ const MaterialsCatalog = () => {
           setSelectedMaterial(null);
         }}
         onSave={handleSaveTransfer}
+        material={selectedMaterial}
+      />
+
+      <MaterialAssignmentsModal
+        isOpen={isAssignmentsModalOpen}
+        onClose={() => {
+          setIsAssignmentsModalOpen(false);
+          setSelectedMaterial(null);
+        }}
         material={selectedMaterial}
       />
     </div>

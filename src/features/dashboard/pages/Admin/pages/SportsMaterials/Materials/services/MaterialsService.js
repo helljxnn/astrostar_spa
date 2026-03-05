@@ -12,6 +12,8 @@ class MaterialsService {
       search = "",
       categoriaId = "",
       estado = "",
+      esReutilizable = null,
+      stockType = null,
     } = params;
 
     const queryParams = {
@@ -28,6 +30,14 @@ class MaterialsService {
       queryParams.estado = estado;
     }
 
+    if (esReutilizable !== null) {
+      queryParams.esReutilizable = esReutilizable;
+    }
+
+    if (stockType) {
+      queryParams.stockType = stockType;
+    }
+
     const response = await apiClient.get(this.endpoint, queryParams);
 
     // El backend puede devolver los materiales en response.materials o response.data
@@ -37,15 +47,28 @@ class MaterialsService {
       response.data = materialsArray.map((material) =>
         this.transformFromBackend(material),
       );
-      response.pagination = {
-        total: response.total,
-        page: response.page,
-        limit: response.limit,
-        pages: response.pages,
-      };
+
+      // IMPORTANTE: El backend ya envía response.pagination como objeto
+      // Solo crear si no existe (compatibilidad con respuestas antiguas)
+      if (
+        !response.pagination ||
+        Object.keys(response.pagination).length === 0
+      ) {
+        response.pagination = {
+          total: response.total,
+          page: response.page,
+          limit: response.limit,
+          pages: response.pages || response.totalPages,
+        };
+      }
     }
 
     return response;
+  }
+
+  async getAllMaterials(filters = {}) {
+    // Método helper para obtener todos los materiales sin paginación
+    return this.getMaterials({ ...filters, limit: 1000 });
   }
 
   async getMaterialById(id) {
@@ -346,6 +369,8 @@ class MaterialsService {
         backendData.stockTotal ||
         backendData.stock_total ||
         stockFundacion + stockEventos,
+      esReutilizable:
+        backendData.esReutilizable || backendData.es_reutilizable || false,
       estado: backendData.estado || backendData.status || "Activo",
       hasMovements:
         backendData.hasMovements || backendData.has_movements || false,
