@@ -1,4 +1,3 @@
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { FaArrowLeft, FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
@@ -28,13 +27,6 @@ const DONATION_TYPE_MAP = DONATION_TYPE_OPTIONS.reduce((acc, option) => {
 }, {});
 
 const getTypeMeta = (typeValue) => DONATION_TYPE_MAP[typeValue] || null;
-
-const ECON_MODALITIES = [
-  "Unica",
-  "Mensual",
-  "Patrocinio anual",
-  "Apadrinamiento",
-];
 
 const CHANNELS = ["Transferencia", "Consignacion", "Nequi", "PSE", "Otro"];
 
@@ -85,6 +77,8 @@ const DonationsForm = () => {
   const statusOnlyMode = Boolean(location.state?.statusOnly);
   const [donors, setDonors] = useState([]);
   const [loadingDonors, setLoadingDonors] = useState(false);
+  const [materials, setMaterials] = useState([]);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [eventsError, setEventsError] = useState("");
@@ -102,10 +96,10 @@ const DonationsForm = () => {
     eventId: "",
     specificDestination: "",
     donationAt: getLocalDateTimeString(),
-    econModality: "",
     econAmount: "",
     econChannel: "",
     econComprobante: null,
+    especieMaterialId: "",
     especieDesc: "",
     especieQty: "",
     especieClass: "",
@@ -113,6 +107,7 @@ const DonationsForm = () => {
     especieSoporte: null,
     foodQty: "",
     foodClass: "",
+    foodItems: [],
     foodFactura: null,
     foodEvidence: [],
   });
@@ -131,7 +126,7 @@ const DonationsForm = () => {
         console.error("Error cargando donantes", error);
         showErrorAlert(
           "No se pudo cargar donantes/patrocinadores",
-          "Revisa tu conexion o intenta mas tarde."
+          "Revisa tu conexion o intenta mas tarde.",
         );
       } finally {
         setLoadingDonors(false);
@@ -141,11 +136,36 @@ const DonationsForm = () => {
   }, []);
 
   useEffect(() => {
+    const fetchMaterials = async () => {
+      setLoadingMaterials(true);
+      try {
+        const MaterialsService = (
+          await import("../../SportsMaterials/Materials/services/MaterialsService")
+        ).default;
+        const resp = await MaterialsService.getAllMaterials({
+          estado: "Activo",
+        });
+        const data = resp?.data || [];
+        setMaterials(data);
+      } catch (error) {
+        console.error("Error cargando materiales", error);
+        showErrorAlert(
+          "No se pudo cargar materiales",
+          "Revisa tu conexion o intenta mas tarde.",
+        );
+      } finally {
+        setLoadingMaterials(false);
+      }
+    };
+    fetchMaterials();
+  }, []);
+
+  useEffect(() => {
     const donationState = location.state?.donation;
     if (!donationState || prefilledFromState) return;
 
     const paymentDetail = (donationState.details || []).find(
-      (detail) => detail.recordType === "payment"
+      (detail) => detail.recordType === "payment",
     );
 
     setIsEditing(Boolean(location.state?.isEditing));
@@ -161,12 +181,10 @@ const DonationsForm = () => {
       eventId: donationState.eventId ? String(donationState.eventId) : "",
       specificDestination: donationState.specificDestination || "",
       donationAt: donationState.donationAt || prev.donationAt,
-      econModality: paymentDetail?.classification || prev.econModality,
       econAmount: donationState.econAmount ?? prev.econAmount,
       econChannel: donationState.econChannel ?? prev.econChannel,
       isFoodPurchase: donationState.isFoodPurchase ?? false,
-      foodQty: donationState.foodQty ?? "",
-      foodClass: donationState.foodClass ?? "",
+      foodItems: donationState.foodItems || [],
       especieItems: donationState.especieItems || [],
     }));
 
@@ -189,11 +207,16 @@ const DonationsForm = () => {
         const data = resp?.data || resp?.data?.data || resp?.events || [];
         const list = Array.isArray(data) ? data : resp?.data?.events || [];
         const active = list.filter((ev) => {
-          const status =
-            (ev.status || ev.estado || ev.state || "").toString().toLowerCase();
-          return ["activo", "active", "programado", "programada", "programado"].includes(
-            status
-          );
+          const status = (ev.status || ev.estado || ev.state || "")
+            .toString()
+            .toLowerCase();
+          return [
+            "activo",
+            "active",
+            "programado",
+            "programada",
+            "programado",
+          ].includes(status);
         });
         setEvents(active.length ? active : list);
       } catch (error) {
@@ -216,7 +239,6 @@ const DonationsForm = () => {
         const typeMeta = getTypeMeta(value);
         if (!typeMeta || typeMeta.apiType !== "ECONOMICA") {
           next.isFoodPurchase = false;
-          next.econModality = "";
         }
 
         if (!typeMeta || typeMeta.apiType !== "ESPECIE") {
@@ -230,6 +252,7 @@ const DonationsForm = () => {
       if (field === "isFoodPurchase" && !value) {
         next.foodQty = "";
         next.foodClass = "";
+        next.foodItems = [];
         next.foodFactura = null;
         next.foodEvidence = [];
       }
@@ -254,8 +277,9 @@ const DonationsForm = () => {
   const handleAddEspecieItem = () => {
     if (statusOnlyMode) return;
     const entryErrors = {};
-    if (!form.especieDesc?.trim()) {
-      entryErrors.especieDesc = "Descripcion del bien requerida.";
+
+    if (!form.especieMaterialId) {
+      entryErrors.especieMaterialId = "Selecciona el material donado.";
     }
     if (!form.especieQty || Number(form.especieQty) <= 0) {
       entryErrors.especieQty = "Cantidad requerida y mayor a 0.";
@@ -269,16 +293,26 @@ const DonationsForm = () => {
       return;
     }
 
+    // Buscar el material seleccionado para obtener su nombre
+    const selectedMaterial = materials.find(
+      (m) => m.id === Number(form.especieMaterialId),
+    );
+
     setForm((prev) => ({
       ...prev,
       especieItems: [
         ...prev.especieItems,
         {
-          description: prev.especieDesc.trim(),
+          materialId: prev.especieMaterialId,
+          description:
+            selectedMaterial?.nombre ||
+            prev.especieDesc.trim() ||
+            "Material donado",
           quantity: prev.especieQty,
           classification: prev.especieClass,
         },
       ],
+      especieMaterialId: "",
       especieDesc: "",
       especieQty: "",
       especieClass: "",
@@ -286,6 +320,7 @@ const DonationsForm = () => {
 
     setErrors((prev) => ({
       ...prev,
+      especieMaterialId: undefined,
       especieDesc: undefined,
       especieQty: undefined,
       especieClass: undefined,
@@ -298,6 +333,50 @@ const DonationsForm = () => {
     setForm((prev) => ({
       ...prev,
       especieItems: prev.especieItems.filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handleAddFoodItem = () => {
+    if (statusOnlyMode) return;
+    const entryErrors = {};
+    if (!form.foodQty || Number(form.foodQty) <= 0) {
+      entryErrors.foodQty = "Cantidad requerida y mayor a 0.";
+    }
+    if (!form.foodClass) {
+      entryErrors.foodClass = "Clasificacion del alimento requerida.";
+    }
+
+    if (Object.keys(entryErrors).length > 0) {
+      setErrors((prev) => ({ ...prev, ...entryErrors }));
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      foodItems: [
+        ...prev.foodItems,
+        {
+          quantity: prev.foodQty,
+          classification: prev.foodClass,
+        },
+      ],
+      foodQty: "",
+      foodClass: "",
+    }));
+
+    setErrors((prev) => ({
+      ...prev,
+      foodQty: undefined,
+      foodClass: undefined,
+      foodItems: undefined,
+    }));
+  };
+
+  const handleRemoveFoodItem = (index) => {
+    if (statusOnlyMode) return;
+    setForm((prev) => ({
+      ...prev,
+      foodItems: prev.foodItems.filter((_, idx) => idx !== index),
     }));
   };
 
@@ -329,25 +408,44 @@ const DonationsForm = () => {
     if (isEconomic) {
       if (!form.econAmount || Number(form.econAmount) <= 0)
         newErrors.econAmount = "Valor donado requerido y mayor a 0.";
+      else if (Number(form.econAmount) > 999999999999)
+        newErrors.econAmount = "El valor máximo permitido es $999,999,999,999.";
       if (!form.econChannel) newErrors.econChannel = "Canal de pago requerido.";
-      if (!form.econModality)
-        newErrors.econModality = "Modalidad de donacion requerida.";
       if (!form.econComprobante)
-        newErrors.econComprobante = "Adjunta el comprobante (PDF/JPG/PNG, 5MB).";
+        newErrors.econComprobante =
+          "Adjunta el comprobante (PDF/JPG/PNG, 5MB).";
       if (isFood) {
-        if (!form.foodQty || Number(form.foodQty) <= 0)
-          newErrors.foodQty = "Cantidad de alimentos requerida y mayor a 0.";
-        if (!form.foodClass)
-          newErrors.foodClass = "Clasificacion del alimento requerida.";
+        // Verificar si hay campos llenos sin agregar
+        const hasPendingFoodItem =
+          form.foodDesc?.trim() || form.foodQty || form.foodClass;
+
+        if (!form.foodItems || form.foodItems.length === 0) {
+          newErrors.foodItems = "Agrega al menos un item de alimentos.";
+        } else if (hasPendingFoodItem) {
+          newErrors.foodItems =
+            "Tienes campos llenos. Presiona '+ Agregar entrada' o borra los campos antes de guardar.";
+        }
+
         if (!form.foodFactura)
           newErrors.foodFactura = "Factura obligatoria (PDF/JPG/PNG, 5MB).";
       }
     }
 
     if (isEspecie) {
+      // Verificar si hay campos llenos sin agregar
+      const hasPendingItem =
+        (form.especieMaterialId && form.especieMaterialId !== "") ||
+        (form.especieDesc?.trim() && form.especieDesc.trim() !== "") ||
+        (form.especieQty && form.especieQty !== "") ||
+        (form.especieClass && form.especieClass !== "");
+
       if (!form.especieItems || form.especieItems.length === 0) {
-        newErrors.especieItems = "Agrega al menos una donación en especie.";
+        newErrors.especieItems = "Debes agregar al menos un item en especie.";
+      } else if (hasPendingItem) {
+        newErrors.especieItems =
+          "Tienes campos llenos. Presiona '+ Agregar entrada' o borra los campos antes de guardar.";
       }
+
       if (!form.especieSoporte)
         newErrors.especieSoporte = "Soporte obligatorio (PDF/JPG/PNG, 5MB).";
     }
@@ -378,14 +476,16 @@ const DonationsForm = () => {
         recordType: "payment",
         amount: Number(form.econAmount),
         channel: form.econChannel,
-        classification: form.econModality || null,
       });
       if (isFood) {
-        details.push({
-          kind: apiType,
-          recordType: "food",
-          quantity: Number(form.foodQty),
-          classification: form.foodClass,
+        (form.foodItems || []).forEach((item) => {
+          const quantityValue = Number(item.quantity);
+          details.push({
+            kind: apiType,
+            recordType: "food",
+            quantity: Number.isNaN(quantityValue) ? 0 : quantityValue,
+            classification: item.classification,
+          });
         });
       }
     }
@@ -396,6 +496,7 @@ const DonationsForm = () => {
         details.push({
           kind: selectedType.apiType,
           recordType: "item",
+          materialId: item.materialId ? Number(item.materialId) : undefined,
           description: item.description,
           quantity: Number.isNaN(quantityValue) ? 0 : quantityValue,
           classification: item.classification,
@@ -435,6 +536,11 @@ const DonationsForm = () => {
       payload.donorSponsorId = donorId;
     }
 
+    // Add serviceId if event is selected
+    if (form.program === PROGRAM_EVENT && form.eventId) {
+      payload.serviceId = Number(form.eventId);
+    }
+
     return payload;
   };
   const uploadAllFiles = async (donationId) => {
@@ -444,19 +550,27 @@ const DonationsForm = () => {
 
     if (form.econComprobante) {
       uploads.push(
-        donationsService.uploadFiles(donationId, [form.econComprobante], "comprobante")
+        donationsService.uploadFiles(
+          donationId,
+          [form.econComprobante],
+          "comprobante",
+        ),
       );
     }
 
     if (form.especieSoporte) {
       uploads.push(
-        donationsService.uploadFiles(donationId, [form.especieSoporte], "soporte")
+        donationsService.uploadFiles(
+          donationId,
+          [form.especieSoporte],
+          "soporte",
+        ),
       );
     }
 
     if (isFood && form.foodFactura) {
       uploads.push(
-        donationsService.uploadFiles(donationId, [form.foodFactura], "factura")
+        donationsService.uploadFiles(donationId, [form.foodFactura], "factura"),
       );
     }
 
@@ -465,8 +579,8 @@ const DonationsForm = () => {
         donationsService.uploadFiles(
           donationId,
           Array.from(form.foodEvidence),
-          "evidencia"
-        )
+          "evidencia",
+        ),
       );
     }
 
@@ -482,10 +596,12 @@ const DonationsForm = () => {
     setSubmitting(true);
     try {
       const payload = buildPayload();
-const request = isEditing
+
+      const request = isEditing
         ? donationsService.update(editingDonationId, payload)
         : donationsService.create(payload);
       const resp = await request;
+
       const donationId =
         resp?.data?.id ||
         resp?.data?.data?.id ||
@@ -499,11 +615,13 @@ const request = isEditing
         isEditing ? "Donación actualizada" : "Donación guardada",
         isEditing
           ? "Los cambios se guardaron correctamente."
-          : "Se registró la donación y sus soportes correctamente."
+          : "Se registró la donación y sus soportes correctamente.",
       );
       navigate("/dashboard/donations");
     } catch (error) {
+      console.error("Error completo:", error);
       console.error("Error guardando donacion", error?.response?.data || error);
+
       const firstErrorMsg =
         error?.response?.data?.errors?.[0]?.msg ||
         error?.response?.data?.errors?.[0]?.message;
@@ -511,13 +629,10 @@ const request = isEditing
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         firstErrorMsg ||
-        JSON.stringify(error?.response?.data) ||
         error.message ||
         "No se pudo registrar la donacion.";
-      showErrorAlert(
-        "Error al guardar",
-        apiMessage
-      );
+
+      showErrorAlert("Error al guardar", apiMessage);
     } finally {
       setSubmitting(false);
     }
@@ -529,8 +644,7 @@ const request = isEditing
       "Sin seleccionar";
 
     const selectedType = getTypeMeta(form.type);
-    const isFood =
-      selectedType?.apiType === "ECONOMICA" && form.isFoodPurchase;
+    const isFood = selectedType?.apiType === "ECONOMICA" && form.isFoodPurchase;
     const typeLabel = selectedType
       ? isFood
         ? `${selectedType.label} (compra de alimentos)`
@@ -544,11 +658,19 @@ const request = isEditing
         : null;
 
     const general = [
-      { label: "Codigo de donacion", value: "Se genera automaticamente al guardar" },
+      {
+        label: "Codigo de donacion",
+        value: "Se genera automaticamente al guardar",
+      },
       { label: "Donante", value: donorLabel },
       { label: "Tipo", value: typeLabel },
       ...(eventLabel ? [{ label: "Evento", value: eventLabel }] : []),
-      { label: "Estado", value: STATUS_OPTIONS.find((s) => s.value === form.status)?.label || form.status },
+      {
+        label: "Estado",
+        value:
+          STATUS_OPTIONS.find((s) => s.value === form.status)?.label ||
+          form.status,
+      },
       { label: "Programa", value: form.program || "N/A" },
       { label: "Destino especifico", value: form.specificDestination || "N/A" },
       { label: "Fecha/Hora", value: form.donationAt },
@@ -560,34 +682,53 @@ const request = isEditing
     if (selectedType?.apiType === "ECONOMICA") {
       details.push(`Valor donado: $${formatNumber(form.econAmount) || "0"}`);
       details.push(`Canal de pago: ${form.econChannel || "N/A"}`);
-      details.push(`Modalidad: ${form.econModality || "N/A"}`);
       files.push(
         form.econComprobante
           ? `Comprobante listo: ${form.econComprobante.name}`
-          : "Comprobante pendiente (se subira a Cloudinary)"
+          : "Comprobante pendiente (se subira a Cloudinary)",
       );
       if (isFood) {
-        details.push(`Cantidad de alimentos: ${form.foodQty || "0"}`);
-        details.push(`Clasificacion alimento: ${form.foodClass || "N/A"}`);
+        (form.foodItems || []).forEach((item, index) => {
+          const segments = [
+            `Cantidad: ${item.quantity || "0"}`,
+            `Clasificacion: ${item.classification || "N/A"}`,
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          const prefix =
+            (form.foodItems?.length || 0) > 1
+              ? `Alimento ${index + 1}:`
+              : "Alimento:";
+          details.push(`${prefix} ${segments}`);
+        });
         files.push(
           form.foodFactura
             ? `Factura lista: ${form.foodFactura.name}`
-            : "Factura pendiente (se subira a Cloudinary)"
+            : "Factura pendiente (se subira a Cloudinary)",
         );
         files.push(
           form.foodEvidence?.length
             ? `Evidencias listas: ${form.foodEvidence.length} archivo(s)`
-            : "Evidencias pendientes (imagenes se subiran a Cloudinary)"
+            : "Evidencias pendientes (imagenes se subiran a Cloudinary)",
         );
       }
     }
 
     if (selectedType?.apiType === "ESPECIE") {
       (form.especieItems || []).forEach((item, index) => {
+        const material = materials.find(
+          (m) => m.id === Number(item.materialId),
+        );
+        const materialName =
+          material?.nombre || item.description || "Material no especificado";
+
         const segments = [
-          `Descripcion: ${item.description || "N/A"}`,
+          `Material: ${materialName}`,
           `Cantidad: ${item.quantity || "0"}`,
           item.classification ? `Categoria: ${item.classification}` : null,
+          item.description && item.description !== materialName
+            ? `Descripción: ${item.description}`
+            : null,
         ]
           .filter(Boolean)
           .join(" · ");
@@ -600,12 +741,12 @@ const request = isEditing
       files.push(
         form.especieSoporte
           ? `Soporte listo: ${form.especieSoporte.name}`
-          : "Soporte pendiente (se subira a Cloudinary)"
+          : "Soporte pendiente (se subira a Cloudinary)",
       );
     }
 
     return { general, details, files };
-  }, [form, donors, events]);
+  }, [form, donors, events, materials]);
 
   const selectedType = getTypeMeta(form.type);
   const isEconomicType = selectedType?.apiType === "ECONOMICA";
@@ -619,9 +760,7 @@ const request = isEditing
         >
           <FaArrowLeft /> Regresar
         </Link>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Registrar Donacion
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800">Registrar Donacion</h1>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -645,7 +784,7 @@ const request = isEditing
               <select
                 value={form.donorSponsorId}
                 onChange={(e) => handleChange("donorSponsorId", e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                 disabled={statusOnlyMode}
               >
                 <option value="">
@@ -674,7 +813,7 @@ const request = isEditing
                     key={option.value}
                     className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition ${
                       form.type === option.value
-                        ? "border-sky-300 bg-sky-50"
+                        ? "border-primary-purple bg-primary-purple/10"
                         : "border-gray-200"
                     }`}
                   >
@@ -716,7 +855,7 @@ const request = isEditing
                 <select
                   value={form.program}
                   onChange={(e) => handleChange("program", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                   disabled={statusOnlyMode}
                 >
                   <option value="">Seleccionar...</option>
@@ -738,7 +877,7 @@ const request = isEditing
                     handleChange("specificDestination", e.target.value)
                   }
                   placeholder="Ej: Becas para ninas, apoyo a familias..."
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                   disabled={statusOnlyMode}
                 />
               </div>
@@ -752,11 +891,13 @@ const request = isEditing
                 <select
                   value={form.eventId}
                   onChange={(e) => handleChange("eventId", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                   disabled={loadingEvents || statusOnlyMode}
                 >
                   <option value="">
-                    {loadingEvents ? "Cargando eventos..." : "Seleccionar evento"}
+                    {loadingEvents
+                      ? "Cargando eventos..."
+                      : "Seleccionar evento"}
                   </option>
                   {events.map((ev) => (
                     <option key={ev.id} value={ev.id}>
@@ -765,7 +906,9 @@ const request = isEditing
                   ))}
                 </select>
                 {eventsError && (
-                  <span className="text-red-500 text-xs mt-1">{eventsError}</span>
+                  <span className="text-red-500 text-xs mt-1">
+                    {eventsError}
+                  </span>
                 )}
                 {errors.eventId && (
                   <span className="text-red-500 text-xs mt-1">
@@ -784,7 +927,7 @@ const request = isEditing
                   type="datetime-local"
                   value={form.donationAt}
                   onChange={(e) => handleChange("donationAt", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                   disabled={statusOnlyMode}
                 />
                 {errors.donationAt && (
@@ -801,7 +944,7 @@ const request = isEditing
                 <select
                   value={form.status}
                   onChange={(e) => handleChange("status", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                 >
                   {STATUS_OPTIONS.map((s) => (
                     <option key={s.value} value={s.value}>
@@ -811,15 +954,14 @@ const request = isEditing
                 </select>
               </div>
             </div>
-
-            </section>
+          </section>
           {/* Seccion economica */}
           {isEconomicType && (
             <section className="space-y-4">
               <h3 className="text-base font-semibold text-gray-800">
                 Donacion economica
               </h3>
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
                     Valor donado *
@@ -827,10 +969,13 @@ const request = isEditing
                   <input
                     type="number"
                     min="0"
+                    max="999999999999"
+                    step="0.01"
                     value={form.econAmount}
                     onChange={(e) => handleChange("econAmount", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
+                    placeholder="Ej: 1000000"
                   />
                   {errors.econAmount && (
                     <span className="text-red-500 text-xs mt-1">
@@ -841,36 +986,14 @@ const request = isEditing
 
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
-                    Modalidad *
-                  </label>
-                  <select
-                    value={form.econModality}
-                    onChange={(e) => handleChange("econModality", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
-                    disabled={statusOnlyMode}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {ECON_MODALITIES.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.econModality && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.econModality}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
                     Canal de pago *
                   </label>
                   <select
                     value={form.econChannel}
-                    onChange={(e) => handleChange("econChannel", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    onChange={(e) =>
+                      handleChange("econChannel", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
@@ -892,7 +1015,9 @@ const request = isEditing
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Comprobante de pago (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
+                <label
+                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
+                >
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.econComprobante?.name || "Adjuntar archivo"}
@@ -925,14 +1050,14 @@ const request = isEditing
                     Donacion en especie
                   </h3>
                   <p className="text-sm text-gray-500">
-                    Completa cada bien entregado y pulsa el botón + para agregarlo
-                    a la donación.
+                    Completa cada bien entregado y pulsa el botón + para
+                    agregarlo a la donación.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleAddEspecieItem}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-sky-200 text-sky-600 text-xs font-medium hover:bg-sky-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-primary-purple text-primary-purple text-xs font-medium hover:bg-primary-purple/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={statusOnlyMode}
                 >
                   <FaPlus /> Agregar entrada
@@ -946,8 +1071,10 @@ const request = isEditing
                   </label>
                   <select
                     value={form.especieClass}
-                    onChange={(e) => handleChange("especieClass", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    onChange={(e) =>
+                      handleChange("especieClass", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
@@ -973,7 +1100,7 @@ const request = isEditing
                     min="0"
                     value={form.especieQty}
                     onChange={(e) => handleChange("especieQty", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
                   />
                   {errors.especieQty && (
@@ -987,14 +1114,46 @@ const request = isEditing
               <div className="grid gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
-                    Descripcion del bien *
+                    Material donado *
+                  </label>
+                  <select
+                    value={form.especieMaterialId}
+                    onChange={(e) =>
+                      handleChange("especieMaterialId", e.target.value)
+                    }
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
+                    disabled={statusOnlyMode}
+                  >
+                    <option value="">
+                      {loadingMaterials
+                        ? "Cargando materiales..."
+                        : "Seleccionar material..."}
+                    </option>
+                    {materials.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nombre} - {m.categoria}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.especieMaterialId && (
+                    <span className="text-red-500 text-xs mt-1">
+                      {errors.especieMaterialId}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-medium text-gray-700 mb-1">
+                    Descripción adicional (opcional)
                   </label>
                   <textarea
-                    rows="4"
+                    rows="3"
                     value={form.especieDesc}
-                    onChange={(e) => handleChange("especieDesc", e.target.value)}
-                    placeholder="Describe el bien donado (ej: 20 balones de futbol tamano 5, marca X)"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+                    onChange={(e) =>
+                      handleChange("especieDesc", e.target.value)
+                    }
+                    placeholder="Ej: Balones profesionales marca Adidas, talla 5"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple resize-none"
                     disabled={statusOnlyMode}
                   />
                   {errors.especieDesc && (
@@ -1009,7 +1168,9 @@ const request = isEditing
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Soporte (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
+                <label
+                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
+                >
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.especieSoporte?.name || "Adjuntar soporte"}
@@ -1070,14 +1231,25 @@ const request = isEditing
           {/* Seccion compra de alimentos (subtipo economica) */}
           {isEconomicType && form.isFoodPurchase && (
             <section className="space-y-6">
-              <div>
-                <h3 className="text-base font-semibold text-gray-800">
-                  Compra de alimentos (subtipo de donacion economica)
-                </h3>
-                <p className="text-sm text-gray-500">
-                  Agrega detalle de alimentos adquiridos, factura y evidencias
-                </p>
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-gray-800">
+                    Compra de alimentos (subtipo de donacion economica)
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Agrega detalle de alimentos adquiridos, factura y evidencias
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAddFoodItem}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-primary-purple text-primary-purple text-xs font-medium hover:bg-primary-purple/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={statusOnlyMode}
+                >
+                  <FaPlus /> Agregar alimento
+                </button>
               </div>
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <label className="text-sm font-medium text-gray-700 mb-1">
@@ -1088,7 +1260,7 @@ const request = isEditing
                     min="0"
                     value={form.foodQty}
                     onChange={(e) => handleChange("foodQty", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
                   />
                   {errors.foodQty && (
@@ -1104,7 +1276,7 @@ const request = isEditing
                   <select
                     value={form.foodClass}
                     onChange={(e) => handleChange("foodClass", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-300"
+                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
                     disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
@@ -1122,11 +1294,46 @@ const request = isEditing
                 </div>
               </div>
 
+              {errors.foodItems && (
+                <p className="text-red-500 text-xs">{errors.foodItems}</p>
+              )}
+
+              {form.foodItems.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  {form.foodItems.map((item, index) => (
+                    <div
+                      key={`${item.classification}-${index}`}
+                      className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          Alimento {index + 1}: {item.classification}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Cantidad: {item.quantity || "0"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFoodItem(index)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={statusOnlyMode}
+                        aria-label="Eliminar alimento"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Factura (PDF/JPG/PNG, max 5MB) *
                 </label>
-                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
+                <label
+                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
+                >
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.foodFactura?.name || "Adjuntar factura"}
@@ -1152,7 +1359,9 @@ const request = isEditing
                 <label className="text-sm font-medium text-gray-700 mb-1">
                   Evidencia fotografica (multiples JPG/PNG, max 5MB c/u)
                 </label>
-                <label className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-sky-500 cursor-pointer hover:bg-sky-50 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}>
+                <label
+                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
+                >
                   <FaCloudUploadAlt />
                   <span className="text-sm">
                     {form.foodEvidence?.length
@@ -1186,7 +1395,7 @@ const request = isEditing
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-sky-300 to-sky-400 text-white font-semibold shadow-md hover:from-sky-400 hover:to-sky-500 transition disabled:opacity-60"
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:from-primary-purple-light hover:to-primary-blue transition disabled:opacity-60"
             >
               {submitting ? "Guardando..." : "Guardar donacion"}
             </button>

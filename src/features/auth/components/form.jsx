@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, Link } from "react-router-dom";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
 import logo from "../../../../public/assets/images/astrostar.png";
 import "../Syles/LoginGlow.css";
@@ -10,6 +11,7 @@ const Form = () => {
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState(false);
 
   const isValidEmail = (email) => {
@@ -56,21 +58,41 @@ const Form = () => {
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <input
               className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
-              type="text"
+              type="email"
               placeholder="Correo"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+              name="email"
+              id="email"
             />
             {!isValidEmail(email) && email && (
-              <p className="text-red-500 text-sm text-center">Por favor, introduce un correo electrónico válido.</p>
+              <p className="text-red-500 text-sm text-center">
+                Por favor, introduce un correo electrónico válido.
+              </p>
             )}
-            <input
-              className="w-full h-11 px-4 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                className="w-full h-11 pl-4 pr-12 rounded-xl border border-primary-blue/50 focus:outline-none focus:ring-2 focus:ring-primary-purple bg-white/90"
+                type={showPassword ? "text" : "password"}
+                placeholder="Contraseña"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                name="password"
+                id="password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-primary-purple transition-colors"
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
+            </div>
             {loginError && (
               <p className="text-red-500 text-sm text-center">
                 Correo o contraseña incorrectos.
@@ -88,7 +110,10 @@ const Form = () => {
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>
               ¿Olvidaste tu contraseña?{" "}
-              <Link to="/forgot-password" className="text-black cursor-pointer hover:underline font-semibold">
+              <Link
+                to="/forgot-password"
+                className="text-black cursor-pointer hover:underline font-semibold"
+              >
                 Restaúrala aquí
               </Link>
             </p>

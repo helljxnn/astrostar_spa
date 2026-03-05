@@ -2,6 +2,7 @@ import React from 'react';
 import DatePicker, { registerLocale } from 'react-datepicker';
 import es from 'date-fns/locale/es';
 import 'react-datepicker/dist/react-datepicker.css';
+import './DatePickerField.css';
 
 // Registrar el idioma español para el calendario
 registerLocale('es', es);
@@ -41,7 +42,7 @@ export const DatePickerField = ({
     placeholder
 }) => {
     return (
-        <div className="w-full">
+        <div className="w-full relative">
             <label className="block text-sm font-medium text-gray-700 mb-1">
                 {label} {required && <span className="text-red-500">*</span>}
             </label>
@@ -61,6 +62,24 @@ export const DatePickerField = ({
                 locale="es"
                 showTimeSelect
                 placeholderText={placeholder || "Seleccione fecha y hora"}
+                popperClassName="datepicker-popper-high-z"
+                popperPlacement="bottom-start"
+                popperModifiers={[
+                    {
+                        name: 'offset',
+                        options: {
+                            offset: [0, 8],
+                        },
+                    },
+                    {
+                        name: 'preventOverflow',
+                        options: {
+                            rootBoundary: 'viewport',
+                            tether: false,
+                            altAxis: true,
+                        },
+                    },
+                ]}
             />
             {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         </div>

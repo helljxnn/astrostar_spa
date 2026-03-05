@@ -20,18 +20,56 @@ ChartJS.register(
   Legend,
 );
 
-const DonationsGraphic = () => {
+const DonationsGraphic = ({ donations = [] }) => {
   const [loading] = useState(false);
 
-  // Datos de ejemplo - conectar con tu API real
-  const donationsData = [
-    { mes: "Ene", monetarias: 45000, materiales: 12000, servicios: 8000 },
-    { mes: "Feb", monetarias: 52000, materiales: 15000, servicios: 9500 },
-    { mes: "Mar", monetarias: 48000, materiales: 13500, servicios: 7800 },
-    { mes: "Abr", monetarias: 61000, materiales: 18000, servicios: 11000 },
-    { mes: "May", monetarias: 55000, materiales: 16000, servicios: 9800 },
-    { mes: "Jun", monetarias: 58000, materiales: 17500, servicios: 10500 },
-  ];
+  // Procesar donaciones reales por mes
+  const processDonationsByMonth = () => {
+    const monthlyData = {};
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    
+    // Inicializar últimos 6 meses
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthlyData[key] = {
+        mes: monthNames[date.getMonth()],
+        monetarias: 0,
+        materiales: 0,
+        servicios: 0,
+      };
+    }
+
+    // Procesar donaciones
+    donations.forEach((donation) => {
+      if (donation.status === "Anulada") return;
+      
+      const date = new Date(donation.donationAt || donation.createdAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyData[key]) return;
+
+      const details = donation.details || [];
+      
+      if (donation.type === "ECONOMICA" || donation.type === "ALIMENTOS") {
+        const payment = details.find((d) => d.recordType === "payment");
+        monthlyData[key].monetarias += payment?.amount || 0;
+      } else if (donation.type === "ESPECIE") {
+        const itemsValue = details.reduce((sum, d) => {
+          if (d.recordType === "item") {
+            return sum + (d.amount || d.quantity || 0);
+          }
+          return sum;
+        }, 0);
+        monthlyData[key].materiales += itemsValue;
+      }
+    });
+
+    return Object.values(monthlyData);
+  };
+
+  const donationsData = processDonationsByMonth();
 
   const reportColumns = [
     { key: "mes", label: "Mes" },

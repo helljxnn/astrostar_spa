@@ -327,20 +327,41 @@ const MaterialsMovements = () => {
   };
 
   // Preparar datos para tabla de INGRESOS con truncado
-  const ingresosTableData = displayData.map((m) => ({
-    ...m,
-    fechaFormatted: formatDate(m.fechaIngreso || m.fecha),
-    materialNombreTruncated:
-      m.materialNombre && m.materialNombre.length > 35
-        ? m.materialNombre.substring(0, 35) + "..."
-        : m.materialNombre || "",
-    categoriaTruncated:
-      m.categoria && m.categoria.length > 25
-        ? m.categoria.substring(0, 25) + "..."
-        : m.categoria || "",
-    cantidadFormatted: formatStock(m.cantidad),
-    proveedorDisplay: m.proveedor || "Sin proveedor",
-  }));
+  const ingresosTableData = displayData.map((m) => {
+    const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || "";
+    const observaciones = m.observaciones || "";
+
+    // Identificar si es un movimiento automático del sistema
+    // Incluye: movimientos con tipos específicos O movimientos de reversión detectados por observaciones
+    const isSystemMovement =
+      [
+        "ASIGNACION_EVENTO",
+        "REVERSION_ASIGNACION",
+        "TRANSFERENCIA",
+        "Salida",
+        "Baja",
+      ].includes(tipoMovimiento) ||
+      observaciones.includes("[REVERSION]") ||
+      observaciones.includes("Reverted assignment from event") ||
+      observaciones.includes("Reversión de asignación al evento") ||
+      observaciones.includes("Asignado al evento");
+
+    return {
+      ...m,
+      fechaFormatted: formatDate(m.fechaIngreso || m.fecha),
+      materialNombreTruncated:
+        m.materialNombre && m.materialNombre.length > 35
+          ? m.materialNombre.substring(0, 35) + "..."
+          : m.materialNombre || "",
+      categoriaTruncated:
+        m.categoria && m.categoria.length > 25
+          ? m.categoria.substring(0, 25) + "..."
+          : m.categoria || "",
+      cantidadFormatted: formatStock(m.cantidad),
+      proveedorDisplay: m.proveedor || "Sin proveedor",
+      isSystemMovement, // Agregar flag para identificar movimientos del sistema
+    };
+  });
 
   // Preparar datos para tabla de SALIDAS con truncado
   const salidasTableData = displayData.map((m) => {
@@ -667,10 +688,12 @@ const MaterialsMovements = () => {
               disabled: false,
               title: "Ver detalles",
             }),
-            edit: () => ({
+            edit: (movement) => ({
               show: hasPermission("materialsRegistry", "Editar"),
-              disabled: false,
-              title: "Editar ingreso",
+              disabled: movement.isSystemMovement,
+              title: movement.isSystemMovement
+                ? "No se pueden editar movimientos automáticos del sistema"
+                : "Editar ingreso",
             }),
             delete: () => ({
               show: false,

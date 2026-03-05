@@ -139,8 +139,9 @@ export function useSportsCategories() {
       } catch (err) {
         console.error("fetchSportsCategories error:", err);
         setError(err?.message || "No se pudieron cargar las categorías.");
-        showErrorAlert("Error", "No se pudieron cargar las categorías.");
-        throw err;
+        // No mostrar alerta automáticamente, dejar que el componente decida
+        // showErrorAlert("Error", "No se pudieron cargar las categorías.");
+        return { success: false, error: err?.message || "No se pudieron cargar las categorías." };
       } finally {
         setLoading(false);
       }

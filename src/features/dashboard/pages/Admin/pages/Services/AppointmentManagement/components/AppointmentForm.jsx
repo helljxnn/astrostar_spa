@@ -432,19 +432,20 @@ const AppointmentForm = ({
               </section>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Programacion
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Fecha y duracion
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                  Programacion
+                </p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Fecha, hora y duracion
+                </h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
                   <DatePickerField
-                    label="Fecha y Hora"
+                    label="Seleccione fecha y hora"
                     selected={formData.start}
                     onChange={handleDateChange}
                     timeIntervals={15}
@@ -456,8 +457,11 @@ const AppointmentForm = ({
                     filterTime={filterAvailableTimes}
                     disabled={!formData.specialistId || loadingSchedules}
                   />
+                </div>
+                
+                <div>
                   <FormField
-                    label="Duracion"
+                    label="Duracion de la cita"
                     name="durationMinutes"
                     type="select"
                     options={DURATION_OPTIONS}
@@ -466,37 +470,57 @@ const AppointmentForm = ({
                     required
                   />
                 </div>
-                {loadingSchedules && (
-                  <p className="text-xs text-gray-500">Cargando horarios disponibles...</p>
-                )}
-                {formData.specialistId && !loadingSchedules && specialistSchedules.length === 0 && (
-                  <p className="text-xs text-amber-600">El especialista no tiene horarios configurados</p>
-                )}
-              </section>
+              </div>
 
-              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
-                <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Motivo
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Descripcion de la cita
-                  </h3>
+              {loadingSchedules && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                  <span>Cargando horarios disponibles...</span>
                 </div>
-                <FormField
-                  label="Descripcion"
-                  name="description"
-                  type="textarea"
-                  value={formData.description}
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  error={errors.description}
-                  touched={touched.description}
-                  required
-                  placeholder="Describa el motivo de la cita..."
-                />
-              </section>
-            </div>
+              )}
+              
+              {formData.specialistId && !loadingSchedules && specialistSchedules.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  <span>El especialista no tiene horarios configurados</span>
+                </div>
+              )}
+
+              {!formData.specialistId && (
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <span>Seleccione un especialista para ver horarios disponibles</span>
+                </div>
+              )}
+            </section>
+
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                  Motivo
+                </p>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Descripcion de la cita
+                </h3>
+              </div>
+              <FormField
+                label="Descripcion"
+                name="description"
+                type="textarea"
+                value={formData.description}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={errors.description}
+                touched={touched.description}
+                required
+                placeholder="Describa el motivo de la cita..."
+                rows={4}
+              />
+            </section>
           </div>
 
           <div className="px-6 py-4 border-t border-gray-200 bg-white rounded-b-3xl">

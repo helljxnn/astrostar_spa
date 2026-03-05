@@ -4,15 +4,63 @@ import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const TopDonorsGraphic = () => {
-  // Datos de ejemplo - conectar con tu API real
-  const donorsData = [
-    { nombre: "Empresa ABC", monto: 85000 },
-    { nombre: "Fundación XYZ", monto: 62000 },
-    { nombre: "Donante Anónimo", monto: 48000 },
-    { nombre: "Corporación 123", monto: 35000 },
-    { nombre: "Otros", monto: 89000 },
-  ];
+const TopDonorsGraphic = ({ donations = [] }) => {
+  // Procesar donaciones reales para obtener top donantes
+  const processTopDonors = () => {
+    const donorTotals = {};
+
+    donations.forEach((donation) => {
+      if (donation.status === "Anulada" || !donation.donorSponsorId) return;
+
+      const donorId = donation.donorSponsorId;
+      const donorName = 
+        donation.donorSponsor?.nombre ||
+        donation.donorSponsor?.name ||
+        donation.donor?.nombre ||
+        donation.donor?.name ||
+        `Donante #${donorId}`;
+
+      if (!donorTotals[donorId]) {
+        donorTotals[donorId] = { nombre: donorName, monto: 0 };
+      }
+
+      const details = donation.details || [];
+      
+      if (donation.type === "ECONOMICA" || donation.type === "ALIMENTOS") {
+        const payment = details.find((d) => d.recordType === "payment");
+        donorTotals[donorId].monto += payment?.amount || 0;
+      } else if (donation.type === "ESPECIE") {
+        const itemsValue = details.reduce((sum, d) => {
+          if (d.recordType === "item") {
+            // Usar el amount si existe, sino usar quantity sin multiplicar
+            return sum + (d.amount || d.quantity || 0);
+          }
+          return sum;
+        }, 0);
+        donorTotals[donorId].monto += itemsValue;
+      }
+    });
+
+    // Ordenar por monto y tomar top 4
+    const sortedDonors = Object.values(donorTotals)
+      .sort((a, b) => b.monto - a.monto)
+      .slice(0, 4);
+
+    // Calcular "Otros"
+    const topTotal = sortedDonors.reduce((sum, d) => sum + d.monto, 0);
+    const grandTotal = Object.values(donorTotals).reduce((sum, d) => sum + d.monto, 0);
+    const othersTotal = grandTotal - topTotal;
+
+    if (othersTotal > 0) {
+      sortedDonors.push({ nombre: "Otros", monto: othersTotal });
+    }
+
+    return sortedDonors.length > 0 ? sortedDonors : [
+      { nombre: "Sin donaciones", monto: 1 }
+    ];
+  };
+
+  const donorsData = processTopDonors();
 
   const total = donorsData.reduce((sum, item) => sum + item.monto, 0);
 

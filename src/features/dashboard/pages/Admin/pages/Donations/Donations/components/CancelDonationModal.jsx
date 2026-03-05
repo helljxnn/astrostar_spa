@@ -25,7 +25,7 @@ const CancelDonationModal = ({ donation, onClose, onConfirm }) => {
         </button>
 
         {/* ---------- Encabezado ---------- */}
-        <h2 className="text-2xl font-bold text-sky-300 mb-2">
+        <h2 className="text-2xl font-bold text-primary-purple mb-2">
           Anular Donación
         </h2>
         <p className="text-gray-500 mb-6">
@@ -48,7 +48,7 @@ const CancelDonationModal = ({ donation, onClose, onConfirm }) => {
               setError("");
             }}
             placeholder="Escribe el motivo de la anulación..."
-            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-sky-300 resize-none"
+            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-purple resize-none"
             rows="4"
           />
           {error && (
@@ -69,7 +69,7 @@ const CancelDonationModal = ({ donation, onClose, onConfirm }) => {
 
           <button
             onClick={handleSubmit}
-            className="px-5 py-2 rounded-lg flex items-center gap-2 bg-gradient-to-r from-sky-300 to-sky-400 hover:from-sky-400 hover:to-sky-500 text-white font-medium shadow-md transition-all duration-200 ease-in-out transform hover:scale-[1.03]"
+            className="px-5 py-2 rounded-lg flex items-center gap-2 bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple-light hover:to-primary-blue text-white font-medium shadow-md transition-all duration-200 ease-in-out transform hover:scale-[1.03]"
           >
             <FaBan />
             Anular Donación

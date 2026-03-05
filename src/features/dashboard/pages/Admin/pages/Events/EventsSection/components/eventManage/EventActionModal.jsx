@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+import { Package } from "lucide-react";
 import { createPortal } from "react-dom";
 
 const EventActionModal = ({
@@ -54,6 +55,14 @@ const EventActionModal = ({
       color: "text-blue-600",
       hoverColor: "hover:bg-blue-50",
       showWhen: !cannotEdit, // Solo mostrar si NO está finalizado o cancelado y pasado
+    },
+    {
+      id: "materials",
+      label: "Gestionar materiales",
+      icon: <Package className="w-4 h-4" />,
+      color: "text-green-600",
+      hoverColor: "hover:bg-green-50",
+      showWhen: true, // Siempre mostrar
     },
     {
       id: "delete",

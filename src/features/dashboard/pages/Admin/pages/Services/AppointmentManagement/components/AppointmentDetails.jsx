@@ -48,7 +48,6 @@ const AppointmentDetails = ({
   onCancelAppointment,
   onMarkAsCompleted,
   onEdit,
-  onReschedule,
   isAthleteScope = false,
 }) => {
   if (!appointmentData) return null;
@@ -106,7 +105,6 @@ const AppointmentDetails = ({
   ];
 
   const canActOnAppointment = appointmentData.status === "Programado";
-  const canReschedule = appointmentData.status === "Cancelado" && onReschedule;
   return (
     <AnimatePresence>
       {isOpen && (
@@ -232,19 +230,6 @@ const AppointmentDetails = ({
 
             {/* Footer */}
             <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
-              {canReschedule && !isAthleteScope && (
-                <button
-                  onClick={() => {
-                    onReschedule(appointmentData);
-                    onClose();
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-purple-200 px-4 py-2 text-sm font-semibold text-primary-purple transition hover:bg-purple-50"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Reagendar
-                </button>
-              )}
-
               {canActOnAppointment && onEdit && !isAthleteScope && (
                 <button
                   onClick={() => {

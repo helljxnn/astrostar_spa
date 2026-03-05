@@ -64,27 +64,28 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-3">
           <div className="space-y-3">
-            {/* Material */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Material
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
-                {movement.materialNombre}
+            {/* Fila 1: Material y Categoría */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Material
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
+                  {movement.materialNombre}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoría
+                </label>
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  {movement.categoria}
+                </div>
               </div>
             </div>
 
-            {/* Categoría */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoría
-              </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                {movement.categoria}
-              </div>
-            </div>
-
-            {/* Cantidad y Fecha */}
+            {/* Fila 2: Cantidad y Fecha */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -104,6 +105,46 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                 </div>
               </div>
             </div>
+
+            {/* Fila 3: Destino y Proveedor (solo para ingresos) */}
+            {esIngreso && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Inventario Destino
+                  </label>
+                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    {movement.inventario_destino ||
+                      movement.inventarioDestino ||
+                      "No especificado"}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Proveedor
+                  </label>
+                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    {movement.proveedor ? (
+                      <div>
+                        <p className="font-medium">{movement.proveedor}</p>
+                        {movement.proveedorNit && (
+                          <p className="text-sm text-gray-600 mt-1">
+                            {movement.proveedorTipoEntidad === "Juridica"
+                              ? `NIT: ${movement.proveedorNit}`
+                              : movement.proveedorTipoDocumento
+                                ? `${movement.proveedorTipoDocumento}: ${movement.proveedorNit}`
+                                : `Identificación: ${movement.proveedorNit}`}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      "Sin proveedor"
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Tipo de Baja (solo para bajas) */}
             {esBaja && (
@@ -214,71 +255,30 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
               </div>
             )}
 
-            {/* Destino (solo para ingresos) */}
-            {esIngreso && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Inventario Destino
-                </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {movement.inventario_destino ||
-                    movement.inventarioDestino ||
-                    "No especificado"}
-                </div>
-              </div>
-            )}
-
-            {/* Proveedor (solo para ingresos) */}
-            {esIngreso && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Proveedor
-                </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                  {movement.proveedor ? (
-                    <div>
-                      <p className="font-medium">{movement.proveedor}</p>
-                      {movement.proveedorNit && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {movement.proveedorTipoEntidad === "Juridica"
-                            ? `NIT: ${movement.proveedorNit}`
-                            : movement.proveedorTipoDocumento
-                              ? `${movement.proveedorTipoDocumento}: ${movement.proveedorNit}`
-                              : `Identificación: ${movement.proveedorNit}`}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    "Sin proveedor"
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Observaciones (solo para ingresos) */}
             {esIngreso && movement.observaciones && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Observaciones
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap min-h-[80px]">
+                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap">
                   {movement.observaciones}
                 </div>
               </div>
             )}
 
-            {/* Información del Sistema (solo para ingresos) */}
+            {/* Información del Sistema (solo para ingresos) - en 2 columnas */}
             {esIngreso && movement.createdAt && (
-              <div className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">
                   Información del Sistema
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">
+                    <span className="text-xs font-medium text-gray-600">
                       Fecha de Creación:
                     </span>
-                    <p className="text-gray-800">
+                    <p className="text-sm text-gray-800">
                       {new Date(movement.createdAt).toLocaleDateString(
                         "es-ES",
                         {
@@ -291,10 +291,10 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                   </div>
                   {movement.updatedAt && (
                     <div>
-                      <span className="text-sm font-medium text-gray-600">
+                      <span className="text-xs font-medium text-gray-600">
                         Última Actualización:
                       </span>
-                      <p className="text-gray-800">
+                      <p className="text-sm text-gray-800">
                         {new Date(movement.updatedAt).toLocaleDateString(
                           "es-ES",
                           {

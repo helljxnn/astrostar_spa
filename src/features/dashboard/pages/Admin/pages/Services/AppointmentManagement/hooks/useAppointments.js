@@ -186,15 +186,12 @@ export const useAppointments = () => {
 
   const isAdminUser = useMemo(() => {
     const roleName = (user?.role?.name || user?.rol || "").toString().toLowerCase();
-    console.log("🔍 Debug Hook - User role:", roleName);
-    console.log("🔍 Debug Hook - Full user:", user);
     return roleName === "admin" || roleName === "administrador";
   }, [user]);
 
   const isAthleteUser = useMemo(() => {
     const roleName = (user?.role?.name || user?.rol || "").toString().toLowerCase();
     const isAthlete = roleName === "athlete" || roleName === "deportista";
-    console.log("🔍 Debug Hook - isAthleteUser:", isAthlete);
     return isAthlete;
   }, [user]);
 
@@ -202,7 +199,6 @@ export const useAppointments = () => {
   const isAthleteScope = useMemo(
     () => {
       const scope = isAthleteUser || (!isAdminUser && Boolean(athleteIdFromUser));
-      console.log("🔍 Debug Hook - isAthleteScope:", scope);
       return scope;
     },
     [isAthleteUser, isAdminUser, athleteIdFromUser]
@@ -540,30 +536,6 @@ export const useAppointments = () => {
     [loadAppointments]
   );
 
-  const proposeReschedule = useCallback(
-    async (id, rescheduleData) => {
-      setLoading(true);
-      try {
-        const response = await appointmentService.proposeReschedule(id, rescheduleData);
-
-        if (!response?.success) {
-          throw new Error(response?.message || "No se pudo proponer el reagendamiento");
-        }
-
-        showSuccessAlert("Propuesta enviada", response.message);
-        await loadAppointments();
-        return true;
-      } catch (error) {
-        console.error(error);
-        showErrorAlert("Error", error.message || "No se pudo enviar la propuesta");
-        throw error;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loadAppointments]
-  );
-
   return {
     appointments,
     athletes,
@@ -584,7 +556,6 @@ export const useAppointments = () => {
     cancelAppointment,
     completeAppointment,
     deleteAppointment,
-    proposeReschedule,
     isAthleteScope,
     athleteIdFromUser,
   };
