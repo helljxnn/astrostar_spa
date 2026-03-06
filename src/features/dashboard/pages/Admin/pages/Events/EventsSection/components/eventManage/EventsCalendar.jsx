@@ -99,6 +99,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
   // Transformar eventos para el calendario genérico
   const transformedEvents = useMemo(() => {
+    console.log("📦 Eventos recibidos (propEvents):", propEvents);
+    console.log("📦 Primer evento _count:", propEvents[0]?._count);
     return transformEventsForBaseCalendar(propEvents);
   }, [propEvents]);
 
@@ -704,6 +706,85 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   );
 
   /**
+   * Verificar si un evento se puede eliminar
+   */
+  const canDeleteEvent = useCallback((event) => {
+    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+    const estado = dashboardEvent.estado || dashboardEvent.status;
+    const participantCount =
+      dashboardEvent.participants?.length ||
+      dashboardEvent._count?.participants ||
+      0;
+    const materialCount = dashboardEvent._count?.eventMaterials || 0;
+
+    console.log("🟢 canDeleteEvent ejecutándose:", {
+      eventName: dashboardEvent.name || dashboardEvent.title,
+      estado,
+      participantCount,
+      materialCount,
+      _count: dashboardEvent._count,
+      fullEvent: dashboardEvent,
+    });
+
+    // No se puede eliminar si está en curso o finalizado
+    if (
+      estado === "En Curso" ||
+      estado === "en_curso" ||
+      estado === "Finalizado" ||
+      estado === "finalizado"
+    ) {
+      console.log("❌ No se puede eliminar: estado", estado);
+      return false;
+    }
+
+    // No se puede eliminar si tiene inscritos
+    if (participantCount > 0) {
+      console.log("❌ No se puede eliminar: tiene inscritos", participantCount);
+      return false;
+    }
+
+    // No se puede eliminar si tiene materiales asignados
+    if (materialCount > 0) {
+      console.log("❌ No se puede eliminar: tiene materiales", materialCount);
+      return false;
+    }
+
+    console.log("✅ Se puede eliminar");
+    return true;
+  }, []);
+
+  /**
+   * Obtener mensaje de por qué no se puede eliminar un evento
+   */
+  const getDeleteDisabledReason = useCallback((event) => {
+    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+    const estado = dashboardEvent.estado || dashboardEvent.status;
+    const participantCount =
+      dashboardEvent.participants?.length ||
+      dashboardEvent._count?.participants ||
+      0;
+    const materialCount = dashboardEvent._count?.eventMaterials || 0;
+
+    if (estado === "En Curso" || estado === "en_curso") {
+      return "No se puede eliminar un evento en curso";
+    }
+
+    if (estado === "Finalizado" || estado === "finalizado") {
+      return "No se puede eliminar un evento finalizado";
+    }
+
+    if (participantCount > 0) {
+      return `No se puede eliminar: tiene ${participantCount} inscrito(s)`;
+    }
+
+    if (materialCount > 0) {
+      return `No se puede eliminar: tiene ${materialCount} material(es) asignado(s)`;
+    }
+
+    return "";
+  }, []);
+
+  /**
    * Manejar eliminación de evento desde la sidebar
    */
   const handleDeleteEvent = useCallback(
@@ -741,127 +822,145 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   /**
    * Renderizar evento personalizado para la barra lateral
    */
-  const renderSidebarItem = useCallback((event, actions) => {
-    // Filtrar acciones basándose en shouldShow
-    const filteredActions = actions.filter((action) => {
-      if (action.shouldShow) {
-        return action.shouldShow(event);
-      }
-      return true; // Si no tiene shouldShow, mostrar por defecto
-    });
+  const renderSidebarItem = useCallback(
+    (event, actions) => {
+      // Filtrar acciones basándose en shouldShow
+      const filteredActions = actions.filter((action) => {
+        if (action.shouldShow) {
+          return action.shouldShow(event);
+        }
+        return true; // Si no tiene shouldShow, mostrar por defecto
+      });
 
-    // Separar acciones de gestión y de inscripción
-    const managementActions = filteredActions.filter(
-      (action) => action.group === "management",
-    );
-    const registrationActions = filteredActions.filter(
-      (action) => action.group === "registration",
-    );
+      // Separar acciones de gestión y de inscripción
+      const managementActions = filteredActions.filter(
+        (action) => action.group === "management",
+      );
+      const registrationActions = filteredActions.filter(
+        (action) => action.group === "registration",
+      );
 
-    return (
-      <div className="space-y-2">
-        <div>
-          <h4 className="font-medium text-gray-800 text-sm mb-1">
-            {event.title}
-          </h4>
-          <div className="space-y-1 text-xs text-gray-600">
-            <div className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {event.extendedProps?.horaInicio} - {event.extendedProps?.horaFin}
-            </div>
-            {event.extendedProps?.ubicacion && (
+      return (
+        <div className="space-y-2">
+          <div>
+            <h4 className="font-medium text-gray-800 text-sm mb-1">
+              {event.title}
+            </h4>
+            <div className="space-y-1 text-xs text-gray-600">
               <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {event.extendedProps.ubicacion}
+                <Clock className="h-3 w-3" />
+                {event.extendedProps?.horaInicio} -{" "}
+                {event.extendedProps?.horaFin}
               </div>
-            )}
-            {event.extendedProps?.tipo && (
+              {event.extendedProps?.ubicacion && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {event.extendedProps.ubicacion}
+                </div>
+              )}
+              {event.extendedProps?.tipo && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium">Tipo:</span>
+                  {event.extendedProps.tipo}
+                </div>
+              )}
+              {event.extendedProps?.categoria && (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-medium">Categoría:</span>
+                  {event.extendedProps.categoria}
+                </div>
+              )}
               <div className="flex items-center gap-1">
-                <span className="text-xs font-medium">Tipo:</span>
-                {event.extendedProps.tipo}
+                <span className="text-xs font-medium">Estado:</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                    event.extendedProps?.estado === "programado"
+                      ? "bg-blue-100 text-blue-800"
+                      : event.extendedProps?.estado === "en-curso"
+                        ? "bg-green-100 text-green-800"
+                        : event.extendedProps?.estado === "finalizado"
+                          ? "bg-gray-100 text-gray-800"
+                          : event.extendedProps?.estado === "cancelado"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-purple-100 text-purple-800"
+                  }`}
+                >
+                  {event.extendedProps?.estado || "Programado"}
+                </span>
               </div>
-            )}
-            {event.extendedProps?.categoria && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-medium">Categoría:</span>
-                {event.extendedProps.categoria}
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <span className="text-xs font-medium">Estado:</span>
-              <span
-                className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                  event.extendedProps?.estado === "programado"
-                    ? "bg-blue-100 text-blue-800"
-                    : event.extendedProps?.estado === "en-curso"
-                      ? "bg-green-100 text-green-800"
-                      : event.extendedProps?.estado === "finalizado"
-                        ? "bg-gray-100 text-gray-800"
-                        : event.extendedProps?.estado === "cancelado"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-purple-100 text-purple-800"
-                }`}
-              >
-                {event.extendedProps?.estado || "Programado"}
-              </span>
             </div>
           </div>
+
+          {/* Botones de gestión (Ver, Editar, Eliminar) */}
+          {managementActions.length > 0 && (
+            <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+              {managementActions.map((action, actionIndex) => {
+                const isDeleteAction = action.variant === "danger";
+                const isDisabled = isDeleteAction && !canDeleteEvent(event);
+                const disabledReason = isDisabled
+                  ? getDeleteDisabledReason(event)
+                  : "";
+
+                return (
+                  <button
+                    key={actionIndex}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isDisabled) {
+                        action.onClick(event);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    title={disabledReason}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                      isDisabled
+                        ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                        : action.variant === "danger"
+                          ? "text-red-600 hover:bg-red-50"
+                          : action.variant === "edit"
+                            ? "text-orange-600 hover:bg-orange-50"
+                            : action.variant === "materials"
+                              ? "text-primary-pink hover:bg-pink-50"
+                              : "text-blue-600 hover:bg-blue-50"
+                    }`}
+                  >
+                    {action.icon && <action.icon className="h-3 w-3" />}
+                    {action.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Botones de inscripción (Inscribir, Ver Inscritos) */}
+          {registrationActions.length > 0 && (
+            <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
+              {registrationActions.map((action, actionIndex) => (
+                <button
+                  key={actionIndex}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    action.onClick(event);
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                    action.variant === "success"
+                      ? "text-green-600 hover:bg-green-50"
+                      : action.variant === "info"
+                        ? "text-purple-600 hover:bg-purple-50"
+                        : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                  }`}
+                >
+                  {action.icon && <action.icon className="h-3 w-3" />}
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Botones de gestión (Ver, Editar, Eliminar) */}
-        {managementActions.length > 0 && (
-          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
-            {managementActions.map((action, actionIndex) => (
-              <button
-                key={actionIndex}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  action.onClick(event);
-                }}
-                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                  action.variant === "danger"
-                    ? "text-red-600 hover:bg-red-50"
-                    : action.variant === "edit"
-                      ? "text-orange-600 hover:bg-orange-50"
-                      : action.variant === "materials"
-                        ? "text-green-600 hover:bg-green-50"
-                        : "text-blue-600 hover:bg-blue-50"
-                }`}
-              >
-                {action.icon && <action.icon className="h-3 w-3" />}
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Botones de inscripción (Inscribir, Ver Inscritos) */}
-        {registrationActions.length > 0 && (
-          <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
-            {registrationActions.map((action, actionIndex) => (
-              <button
-                key={actionIndex}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  action.onClick(event);
-                }}
-                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                  action.variant === "success"
-                    ? "text-green-600 hover:bg-green-50"
-                    : action.variant === "info"
-                      ? "text-purple-600 hover:bg-purple-50"
-                      : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
-                }`}
-              >
-                {action.icon && <action.icon className="h-3 w-3" />}
-                {action.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }, []);
+      );
+    },
+    [canDeleteEvent, getDeleteDisabledReason],
+  );
 
   // Configuración de acciones de la barra lateral
   const sidebarActions = useMemo(
@@ -895,6 +994,17 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               permission: { module: "events", action: "delete" },
               variant: "danger",
               group: "management",
+              isDisabled: (event) => {
+                const result = !canDeleteEvent(event);
+                console.log(
+                  "🔴 Botón Eliminar - isDisabled:",
+                  result,
+                  "para evento:",
+                  event.extendedProps?.dashboardEvent?.name || event.title,
+                );
+                return result;
+              },
+              getDisabledReason: (event) => getDeleteDisabledReason(event),
             },
           ]
         : []),
@@ -1001,6 +1111,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       handleSidebarEventClick,
       handleEditEvent,
       handleDeleteEvent,
+      canDeleteEvent,
     ],
   );
 
@@ -1167,7 +1278,13 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         {materialsModal.isOpen && (
           <EventMaterialsModal
             isOpen={materialsModal.isOpen}
-            onClose={() => setMaterialsModal({ isOpen: false, event: null })}
+            onClose={() => {
+              setMaterialsModal({ isOpen: false, event: null });
+              // Recargar eventos para actualizar el conteo de materiales
+              if (onRefresh) {
+                onRefresh();
+              }
+            }}
             event={materialsModal.event}
           />
         )}

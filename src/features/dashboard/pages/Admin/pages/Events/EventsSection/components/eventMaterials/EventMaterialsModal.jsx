@@ -143,7 +143,7 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      maxWidth="max-w-[95vw]"
+      maxWidth="max-w-5xl"
       closeOnBackdropClick={false}
     >
       <div className="bg-white rounded-2xl shadow-xl max-h-[90vh] flex flex-col">
