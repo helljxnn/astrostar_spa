@@ -21,6 +21,7 @@ import {
   showErrorAlert,
   showSuccessAlert,
 } from "../../../../../../../shared/utils/alerts";
+import MaterialSearchSelector from "../../../../../../../shared/components/MaterialSearchSelector";
 
 const STATUS_OPTIONS = [
   { value: "Recibida", label: "Recibida" },
@@ -104,7 +105,7 @@ const DonationsForm = () => {
     isFoodPurchase: false,
     donorSponsorId: "",
     type: "",
-    status: "Recibida",
+    status: "Ejecutada",
     program: "",
     eventId: "",
     specificDestination: "",
@@ -844,16 +845,16 @@ const DonationsForm = () => {
         <div className="xl:col-span-2 space-y-6">
           {/* Card: información general */}
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-            <div className="bg-primary-purple/15 px-6 py-4">
+            <div className="bg-primary-purple/30 px-6 py-4">
               <div className="flex items-center gap-3 text-gray-800">
-                <div className="p-2 bg-white/60 rounded-lg">
+                <div className="p-2 bg-white/70 rounded-lg">
                   <FaUser className="text-xl" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-800">
+                  <h2 className="text-lg font-semibold text-gray-900">
                     información General
                   </h2>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-700">
                     Datos básicos de la Donación
                   </p>
                 </div>
@@ -1034,39 +1035,41 @@ const DonationsForm = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col order-7">
-                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                    <FaCheckCircle className="text-primary-purple" />
-                    Estado *
-                  </label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => handleChange("status", e.target.value)}
-                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {isEditing && (
+                  <div className="flex flex-col order-7">
+                    <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-purple" />
+                      Estado *
+                    </label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => handleChange("status", e.target.value)}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </div>
           {/* Card: Donación económica */}
           {isEconomicType && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-primary-green px-6 py-4">
+              <div className="bg-primary-green/30 px-6 py-4">
                 <div className="flex items-center gap-3 text-gray-800">
-                  <div className="p-2 bg-white/60 rounded-lg">
+                  <div className="p-2 bg-white/70 rounded-lg">
                     <FaDollarSign className="text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
+                    <h3 className="text-lg font-semibold text-gray-900">
                       Donación económica
                     </h3>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-700">
                       Detalles del aporte monetario
                     </p>
                   </div>
@@ -1178,17 +1181,17 @@ const DonationsForm = () => {
           {/* Card: Donación en especie */}
           {isEspecieType && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-primary-purple/15 px-6 py-4">
+              <div className="bg-primary-blue/30 px-6 py-4">
                 <div className="flex items-center gap-3 text-gray-800">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/60 rounded-lg">
+                    <div className="p-2 bg-white/70 rounded-lg">
                       <FaBoxOpen className="text-xl" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
+                      <h3 className="text-lg font-semibold text-gray-900">
                         Donación en Especie
                       </h3>
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-700">
                         Bienes y materiales donados
                       </p>
                     </div>
@@ -1197,9 +1200,9 @@ const DonationsForm = () => {
               </div>
 
               <div className="p-6 flex flex-col gap-5">
-                <div className="bg-primary-purple/10 border border-primary-purple/30 rounded-xl p-4">
+                <div className="bg-primary-blue/15 border border-primary-blue/40 rounded-xl p-4">
                   <p className="text-sm text-gray-700 flex items-start gap-2">
-                    <FaInfoCircle className="mt-0.5 flex-shrink-0 text-primary-purple" />
+                    <FaInfoCircle className="mt-0.5 flex-shrink-0 text-primary-blue" />
                     <span>
                       Completa la información de cada bien y presiona "Agregar"
                       para incluirlo en la donación.
@@ -1208,8 +1211,8 @@ const DonationsForm = () => {
                 </div>
 
                 {/* Primera fila: Categoría, Material, Cantidad, Botón + */}
-                <div className="grid md:grid-cols-4 gap-4 items-end">
-                  <div className="flex flex-col">
+                <div className="grid md:grid-cols-12 gap-4 items-end">
+                  <div className="flex flex-col md:col-span-3">
                     <label className="text-sm font-semibold text-gray-700 mb-2">
                       Categoría *
                     </label>
@@ -1235,35 +1238,24 @@ const DonationsForm = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col">
+                  <div className="flex flex-col md:col-span-5">
                     <label className="text-sm font-semibold text-gray-700 mb-2">
                       Material donado *
                     </label>
-                    <select
+                    <MaterialSearchSelector
+                      materials={materials}
                       value={form.especieMaterialId}
-                      onChange={(e) =>
-                        handleChange("especieMaterialId", e.target.value)
+                      onChange={(value) =>
+                        handleChange("especieMaterialId", value)
                       }
-                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
                       disabled={statusOnlyMode}
-                    >
-                      <option value="">
-                        {loadingMaterials ? "Cargando..." : "Seleccionar..."}
-                      </option>
-                      {materials.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.nombre} - {m.categoria}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.especieMaterialId && (
-                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                        <FaInfoCircle /> {errors.especieMaterialId}
-                      </span>
-                    )}
+                      loading={loadingMaterials}
+                      placeholder="Buscar material..."
+                      error={errors.especieMaterialId}
+                    />
                   </div>
 
-                  <div className="flex flex-col">
+                  <div className="flex flex-col md:col-span-2">
                     <label className="text-sm font-semibold text-gray-700 mb-2">
                       Cantidad *
                     </label>
@@ -1285,11 +1277,11 @@ const DonationsForm = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col">
+                  <div className="flex flex-col md:col-span-2">
                     <button
                       type="button"
                       onClick={handleAddEspecieItem}
-                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-purple hover:bg-primary-purple-light text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-primary-purple hover:bg-primary-purple-light text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={statusOnlyMode}
                     >
                       <FaPlus /> Agregar
@@ -1333,11 +1325,11 @@ const DonationsForm = () => {
                       {form.especieItems.map((item, index) => (
                         <div
                           key={`${item.description}-${index}`}
-                          className="flex items-center justify-between gap-4 p-3 rounded-xl bg-primary-purple/5 border border-primary-purple/30 shadow-sm"
+                          className="flex items-center justify-between gap-4 p-3 rounded-xl bg-primary-blue/15 border border-primary-blue/40 shadow-sm"
                         >
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-purple text-white text-xs">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-blue text-white text-xs">
                                 {index + 1}
                               </span>
                               {item.description}
@@ -1415,16 +1407,16 @@ const DonationsForm = () => {
           {/* Card: Compra de alimentos */}
           {isEconomicType && form.isFoodPurchase && (
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-primary-pink px-6 py-4">
+              <div className="bg-primary-pink/30 px-6 py-4">
                 <div className="flex items-center gap-3 text-gray-800">
-                  <div className="p-2 bg-white/60 rounded-lg">
+                  <div className="p-2 bg-white/70 rounded-lg">
                     <FaUtensils className="text-xl" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">
+                    <h3 className="text-lg font-semibold text-gray-900">
                       Compra de Alimentos
                     </h3>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-gray-700">
                       Detalle de alimentos adquiridos
                     </p>
                   </div>
@@ -1432,7 +1424,7 @@ const DonationsForm = () => {
               </div>
 
               <div className="p-6 flex flex-col gap-5">
-                <div className="bg-primary-pink/10 border border-primary-pink/30 rounded-xl p-4">
+                <div className="bg-primary-pink/15 border border-primary-pink/40 rounded-xl p-4">
                   <p className="text-sm text-gray-700 flex items-start gap-2">
                     <FaInfoCircle className="mt-0.5 flex-shrink-0 text-primary-pink" />
                     <span>
@@ -1516,7 +1508,7 @@ const DonationsForm = () => {
                     {form.foodItems.map((item, index) => (
                       <div
                         key={`${item.classification}-${index}`}
-                        className="flex items-center justify-between gap-4 p-4 rounded-xl bg-gradient-to-r from-primary-pink/5 to-primary-pink/5 border border-primary-pink/30 shadow-sm"
+                        className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary-pink/15 border border-primary-pink/40 shadow-sm"
                       >
                         <div className="flex-1">
                           <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -1641,7 +1633,7 @@ const DonationsForm = () => {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-8 py-3 rounded-xl bg-primary-purple-light text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-8 py-3 rounded-xl bg-primary-purple hover:bg-primary-blue text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {submitting ? (
                 <>
@@ -1659,25 +1651,25 @@ const DonationsForm = () => {
         </div>
 
         {/* Panel de resumen mejorado */}
-        <aside className="space-y-6">
-          <div className="bg-white rounded-2xl shadow-lg overflow-hidden sticky top-6">
-            <div className="bg-primary-purple/15 px-6 py-4">
+        <aside className="xl:h-full">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="bg-primary-purple/30 px-6 py-4">
               <div className="flex items-center gap-3 text-gray-800">
-                <div className="p-2 bg-white/60 rounded-lg">
+                <div className="p-2 bg-white/70 rounded-lg">
                   <FaInfoCircle className="text-xl" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800">
+                  <h3 className="text-lg font-semibold text-gray-900">
                     Resumen
                   </h3>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-700">
                     Vista previa de la Donación
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+            <div className="p-6 space-y-4">
               {/* información general */}
               <div className="space-y-3">
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
@@ -1685,7 +1677,7 @@ const DonationsForm = () => {
                   información General
                 </h4>
                 {summary.general.map((item) => (
-                  <div key={item.label} className="bg-gray-50 rounded-lg p-3">
+                  <div key={item.label} className="bg-gray-100 rounded-lg p-3">
                     <p className="text-xs text-gray-500 mb-1">{item.label}</p>
                     <p className="text-sm font-medium text-gray-800 break-words">
                       {item.value}
@@ -1701,17 +1693,26 @@ const DonationsForm = () => {
                     <FaBoxOpen className="text-primary-purple" />
                     Detalles
                   </h4>
-                  <ul className="space-y-2">
-                    {summary.details.map((d, idx) => (
-                      <li
-                        key={idx}
-                        className="flex items-start gap-2 text-sm text-gray-700 bg-blue-50 rounded-lg p-3"
-                      >
-                        <span className="text-primary-blue mt-0.5">•</span>
-                        <span className="flex-1">{d}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="bg-primary-purple/5 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {summary.details.length}{" "}
+                      {summary.details.length === 1
+                        ? "item agregado"
+                        : "items agregados"}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {selectedType?.apiType === "ESPECIE" &&
+                        form.especieItems.length > 0 &&
+                        `${form.especieItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} unidades totales`}
+                      {selectedType?.apiType === "ECONOMICA" &&
+                        form.isFoodPurchase &&
+                        form.foodItems.length > 0 &&
+                        `${form.foodItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} unidades de alimentos`}
+                      {selectedType?.apiType === "ECONOMICA" &&
+                        !form.isFoodPurchase &&
+                        `Valor: ${formatNumber(form.econAmount) || "0"}`}
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -1722,16 +1723,17 @@ const DonationsForm = () => {
                     <FaFileAlt className="text-primary-purple" />
                     Archivos
                   </h4>
-                  <div className="space-y-2">
-                    {summary.files.map((f, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-start gap-2 text-xs bg-green-50 rounded-lg p-3"
-                      >
-                        <FaCheckCircle className="text-primary-green mt-0.5 flex-shrink-0" />
-                        <span className="text-green-700 flex-1">{f}</span>
-                      </div>
-                    ))}
+                  <div className="bg-primary-green/15 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-green" />
+                      <p className="text-sm font-semibold text-gray-800">
+                        {
+                          summary.files.filter((f) => f.includes("listo"))
+                            .length
+                        }{" "}
+                        de {summary.files.length} archivos listos
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
