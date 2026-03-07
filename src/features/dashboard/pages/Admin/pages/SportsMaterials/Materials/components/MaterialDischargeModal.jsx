@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 import { getTipoBajaOptions } from "../../shared/utils/tipoBajaLabels";
+import materialsService from "../services/materialsService";
 
 const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,12 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assignmentInfo, setAssignmentInfo] = useState({
+    hasAssignments: false,
+    count: 0,
+    totalPlanned: 0,
+    availableForDischarge: 0,
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -26,8 +33,51 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
       });
       setErrors({});
       setTouched({});
+      checkFutureAssignments();
     }
-  }, [isOpen]);
+  }, [isOpen, material?.id]);
+
+  // Verificar asignaciones futuras cuando cambia el origen
+  useEffect(() => {
+    if (isOpen && formData.inventarioOrigen === "FUNDACION") {
+      checkFutureAssignments();
+    } else {
+      setAssignmentInfo({
+        hasAssignments: false,
+        count: 0,
+        totalPlanned: 0,
+        availableForDischarge: 0,
+      });
+    }
+  }, [formData.inventarioOrigen, isOpen, material?.id]);
+
+  const checkFutureAssignments = async () => {
+    if (!material?.id) return;
+
+    try {
+      const response = await materialsService.checkFutureAssignments(
+        material.id,
+      );
+
+      if (response.success && response.data) {
+        setAssignmentInfo({
+          hasAssignments: response.data.hasAssignments,
+          count: response.data.count || 0,
+          totalPlanned: response.data.totalPlanned || 0,
+          availableForDischarge: response.data.availableForDischarge || 0,
+        });
+      }
+    } catch (error) {
+      console.error("Error checking future assignments:", error);
+      // En caso de error, asumir que no hay asignaciones
+      setAssignmentInfo({
+        hasAssignments: false,
+        count: 0,
+        totalPlanned: 0,
+        availableForDischarge: material?.stockFundacion || 0,
+      });
+    }
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -71,6 +121,10 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     if (!formData.inventarioOrigen) return 0;
 
     if (formData.inventarioOrigen === "FUNDACION") {
+      // Si hay asignaciones, usar el disponible calculado
+      if (assignmentInfo.hasAssignments) {
+        return assignmentInfo.availableForDischarge;
+      }
       return material?.stockFundacion || 0;
     } else {
       // Para EVENTOS, considerar stock reservado
@@ -181,6 +235,37 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </div>
             </div>
 
+            {/* Información de disponibilidad para Fundación */}
+            {formData.inventarioOrigen === "FUNDACION" &&
+              assignmentInfo.hasAssignments && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Stock Total:</span>
+                      <span className="font-medium text-gray-900">
+                        {formatStock(material?.stockFundacion || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">
+                        Planificado en eventos:
+                      </span>
+                      <span className="font-medium text-blue-600">
+                        {formatStock(assignmentInfo.totalPlanned)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-200 pt-1 mt-1">
+                      <span className="text-gray-700 font-medium">
+                        Disponible para baja:
+                      </span>
+                      <span className="font-bold text-green-600">
+                        {formatStock(assignmentInfo.availableForDischarge)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             {/* Origen y Cantidad en una fila */}
             <div className="grid grid-cols-2 gap-3">
               <FormField
@@ -225,6 +310,29 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
                 placeholder="0"
               />
             </div>
+
+            {/* Advertencia cuando no hay stock disponible */}
+            {formData.inventarioOrigen === "FUNDACION" &&
+              assignmentInfo.hasAssignments &&
+              assignmentInfo.availableForDischarge === 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-amber-600 text-lg">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-900">
+                        No hay stock disponible para dar de baja
+                      </p>
+                      <p className="text-xs text-amber-700 mt-1">
+                        Todo el stock de Fundación (
+                        {formatStock(material?.stockFundacion || 0)}) está
+                        planificado en {assignmentInfo.count} evento(s). Revisa
+                        las "Asignaciones del Material" y reduce las
+                        planificaciones para poder dar de baja.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             <FormField
               label="Tipo de Baja"
@@ -273,8 +381,13 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50"
-                disabled={isSubmitting}
+                className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={
+                  isSubmitting ||
+                  (formData.inventarioOrigen === "FUNDACION" &&
+                    assignmentInfo.hasAssignments &&
+                    assignmentInfo.availableForDischarge === 0)
+                }
               >
                 {isSubmitting ? "Registrando..." : "Registrar Baja"}
               </button>

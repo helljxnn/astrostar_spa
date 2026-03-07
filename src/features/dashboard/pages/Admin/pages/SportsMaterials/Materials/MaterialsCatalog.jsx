@@ -509,20 +509,17 @@ const MaterialsCatalog = () => {
           customActions: {
             0: (material) => {
               // Botón de asignaciones (índice 0 en customActions)
-              const isReusable = material.esReutilizable === true;
               const hasActiveAssignments =
                 material.hasActiveAssignments === true;
 
-              // El botón está habilitado solo si es reutilizable Y tiene asignaciones activas
-              const isEnabled = isReusable && hasActiveAssignments;
+              // El botón está habilitado si tiene asignaciones activas
+              // (ya sean consumibles o reutilizables)
+              const isEnabled = hasActiveAssignments;
 
               // Mensajes más claros y específicos
               let tooltipMessage = "Ver Asignaciones a Eventos";
 
-              if (!isReusable) {
-                tooltipMessage =
-                  "Material consumible - No tiene asignaciones por evento";
-              } else if (!hasActiveAssignments) {
+              if (!hasActiveAssignments) {
                 tooltipMessage = "Sin eventos asignados actualmente";
               }
 

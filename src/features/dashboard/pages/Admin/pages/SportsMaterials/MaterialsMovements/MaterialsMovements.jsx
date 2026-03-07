@@ -132,7 +132,11 @@ const MaterialsMovements = () => {
         if (activeTab === "salidas") {
           const tipoMovimiento =
             movement.tipoMovimiento || movement.tipo_movimiento || "";
-          if (tipoMovimiento === "BAJA" || movement.tipo_baja) {
+          if (
+            tipoMovimiento === "Baja" ||
+            tipoMovimiento === "BAJA" ||
+            movement.tipo_baja
+          ) {
             tipoMatch = "baja".includes(searchLower);
             const tipoBajaLabel = getTipoBajaLabel(
               movement.tipo_baja || movement.tipoBaja,
@@ -141,7 +145,10 @@ const MaterialsMovements = () => {
               tipoMatch = true;
           } else if (tipoMovimiento === "TRANSFERENCIA") {
             tipoMatch = "transferencia".includes(searchLower);
-          } else if (tipoMovimiento === "SALIDA_EVENTO") {
+          } else if (
+            tipoMovimiento === "SALIDA_EVENTO" ||
+            tipoMovimiento === "ASIGNACION_EVENTO"
+          ) {
             tipoMatch =
               "salida por evento".includes(searchLower) ||
               "evento".includes(searchLower);
@@ -149,6 +156,8 @@ const MaterialsMovements = () => {
               movement.evento_nombre || movement.eventoNombre || "";
             if (eventoNombre.toLowerCase().includes(searchLower))
               tipoMatch = true;
+          } else if (tipoMovimiento === "Salida") {
+            tipoMatch = "salida".includes(searchLower);
           }
           const inventarioOrigen =
             movement.inventario_origen || movement.inventarioOrigen || "";
@@ -184,12 +193,19 @@ const MaterialsMovements = () => {
     if (activeTab === "salidas" && filters.tipoSalida) {
       result = result.filter((m) => {
         const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || "";
-        if (filters.tipoSalida === "BAJA") {
-          return tipoMovimiento === "BAJA" || m.tipo_baja;
+        if (filters.tipoSalida === "Baja") {
+          return (
+            tipoMovimiento === "Baja" ||
+            tipoMovimiento === "BAJA" ||
+            m.tipo_baja
+          );
         } else if (filters.tipoSalida === "TRANSFERENCIA") {
           return tipoMovimiento === "TRANSFERENCIA";
         } else if (filters.tipoSalida === "SALIDA_EVENTO") {
-          return tipoMovimiento === "SALIDA_EVENTO";
+          return (
+            tipoMovimiento === "SALIDA_EVENTO" ||
+            tipoMovimiento === "ASIGNACION_EVENTO"
+          );
         }
         return false;
       });
@@ -367,15 +383,20 @@ const MaterialsMovements = () => {
   const salidasTableData = displayData.map((m) => {
     const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || "";
 
-    // Determinar el tipo de salida de forma simple
+    // Determinar el tipo de salida - normalizar todos los valores posibles
     let tipoDisplay = "Otro";
 
-    if (tipoMovimiento === "BAJA" || m.tipo_baja) {
+    if (tipoMovimiento === "Baja" || tipoMovimiento === "BAJA" || m.tipo_baja) {
       tipoDisplay = "Baja";
     } else if (tipoMovimiento === "TRANSFERENCIA") {
       tipoDisplay = "Transferencia";
-    } else if (tipoMovimiento === "SALIDA_EVENTO") {
+    } else if (
+      tipoMovimiento === "SALIDA_EVENTO" ||
+      tipoMovimiento === "ASIGNACION_EVENTO"
+    ) {
       tipoDisplay = "Salida por Evento";
+    } else if (tipoMovimiento === "Salida") {
+      tipoDisplay = "Salida";
     }
 
     return {
@@ -418,7 +439,11 @@ const MaterialsMovements = () => {
       let tipo = "Otro";
       let detalles = "";
 
-      if (tipoMovimiento === "BAJA" || m.tipo_baja) {
+      if (
+        tipoMovimiento === "Baja" ||
+        tipoMovimiento === "BAJA" ||
+        m.tipo_baja
+      ) {
         tipo = "Baja";
         const tipoBaja = getTipoBajaLabel(m.tipo_baja || m.tipoBaja);
         const origen = m.inventario_origen || m.inventarioOrigen || "";
@@ -428,9 +453,15 @@ const MaterialsMovements = () => {
         const desde = m.inventario_origen || m.inventarioOrigen || "N/A";
         const hacia = m.inventario_destino || m.inventarioDestino || "N/A";
         detalles = `De ${desde} a ${hacia}${m.observaciones ? " - " + m.observaciones : ""}`;
-      } else if (tipoMovimiento === "SALIDA_EVENTO") {
+      } else if (
+        tipoMovimiento === "SALIDA_EVENTO" ||
+        tipoMovimiento === "ASIGNACION_EVENTO"
+      ) {
         tipo = "Salida por Evento";
         detalles = m.evento_nombre || m.eventoNombre || "Evento finalizado";
+      } else if (tipoMovimiento === "Salida") {
+        tipo = "Salida";
+        detalles = m.observaciones || "Salida de material";
       }
 
       return {
@@ -605,7 +636,7 @@ const MaterialsMovements = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                 >
                   <option value="">Todos los tipos</option>
-                  <option value="BAJA">Baja</option>
+                  <option value="Baja">Baja</option>
                   <option value="TRANSFERENCIA">Transferencia</option>
                   <option value="SALIDA_EVENTO">Salida por Evento</option>
                 </select>

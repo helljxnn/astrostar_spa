@@ -310,9 +310,44 @@ class EventMaterialsService {
   }
 
   /**
-   * Get all event assignments for a specific reusable material
+   * Get all event assignments for a specific consumable material (stock eventos)
    */
   async getMaterialAssignments(materialId, options = {}) {
+    if (!materialId) {
+      throw new Error("ID del material es requerido");
+    }
+
+    try {
+      const params = new URLSearchParams();
+
+      if (options.includeCompleted !== undefined) {
+        params.append("includeCompleted", options.includeCompleted);
+      }
+
+      if (options.startDate) {
+        params.append("startDate", options.startDate);
+      }
+
+      if (options.endDate) {
+        params.append("endDate", options.endDate);
+      }
+
+      const queryString = params.toString();
+      const url = queryString
+        ? `${this.endpoint}/consumables/${materialId}/assignments?${queryString}`
+        : `${this.endpoint}/consumables/${materialId}/assignments`;
+
+      const response = await apiClient.get(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get all event assignments for a specific reusable material (stock fundación)
+   */
+  async getReusableMaterialAssignments(materialId, options = {}) {
     if (!materialId) {
       throw new Error("ID del material es requerido");
     }

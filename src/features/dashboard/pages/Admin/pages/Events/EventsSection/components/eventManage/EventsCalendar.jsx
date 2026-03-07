@@ -980,14 +980,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               variant: "danger",
               group: "management",
               isDisabled: (event) => {
-                const result = !canDeleteEvent(event);
-                console.log(
-                  "🔴 Botón Eliminar - isDisabled:",
-                  result,
-                  "para evento:",
-                  event.extendedProps?.dashboardEvent?.name || event.title,
-                );
-                return result;
+                return !canDeleteEvent(event);
               },
               getDisabledReason: (event) => getDeleteDisabledReason(event),
             },

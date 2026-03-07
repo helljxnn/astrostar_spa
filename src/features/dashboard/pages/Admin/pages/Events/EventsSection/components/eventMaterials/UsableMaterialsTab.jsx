@@ -1,13 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import {
-  Plus,
-  Trash2,
-  Recycle,
-  X,
-  AlertCircle,
-  Lock,
-  Edit,
-} from "lucide-react";
+import { Trash2, Recycle, X, AlertCircle, Lock, Edit } from "lucide-react";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -30,7 +22,6 @@ const UsableMaterialsTab = ({
   const [materialsAvailability, setMaterialsAvailability] = useState({});
   const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
@@ -222,9 +213,38 @@ const UsableMaterialsTab = ({
       return;
     }
 
+    // Check if material is already assigned (in saved list)
+    const materialId = parseInt(selectedMaterial);
+    const isAlreadyAssigned = usables.some(
+      (item) => item.material_id === materialId,
+    );
+
+    if (isAlreadyAssigned) {
+      const materialName = selectedMaterialData?.nombre || "este material";
+      showWarningAlert(
+        "Material ya asignado",
+        `${materialName} ya está en la lista. Si deseas cambiar la cantidad, usa el botón de editar.`,
+      );
+      return;
+    }
+
+    // Check if material is already in pending list
+    const isInPending = pendingMaterials.some(
+      (item) => item.materialId === materialId,
+    );
+
+    if (isInPending) {
+      const materialName = selectedMaterialData?.nombre || "este material";
+      showWarningAlert(
+        "Material ya agregado",
+        `${materialName} ya está en la lista de pendientes. Si deseas cambiar la cantidad, elimínalo y agrégalo nuevamente.`,
+      );
+      return;
+    }
+
     // Add to pending list
     const materialData = {
-      materialId: parseInt(selectedMaterial),
+      materialId: materialId,
       cantidad: parseInt(quantity),
       observaciones: note,
     };
@@ -235,7 +255,6 @@ const UsableMaterialsTab = ({
     setSelectedMaterial("");
     setQuantity("");
     setNote("");
-    setShowAddForm(false);
   };
 
   const handleRemove = async (assignmentId, materialName, qty) => {
@@ -273,20 +292,68 @@ const UsableMaterialsTab = ({
     setEditNote("");
   };
 
+  // Get real availability for editing item
+  const editingMaterialAvailability = useMemo(() => {
+    if (!editingItem) return null;
+
+    const availability = materialsAvailability[editingItem.material_id] || {
+      available: editingItem.stock_available || 0,
+      totalStock: editingItem.stock_available || 0,
+      usedInConflicts: 0,
+      conflictingEvents: [],
+    };
+
+    // Para materiales REUTILIZABLES (a usar):
+    // - NO se descuenta stock, solo se valida disponibilidad en tiempo
+    // - La cantidad actual YA está incluida en la disponibilidad calculada
+    // - Por lo tanto, el máximo es simplemente la disponibilidad disponible
+    //
+    // Ejemplo: Stock 50, Evento1 usa 30, quedan 20 disponibles
+    // - Al crear Evento2: máx 20 ✓
+    // - Al editar Evento2 (tiene 10): máx 20 ✓ (NO 30, porque los 10 ya cuentan en la reserva)
+
+    return {
+      availableForEvent: availability.available,
+      maxAllowed: availability.available, // NO sumamos qty_planned
+      totalStock: availability.totalStock,
+      usedInConflicts: availability.usedInConflicts,
+      conflictingEvents: availability.conflictingEvents,
+    };
+  }, [editingItem, materialsAvailability]);
+
+  // Validate edit quantity in real-time
+  const editQuantityValidation = useMemo(() => {
+    if (!editQuantity || !editingItem || !editingMaterialAvailability) {
+      return { valid: false, message: "" };
+    }
+
+    const qty = parseInt(editQuantity);
+    const maxAvailable = editingMaterialAvailability.maxAllowed;
+
+    if (qty <= 0) {
+      return { valid: false, message: "La cantidad debe ser mayor a 0" };
+    }
+
+    if (qty > maxAvailable) {
+      const conflictInfo =
+        editingMaterialAvailability.conflictingEvents?.length > 0
+          ? ` (${editingMaterialAvailability.usedInConflicts} en uso en otros eventos)`
+          : "";
+      return {
+        valid: false,
+        message: `Stock insuficiente. Disponible: ${maxAvailable}${conflictInfo}`,
+      };
+    }
+
+    return { valid: true, message: "" };
+  }, [editQuantity, editingItem, editingMaterialAvailability]);
+
   const handleSaveEdit = async () => {
     const newQty = parseInt(editQuantity);
 
     // Validaciones
-    if (!newQty || newQty <= 0) {
-      showWarningAlert("Cantidad inválida", "La cantidad debe ser mayor a 0");
-      return;
-    }
-
-    if (newQty > editingItem.stock_available + editingItem.qty_planned) {
-      showWarningAlert(
-        "Stock insuficiente",
-        `Solo hay ${editingItem.stock_available + editingItem.qty_planned} unidades disponibles`,
-      );
+    if (!editQuantityValidation.valid) {
+      showWarningAlert("Cantidad inválida", editQuantityValidation.message);
       return;
     }
 
@@ -343,15 +410,6 @@ const UsableMaterialsTab = ({
         </div>
       </div>
 
-      {/* Info Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-800">
-          <strong>Nota:</strong> Los materiales a usar son patrimonio de la
-          fundación. Se planifica su uso pero NO se descuenta stock. Deben
-          regresar después del evento.
-        </p>
-      </div>
-
       {/* Event Started Warning Banner */}
       {eventHasStarted && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -370,38 +428,18 @@ const UsableMaterialsTab = ({
         </div>
       )}
 
-      {/* Add Material Button */}
-      {!showAddForm && !eventHasStarted && (
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-purple hover:bg-primary-blue text-white rounded-lg transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Agregar Material
-        </button>
-      )}
-
-      {/* Add Material Form */}
-      {showAddForm && (
-        <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+      {/* Add Material Form - Always visible when event hasn't started */}
+      {!eventHasStarted && (
+        <div className="bg-gray-50 rounded-lg p-4 space-y-3 border-2 border-primary-purple/20">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-gray-900">Planificar Material</h3>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {loadingAvailability && (
+              <span className="text-xs text-blue-600 flex items-center gap-1">
+                <span className="animate-spin">⏳</span>
+                Verificando disponibilidad...
+              </span>
+            )}
           </div>
-
-          {loadingAvailability && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-700">
-                ⏳ Verificando disponibilidad de materiales para las fechas del
-                evento...
-              </p>
-            </div>
-          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -409,12 +447,24 @@ const UsableMaterialsTab = ({
                 Material
               </label>
               <MaterialSearchSelector
-                materials={materials.map((m) => ({
-                  ...m,
-                  // Mostrar disponibilidad real en lugar de stock total
-                  stockFundacion:
-                    materialsAvailability[m.id]?.available ?? m.stockFundacion,
-                }))}
+                materials={materials
+                  .filter((m) => {
+                    // Filtrar materiales que ya están asignados o pendientes
+                    const isAssigned = usables.some(
+                      (item) => item.material_id === m.id,
+                    );
+                    const isPending = pendingMaterials.some(
+                      (item) => item.materialId === m.id,
+                    );
+                    return !isAssigned && !isPending;
+                  })
+                  .map((m) => ({
+                    ...m,
+                    // Mostrar disponibilidad real en lugar de stock total
+                    stockFundacion:
+                      materialsAvailability[m.id]?.available ??
+                      m.stockFundacion,
+                  }))}
                 value={selectedMaterial}
                 onChange={(materialId) => {
                   setSelectedMaterial(materialId);
@@ -493,14 +543,13 @@ const UsableMaterialsTab = ({
             </button>
             <button
               onClick={() => {
-                setShowAddForm(false);
                 setSelectedMaterial("");
                 setQuantity("");
                 setNote("");
               }}
               className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
             >
-              Cancelar
+              Limpiar
             </button>
           </div>
         </div>
@@ -526,18 +575,48 @@ const UsableMaterialsTab = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad
                 <span className="text-xs text-gray-500 ml-2">
-                  (Máx: {editingItem.stock_available + editingItem.qty_planned})
+                  {editingMaterialAvailability ? (
+                    <>
+                      (Disponible:{" "}
+                      {editingMaterialAvailability.availableForEvent} de{" "}
+                      {editingMaterialAvailability.totalStock})
+                    </>
+                  ) : (
+                    <>(Máx: {editingItem.stock_available})</>
+                  )}
                 </span>
               </label>
               <input
                 type="number"
                 min="1"
-                max={editingItem.stock_available + editingItem.qty_planned}
+                max={
+                  editingMaterialAvailability?.maxAllowed ||
+                  editingItem.stock_available
+                }
                 value={editQuantity}
                 onChange={(e) => setEditQuantity(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-primary-purple ${
+                  editQuantity && !editQuantityValidation.valid
+                    ? "border-red-500 bg-red-50"
+                    : "border-gray-300"
+                }`}
                 placeholder="0"
               />
+              {editQuantity && !editQuantityValidation.valid && (
+                <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
+                  <AlertCircle className="w-3 h-3" />
+                  {editQuantityValidation.message}
+                </div>
+              )}
+              {editingMaterialAvailability &&
+                editingMaterialAvailability.conflictingEvents?.length > 0 && (
+                  <div className="mt-1 text-xs text-amber-600">
+                    ⚠ {editingMaterialAvailability.usedInConflicts} unidades
+                    reservadas en{" "}
+                    {editingMaterialAvailability.conflictingEvents.length}{" "}
+                    evento(s) con fechas solapadas
+                  </div>
+                )}
             </div>
 
             <div>
@@ -557,7 +636,7 @@ const UsableMaterialsTab = ({
           <div className="flex gap-2">
             <button
               onClick={handleSaveEdit}
-              disabled={!editQuantity || parseInt(editQuantity) <= 0}
+              disabled={!editQuantity || !editQuantityValidation.valid}
               className="flex-1 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Guardar Cambios
