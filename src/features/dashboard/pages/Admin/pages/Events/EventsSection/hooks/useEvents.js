@@ -105,6 +105,8 @@ export const useEvents = () => {
       start: createLocalDate(startDate, event.startTime),
       end: createLocalDate(endDate, event.endTime),
       title: event.name,
+      // Preservar _count para validaciones
+      _count: event._count || { participants: 0, eventMaterials: 0 },
     };
   };
 

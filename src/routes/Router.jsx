@@ -4,6 +4,7 @@ import { Routes, Route } from "react-router-dom";
 import LayoutLanding from "../features/landing/components/LayoutLanding.jsx";
 import Foundation from "../features/landing/pages/Foundation/Foundation.jsx";
 import AreasProjects from "../features/landing/pages/AreasProjects/AreasProjects.jsx";
+import Gallery from "../features/landing/pages/Gallery/Gallery.jsx";
 import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
@@ -24,6 +25,7 @@ function AppRoutes() {
         <Route path="/" element={<Home />} />
         <Route path="/fundacion" element={<Foundation />} />
         <Route path="/areas-proyectos" element={<AreasProjects />} />
+        <Route path="/galeria" element={<Gallery />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
         <Route path="/services" element={<Services />} />

@@ -296,11 +296,6 @@ const AthleteRegistrationFormModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedAthletes.length === 0) {
-      setError("Debe seleccionar al menos un deportista");
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);
@@ -1126,7 +1121,7 @@ const AthleteRegistrationFormModal = ({
                 </p>
                 <p className="text-sm text-gray-500">
                   {selectedAthletes.length === 0
-                    ? "Selecciona al menos un deportista"
+                    ? "Sin deportistas seleccionados"
                     : "Listos para inscribir al evento"}
                 </p>
               </div>
@@ -1143,9 +1138,9 @@ const AthleteRegistrationFormModal = ({
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={selectedAthletes.length === 0 || loading}
+                disabled={loading}
                 className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
-                  selectedAthletes.length === 0 || loading
+                  loading
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-primary-purple text-white hover:bg-primary-blue hover:shadow-xl hover:scale-105 active:scale-95"
                 }`}

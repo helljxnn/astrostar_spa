@@ -223,6 +223,21 @@ class MaterialsService {
     }
   }
 
+  async checkFutureAssignments(id) {
+    if (!id) {
+      throw new Error("ID del material es requerido");
+    }
+
+    try {
+      const response = await apiClient.get(
+        `${this.endpoint}/${id}/future-assignments`,
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async transferStock(id, transferData) {
     if (!id) {
       throw new Error("ID del material es requerido");

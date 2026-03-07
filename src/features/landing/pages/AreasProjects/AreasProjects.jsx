@@ -19,7 +19,6 @@ import nutriImage from "../Services/images/cards/nutri_image.png";
 import fisioImage from "../Services/images/cards/fisio_image.png";
 import acadImage from "../Services/images/cards/acad_image.jpg";
 import famImage from "../Services/images/cards/fam_image.jpg";
-import { GallerySection } from "./components/GallerySection";
 
 const truncate = (text, max = 180) =>
   text.length > max ? `${text.slice(0, max).trimEnd()}...` : text;
@@ -385,7 +384,6 @@ function AreasProjects() {
         </div>
       </section>
 
-      <GallerySection />
 
       <AnimatePresence>
         {selectedArea && (
@@ -448,5 +446,6 @@ function AreasProjects() {
 }
 
 export default AreasProjects;
+
 
 

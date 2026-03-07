@@ -267,9 +267,87 @@ class EventMaterialsService {
   }
 
   /**
-   * Get all event assignments for a specific reusable material
+   * Check availability for multiple materials at once (optimized)
+   */
+  async checkBulkAvailability(
+    materialIds,
+    startDate,
+    endDate,
+    excludeEventoId,
+  ) {
+    if (
+      !materialIds ||
+      !Array.isArray(materialIds) ||
+      materialIds.length === 0
+    ) {
+      throw new Error("IDs de materiales son requeridos");
+    }
+
+    if (!startDate || !endDate) {
+      throw new Error("Fechas de inicio y fin son requeridas");
+    }
+
+    try {
+      const payload = {
+        materialIds,
+        startDate,
+        endDate,
+      };
+
+      if (excludeEventoId) {
+        payload.excludeEventoId = excludeEventoId;
+      }
+
+      const response = await apiClient.post(
+        `${this.endpoint}/reusables/bulk-availability`,
+        payload,
+      );
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get all event assignments for a specific consumable material (stock eventos)
    */
   async getMaterialAssignments(materialId, options = {}) {
+    if (!materialId) {
+      throw new Error("ID del material es requerido");
+    }
+
+    try {
+      const params = new URLSearchParams();
+
+      if (options.includeCompleted !== undefined) {
+        params.append("includeCompleted", options.includeCompleted);
+      }
+
+      if (options.startDate) {
+        params.append("startDate", options.startDate);
+      }
+
+      if (options.endDate) {
+        params.append("endDate", options.endDate);
+      }
+
+      const queryString = params.toString();
+      const url = queryString
+        ? `${this.endpoint}/consumables/${materialId}/assignments?${queryString}`
+        : `${this.endpoint}/consumables/${materialId}/assignments`;
+
+      const response = await apiClient.get(url);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get all event assignments for a specific reusable material (stock fundación)
+   */
+  async getReusableMaterialAssignments(materialId, options = {}) {
     if (!materialId) {
       throw new Error("ID del material es requerido");
     }

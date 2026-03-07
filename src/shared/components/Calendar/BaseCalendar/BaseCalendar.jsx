@@ -512,31 +512,63 @@ const BaseCalendar = ({
                           </p>
                           {sidebarActions.length > 0 && (
                             <div className="flex gap-1 flex-wrap">
-                              {sidebarActions.map((action, actionIndex) => (
-                                <PermissionGuard
-                                  key={actionIndex}
-                                  module={action.permission?.module}
-                                  action={action.permission?.action}
-                                  fallback={!action.permission}
-                                >
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      action.onClick(event);
-                                    }}
-                                    className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-                                      action.variant === "danger"
-                                        ? "text-red-600 hover:bg-red-50"
-                                        : action.variant === "warning"
-                                          ? "text-yellow-600 hover:bg-yellow-50"
-                                          : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
-                                    }`}
+                              {sidebarActions.map((action, actionIndex) => {
+                                // Verificar si la acción tiene una función shouldShow
+                                if (
+                                  action.shouldShow &&
+                                  !action.shouldShow(event)
+                                ) {
+                                  return null;
+                                }
+
+                                // Verificar si la acción está deshabilitada
+                                const isDisabled = action.isDisabled
+                                  ? action.isDisabled(event)
+                                  : false;
+                                const disabledReason = action.getDisabledReason
+                                  ? action.getDisabledReason(event)
+                                  : "";
+
+                                return (
+                                  <PermissionGuard
+                                    key={actionIndex}
+                                    module={action.permission?.module}
+                                    action={action.permission?.action}
+                                    fallback={!action.permission}
                                   >
-                                    {action.icon && <action.icon />}
-                                    {action.label}
-                                  </button>
-                                </PermissionGuard>
-                              ))}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!isDisabled) {
+                                          action.onClick(event);
+                                        }
+                                      }}
+                                      disabled={isDisabled}
+                                      title={disabledReason}
+                                      className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                                        isDisabled
+                                          ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                                          : action.variant === "danger"
+                                            ? "text-red-600 hover:bg-red-50"
+                                            : action.variant === "warning"
+                                              ? "text-yellow-600 hover:bg-yellow-50"
+                                              : action.variant === "materials"
+                                                ? "text-primary-pink hover:bg-pink-50"
+                                                : action.variant === "success"
+                                                  ? "text-green-600 hover:bg-green-50"
+                                                  : action.variant === "info"
+                                                    ? "text-purple-600 hover:bg-purple-50"
+                                                    : action.variant === "edit"
+                                                      ? "text-orange-600 hover:bg-orange-50"
+                                                      : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                                      }`}
+                                    >
+                                      {action.icon && <action.icon />}
+                                      {action.label}
+                                    </button>
+                                  </PermissionGuard>
+                                );
+                              })}
                             </div>
                           )}
                         </div>

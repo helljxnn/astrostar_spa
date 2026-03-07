@@ -45,7 +45,73 @@ const EventActionModal = ({
     return endDateOnly < today;
   };
 
+  // Verificar si el evento se puede eliminar
+  const canDeleteEvent = () => {
+    const dashboardEvent = event?.extendedProps?.dashboardEvent || event;
+    const estado =
+      dashboardEvent?.estado || dashboardEvent?.status || eventStatus;
+    const participantCount =
+      dashboardEvent?.participants?.length ||
+      dashboardEvent?._count?.participants ||
+      0;
+    const materialCount = dashboardEvent?._count?.eventMaterials || 0;
+
+    // No se puede eliminar si está en curso o finalizado
+    if (
+      estado === "En Curso" ||
+      estado === "en_curso" ||
+      estado === "Finalizado" ||
+      estado === "finalizado"
+    ) {
+      return false;
+    }
+
+    // No se puede eliminar si tiene inscritos
+    if (participantCount > 0) {
+      return false;
+    }
+
+    // No se puede eliminar si tiene materiales asignados
+    if (materialCount > 0) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Obtener mensaje de por qué no se puede eliminar
+  const getDeleteDisabledReason = () => {
+    const dashboardEvent = event?.extendedProps?.dashboardEvent || event;
+    const estado =
+      dashboardEvent?.estado || dashboardEvent?.status || eventStatus;
+    const participantCount =
+      dashboardEvent?.participants?.length ||
+      dashboardEvent?._count?.participants ||
+      0;
+    const materialCount = dashboardEvent?._count?.eventMaterials || 0;
+
+    if (estado === "En Curso" || estado === "en_curso") {
+      return "No se puede eliminar un evento en curso";
+    }
+
+    if (estado === "Finalizado" || estado === "finalizado") {
+      return "No se puede eliminar un evento finalizado";
+    }
+
+    if (participantCount > 0) {
+      return `No se puede eliminar: tiene ${participantCount} inscrito(s)`;
+    }
+
+    if (materialCount > 0) {
+      return `No se puede eliminar: tiene ${materialCount} material(es) asignado(s)`;
+    }
+
+    return "";
+  };
+
   const cannotEdit = isFinalized || isCancelledAndPassed();
+  const cannotDelete = !canDeleteEvent();
+  const deleteDisabledReason = getDeleteDisabledReason();
 
   const allActions = [
     {
@@ -54,23 +120,27 @@ const EventActionModal = ({
       icon: <FaEdit className="w-4 h-4" />,
       color: "text-blue-600",
       hoverColor: "hover:bg-blue-50",
-      showWhen: !cannotEdit, // Solo mostrar si NO está finalizado o cancelado y pasado
+      showWhen: !cannotEdit,
+      disabled: false,
     },
     {
       id: "materials",
       label: "Gestionar materiales",
       icon: <Package className="w-4 h-4" />,
-      color: "text-green-600",
-      hoverColor: "hover:bg-green-50",
-      showWhen: true, // Siempre mostrar
+      color: "text-primary-pink",
+      hoverColor: "hover:bg-pink-50",
+      showWhen: true,
+      disabled: false,
     },
     {
       id: "delete",
       label: "Eliminar evento",
       icon: <FaTrash className="w-4 h-4" />,
-      color: "text-red-600",
-      hoverColor: "hover:bg-red-50",
-      showWhen: true, // Siempre mostrar
+      color: cannotDelete ? "text-gray-400" : "text-red-600",
+      hoverColor: cannotDelete ? "" : "hover:bg-red-50",
+      showWhen: true,
+      disabled: cannotDelete,
+      disabledReason: deleteDisabledReason,
     },
     {
       id: "view",
@@ -78,7 +148,8 @@ const EventActionModal = ({
       icon: <FaEye className="w-4 h-4" />,
       color: "text-gray-600",
       hoverColor: "hover:bg-gray-50",
-      showWhen: true, // Siempre mostrar
+      showWhen: true,
+      disabled: false,
     },
   ];
 
@@ -123,10 +194,18 @@ const EventActionModal = ({
               <button
                 key={action.id}
                 onClick={() => {
-                  onAction(action.id);
-                  onClose();
+                  if (!action.disabled) {
+                    onAction(action.id);
+                    onClose();
+                  }
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors rounded-lg ${action.color} ${action.hoverColor}`}
+                disabled={action.disabled}
+                title={action.disabledReason || ""}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors rounded-lg ${
+                  action.disabled
+                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                    : `${action.color} ${action.hoverColor}`
+                }`}
               >
                 {action.icon}
                 {action.label}
