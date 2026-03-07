@@ -6,7 +6,9 @@ import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 
 const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
+  const [consumableData, setConsumableData] = useState(null);
+  const [reusableData, setReusableData] = useState(null);
+  const [activeTab, setActiveTab] = useState("reusable"); // 'reusable' | 'consumable'
 
   useEffect(() => {
     if (isOpen && material) {
@@ -17,13 +19,26 @@ const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
   const loadAssignments = async () => {
     try {
       setLoading(true);
-      const response = await EventMaterialsService.getMaterialAssignments(
-        material.id,
-        { includeCompleted: false }, // Solo eventos futuros/activos
-      );
 
-      if (response.success) {
-        setData(response.data);
+      // Cargar asignaciones consumibles (a entregar)
+      const consumableResponse =
+        await EventMaterialsService.getMaterialAssignments(material.id, {
+          includeCompleted: false,
+        });
+
+      if (consumableResponse.success) {
+        setConsumableData(consumableResponse.data);
+      }
+
+      // Cargar asignaciones reutilizables (planificados)
+      const reusableResponse =
+        await EventMaterialsService.getReusableMaterialAssignments(
+          material.id,
+          { includeCompleted: false },
+        );
+
+      if (reusableResponse.success) {
+        setReusableData(reusableResponse.data);
       }
     } catch (error) {
       console.error("Error loading assignments:", error);
@@ -61,114 +76,169 @@ const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
             </div>
-          ) : data ? (
-            <div className="space-y-4">
+          ) : (
+            <div className="space-y-6">
               {/* Summary Cards */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="text-sm font-medium text-gray-600">
-                    Stock Total
+                    Stock Fundación
                   </div>
                   <div className="text-2xl font-bold text-gray-900 mt-1">
-                    {formatStock(data.material.stockTotal)}
+                    {formatStock(material?.stockFundacion || 0)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    unidades disponibles
+                    planificados en{" "}
+                    {reusableData?.summary?.totalAsignaciones || 0} eventos
                   </div>
                 </div>
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="text-sm font-medium text-gray-600">
-                    Eventos Planificados
+                    Stock Eventos
                   </div>
                   <div className="text-2xl font-bold text-gray-900 mt-1">
-                    {data.summary.totalAsignaciones}
+                    {formatStock(material?.stockEventos || 0)}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
+                    asignados en{" "}
+                    {consumableData?.summary?.totalAsignaciones || 0} eventos
+                  </div>
+                </div>
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="text-sm font-medium text-purple-600">
+                    Total Eventos
+                  </div>
+                  <div className="text-2xl font-bold text-purple-900 mt-1">
+                    {(reusableData?.summary?.totalAsignaciones || 0) +
+                      (consumableData?.summary?.totalAsignaciones || 0)}
+                  </div>
+                  <div className="text-xs text-purple-600 mt-1">
                     próximos eventos
                   </div>
                 </div>
               </div>
 
-              {/* Assignments List */}
-              {data.assignments.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-                  <Package className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-600">
-                    No hay eventos próximos usando este material
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {data.assignments.map((assignment) => (
-                    <div
-                      key={assignment.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">
-                            {assignment.evento.nombre}
-                          </h3>
-                          <div className="mt-2 space-y-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Calendar className="w-4 h-4 flex-shrink-0" />
-                              <span>
-                                {new Date(
-                                  assignment.evento.fechaInicio,
-                                ).toLocaleDateString("es-ES", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })}{" "}
-                                -{" "}
-                                {new Date(
-                                  assignment.evento.fechaFin,
-                                ).toLocaleDateString("es-ES", {
-                                  year: "numeric",
-                                  month: "long",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-                            {assignment.evento.ubicacion && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <MapPin className="w-4 h-4 flex-shrink-0" />
-                                <span>{assignment.evento.ubicacion}</span>
+              {/* Materiales Planificados (Fundación - Reutilizables) */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                  Materiales Planificados (Stock Fundación)
+                </h3>
+                {!reusableData || reusableData.assignments.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <Package className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">
+                      No hay eventos próximos con este material planificado
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {reusableData.assignments.map((assignment) => (
+                      <div
+                        key={assignment.id}
+                        className="border border-blue-200 bg-blue-50/50 rounded-lg p-3 hover:bg-blue-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 text-sm">
+                              {assignment.evento.nombre}
+                            </h4>
+                            <div className="mt-1 space-y-1">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <Calendar className="w-3 h-3 flex-shrink-0" />
+                                <span>
+                                  {new Date(
+                                    assignment.evento.fechaInicio,
+                                  ).toLocaleDateString("es-ES", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
                               </div>
-                            )}
-                            {assignment.observaciones && (
-                              <p className="text-sm text-gray-600 mt-2 pl-6">
-                                {assignment.observaciones}
-                              </p>
-                            )}
+                              {assignment.observaciones && (
+                                <p className="text-xs text-gray-600 pl-5">
+                                  {assignment.observaciones}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div className="ml-4 text-right flex-shrink-0">
-                          <div className="text-2xl font-bold text-primary-blue">
-                            {assignment.cantidad}
-                          </div>
-                          <div className="text-xs text-gray-500">unidades</div>
-                          <div className="mt-2">
-                            <span
-                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                assignment.evento.estado === "Completado"
-                                  ? "bg-gray-100 text-gray-700"
-                                  : assignment.evento.estado === "En Curso"
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-blue-100 text-blue-700"
-                              }`}
-                            >
-                              {assignment.evento.estado}
-                            </span>
+                          <div className="ml-3 text-right flex-shrink-0">
+                            <div className="text-xl font-bold text-blue-600">
+                              {assignment.cantidad}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              unidades
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Materiales a Entregar (Eventos - Consumibles) */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                  Materiales a Entregar (Stock Eventos)
+                </h3>
+                {!consumableData || consumableData.assignments.length === 0 ? (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <Package className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600">
+                      No hay eventos próximos con este material asignado
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {consumableData.assignments.map((assignment) => (
+                      <div
+                        key={assignment.id}
+                        className="border border-purple-200 bg-purple-50/50 rounded-lg p-3 hover:bg-purple-50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 text-sm">
+                              {assignment.evento.nombre}
+                            </h4>
+                            <div className="mt-1 space-y-1">
+                              <div className="flex items-center gap-2 text-xs text-gray-600">
+                                <Calendar className="w-3 h-3 flex-shrink-0" />
+                                <span>
+                                  {new Date(
+                                    assignment.evento.fechaInicio,
+                                  ).toLocaleDateString("es-ES", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                              </div>
+                              {assignment.observaciones && (
+                                <p className="text-xs text-gray-600 pl-5">
+                                  {assignment.observaciones}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-3 text-right flex-shrink-0">
+                            <div className="text-xl font-bold text-purple-600">
+                              {assignment.cantidad}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              unidades
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : null}
+          )}
         </div>
 
         {/* Footer */}

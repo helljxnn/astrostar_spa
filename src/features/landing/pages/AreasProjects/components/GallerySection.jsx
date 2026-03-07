@@ -1,6 +1,10 @@
 ﻿import { motion } from "framer-motion";
 import { FaInstagram, FaPlayCircle, FaYoutube } from "react-icons/fa";
-import DomeGallery from "./DomeGallery";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, EffectCoverflow, Pagination } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/effect-coverflow";
+import "swiper/css/pagination";
 
 const placeholderImages = [
   "/assets/images/services_image.jpg",
@@ -10,7 +14,7 @@ const placeholderImages = [
   "/assets/images/CategoriasHero.jpg",
   "/assets/images/EventsHero.png",
   "/assets/images/AboutHero.png",
-  "/assets/images/Foundation/banner_foundation.jpg",
+  "/assets/images/EventsHero.png",
 ];
 
 const firstMoments = [
@@ -33,10 +37,7 @@ const secondMoments = [
   image: placeholderImages[index + 4],
 }));
 
-const domeImages = [...firstMoments, ...secondMoments].map((item) => ({
-  src: item.image,
-  alt: item.title,
-}));
+const featuredMoments = [...firstMoments, ...secondMoments];
 
 const reels = [
   "Reel Instagram 01",
@@ -57,7 +58,7 @@ export const GallerySection = () => {
         >
           <div className="relative overflow-hidden rounded-[2rem] shadow-2xl min-h-[320px] sm:min-h-[380px]">
             <img
-              src="/assets/images/Foundation/banner_foundation.jpg"
+              src="/assets/images/EventsHero.png"
               alt="Banner galería"
               className="absolute inset-0 w-full h-full object-cover"
             />
@@ -81,28 +82,61 @@ export const GallerySection = () => {
       </div>
 
       <div className="mt-14 px-4 sm:px-8 lg:px-16">
-        <div className="max-w-7xl mx-auto rounded-[2rem] bg-white border border-[#b595ff]/20 shadow-[0_20px_70px_rgba(181,149,255,0.16)] overflow-hidden">
-          <div className="px-6 sm:px-10 pt-8 sm:pt-10 text-center">
+        <div className="max-w-7xl mx-auto rounded-[2rem] bg-white border border-[#b595ff]/20 shadow-[0_20px_70px_rgba(181,149,255,0.16)] overflow-hidden py-10 px-4 sm:px-8">
+          <div className="text-center mb-8">
             <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 font-montserrat">
-              Revive Nuestros Momentos
+              Carrusel Destacado
             </h3>
             <p className="mt-3 text-gray-600 max-w-3xl mx-auto">
-              Galería interactiva estilo domo. Arrastra para explorar y toca una
-              imagen para verla en grande.
+              Una experiencia visual fluida e interactiva para recorrer nuestros
+              momentos más representativos.
             </p>
           </div>
 
-          <div className="h-[340px] sm:h-[420px] lg:h-[520px] mt-4">
-            <DomeGallery
-              images={domeImages}
-              fit={0.8}
-              minRadius={600}
-              maxVerticalRotationDeg={0}
-              segments={34}
-              dragDampening={2}
-              grayscale
-            />
-          </div>
+          <Swiper
+            modules={[Autoplay, Pagination, EffectCoverflow]}
+            effect="coverflow"
+            centeredSlides
+            slidesPerView={1.15}
+            loop
+            speed={700}
+            autoplay={{ delay: 2800, disableOnInteraction: false }}
+            pagination={{ clickable: true }}
+            coverflowEffect={{
+              rotate: 0,
+              stretch: 0,
+              depth: 130,
+              modifier: 1.2,
+              slideShadows: false,
+            }}
+            breakpoints={{
+              768: { slidesPerView: 1.8 },
+              1024: { slidesPerView: 2.5 },
+              1280: { slidesPerView: 3 },
+            }}
+            className="!pb-12"
+          >
+            {featuredMoments.map((moment) => (
+              <SwiperSlide key={`featured-${moment.title}`}>
+                <article className="group rounded-3xl overflow-hidden bg-white border border-gray-100 shadow-lg hover:shadow-2xl transition-all">
+                  <div className="relative h-72 overflow-hidden">
+                    <img
+                      src={moment.image}
+                      alt={moment.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <span className="absolute right-3 top-3 rounded-full bg-white/85 px-3 py-1 text-[11px] font-semibold text-gray-700">
+                      Imagen referencial
+                    </span>
+                    <p className="absolute left-4 right-4 bottom-4 text-sm text-white leading-relaxed">
+                      {moment.title}
+                    </p>
+                  </div>
+                </article>
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </div>
 
@@ -226,3 +260,4 @@ export const GallerySection = () => {
     </section>
   );
 };
+

@@ -6,6 +6,8 @@ import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import CancelDonationModal from "./components/CancelDonationModal";
+import DonationViewModal from "./components/DonationViewModal";
+import StatusSelector from "./components/StatusSelector";
 import donationsService from "./services/donationsService";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import {
@@ -50,7 +52,8 @@ const getDonorDisplayName = (donation, donorsMap = {}) => {
     if (sponsor?.[key]) return sponsor[key];
   }
 
-  const idKey = donation.donorSponsorId ?? donation.donor_id ?? donation.sponsor_id;
+  const idKey =
+    donation.donorSponsorId ?? donation.donor_id ?? donation.sponsor_id;
   if (idKey && donorsMap[String(idKey)]) {
     return donorsMap[String(idKey)];
   }
@@ -90,6 +93,7 @@ const Donations = () => {
   );
   const [totalRows, setTotalRows] = useState(0);
   const [cancelingDonation, setCancelingDonation] = useState(null);
+  const [viewingDonation, setViewingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [donorsMap, setDonorsMap] = useState({});
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -177,11 +181,11 @@ const Donations = () => {
                     ? "En especie"
                     : "Economica";
 
-      const statusLabel =
-        d.status === "Recibida"
-          ? "Recibida"
-          : d.status === "EnProceso"
-            ? "En proceso"
+          const statusLabel =
+            d.status === "Recibida"
+              ? "Recibida"
+              : d.status === "EnProceso"
+                ? "En proceso"
                 : d.status === "Verificada"
                   ? "Verificada"
                   : d.status === "Ejecutada"
@@ -216,7 +220,8 @@ const Donations = () => {
         const missingIds = new Set();
         records.forEach((d) => {
           const idKey = d.donorSponsorId ?? d.donor_id ?? d.sponsor_id;
-          const hasName = getDonorDisplayName(d, donorsMap) !== `Donante #${idKey}`;
+          const hasName =
+            getDonorDisplayName(d, donorsMap) !== `Donante #${idKey}`;
           if (idKey && !donorsMap[String(idKey)] && !hasName) {
             missingIds.add(String(idKey));
           }
@@ -297,9 +302,7 @@ const Donations = () => {
       (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
     );
     const firstDetailKind =
-      details.find((d) => d.kind)?.kind ||
-      (details[0]?.tipo) ||
-      null;
+      details.find((d) => d.kind)?.kind || details[0]?.tipo || null;
 
     const isFoodPurchase =
       raw.type === "ALIMENTOS" ||
@@ -316,7 +319,8 @@ const Donations = () => {
       status: raw.status || "Recibida",
       program: raw.program || raw.programa || "",
       eventId: raw.eventId ? String(raw.eventId) : "",
-      specificDestination: raw.specificDestination || raw.destinoEspecifico || "",
+      specificDestination:
+        raw.specificDestination || raw.destinoEspecifico || "",
       donationAt: raw.donationAt
         ? new Date(raw.donationAt).toISOString().slice(0, 16)
         : new Date().toISOString().slice(0, 16),
@@ -326,8 +330,13 @@ const Donations = () => {
       econModality:
         payment?.classification ?? raw.econModality ?? raw.modalidad ?? "",
       isFoodPurchase,
-      foodQty: foodDetail?.quantity ?? raw.foodQty ?? raw.cantidadAlimentos ?? "",
-      foodClass: foodDetail?.classification ?? raw.foodClass ?? raw.clasificacionAlimentos ?? "",
+      foodQty:
+        foodDetail?.quantity ?? raw.foodQty ?? raw.cantidadAlimentos ?? "",
+      foodClass:
+        foodDetail?.classification ??
+        raw.foodClass ??
+        raw.clasificacionAlimentos ??
+        "",
       especieItems: raw.especieItems || specieItems,
       details,
       files:
@@ -350,11 +359,38 @@ const Donations = () => {
 
   const handleView = (donation) => {
     const raw = donation._raw || donation;
-    const mapped = mapDonationToFormState(raw);
-    navigate("/dashboard/donations/form", {
-      state: { donation: mapped, isEditing: true, statusOnly: true },
-    });
+    setViewingDonation(raw);
   };
+
+  const handleStatusChange = async (donationId, newStatus) => {
+    try {
+      await donationsService.update(donationId, { status: newStatus });
+
+      // Actualizar el estado local
+      setData((prev) =>
+        prev.map((d) =>
+          d.id === donationId
+            ? {
+                ...d,
+                status: newStatus === "EnProceso" ? "En proceso" : newStatus,
+              }
+            : d,
+        ),
+      );
+
+      showSuccessAlert(
+        "Estado actualizado",
+        "El estado de la donación se actualizó correctamente.",
+      );
+    } catch (error) {
+      console.error("Error actualizando estado", error);
+      showErrorAlert(
+        "Error al actualizar",
+        error?.response?.data?.message || "No se pudo actualizar el estado.",
+      );
+    }
+  };
+
   const handleCancel = (donation) => setCancelingDonation(donation);
 
   const handleConfirmCancel = (reason) => {
@@ -394,19 +430,14 @@ const Donations = () => {
     Anulada: "bg-rose-100 text-rose-700",
   };
 
-  const renderStatusChip = (value) => {
-    const cls =
-      statusColorMap[value] ||
-      statusColorMap[value?.replace(/\s+/g, "")] ||
-      "";
+  const renderStatusChip = (value, row) => {
+    const statusKey = value === "En proceso" ? "EnProceso" : value;
     return (
-      <span
-        className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          cls || "text-primary-purple"
-        }`}
-      >
-        {value || "N/A"}
-      </span>
+      <StatusSelector
+        currentStatus={statusKey}
+        donationId={row.id}
+        onStatusChange={handleStatusChange}
+      />
     );
   };
 
@@ -460,7 +491,7 @@ const Donations = () => {
 
             <button
               onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-purple to-primary-blue hover:from-primary-purple-light hover:to-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all transform hover:scale-[1.03]"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all"
             >
               <FaPlus /> Crear
             </button>
@@ -494,7 +525,7 @@ const Donations = () => {
               "status",
             ],
             customRenderers: {
-              status: (value) => renderStatusChip(value),
+              status: (value, row) => renderStatusChip(value, row),
             },
             cellClassNames: {
               status: "whitespace-nowrap",
@@ -518,6 +549,17 @@ const Donations = () => {
         />
       )}
 
+      {viewingDonation && (
+        <DonationViewModal
+          donation={{
+            ...viewingDonation,
+            donorName: getDonorDisplayName(viewingDonation, donorsMap),
+            status: viewingDonation.status,
+          }}
+          onClose={() => setViewingDonation(null)}
+        />
+      )}
+
       {loading && (
         <div className="text-sm text-gray-500 mt-3">Cargando donaciones...</div>
       )}
@@ -526,4 +568,3 @@ const Donations = () => {
 };
 
 export default Donations;
-

@@ -1,6 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FaArrowLeft, FaCloudUploadAlt, FaPlus, FaTrash } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaCloudUploadAlt,
+  FaPlus,
+  FaTrash,
+  FaUser,
+  FaCalendarAlt,
+  FaDollarSign,
+  FaBoxOpen,
+  FaUtensils,
+  FaInfoCircle,
+  FaCheckCircle,
+  FaFileAlt,
+} from "react-icons/fa";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import donationsService from "./services/donationsService";
 import eventsService from "../../Events/services/eventsService";
@@ -8,6 +21,7 @@ import {
   showErrorAlert,
   showSuccessAlert,
 } from "../../../../../../../shared/utils/alerts";
+import MaterialSearchSelector from "../../../../../../../shared/components/MaterialSearchSelector";
 
 const STATUS_OPTIONS = [
   { value: "Recibida", label: "Recibida" },
@@ -91,7 +105,7 @@ const DonationsForm = () => {
     isFoodPurchase: false,
     donorSponsorId: "",
     type: "",
-    status: "Recibida",
+    status: "Ejecutada",
     program: "",
     eventId: "",
     specificDestination: "",
@@ -298,25 +312,52 @@ const DonationsForm = () => {
       (m) => m.id === Number(form.especieMaterialId),
     );
 
-    setForm((prev) => ({
-      ...prev,
-      especieItems: [
-        ...prev.especieItems,
-        {
-          materialId: prev.especieMaterialId,
-          description:
-            selectedMaterial?.nombre ||
-            prev.especieDesc.trim() ||
-            "Material donado",
-          quantity: prev.especieQty,
-          classification: prev.especieClass,
-        },
-      ],
-      especieMaterialId: "",
-      especieDesc: "",
-      especieQty: "",
-      especieClass: "",
-    }));
+    const materialDescription =
+      selectedMaterial?.nombre || form.especieDesc.trim() || "Material donado";
+
+    // Verificar si el material ya existe en la lista
+    const existingItemIndex = form.especieItems.findIndex(
+      (item) =>
+        item.materialId === form.especieMaterialId &&
+        item.classification === form.especieClass,
+    );
+
+    setForm((prev) => {
+      let updatedItems;
+
+      if (existingItemIndex !== -1) {
+        // Si el material ya existe, incrementar la cantidad
+        updatedItems = [...prev.especieItems];
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: String(
+            Number(updatedItems[existingItemIndex].quantity) +
+              Number(prev.especieQty),
+          ),
+          description: materialDescription, // Actualizar descripción si cambió
+        };
+      } else {
+        // Si no existe, agregar nuevo item
+        updatedItems = [
+          ...prev.especieItems,
+          {
+            materialId: prev.especieMaterialId,
+            description: materialDescription,
+            quantity: prev.especieQty,
+            classification: prev.especieClass,
+          },
+        ];
+      }
+
+      return {
+        ...prev,
+        especieItems: updatedItems,
+        especieMaterialId: "",
+        especieDesc: "",
+        especieQty: "",
+        especieClass: "",
+      };
+    });
 
     setErrors((prev) => ({
       ...prev,
@@ -351,18 +392,42 @@ const DonationsForm = () => {
       return;
     }
 
-    setForm((prev) => ({
-      ...prev,
-      foodItems: [
-        ...prev.foodItems,
-        {
-          quantity: prev.foodQty,
-          classification: prev.foodClass,
-        },
-      ],
-      foodQty: "",
-      foodClass: "",
-    }));
+    // Verificar si la clasificación ya existe en la lista
+    const existingItemIndex = form.foodItems.findIndex(
+      (item) => item.classification === form.foodClass,
+    );
+
+    setForm((prev) => {
+      let updatedItems;
+
+      if (existingItemIndex !== -1) {
+        // Si la clasificación ya existe, incrementar la cantidad
+        updatedItems = [...prev.foodItems];
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: String(
+            Number(updatedItems[existingItemIndex].quantity) +
+              Number(prev.foodQty),
+          ),
+        };
+      } else {
+        // Si no existe, agregar nuevo item
+        updatedItems = [
+          ...prev.foodItems,
+          {
+            quantity: prev.foodQty,
+            classification: prev.foodClass,
+          },
+        ];
+      }
+
+      return {
+        ...prev,
+        foodItems: updatedItems,
+        foodQty: "",
+        foodClass: "",
+      };
+    });
 
     setErrors((prev) => ({
       ...prev,
@@ -423,7 +488,7 @@ const DonationsForm = () => {
           newErrors.foodItems = "Agrega al menos un item de alimentos.";
         } else if (hasPendingFoodItem) {
           newErrors.foodItems =
-            "Tienes campos llenos. Presiona '+ Agregar entrada' o borra los campos antes de guardar.";
+            "Tienes campos llenos. Presiona 'Agregar item' o borra los campos antes de guardar.";
         }
 
         if (!form.foodFactura)
@@ -443,7 +508,7 @@ const DonationsForm = () => {
         newErrors.especieItems = "Debes agregar al menos un item en especie.";
       } else if (hasPendingItem) {
         newErrors.especieItems =
-          "Tienes campos llenos. Presiona '+ Agregar entrada' o borra los campos antes de guardar.";
+          "Tienes campos llenos. Presiona 'Agregar item' o borra los campos antes de guardar.";
       }
 
       if (!form.especieSoporte)
@@ -615,7 +680,7 @@ const DonationsForm = () => {
         isEditing ? "Donación actualizada" : "Donación guardada",
         isEditing
           ? "Los cambios se guardaron correctamente."
-          : "Se registró la donación y sus soportes correctamente.",
+          : "Se registró la Donación y sus soportes correctamente.",
       );
       navigate("/dashboard/donations");
     } catch (error) {
@@ -685,7 +750,7 @@ const DonationsForm = () => {
       files.push(
         form.econComprobante
           ? `Comprobante listo: ${form.econComprobante.name}`
-          : "Comprobante pendiente (se subira a Cloudinary)",
+          : "Comprobante pendiente",
       );
       if (isFood) {
         (form.foodItems || []).forEach((item, index) => {
@@ -704,12 +769,12 @@ const DonationsForm = () => {
         files.push(
           form.foodFactura
             ? `Factura lista: ${form.foodFactura.name}`
-            : "Factura pendiente (se subira a Cloudinary)",
+            : "Factura pendiente",
         );
         files.push(
           form.foodEvidence?.length
             ? `Evidencias listas: ${form.foodEvidence.length} archivo(s)`
-            : "Evidencias pendientes (imagenes se subiran a Cloudinary)",
+            : "Evidencias pendientes",
         );
       }
     }
@@ -727,7 +792,7 @@ const DonationsForm = () => {
           `Cantidad: ${item.quantity || "0"}`,
           item.classification ? `Categoria: ${item.classification}` : null,
           item.description && item.description !== materialName
-            ? `Descripción: ${item.description}`
+            ? `descripción: ${item.description}`
             : null,
         ]
           .filter(Boolean)
@@ -741,7 +806,7 @@ const DonationsForm = () => {
       files.push(
         form.especieSoporte
           ? `Soporte listo: ${form.especieSoporte.name}`
-          : "Soporte pendiente (se subira a Cloudinary)",
+          : "Soporte pendiente",
       );
     }
 
@@ -751,642 +816,815 @@ const DonationsForm = () => {
   const selectedType = getTypeMeta(form.type);
   const isEconomicType = selectedType?.apiType === "ECONOMICA";
   const isEspecieType = selectedType?.apiType === "ESPECIE";
+
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-questrial">
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-questrial">
+      {/* Header mejorado */}
       <div className="flex items-center justify-between mb-6">
         <Link
           to="/dashboard/donations"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-gray-700 shadow hover:shadow-md transition"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-gray-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105"
         >
           <FaArrowLeft /> Regresar
         </Link>
-        <h1 className="text-2xl font-bold text-gray-800">Registrar Donacion</h1>
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900">
+            {isEditing ? "Editar Donación" : "Registrar Nueva Donación"}
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {statusOnlyMode
+              ? "Actualizar estado"
+              : "Completa la información requerida"}
+          </p>
+        </div>
+        <div className="w-32"></div> {/* Spacer para centrar el título */}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Formulario principal */}
-        <div className="xl:col-span-2 bg-white p-6 rounded-2xl shadow space-y-6">
-          {/* Informacion general */}
-          <section className="border-b pb-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Informacion general
-              </h2>
-              <span className="text-sm text-gray-500">
-                Estados: Recibida, En proceso, Verificada, Ejecutada
-              </span>
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">
-                Donante / Patrocinador
-              </label>
-              <select
-                value={form.donorSponsorId}
-                onChange={(e) => handleChange("donorSponsorId", e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                disabled={statusOnlyMode}
-              >
-                <option value="">
-                  {loadingDonors ? "Cargando..." : "Seleccionar..."}
-                </option>
-                {donors.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.nombre}
-                  </option>
-                ))}
-              </select>
-              {errors.donorSponsorId && (
-                <span className="text-red-500 text-xs mt-1">
-                  {errors.donorSponsorId}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-col">
-              <label className="text-sm font-medium text-gray-700 mb-1">
-                Tipo de donacion *
-              </label>
-              <div className="grid md:grid-cols-2 gap-3">
-                {DONATION_TYPE_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className={`flex items-center gap-2 px-3 py-2 border rounded-xl cursor-pointer transition ${
-                      form.type === option.value
-                        ? "border-primary-purple bg-primary-purple/10"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="type"
-                      value={option.value}
-                      checked={form.type === option.value}
-                      onChange={(e) => handleChange("type", e.target.value)}
-                      disabled={statusOnlyMode}
-                    />
-                    <span className="text-sm">{option.label}</span>
-                  </label>
-                ))}
-              </div>
-              {errors.type && (
-                <span className="text-red-500 text-xs mt-1">{errors.type}</span>
-              )}
-              {isEconomicType && (
-                <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                  <input
-                    type="checkbox"
-                    checked={form.isFoodPurchase}
-                    onChange={(e) =>
-                      handleChange("isFoodPurchase", e.target.checked)
-                    }
-                    disabled={statusOnlyMode}
-                  />
-                  Esta donacion economica es para compra de alimentos
-                </label>
-              )}
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Programa / Destino
-                </label>
-                <select
-                  value={form.program}
-                  onChange={(e) => handleChange("program", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                  disabled={statusOnlyMode}
-                >
-                  <option value="">Seleccionar...</option>
-                  {PROGRAMS.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Destino especifico (opcional)
-                </label>
-                <input
-                  type="text"
-                  value={form.specificDestination}
-                  onChange={(e) =>
-                    handleChange("specificDestination", e.target.value)
-                  }
-                  placeholder="Ej: Becas para ninas, apoyo a familias..."
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                  disabled={statusOnlyMode}
-                />
-              </div>
-            </div>
-
-            {form.program === PROGRAM_EVENT && (
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Evento (activo)
-                </label>
-                <select
-                  value={form.eventId}
-                  onChange={(e) => handleChange("eventId", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                  disabled={loadingEvents || statusOnlyMode}
-                >
-                  <option value="">
-                    {loadingEvents
-                      ? "Cargando eventos..."
-                      : "Seleccionar evento"}
-                  </option>
-                  {events.map((ev) => (
-                    <option key={ev.id} value={ev.id}>
-                      {ev.name || ev.nombre || `Evento ${ev.id}`}
-                    </option>
-                  ))}
-                </select>
-                {eventsError && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {eventsError}
-                  </span>
-                )}
-                {errors.eventId && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.eventId}
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Fecha y hora de donacion *
-                </label>
-                <input
-                  type="datetime-local"
-                  value={form.donationAt}
-                  onChange={(e) => handleChange("donationAt", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                  disabled={statusOnlyMode}
-                />
-                {errors.donationAt && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.donationAt}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Estado
-                </label>
-                <select
-                  value={form.status}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>
-                      {s.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </section>
-          {/* Seccion economica */}
-          {isEconomicType && (
-            <section className="space-y-4">
-              <h3 className="text-base font-semibold text-gray-800">
-                Donacion economica
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Valor donado *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="999999999999"
-                    step="0.01"
-                    value={form.econAmount}
-                    onChange={(e) => handleChange("econAmount", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                    placeholder="Ej: 1000000"
-                  />
-                  {errors.econAmount && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.econAmount}
-                    </span>
-                  )}
+        {/* Formulario principal con diseño mejorado */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* Card: información general */}
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="bg-primary-purple/30 px-6 py-4">
+              <div className="flex items-center gap-3 text-gray-800">
+                <div className="p-2 bg-white/70 rounded-lg">
+                  <FaUser className="text-xl" />
                 </div>
-
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Canal de pago *
-                  </label>
-                  <select
-                    value={form.econChannel}
-                    onChange={(e) =>
-                      handleChange("econChannel", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {CHANNELS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.econChannel && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.econChannel}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Comprobante de pago (PDF/JPG/PNG, max 5MB) *
-                </label>
-                <label
-                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
-                >
-                  <FaCloudUploadAlt />
-                  <span className="text-sm">
-                    {form.econComprobante?.name || "Adjuntar archivo"}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,image/jpeg,image/png"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleFile("econComprobante", e.target.files[0])
-                    }
-                    disabled={statusOnlyMode}
-                  />
-                </label>
-                {errors.econComprobante && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.econComprobante}
-                  </span>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* Seccion en especie */}
-          {isEspecieType && (
-            <section className="space-y-4">
-              <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-800">
-                    Donacion en especie
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Completa cada bien entregado y pulsa el botón + para
-                    agregarlo a la donación.
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    información General
+                  </h2>
+                  <p className="text-xs text-gray-700">
+                    Datos básicos de la Donación
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddEspecieItem}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-primary-purple text-primary-purple text-xs font-medium hover:bg-primary-purple/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              </div>
+            </div>
+
+            <div className="p-6 flex flex-col gap-5">
+              <div className="flex flex-col order-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FaUser className="text-primary-purple" />
+                  Donante / Patrocinador *
+                </label>
+                <select
+                  value={form.donorSponsorId}
+                  onChange={(e) =>
+                    handleChange("donorSponsorId", e.target.value)
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
                   disabled={statusOnlyMode}
                 >
-                  <FaPlus /> Agregar entrada
-                </button>
+                  <option value="">
+                    {loadingDonors ? "Cargando..." : "Seleccionar donante..."}
+                  </option>
+                  {donors.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.nombre}
+                    </option>
+                  ))}
+                </select>
+                {errors.donorSponsorId && (
+                  <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    <FaInfoCircle /> {errors.donorSponsorId}
+                  </span>
+                )}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Categoria de la donacion *
+              <div className="flex flex-col order-1">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FaBoxOpen className="text-primary-purple" />
+                  Tipo de Donación *
+                </label>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {DONATION_TYPE_OPTIONS.map((option) => (
+                    <label
+                      key={option.value}
+                      className={`flex items-center gap-3 px-4 py-3 border-2 rounded-xl cursor-pointer transition-all transform hover:scale-105 ${
+                        form.type === option.value
+                          ? "border-primary-purple bg-gradient-to-br from-primary-purple/10 to-primary-blue/10 shadow-md"
+                          : "border-gray-200 hover:border-primary-purple/50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="type"
+                        value={option.value}
+                        checked={form.type === option.value}
+                        onChange={(e) => handleChange("type", e.target.value)}
+                        disabled={statusOnlyMode}
+                        className="w-4 h-4 text-primary-purple"
+                      />
+                      <span className="text-sm font-medium">
+                        {option.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {errors.type && (
+                  <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    <FaInfoCircle /> {errors.type}
+                  </span>
+                )}
+                {isEconomicType && (
+                  <label className="flex items-center gap-2 text-sm text-gray-600 mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <input
+                      type="checkbox"
+                      checked={form.isFoodPurchase}
+                      onChange={(e) =>
+                        handleChange("isFoodPurchase", e.target.checked)
+                      }
+                      disabled={statusOnlyMode}
+                      className="w-4 h-4 text-primary-blue rounded"
+                    />
+                    <FaUtensils className="text-primary-blue" />
+                    Esta Donación económica es para compra de alimentos
+                  </label>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 order-4">
+                <div className="flex flex-col order-4">
+                  <label className="text-sm font-semibold text-gray-700 mb-2">
+                    Programa / Destino
                   </label>
                   <select
-                    value={form.especieClass}
-                    onChange={(e) =>
-                      handleChange("especieClass", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
+                    value={form.program}
+                    onChange={(e) => handleChange("program", e.target.value)}
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
                     disabled={statusOnlyMode}
                   >
                     <option value="">Seleccionar...</option>
-                    {GOOD_CLASSES.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
+                    {PROGRAMS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
                       </option>
                     ))}
                   </select>
-                  {errors.especieClass && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieClass}
+                </div>
+                <div className="flex flex-col order-6">
+                  <label className="text-sm font-semibold text-gray-700 mb-2">
+                    Destino específico (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.specificDestination}
+                    onChange={(e) =>
+                      handleChange("specificDestination", e.target.value)
+                    }
+                    placeholder="Ej: Becas para niñas..."
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                    disabled={statusOnlyMode}
+                  />
+                </div>
+              </div>
+
+              {form.program === PROGRAM_EVENT && (
+                <div className="flex flex-col p-4 bg-purple-50 rounded-xl border border-purple-200 order-5">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaCalendarAlt className="text-primary-purple" />
+                    Evento (activo) *
+                  </label>
+                  <select
+                    value={form.eventId}
+                    onChange={(e) => handleChange("eventId", e.target.value)}
+                    className="w-full border-2 border-purple-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                    disabled={loadingEvents || statusOnlyMode}
+                  >
+                    <option value="">
+                      {loadingEvents
+                        ? "Cargando eventos..."
+                        : "Seleccionar evento"}
+                    </option>
+                    {events.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.name || ev.nombre || `Evento ${ev.id}`}
+                      </option>
+                    ))}
+                  </select>
+                  {eventsError && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {eventsError}
+                    </span>
+                  )}
+                  {errors.eventId && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {errors.eventId}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="grid md:grid-cols-2 gap-4 order-3">
+                <div className="flex flex-col order-3">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaCalendarAlt className="text-primary-purple" />
+                    Fecha y hora de Donación *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={form.donationAt}
+                    onChange={(e) => handleChange("donationAt", e.target.value)}
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                    disabled={statusOnlyMode}
+                  />
+                  {errors.donationAt && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {errors.donationAt}
                     </span>
                   )}
                 </div>
 
+                {isEditing && (
+                  <div className="flex flex-col order-7">
+                    <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-purple" />
+                      Estado *
+                    </label>
+                    <select
+                      value={form.status}
+                      onChange={(e) => handleChange("status", e.target.value)}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                    >
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          {/* Card: Donación económica */}
+          {isEconomicType && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-primary-green/30 px-6 py-4">
+                <div className="flex items-center gap-3 text-gray-800">
+                  <div className="p-2 bg-white/70 rounded-lg">
+                    <FaDollarSign className="text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Donación económica
+                    </h3>
+                    <p className="text-xs text-gray-700">
+                      Detalles del aporte monetario
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <FaDollarSign className="text-primary-green" />
+                      Valor donado *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="999999999999"
+                        step="0.01"
+                        value={form.econAmount}
+                        onChange={(e) =>
+                          handleChange("econAmount", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-xl pl-8 pr-4 py-3 focus:outline-none focus:border-primary-green focus:ring-2 focus:ring-primary-green/20 transition-all"
+                        disabled={statusOnlyMode}
+                        placeholder="1000000"
+                      />
+                    </div>
+                    {errors.econAmount && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.econAmount}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Canal de pago *
+                    </label>
+                    <select
+                      value={form.econChannel}
+                      onChange={(e) =>
+                        handleChange("econChannel", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-green focus:ring-2 focus:ring-primary-green/20 transition-all"
+                      disabled={statusOnlyMode}
+                    >
+                      <option value="">Seleccionar canal...</option>
+                      {CHANNELS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.econChannel && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.econChannel}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Cantidad *
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaFileAlt className="text-primary-green" />
+                    Comprobante de pago *
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.especieQty}
-                    onChange={(e) => handleChange("especieQty", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                  />
-                  {errors.especieQty && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieQty}
+                  <label
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      statusOnlyMode
+                        ? "opacity-60 pointer-events-none bg-gray-50"
+                        : form.econComprobante
+                          ? "border-primary-green bg-green-50 text-green-700"
+                          : "border-gray-300 hover:border-primary-green hover:bg-green-50 text-gray-600"
+                    }`}
+                  >
+                    <FaCloudUploadAlt className="text-2xl" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">
+                        {form.econComprobante?.name || "Adjuntar comprobante"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PDF, JPG o PNG (máx. 5MB)
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,image/jpeg,image/png"
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFile("econComprobante", e.target.files[0])
+                      }
+                      disabled={statusOnlyMode}
+                    />
+                  </label>
+                  {errors.econComprobante && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {errors.econComprobante}
                     </span>
                   )}
                 </div>
               </div>
+            </div>
+          )}
 
-              <div className="grid gap-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Material donado *
-                  </label>
-                  <select
-                    value={form.especieMaterialId}
-                    onChange={(e) =>
-                      handleChange("especieMaterialId", e.target.value)
-                    }
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                  >
-                    <option value="">
-                      {loadingMaterials
-                        ? "Cargando materiales..."
-                        : "Seleccionar material..."}
-                    </option>
-                    {materials.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nombre} - {m.categoria}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.especieMaterialId && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieMaterialId}
+          {/* Card: Donación en especie */}
+          {isEspecieType && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-primary-blue/30 px-6 py-4">
+                <div className="flex items-center gap-3 text-gray-800">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/70 rounded-lg">
+                      <FaBoxOpen className="text-xl" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Donación en Especie
+                      </h3>
+                      <p className="text-xs text-gray-700">
+                        Bienes y materiales donados
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 flex flex-col gap-5">
+                <div className="bg-primary-blue/15 border border-primary-blue/40 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 flex items-start gap-2">
+                    <FaInfoCircle className="mt-0.5 flex-shrink-0 text-primary-blue" />
+                    <span>
+                      Completa la información de cada bien y presiona "Agregar"
+                      para incluirlo en la donación.
                     </span>
-                  )}
+                  </p>
                 </div>
 
+                {/* Primera fila: Categoría, Material, Cantidad, Botón + */}
+                <div className="grid md:grid-cols-12 gap-4 items-end">
+                  <div className="flex flex-col md:col-span-3">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Categoría *
+                    </label>
+                    <select
+                      value={form.especieClass}
+                      onChange={(e) =>
+                        handleChange("especieClass", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                      disabled={statusOnlyMode}
+                    >
+                      <option value="">Seleccionar...</option>
+                      {GOOD_CLASSES.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.especieClass && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.especieClass}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col md:col-span-5">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Material donado *
+                    </label>
+                    <MaterialSearchSelector
+                      materials={materials}
+                      value={form.especieMaterialId}
+                      onChange={(value) =>
+                        handleChange("especieMaterialId", value)
+                      }
+                      disabled={statusOnlyMode}
+                      loading={loadingMaterials}
+                      placeholder="Buscar material..."
+                      error={errors.especieMaterialId}
+                    />
+                  </div>
+
+                  <div className="flex flex-col md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Cantidad *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.especieQty}
+                      onChange={(e) =>
+                        handleChange("especieQty", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                      disabled={statusOnlyMode}
+                      placeholder="Ej: 10"
+                    />
+                    {errors.especieQty && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.especieQty}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col md:col-span-2">
+                    <button
+                      type="button"
+                      onClick={handleAddEspecieItem}
+                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl bg-primary-purple hover:bg-primary-purple-light text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={statusOnlyMode}
+                    >
+                      <FaPlus /> Agregar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Segunda fila: Descripción */}
                 <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
+                  <label className="text-sm font-semibold text-gray-700 mb-2">
                     Descripción adicional (opcional)
                   </label>
                   <textarea
-                    rows="3"
+                    rows="2"
                     value={form.especieDesc}
                     onChange={(e) =>
                       handleChange("especieDesc", e.target.value)
                     }
                     placeholder="Ej: Balones profesionales marca Adidas, talla 5"
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple resize-none"
+                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 resize-none transition-all"
                     disabled={statusOnlyMode}
                   />
-                  {errors.especieDesc && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.especieDesc}
+                </div>
+
+                {errors.especieItems && (
+                  <div className="bg-primary-red/10 border border-primary-red/30 rounded-xl p-4">
+                    <p className="text-primary-red text-sm flex items-center gap-2">
+                      <FaInfoCircle /> {errors.especieItems}
+                    </p>
+                  </div>
+                )}
+
+                {/* Tercera sección: Items agregados (colapsable) */}
+                {form.especieItems.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-green" />
+                      Items agregados ({form.especieItems.length})
+                    </h4>
+                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+                      {form.especieItems.map((item, index) => (
+                        <div
+                          key={`${item.description}-${index}`}
+                          className="flex items-center justify-between gap-4 p-3 rounded-xl bg-primary-blue/15 border border-primary-blue/40 shadow-sm"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-blue text-white text-xs">
+                                {index + 1}
+                              </span>
+                              {item.description}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1 ml-8">
+                              Cantidad:{" "}
+                              <span className="font-semibold">
+                                {item.quantity || "0"}
+                              </span>{" "}
+                              · Categoría:{" "}
+                              <span className="font-semibold">
+                                {item.classification || "Sin clasificación"}
+                              </span>
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveEspecieItem(index)}
+                            className="p-2.5 text-primary-red hover:bg-primary-red/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={statusOnlyMode}
+                            aria-label="Eliminar entrada"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cuarta sección: Soporte */}
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaFileAlt className="text-primary-purple" />
+                    Soporte *
+                  </label>
+                  <label
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      statusOnlyMode
+                        ? "opacity-60 pointer-events-none bg-gray-50"
+                        : form.especieSoporte
+                          ? "border-primary-purple bg-primary-purple/10 text-primary-purple"
+                          : "border-gray-300 hover:border-primary-purple hover:bg-primary-purple/5 text-gray-600"
+                    }`}
+                  >
+                    <FaCloudUploadAlt className="text-2xl" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">
+                        {form.especieSoporte?.name || "Adjuntar soporte"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PDF, JPG o PNG (máx. 5MB)
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,image/jpeg,image/png"
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFile("especieSoporte", e.target.files[0])
+                      }
+                      disabled={statusOnlyMode}
+                    />
+                  </label>
+                  {errors.especieSoporte && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {errors.especieSoporte}
                     </span>
                   )}
                 </div>
               </div>
-
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Soporte (PDF/JPG/PNG, max 5MB) *
-                </label>
-                <label
-                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
-                >
-                  <FaCloudUploadAlt />
-                  <span className="text-sm">
-                    {form.especieSoporte?.name || "Adjuntar soporte"}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,image/jpeg,image/png"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleFile("especieSoporte", e.target.files[0])
-                    }
-                    disabled={statusOnlyMode}
-                  />
-                </label>
-                {errors.especieSoporte && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.especieSoporte}
-                  </span>
-                )}
-              </div>
-
-              {errors.especieItems && (
-                <p className="text-red-500 text-xs">{errors.especieItems}</p>
-              )}
-
-              {form.especieItems.length > 0 && (
-                <div className="space-y-3 pt-2">
-                  {form.especieItems.map((item, index) => (
-                    <div
-                      key={`${item.description}-${index}`}
-                      className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">
-                          Item {index + 1}: {item.description}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Cantidad: {item.quantity || "0"} ·{" "}
-                          {item.classification || "Sin clasificacion"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveEspecieItem(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={statusOnlyMode}
-                        aria-label="Eliminar entrada"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
+            </div>
           )}
 
-          {/* Seccion compra de alimentos (subtipo economica) */}
+          {/* Card: Compra de alimentos */}
           {isEconomicType && form.isFoodPurchase && (
-            <section className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-base font-semibold text-gray-800">
-                    Compra de alimentos (subtipo de donacion economica)
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    Agrega detalle de alimentos adquiridos, factura y evidencias
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-primary-pink/30 px-6 py-4">
+                <div className="flex items-center gap-3 text-gray-800">
+                  <div className="p-2 bg-white/70 rounded-lg">
+                    <FaUtensils className="text-xl" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Compra de Alimentos
+                    </h3>
+                    <p className="text-xs text-gray-700">
+                      Detalle de alimentos adquiridos
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 flex flex-col gap-5">
+                <div className="bg-primary-pink/15 border border-primary-pink/40 rounded-xl p-4">
+                  <p className="text-sm text-gray-700 flex items-start gap-2">
+                    <FaInfoCircle className="mt-0.5 flex-shrink-0 text-primary-pink" />
+                    <span>
+                      Agrega los detalles de cada tipo de alimento, la factura y
+                      evidencias fotográficas.
+                    </span>
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleAddFoodItem}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-primary-purple text-primary-purple text-xs font-medium hover:bg-primary-purple/10 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={statusOnlyMode}
-                >
-                  <FaPlus /> Agregar alimento
-                </button>
-              </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Cantidad de alimentos adquiridos *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.foodQty}
-                    onChange={(e) => handleChange("foodQty", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                  />
-                  {errors.foodQty && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.foodQty}
-                    </span>
-                  )}
-                </div>
-                <div className="flex flex-col">
-                  <label className="text-sm font-medium text-gray-700 mb-1">
-                    Clasificacion *
-                  </label>
-                  <select
-                    value={form.foodClass}
-                    onChange={(e) => handleChange("foodClass", e.target.value)}
-                    className="w-full border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-purple"
-                    disabled={statusOnlyMode}
-                  >
-                    <option value="">Seleccionar...</option>
-                    {FOOD_CLASSES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.foodClass && (
-                    <span className="text-red-500 text-xs mt-1">
-                      {errors.foodClass}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {errors.foodItems && (
-                <p className="text-red-500 text-xs">{errors.foodItems}</p>
-              )}
-
-              {form.foodItems.length > 0 && (
-                <div className="space-y-3 pt-2">
-                  {form.foodItems.map((item, index) => (
-                    <div
-                      key={`${item.classification}-${index}`}
-                      className="flex items-center justify-between gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100"
+                <div className="grid md:grid-cols-3 gap-4 items-end">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Cantidad de alimentos *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.foodQty}
+                      onChange={(e) => handleChange("foodQty", e.target.value)}
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-pink focus:ring-2 focus:ring-primary-pink/20 transition-all"
+                      disabled={statusOnlyMode}
+                      placeholder="Ej: 50"
+                    />
+                    {errors.foodQty && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.foodQty}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Clasificación *
+                    </label>
+                    <select
+                      value={form.foodClass}
+                      onChange={(e) =>
+                        handleChange("foodClass", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-pink focus:ring-2 focus:ring-primary-pink/20 transition-all"
+                      disabled={statusOnlyMode}
                     >
-                      <div>
-                        <p className="text-sm font-semibold text-gray-800">
-                          Alimento {index + 1}: {item.classification}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          Cantidad: {item.quantity || "0"}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFoodItem(index)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={statusOnlyMode}
-                        aria-label="Eliminar alimento"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  ))}
+                      <option value="">Seleccionar clasificación...</option>
+                      {FOOD_CLASSES.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.foodClass && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.foodClass}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col">
+                    <button
+                      type="button"
+                      onClick={handleAddFoodItem}
+                      className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-pink hover:shadow-lg text-white text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
+                      disabled={statusOnlyMode}
+                    >
+                      <FaPlus /> Agregar item
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Factura (PDF/JPG/PNG, max 5MB) *
-                </label>
-                <label
-                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
-                >
-                  <FaCloudUploadAlt />
-                  <span className="text-sm">
-                    {form.foodFactura?.name || "Adjuntar factura"}
-                  </span>
-                  <input
-                    type="file"
-                    accept=".pdf,image/jpeg,image/png"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleFile("foodFactura", e.target.files[0])
-                    }
-                    disabled={statusOnlyMode}
-                  />
-                </label>
-                {errors.foodFactura && (
-                  <span className="text-red-500 text-xs mt-1">
-                    {errors.foodFactura}
-                  </span>
+                {errors.foodItems && (
+                  <div className="bg-primary-red/10 border border-primary-red/30 rounded-xl p-4">
+                    <p className="text-primary-red text-sm flex items-center gap-2">
+                      <FaInfoCircle /> {errors.foodItems}
+                    </p>
+                  </div>
                 )}
-              </div>
 
-              <div className="flex flex-col">
-                <label className="text-sm font-medium text-gray-700 mb-1">
-                  Evidencia fotografica (multiples JPG/PNG, max 5MB c/u)
-                </label>
-                <label
-                  className={`flex items-center gap-3 px-4 py-3 border border-dashed rounded-xl text-primary-purple cursor-pointer hover:bg-primary-purple/10 transition ${statusOnlyMode ? "opacity-60 pointer-events-none" : ""}`}
-                >
-                  <FaCloudUploadAlt />
-                  <span className="text-sm">
-                    {form.foodEvidence?.length
-                      ? `${form.foodEvidence.length} archivos seleccionados`
-                      : "Adjuntar evidencias"}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    multiple
-                    className="hidden"
-                    onChange={(e) => handleFile("foodEvidence", e.target.files)}
-                    disabled={statusOnlyMode}
-                  />
-                </label>
+                {form.foodItems.length > 0 && (
+                  <div className="space-y-3 pt-2">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-green" />
+                      Alimentos agregados ({form.foodItems.length})
+                    </h4>
+                    {form.foodItems.map((item, index) => (
+                      <div
+                        key={`${item.classification}-${index}`}
+                        className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary-pink/15 border border-primary-pink/40 shadow-sm"
+                      >
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary-pink text-white text-xs">
+                              {index + 1}
+                            </span>
+                            {item.classification}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1 ml-8">
+                            Cantidad:{" "}
+                            <span className="font-semibold">
+                              {item.quantity || "0"}
+                            </span>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFoodItem(index)}
+                          className="p-2.5 text-primary-red hover:bg-primary-red/10 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={statusOnlyMode}
+                          aria-label="Eliminar alimento"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaFileAlt className="text-primary-pink" />
+                    Factura *
+                  </label>
+                  <label
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      statusOnlyMode
+                        ? "opacity-60 pointer-events-none bg-gray-50"
+                        : form.foodFactura
+                          ? "border-primary-pink bg-primary-pink/10 text-primary-pink"
+                          : "border-gray-300 hover:border-primary-pink hover:bg-blue-50 text-gray-600"
+                    }`}
+                  >
+                    <FaCloudUploadAlt className="text-2xl" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">
+                        {form.foodFactura?.name || "Adjuntar factura"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        PDF, JPG o PNG (máx. 5MB)
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,image/jpeg,image/png"
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFile("foodFactura", e.target.files[0])
+                      }
+                      disabled={statusOnlyMode}
+                    />
+                  </label>
+                  {errors.foodFactura && (
+                    <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                      <FaInfoCircle /> {errors.foodFactura}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-col">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                    <FaFileAlt className="text-primary-pink" />
+                    Evidencia fotográfica (opcional)
+                  </label>
+                  <label
+                    className={`flex items-center justify-center gap-3 px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${
+                      statusOnlyMode
+                        ? "opacity-60 pointer-events-none bg-gray-50"
+                        : form.foodEvidence?.length
+                          ? "border-primary-pink bg-primary-pink/10 text-primary-pink"
+                          : "border-gray-300 hover:border-primary-pink hover:bg-blue-50 text-gray-600"
+                    }`}
+                  >
+                    <FaCloudUploadAlt className="text-2xl" />
+                    <div className="text-center">
+                      <span className="text-sm font-medium block">
+                        {form.foodEvidence?.length
+                          ? `${form.foodEvidence.length} archivo(s) seleccionado(s)`
+                          : "Adjuntar evidencias"}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        JPG o PNG (máx. 5MB c/u)
+                      </span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png"
+                      multiple
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFile("foodEvidence", e.target.files)
+                      }
+                      disabled={statusOnlyMode}
+                    />
+                  </label>
+                </div>
               </div>
-            </section>
+            </div>
           )}
 
-          {/* Botones */}
-          <div className="flex justify-end gap-3 pt-2">
+          {/* Botones de acción */}
+          <div className="flex justify-end gap-4 pt-4">
             <button
               type="button"
               onClick={() => navigate("/dashboard/donations")}
-              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+              className="px-6 py-3 rounded-xl border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-all transform hover:scale-105 disabled:opacity-50"
               disabled={submitting}
             >
               Cancelar
@@ -1395,38 +1633,110 @@ const DonationsForm = () => {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-primary-purple to-primary-blue text-white font-semibold shadow-md hover:from-primary-purple-light hover:to-primary-blue transition disabled:opacity-60"
+              className="px-8 py-3 rounded-xl bg-primary-purple hover:bg-primary-blue text-white font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              {submitting ? "Guardando..." : "Guardar donacion"}
+              {submitting ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Guardando...
+                </>
+              ) : (
+                <>
+                  <FaCheckCircle />
+                  Guardar Donación
+                </>
+              )}
             </button>
           </div>
         </div>
 
-        {/* Resumen */}
-        <aside className="bg-white p-5 rounded-2xl shadow space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Resumen previo
-          </h3>
-          <div className="space-y-2 text-sm text-gray-700">
-            {summary.general.map((item) => (
-              <p key={item.label}>
-                <strong>{item.label}:</strong> {item.value}
-              </p>
-            ))}
-            <div>
-              <strong>Detalle:</strong>
-              <ul className="list-disc ml-4 mt-1">
-                {summary.details.map((d, idx) => (
-                  <li key={idx}>{d}</li>
-                ))}
-              </ul>
+        {/* Panel de resumen mejorado */}
+        <aside className="xl:h-full">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="bg-primary-purple/30 px-6 py-4">
+              <div className="flex items-center gap-3 text-gray-800">
+                <div className="p-2 bg-white/70 rounded-lg">
+                  <FaInfoCircle className="text-xl" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Resumen
+                  </h3>
+                  <p className="text-xs text-gray-700">
+                    Vista previa de la Donación
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-1">
-              {summary.files.map((f, idx) => (
-                <p key={idx} className="text-xs text-green-700">
-                  - {f}
-                </p>
-              ))}
+
+            <div className="p-6 space-y-4">
+              {/* información general */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                  <FaUser className="text-primary-purple" />
+                  información General
+                </h4>
+                {summary.general.map((item) => (
+                  <div key={item.label} className="bg-gray-100 rounded-lg p-3">
+                    <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                    <p className="text-sm font-medium text-gray-800 break-words">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Detalles */}
+              {summary.details.length > 0 && (
+                <div className="space-y-3 pt-4 border-t">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <FaBoxOpen className="text-primary-purple" />
+                    Detalles
+                  </h4>
+                  <div className="bg-primary-purple/5 rounded-lg p-4">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {summary.details.length}{" "}
+                      {summary.details.length === 1
+                        ? "item agregado"
+                        : "items agregados"}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {selectedType?.apiType === "ESPECIE" &&
+                        form.especieItems.length > 0 &&
+                        `${form.especieItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} unidades totales`}
+                      {selectedType?.apiType === "ECONOMICA" &&
+                        form.isFoodPurchase &&
+                        form.foodItems.length > 0 &&
+                        `${form.foodItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} unidades de alimentos`}
+                      {selectedType?.apiType === "ECONOMICA" &&
+                        !form.isFoodPurchase &&
+                        `Valor: ${formatNumber(form.econAmount) || "0"}`}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Archivos */}
+              {summary.files.length > 0 && (
+                <div className="space-y-3 pt-4 border-t">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                    <FaFileAlt className="text-primary-purple" />
+                    Archivos
+                  </h4>
+                  <div className="bg-primary-green/15 rounded-lg p-4">
+                    <div className="flex items-center gap-2">
+                      <FaCheckCircle className="text-primary-green" />
+                      <p className="text-sm font-semibold text-gray-800">
+                        {
+                          summary.files.filter((f) => f.includes("listo"))
+                            .length
+                        }{" "}
+                        de {summary.files.length} archivos listos
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </aside>
