@@ -16,6 +16,7 @@ import {
 } from "../../../../../../../../../shared/utils/alerts";
 import EventMaterialsService from "../../../../SportsMaterials/Materials/services/EventMaterialsService";
 import MaterialsService from "../../../../SportsMaterials/Materials/services/materialsService";
+import MaterialSearchSelector from "../../../../../../../../../shared/components/MaterialSearchSelector";
 
 const UsableMaterialsTab = ({
   event,
@@ -26,7 +27,9 @@ const UsableMaterialsTab = ({
   onRefresh,
 }) => {
   const [materials, setMaterials] = useState([]);
+  const [materialsAvailability, setMaterialsAvailability] = useState({});
   const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -46,10 +49,16 @@ const UsableMaterialsTab = ({
   }, [event]);
 
   useEffect(() => {
-    loadAvailableMaterials();
-  }, []);
+    if (event?.id) {
+      loadAvailableMaterials();
+    }
+  }, [event?.id]);
 
   const loadAvailableMaterials = async () => {
+    // Normalizar las fechas del evento (puede venir como start/end o startDate/endDate)
+    const startDate = event?.startDate || event?.start;
+    const endDate = event?.endDate || event?.end;
+
     try {
       setLoadingMaterials(true);
       const response = await MaterialsService.getMaterials({
@@ -63,7 +72,17 @@ const UsableMaterialsTab = ({
         const materialsFiltered = response.data.filter(
           (m) => m.estado === "Activo" && (m.stockFundacion || 0) > 0,
         );
+
         setMaterials(materialsFiltered);
+
+        // Cargar disponibilidad para cada material
+        if (startDate && endDate) {
+          await loadMaterialsAvailability(
+            materialsFiltered,
+            startDate,
+            endDate,
+          );
+        }
       }
     } catch (error) {
       console.error("Error loading materials:", error);
@@ -76,11 +95,82 @@ const UsableMaterialsTab = ({
     }
   };
 
-  // Get selected material details
+  const loadMaterialsAvailability = async (
+    materialsList,
+    startDate,
+    endDate,
+  ) => {
+    if (!startDate || !endDate) return;
+
+    try {
+      setLoadingAvailability(true);
+      const availabilityMap = {};
+
+      // Usar bulk availability para obtener todo en una sola llamada (optimizado)
+      const materialIds = materialsList.map((m) => m.id);
+
+      try {
+        const response = await EventMaterialsService.checkBulkAvailability(
+          materialIds,
+          startDate,
+          endDate,
+          event.id,
+        );
+
+        if (response.success && response.data) {
+          // El backend devuelve un mapa con la disponibilidad de cada material
+          Object.keys(response.data).forEach((materialId) => {
+            const data = response.data[materialId];
+            availabilityMap[materialId] = {
+              available: data.availableQuantity || 0,
+              totalStock: data.totalStock || 0,
+              usedInConflicts: data.usedInConflicts || 0,
+              conflictingEvents: data.conflictingEvents || [],
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error checking bulk availability:", error);
+        // Si falla bulk, usar stock total como fallback
+        materialsList.forEach((material) => {
+          availabilityMap[material.id] = {
+            available: material.stockFundacion || 0,
+            totalStock: material.stockFundacion || 0,
+            usedInConflicts: 0,
+            conflictingEvents: [],
+          };
+        });
+      }
+
+      setMaterialsAvailability(availabilityMap);
+    } catch (error) {
+      console.error("Error loading materials availability:", error);
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
+  // Get selected material details with availability
   const selectedMaterialData = useMemo(() => {
     if (!selectedMaterial) return null;
-    return materials.find((m) => m.id === parseInt(selectedMaterial));
-  }, [selectedMaterial, materials]);
+    const material = materials.find((m) => m.id === parseInt(selectedMaterial));
+    if (!material) return null;
+
+    const availability = materialsAvailability[material.id] || {
+      available: material.stockFundacion || 0,
+      totalStock: material.stockFundacion || 0,
+      usedInConflicts: 0,
+      conflictingEvents: [],
+    };
+
+    return {
+      ...material,
+      availableForEvent: availability.available,
+      totalStock: availability.totalStock,
+      usedInConflicts: availability.usedInConflicts,
+      conflictingEvents: availability.conflictingEvents,
+    };
+  }, [selectedMaterial, materials, materialsAvailability]);
 
   // Validate quantity in real-time
   const quantityValidation = useMemo(() => {
@@ -89,16 +179,20 @@ const UsableMaterialsTab = ({
     }
 
     const qty = parseInt(quantity);
-    const available = selectedMaterialData.stockFundacion || 0;
+    const available = selectedMaterialData.availableForEvent || 0;
 
     if (qty <= 0) {
       return { valid: false, message: "La cantidad debe ser mayor a 0" };
     }
 
     if (qty > available) {
+      const conflictInfo =
+        selectedMaterialData.conflictingEvents?.length > 0
+          ? ` (${selectedMaterialData.usedInConflicts} en uso en otros eventos)`
+          : "";
       return {
         valid: false,
-        message: `Stock insuficiente. Disponible: ${available}`,
+        message: `Stock insuficiente. Disponible: ${available}${conflictInfo}`,
       };
     }
 
@@ -300,27 +394,37 @@ const UsableMaterialsTab = ({
             </button>
           </div>
 
+          {loadingAvailability && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-700">
+                ⏳ Verificando disponibilidad de materiales para las fechas del
+                evento...
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Material
               </label>
-              <select
+              <MaterialSearchSelector
+                materials={materials.map((m) => ({
+                  ...m,
+                  // Mostrar disponibilidad real en lugar de stock total
+                  stockFundacion:
+                    materialsAvailability[m.id]?.available ?? m.stockFundacion,
+                }))}
                 value={selectedMaterial}
-                onChange={(e) => {
-                  setSelectedMaterial(e.target.value);
+                onChange={(materialId) => {
+                  setSelectedMaterial(materialId);
                   setQuantity(""); // Reset quantity when material changes
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue"
-                disabled={loadingMaterials}
-              >
-                <option value="">Seleccionar...</option>
-                {materials.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.nombre} (Stock: {material.stockFundacion})
-                  </option>
-                ))}
-              </select>
+                placeholder="Buscar material..."
+                disabled={loadingMaterials || loadingAvailability}
+                showStock={true}
+                stockField="stockFundacion"
+              />
             </div>
 
             <div>
@@ -328,14 +432,15 @@ const UsableMaterialsTab = ({
                 Cantidad
                 {selectedMaterialData && (
                   <span className="text-xs text-gray-500 ml-2">
-                    (Máx: {selectedMaterialData.stockFundacion})
+                    (Disponible: {selectedMaterialData.availableForEvent} de{" "}
+                    {selectedMaterialData.totalStock})
                   </span>
                 )}
               </label>
               <input
                 type="number"
                 min="1"
-                max={selectedMaterialData?.stockFundacion || 999999}
+                max={selectedMaterialData?.availableForEvent || 999999}
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-primary-blue ${
@@ -344,7 +449,7 @@ const UsableMaterialsTab = ({
                     : "border-gray-300"
                 }`}
                 placeholder="0"
-                disabled={!selectedMaterial}
+                disabled={!selectedMaterial || loadingAvailability}
               />
               {quantity && !quantityValidation.valid && (
                 <div className="flex items-center gap-1 mt-1 text-xs text-red-600">
@@ -352,6 +457,14 @@ const UsableMaterialsTab = ({
                   {quantityValidation.message}
                 </div>
               )}
+              {selectedMaterialData &&
+                selectedMaterialData.conflictingEvents?.length > 0 && (
+                  <div className="mt-1 text-xs text-amber-600">
+                    ⚠ {selectedMaterialData.usedInConflicts} unidades reservadas
+                    en {selectedMaterialData.conflictingEvents.length} evento(s)
+                    con fechas solapadas
+                  </div>
+                )}
             </div>
           </div>
 

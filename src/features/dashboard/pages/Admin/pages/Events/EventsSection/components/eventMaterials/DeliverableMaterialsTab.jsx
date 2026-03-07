@@ -16,6 +16,7 @@ import {
 } from "../../../../../../../../../shared/utils/alerts";
 import EventMaterialsService from "../../../../SportsMaterials/Materials/services/EventMaterialsService";
 import MaterialsService from "../../../../SportsMaterials/Materials/services/materialsService";
+import MaterialSearchSelector from "../../../../../../../../../shared/components/MaterialSearchSelector";
 
 const DeliverableMaterialsTab = ({
   event,
@@ -323,22 +324,18 @@ const DeliverableMaterialsTab = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Material
               </label>
-              <select
+              <MaterialSearchSelector
+                materials={materials}
                 value={selectedMaterial}
-                onChange={(e) => {
-                  setSelectedMaterial(e.target.value);
+                onChange={(materialId) => {
+                  setSelectedMaterial(materialId);
                   setQuantity(""); // Reset quantity when material changes
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                placeholder="Buscar material..."
                 disabled={loadingMaterials}
-              >
-                <option value="">Seleccionar...</option>
-                {materials.map((material) => (
-                  <option key={material.id} value={material.id}>
-                    {material.nombre} (Stock: {material.stockEventos})
-                  </option>
-                ))}
-              </select>
+                showStock={true}
+                stockField="stockEventos"
+              />
             </div>
 
             <div>

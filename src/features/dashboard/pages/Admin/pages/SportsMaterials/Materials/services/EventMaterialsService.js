@@ -267,6 +267,49 @@ class EventMaterialsService {
   }
 
   /**
+   * Check availability for multiple materials at once (optimized)
+   */
+  async checkBulkAvailability(
+    materialIds,
+    startDate,
+    endDate,
+    excludeEventoId,
+  ) {
+    if (
+      !materialIds ||
+      !Array.isArray(materialIds) ||
+      materialIds.length === 0
+    ) {
+      throw new Error("IDs de materiales son requeridos");
+    }
+
+    if (!startDate || !endDate) {
+      throw new Error("Fechas de inicio y fin son requeridas");
+    }
+
+    try {
+      const payload = {
+        materialIds,
+        startDate,
+        endDate,
+      };
+
+      if (excludeEventoId) {
+        payload.excludeEventoId = excludeEventoId;
+      }
+
+      const response = await apiClient.post(
+        `${this.endpoint}/reusables/bulk-availability`,
+        payload,
+      );
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Get all event assignments for a specific reusable material
    */
   async getMaterialAssignments(materialId, options = {}) {

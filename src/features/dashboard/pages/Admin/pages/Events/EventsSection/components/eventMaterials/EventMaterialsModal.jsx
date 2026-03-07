@@ -21,6 +21,19 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
   const [pendingUsables, setPendingUsables] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
 
+  // Log para debug
+  useEffect(() => {
+    if (event) {
+      console.log("📅 Event data in modal:", {
+        id: event.id,
+        name: event.name,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        allKeys: Object.keys(event),
+      });
+    }
+  }, [event]);
+
   useEffect(() => {
     if (isOpen && event?.id) {
       loadSummary();

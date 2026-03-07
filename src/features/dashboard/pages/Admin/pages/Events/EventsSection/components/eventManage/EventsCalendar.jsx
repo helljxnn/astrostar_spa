@@ -99,8 +99,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
   // Transformar eventos para el calendario genérico
   const transformedEvents = useMemo(() => {
-    console.log("📦 Eventos recibidos (propEvents):", propEvents);
-    console.log("📦 Primer evento _count:", propEvents[0]?._count);
     return transformEventsForBaseCalendar(propEvents);
   }, [propEvents]);
 
@@ -717,15 +715,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       0;
     const materialCount = dashboardEvent._count?.eventMaterials || 0;
 
-    console.log("🟢 canDeleteEvent ejecutándose:", {
-      eventName: dashboardEvent.name || dashboardEvent.title,
-      estado,
-      participantCount,
-      materialCount,
-      _count: dashboardEvent._count,
-      fullEvent: dashboardEvent,
-    });
-
     // No se puede eliminar si está en curso o finalizado
     if (
       estado === "En Curso" ||
@@ -733,23 +722,19 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       estado === "Finalizado" ||
       estado === "finalizado"
     ) {
-      console.log("❌ No se puede eliminar: estado", estado);
       return false;
     }
 
     // No se puede eliminar si tiene inscritos
     if (participantCount > 0) {
-      console.log("❌ No se puede eliminar: tiene inscritos", participantCount);
       return false;
     }
 
     // No se puede eliminar si tiene materiales asignados
     if (materialCount > 0) {
-      console.log("❌ No se puede eliminar: tiene materiales", materialCount);
       return false;
     }
 
-    console.log("✅ Se puede eliminar");
     return true;
   }, []);
 
