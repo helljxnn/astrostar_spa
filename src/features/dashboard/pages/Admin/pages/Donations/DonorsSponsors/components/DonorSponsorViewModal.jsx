@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 
@@ -23,7 +24,9 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
   const isJuridica = donorData.tipoPersona === "Juridica";
   const isSponsor = donorData.tipo === "Patrocinador";
   const phoneLabel = isJuridica ? "Tel\u00e9fono de contacto" : "Tel\u00e9fono";
-  const emailLabel = isJuridica ? "Correo del representante" : "Correo Electr\u00f3nico";
+  const emailLabel = isJuridica
+    ? "Correo del representante"
+    : "Correo Electr\u00f3nico";
   const tipoPersonaLabel = isJuridica
     ? "Empresa / Organizacion"
     : "Persona Natural";
@@ -39,8 +42,12 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
     });
   };
 
-  const baseNombre = isJuridica ? donorData.razonSocial || donorData.nombre : donorData.nombreCompleto || donorData.nombre;
-  const baseIdent = isJuridica ? donorData.nit || donorData.identificacion : donorData.numeroDocumento || donorData.identificacion;
+  const baseNombre = isJuridica
+    ? donorData.razonSocial || donorData.nombre
+    : donorData.nombreCompleto || donorData.nombre;
+  const baseIdent = isJuridica
+    ? donorData.nit || donorData.identificacion
+    : donorData.numeroDocumento || donorData.identificacion;
   const creationDate = donorData.createdAt;
   const updateDate = donorData.updatedAt;
   const statusDate =
@@ -52,17 +59,16 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
   const fields = [
     { label: "Tipo", value: donorData.tipo },
     { label: "Tipo de Persona", value: tipoPersonaLabel },
-    { label: isJuridica ? "Razon Social" : "Nombre completo", value: baseNombre },
+    {
+      label: isJuridica ? "Razon Social" : "Nombre completo",
+      value: baseNombre,
+    },
     { label: isJuridica ? "NIT" : "Numero de documento", value: baseIdent },
     ...(isNatural
-      ? [
-          { label: "Tipo de documento", value: donorData.tipoDocumento },
-        ]
+      ? [{ label: "Tipo de documento", value: donorData.tipoDocumento }]
       : []),
     ...(isJuridica
-      ? [
-          { label: "Representante legal", value: donorData.personaContacto },
-        ]
+      ? [{ label: "Representante legal", value: donorData.personaContacto }]
       : []),
     // Que patrocina se omite para simplificar
     { label: phoneLabel, value: donorData.telefono },
@@ -74,7 +80,7 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
     { label: "Estado", value: donorData.estado },
   ];
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -124,18 +130,26 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
                 transition={{ delay: 0.2 }}
                 className="mt-6 p-5 bg-gray-50 rounded-xl border border-gray-100"
               >
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">Informacion del Sistema</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                  Informacion del Sistema
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Fecha de Creacion:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Fecha de Creacion:
+                    </span>
                     <p className="text-gray-800">{formatDate(creationDate)}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Ultima Actualizacion:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Ultima Actualizacion:
+                    </span>
                     <p className="text-gray-800">{formatDate(updateDate)}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Estado Asignado:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      Estado Asignado:
+                    </span>
                     <p className="text-gray-800">{formatDate(statusDate)}</p>
                   </div>
                 </div>
@@ -156,7 +170,8 @@ const DonorSponsorViewModal = ({ isOpen, onClose, donorData }) => {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 
