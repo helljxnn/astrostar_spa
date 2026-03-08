@@ -74,6 +74,11 @@ export const Navbar = () => {
                 </NavLink>
               </li>
               <li>
+                <NavLink to="/historias" className={linkClasses}>
+                  Testimonios
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/events" className={linkClasses}>
                   Eventos
                 </NavLink>
@@ -147,6 +152,15 @@ export const Navbar = () => {
                     onClick={() => setIsOpen(false)}
                   >
                     Fundación
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/historias"
+                    className={linkClasses}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Testimonios
                   </NavLink>
                 </li>
                 <li>

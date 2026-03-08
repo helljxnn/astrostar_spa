@@ -35,7 +35,16 @@ export const useSidebarVisibility = () => {
       // Excepción: Deportistas y acudientes siempre ven Gestión de Citas
       if (moduleId === "appointmentManagement" && isAthleteOrGuardian) {
         visible[moduleId] = true;
-      } else {
+      }
+      // Excepción: "Mis Pagos" solo para deportistas y acudientes
+      else if (moduleId === "myPayments") {
+        visible[moduleId] = isAthleteOrGuardian;
+      }
+      // Excepción: "Gestión de Pagos" NO para deportistas y acudientes
+      else if (moduleId === "paymentsManagement") {
+        visible[moduleId] = !isAthleteOrGuardian && (isAdmin || hasModuleAccess(moduleId));
+      }
+      else {
         visible[moduleId] = isAdmin || hasModuleAccess(moduleId);
       }
     });

@@ -34,8 +34,15 @@ const PrivateRoute = ({
     return <Loader isVisible={true} message="Cargando permisos..." />;
   }
 
-  // Si es admin, permitir acceso a todo
+  // Si es admin, permitir acceso a todo EXCEPTO módulos específicos de deportistas
   if (isAdmin) {
+    // EXCEPCIÓN: Los administradores NO deben ver "Mis Pagos" (es solo para deportistas/acudientes)
+    if (module === "myPayments") {
+      if (showFallback) {
+        return <AccessDenied />;
+      }
+      return <Navigate to={fallbackPath} replace />;
+    }
     return children ? children : <Outlet />;
   }
 
@@ -44,6 +51,11 @@ const PrivateRoute = ({
   const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
   
   if (module === "appointmentManagement" && isAthleteOrGuardian) {
+    return children ? children : <Outlet />;
+  }
+
+  // EXCEPCIÓN: Deportistas y acudientes siempre tienen acceso a Mis Pagos
+  if (module === "myPayments" && isAthleteOrGuardian) {
     return children ? children : <Outlet />;
   }
 

@@ -16,23 +16,6 @@ const DetailItem = ({ icon, label, value }) => (
 const ViewProfileModal = ({ isOpen, onClose, user }) => {
     if (!isOpen) return null;
 
-    // Función para formatear el rol
-    const formatRole = (role) => {
-        if (!role) return "No especificado";
-        
-        // Si el rol es un objeto con name
-        if (typeof role === 'object' && role?.name) {
-            return role.name.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-        }
-        
-        // Si el rol es un string
-        if (typeof role === 'string') {
-            return role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-        }
-        
-        return "No especificado";
-    };
-
     // Función para obtener el nombre del tipo de documento
     const getDocumentTypeName = () => {
         if (user?.documentType?.name) {
@@ -122,7 +105,7 @@ const ViewProfileModal = ({ isOpen, onClose, user }) => {
                             </div>
                         )}
                         <h3 className="text-lg font-bold text-gray-800">{getFullName()}</h3>
-                        <p className="text-sm text-gray-500">{formatRole(user?.role || user?.rol)}</p>
+                        <p className="text-sm text-gray-500">{user?.role?.name || user?.rol || "No especificado"}</p>
                     </div>
 
                     {/* Grid de dos columnas */}
@@ -217,7 +200,7 @@ const ViewProfileModal = ({ isOpen, onClose, user }) => {
                                     <DetailItem 
                                         icon={<FaBriefcase size={16} />} 
                                         label="Rol en el Sistema" 
-                                        value={formatRole(user?.role || user?.rol)} 
+                                        value={user?.role?.name || user?.rol || "No especificado"} 
                                     />
                                 </div>
                             </div>

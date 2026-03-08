@@ -115,6 +115,26 @@ export const MODULE_CONFIG = {
     description: "Gestión de matrículas",
   },
 
+  paymentsManagement: {
+    id: "paymentsManagement",
+    name: "Gestión de Pagos",
+    path: "/dashboard/payments-management",
+    icon: "FaCreditCard",
+    category: "athletes",
+    parent: "athletes",
+    description: "Gestión de pagos y comprobantes",
+  },
+
+  myPayments: {
+    id: "myPayments",
+    name: "Mis Pagos",
+    path: "/dashboard/athlete-payments",
+    icon: "FaCreditCard",
+    category: "athletes",
+    parent: "athletes",
+    description: "Estado financiero y comprobantes de pago",
+  },
+
   // === EVENTOS ===
   eventsManagement: {
     id: "eventsManagement",
@@ -235,6 +255,8 @@ export const MODULE_GROUPS = {
       "sportsCategory",
       "enrollments",
       "athletesSection",
+      "paymentsManagement",
+      "myPayments",
       "athletesAssistance",
     ],
   },

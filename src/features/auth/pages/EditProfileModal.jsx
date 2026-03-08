@@ -240,7 +240,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
                             <div>
                                 <p className="text-xs text-gray-500">Rol</p>
                                 <p className="text-sm font-medium text-gray-800">
-                                    {user?.role?.name?.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || 'No especificado'}
+                                    {user?.role?.name || user?.rol || 'No especificado'}
                                 </p>
                             </div>
                         </div>

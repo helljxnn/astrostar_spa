@@ -24,6 +24,7 @@ import {
   FaDollarSign,
   FaSignOutAlt,
   FaBoxes,
+  FaCreditCard,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
@@ -129,6 +130,7 @@ function DynamicSideBar({
       FaRegCalendarAlt: <FaRegCalendarAlt size={size} className="shrink-0" />,
       FaShoppingCart: <FaShoppingCart size={size} className="shrink-0" />,
       FaBoxes: <FaBoxes size={size} className="shrink-0" />,
+      FaCreditCard: <FaCreditCard size={size} className="shrink-0" />,
       GiWeightLiftingUp: <GiWeightLiftingUp size={size} className="shrink-0" />,
     };
     return icons[iconName] || <FaUsers size={size} className="shrink-0" />;
