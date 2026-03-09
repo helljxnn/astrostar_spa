@@ -1,8 +1,8 @@
 import React from "react";
-import PaymentsService from "../services/PaymentsService";
 
 /**
- * Badge para mostrar el tipo de pago
+ * Badge para mostrar el tipo de pago/obligación
+ * Soporta: MONTHLY, ENROLLMENT_INITIAL, ENROLLMENT_RENEWAL
  */
 const PaymentTypeBadge = ({ type }) => {
   const getTypeConfig = (type) => {
@@ -12,23 +12,18 @@ const PaymentTypeBadge = ({ type }) => {
         icon: '📅',
         text: 'Mensualidad'
       },
+      'ENROLLMENT_INITIAL': {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: '🎓',
+        text: 'Matrícula Inicial'
+      },
       'ENROLLMENT_RENEWAL': {
         color: 'bg-purple-100 text-purple-800 border-purple-200',
-        icon: '🎓',
-        text: 'Renovación'
+        icon: '🔄',
+        text: 'Renovación Matrícula'
       },
-      'UNIFORM': {
-        color: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-        icon: '👕',
-        text: 'Uniforme'
-      },
-      'EVENT': {
-        color: 'bg-orange-100 text-orange-800 border-orange-200',
-        icon: '🏆',
-        text: 'Evento'
-      }
     };
-    
+
     return configs[type] || {
       color: 'bg-gray-100 text-gray-800 border-gray-200',
       icon: '💰',

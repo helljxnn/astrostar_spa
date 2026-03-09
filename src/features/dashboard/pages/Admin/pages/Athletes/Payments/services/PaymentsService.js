@@ -7,8 +7,8 @@ import { formatCurrency } from "../utils/currencyUtils";
  */
 class PaymentsService {
   constructor() {
-    this.endpoint = "/api/payments";
-    this.settingsEndpoint = "/api/payment-settings";
+    this.endpoint = "/payments";
+    this.settingsEndpoint = "/payment-settings";
   }
 
   // ============================================================================
@@ -101,11 +101,30 @@ class PaymentsService {
   }
 
   /**
+   * Verificar restricciones de acceso de un atleta por mora o matrícula pendiente
+   * GET /api/payments/athletes/:athleteId/access-check
+   */
+  async checkAthleteAccess(athleteId) {
+    const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/access-check`);
+    return response.data;
+  }
+
+  /**
    * Crear obligación de renovación de matrícula
    * POST /api/payments/athletes/:athleteId/enrollment-renewal
    */
   async createEnrollmentRenewal(athleteId) {
     const response = await apiClient.post(`${this.endpoint}/athletes/${athleteId}/enrollment-renewal`);
+    return response.data;
+  }
+
+  /**
+   * Generar obligación de pago inicial de matrícula (fallback manual para admin)
+   * POST /api/payments/athletes/:athleteId/enrollment-initial
+   */
+  async createEnrollmentInitial(athleteId, enrollmentId = null) {
+    const body = enrollmentId ? { enrollmentId } : {};
+    const response = await apiClient.post(`${this.endpoint}/athletes/${athleteId}/enrollment-initial`, body);
     return response.data;
   }
 

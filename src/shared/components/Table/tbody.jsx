@@ -28,7 +28,7 @@ const Tbody = ({ options }) => {
     cellClassNames = {}, // clases personalizadas por columna
   } = options.tbody || {};
 
-  const hasActions = onEdit || onDelete || onView || onList || customActions; 
+  const hasActions = onEdit || onDelete || onView || onList || customActions;
 
   /* --- Si no hay datos --- */
   if (!data || data.length === 0) {
@@ -120,82 +120,91 @@ const Tbody = ({ options }) => {
             {hasActions && (
               <td className="px-6 py-4 flex items-center justify-center gap-3">
                 {/* 1. Ver detalles */}
-                {onView && (() => {
-                  const config = buttonConfig.view ? buttonConfig.view(item) : {};
-                  const shouldShow = config.show !== false;
-                  const isDisabled = config.disabled || false;
-                  const customClass = config.className || '';
-                  const title = config.title || 'Ver Detalle';
+                {onView &&
+                  (() => {
+                    const config = buttonConfig.view
+                      ? buttonConfig.view(item)
+                      : {};
+                    const shouldShow = config.show !== false;
+                    const isDisabled = config.disabled || false;
+                    const customClass = config.className || "";
+                    const title = config.title || "Ver Detalle";
 
-                  if (!shouldShow) return null;
+                    if (!shouldShow) return null;
 
-                  return (
-                    <button
-                      onClick={() => !isDisabled && onView(item)}
-                      className={`p-2 rounded-full transition-colors ${
-                        isDisabled 
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}` 
-                          : `bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white ${customClass}`
-                      }`}
-                      title={title}
-                      disabled={isDisabled}
-                    >
-                      <FaEye />
-                    </button>
-                  );
-                })()}
+                    return (
+                      <button
+                        onClick={() => !isDisabled && onView(item)}
+                        className={`p-2 rounded-full transition-colors ${
+                          isDisabled
+                            ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
+                            : `bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white ${customClass}`
+                        }`}
+                        title={title}
+                        disabled={isDisabled}
+                      >
+                        <FaEye />
+                      </button>
+                    );
+                  })()}
 
                 {/* 2. Editar */}
-                {onEdit && (() => {
-                  const config = buttonConfig.edit ? buttonConfig.edit(item) : {};
-                  const shouldShow = config.show !== false;
-                  const isDisabled = config.disabled || false;
-                  const customClass = config.className || '';
-                  const title = config.title || 'Editar';
+                {onEdit &&
+                  (() => {
+                    const config = buttonConfig.edit
+                      ? buttonConfig.edit(item)
+                      : {};
+                    const shouldShow = config.show !== false;
+                    const isDisabled = config.disabled || false;
+                    const customClass = config.className || "";
+                    const title = config.title || "Editar";
 
-                  if (!shouldShow) return null;
+                    if (!shouldShow) return null;
 
-                  return (
-                    <button
-                      onClick={() => !isDisabled && onEdit(item)}
-                      className={`p-2 rounded-full transition-colors ${
-                        isDisabled
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
-                          : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
-                      }`}
-                      title={title}
-                      disabled={isDisabled}
-                    >
-                      <FaRegEdit />
-                    </button>
-                  );
-                })()}
+                    return (
+                      <button
+                        onClick={() => !isDisabled && onEdit(item)}
+                        className={`p-2 rounded-full transition-colors ${
+                          isDisabled
+                            ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
+                            : `bg-primary-blue/10 text-primary-blue hover:bg-primary-purple hover:text-white ${customClass}`
+                        }`}
+                        title={title}
+                        disabled={isDisabled}
+                      >
+                        <FaRegEdit />
+                      </button>
+                    );
+                  })()}
 
                 {/* 3. Eliminar */}
-                {onDelete && (() => {
-                  const config = buttonConfig.delete ? buttonConfig.delete(item) : {};
-                  const shouldShow = config.show !== false;
-                  const isDisabled = config.disabled || false;
-                  const customClass = config.className || '';
-                  const title = config.title || 'Eliminar';
+                {onDelete &&
+                  (() => {
+                    const config = buttonConfig.delete
+                      ? buttonConfig.delete(item)
+                      : {};
+                    const shouldShow = config.show !== false;
+                    const isDisabled = config.disabled || false;
+                    const customClass = config.className || "";
+                    const title = config.title || "Eliminar";
 
-                  if (!shouldShow) return null;
+                    if (!shouldShow) return null;
 
-                  return (
-                    <button
-                      onClick={() => !isDisabled && onDelete(item)}
-                      className={`p-2 rounded-full transition-colors ${
-                        isDisabled
-                          ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
-                          : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
-                      }`}
-                      title={title}
-                      disabled={isDisabled}
-                    >
-                      <FaTrash />
-                    </button>
-                  );
-                })()}
+                    return (
+                      <button
+                        onClick={() => !isDisabled && onDelete(item)}
+                        className={`p-2 rounded-full transition-colors ${
+                          isDisabled
+                            ? `bg-gray-100 text-gray-400 cursor-not-allowed ${customClass}`
+                            : `bg-red-100 text-red-500 hover:bg-red-500 hover:text-white ${customClass}`
+                        }`}
+                        title={title}
+                        disabled={isDisabled}
+                      >
+                        <FaTrash />
+                      </button>
+                    );
+                  })()}
 
                 {/* 4. Ver Lista (si existe) */}
                 {onList && (
@@ -209,26 +218,39 @@ const Tbody = ({ options }) => {
                 )}
 
                 {/* 5. Acciones personalizadas */}
-                {customActions && (
-                  typeof customActions === 'function'
+                {customActions &&
+                  (typeof customActions === "function"
                     ? customActions(item)
                     : customActions.map((action, idx) => {
                         // Verificar si la acción debe mostrarse
-                        const shouldShow = action.show ? action.show(item) : true;
+                        const shouldShow = action.show
+                          ? action.show(item)
+                          : true;
                         if (!shouldShow) return null;
-                        
+
+                        // Obtener configuración de disabled y title desde buttonConfig
+                        const config = buttonConfig.customActions?.[idx]
+                          ? buttonConfig.customActions[idx](item)
+                          : {};
+                        const isDisabled = config.disabled || false;
+                        const title = config.title || action.title;
+
                         return (
                           <button
                             key={idx}
-                            onClick={() => action.onClick(item)}
-                            className={action.className}
-                            title={action.title}
+                            onClick={() => !isDisabled && action.onClick(item)}
+                            className={
+                              isDisabled
+                                ? "p-2 rounded-full bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed transition-colors"
+                                : action.className
+                            }
+                            title={title}
+                            disabled={isDisabled}
                           >
                             {action.label}
                           </button>
                         );
-                      })
-                )}
+                      }))}
               </td>
             )}
           </motion.tr>

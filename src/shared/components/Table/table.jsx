@@ -25,7 +25,7 @@ const Table = ({
 
   const allData = tbody.data || [];
   const totalRows = serverPagination
-    ? externalTotalRows ?? allData.length
+    ? (externalTotalRows ?? allData.length)
     : allData.length;
 
   const currentPage = serverPagination
@@ -206,12 +206,24 @@ const Table = ({
                           : true;
                         if (!shouldShow) return null;
 
+                        // Obtener configuración de disabled y title desde buttonConfig
+                        const config = buttonConfig.customActions?.[idx]
+                          ? buttonConfig.customActions[idx](item)
+                          : {};
+                        const isDisabled = config.disabled || false;
+                        const title = config.title || action.title;
+
                         return (
                           <button
                             key={idx}
-                            onClick={() => action.onClick(item)}
-                            className={action.className}
-                            title={action.title}
+                            onClick={() => !isDisabled && action.onClick(item)}
+                            className={
+                              isDisabled
+                                ? "p-2 rounded-full bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed transition-colors"
+                                : action.className
+                            }
+                            title={title}
+                            disabled={isDisabled}
                           >
                             {action.label}
                           </button>

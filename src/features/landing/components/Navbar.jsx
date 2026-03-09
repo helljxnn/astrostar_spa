@@ -41,12 +41,8 @@ export const Navbar = () => {
         }`}
       >
         <div className="flex items-center justify-between px-4 sm:px-6 py-4">
-          {/* Logo - Exactly as original */}
           <div className="flex-shrink-0 w-1/4 min-w-[120px]">
-            <NavLink
-              to="/"
-              className="flex items-center space-x-2 sm:space-x-3"
-            >
+            <NavLink to="/" className="flex items-center space-x-2 sm:space-x-3">
               <img
                 src="/assets/images/Logo1LFundacionMV.png"
                 alt="Logo Fundación MV 1"
@@ -60,48 +56,19 @@ export const Navbar = () => {
             </NavLink>
           </div>
 
-          {/* Links escritorio - Centered, constrained to prevent overlap */}
-          <div className="hidden md:flex justify-center w-2/4 max-w-[400px] md:max-w-[450px] lg:max-w-[600px] mx-2 sm:mx-4">
-            <ul className="flex space-x-2 md:space-x-4 lg:space-x-8 xl:space-x-12 text-base lg:text-lg">
-              <li>
-                <NavLink to="/" className={linkClasses}>
-                  Inicio
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/fundacion" className={linkClasses}>
-                  Fundación
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/historias" className={linkClasses}>
-                  Testimonios
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/events" className={linkClasses}>
-                  Eventos
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/categories" className={linkClasses}>
-                  Categorías
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/services" className={linkClasses}>
-                  Servicios
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/donacion" className={linkClasses}>
-                  Donación
-                </NavLink>
-              </li>
+          <div className="hidden md:flex justify-center w-2/4 max-w-[660px] mx-2 sm:mx-4">
+            <ul className="flex space-x-2 md:space-x-4 lg:space-x-7 text-sm lg:text-base">
+              <li><NavLink to="/" className={linkClasses}>Inicio</NavLink></li>
+              <li><NavLink to="/fundacion" className={linkClasses}>Fundación</NavLink></li>
+              <li><NavLink to="/areas-proyectos" className={linkClasses}>Áreas</NavLink></li>
+              <li><NavLink to="/galeria" className={linkClasses}>Galería</NavLink></li>
+              <li><NavLink to="/events" className={linkClasses}>Eventos</NavLink></li>
+              <li><NavLink to="/categories" className={linkClasses}>Categorías</NavLink></li>
+              <li><NavLink to="/services" className={linkClasses}>Servicios</NavLink></li>
+              <li><NavLink to="/donacion" className={linkClasses}>Donación</NavLink></li>
             </ul>
           </div>
 
-          {/* Login escritorio - Exactly as original */}
           <div className="hidden md:flex justify-end w-1/4">
             <NavLink to="/login" className={loginClasses}>
               Iniciar Sesión
@@ -109,23 +76,17 @@ export const Navbar = () => {
             </NavLink>
           </div>
 
-          {/* Botón menú móvil - Exactly as original */}
           <div className="md:hidden flex justify-end">
             <button
               className="p-2 rounded-lg hover:bg-gray-100 transition"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Alternar menú de navegación"
             >
-              {isOpen ? (
-                <FiX className="w-6 h-6" />
-              ) : (
-                <FiMenu className="w-6 h-6" />
-              )}
+              {isOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
             </button>
           </div>
         </div>
 
-        {/* Menú móvil - Exactly as original */}
         <AnimatePresence>
           {isOpen && (
             <motion.div
@@ -136,75 +97,16 @@ export const Navbar = () => {
               className="md:hidden bg-white border-t border-gray-200"
             >
               <ul className="flex flex-col space-y-4 px-6 py-4 text-base sm:text-lg">
-                <li>
-                  <NavLink
-                    to="/"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Inicio
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/fundacion"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Fundación
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/historias"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Testimonios
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/events"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Eventos
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/categories"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Categorías
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/services"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Servicios
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink
-                    to="/donacion"
-                    className={linkClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Donación
-                  </NavLink>
-                </li>
+                <li><NavLink to="/" className={linkClasses} onClick={() => setIsOpen(false)}>Inicio</NavLink></li>
+                <li><NavLink to="/fundacion" className={linkClasses} onClick={() => setIsOpen(false)}>Fundación</NavLink></li>
+                <li><NavLink to="/areas-proyectos" className={linkClasses} onClick={() => setIsOpen(false)}>Áreas y Proyectos</NavLink></li>
+                <li><NavLink to="/galeria" className={linkClasses} onClick={() => setIsOpen(false)}>Galería</NavLink></li>
+                <li><NavLink to="/events" className={linkClasses} onClick={() => setIsOpen(false)}>Eventos</NavLink></li>
+                <li><NavLink to="/categories" className={linkClasses} onClick={() => setIsOpen(false)}>Categorías</NavLink></li>
+                <li><NavLink to="/services" className={linkClasses} onClick={() => setIsOpen(false)}>Servicios</NavLink></li>
+                <li><NavLink to="/donacion" className={linkClasses} onClick={() => setIsOpen(false)}>Donación</NavLink></li>
                 <li className="border-t pt-4">
-                  <NavLink
-                    to="/login"
-                    className={loginClasses}
-                    onClick={() => setIsOpen(false)}
-                  >
+                  <NavLink to="/login" className={loginClasses} onClick={() => setIsOpen(false)}>
                     Iniciar Sesión
                     <FiLogIn className="ml-2 text-[#9BE9FF] w-5 h-5" />
                   </NavLink>

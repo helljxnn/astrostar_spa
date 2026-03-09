@@ -154,6 +154,7 @@ const AthleteModal = ({
       estado: "Activo",
       acudiente: "",
       parentesco: "",
+      isScholarship: false,
     },
     athleteValidationRules,
   );
@@ -452,6 +453,7 @@ const AthleteModal = ({
         estado: isEnrollmentMode ? "Activo" : athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
         parentesco: parentescoFrontend,
+        isScholarship: athleteToEdit.isScholarship === true,
       };
 
       setValues(newValues);
@@ -583,6 +585,7 @@ const AthleteModal = ({
         estado: "Activo",
         acudiente: "",
         parentesco: "",
+        isScholarship: false,
       });
       setOtroParentesco("");
       setAsyncErrors({});
@@ -766,6 +769,10 @@ const AthleteModal = ({
       if (acudienteId) {
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
+      }
+      // Incluir isScholarship siempre (solo en edición)
+      if (isEditing) {
+        athleteData.isScholarship = values.isScholarship === true;
       }
       if (isEditing) {
         // Detectar si cambió el email
@@ -1261,6 +1268,30 @@ const AthleteModal = ({
                     helperText=""
                     delay={0.9}
                   />
+                </div>
+              )}
+
+              {/* ── isScholarship (solo en edición) ── */}
+              {isEditing && (
+                <div className="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg col-span-full">
+                  <input
+                    type="checkbox"
+                    id="isScholarship"
+                    name="isScholarship"
+                    checked={values.isScholarship === true}
+                    onChange={(e) =>
+                      handleChange({ target: { name: "isScholarship", value: e.target.checked } })
+                    }
+                    className="mt-0.5 w-4 h-4 text-primary-purple border-gray-300 rounded focus:ring-primary-purple cursor-pointer"
+                  />
+                  <label htmlFor="isScholarship" className="cursor-pointer select-none flex-1">
+                    <span className="block text-sm font-semibold text-purple-800">
+                      🎓 Deportista Becada
+                    </span>
+                    <span className="block text-xs text-purple-600 mt-0.5">
+                      Si está marcada, esta deportista está exenta del pago de mensualidades. El sistema no generará obligaciones de pago para ella.
+                    </span>
+                  </label>
                 </div>
               )}
             </div>

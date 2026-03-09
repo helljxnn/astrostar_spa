@@ -129,122 +129,120 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3">
             {/* Material (readonly) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs font-medium text-gray-700 mb-1">
                 Material
               </label>
-              <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
+              <div className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[38px] break-words">
                 {material?.nombre || ""}
               </div>
             </div>
 
             {/* Stock Actual */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Stock Fundación
                 </label>
                 <input
                   type="text"
                   value={formatStock(material?.stockFundacion || 0)}
                   readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
                   Stock Eventos
                 </label>
                 <input
                   type="text"
                   value={formatStock(material?.stockEventos || 0)}
                   readOnly
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed text-gray-700"
                 />
               </div>
             </div>
 
-            {/* Desde */}
-            <FormField
-              label="Desde"
-              name="from"
-              type="select"
-              value={formData.from}
-              onChange={handleChange}
-              onBlur={() => handleBlur("from")}
-              error={errors.from}
-              touched={touched.from}
-              required
-              options={[
-                { value: "FUNDACION", label: "Inventario Fundación" },
-                { value: "EVENTOS", label: "Inventario Eventos" },
-              ]}
-              placeholder="Seleccione inventario origen"
-            />
+            {/* Desde y Hacia en una fila */}
+            <div className="grid grid-cols-2 gap-3">
+              <FormField
+                label="Desde"
+                name="from"
+                type="select"
+                value={formData.from}
+                onChange={handleChange}
+                onBlur={() => handleBlur("from")}
+                error={errors.from}
+                touched={touched.from}
+                required
+                options={[
+                  { value: "FUNDACION", label: "Fundación" },
+                  { value: "EVENTOS", label: "Eventos" },
+                ]}
+                placeholder="Origen"
+              />
 
-            {/* Hacia */}
-            <FormField
-              label="Hacia"
-              name="to"
-              type="select"
-              value={formData.to}
-              onChange={handleChange}
-              onBlur={() => handleBlur("to")}
-              error={errors.to}
-              touched={touched.to}
-              required
-              disabled={!formData.from}
-              options={
-                !formData.from
-                  ? []
-                  : formData.from === "FUNDACION"
-                    ? [{ value: "EVENTOS", label: "Inventario Eventos" }]
-                    : [{ value: "FUNDACION", label: "Inventario Fundación" }]
-              }
-              placeholder="Seleccione inventario destino"
-            />
-
-            {/* Stock Disponible en Origen */}
-            {formData.from && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>
-                    Stock disponible en{" "}
-                    {formData.from === "FUNDACION" ? "Fundación" : "Eventos"}:
-                  </strong>{" "}
-                  {formatStock(stockOrigen)}
-                </p>
-              </div>
-            )}
-
-            {/* Cantidad */}
-            <FormField
-              label="Cantidad a transferir"
-              name="cantidad"
-              type="text"
-              value={formData.cantidad}
-              onChange={(name, value) => {
-                const numericValue = value.replace(/[^0-9]/g, "");
-                if (numericValue.length <= 6) {
-                  handleChange(name, numericValue);
+              <FormField
+                label="Hacia"
+                name="to"
+                type="select"
+                value={formData.to}
+                onChange={handleChange}
+                onBlur={() => handleBlur("to")}
+                error={errors.to}
+                touched={touched.to}
+                required
+                disabled={!formData.from}
+                options={
+                  !formData.from
+                    ? []
+                    : formData.from === "FUNDACION"
+                      ? [{ value: "EVENTOS", label: "Eventos" }]
+                      : [{ value: "FUNDACION", label: "Fundación" }]
                 }
-              }}
-              onKeyDown={(e) => {
-                if (["e", "E", "+", "-", "."].includes(e.key)) {
-                  e.preventDefault();
-                }
-              }}
-              onBlur={() => handleBlur("cantidad")}
-              error={errors.cantidad}
-              touched={touched.cantidad}
-              required
-              min="1"
-              max={stockOrigen}
-              maxLength={6}
-              placeholder="0"
-            />
+                placeholder="Destino"
+              />
+            </div>
+
+            {/* Stock Disponible y Cantidad en una fila */}
+            <div className="grid grid-cols-2 gap-3">
+              {formData.from && (
+                <div className="p-2 bg-blue-50 border border-blue-200 rounded-lg flex items-center">
+                  <p className="text-xs text-blue-800">
+                    <strong>Disponible:</strong> {formatStock(stockOrigen)}
+                  </p>
+                </div>
+              )}
+
+              <FormField
+                label="Cantidad"
+                name="cantidad"
+                type="text"
+                value={formData.cantidad}
+                onChange={(name, value) => {
+                  const numericValue = value.replace(/[^0-9]/g, "");
+                  if (numericValue.length <= 6) {
+                    handleChange(name, numericValue);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (["e", "E", "+", "-", "."].includes(e.key)) {
+                    e.preventDefault();
+                  }
+                }}
+                onBlur={() => handleBlur("cantidad")}
+                error={errors.cantidad}
+                touched={touched.cantidad}
+                required
+                min="1"
+                max={stockOrigen}
+                maxLength={6}
+                placeholder="0"
+              />
+            </div>
 
             {/* Observaciones */}
             <FormField
@@ -253,11 +251,11 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
               type="textarea"
               value={formData.observaciones}
               onChange={(name, value) => handleChange(name, value)}
-              placeholder="Ej: Transferencia para evento especial, ajuste de inventario, etc."
-              rows={3}
+              placeholder="Ej: Transferencia para evento especial"
+              rows={2}
             />
 
-            <div className="flex justify-end gap-3 pt-4">
+            <div className="flex justify-end gap-3 pt-3">
               <button
                 type="button"
                 onClick={onClose}

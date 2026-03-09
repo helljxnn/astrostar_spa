@@ -1,23 +1,15 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
   Filter,
-  Eye,
-  PencilLine,
-  XCircle,
-  CheckCircle2,
-  CalendarClock,
-  UserRound,
   Stethoscope,
 } from "lucide-react";
-import Swal from "sweetalert2";
 import AppointmentForm from "./components/AppointmentForm";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import AppointmentDetails from "./components/AppointmentDetails";
 import CancelAppointmentModal from "./components/CancelAppointmentModal";
 import CompleteAppointmentModal from "./components/CompleteAppointmentModal";
-import RescheduleAppointmentModal from "./components/RescheduleAppointmentModal";
 import {
   BaseCalendar,
   CalendarReportGenerator,
@@ -26,11 +18,32 @@ import { useAppointments } from "./hooks/useAppointments";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 import { useAuth } from "../../../../../../../shared/contexts/authContext";
 
-const specialtyColors = {
-  psicologia: "#EAB308",
-  fisioterapia: "#22C55E",
-  nutricion: "#3B82F6",
-  medicina: "#EF4444",
+// Colores pastel para cada especialista
+const pastelColors = [
+  "#FFB3BA", // Rosa pastel
+  "#FFDFBA", // Durazno pastel
+  "#FFFFBA", // Amarillo pastel
+  "#BAFFC9", // Verde menta pastel
+  "#BAE1FF", // Azul cielo pastel
+  "#E0BBE4", // Lavanda pastel
+  "#FFDFD3", // Coral pastel
+  "#D4F1F4", // Aqua pastel
+  "#FFE5B4", // Melocotón pastel
+  "#C7CEEA", // Periwinkle pastel
+  "#FFD1DC", // Rosa claro pastel
+  "#B4E7CE", // Menta pastel
+  "#FFF4E0", // Crema pastel
+  "#E8D5C4", // Beige pastel
+  "#C9E4DE", // Turquesa pastel
+];
+
+// Función para asignar color basado en el ID del especialista
+const getSpecialistColor = (specialistId) => {
+  if (!specialistId) return "#E0BBE4"; // Color por defecto
+  const numericId = typeof specialistId === 'string' 
+    ? parseInt(specialistId.replace(/\D/g, ''), 10) || 0
+    : specialistId;
+  return pastelColors[numericId % pastelColors.length];
 };
 
 const statusLabels = {
@@ -57,7 +70,6 @@ function Appointments() {
     createAppointment,
     cancelAppointment,
     completeAppointment,
-    proposeReschedule,
     isAthleteScope,
     athleteIdFromUser,
   } = useAppointments();
@@ -73,23 +85,13 @@ function Appointments() {
   const canCreateAppointments =
     hasPermission("appointmentManagement", "Crear") || true;
 
-  // Debug: verificar el alcance del deportista
-  useEffect(() => {
-    console.log("🔍 Debug Appointments - userRole:", userRole);
-    console.log("🔍 Debug Appointments - isAthleteView:", isAthleteView);
-    console.log("🔍 Debug Appointments - isAthleteScope:", isAthleteScope);
-    console.log("🔍 Debug Appointments - athleteIdFromUser:", athleteIdFromUser);
-  }, [isAthleteView, isAthleteScope, athleteIdFromUser, userRole]);
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [appointmentToCancel, setAppointmentToCancel] = useState(null);
   const [appointmentToComplete, setAppointmentToComplete] = useState(null);
-  const [appointmentToReschedule, setAppointmentToReschedule] = useState(null);
   const [initialSlot, setInitialSlot] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -146,8 +148,7 @@ function Appointments() {
       const endDate = appointment.end ? new Date(appointment.end) : null;
       const date = appointment.appointmentDate || "";
       const time = appointment.startTime || "";
-      const backgroundColor =
-        specialtyColors[appointment.specialty] || "#B595FF";
+      const backgroundColor = getSpecialistColor(appointment.specialistId);
 
       return {
         id: appointment.id,
@@ -212,10 +213,11 @@ function Appointments() {
   };
 
   const handleDateSelect = useCallback((selectedDate) => {
-    if (!canCreateAppointments) return;
+    // Bloquear creación de citas para deportistas
+    if (!canCreateAppointments || isAthleteView) return;
     setInitialSlot({ start: selectedDate });
     setIsCreateModalOpen(true);
-  }, [canCreateAppointments]);
+  }, [canCreateAppointments, isAthleteView]);
 
   const handleCreateSubmit = async (formValues) => {
     try {
@@ -257,24 +259,6 @@ function Appointments() {
         await completeAppointment(appointmentToComplete.id, conclusion);
         setIsCompleteModalOpen(false);
         setAppointmentToComplete(null);
-        handleCloseViewModal();
-      } catch (error) {
-        // errores manejados por el hook
-      }
-    }
-  };
-
-  const handleReschedule = (appointment) => {
-    setAppointmentToReschedule(appointment);
-    setIsRescheduleModalOpen(true);
-  };
-
-  const handleConfirmReschedule = async (rescheduleData) => {
-    if (appointmentToReschedule) {
-      try {
-        await proposeReschedule(appointmentToReschedule.id, rescheduleData);
-        setIsRescheduleModalOpen(false);
-        setAppointmentToReschedule(null);
         handleCloseViewModal();
       } catch (error) {
         // errores manejados por el hook
@@ -384,17 +368,7 @@ function Appointments() {
               Cancelar
             </button>
           )}
-          {event.status === "Cancelado" && !isAthleteView && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReschedule(event);
-              }}
-              className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-purple-600 hover:bg-purple-50"
-            >
-              Reagendar
-            </button>
-          )}
+
         </div>
       </div>
     );
@@ -579,7 +553,6 @@ function Appointments() {
         specialtyOptions={specialtyOptions}
         onMarkAsCompleted={handleMarkAsCompleted}
         onCancelAppointment={handleCancelAppointment}
-        onReschedule={handleReschedule}
         isAthleteScope={isAthleteView}
       />
 
@@ -601,16 +574,6 @@ function Appointments() {
         }}
         onConfirm={handleConfirmComplete}
         appointmentData={appointmentToComplete}
-      />
-
-      <RescheduleAppointmentModal
-        isOpen={isRescheduleModalOpen}
-        onClose={() => {
-          setIsRescheduleModalOpen(false);
-          setAppointmentToReschedule(null);
-        }}
-        onConfirm={handleConfirmReschedule}
-        appointmentData={appointmentToReschedule}
       />
     </div>
   );

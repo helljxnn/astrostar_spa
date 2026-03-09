@@ -83,7 +83,12 @@ const PaymentRejectModal = ({ isOpen, onClose, payment, onReject, loading = fals
                     <strong>Identificación:</strong> {payment.athlete?.user?.identification}
                   </p>
                   <p>
-                    <strong>Tipo:</strong> {payment.obligation?.type === 'MONTHLY' ? 'Mensualidad' : 'Renovación Matrícula'}
+                    <strong>Tipo:</strong>{' '}
+                    {{
+                      MONTHLY: 'Mensualidad',
+                      ENROLLMENT_INITIAL: 'Matrícula Inicial',
+                      ENROLLMENT_RENEWAL: 'Renovación Matrícula',
+                    }[payment.obligation?.type] || 'Otro'}
                   </p>
                   {payment.obligation?.period && (
                     <p>

@@ -745,6 +745,7 @@ setSelectedAthlete(currentAthlete);
               >
                 <option value="">Todos los estados</option>
                 <option value="Vigente">Vigente</option>
+                <option value="Pending_Payment">Pago Pendiente</option>
                 <option value="Vencida">Vencida</option>
               </select>
             </div>
@@ -924,11 +925,36 @@ setSelectedAthlete(currentAthlete);
                       );
                     },
                     estadoMatricula: (value, row) => {
+                      // Estado: Pending_Payment — Matrícula creada, esperando pago inicial
+                      const rawEstado =
+                        row.latestEnrollment?.status ||
+                        row.latestEnrollment?.estado ||
+                        "";
+                      if (rawEstado === "Pending_Payment") {
+                        return (
+                          <div className="text-left pl-2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                              ⏳ Pago Pendiente
+                            </span>
+                          </div>
+                        );
+                      }
+                      // Estado: Vencida (calculada localmente)
                       if (row.isVencida) {
                         return (
                           <div className="text-left pl-2">
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
                               Vencida
+                            </span>
+                          </div>
+                        );
+                      }
+                      // Estado: Vigente
+                      if (rawEstado === "Vigente" || (!row.isVencida && rawEstado && rawEstado !== "Pending_Payment")) {
+                        return (
+                          <div className="text-left pl-2">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-300">
+                              Vigente
                             </span>
                           </div>
                         );

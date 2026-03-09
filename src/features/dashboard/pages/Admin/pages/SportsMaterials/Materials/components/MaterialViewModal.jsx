@@ -8,7 +8,7 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
 
   const modalContent = (
     <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -90,29 +90,6 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
                   </div>
                 </div>
               </div>
-
-              {/* Alerta de materiales comprometidos */}
-              {material.stockEventosReservado > 0 && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800">
-                    ⚠️{" "}
-                    <strong>
-                      {formatStock(material.stockEventosReservado)}
-                    </strong>{" "}
-                    unidades comprometidas en eventos activos
-                  </p>
-                  <p className="text-xs text-amber-700 mt-1">
-                    Disponible para asignar:{" "}
-                    <strong>
-                      {formatStock(
-                        (material.stockEventos || 0) -
-                          (material.stockEventosReservado || 0),
-                      )}
-                    </strong>{" "}
-                    unidades
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Estado */}

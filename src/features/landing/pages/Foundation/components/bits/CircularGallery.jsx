@@ -63,16 +63,20 @@ class Title {
     plane,
     renderer,
     text,
+    role,
     textColor = "#545050",
     font = "30px sans-serif",
+    roleFont = "20px sans-serif",
   }) {
     autoBind(this);
     this.gl = gl;
     this.plane = plane;
     this.renderer = renderer;
     this.text = text;
+    this.role = role;
     this.textColor = textColor;
     this.font = font;
+    this.roleFont = roleFont;
     this.createMesh();
   }
   createMesh() {
@@ -115,6 +119,53 @@ class Title {
     this.mesh.scale.set(textWidth, textHeight, 1);
     this.mesh.position.y = -this.plane.scale.y * 0.5 - textHeight * 0.5 - 0.05;
     this.mesh.setParent(this.plane);
+
+    // Crear el mesh del rol si existe
+    if (this.role) {
+      const roleData = createTextTexture(
+        this.gl,
+        this.role,
+        this.roleFont,
+        "#B595FF", // Color morado para el rol
+      );
+      const roleGeometry = new Plane(this.gl);
+      const roleProgram = new Program(this.gl, {
+        vertex: `
+          attribute vec3 position;
+          attribute vec2 uv;
+          uniform mat4 modelViewMatrix;
+          uniform mat4 projectionMatrix;
+          varying vec2 vUv;
+          void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragment: `
+          precision highp float;
+          uniform sampler2D tMap;
+          varying vec2 vUv;
+          void main() {
+            vec4 color = texture2D(tMap, vUv);
+            if (color.a < 0.1) discard;
+            gl_FragColor = color;
+          }
+        `,
+        uniforms: { tMap: { value: roleData.texture } },
+        transparent: true,
+      });
+      this.roleMesh = new Mesh(this.gl, {
+        geometry: roleGeometry,
+        program: roleProgram,
+      });
+      const roleAspect = roleData.width / roleData.height;
+      const roleHeight = this.plane.scale.y * 0.1;
+      const roleWidth = roleHeight * roleAspect;
+      this.roleMesh.scale.set(roleWidth, roleHeight, 1);
+      this.roleMesh.position.y =
+        -this.plane.scale.y * 0.5 - textHeight - roleHeight * 0.5 - 0.02;
+      this.roleMesh.setParent(this.plane);
+    }
   }
 }
 
@@ -129,6 +180,7 @@ class Media {
     scene,
     screen,
     text,
+    role,
     viewport,
     bend,
     textColor,
@@ -147,6 +199,7 @@ class Media {
     this.scene = scene;
     this.screen = screen;
     this.text = text;
+    this.role = role;
     this.viewport = viewport;
     this.bend = bend;
     this.textColor = textColor;
@@ -249,6 +302,7 @@ class Media {
       plane: this.plane,
       renderer: this.renderer,
       text: this.text,
+      role: this.role,
       textColor: this.textColor,
       fontFamily: this.font,
     });
@@ -438,6 +492,7 @@ class App {
         scene: this.scene,
         screen: this.screen,
         text: data.text,
+        role: data.role,
         viewport: this.viewport,
         bend,
         textColor,
