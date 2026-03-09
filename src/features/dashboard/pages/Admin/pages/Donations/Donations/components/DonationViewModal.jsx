@@ -1,12 +1,10 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import {
-  FaTimes,
   FaUser,
   FaCalendarAlt,
   FaCheckCircle,
   FaTimesCircle,
-  FaGift,
   FaBoxOpen,
   FaDollarSign,
   FaInfoCircle,
@@ -101,33 +99,18 @@ const DonationViewModal = ({ donation, onClose }) => {
         className="bg-white rounded-xl shadow-2xl w-full max-w-5xl relative max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Encabezado compacto */}
-        <div className="bg-primary-purple text-white px-6 py-4 relative">
+        {/* Encabezado */}
+        <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white transition-all duration-200"
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
             aria-label="Cerrar"
           >
-            <FaTimes className="text-lg" />
+            ✕
           </button>
-
-          <div className="flex items-center gap-3 pr-12">
-            <FaGift className="text-2xl flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold">Detalles de la Donación</h2>
-              <p className="text-sm text-white/90 truncate">
-                {donation.donorName || "N/A"}
-              </p>
-            </div>
-            <div className="flex-shrink-0">
-              <span
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold ${currentStatus.color}`}
-              >
-                <StatusIcon className="text-sm" />
-                {currentStatus.label}
-              </span>
-            </div>
-          </div>
+          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+            Detalles de la Donación
+          </h2>
         </div>
 
         {/* Contenido scrolleable */}
@@ -135,6 +118,19 @@ const DonationViewModal = ({ donation, onClose }) => {
           {/* Información compacta en grid */}
           <div className="px-6 py-4 bg-gray-50 border-b">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Código */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <FaFileAlt className="text-blue-600 text-sm" />
+                  <span className="text-xs text-gray-600 font-medium uppercase">
+                    Código
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {donation.code || "N/A"}
+                </p>
+              </div>
+
               {/* Donante */}
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
@@ -146,6 +142,22 @@ const DonationViewModal = ({ donation, onClose }) => {
                 <p className="text-sm font-semibold text-gray-900">
                   {donation.donorName || "N/A"}
                 </p>
+              </div>
+
+              {/* Estado */}
+              <div>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <StatusIcon className="text-purple-600 text-sm" />
+                  <span className="text-xs text-gray-600 font-medium uppercase">
+                    Estado
+                  </span>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold ${currentStatus.color}`}
+                >
+                  <StatusIcon className="text-xs" />
+                  {currentStatus.label}
+                </span>
               </div>
 
               {/* Tipo */}
@@ -241,7 +253,7 @@ const DonationViewModal = ({ donation, onClose }) => {
                 <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                   <table className="w-full">
                     <thead className="sticky top-0 z-10">
-                      <tr className="bg-primary-purple text-white">
+                      <tr className="bg-purple-100 text-purple-800">
                         <th className="px-4 py-3 text-left text-xs font-semibold uppercase">
                           Descripción
                         </th>

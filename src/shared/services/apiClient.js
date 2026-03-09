@@ -228,6 +228,14 @@ class ApiClient {
         throw new Error(errorMessage);
       }
 
+            // Permitir respuestas binarias para descargas (PDF, Excel, etc.)
+      if (options.responseType === "blob") {
+        return await response.blob();
+      }
+      if (options.responseType === "arraybuffer") {
+        return await response.arrayBuffer();
+      }
+
       // Algunos endpoints no devuelven JSON
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
@@ -264,7 +272,8 @@ class ApiClient {
     const isOptionsStyle =
       Object.prototype.hasOwnProperty.call(optionsOrParams, "params") ||
       Object.prototype.hasOwnProperty.call(optionsOrParams, "skipLoader") ||
-      Object.prototype.hasOwnProperty.call(optionsOrParams, "headers");
+      Object.prototype.hasOwnProperty.call(optionsOrParams, "headers") ||
+      Object.prototype.hasOwnProperty.call(optionsOrParams, "responseType");
 
     const options = isOptionsStyle ? optionsOrParams : { params: optionsOrParams };
 
@@ -321,3 +330,7 @@ class ApiClient {
 }
 
 export default new ApiClient();
+
+
+
+

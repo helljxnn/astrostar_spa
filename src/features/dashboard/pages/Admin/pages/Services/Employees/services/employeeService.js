@@ -3,11 +3,11 @@
  * Maneja todas las operaciones CRUD de empleados
  */
 
-import apiClient from '../../../../../../../../shared/services/apiClient.js';
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class EmployeeService {
   constructor() {
-    this.endpoint = '/employees';
+    this.endpoint = "/employees";
   }
 
   /**
@@ -41,10 +41,30 @@ class EmployeeService {
   /**
    * Crear nuevo empleado
    * @param {Object} employeeData - Datos del empleado
+   * @param {File} signatureFile - Archivo de firma (opcional)
    * @returns {Promise} Empleado creado
    */
-  async create(employeeData) {
+  async create(employeeData, signatureFile = null) {
     try {
+      // If signature file is provided, use FormData
+      if (signatureFile) {
+        const formData = new FormData();
+
+        // Append employee data as JSON string
+        formData.append("employeeData", JSON.stringify(employeeData));
+
+        // Append signature file
+        formData.append("signature", signatureFile);
+
+        const response = await apiClient.post(this.endpoint, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        return response;
+      }
+
+      // Otherwise, send as regular JSON
       const response = await apiClient.post(this.endpoint, employeeData);
       return response;
     } catch (error) {
@@ -60,7 +80,10 @@ class EmployeeService {
    */
   async update(id, employeeData) {
     try {
-      const response = await apiClient.put(`${this.endpoint}/${id}`, employeeData);
+      const response = await apiClient.put(
+        `${this.endpoint}/${id}`,
+        employeeData,
+      );
       return response;
     } catch (error) {
       throw error;
@@ -117,8 +140,11 @@ class EmployeeService {
     try {
       const params = { email };
       if (excludeUserId) params.excludeUserId = excludeUserId;
-      
-      const response = await apiClient.get(`${this.endpoint}/check-email`, params);
+
+      const response = await apiClient.get(
+        `${this.endpoint}/check-email`,
+        params,
+      );
       return response;
     } catch (error) {
       throw error;
@@ -135,8 +161,68 @@ class EmployeeService {
     try {
       const params = { identification };
       if (excludeUserId) params.excludeUserId = excludeUserId;
-      
-      const response = await apiClient.get(`${this.endpoint}/check-identification`, params);
+
+      const response = await apiClient.get(
+        `${this.endpoint}/check-identification`,
+        params,
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Upload signature for an employee
+   * @param {number} id - Employee ID
+   * @param {File} file - Signature image file
+   * @returns {Promise} Upload result
+   */
+  async uploadSignature(id, file) {
+    try {
+      const formData = new FormData();
+      formData.append("signature", file);
+
+      const response = await apiClient.post(
+        `${this.endpoint}/${id}/signature`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        },
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Delete signature for an employee
+   * @param {number} id - Employee ID
+   * @returns {Promise} Delete result
+   */
+  async deleteSignature(id) {
+    try {
+      const response = await apiClient.delete(
+        `${this.endpoint}/${id}/signature`,
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get administrators with signatures (for donation responsible selection)
+   * @returns {Promise} List of administrators with signatures
+   */
+  async getAdministratorsWithSignature() {
+    try {
+      const response = await apiClient.get(
+        `${this.endpoint}/administrators/with-signature`,
+      );
       return response;
     } catch (error) {
       throw error;

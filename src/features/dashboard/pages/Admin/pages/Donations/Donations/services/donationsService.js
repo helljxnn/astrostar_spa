@@ -20,12 +20,31 @@ class DonationsService {
     files.forEach((file) => formData.append("files", file));
     return apiClient.post(
       `/donations/${donationId}/files?fileType=${fileType}`,
-      formData
+      formData,
     );
   }
 
   async getStatistics() {
     return apiClient.get("/donations", { params: { limit: 10000 } });
+  }
+
+  /**
+   * Download donation certificate PDF
+   * @param {number} donationId - Donation ID
+   * @returns {Promise<Blob>} PDF file
+   */
+  async downloadCertificate(donationId) {
+    try {
+      const response = await apiClient.get(
+        `/donations/${donationId}/certificate`,
+        {
+          responseType: "blob",
+        },
+      );
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 

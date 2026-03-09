@@ -40,7 +40,6 @@ const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
       const data = response?.data?.data || response?.data || [];
       setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error loading materials:", error);
       showErrorAlert("Error", "No se pudieron cargar los materiales");
     } finally {
       setLoadingMaterials(false);
@@ -54,7 +53,6 @@ const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
       const data = response?.data || response?.events || [];
       setEvents(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error loading events:", error);
       showErrorAlert("Error", "No se pudieron cargar los eventos");
     } finally {
       setLoadingEvents(false);
