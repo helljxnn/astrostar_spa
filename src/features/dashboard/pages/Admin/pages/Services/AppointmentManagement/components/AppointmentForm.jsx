@@ -15,6 +15,8 @@ const DURATION_OPTIONS = [
   { value: "120", label: "120 minutos" },
 ];
 
+const MAX_DESCRIPTION_LENGTH = 500;
+
 const AppointmentForm = ({
   isOpen,
   onClose,
@@ -519,6 +521,11 @@ const AppointmentForm = ({
                 required
                 placeholder="Describa el motivo de la cita..."
                 rows={4}
+                helperText={
+                  formData.description.length > MAX_DESCRIPTION_LENGTH
+                    ? `${formData.description.length}/${MAX_DESCRIPTION_LENGTH} caracteres (excedido por ${formData.description.length - MAX_DESCRIPTION_LENGTH})`
+                    : `${formData.description.length}/${MAX_DESCRIPTION_LENGTH} caracteres`
+                }
               />
             </section>
           </div>

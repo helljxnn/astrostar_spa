@@ -28,8 +28,8 @@ import novasport from "./images/provedores/NovaSport.jpg";
 import natipan from "./images/provedores/Natipan.png";
 import ponymalta from "./images/provedores/ponymalta.png";
 
-// Importa carrusel
-import HeroCarousel from "./components/HeroCarousel";
+// Importa hero principal
+import HeroMain from "./components/HeroMain";
 import InscriptionSection from "./components/InscriptionSection";
 
 //
@@ -87,16 +87,14 @@ export default function Home() {
 
   return (
     <>
-      {/* HERO con Accordion Carousel */}
-      <section className="hero-section">
-        <HeroCarousel />
-      </section>
+      {/* HERO Principal */}
+      <HeroMain />
 
       {/* Sección de Inscripción */}
       <InscriptionSection />
 
       {/* Fundadora */}
-      <section className="bg-white py-24 relative overflow-hidden">
+      <section id="quienes-somos" className="bg-white py-24 relative overflow-hidden">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center px-6">
           {/* Imagen con animación */}
           <motion.div
@@ -210,7 +208,7 @@ export default function Home() {
       </section>
 
       {/* Estadísticas */}
-      <section className="bg-white text-black py-16">
+      <section id="impacto" className="bg-white text-black py-16">
         <motion.h2
           {...statAnim.header}
           className="text-4xl font-bold text-center mb-12"

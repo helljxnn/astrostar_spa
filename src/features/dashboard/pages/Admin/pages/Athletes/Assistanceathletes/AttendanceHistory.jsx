@@ -20,11 +20,29 @@ const formatDate = (value) => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 };
 
+const formatInputValue = (value) => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 2) return cleaned;
+  if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+  return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+};
+
+const parseInputToISO = (input) => {
+  if (!input || input.length !== 10) return "";
+  const parts = input.split("/");
+  if (parts.length !== 3) return "";
+  const [day, month, year] = parts;
+  if (!day || !month || !year || year.length !== 4) return "";
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
 export default function AssistanceHistory() {
   const navigate = useNavigate();
 
   const [startDate, setStartDate] = useState(() => todayISO());
   const [endDate, setEndDate] = useState(() => todayISO());
+  const [startDateInput, setStartDateInput] = useState(() => formatDate(todayISO()));
+  const [endDateInput, setEndDateInput] = useState(() => formatDate(todayISO()));
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
@@ -197,8 +215,8 @@ export default function AssistanceHistory() {
   }, []);
 
   const handleConsult = () => {
-    const parsedStart = startDateInput || "";
-    const parsedEnd = endDateInput || "";
+    const parsedStart = parseInputToISO(startDateInput);
+    const parsedEnd = parseInputToISO(endDateInput);
 
     if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
       setError("La fecha inicial no puede ser mayor a la fecha final.");
@@ -221,8 +239,8 @@ export default function AssistanceHistory() {
     const today = todayISO();
     setStartDate(today);
     setEndDate(today);
-    setStartDateInput(today);
-    setEndDateInput(today);
+    setStartDateInput(formatDate(today));
+    setEndDateInput(formatDate(today));
     setSearchTerm("");
     setCategoryFilter(ALL_CATEGORIES);
     setPagination((prev) => ({ ...prev, page: 1 }));

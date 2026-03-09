@@ -91,19 +91,24 @@ const DonorSponsorModal = ({
               {/* Pestañas Donante/Patrocinador */}
               <div className="flex gap-2 mb-6 border-b border-gray-200">
                 {[
-                  { value: "Donante", label: "🤝 Donante" },
-                  { value: "Patrocinador", label: "⭐ Patrocinador" },
+                  { value: "Donante", label: " Donante" },
+                  { value: "Patrocinador", label: " Patrocinador" },
                 ].map((option) => {
                   const active = formData.tipo === option.value;
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() =>
-                        handleChange({
-                          target: { name: "tipo", value: option.value },
-                        })
-                      }
+                      onClick={() => {
+                        handleChange({ target: { name: "tipo", value: option.value } });
+                        // Si selecciona Patrocinador, automáticamente seleccionar Persona Jurídica
+                        // Si selecciona Donante, automáticamente seleccionar Persona Natural
+                        if (option.value === "Patrocinador") {
+                          handleChange({ target: { name: "tipoPersona", value: "Juridica" } });
+                        } else if (option.value === "Donante") {
+                          handleChange({ target: { name: "tipoPersona", value: "Natural" } });
+                        }
+                      }}
                       className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm transition-all relative ${
                         active
                           ? "text-primary-blue border-b-2 border-primary-blue"
@@ -181,7 +186,6 @@ const DonorSponsorModal = ({
                         label="Tipo de Documento"
                         name="tipoDocumento"
                         type="select"
-                        placeholder="Seleccione tipo"
                         required
                         value={formData.tipoDocumento}
                         onChange={handleChange}
@@ -189,24 +193,12 @@ const DonorSponsorModal = ({
                         error={errors.tipoDocumento}
                         touched={touched.tipoDocumento}
                         options={[
-                          { value: "", label: "Seleccione tipo" },
-                          {
-                            value: "Cédula de Ciudadanía",
-                            label: "Cédula de Ciudadanía",
-                          },
-                          {
-                            value: "Tarjeta de Identidad",
-                            label: "Tarjeta de Identidad",
-                          },
-                          {
-                            value: "Cédula de Extranjería",
-                            label: "Cédula de Extranjería",
-                          },
+                          { value: "", label: "Seleccione un tipo" },
+                          { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
+                          { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
+                          { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
                           { value: "Pasaporte", label: "Pasaporte" },
-                          {
-                            value: "Permiso de Permanencia",
-                            label: "Permiso de Permanencia",
-                          },
+                          { value: "Permiso de Permanencia", label: "Permiso de Permanencia" },
                         ]}
                       />
                       <div className="space-y-2 md:col-span-2">

@@ -11,13 +11,13 @@ const diasSemana = [
   { value: 0, label: "D" },
 ];
 
-export default function CustomRecurrenceModal({ onClose, onSave }) {
-  const [interval, setInterval] = useState(1);
-  const [frequency, setFrequency] = useState("semana");
-  const [dias, setDias] = useState([]);
-  const [endType, setEndType] = useState("nunca");
-  const [endDate, setEndDate] = useState("");
-  const [afterDate, setAfterDate] = useState("");
+export default function CustomRecurrenceModal({ onClose, onSave, initialData = null }) {
+  const [interval, setInterval] = useState(initialData?.interval || 1);
+  const [frequency, setFrequency] = useState(initialData?.frequency || "semana");
+  const [dias, setDias] = useState(initialData?.dias || []);
+  const [endType, setEndType] = useState(initialData?.endType || "nunca");
+  const [endDate, setEndDate] = useState(initialData?.endDate || "");
+  const [afterDate, setAfterDate] = useState(initialData?.afterDate || "");
 
   const toggleDia = (value) => {
     setDias((prev) =>
