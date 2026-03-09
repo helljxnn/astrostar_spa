@@ -25,3 +25,12 @@ dist-ssr
 
 # Private
 .env
+
+#tests
+test-results
+tests
+jest.config.cjs
+__tests__
+setupTests.js
+test
+coverage

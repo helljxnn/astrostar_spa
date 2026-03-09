@@ -186,17 +186,17 @@ const Event = () => {
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           {/* Buscador genérico */}
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto sm:min-w-[200px]">
             <SearchInput
               placeholder="Buscar eventos..."
               value={searchTerm}
               onChange={handleSearch}
-              className="min-w-[200px]"
+              className="w-full"
             />
           </div>
 
           {/* Botones de acción */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {/* Botón crear evento */}
             {canCreateEvents && (
               <motion.button
@@ -222,7 +222,7 @@ const Event = () => {
               whileTap={{ scale: 0.95 }}
             >
               <Filter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filtros</span>
+              <span>Filtros</span>
             </motion.button>
 
             {/* Generador de reportes genérico */}

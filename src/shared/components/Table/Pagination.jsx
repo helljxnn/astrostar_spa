@@ -22,7 +22,7 @@ const Pagination = ({
     if (page !== currentPage) onPageChange(page);
   };
 
-  // ✅ Evitar NaN
+  //  Evitar NaN
   const safeTotalRows = totalRows || 0;
   const safeRowsPerPage = rowsPerPage || PAGINATION_CONFIG.ROWS_PER_PAGE;
   const safeStartIndex = startIndex >= 0 ? startIndex : 0;
@@ -33,28 +33,55 @@ const Pagination = ({
       ? 0
       : Math.min(safeStartIndex + safeRowsPerPage, safeTotalRows);
 
-  // Generar páginas
+  // Generar páginas (máximo 7 visibles)
   const generatePageNumbers = () => {
     const pages = [];
-    const maxVisiblePages = 5;
+    const maxVisiblePages = 7; // Máximo 7 páginas visibles
 
     if (totalPages <= maxVisiblePages) {
+      // Si hay 7 o menos páginas, mostrar todas
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
+      // Siempre mostrar la primera página
       pages.push(1);
-      let startPage = Math.max(2, currentPage - 1);
-      let endPage = Math.min(totalPages - 1, currentPage + 1);
 
-      if (currentPage <= 3) endPage = 4;
-      if (currentPage >= totalPages - 2) startPage = totalPages - 3;
+      // Calcular rango de páginas a mostrar
+      let startPage = Math.max(2, currentPage - 2);
+      let endPage = Math.min(totalPages - 1, currentPage + 2);
 
-      if (startPage > 2) pages.push("...");
-      for (let i = startPage; i <= endPage; i++) pages.push(i);
-      if (endPage < totalPages - 1) pages.push("...");
-      if (totalPages > 1) pages.push(totalPages);
+      // Ajustar si estamos cerca del inicio
+      if (currentPage <= 4) {
+        endPage = 5;
+      }
+
+      // Ajustar si estamos cerca del final
+      if (currentPage >= totalPages - 3) {
+        startPage = totalPages - 4;
+      }
+
+      // Agregar "..." si hay páginas ocultas al inicio
+      if (startPage > 2) {
+        pages.push("...");
+      }
+
+      // Agregar páginas del rango
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i);
+      }
+
+      // Agregar "..." si hay páginas ocultas al final
+      if (endPage < totalPages - 1) {
+        pages.push("...");
+      }
+
+      // Siempre mostrar la última página
+      if (totalPages > 1) {
+        pages.push(totalPages);
+      }
     }
+
     return pages;
   };
 
