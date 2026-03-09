@@ -247,6 +247,7 @@ const Tbody = ({ options }) => {
                             title={title}
                             disabled={isDisabled}
                           >
+                            {action.icon && <action.icon />}
                             {action.label}
                           </button>
                         );
@@ -261,3 +262,6 @@ const Tbody = ({ options }) => {
 };
 
 export default Tbody;
+
+
+

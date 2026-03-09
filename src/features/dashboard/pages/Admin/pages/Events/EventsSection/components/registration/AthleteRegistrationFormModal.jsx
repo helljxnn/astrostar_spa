@@ -482,7 +482,7 @@ const AthleteRegistrationFormModal = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl md:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
@@ -493,7 +493,7 @@ const AthleteRegistrationFormModal = ({
         }}
       >
         {/* Header */}
-        <div className="bg-primary-purple p-6 text-white">
+        <div className="bg-primary-purple p-4 sm:p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={handleClose}
@@ -502,14 +502,16 @@ const AthleteRegistrationFormModal = ({
               <FaArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-2xl font-bold">Gestionar Deportistas</h2>
+              <h2 className="text-xl sm:text-2xl font-bold">
+                Gestionar Deportistas
+              </h2>
               <p className="text-blue-100 mt-1">Evento: {event?.name}</p>
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
           <div className="flex items-center gap-3 mb-3">
             {/* Search */}
             <div className="relative flex-1">
@@ -558,11 +560,11 @@ const AthleteRegistrationFormModal = ({
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                 {/* Botón Todas */}
                 <button
                   onClick={selectAllCategories}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                     selectedCategories.length === availableCategories.length
                       ? "bg-primary-purple text-white shadow-md"
                       : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
@@ -574,7 +576,7 @@ const AthleteRegistrationFormModal = ({
                   <button
                     key={category.id}
                     onClick={() => toggleCategory(category.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                       selectedCategories.includes(category.id)
                         ? "bg-primary-purple text-white shadow-md"
                         : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
@@ -1128,18 +1130,18 @@ const AthleteRegistrationFormModal = ({
             </div>
 
             {/* Botones de acción */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={handleClose}
                 disabled={loading}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={loading}
-                className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
+                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                   loading
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-primary-purple text-white hover:bg-primary-blue hover:shadow-xl hover:scale-105 active:scale-95"

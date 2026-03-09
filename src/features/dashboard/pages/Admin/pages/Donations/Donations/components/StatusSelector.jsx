@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FaChevronDown, FaCheck } from "react-icons/fa";
 import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
 
@@ -39,7 +40,9 @@ const StatusSelector = ({
   disabled = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const statusInfo = STATUS_FLOW[currentStatus] || STATUS_FLOW.Recibida;
   const currentOrder = statusInfo.order;
@@ -47,10 +50,12 @@ const StatusSelector = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
+      const clickedInsideTrigger =
+        containerRef.current && containerRef.current.contains(event.target);
+      const clickedInsideDropdown =
+        dropdownRef.current && dropdownRef.current.contains(event.target);
+
+      if (!clickedInsideTrigger && !clickedInsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -59,19 +64,39 @@ const StatusSelector = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  }, [isOpen]);
+
   const handleStatusClick = async (newStatus) => {
     setIsOpen(false);
 
     const newStatusInfo = STATUS_FLOW[newStatus];
-    const result = await showConfirmAlert(
-      "Cambiar estado de donación",
-      `¿Estás seguro de cambiar el estado a "${newStatusInfo.label}"? Esta acción no se puede deshacer.`,
-      "Sí, cambiar",
-      "Cancelar",
-    );
 
-    if (result.isConfirmed) {
-      onStatusChange(donationId, newStatus);
+    try {
+      const result = await showConfirmAlert(
+        "Cambiar estado de donación",
+        `¿Estás seguro de cambiar el estado a "${newStatusInfo.label}"?`,
+        {
+          confirmButtonText: "Sí, cambiar",
+          cancelButtonText: "Cancelar",
+        },
+      );
+
+      if (result.isConfirmed) {
+        onStatusChange(donationId, newStatus);
+      }
+    } catch (error) {
+      if (window.confirm(`¿Cambiar estado a "${newStatusInfo.label}"?`)) {
+        onStatusChange(donationId, newStatus);
+      }
     }
   };
 
@@ -98,40 +123,51 @@ const StatusSelector = ({
         />
       </button>
 
-      {isOpen && (
-        <div className="absolute z-50 mt-2 bg-white border-2 border-primary-purple/30 rounded-xl shadow-lg min-w-[150px] py-2">
-          {ALL_STATUSES.map((status) => {
-            const statusData = STATUS_FLOW[status];
-            const isCurrent = status === currentStatus;
-            const isPast = statusData.order < currentOrder;
-            const isDisabled = isPast || isCurrent;
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            style={{
+              position: "absolute",
+              top: `${dropdownPosition.top}px`,
+              left: `${dropdownPosition.left}px`,
+              minWidth: "150px",
+            }}
+            className="z-[9999] bg-white border-2 border-primary-purple/30 rounded-xl shadow-lg py-2"
+          >
+            {ALL_STATUSES.map((status) => {
+              const statusData = STATUS_FLOW[status];
+              const isCurrent = status === currentStatus;
+              const isPast = statusData.order < currentOrder;
+              const isDisabled = isPast || isCurrent;
 
-            return (
-              <button
-                key={status}
-                type="button"
-                onClick={() => !isDisabled && handleStatusClick(status)}
-                disabled={isDisabled}
-                className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between gap-2 ${
-                  isDisabled
-                    ? "opacity-40 cursor-not-allowed bg-gray-50"
-                    : "hover:bg-primary-purple/10 cursor-pointer"
-                } ${isCurrent ? "bg-primary-purple/5" : ""}`}
-              >
-                <span
-                  className={`font-medium ${isDisabled ? "text-gray-400" : "text-gray-700"}`}
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => !isDisabled && handleStatusClick(status)}
+                  disabled={isDisabled}
+                  className={`w-full px-4 py-2 text-left text-sm transition-colors flex items-center justify-between gap-2 ${
+                    isDisabled
+                      ? "opacity-40 cursor-not-allowed bg-gray-50"
+                      : "hover:bg-primary-purple/10 cursor-pointer"
+                  } ${isCurrent ? "bg-primary-purple/5" : ""}`}
                 >
-                  {statusData.label}
-                  {isCurrent && " (actual)"}
-                </span>
-                {!isDisabled && (
-                  <FaCheck className="text-primary-purple text-xs" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+                  <span
+                    className={`font-medium ${isDisabled ? "text-gray-400" : "text-gray-700"}`}
+                  >
+                    {statusData.label}
+                    {isCurrent && " (actual)"}
+                  </span>
+                  {!isDisabled && (
+                    <FaCheck className="text-primary-purple text-xs" />
+                  )}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

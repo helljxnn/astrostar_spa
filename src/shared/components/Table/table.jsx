@@ -225,6 +225,7 @@ const Table = ({
                             title={title}
                             disabled={isDisabled}
                           >
+                            {action.icon && <action.icon />}
                             {action.label}
                           </button>
                         );
