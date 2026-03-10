@@ -12,7 +12,7 @@ import { useSportsCategories } from "../hooks/useSportsCategories";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const MAX_FILE_SIZE_MB = 5;
 const AGE_MIN = 5;

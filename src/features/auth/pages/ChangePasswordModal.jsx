@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaTimes } from 'react-icons/fa';
 import { FiLock, FiEye, FiEyeOff, FiCheck, FiX } from 'react-icons/fi';
-import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
+import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts.js';
 import apiClient from '../../../shared/services/apiClient';
 
 const ChangePasswordModal = ({ isOpen, onClose, email }) => {

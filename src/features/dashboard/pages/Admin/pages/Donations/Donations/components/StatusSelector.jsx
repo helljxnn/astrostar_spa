@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaChevronDown, FaCheck } from "react-icons/fa";
-import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 const STATUS_FLOW = {
   Recibida: {

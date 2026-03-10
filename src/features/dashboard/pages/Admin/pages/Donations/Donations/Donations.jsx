@@ -13,7 +13,7 @@ import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsServ
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";

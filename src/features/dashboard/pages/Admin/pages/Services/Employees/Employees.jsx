@@ -9,7 +9,7 @@ import {
   showDeleteAlert,
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 
 // Importaciones para permisos
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";

@@ -7,7 +7,7 @@ import RoleDetailModal from "./components/RoleDetailModal";
 import { useRoles } from "./hooks/useRoles";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
-import { showErrorAlert } from "../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
 const Roles = () => {

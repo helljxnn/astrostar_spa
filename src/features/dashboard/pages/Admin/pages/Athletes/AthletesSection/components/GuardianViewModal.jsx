@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { FaTimes, FaEdit, FaEye, FaTrash } from "react-icons/fa"
 import { FormField } from "../../../../../../../../shared/components/FormField"
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from "../../../../../../../../shared/utils/alerts"
+import { showSuccessAlert, showErrorAlert, showDeleteAlert } from "../../../../../../../../shared/utils/alerts.js"
 
 // Mapeo de parentesco del backend (inglés) al frontend (español)
 const parentescoBackendToFrontend = {

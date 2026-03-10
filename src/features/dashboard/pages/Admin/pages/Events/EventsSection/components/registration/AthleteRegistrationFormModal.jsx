@@ -7,7 +7,7 @@ import SportsCategoriesService from "../../../../Athletes/SportsCategory/service
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 
 const AthleteRegistrationFormModal = ({
   isOpen,

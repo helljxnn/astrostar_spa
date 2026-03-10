@@ -10,7 +10,7 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import movementsService from "./services/MovementsService";
 import { formatDate, formatDateTime } from "../shared/utils/stockCalculations";
 import { formatStock } from "../../../../../../../shared/utils/numberFormat";

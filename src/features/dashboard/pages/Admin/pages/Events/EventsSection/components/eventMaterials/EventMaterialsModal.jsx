@@ -4,7 +4,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import Modal from "../../../../../../../../../shared/components/Modal/Modal.jsx";
 import DeliverableMaterialsTab from "./DeliverableMaterialsTab";
 import UsableMaterialsTab from "./UsableMaterialsTab";

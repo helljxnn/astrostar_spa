@@ -27,7 +27,7 @@ import {
 import {
   showDeleteAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import { usePermissions } from "../../../../../../../../../shared/hooks/usePermissions";
 
 /**
