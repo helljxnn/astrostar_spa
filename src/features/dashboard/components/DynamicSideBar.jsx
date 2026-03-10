@@ -355,8 +355,8 @@ function DynamicSideBar({
             {renderModule("dashboard")}
 
             {/* Módulos individuales principales */}
-            {renderModule("users")}
             {renderModule("roles")}
+            {renderModule("users")}
 
             {/* Enlace directo a Gestión de citas para deportista y acudiente */}
             {isModuleVisible("appointmentManagement") &&
@@ -364,9 +364,9 @@ function DynamicSideBar({
               renderModule("appointmentManagement")}
 
             {/* Grupos de módulos */}
-            {renderGroup("equipment")}
             {renderGroup("services")}
             {renderGroup("athletes")}
+            {renderGroup("equipment")}
             {renderGroup("donations")}
             {renderGroup("events")}
           </div>
