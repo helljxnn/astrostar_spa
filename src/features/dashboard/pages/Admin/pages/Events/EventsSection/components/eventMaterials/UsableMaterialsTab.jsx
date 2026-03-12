@@ -5,7 +5,7 @@ import {
   showErrorAlert,
   showWarningAlert,
   showDeleteAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import EventMaterialsService from "../../../../SportsMaterials/Materials/services/EventMaterialsService";
 import MaterialsService from "../../../../SportsMaterials/Materials/services/MaterialsService";
 import MaterialSearchSelector from "../../../../../../../../../shared/components/MaterialSearchSelector";

@@ -11,7 +11,7 @@ import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import GuardianModal from "./components/GuardianModal";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 

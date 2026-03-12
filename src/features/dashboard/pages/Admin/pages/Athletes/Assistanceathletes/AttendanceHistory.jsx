@@ -7,7 +7,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import DateRangePickerCalendar from "./components/DateRangePickerCalendar";
 import assistanceathletesService from "./services/AssistanceathletesService";
-import { showWarningAlert } from "../../../../../../../shared/utils/alerts";
+import { showWarningAlert } from "../../../../../../../shared/utils/alerts.js";
 
 const DEFAULT_ROWS_PER_PAGE = 10;
 const ALL_CATEGORIES = "Todas";

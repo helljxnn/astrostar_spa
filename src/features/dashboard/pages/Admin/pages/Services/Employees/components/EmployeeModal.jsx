@@ -12,7 +12,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import { useLoader } from "../../../../../../../../shared/components/Loader";
 import employeeService from "../services/employeeService";
 

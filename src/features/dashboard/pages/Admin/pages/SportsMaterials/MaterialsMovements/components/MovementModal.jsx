@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaPlus } from "react-icons/fa";
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import SearchableSelect from "../../../../../../../../shared/components/SearchableSelect";
 import ProviderModal from "../../../Providers/components/ProviderModal";

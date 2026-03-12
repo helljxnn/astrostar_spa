@@ -4,7 +4,7 @@ import apiClient from "../../../../../../../../shared/services/apiClient";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const API_URL = "/sports-categories";
 

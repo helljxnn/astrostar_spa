@@ -5,7 +5,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import {
   useFormUserValidation,
   userValidationRules,

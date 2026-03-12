@@ -20,7 +20,7 @@ import eventsService from "../../Events/services/eventsService";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import MaterialSearchSelector from "../../../../../../../shared/components/MaterialSearchSelector";
 
 const STATUS_OPTIONS = [
