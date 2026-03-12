@@ -10,7 +10,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import {
   showDeleteAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { useEvents } from "./hooks/useEvents";
 
 // Importaciones para permisos

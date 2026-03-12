@@ -16,7 +16,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import {
   findCategoryByName,
   resolveCategoryAgeRange,

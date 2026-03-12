@@ -5,7 +5,7 @@ import GuardiansService from "../../AthletesSection/services/GuardiansService";
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 export const useEnrollments = () => {
   const [athletes, setAthletes] = useState([]);

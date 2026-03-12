@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FaTrash, FaCheckCircle } from 'react-icons/fa';
 import AssignMaterialModal from './AssignMaterialModal';
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../../shared/utils/alerts';
+import { showSuccessAlert, showErrorAlert, showDeleteAlert } from '../../../../../../../../shared/utils/alerts.js';
 import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
 import eventMaterialsService from '../services/EventMaterialsService';
 

@@ -9,7 +9,7 @@ import eventsService from "../../../Events/services/eventsService";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
   const [materials, setMaterials] = useState([]);

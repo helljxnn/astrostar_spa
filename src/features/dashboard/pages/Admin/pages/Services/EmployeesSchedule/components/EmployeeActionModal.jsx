@@ -6,7 +6,7 @@ import CancelScheduleModal from "./CancelScheduleModal";
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const EmployeeActionModal = ({
   isOpen,

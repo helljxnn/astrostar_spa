@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaSync, FaTimes, FaUpload, FaFileAlt, FaTrash, FaUserCircle, FaCalendarAlt } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import {
   findCategoryByName,
   resolveCategoryAgeRange,

@@ -7,7 +7,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import temporaryPersonsService from "../services/temporaryPersonsService";
 
 // Hook de validación personalizado para personas temporales
