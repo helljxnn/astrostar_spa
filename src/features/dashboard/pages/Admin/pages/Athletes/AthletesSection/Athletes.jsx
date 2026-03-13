@@ -563,6 +563,11 @@ const Athletes = () => {
         <>
           <div className="w-full bg-white rounded-lg">
             <Table
+              serverPagination={true}
+              currentPage={pagination.page}
+              totalRows={totalRows}
+              rowsPerPage={pagination.limit || PAGINATION_CONFIG.ROWS_PER_PAGE}
+              onPageChange={changePage}
               thead={{
                 titles: [
                   "Nombre Completo",

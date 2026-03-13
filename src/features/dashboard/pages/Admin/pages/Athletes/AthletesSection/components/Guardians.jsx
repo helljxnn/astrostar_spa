@@ -217,6 +217,11 @@ const Guardians = () => {
       ) : displayTotalRows > 0 ? (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: [
                 "Nombre Completo",

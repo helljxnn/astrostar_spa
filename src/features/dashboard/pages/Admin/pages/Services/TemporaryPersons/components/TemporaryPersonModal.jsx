@@ -123,24 +123,36 @@ const temporaryPersonValidationRules = {
     if (!validTypes.includes(value)) return "Tipo de persona no válido";
     return "";
   },
-  email: (value) => {
-    if (!value || !value.trim()) return "El correo electrónico es requerido";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return "El formato del email no es válido";
+  email: (value, allValues) => {
+    // Email requerido solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "El correo electrónico es requerido para entrenadores";
     }
-    if (value.length > 150) {
-      return "El email no puede exceder 150 caracteres";
+    // Si se proporciona, validar formato
+    if (value && value.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return "El formato del email no es válido";
+      }
+      if (value.length > 150) {
+        return "El email no puede exceder 150 caracteres";
+      }
     }
     return "";
   },
-  phone: (value) => {
-    if (!value || !value.trim()) return "El número telefónico es requerido";
-    const cleanPhone = value.replace(/[\s\-\+\(\)]/g, "");
-    if (!/^[0-9]+$/.test(cleanPhone)) {
-      return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
+  phone: (value, allValues) => {
+    // Teléfono requerido solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "El número telefónico es requerido para entrenadores";
     }
-    if (cleanPhone.length < 7 || cleanPhone.length > 14) {
-      return "El teléfono debe tener entre 7 y 14 dígitos";
+    // Si se proporciona, validar formato
+    if (value && value.trim()) {
+      const cleanPhone = value.replace(/[\s\-\+\(\)]/g, "");
+      if (!/^[0-9]+$/.test(cleanPhone)) {
+        return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
+      }
+      if (cleanPhone.length < 7 || cleanPhone.length > 14) {
+        return "El teléfono debe tener entre 7 y 14 dígitos";
+      }
     }
     return "";
   },
@@ -158,14 +170,18 @@ const temporaryPersonValidationRules = {
     }
     return "";
   },
-  address: (value) => {
-    if (!value || !value.trim()) return "La dirección es requerida";
-    if (value.length > 200) {
+  address: (value, allValues) => {
+    // Dirección requerida solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "La dirección es requerida para entrenadores";
+    }
+    // Si se proporciona, validar longitud
+    if (value && value.length > 200) {
       return "La dirección no puede exceder 200 caracteres";
     }
     return "";
   },
-  birthDate: (value) => {
+  birthDate: (value, allValues) => {
     if (!value || !value.trim()) return "La fecha de nacimiento es requerida";
     const birthDate = new Date(value);
     if (isNaN(birthDate.getTime())) {
@@ -193,6 +209,19 @@ const temporaryPersonValidationRules = {
     if (birthDate > today) {
       return "La fecha de nacimiento no puede ser futura";
     }
+
+    // Validar que entrenadores sean mayores de edad (18 años)
+    if (allValues.personType === "Entrenador") {
+      const minDateForTrainer = new Date(
+        today.getFullYear() - 18,
+        today.getMonth(),
+        today.getDate(),
+      );
+      if (birthDate > minDateForTrainer) {
+        return "Los entrenadores deben ser mayores de 18 años";
+      }
+    }
+
     return "";
   },
   team: (value, allValues) => {
@@ -541,6 +570,25 @@ const TemporaryPersonModal = ({
         {/* Body */}
         <div className="modal-body flex-1 overflow-y-auto p-3 relative">
           <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
+            {/* Tipo de Persona - PRIMERO */}
+            <FormField
+              label="Tipo de Persona"
+              name="personType"
+              type="select"
+              placeholder="Seleccionar tipo"
+              required={true}
+              options={[
+                { value: "Deportista", label: "Deportista" },
+                { value: "Entrenador", label: "Entrenador" },
+              ]}
+              value={formData.personType}
+              error={errors.personType}
+              touched={touched.personType}
+              onChange={handleCustomChange}
+              onBlur={handleBlur}
+              delay={0.05}
+            />
+
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
@@ -637,13 +685,13 @@ const TemporaryPersonModal = ({
               delay={0.37}
             />
 
-            {/* Correo */}
+            {/* Correo - Requerido solo para Entrenador */}
             <FormField
               label="Correo Electrónico"
               name="email"
               type="email"
               placeholder="correo@ejemplo.com"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.email}
               error={errors.email}
               touched={touched.email}
@@ -652,13 +700,13 @@ const TemporaryPersonModal = ({
               delay={0.4}
             />
 
-            {/* Teléfono */}
+            {/* Teléfono - Requerido solo para Entrenador */}
             <FormField
               label="Número Telefónico"
               name="phone"
               type="text"
               placeholder="300 123 4567"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.phone}
               error={errors.phone}
               touched={touched.phone}
@@ -668,13 +716,13 @@ const TemporaryPersonModal = ({
               delay={0.42}
             />
 
-            {/* Dirección */}
+            {/* Dirección - Requerido solo para Entrenador */}
             <FormField
               label="Dirección"
               name="address"
               type="text"
               placeholder="Dirección de residencia"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.address}
               error={errors.address}
               touched={touched.address}
@@ -729,9 +777,8 @@ const TemporaryPersonModal = ({
               />
             )}
 
-            {/* Categoría - Solo para Deportista y Entrenador */}
-            {(formData.personType === "Deportista" ||
-              formData.personType === "Entrenador") && (
+            {/* Categoría - Solo para Deportista */}
+            {formData.personType === "Deportista" && (
               <FormField
                 label="Categoría"
                 name="category"
@@ -745,25 +792,6 @@ const TemporaryPersonModal = ({
                 delay={0.55}
               />
             )}
-
-            {/* Tipo de Persona */}
-            <FormField
-              label="Tipo de Persona"
-              name="personType"
-              type="select"
-              placeholder="Seleccionar tipo"
-              required={true}
-              options={[
-                { value: "Deportista", label: "Deportista" },
-                { value: "Entrenador", label: "Entrenador" },
-              ]}
-              value={formData.personType}
-              error={errors.personType}
-              touched={touched.personType}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.57}
-            />
 
             {/* Estado - Solo visible en modo editar */}
             {mode === "edit" && (

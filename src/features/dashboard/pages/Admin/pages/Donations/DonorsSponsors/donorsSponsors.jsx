@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
@@ -199,7 +199,11 @@ function DonorsSponsors() {
 
       <div>
         <Table
+          serverPagination={true}
+          currentPage={pagination.page}
+          totalRows={pagination.total || 0}
           rowsPerPage={pagination.limit || 5}
+          onPageChange={(page) => loadDonorsSponsors({ page })}
           thead={{
             titles: [
               "Nombre",

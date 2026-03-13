@@ -256,6 +256,11 @@ const Employees = () => {
       ) : (
         <>
           <Table
+            serverPagination={true}
+            currentPage={pagination.page}
+            totalRows={totalRows}
+            rowsPerPage={pagination.limit}
+            onPageChange={changePage}
             thead={{
               titles: ["Nombre", "Identificación", "Rol", "Estado"],
               state: false,

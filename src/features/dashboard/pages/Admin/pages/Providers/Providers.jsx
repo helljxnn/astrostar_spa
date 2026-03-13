@@ -433,6 +433,11 @@ setProviderToEdit(response.data);
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
               <Table
+                serverPagination={true}
+                currentPage={currentPage}
+                totalRows={displayTotalRows}
+                rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+                onPageChange={(page) => setCurrentPage(page)}
                 thead={{
                   titles: [
                     "Razón Social",

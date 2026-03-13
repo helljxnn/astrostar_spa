@@ -337,6 +337,11 @@ const TemporaryPersons = () => {
       ) : (
         <>
           <Table
+            serverPagination={true}
+            currentPage={pagination.page}
+            totalRows={totalRows}
+            rowsPerPage={pagination.limit}
+            onPageChange={changePage}
             thead={{
               titles: ["Nombre Completo", "Identificación", "Tipo", "Estado"],
               state: false,
