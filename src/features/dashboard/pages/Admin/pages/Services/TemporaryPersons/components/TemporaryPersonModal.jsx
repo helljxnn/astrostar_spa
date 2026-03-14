@@ -161,13 +161,19 @@ const temporaryPersonValidationRules = {
     // La validación de longitud y formato se maneja automáticamente en DocumentField según el tipo de documento
     return "";
   },
-  documentTypeId: (value) => {
+  documentTypeId: (value, allValues) => {
     if (!value || (typeof value === "string" && !value.trim()))
       return "El tipo de documento es requerido";
     const numValue = parseInt(value);
     if (isNaN(numValue) || numValue < 1) {
       return "Tipo de documento no válido";
     }
+    
+    // Validar que entrenadores no puedan usar Tarjeta de Identidad (ID 2)
+    if (allValues.personType === "Entrenador" && numValue === 2) {
+      return "Los entrenadores no pueden usar Tarjeta de Identidad ya que deben ser mayores de edad";
+    }
+    
     return "";
   },
   address: (value, allValues) => {
@@ -210,15 +216,30 @@ const temporaryPersonValidationRules = {
       return "La fecha de nacimiento no puede ser futura";
     }
 
+    // Calcular edad
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+
     // Validar que entrenadores sean mayores de edad (18 años)
     if (allValues.personType === "Entrenador") {
-      const minDateForTrainer = new Date(
-        today.getFullYear() - 18,
-        today.getMonth(),
-        today.getDate(),
-      );
-      if (birthDate > minDateForTrainer) {
+      if (actualAge < 18) {
         return "Los entrenadores deben ser mayores de 18 años";
+      }
+    }
+
+    // Validar edad según tipo de documento
+    if (allValues.documentTypeId) {
+      const docTypeId = parseInt(allValues.documentTypeId);
+      // Asumiendo que documentTypeId 1 = CC (Cédula) y 2 = TI (Tarjeta de Identidad)
+      if (docTypeId === 1) { // Cédula de Ciudadanía
+        if (actualAge < 18) {
+          return "Para cédula de ciudadanía la persona debe ser mayor de edad (18 años)";
+        }
+      } else if (docTypeId === 2) { // Tarjeta de Identidad
+        if (actualAge >= 18) {
+          return "Para tarjeta de identidad la persona debe ser menor de edad (menor a 18 años)";
+        }
       }
     }
 
@@ -315,8 +336,17 @@ const TemporaryPersonModal = ({
       handleChange(name, value);
       handleChange("age", age);
     } else if (name === "personType") {
-      // Al cambiar el tipo de persona, solo actualizar el valor
+      // Al cambiar el tipo de persona, validar el tipo de documento actual
       handleChange(name, value);
+      
+      // Si es entrenador y tiene seleccionada Tarjeta de Identidad (ID 2), limpiar la selección
+      if (value === "Entrenador" && formData.documentTypeId === "2") {
+        handleChange("documentTypeId", "");
+        setErrors((prev) => ({ 
+          ...prev, 
+          documentTypeId: "Los entrenadores no pueden usar Tarjeta de Identidad ya que deben ser mayores de edad" 
+        }));
+      }
     } else {
       handleChange(name, value);
     }
@@ -596,10 +626,18 @@ const TemporaryPersonModal = ({
               type="select"
               placeholder="Seleccionar tipo de documento"
               required={true}
-              options={referenceData.documentTypes.map((type) => ({
-                value: type.id,
-                label: type.name,
-              }))}
+              options={referenceData.documentTypes
+                .filter((type) => {
+                  // Si es entrenador, excluir Tarjeta de Identidad (ID 2)
+                  if (formData.personType === "Entrenador" && type.id === 2) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((type) => ({
+                  value: type.id,
+                  label: type.name,
+                }))}
               value={formData.documentTypeId}
               error={errors.documentTypeId}
               touched={touched.documentTypeId}

@@ -245,6 +245,27 @@ class ProvidersService {
       ...backendData,
     };
   }
+
+  /**
+   * Obtener todos los proveedores para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de proveedores
+   */
+  async getAllForReport(params = {}) {
+    const response = await apiClient.get(this.endpoint, {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    });
+
+    // Transformar la respuesta del backend al formato del frontend
+    if (response.success && response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((provider) =>
+        this.transformFromBackend(provider)
+      );
+    }
+
+    return response;
+  }
 }
 
 export default new ProvidersService();

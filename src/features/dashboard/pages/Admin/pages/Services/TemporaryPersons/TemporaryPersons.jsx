@@ -18,6 +18,8 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 // Hook personalizado para personas temporales
 import { useTemporaryPersons } from "./hooks/useTemporaryPersons.js";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import temporaryPersonsService from "./services/temporaryPersonsService";
 
 const TemporaryPersons = () => {
   const { hasPermission } = usePermissions();
@@ -32,6 +34,11 @@ const TemporaryPersons = () => {
     deleteTemporaryPerson,
     changePage,
   } = useTemporaryPersons();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    (params) => temporaryPersonsService.getAllForReport(params)
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -63,7 +70,7 @@ const TemporaryPersons = () => {
     loadTemporaryPersons({
       page: pagination.page,
       limit: pagination.limit,
-      search: searchTerm, // Enviar búsqueda al backend
+      search: searchTerm, // Buscar por nombre completo, identificación, tipo y estado
     });
   }, [pagination.page, searchTerm]);
 
@@ -91,23 +98,32 @@ const TemporaryPersons = () => {
     fechaCreacion: person.createdAt || "",
   }));
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (persons) => persons.map((person) => ({ // Mapper de datos
+        tipoDocumento: person.documentType?.name || "",
+        identificacion: person.identification || "",
+        nombreCompleto: `${person.firstName || ""} ${person.middleName || ""} ${person.lastName || ""} ${person.secondLastName || ""}`.replace(/\s+/g, " ").trim(),
+        correo: person.email || "",
+        telefono: person.phone || "",
+        edad: person.age || "",
+        tipoPersona: translatePersonType(person.personType) || "",
+        estado: translateStatus(person.status) || "",
+      }))
+    );
+  };
+
   const reportColumns = [
-    { header: "Tipo Documento", accessor: "tipoDocumento" },
+    { header: "Tipo Doc.", accessor: "tipoDocumento" },
     { header: "Identificación", accessor: "identificacion" },
-    { header: "Primer Nombre", accessor: "primerNombre" },
-    { header: "Segundo Nombre", accessor: "segundoNombre" },
-    { header: "Primer Apellido", accessor: "primerApellido" },
-    { header: "Segundo Apellido", accessor: "segundoApellido" },
+    { header: "Nombre Completo", accessor: "nombreCompleto" },
     { header: "Correo", accessor: "correo" },
     { header: "Teléfono", accessor: "telefono" },
-    { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
     { header: "Edad", accessor: "edad" },
-    { header: "Dirección", accessor: "direccion" },
-    { header: "Equipo", accessor: "equipo" },
-    { header: "Categoría", accessor: "categoria" },
     { header: "Tipo Persona", accessor: "tipoPersona" },
     { header: "Estado", accessor: "estado" },
-    { header: "Fecha Creación", accessor: "fechaCreacion" },
   ];
 
   const handleSave = async (personData) => {
@@ -302,13 +318,13 @@ const TemporaryPersons = () => {
               setSearchTerm(e.target.value);
               changePage(1); // Resetear a la primera página al buscar
             }}
-            placeholder="Buscar persona temporal..."
+            placeholder="Buscar por nombre, identificación, tipo o estado..."
           />
 
           <div className="flex items-center gap-3">
             <PermissionGuard module="temporaryWorkers" action="Ver">
               <ReportButton
-                data={reportData}
+                dataProvider={getCompleteReportData}
                 fileName="Reporte_Personas_Temporales"
                 columns={reportColumns}
               />

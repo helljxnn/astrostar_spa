@@ -46,6 +46,23 @@ class DonationsService {
       throw error;
     }
   }
+
+  /**
+   * Obtener todas las donaciones para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de donaciones
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get("/donations", {
+        ...params,
+        limit: 10000, // Límite alto para obtener todos los datos
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export default new DonationsService();

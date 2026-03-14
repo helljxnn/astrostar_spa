@@ -10,6 +10,7 @@ import DonationViewModal from "./components/DonationViewModal";
 import StatusSelector from "./components/StatusSelector";
 import donationsService from "./services/donationsService";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -86,6 +87,11 @@ const getDonorDisplayName = (donation, donorsMap = {}) => {
 };
 
 const Donations = () => {
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    donationsService.getAllForReport.bind(donationsService)
+  );
+
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(
@@ -476,6 +482,25 @@ const Donations = () => {
     );
   };
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { 
+        search: searchTerm,
+        month: selectedMonth ? selectedMonth.getMonth() + 1 : undefined,
+        year: selectedMonth ? selectedMonth.getFullYear() : undefined,
+      }, // Filtros actuales
+      (donations) => donations.map((donation) => ({ // Mapper de datos
+        code: donation.code || donation.codigo || "",
+        donorName: getDonorDisplayName(donation, donorsMap),
+        donationType: donation.typeLabel || "Sin tipos",
+        programLabel: donation.programLabel || donation.program || "",
+        status: donation.status || donation.estado || "",
+        donationDate: donation.donationDate || donation.fechaDonacion || "",
+      }))
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
@@ -523,7 +548,7 @@ const Donations = () => {
 
             <div className="flex items-center gap-3">
               <ReportButton
-                data={displayData}
+                dataProvider={getCompleteReportData}
                 fileName="Reporte_Donaciones"
                 columns={reportColumns}
               />

@@ -115,7 +115,7 @@ const HealthServicesGraphic = () => {
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
           Servicios de Salud (Mensual)
         </h3>
-        <ReportButton data={filteredData} fileName="Servicios_Salud" columns={reportColumns} />
+        <ReportButton dataProvider={async () => filteredData} fileName="Servicios_Salud" columns={reportColumns} />
       </div>
 
       <div className="flex flex-wrap gap-3 mb-4">

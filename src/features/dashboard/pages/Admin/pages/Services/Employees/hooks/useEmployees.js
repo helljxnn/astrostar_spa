@@ -220,6 +220,26 @@ export const useEmployees = () => {
     setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
+  /**
+   * Obtener todos los empleados para reporte (sin paginación)
+   */
+  const getAllEmployeesForReport = useCallback(
+    async (filters = {}) => {
+      try {
+        const response = await employeeService.getAllForReport(filters);
+        if (response.success) {
+          return response.data;
+        } else {
+          throw new Error(response.message || "Error obteniendo empleados para reporte");
+        }
+      } catch (err) {
+        showErrorAlert("Error", "No se pudieron obtener los empleados para el reporte");
+        throw err;
+      }
+    },
+    [],
+  );
+
   // Cargar datos iniciales solo si está autenticado
   useEffect(() => {
     if (isAuthenticated) {
@@ -250,6 +270,7 @@ export const useEmployees = () => {
     checkIdentificationAvailability,
     changePage,
     changeLimit,
+    getAllEmployeesForReport,
 
     // Utilidades
     refresh: loadEmployees,

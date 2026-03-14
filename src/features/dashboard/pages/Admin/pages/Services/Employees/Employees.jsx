@@ -17,6 +17,8 @@ import { usePermissions } from "../../../../../../../shared/hooks/usePermissions
 
 // Hook personalizado para empleados
 import { useEmployees } from "./hooks/useEmployees";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import employeeService from "./services/employeeService";
 
 const Employees = () => {
   const { hasPermission } = usePermissions();
@@ -31,6 +33,11 @@ const Employees = () => {
     deleteEmployee,
     changePage,
   } = useEmployees();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData: getReportDataGeneric } = useReportDataWithService(
+    employeeService.getAllForReport.bind(employeeService)
+  );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -69,19 +76,24 @@ const Employees = () => {
   const totalRows = pagination.total;
   const displayData = employees;
 
-  // Preparar datos para reporte
-  const reportData = displayData.map((employee) => ({
-    tipoDocumento: employee.user?.documentType?.name || "",
-    identificacion: employee.user?.identification || "",
-    nombre: employee.user?.firstName || "",
-    apellido: employee.user?.lastName || "",
-    correo: employee.user?.email || "",
-    telefono: employee.user?.phoneNumber || "",
-    fechaNacimiento: employee.user?.birthDate || "",
-    rol: employee.user?.role?.name || "",
-    estado: translateStatus(employee.status) || "",
-    fechaCreacion: employee.createdAt || "",
-  }));
+  // Función para obtener todos los empleados para reporte
+  const getReportData = async () => {
+    return await getReportDataGeneric(
+      { search: searchTerm }, // Filtros actuales
+      (employees) => employees.map((employee) => ({ // Mapper de datos
+        tipoDocumento: employee.user?.documentType?.name || "",
+        identificacion: employee.user?.identification || "",
+        nombre: employee.user?.firstName || "",
+        apellido: employee.user?.lastName || "",
+        correo: employee.user?.email || "",
+        telefono: employee.user?.phoneNumber || "",
+        fechaNacimiento: employee.user?.birthDate || "",
+        rol: employee.user?.role?.name || "",
+        estado: translateStatus(employee.status) || "",
+        fechaCreacion: employee.createdAt || "",
+      }))
+    );
+  };
 
   const reportColumns = [
     { header: "Tipo Documento", accessor: "tipoDocumento" },
@@ -227,7 +239,7 @@ const Employees = () => {
           <div className="flex items-center gap-3">
             <PermissionGuard module="employees" action="Ver">
               <ReportButton
-                data={reportData}
+                dataProvider={getReportData}
                 fileName="Reporte_Empleados"
                 columns={reportColumns}
               />

@@ -25,6 +25,20 @@ class EmployeeService {
   }
 
   /**
+   * Obtener todos los empleados para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de empleados
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, params);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Obtener empleado por ID
    * @param {number} id - ID del empleado
    * @returns {Promise} Datos del empleado
