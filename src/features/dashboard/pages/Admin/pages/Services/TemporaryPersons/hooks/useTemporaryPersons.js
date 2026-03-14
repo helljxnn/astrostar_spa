@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import temporaryPersonsService from "../services/temporaryPersonsService.js";
-import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
-import { useAuth } from "@shared/contexts/authContext.jsx";
-import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 export const useTemporaryPersons = () => {
   const { isAuthenticated } = useAuth();

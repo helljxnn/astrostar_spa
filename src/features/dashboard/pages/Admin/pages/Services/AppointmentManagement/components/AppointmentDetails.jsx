@@ -2,6 +2,7 @@ import React from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
   CalendarClock,
   UserRound,
@@ -49,6 +50,7 @@ const AppointmentDetails = ({
   onMarkAsCompleted,
   onEdit,
   isAthleteScope = false,
+  allAppointments = [],
 }) => {
   if (!appointmentData) return null;
 
@@ -105,29 +107,36 @@ const AppointmentDetails = ({
   ];
 
   const canActOnAppointment = appointmentData.status === "Programado";
-  return (
+  
+  // Filtrar citas del mismo deportista para el historial
+  const athleteAppointments = allAppointments.filter(
+    apt => apt.athleteId === appointmentData.athleteId
+  );
+  
+  const athleteName = getAthleteName(
+    appointmentData.athleteId || appointmentData.athlete,
+    athleteList,
+  );
+  
+  if (typeof document === "undefined") return null;
+  
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            style={{ zIndex: 99998 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-          />
-          <div 
-            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
-            style={{ zIndex: 99999 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] relative flex flex-col overflow-hidden"
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <motion.div
-              className="relative w-full max-w-3xl max-h-[92vh] overflow-hidden rounded-2xl bg-white shadow-2xl pointer-events-auto"
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            >
             {/* Header */}
             <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-gray-100">
               <div className="space-y-1">
@@ -220,7 +229,7 @@ const AppointmentDetails = ({
                     <p className="text-[11px] font-semibold uppercase tracking-wide text-green-700">
                       Conclusión de la cita
                     </p>
-                    <p className="mt-2 text-sm leading-relaxed text-green-900">
+                    <p className="mt-2 text-sm leading-relaxed text-green-900 whitespace-pre-wrap">
                       {appointmentData.conclusion || "No registrada"}
                     </p>
                   </div>
@@ -243,28 +252,28 @@ const AppointmentDetails = ({
                 </button>
               )}
 
-              {canActOnAppointment && onCancelAppointment && (
-                <button
-                  onClick={async () => {
-                    await onCancelAppointment(appointmentData);
-                    onClose();
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                >
-                  <XCircle className="h-4 w-4" />
-                  Cancelar
-                </button>
-              )}
+                {canActOnAppointment && onCancelAppointment && (
+                  <button
+                    onClick={async () => {
+                      await onCancelAppointment(appointmentData);
+                      onClose();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Cancelar
+                  </button>
+                )}
 
-              {canActOnAppointment && onMarkAsCompleted && !isAthleteScope && (
-                <button
-                  onClick={() => onMarkAsCompleted(appointmentData)}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary-purple px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#9d7bff]"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Completar
-                </button>
-              )}
+                {canActOnAppointment && onMarkAsCompleted && !isAthleteScope && (
+                  <button
+                    onClick={() => onMarkAsCompleted(appointmentData)}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary-purple px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#9d7bff]"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Completar
+                  </button>
+                )}
 
               <button
                 type="button"
@@ -274,12 +283,13 @@ const AppointmentDetails = ({
                 Cerrar
               </button>
             </div>
-            </motion.div>
-          </div>
-        </>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AppointmentDetails;

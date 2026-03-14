@@ -13,6 +13,7 @@ import {
   subDays,
   isBefore,
   parseISO,
+  isSameDay,
 } from "date-fns";
 import es from "date-fns/locale/es";
 import { motion } from "framer-motion";
@@ -91,38 +92,7 @@ const getRoleColors = (cargo = "") => {
   return ROLE_COLORS[key] || ROLE_COLORS.default;
 };
 
-function generateRecurringEvents(event) {
-  const events = [];
-  const startDate = parseISO(event.fecha);
-
-  const endDate = event.customRecurrence?.endDate
-    ? parseISO(event.customRecurrence.endDate)
-    : addMonths(startDate, 2);
-
-  let addFn;
-  switch (event.repeticion) {
-    case "dia":
-      addFn = (d) => addDays(d, 1);
-      break;
-    case "semana":
-      addFn = (d) => addWeeks(d, 1);
-      break;
-    case "mes":
-      addFn = (d) => addMonths(d, 1);
-      break;
-    case "anio":
-      addFn = (d) => addMonths(d, 12);
-      break;
-    case "laboral":
-      addFn = (d) => addDays(d, 1);
-      break;
-    case "personalizado":
-      break;
-    default:
-      return [event];
-  }
-
-  // ðŸ”¸ Si es personalizado
+// ðŸ"¸ Si es personalizado
   if (event.repeticion === "personalizado" && event.customRecurrence) {
     const { interval, frequency, dias, endType, endDate: endCustom } =
       event.customRecurrence;
@@ -133,16 +103,31 @@ function generateRecurringEvents(event) {
       anio: (d, i) => addMonths(d, 12 * i),
     };
     const addStep = freqMap[frequency] || addWeeks;
-    let current = startDate;
+
+    // Siempre incluir la fecha base (el día que se creó el horario)
+    const baseEvent = { ...event };
+    baseEvent.fecha = startDate.toISOString().split("T")[0];
+    baseEvent.start = startDate;
+    baseEvent.end = startDate;
+    events.push(baseEvent);
+
+    let current = addStep(startDate, interval);
     const limit =
       endType === "el" && endCustom
         ? parseISO(endCustom)
         : addMonths(startDate, 6);
+
     while (isBefore(current, limit)) {
       if (dias && dias.length > 0) {
-        dias.forEach((d) => {
-          const next = addDays(current, d - current.getDay());
-          if (isBefore(next, limit)) {
+        // Si hay días específicos, generar eventos para esos días de la semana
+        const weekStart = current;
+        dias.forEach((dayOfWeek) => {
+          // Calcular la fecha del día de la semana especificado
+          const daysToAdd = (dayOfWeek - weekStart.getDay() + 7) % 7;
+          const next = addDays(weekStart, daysToAdd);
+
+          // Solo agregar si está dentro del límite y no es la fecha base
+          if (isBefore(next, limit) && !isSameDay(next, startDate)) {
             const eventCopy = { ...event };
             eventCopy.fecha = next.toISOString().split("T")[0];
             eventCopy.start = next;
@@ -151,6 +136,7 @@ function generateRecurringEvents(event) {
           }
         });
       } else {
+        // Sin días específicos, repetir el mismo día de la semana
         const eventCopy = { ...event };
         eventCopy.fecha = current.toISOString().split("T")[0];
         eventCopy.start = current;
@@ -162,19 +148,6 @@ function generateRecurringEvents(event) {
     return events;
   }
 
-  // ðŸ”¸ Si es diaria/semanal/mensual/etc
-  let current = startDate;
-  while (isBefore(current, endDate)) {
-    const eventCopy = { ...event };
-    eventCopy.start = current;
-    eventCopy.end = current;
-    eventCopy.fecha = current.toISOString().split("T")[0];
-    events.push(eventCopy);
-    current = addFn(current);
-  }
-
-  return events;
-}
 
 /* ============================================================
    ðŸ”¹ COMPONENTE PRINCIPAL

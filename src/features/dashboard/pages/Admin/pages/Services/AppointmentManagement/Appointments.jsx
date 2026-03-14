@@ -249,15 +249,38 @@ function Appointments() {
   };
 
   const handleMarkAsCompleted = async (appointmentToComplete) => {
+    const appointmentDate = appointmentToComplete?.appointmentDate || appointmentToComplete?.date;
+    if (appointmentDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const apptDate = new Date(appointmentDate);
+      apptDate.setHours(0, 0, 0, 0);
+      if (apptDate > today) {
+        alert(`No se puede completar una cita que aún no ha ocurrido. La cita está programada para el ${apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}.`);
+        return;
+      }
+    }
     setAppointmentToComplete(appointmentToComplete);
     setIsCompleteModalOpen(true);
   };
 
-  const handleConfirmComplete = async (conclusion) => {
+  const handleConfirmComplete = async (conclusion, shouldReschedule, file = null) => {
     if (appointmentToComplete) {
       try {
-        await completeAppointment(appointmentToComplete.id, conclusion);
+        await completeAppointment(appointmentToComplete.id, conclusion, file);
         setIsCompleteModalOpen(false);
+        
+        // Si se debe re-agendar, abrir el formulario con los datos pre-cargados
+        if (shouldReschedule) {
+          setInitialSlot({
+            athleteId: appointmentToComplete.athleteId,
+            specialistId: appointmentToComplete.specialistId,
+            specialty: appointmentToComplete.specialty,
+            description: `Seguimiento de cita anterior (ID: ${appointmentToComplete.id})`,
+          });
+          setIsCreateModalOpen(true);
+        }
+        
         setAppointmentToComplete(null);
         handleCloseViewModal();
       } catch (error) {
@@ -543,6 +566,7 @@ function Appointments() {
         loadingCategories={loadingCategories}
         defaultAthleteId={isAthleteScope ? athleteIdFromUser : ""}
         lockAthlete={isAthleteScope}
+        existingAppointments={appointments}
       />
 
       <AppointmentDetails
@@ -554,6 +578,7 @@ function Appointments() {
         onMarkAsCompleted={handleMarkAsCompleted}
         onCancelAppointment={handleCancelAppointment}
         isAthleteScope={isAthleteView}
+        allAppointments={appointments}
       />
 
       <CancelAppointmentModal

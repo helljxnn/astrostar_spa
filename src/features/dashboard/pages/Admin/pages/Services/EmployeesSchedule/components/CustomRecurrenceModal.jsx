@@ -26,9 +26,22 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
   };
 
   const handleSave = () => {
-    const label = `Cada ${interval} ${frequency}${
-      interval > 1 ? "s" : ""
-    }${dias.length > 0 ? `, los ${dias.map((d) => diasSemana.find(x => x.value === d)?.label).join(", ")}` : ""}`;
+    let label = `Cada ${interval} ${frequency}${interval > 1 ? "s" : ""}`;
+    
+    if (frequency === "semana" && dias.length > 0) {
+      const diasLabels = dias
+        .sort((a, b) => a - b)
+        .map((d) => diasSemana.find(x => x.value === d)?.label)
+        .join(", ");
+      label += `, los ${diasLabels}`;
+    }
+    
+    if (endType === "el" && endDate) {
+      label += ` hasta ${endDate}`;
+    } else if (endType === "despues" && afterDate) {
+      label += ` después de ${afterDate}`;
+    }
+    
     onSave({ interval, frequency, dias, endType, endDate, afterDate, label });
     onClose();
   };
@@ -43,9 +56,14 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
         className="bg-white rounded-[20px] shadow-2xl p-8 w-full max-w-md relative"
       >
         {/* Título */}
-        <h2 className="text-2xl font-semibold text-center text-[#9BE9FF] mb-8">
+        <h2 className="text-2xl font-semibold text-center text-[#9BE9FF] mb-4">
           Periodicidad personalizada
         </h2>
+        <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-xs text-blue-800 text-center">
+            <strong>Nota:</strong> El horario se creará para la fecha seleccionada y se repetirá según la configuración que definas aquí.
+          </p>
+        </div>
 
         {/* Repetir cada */}
         <div className="flex items-center gap-3 mb-6 justify-center">
@@ -72,26 +90,31 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
         </div>
 
         {/* Se repite el */}
-        <div className="mb-6">
-          <p className="text-gray-700 text-sm font-medium text-center mb-3">
-            Se repite el
-          </p>
-          <div className="flex justify-center gap-2">
-            {diasSemana.map((dia) => (
-              <button
-                key={dia.value}
-                onClick={() => toggleDia(dia.value)}
-                className={`w-8 h-8 rounded-full border text-sm font-semibold transition ${
-                  dias.includes(dia.value)
-                    ? "bg-[#c8a9ff] text-white border-[#c8a9ff]"
-                    : "border-gray-300 text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                {dia.label}
-              </button>
-            ))}
+        {frequency === "semana" && (
+          <div className="mb-6">
+            <p className="text-gray-700 text-sm font-medium text-center mb-2">
+              Se repite los días
+            </p>
+            <p className="text-xs text-gray-500 text-center mb-3">
+              (Opcional: deja vacío para repetir el mismo día de la semana)
+            </p>
+            <div className="flex justify-center gap-2">
+              {diasSemana.map((dia) => (
+                <button
+                  key={dia.value}
+                  onClick={() => toggleDia(dia.value)}
+                  className={`w-8 h-8 rounded-full border text-sm font-semibold transition ${
+                    dias.includes(dia.value)
+                      ? "bg-[#c8a9ff] text-white border-[#c8a9ff]"
+                      : "border-gray-300 text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {dia.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Se termina */}
         <div className="mb-8">

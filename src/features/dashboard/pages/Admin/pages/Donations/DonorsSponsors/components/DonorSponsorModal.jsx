@@ -91,8 +91,8 @@ const DonorSponsorModal = ({
               {/* Pestañas Donante/Patrocinador */}
               <div className="flex gap-2 mb-6 border-b border-gray-200">
                 {[
-                  { value: "Donante", label: " Donante" },
-                  { value: "Patrocinador", label: " Patrocinador" },
+                  { value: "Donante", label: "Donante" },
+                  { value: "Patrocinador", label: "Patrocinador" },
                 ].map((option) => {
                   const active = formData.tipo === option.value;
                   return (
@@ -101,8 +101,6 @@ const DonorSponsorModal = ({
                       type="button"
                       onClick={() => {
                         handleChange({ target: { name: "tipo", value: option.value } });
-                        // Si selecciona Patrocinador, automáticamente seleccionar Persona Jurídica
-                        // Si selecciona Donante, automáticamente seleccionar Persona Natural
                         if (option.value === "Patrocinador") {
                           handleChange({ target: { name: "tipoPersona", value: "Juridica" } });
                         } else if (option.value === "Donante") {
@@ -123,14 +121,9 @@ const DonorSponsorModal = ({
 
               {/* INFORMACIÓN DE IDENTIDAD */}
               <div className="mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <h3 className="text-base font-bold text-gray-800 uppercase tracking-wide">
-                    Información de Identidad
-                  </h3>
-                  <div className="w-4 h-4 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span className="text-white text-xs">?</span>
-                  </div>
-                </div>
+                <h3 className="text-base font-bold text-gray-800 uppercase tracking-wide mb-4">
+                  Información de Identidad
+                </h3>
 
                 {/* Botones Persona Natural / Jurídica */}
                 <div className="grid grid-cols-2 gap-4 mb-6">
@@ -151,10 +144,10 @@ const DonorSponsorModal = ({
                             },
                           })
                         }
-                        className={`px-6 py-4 rounded-xl font-semibold text-sm transition-all border-2 ${
+                        className={`px-6 py-3 rounded-xl font-semibold text-sm transition-all ${
                           active
-                            ? "bg-primary-blue text-white border-primary-blue shadow-lg"
-                            : "bg-gray-100 text-gray-500 border-gray-200 hover:border-gray-300"
+                            ? "bg-primary-blue text-white shadow-md"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                         }`}
                       >
                         {option.label}
@@ -201,34 +194,27 @@ const DonorSponsorModal = ({
                           { value: "Permiso de Permanencia", label: "Permiso de Permanencia" },
                         ]}
                       />
-                      <div className="space-y-2 md:col-span-2">
-                        <FormField
-                          label="Número de Documento"
-                          name="numeroDocumento"
-                          type="text"
-                          placeholder="Ingrese el número"
-                          required
-                          value={formData.numeroDocumento}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          error={
-                            errors.numeroDocumento || errors.identificacion
-                          }
-                          touched={touched.numeroDocumento}
-                          helperText={
-                            checkingId
-                              ? "Verificando disponibilidad..."
-                              : errors.identificacion || errors.numeroDocumento
-                                ? undefined
-                                : `${formData.numeroDocumento.length}/${docMaxLength} caracteres`
-                          }
-                        />
-                        {(errors.numeroDocumento || errors.identificacion) && (
-                          <p className="text-xs text-red-500 mt-1">
-                            {errors.numeroDocumento || errors.identificacion}
-                          </p>
-                        )}
-                      </div>
+                      <FormField
+                        label="Número de Documento"
+                        name="numeroDocumento"
+                        type="text"
+                        placeholder="Ingrese el número"
+                        required
+                        value={formData.numeroDocumento}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={
+                          errors.numeroDocumento || errors.identificacion
+                        }
+                        touched={touched.numeroDocumento}
+                        helperText={
+                          checkingId
+                            ? "Verificando disponibilidad..."
+                            : errors.identificacion || errors.numeroDocumento
+                              ? undefined
+                              : `${formData.numeroDocumento.length}/${docMaxLength} caracteres`
+                        }
+                      />
                     </>
                   )}
 
@@ -251,32 +237,25 @@ const DonorSponsorModal = ({
                             : undefined
                         }
                       />
-                      <div className="space-y-2">
-                        <FormField
-                          label="NIT"
-                          name="nit"
-                          type="text"
-                          placeholder="000000000-0"
-                          required
-                          value={formData.nit}
-                          onChange={handleChange}
-                          onBlur={handleBlur}
-                          error={errors.nit || errors.identificacion}
-                          touched={touched.nit}
-                          helperText={
-                            checkingId
-                              ? "Verificando disponibilidad..."
-                              : errors.identificacion || errors.nit
-                                ? undefined
-                                : `${formData.nit.length}/${nitMaxLength} caracteres`
-                          }
-                        />
-                        {(errors.nit || errors.identificacion) && (
-                          <p className="text-xs text-red-500 mt-1">
-                            {errors.nit || errors.identificacion}
-                          </p>
-                        )}
-                      </div>
+                      <FormField
+                        label="NIT"
+                        name="nit"
+                        type="text"
+                        placeholder="000000000-0"
+                        required
+                        value={formData.nit}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={errors.nit || errors.identificacion}
+                        touched={touched.nit}
+                        helperText={
+                          checkingId
+                            ? "Verificando disponibilidad..."
+                            : errors.identificacion || errors.nit
+                              ? undefined
+                              : `${formData.nit.length}/${nitMaxLength} caracteres`
+                        }
+                      />
                       <div className="md:col-span-2">
                         <FormField
                           label="Representante Legal"
@@ -376,6 +355,9 @@ const DonorSponsorModal = ({
               {/* Estado (solo en modo edición) */}
               {mode === "edit" && (
                 <div className="mb-6">
+                  <h3 className="text-base font-bold text-gray-800 uppercase tracking-wide mb-4">
+                    Estado
+                  </h3>
                   <FormField
                     label="Estado"
                     name="estado"
@@ -389,12 +371,12 @@ const DonorSponsorModal = ({
               )}
             </div>
 
-            <div className="flex-shrink-0 border-t border-gray-200 p-4">
-              <div className="flex justify-between">
+            <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-white">
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+                  className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-medium"
                 >
                   Cancelar
                 </button>
@@ -432,7 +414,7 @@ const DonorSponsorModal = ({
                       );
                     }
                   }}
-                  className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg disabled:opacity-60"
+                  className="px-6 py-2.5 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all font-medium shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={checkingId || checkingEmail}
                 >
                   {mode === "edit" ? "Guardar Cambios" : "Crear Registro"}

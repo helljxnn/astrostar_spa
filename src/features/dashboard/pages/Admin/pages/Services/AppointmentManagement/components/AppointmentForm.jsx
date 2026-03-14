@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { addMinutes } from "date-fns";
@@ -31,6 +31,7 @@ const AppointmentForm = ({
   loadingCategories = false,
   defaultAthleteId = "",
   lockAthlete = false,
+  existingAppointments = [],
 }) => {
   const [formData, setFormData] = useState({
     athleteId: "",
@@ -48,6 +49,7 @@ const AppointmentForm = ({
   const [loadingAthletes2, setLoadingAthletes2] = useState(false);
   const [specialistSchedules, setSpecialistSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [athleteDateWarning, setAthleteDateWarning] = useState(null);
 
   // Resetear formulario
   useEffect(() => {
@@ -64,6 +66,7 @@ const AppointmentForm = ({
       setErrors({});
       setTouched({});
       setAthletesByCategory([]);
+      setAthleteDateWarning(null);
       return;
     }
 
@@ -95,9 +98,39 @@ const AppointmentForm = ({
     }
   }, [isOpen, initialData, defaultAthleteId]);
 
+  // Validación en tiempo real: deportista ya tiene cita ese día
+  useEffect(() => {
+    const { athleteId, start } = formData;
+    if (!athleteId || !start || !existingAppointments.length) {
+      setAthleteDateWarning(null);
+      return;
+    }
+
+    const selectedDay = new Date(start);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    const conflict = existingAppointments.find((appt) => {
+      if (String(appt.athleteId) !== String(athleteId)) return false;
+      if (appt.status === "Cancelado") return false;
+      if (initialData?.id && appt.id === initialData.id) return false;
+
+      const apptDay = new Date(appt.appointmentDate || appt.date || appt.start);
+      apptDay.setHours(0, 0, 0, 0);
+      return apptDay.getTime() === selectedDay.getTime();
+    });
+
+    if (conflict) {
+      const timeLabel = conflict.startTime || conflict.time || "";
+      setAthleteDateWarning(
+        `Este deportista ya tiene una cita programada el ${selectedDay.toLocaleDateString("es-ES", { weekday: "long", day: "2-digit", month: "long" })}${timeLabel ? ` a las ${timeLabel}` : ""}. Por favor elige otro horario.`
+      );
+    } else {
+      setAthleteDateWarning(null);
+    }
+  }, [formData.athleteId, formData.start, existingAppointments, initialData]);
+
   // Cargar deportistas por categoría
   useEffect(() => {
-    if (!selectedCategory) {
       setAthletesByCategory([]);
       return;
     }
@@ -132,6 +165,18 @@ const AppointmentForm = ({
     loadAthletes();
   }, [selectedCategory]);
 
+  // Función para parsear customRecurrence
+  const parseCustomRecurrence = useCallback((value) => {
+    if (!value) return null;
+    if (typeof value === "object") return value;
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.warn("Error parseando customRecurrence:", error);
+      return null;
+    }
+  }, []);
+
   // Cargar horarios del especialista seleccionado
   useEffect(() => {
     if (!formData.specialistId) {
@@ -144,7 +189,16 @@ const AppointmentForm = ({
       try {
         const response = await apiClient.get(`/schedules/employee/${formData.specialistId}`);
         const schedules = response?.data?.data || response?.data || [];
-        setSpecialistSchedules(Array.isArray(schedules) ? schedules : []);
+        
+        // Parsear customRecurrence si viene como string
+        const parsedSchedules = Array.isArray(schedules) 
+          ? schedules.map(schedule => ({
+              ...schedule,
+              customRecurrence: parseCustomRecurrence(schedule.customRecurrence)
+            }))
+          : [];
+        
+        setSpecialistSchedules(parsedSchedules);
       } catch (error) {
         console.error("Error cargando horarios:", error);
         setSpecialistSchedules([]);
@@ -154,7 +208,33 @@ const AppointmentForm = ({
     };
 
     loadSchedules();
-  }, [formData.specialistId]);
+  }, [formData.specialistId, isOpen, parseCustomRecurrence]); // Recargar cuando se abre el modal
+
+  // Función para refrescar horarios manualmente
+  const refreshSchedules = useCallback(async () => {
+    if (!formData.specialistId) return;
+    
+    setLoadingSchedules(true);
+    try {
+      const response = await apiClient.get(`/schedules/employee/${formData.specialistId}`);
+      const schedules = response?.data?.data || response?.data || [];
+      
+      // Parsear customRecurrence si viene como string
+      const parsedSchedules = Array.isArray(schedules) 
+        ? schedules.map(schedule => ({
+            ...schedule,
+            customRecurrence: parseCustomRecurrence(schedule.customRecurrence)
+          }))
+        : [];
+      
+      setSpecialistSchedules(parsedSchedules);
+    } catch (error) {
+      console.error("Error cargando horarios:", error);
+      showErrorAlert("Error", "No se pudieron cargar los horarios");
+    } finally {
+      setLoadingSchedules(false);
+    }
+  }, [formData.specialistId, parseCustomRecurrence]);
 
   // Opciones de categorías
   const categoryOptions = useMemo(() => {
@@ -185,14 +265,46 @@ const AppointmentForm = ({
 
   const specialistOptions = useMemo(
     () =>
-      filteredSpecialists.map((specialist) => ({
-        value: String(specialist.id || specialist.specialistId),
-        label: specialist.label || specialist.nombre || "Especialista",
-      })),
+      filteredSpecialists.map((specialist) => {
+        const name = specialist.label || specialist.nombre || "Especialista";
+        const role = specialist.cargo || specialist.role || "";
+        const specialty = specialist.specialtyLabel || "";
+        
+        // Formato: Nombre - Rol (Especialidad)
+        if (role && specialty) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} - ${role} (${specialty})`,
+          };
+        }
+        // Si solo tiene especialidad
+        if (specialty) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} (${specialty})`,
+          };
+        }
+        // Si solo tiene rol
+        if (role) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} - ${role}`,
+          };
+        }
+        // Solo nombre
+        return {
+          value: String(specialist.id || specialist.specialistId),
+          label: name,
+        };
+      }),
     [filteredSpecialists]
   );
 
   const handleChange = (e) => {
+    if (!e || !e.target) {
+      console.warn('handleChange called without valid event');
+      return;
+    }
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setTouched((prev) => ({ ...prev, [name]: true }));
@@ -220,40 +332,196 @@ const AppointmentForm = ({
     setTouched((prev) => ({ ...prev, start: true }));
   };
 
-  // Filtrar horas disponibles según horarios del especialista
-  const filterAvailableTimes = (time) => {
+  // Funciones auxiliares para cálculo de diferencias de tiempo
+  const differenceInDays = useCallback((dateA, dateB) => {
+    const a = new Date(dateA);
+    const b = new Date(dateB);
+    a.setHours(0, 0, 0, 0);
+    b.setHours(0, 0, 0, 0);
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.floor((a - b) / msPerDay);
+  }, []);
+
+  const differenceInWeeks = useCallback((dateA, dateB) => {
+    return Math.floor(differenceInDays(dateA, dateB) / 7);
+  }, [differenceInDays]);
+
+  const differenceInMonths = useCallback((dateA, dateB) => {
+    const a = new Date(dateA);
+    const b = new Date(dateB);
+    a.setHours(0, 0, 0, 0);
+    b.setHours(0, 0, 0, 0);
+    return (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
+  }, []);
+
+  const differenceInYears = useCallback((dateA, dateB) => {
+    const a = new Date(dateA);
+    const b = new Date(dateB);
+    return a.getFullYear() - b.getFullYear();
+  }, []);
+
+  // Verificar si un horario aplica para una fecha (considerando recurrencias)
+  const isScheduleActiveOnDate = useCallback((schedule, targetDate) => {
+    if (!schedule?.scheduleDate) return false;
+    
+    const scheduleDate = new Date(schedule.scheduleDate);
+    scheduleDate.setHours(0, 0, 0, 0);
+    const checkDate = new Date(targetDate);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Si la fecha objetivo es anterior a la fecha del horario, no aplica
+    if (checkDate < scheduleDate) return false;
+    
+    const recurrence = (schedule.recurrence || schedule.repeticion || 'no').toLowerCase();
+    
+    // Sin recurrencia: solo aplica el día exacto
+    if (recurrence === 'no') {
+      return checkDate.getTime() === scheduleDate.getTime();
+    }
+    
+    // Recurrencia diaria
+    if (recurrence === 'dia' || recurrence === 'diaria') {
+      return true;
+    }
+    
+    // Recurrencia semanal: mismo día de la semana
+    if (recurrence === 'semana' || recurrence === 'semanal') {
+      return checkDate.getDay() === scheduleDate.getDay();
+    }
+    
+    // Recurrencia mensual: mismo día del mes
+    if (recurrence === 'mes' || recurrence === 'mensual') {
+      return checkDate.getDate() === scheduleDate.getDate();
+    }
+    
+    // Recurrencia anual: mismo día y mes
+    if (recurrence === 'año' || recurrence === 'anual' || recurrence === 'anio') {
+      return checkDate.getDate() === scheduleDate.getDate() && 
+             checkDate.getMonth() === scheduleDate.getMonth();
+    }
+    
+    // Recurrencia laboral: lunes a viernes
+    if (recurrence === 'laboral') {
+      const day = checkDate.getDay();
+      return day >= 1 && day <= 5;
+    }
+    
+    // Recurrencia personalizada (lógica mejorada basada en el backend)
+    if (recurrence === 'personalizado' && schedule.customRecurrence) {
+      const custom = schedule.customRecurrence;
+      const interval = Number(custom.interval) || 1;
+      const frequency = (custom.frequency || 'semana').toLowerCase();
+      const dias = Array.isArray(custom.dias) ? custom.dias : [];
+      const endType = custom.endType || '';
+      const endDateValue = endType === 'el' 
+        ? custom.endDate 
+        : endType === 'despues' 
+          ? custom.afterDate 
+          : custom.endDate || custom.afterDate;
+
+      // Verificar fecha límite
+      if (endDateValue) {
+        const limit = new Date(endDateValue);
+        limit.setHours(0, 0, 0, 0);
+        if (checkDate > limit) return false;
+      }
+
+      // Si es la fecha base, siempre es válida
+      if (checkDate.getTime() === scheduleDate.getTime()) {
+        return true;
+      }
+
+      // Si hay días específicos de la semana
+      if (dias.length > 0) {
+        const daysDiff = differenceInDays(checkDate, scheduleDate);
+        const weeksDiff = differenceInWeeks(checkDate, scheduleDate);
+
+        // Verificar intervalo según frecuencia
+        if (frequency === 'dia' && daysDiff % interval !== 0) return false;
+        if (frequency === 'semana' && weeksDiff % interval !== 0) return false;
+        if ((frequency === 'mes' || frequency === 'anio') && daysDiff % 7 !== 0) {
+          return false;
+        }
+
+        // Verificar si el día de la semana está en la lista
+        return dias.includes(checkDate.getDay());
+      }
+
+      // Sin días específicos, usar solo la frecuencia
+      if (frequency === 'dia') {
+        return differenceInDays(checkDate, scheduleDate) % interval === 0;
+      }
+      if (frequency === 'semana') {
+        return checkDate.getDay() === scheduleDate.getDay() &&
+               differenceInWeeks(checkDate, scheduleDate) % interval === 0;
+      }
+      if (frequency === 'mes') {
+        return checkDate.getDate() === scheduleDate.getDate() &&
+               differenceInMonths(checkDate, scheduleDate) % interval === 0;
+      }
+      if (frequency === 'anio' || frequency === 'año') {
+        return checkDate.getDate() === scheduleDate.getDate() &&
+               checkDate.getMonth() === scheduleDate.getMonth() &&
+               differenceInYears(checkDate, scheduleDate) % interval === 0;
+      }
+    }
+    
+    return false;
+  }, [differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears]);
+
+  // Filtrar días disponibles según horarios del especialista
+  const filterAvailableDates = useCallback((date) => {
     if (!formData.specialistId || specialistSchedules.length === 0) {
-      return true; // Si no hay especialista seleccionado, mostrar todas las horas
+      return true; // Si no hay especialista seleccionado, permitir todos los días
     }
 
-    const selectedDate = formData.start || new Date();
-    const timeDate = new Date(time);
-    
     // Verificar si hay algún horario activo para esta fecha
     const hasActiveSchedule = specialistSchedules.some((schedule) => {
-      const scheduleDate = new Date(schedule.scheduleDate);
-      const isSameDay = 
-        scheduleDate.getFullYear() === selectedDate.getFullYear() &&
-        scheduleDate.getMonth() === selectedDate.getMonth() &&
-        scheduleDate.getDate() === selectedDate.getDate();
-      
-      if (!isSameDay) return false;
-
-      // Verificar si la hora está dentro del rango del horario
-      const [startHour, startMin] = schedule.startTime.split(':').map(Number);
-      const [endHour, endMin] = schedule.endTime.split(':').map(Number);
-      
-      const scheduleStart = new Date(selectedDate);
-      scheduleStart.setHours(startHour, startMin, 0, 0);
-      
-      const scheduleEnd = new Date(selectedDate);
-      scheduleEnd.setHours(endHour, endMin, 0, 0);
-      
-      return timeDate >= scheduleStart && timeDate <= scheduleEnd;
+      return isScheduleActiveOnDate(schedule, date);
     });
 
     return hasActiveSchedule;
-  };
+  }, [formData.specialistId, specialistSchedules, isScheduleActiveOnDate]);
+
+  // Filtrar horas disponibles según horarios del especialista
+  const filterAvailableTimes = useCallback((time) => {
+    if (!formData.specialistId || specialistSchedules.length === 0) {
+      return false; // Si no hay especialista seleccionado, no mostrar horas
+    }
+
+    const timeDate = new Date(time);
+    const selectedDate = timeDate;
+    
+    // Verificar si hay algún horario activo para esta fecha y hora
+    const hasActiveSchedule = specialistSchedules.some((schedule) => {
+      // Verificar si el horario aplica para esta fecha (considerando recurrencias)
+      const isActive = isScheduleActiveOnDate(schedule, selectedDate);
+      
+      if (!isActive) {
+        return false;
+      }
+
+      // Verificar si la hora está dentro del rango del horario
+      if (!schedule.startTime || !schedule.endTime) {
+        return false;
+      }
+
+      const [startHour, startMin] = schedule.startTime.split(':').map(Number);
+      const [endHour, endMin] = schedule.endTime.split(':').map(Number);
+      
+      const timeHours = timeDate.getHours();
+      const timeMinutes = timeDate.getMinutes();
+      const timeInMinutes = timeHours * 60 + timeMinutes;
+      const startInMinutes = startHour * 60 + startMin;
+      const endInMinutes = endHour * 60 + endMin;
+      
+      const isInRange = timeInMinutes >= startInMinutes && timeInMinutes < endInMinutes;
+      
+      return isInRange;
+    });
+
+    return hasActiveSchedule;
+  }, [formData.specialistId, specialistSchedules, isScheduleActiveOnDate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -456,9 +724,18 @@ const AppointmentForm = ({
                     required
                     placeholder="Seleccione fecha y hora"
                     minDate={new Date()}
+                    filterDate={filterAvailableDates}
                     filterTime={filterAvailableTimes}
                     disabled={!formData.specialistId || loadingSchedules}
                   />
+                  {athleteDateWarning && (
+                    <div className="mt-2 flex items-start gap-2 text-sm text-amber-800 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2">
+                      <svg className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span>{athleteDateWarning}</span>
+                    </div>
+                  )}
                 </div>
                 
                 <div>
@@ -486,7 +763,28 @@ const AppointmentForm = ({
                   <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
-                  <span>El especialista no tiene horarios configurados</span>
+                  <span>El especialista no tiene horarios configurados. Crea un horario primero.</span>
+                </div>
+              )}
+
+              {formData.specialistId && !loadingSchedules && specialistSchedules.length > 0 && (
+                <div className="flex items-center justify-between gap-2 text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+                  <div className="flex items-center gap-2">
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>{specialistSchedules.length} horario{specialistSchedules.length !== 1 ? 's' : ''} disponible{specialistSchedules.length !== 1 ? 's' : ''}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={refreshSchedules}
+                    className="flex items-center gap-1 px-3 py-1 text-xs font-medium text-green-700 hover:bg-green-100 rounded-md transition-colors"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refrescar
+                  </button>
                 </div>
               )}
 
