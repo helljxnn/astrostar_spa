@@ -4,7 +4,7 @@ import {
   showErrorAlert,
   showSuccessAlert,
   showWarningAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const ALL_CATEGORIES = "Todas";
 const DEFAULT_ROWS_PER_PAGE = 10;

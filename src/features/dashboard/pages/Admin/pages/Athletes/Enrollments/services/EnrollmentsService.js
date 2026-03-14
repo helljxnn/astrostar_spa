@@ -3,34 +3,14 @@ import apiClient from "../../../../../../../../shared/services/apiClient.js";
 // ============================================================================
 // CONSTANTES
 // ============================================================================
-const ENROLLMENT_STATUS = {
-  ACTIVE: "Active",
-  INACTIVE: "Inactive",
-  SUSPENDED: "Suspended",
-};
-
 const ENDPOINTS = {
   ATHLETES: "/athletes",
   ENROLLMENTS: "/enrollments",
 };
 
-const DEFAULT_ENROLLMENT_DURATION_YEARS = 1;
-
 // ============================================================================
 // UTILIDADES
 // ============================================================================
-
-/**
- * Calcula la fecha de vencimiento de una matrícula
- * @param {Date} startDate - Fecha de inicio
- * @param {number} years - Años de duración
- * @returns {string} Fecha de vencimiento en formato ISO
- */
-const calculateExpirationDate = (startDate = new Date(), years = DEFAULT_ENROLLMENT_DURATION_YEARS) => {
-  const expirationDate = new Date(startDate);
-  expirationDate.setFullYear(expirationDate.getFullYear() + years);
-  return expirationDate.toISOString();
-};
 
 /**
  * Prepara los datos de matrícula para enviar al backend
@@ -39,15 +19,12 @@ const calculateExpirationDate = (startDate = new Date(), years = DEFAULT_ENROLLM
  * @returns {Object} Datos formateados para el backend
  */
 const prepareEnrollmentData = (athleteData, preRegistrationId = null) => {
-  const now = new Date();
-  
   return {
     athlete: athleteData,
     enrollment: {
-      estado: ENROLLMENT_STATUS.ACTIVE,
-      fechaMatricula: now.toISOString(),
-      fechaInicio: now.toISOString(),
-      fechaVencimiento: calculateExpirationDate(now),
+      // Estado inicial: Pending_Payment. createdAt = fecha de creación (backend).
+      // fechaInicio y fechaVencimiento se asignan al aprobar el pago inicial.
+      estado: "Pending_Payment",
     },
     ...(preRegistrationId && { preRegistrationId }),
   };
@@ -64,8 +41,9 @@ class EnrollmentsService {
   }
 
   /**
-   * Obtiene todas las deportistas con matrículas
-   * @param {Object} filters - Filtros de búsqueda
+   * Obtiene todas las deportistas con matrículas desde GET /api/enrollments
+   * Soporta búsqueda por nombre completo y número de documento
+   * @param {Object} filters - { page, pageSize, search, estado }
    * @returns {Promise<Object>} Resultado con datos y metadata
    */
   async getAll(filters = {}) {
@@ -73,25 +51,116 @@ class EnrollmentsService {
       const params = {
         page: filters.page || 1,
         limit: filters.pageSize || 10,
-        ...(filters.estadoMatricula && {
-          estadoInscripcion: filters.estadoMatricula,
-        }),
+        ...(filters.estado && { estado: filters.estado }),
+        ...(filters.search && filters.search.trim() && { search: filters.search.trim() }),
       };
 
-      const response = await apiClient.get(this.endpoint, { params });
+      const response = await apiClient.get(this.enrollmentsEndpoint, { params });
 
-      console.log(
-        "📡 [EnrollmentsService.getAll] Respuesta del backend:",
-        response.data
-      );
-
-      const data = Array.isArray(response.data)
+      const raw = Array.isArray(response.data)
         ? response.data
         : response.data.data || [];
 
+      const data = raw.map((item, index) => {
+        const enrollment = item.enrollment || item;
+        const athlete = item.athlete || item.athleteData || {};
+        const user = athlete.user || item.user || {};
+
+        const firstName =
+          user.firstName ||
+          athlete.firstName ||
+          athlete.nombres ||
+          "";
+
+        const lastName =
+          user.lastName ||
+          athlete.lastName ||
+          athlete.apellidos ||
+          "";
+
+        const identification =
+          user.identification ||
+          athlete.identification ||
+          athlete.numeroDocumento ||
+          "";
+
+        const email =
+          user.email ||
+          athlete.email ||
+          athlete.correo ||
+          "";
+
+        const phoneNumber =
+          user.phoneNumber ||
+          athlete.phoneNumber ||
+          athlete.telefono ||
+          "";
+
+        const fechaMatricula =
+          enrollment.fechaMatricula ||
+          enrollment.enrollmentDate ||
+          enrollment.fechaInscripcion ||
+          enrollment.createdAt ||
+          item.fechaMatricula ||
+          item.createdAt ||
+          null;
+
+        const fechaVencimiento =
+          enrollment.fechaVencimiento ||
+          enrollment.expirationDate ||
+          null;
+
+        const estadoMatricula =
+          enrollment.estado ||
+          enrollment.status ||
+          item.estadoMatricula ||
+          null;
+
+        const base = {
+          id: athlete.id || item.athleteId || item.id,
+          firstName,
+          lastName,
+          identification,
+          email,
+          phoneNumber,
+          categoria: athlete.categoria || null,
+          estado: athlete.status || athlete.estado || null,
+          fechaMatricula,
+          fechaVencimiento,
+          estadoMatricula,
+        };
+
+        const enrollmentForLists = {
+          id: enrollment.id,
+          fechaMatricula,
+          fechaVencimiento,
+          estado: estadoMatricula,
+          fechaInicio: enrollment.fechaInicio || null,
+        };
+
+        const result = {
+          ...base,
+          enrollments: [enrollmentForLists],
+          latestEnrollment: enrollmentForLists,
+          athlete: {
+            ...athlete,
+            user,
+          },
+        };
+
+        return result;
+      });
+
+      // Verificar duplicados
+      const ids = data.map(item => item.id);
+      const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
+      if (duplicateIds.length > 0) {
+        console.warn('⚠️ [EnrollmentsService.getAll] Duplicados detectados:', duplicateIds);
+      }
+
       return {
         success: true,
-        data: data,
+        data,
         total: response.data.total || data.length,
         hasMore: response.data.hasMore || false,
       };
@@ -128,36 +197,92 @@ class EnrollmentsService {
    */
   async createEnrollment(athleteData, preRegistrationId = null) {
     try {
-      console.log("📤 [EnrollmentsService.createEnrollment] Iniciando...");
-      console.log("📤 [EnrollmentsService.createEnrollment] Datos recibidos:", athleteData);
-      console.log("📤 [EnrollmentsService.createEnrollment] preRegistrationId:", preRegistrationId);
+      // USAR EL ENDPOINT CORRECTO /api/enrollments para crear matrículas con estado PENDING_PAYMENT
+      const dataToSend = prepareEnrollmentData(athleteData, preRegistrationId);
 
-      // USAR EL ENDPOINT ANTIGUO /api/athletes que SÍ funciona
-      // Enviar datos en formato plano con preRegistrationId
-      const dataToSend = {
-        ...athleteData,
-        ...(preRegistrationId && { preRegistrationId }),
-      };
+      // Usar el endpoint de enrollments (el correcto para matrículas)
+      const response = await apiClient.post(this.enrollmentsEndpoint, dataToSend);
 
-      console.log(
-        "📤 [EnrollmentsService.createEnrollment] Data final:",
-        JSON.stringify(dataToSend, null, 2)
-      );
-
-      // Usar el endpoint de athletes (el que funciona actualmente)
-      const response = await apiClient.post(this.endpoint, dataToSend);
-
-      console.log("✅ [EnrollmentsService.createEnrollment] Respuesta:", response);
+      // Si la matrícula se creó exitosamente, intentar actualizar la categoría del atleta
+      if (response.data && athleteData.categoria) {
+        try {
+          // Buscar el ID del atleta en diferentes lugares de la respuesta
+          let athleteId = null;
+          if (response.data.athlete?.id) {
+            athleteId = response.data.athlete.id;
+          } else if (response.data.athleteId) {
+            athleteId = response.data.athleteId;
+          } else if (response.data.id) {
+            // Si la respuesta es directamente el atleta
+            athleteId = response.data.id;
+          }
+          
+          if (athleteId) {
+            // Primero obtener los datos completos del atleta
+            const athleteResponse = await apiClient.get(`${this.endpoint}/${athleteId}`);
+            
+            if (athleteResponse.success && athleteResponse.data) {
+              // Actualizar solo la categoría manteniendo todos los demás datos
+              const updateData = {
+                ...athleteResponse.data,
+                categoria: athleteData.categoria
+              };
+              
+              const updateResponse = await apiClient.put(`${this.endpoint}/${athleteId}`, updateData);
+            } else {
+              console.warn("⚠️ [EnrollmentsService.createEnrollment] No se pudieron obtener los datos del atleta");
+            }
+          } else {
+            console.warn("⚠️ [EnrollmentsService.createEnrollment] No se encontró ID del atleta en la respuesta");
+          }
+        } catch (categoryError) {
+          console.warn("⚠️ [EnrollmentsService.createEnrollment] Error actualizando categoría:", categoryError);
+          // No fallar la operación completa por este error
+        }
+      }
 
       return {
         success: true,
         data: response.data,
         emailSent: response.emailSent || false,
         temporaryPassword: response.temporaryPassword || null,
-        message: response.message || "Deportista creada exitosamente",
+        message: response.message || "Matrícula creada exitosamente con estado pendiente de pago",
       };
     } catch (error) {
       console.error("❌ [EnrollmentsService.createEnrollment] Error:", error);
+      
+      let errorMessage = error.message;
+      
+      // Manejar error específico de timeout de transacción
+      if (error.message && error.message.includes('Transaction already closed')) {
+        errorMessage = 'El servidor está procesando muchas solicitudes. Por favor, intenta crear la matrícula nuevamente en unos segundos.';
+      }
+      
+      // Manejar otros errores de timeout
+      if (error.message && error.message.includes('timeout')) {
+        errorMessage = 'La operación está tomando más tiempo del esperado. Por favor, intenta nuevamente.';
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Activa una matrícula cuando se aprueba el pago inicial
+   * @param {number} enrollmentId - ID de la matrícula
+   * @returns {Promise<Object>} Resultado de la operación
+   */
+  async activateEnrollment(enrollmentId) {
+    try {
+      const response = await apiClient.post(`${this.enrollmentsEndpoint}/${enrollmentId}/activate`);
+
+      return {
+        success: true,
+        data: response.data,
+        message: response.message || "Matrícula activada exitosamente",
+      };
+    } catch (error) {
+      console.error("❌ [EnrollmentsService.activateEnrollment] Error:", error);
       return { success: false, error: error.message };
     }
   }

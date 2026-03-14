@@ -115,9 +115,9 @@ const SmartRedirect = () => {
     return <Navigate to="/dashboard/analytics" replace />;
   }
 
-  // Si es deportista o acudiente, redirigir a Gestión de Citas
+  // Si es deportista o acudiente, redirigir a Mis Pagos
   if (isAthleteOrGuardian) {
-    return <Navigate to="/dashboard/appointment-management" replace />;
+    return <Navigate to="/dashboard/athlete-payments" replace />;
   }
 
   // Buscar la primera página a la que tiene acceso

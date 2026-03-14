@@ -22,7 +22,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 // Estados de matrícula

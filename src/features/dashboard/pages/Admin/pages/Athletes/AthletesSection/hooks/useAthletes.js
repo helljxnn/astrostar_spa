@@ -8,6 +8,7 @@ import AthletesService from '../services/AthletesService.js';
 import GuardiansService from '../services/GuardiansService.js';
 import { showSuccessAlert, showErrorAlert } from '../../../../../../../../shared/utils/alerts.js';
 import { useAuth } from '../../../../../../../../shared/contexts/authContext.jsx';
+import { PAGINATION_CONFIG } from '../../../../../../../../shared/constants/paginationConfig.js';
 
 export const useAthletes = () => {
   const { isAuthenticated } = useAuth();
@@ -16,8 +17,8 @@ export const useAthletes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
+    page: PAGINATION_CONFIG.DEFAULT_PAGE,
+    limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
     total: 0,
     totalPages: 0,
     hasNext: false,
@@ -30,29 +31,25 @@ export const useAthletes = () => {
   });
 
   /**
-   * Cargar deportistas con filtros
+   * Cargar deportistas con filtros - OPTIMIZADO
    */
-  const loadAthletes = useCallback(async (params = {}) => {
-    setLoading(true);
+  const loadAthletes = useCallback(async (params = {}, silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     setError(null);
     
     try {
-const response = await AthletesService.getAthletes({
-        page: pagination.page,
-        limit: pagination.limit,
-        ...params
+      const response = await AthletesService.getAthletes({
+        page: params.page || PAGINATION_CONFIG.DEFAULT_PAGE,
+        limit: params.limit || PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: params.search,
+        status: params.status,
+        categoria: params.categoria,
+        estadoInscripcion: params.estadoInscripcion
       });
-      console.log('🔄 [useAthletes] Respuesta de getAthletes:', response);
 
       if (response.success) {
-        console.log('✅ [useAthletes] Deportistas cargados:', response.data.length);
-        console.log('🔍 [useAthletes] Primer deportista:', response.data[0]);
-        console.log('🔍 [useAthletes] Acudientes en deportistas:', response.data.map(a => ({
-          id: a.id,
-          nombre: a.firstName || a.nombres,
-          acudiente: a.acudiente,
-          guardian: a.guardian
-        })));
         setAthletes(response.data);
         setPagination(response.pagination);
       } else {
@@ -62,27 +59,42 @@ const response = await AthletesService.getAthletes({
     } catch (err) {
       console.error('❌ [useAthletes] Excepción al cargar deportistas:', err);
       setError(err.message);
-      showErrorAlert('Error', 'No se pudieron cargar los deportistas');
+      if (!silent) {
+        showErrorAlert('Error', 'No se pudieron cargar los deportistas');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [pagination.page, pagination.limit]);
+  }, []); // Sin dependencias para evitar loops
 
   /**
-   * Cargar acudientes
+   * Cargar acudientes bajo demanda (OPTIMIZADO - solo cuando sea necesario)
    */
-  const loadGuardians = useCallback(async () => {
+  const loadGuardians = useCallback(async (searchTerm = '') => {
     try {
-const response = await GuardiansService.getGuardians({
-        limit: 100 // Límite máximo permitido por el backend
-      });
-if (response.success) {
-setGuardians(response.data);
+      // Si hay término de búsqueda, usar búsqueda específica
+      if (searchTerm && searchTerm.length >= 2) {
+        const response = await GuardiansService.searchGuardians(searchTerm, 20);
+        if (response.success) {
+          setGuardians(response.data);
+        }
+      } else if (!searchTerm) {
+        // Solo cargar algunos si no hay término de búsqueda (para casos específicos)
+        const response = await GuardiansService.getGuardians({
+          limit: 30 // Reducir de 50 a 30 para mejor rendimiento
+        });
+        if (response.success) {
+          setGuardians(response.data);
+        }
       } else {
-        console.error('❌ Error en respuesta de acudientes:', response);
+        // Limpiar lista si el término es muy corto
+        setGuardians([]);
       }
     } catch (err) {
       console.error('❌ Error cargando acudientes:', err);
+      setGuardians([]);
     }
   }, []);
 
@@ -108,7 +120,6 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
       if (allDocTypesResponse && allDocTypesResponse.success) {
         // Obtener los tipos de documento de la respuesta
         const allDocTypes = allDocTypesResponse.data?.documentTypes || allDocTypesResponse.data || [];
-console.log('📊 Total tipos:', allDocTypes.length);
         
         // Para DEPORTISTAS: Usar los tipos del endpoint específico de deportistas
         let athleteDocTypes = [];
@@ -122,7 +133,6 @@ console.log('📊 Total tipos:', allDocTypes.length);
             name: dt.name,
             description: dt.description
           }));
-console.log('📊 Total deportistas:', athleteDocTypes.length);
 } else {
 // Fallback: filtrar manualmente
           athleteDocTypes = allDocTypes.filter(dt => {
@@ -157,7 +167,6 @@ console.log('📊 Total deportistas:', athleteDocTypes.length);
           );
           return !isExcluded;
         });
-console.log('📊 Total acudientes:', guardianDocTypes.length);
 // Transformar acudientes a la estructura que esperan los componentes
         const guardianDocTypesWithName = guardianDocTypes.map(dt => ({
           ...dt,
@@ -216,7 +225,7 @@ if (response.success) {
     } finally {
       setLoading(false);
     }
-  }, [loadAthletes]);
+  }, []);
 
   /**
    * Actualizar deportista
@@ -255,7 +264,7 @@ if (response.success) {
     } finally {
       setLoading(false);
     }
-  }, [loadAthletes]);
+  }, []);
 
   /**
    * Eliminar deportista
@@ -281,7 +290,7 @@ if (response.success) {
     } finally {
       setLoading(false);
     }
-  }, [loadAthletes]);
+  }, []);
 
   /**
    * Crear acudiente
@@ -366,14 +375,14 @@ if (response.success) {
     } finally {
       setLoading(false);
     }
-  }, [loadGuardians, loadAthletes]);
+  }, []);
 
   /**
    * Cambiar página
    */
   const changePage = useCallback((newPage) => {
-    setPagination(prev => ({ ...prev, page: newPage }));
-  }, []);
+    loadAthletes({ page: newPage });
+  }, [loadAthletes]);
 
   /**
    * Cambiar límite por página
@@ -382,20 +391,30 @@ if (response.success) {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
-  // Cargar datos iniciales solo si está autenticado
+  // Cargar datos iniciales solo si está autenticado - OPTIMIZADO
   useEffect(() => {
     if (isAuthenticated) {
       loadReferenceData();
-      // NO cargar todos los acudientes al inicio - se cargarán bajo demanda
-      // loadGuardians(); // ❌ ELIMINADO - Esto causaba lentitud
+      // NO cargar acudientes al inicio - se cargarán bajo demanda
     }
   }, [isAuthenticated, loadReferenceData]);
 
+  // Cargar deportistas solo al inicio - SIN dependencias que causen loops
   useEffect(() => {
     if (isAuthenticated) {
-      loadAthletes();
+      loadAthletes({ 
+        page: PAGINATION_CONFIG.DEFAULT_PAGE, 
+        limit: PAGINATION_CONFIG.ROWS_PER_PAGE 
+      }, false); // Carga inicial con parámetros explícitos
     }
-  }, [isAuthenticated, pagination.page, loadAthletes]);
+  }, [isAuthenticated, loadAthletes]); // Incluir loadAthletes como dependencia
+
+  /**
+   * Función refresh estable que no causa loops
+   */
+  const refresh = useCallback(async (params = {}, silent = false) => {
+    return await loadAthletes(params, silent);
+  }, [loadAthletes]);
 
   return {
     // Estado
@@ -419,6 +438,6 @@ if (response.success) {
     changeLimit,
     
     // Utilidades
-    refresh: loadAthletes
+    refresh
   };
 };

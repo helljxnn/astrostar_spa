@@ -364,17 +364,16 @@ function DynamicSideBar({
             {renderModule("users")}
             {renderModule("roles")}
 
-            {/* Enlace directo a Gestión de citas para deportista y acudiente */}
-            {isModuleVisible("appointmentManagement") &&
-              isAthleteOrGuardian &&
-              renderModule("appointmentManagement")}
+            {/* Para deportistas y acudientes: módulos directos SIN dropdown */}
+            {isAthleteOrGuardian && renderModule("appointmentManagement")}
+            {isAthleteOrGuardian && renderModule("myPayments")}
 
-            {/* Grupos de módulos - Ocultar "services" para deportistas y acudientes */}
-            {renderGroup("equipment")}
+            {/* Grupos de módulos - Solo para NO deportistas */}
+            {!isAthleteOrGuardian && renderGroup("equipment")}
             {!isAthleteOrGuardian && renderGroup("services")}
-            {renderGroup("athletes")}
-            {renderGroup("donations")}
-            {renderGroup("events")}
+            {!isAthleteOrGuardian && renderGroup("athletes")}
+            {!isAthleteOrGuardian && renderGroup("donations")}
+            {!isAthleteOrGuardian && renderGroup("events")}
           </div>
         </nav>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import PaymentsService from "../services/PaymentsService";
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { paymentsService } from "../services/PaymentsService.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 /**
  * Hook para gestionar configuración de pagos (Admin)
@@ -13,7 +13,7 @@ export const usePaymentSettings = () => {
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await PaymentsService.getPaymentSettings();
+      const response = await paymentsService.getPaymentSettings();
       setSettings(response);
     } catch (error) {
       console.error("Error fetching payment settings:", error);
@@ -26,7 +26,7 @@ export const usePaymentSettings = () => {
   const updateSettings = useCallback(async (newSettings) => {
     setUpdating(true);
     try {
-      const response = await PaymentsService.updatePaymentSettings(newSettings);
+      const response = await paymentsService.updatePaymentSettings(newSettings);
       setSettings(response);
       showSuccessAlert("Configuración actualizada exitosamente");
       return { success: true };

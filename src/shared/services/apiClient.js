@@ -28,10 +28,11 @@ class ApiClient {
     this.accessToken = null;
   }
 
-  // Manejar loader automático
+  // Manejar loader automático - OPTIMIZADO
   startRequest(skipLoader = false) {
     if (!skipLoader) {
       this.activeRequests++;
+      // Solo mostrar loader si es la primera petición y no hay muchas activas
       if (this.activeRequests === 1) {
         showGlobalLoader("Cargando...");
       }
@@ -41,9 +42,14 @@ class ApiClient {
   endRequest(skipLoader = false) {
     if (!skipLoader) {
       this.activeRequests--;
+      // Ocultar loader con un pequeño delay para evitar parpadeos
       if (this.activeRequests <= 0) {
         this.activeRequests = 0;
-        hideGlobalLoader();
+        setTimeout(() => {
+          if (this.activeRequests === 0) {
+            hideGlobalLoader();
+          }
+        }, 100); // 100ms delay para suavizar la experiencia
       }
     }
   }

@@ -15,7 +15,7 @@ import { useSportsCategories } from "./hooks/useSportsCategories";
 import {
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../shared/utils/Alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const MODULE_NAME = "sportsCategory";

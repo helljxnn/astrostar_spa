@@ -7,7 +7,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import {
   useFormGuardianValidation,
   guardianValidationRules,
@@ -53,20 +53,15 @@ const GuardianModal = ({
       guardianValidationRules
     );
 
-  // Wrapper para asegurar que siempre se llame con 2 parámetros - V3 FINAL
-  const handleChange = function(nameOrEvent, value) {
-    console.log('✅✅✅ WRAPPER V3 EJECUTÁNDOSE', nameOrEvent, value);
+  // Wrapper optimizado para manejar eventos y llamadas directas
+  const handleChange = useCallback((nameOrEvent, value) => {
     if (typeof nameOrEvent === 'string') {
-      // Ya viene con 2 parámetros
       hookHandleChange(nameOrEvent, value);
     } else if (nameOrEvent?.target) {
-      // Es un evento, extraer name y value
       const { name, value: val } = nameOrEvent.target;
       hookHandleChange(name, val);
     }
-  };
-  
-  console.log('🎯🎯🎯 handleChange.length:', handleChange.length);
+  }, [hookHandleChange]);
 
 
 
@@ -122,7 +117,7 @@ const GuardianModal = ({
     // Debounce de 500ms
     const timeoutId = setTimeout(checkDocument, 500);
     return () => clearTimeout(timeoutId);
-  }, [values.identification, isEditing, guardianToEdit?.id]); // ✅ Removidas dependencias problemáticas
+  }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
 
   // ❌ VALIDACIÓN DE EMAIL ELIMINADA PARA ACUDIENTES
   // Los acudientes pueden compartir email con deportistas o entre ellos
@@ -157,7 +152,7 @@ const GuardianModal = ({
         return prev;
       });
     }
-  }, [values.fechaNacimiento]); // ✅ Removida dependencia problemática
+  }, [values.fechaNacimiento, setTouched, setErrors]);
 
   useEffect(() => {
     if (isOpen && isEditing && guardianToEdit) {

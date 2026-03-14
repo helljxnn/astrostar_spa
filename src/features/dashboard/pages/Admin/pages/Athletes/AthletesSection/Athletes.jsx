@@ -71,17 +71,30 @@ const Athletes = () => {
     return guardians.find((g) => String(g.id) === String(guardianId));
   };
 
-  // Cargar deportistas cuando cambia la página o el término de búsqueda
+  // Cargar deportistas cuando cambia el término de búsqueda
   useEffect(() => {
-    const loadData = async () => {
-      await refresh({
-        page: pagination.page,
+    let timeoutId;
+    
+    const loadData = () => {
+      refresh({
+        page: 1, // Resetear a página 1 en búsquedas
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm, // Enviar búsqueda al backend
+        search: searchTerm,
       });
     };
-    loadData();
-  }, [pagination.page, searchTerm]);
+    
+    // Debounce para búsqueda
+    if (searchTerm) {
+      timeoutId = setTimeout(loadData, 300);
+    } else {
+      // Cargar inmediatamente cuando se limpia la búsqueda
+      loadData();
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchTerm, refresh]); // Incluir refresh como dependencia
 
   // Usar datos del servidor directamente (ya vienen filtrados y paginados)
   const totalRows = pagination.total;
@@ -466,13 +479,7 @@ const Athletes = () => {
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  changePage(1);
-                }
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar deportista..."
             />
           </div>
@@ -622,11 +629,16 @@ const Athletes = () => {
         <>
           <div className="w-full bg-white rounded-lg">
             <Table
+              serverPagination={true}
+              totalRows={pagination.total}
+              currentPage={pagination.page}
+              onPageChange={changePage}
+              rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
               thead={{
                 titles: [
                   "Nombre Completo",
+                  "Identificación",
                   "Categoría",
-                  "Teléfono",
                   "Acudiente",
                 ],
                 state: true,
@@ -651,15 +663,15 @@ const Athletes = () => {
                   return {
                     ...a,
                     nombreCompleto,
-                    telefono: a.phoneNumber || a.telefono || "Sin teléfono",
-                    acudienteNombre:
-                      guardian?.nombreCompleto || "Sin acudiente",
+                    identificacion: a.identification || a.numeroDocumento || "Sin identificación",
+                    acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+                    categoria: a.categoria || "Sin categoría",
                   };
                 }),
                 dataPropertys: [
                   "nombreCompleto",
+                  "identificacion",
                   "categoria",
-                  "telefono",
                   "acudienteNombre",
                 ],
                 state: true,

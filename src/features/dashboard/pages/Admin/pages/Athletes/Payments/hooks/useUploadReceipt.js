@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
-import PaymentsService from "../services/PaymentsService";
-import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { paymentsService } from "../services/PaymentsService.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 /**
  * Hook para subir comprobantes de pago
@@ -11,7 +11,7 @@ export const useUploadReceipt = () => {
 
   const uploadReceipt = useCallback(async (obligationId, file) => {
     // Validar archivo
-    const validationErrors = PaymentsService.validateFile(file);
+    const validationErrors = paymentsService.validateFile(file);
     if (validationErrors.length > 0) {
       showErrorAlert(validationErrors.join(', '));
       return { success: false, errors: validationErrors };
@@ -26,7 +26,7 @@ export const useUploadReceipt = () => {
         setProgress(prev => Math.min(prev + 10, 90));
       }, 100);
 
-      const response = await PaymentsService.uploadReceipt(obligationId, file);
+      const response = await paymentsService.uploadReceipt(obligationId, file);
       
       clearInterval(progressInterval);
       setProgress(100);

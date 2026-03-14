@@ -1,17 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
   FaUpload,
   FaHistory,
   FaExclamationTriangle,
   FaCheckCircle,
   FaTimesCircle,
-  FaInfoCircle,
   FaLock,
   FaTimes,
 } from "react-icons/fa";
 
 import { useAuth } from "../../../../../../../shared/contexts/authContext.jsx";
-import PaymentsService from "./services/PaymentsService.js";
+import { paymentsService } from "./services/PaymentsService.js";
+import { useAthleteFinancialStatus } from "./hooks/useAthleteFinancialStatus.js";
 import { formatCurrency } from "./utils/currencyUtils.js";
 import { showErrorAlert, showSuccessAlert } from "../../../../../../../shared/utils/alerts.js";
 
@@ -20,20 +21,68 @@ import { showErrorAlert, showSuccessAlert } from "../../../../../../../shared/ut
 // ─────────────────────────────────────────────────────────────────────────────
 const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState("");
+  const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const errors = PaymentsService.validateFile(file);
+    
+    const errors = paymentsService.validateFile(file);
     if (errors.length > 0) {
       setFileError(errors.join(". "));
       setSelectedFile(null);
+      setPreviewUrl(null);
     } else {
       setFileError("");
       setSelectedFile(file);
+      
+      // Crear preview para imágenes
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setPreviewUrl(url);
+      } else {
+        setPreviewUrl(null);
+      }
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      const errors = paymentsService.validateFile(file);
+      if (errors.length > 0) {
+        setFileError(errors.join(". "));
+        setSelectedFile(null);
+        setPreviewUrl(null);
+      } else {
+        setFileError("");
+        setSelectedFile(file);
+        
+        if (file.type.startsWith('image/')) {
+          const url = URL.createObjectURL(file);
+          setPreviewUrl(url);
+        } else {
+          setPreviewUrl(null);
+        }
+      }
     }
   };
 
@@ -41,14 +90,13 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
     if (!selectedFile || !obligationId) return;
     setUploading(true);
     try {
-      await PaymentsService.uploadReceipt(obligationId, selectedFile);
+      await paymentsService.uploadReceipt(obligationId, selectedFile);
       showSuccessAlert(
         "Comprobante subido",
         "Tu comprobante fue enviado exitosamente y será revisado por administración."
       );
-      setSelectedFile(null);
+      handleClose();
       onSuccess();
-      onClose();
     } catch (error) {
       const msg = error?.response?.data?.message || "Error al subir el comprobante";
       showErrorAlert("Error", msg);
@@ -58,87 +106,204 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
   };
 
   const handleClose = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     setSelectedFile(null);
+    setPreviewUrl(null);
     setFileError("");
+    setDragActive(false);
     onClose();
+  };
+
+  const handleChangeFile = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setFileError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <FaUpload className="text-primary-blue" /> Subir Comprobante
-          </h3>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600">
-            <FaTimes />
-          </button>
-        </div>
+  const getFileIcon = () => {
+    if (!selectedFile) return <FaUpload className="text-gray-400" size={40} />;
+    
+    if (selectedFile.type === 'application/pdf') {
+      return <FaTimesCircle className="text-red-500" size={40} />;
+    }
+    return <FaCheckCircle className="text-blue-500" size={40} />;
+  };
 
-        <p className="text-sm text-gray-500 mb-4">
-          Sube la imagen o PDF del comprobante de pago. Máximo 5 MB. Formatos aceptados: JPG, PNG, WEBP, PDF.
-        </p>
-
-        <div
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-primary-blue transition-colors"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.webp,.pdf"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          {selectedFile ? (
-            <div className="flex items-center justify-center gap-2 text-green-700">
-              <FaCheckCircle />
-              <span className="text-sm font-medium">{selectedFile.name}</span>
-            </div>
-          ) : (
-            <div className="text-gray-400">
-              <FaUpload className="mx-auto mb-2 text-2xl" />
-              <p className="text-sm">Haz clic para seleccionar un archivo</p>
-            </div>
-          )}
-        </div>
-
-        {fileError && (
-          <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-            <FaTimesCircle /> {fileError}
-          </p>
-        )}
-
-        <div className="flex gap-3 mt-5">
+  const modalContent = (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={handleClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             disabled={uploading}
           >
-            Cancelar
+            ✕
           </button>
-          <button
-            onClick={handleUpload}
-            disabled={!selectedFile || uploading}
-            className="flex-1 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            {uploading ? (
-              <>
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                Subiendo...
-              </>
+          <h2 className="text-lg font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center pr-8">
+            Subir Comprobante
+          </h2>
+        </div>
+
+        {/* Body - SIN overflow-y-auto para evitar scroll */}
+        <div className="flex-1 p-4 space-y-3">
+          <p className="text-xs text-gray-600">
+            Sube la imagen o PDF del comprobante de pago. Máximo 5 MB. Formatos: JPG, PNG, WEBP, PDF.
+          </p>
+
+          {/* File Upload Area */}
+          {!selectedFile ? (
+            <div
+              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all ${
+                dragActive
+                  ? 'border-primary-blue bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                disabled={uploading}
+              />
+
+              <div className="space-y-3">
+                <div className="flex justify-center">
+                  <FaUpload className="text-gray-400" size={32} />
+                </div>
+                <div>
+                  <p className="text-gray-700 font-medium text-sm">
+                    Haz clic para seleccionar un archivo
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    o arrastra y suelta aquí
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Preview Area - Compacto */
+            <div className="space-y-2">
+              {/* Mini mensaje compacto */}
+              <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                <FaCheckCircle className="text-green-600 flex-shrink-0" size={14} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-green-700 font-medium truncate">{selectedFile.name}</p>
+                  <p className="text-xs text-green-600">
+                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
+
+              {/* Image Preview - Más pequeño */}
+              {previewUrl && (
+                <div className="bg-gray-50 rounded-lg p-2 border border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-1">Vista previa:</p>
+                  <div className="flex justify-center">
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="max-h-40 rounded-lg shadow-sm object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Change File Button */}
+              <button
+                onClick={handleChangeFile}
+                className="w-full py-1.5 text-xs text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={uploading}
+              >
+                Cambiar archivo
+              </button>
+            </div>
+          )}
+
+          {fileError && (
+            <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-600 flex items-center gap-2">
+                <FaExclamationTriangle size={12} /> {fileError}
+              </p>
+            </div>
+          )}
+
+          {/* Important Notes - Compacto */}
+          <div className="bg-gray-100 border border-gray-300 rounded-lg p-2">
+            <div className="flex items-start gap-2">
+              <FaExclamationTriangle className="text-gray-500 flex-shrink-0 mt-0.5" size={11} />
+              <div>
+                <h5 className="font-semibold text-gray-700 mb-1 text-xs">Importante:</h5>
+                <ul className="text-xs text-gray-600 space-y-0.5">
+                  <li>• El comprobante debe mostrar claramente el monto pagado</li>
+                  <li>• La imagen debe ser legible y completa</li>
+                  <li>• Una vez enviado, estará en revisión por administración</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-gray-200 p-3 bg-gray-50">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={handleClose}
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              disabled={uploading}
+            >
+              Cancelar
+            </button>
+            {selectedFile ? (
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="px-4 py-2 text-sm bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin w-3 h-3 border-2 border-white border-t-transparent rounded-full" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <FaUpload size={13} />
+                    Enviar Comprobante
+                  </>
+                )}
+              </button>
             ) : (
-              <>
-                <FaUpload /> Enviar comprobante
-              </>
+              <button
+                disabled
+                className="px-4 py-2 text-sm bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+              >
+                Selecciona un archivo
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -146,11 +311,24 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const AthletePayments = () => {
   const { user } = useAuth();
-  const athleteId = user?.athleteId;
-
-  const [financialStatus, setFinancialStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
+  // Intentar múltiples formas de obtener el athleteId
+  const athleteId = user?.athleteId || user?.athlete_id || user?.id;
+  
+  // Usar el hook mejorado para estado financiero
+  const {
+    financialStatus,
+    accessStatus,
+    loading,
+    error,
+    summary,
+    isRestricted,
+    pendingObligations,
+    enrollmentObligation,
+    totalDebt,
+    isBlocked,
+    refresh: fetchFinancialStatus
+  } = useAthleteFinancialStatus(athleteId);
 
   const [activeTab, setActiveTab] = useState("pendientes");
 
@@ -158,25 +336,62 @@ const AthletePayments = () => {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedObligationId, setSelectedObligationId] = useState(null);
 
-  // ── Cargar estado financiero ──
-  const fetchFinancialStatus = async () => {
-    if (!athleteId) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await PaymentsService.getAthleteFinancialStatus(athleteId);
-      setFinancialStatus(response.data || response);
-    } catch (err) {
-      console.error("Error cargando estado financiero:", err);
-      setError("No se pudo cargar tu información de pagos. Intenta de nuevo.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  console.log("=== AthletePayments Debug ===");
+  console.log("Usuario completo:", user);
+  console.log("Posibles athleteId:", {
+    athleteId: user?.athleteId,
+    athlete_id: user?.athlete_id,
+    id: user?.id,
+    finalAthleteId: athleteId
+  });
+  console.log("Estado financiero completo:", financialStatus);
+  console.log("Obligación de matrícula:", enrollmentObligation);
+  console.log("Estado de matrícula:", financialStatus?.enrollment?.estado);
+  console.log("Fecha de inicio matrícula:", financialStatus?.enrollment?.fechaInicio);
 
-  useEffect(() => {
-    fetchFinancialStatus();
-  }, [athleteId]);
+  // ── Lógica mejorada para detectar tipo de matrícula ──
+  // Detectar si es realmente una matrícula inicial basándose en múltiples criterios
+  const isReallyInitialEnrollment = enrollmentObligation && (
+    // Criterio 1: Explícitamente marcado como inicial
+    enrollmentObligation.isInitial === true ||
+    enrollmentObligation.type === 'INITIAL_ENROLLMENT' ||
+    enrollmentObligation.type === 'ENROLLMENT_INITIAL' ||
+    // Criterio 2: Estado de matrícula pendiente de pago inicial
+    financialStatus?.enrollment?.estado === 'Pending_Payment' ||
+    // Criterio 3: No tiene needsRenewal o es false
+    !enrollmentObligation.needsRenewal ||
+    // Criterio 4: Es la primera matrícula (no hay fechas de activación previas)
+    !financialStatus?.enrollment?.fechaInicio
+  );
+
+  const isReallyRenewal = enrollmentObligation && !isReallyInitialEnrollment && (
+    enrollmentObligation.needsRenewal === true ||
+    enrollmentObligation.type === 'RENEWAL' ||
+    enrollmentObligation.type === 'ENROLLMENT_RENEWAL' ||
+    financialStatus?.enrollment?.fechaInicio // Ya tuvo una activación previa
+  );
+
+  // CRÍTICO: Detectar matrícula inicial pendiente de pago
+  // Una matrícula recién creada puede estar marcada como "Vigente" por error del backend
+  // pero si no tiene fechaInicio significa que nunca se activó (nunca se pagó)
+  const hasActiveEnrollment = financialStatus?.enrollment?.estado === 'Vigente' && 
+                              financialStatus?.enrollment?.fechaInicio; // Solo vigente SI tiene fecha de inicio
+  
+  // Detectar matrícula inicial pendiente: 
+  // 1. Hay obligación de matrícula Y
+  // 2. (NO tiene matrícula activa O estado es Pending_Payment O no tiene fecha de inicio)
+  const shouldShowEnrollmentPayment = enrollmentObligation && (
+    !hasActiveEnrollment || 
+    financialStatus?.enrollment?.estado === 'Pending_Payment' || 
+    financialStatus?.enrollment?.estado === 'Vencida' ||
+    !financialStatus?.enrollment?.fechaInicio // CLAVE: Sin fecha de inicio = nunca se activó
+  );
+
+  console.log("Estado de matrícula:", financialStatus?.enrollment?.estado);
+  console.log("Tiene matrícula vigente:", hasActiveEnrollment);
+  console.log("Debe mostrar pago de matrícula:", shouldShowEnrollmentPayment);
+  console.log("Es matrícula inicial:", isReallyInitialEnrollment);
+  console.log("Es renovación:", isReallyRenewal);
 
   // ── Abrir modal de subida ──
   const handleUploadReceipt = (obligationId) => {
@@ -187,19 +402,20 @@ const AthletePayments = () => {
   // ── Helpers ──
   const getStatusBadge = (status) => {
     const statusConfig = {
-      PENDING: { color: "bg-yellow-100 text-yellow-800 border border-yellow-200", text: "⏳ En revisión" },
-      APPROVED: { color: "bg-green-100 text-green-800 border border-green-200", text: "✅ Aprobado" },
-      REJECTED: { color: "bg-red-100 text-red-800 border border-red-200", text: "❌ Rechazado" },
+      PENDING: { color: "bg-yellow-100 text-yellow-800 border border-yellow-200", text: "En revisión" },
+      APPROVED: { color: "bg-green-100 text-green-800 border border-green-200", text: "Aprobado" },
+      REJECTED: { color: "bg-red-100 text-red-800 border border-red-200", text: "Rechazado" },
     };
-    if (!status) return { color: "bg-gray-100 text-gray-700 border border-gray-200", text: "📤 Sin comprobante" };
+    if (!status) return { color: "bg-gray-100 text-gray-700 border border-gray-200", text: "Sin comprobante" };
     return statusConfig[status] || { color: "bg-gray-100 text-gray-700 border border-gray-200", text: "Desconocido" };
   };
 
-  const pendingObligations = financialStatus?.allMonthlyDebts?.filter(
+  // Filtrar obligaciones por estado
+  const pendingObligationsFiltered = pendingObligations?.filter(
     (d) => d.paymentStatus === null || d.paymentStatus === "REJECTED"
   ) || [];
 
-  const inReviewObligations = financialStatus?.allMonthlyDebts?.filter(
+  const inReviewObligations = pendingObligations?.filter(
     (d) => d.paymentStatus === "PENDING"
   ) || [];
 
@@ -318,12 +534,10 @@ const AthletePayments = () => {
     );
   }
 
-  // ─── Caso: Matrícula inicial pendiente (ENROLLMENT_INITIAL) ───────────────
-  if (
-    financialStatus?.enrollment?.needsRenewal &&
-    financialStatus.enrollment.type === "ENROLLMENT_INITIAL"
-  ) {
-    const enroll = financialStatus.enrollment;
+  // ─── Caso: Matrícula inicial pendiente ───────────────
+  // Usar la lógica mejorada para detectar matrícula inicial
+  if (shouldShowEnrollmentPayment && isReallyInitialEnrollment) {
+    const enroll = enrollmentObligation;
     const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
 
     return (
@@ -332,10 +546,9 @@ const AthletePayments = () => {
 
         {/* Banner de bloqueo — Matrícula inicial */}
         <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6 mb-6 flex items-start gap-4">
-          <div className="text-amber-500 text-3xl mt-0.5">🎓</div>
           <div className="flex-1">
             <h2 className="text-lg font-bold text-amber-800 mb-1">
-              Pago de Matrícula Pendiente
+              Matrícula Inicial Requerida
             </h2>
             <p className="text-sm text-amber-700">
               Para acceder completamente al sistema debes completar el pago de tu matrícula inicial.
@@ -353,7 +566,7 @@ const AthletePayments = () => {
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm max-w-lg">
           <div className="flex items-center gap-2 mb-4">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-              🎓 Matrícula Inicial
+              Matrícula Inicial
             </span>
           </div>
 
@@ -406,44 +619,80 @@ const AthletePayments = () => {
   }
 
   // ─── Caso: Renovación de matrícula pendiente (ENROLLMENT_RENEWAL) ────────
-  if (
-    financialStatus?.enrollment?.needsRenewal &&
-    financialStatus.enrollment.type === "ENROLLMENT_RENEWAL"
-  ) {
+  // Usar la lógica mejorada para detectar renovación
+  if (shouldShowEnrollmentPayment && isReallyRenewal) {
+    const enroll = enrollmentObligation;
+    const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
+
     return (
       <div className="p-6 font-questrial w-full max-w-full">
         <h1 className="text-2xl font-semibold text-gray-800 mb-6">Mis Pagos</h1>
+
+        {/* Banner de renovación */}
         <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-6 flex items-start gap-4">
-          <FaInfoCircle className="text-purple-500 text-2xl mt-0.5" />
-          <div>
+          <div className="text-purple-500 text-3xl mt-0.5">🔄</div>
+          <div className="flex-1">
             <h2 className="text-lg font-bold text-purple-800 mb-1">
-              Renovación de Matrícula Pendiente
+              Renovación de Matrícula Requerida
             </h2>
             <p className="text-sm text-purple-700">
-              Tu matrícula venció y la administración ha generado una obligación de renovación.
-              Por favor, sube tu comprobante de pago para continuar usando el sistema.
+              Tu matrícula ha vencido y necesitas renovarla para continuar accediendo al sistema.
+              El sistema automático ha generado una obligación de renovación.
             </p>
+            {enroll.dueDate && (
+              <p className="text-xs text-purple-600 mt-1">
+                Fecha límite: {new Date(enroll.dueDate).toLocaleDateString("es-ES")}
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Tarjeta de renovación */}
         <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm max-w-lg">
-          <div className="flex justify-between font-semibold text-base mb-4">
-            <span>Renovación Matrícula:</span>
-            <span className="text-primary-blue">{formatCurrency(financialStatus.enrollment.amount)}</span>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+              🔄 Renovación Matrícula
+            </span>
           </div>
-          {financialStatus.enrollment.paymentStatus === "PENDING" ? (
+
+          <div className="space-y-2 mb-5 text-sm">
+            <div className="flex justify-between font-medium text-base border-b pb-2">
+              <span>Valor de renovación:</span>
+              <span className="text-primary-blue">{formatCurrency(enroll.amount)}</span>
+            </div>
+          </div>
+
+          {enroll.paymentStatus === "REJECTED" && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start gap-2">
+                <FaTimesCircle className="text-red-500 mt-0.5 flex-shrink-0" size={13} />
+                <div>
+                  <p className="text-xs font-semibold text-red-800 mb-0.5">Comprobante rechazado</p>
+                  <p className="text-xs text-red-700">
+                    Tu comprobante de renovación fue rechazado. Por favor sube uno nuevo.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {enroll.paymentStatus === "PENDING" ? (
             <div className="flex items-center gap-2 px-4 py-3 bg-yellow-50 text-yellow-800 rounded-lg text-sm">
               <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
-              Comprobante en revisión
+              Comprobante de renovación en revisión
             </div>
-          ) : (
+          ) : canUpload ? (
             <button
-              onClick={() => handleUploadReceipt(financialStatus.enrollment.obligationId)}
+              onClick={() => handleUploadReceipt(enroll.obligationId)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors font-medium"
             >
-              <FaUpload /> Subir comprobante
+              <FaUpload />
+              {enroll.paymentStatus === "REJECTED" ? "Subir nuevo comprobante" : "Subir comprobante de renovación"}
             </button>
-          )}
+          ) : null}
         </div>
+
+        {/* Modal de subida */}
         <ReceiptUploadModal
           isOpen={uploadModalOpen}
           onClose={() => setUploadModalOpen(false)}
@@ -455,17 +704,43 @@ const AthletePayments = () => {
   }
 
   // ─── Caso normal: vista de mensualidades ─────────────────────────────────
-  const totalDebt = financialStatus?.totalDebt;
-  const isBlocked = totalDebt?.maxDaysLate >= 15;
-
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Mis Pagos</h1>
+        
+        {/* Indicador de estado financiero */}
+        {summary && (
+          <div className={`px-3 py-1 rounded-full text-xs font-medium border ${
+            summary.status === 'current' ? 'bg-green-50 text-green-700 border-green-200' :
+            summary.status === 'debt' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+            summary.status === 'blocked' ? 'bg-red-50 text-red-700 border-red-200' :
+            summary.status === 'renewal' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+            'bg-gray-50 text-gray-700 border-gray-200'
+          }`}>
+            {summary.text}
+          </div>
+        )}
       </div>
 
-      {/* Banner de bloqueo */}
+      {/* Banner de restricción de acceso */}
+      {isRestricted && accessStatus && (
+        <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 mb-6 flex items-center gap-3">
+          <FaLock className="text-red-600 text-xl flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-red-800 text-sm">
+              Acceso Restringido
+            </p>
+            <p className="text-xs text-red-600">
+              {accessStatus.message || 'Tu acceso está limitado debido a pagos pendientes.'}
+              {accessStatus.lateDays && ` (${accessStatus.lateDays} días de mora)`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Banner de bloqueo por mora */}
       {isBlocked && (
         <div className="bg-red-50 border-2 border-red-300 rounded-xl p-4 mb-6 flex items-center gap-3">
           <FaLock className="text-red-600 text-xl flex-shrink-0" />
@@ -481,7 +756,7 @@ const AthletePayments = () => {
       )}
 
       {/* Resumen financiero */}
-      {totalDebt && (
+      {totalDebt && totalDebt.totalAmount > 0 && (
         <div className="bg-white rounded-xl shadow border border-gray-200 p-5 mb-6">
           <h2 className="text-base font-semibold text-gray-800 mb-4">Resumen Financiero</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -517,7 +792,7 @@ const AthletePayments = () => {
       <div className="mb-5">
         <div className="inline-flex gap-2">
           {[
-            { key: "pendientes", label: "Pendientes", count: pendingObligations.length, activeColor: "bg-primary-purple/10 text-primary-purple", badgeActive: "bg-primary-purple text-white" },
+            { key: "pendientes", label: "Pendientes", count: pendingObligationsFiltered.length, activeColor: "bg-primary-purple/10 text-primary-purple", badgeActive: "bg-primary-purple text-white" },
             { key: "revision", label: "En Revisión", count: inReviewObligations.length, activeColor: "bg-yellow-100 text-yellow-800", badgeActive: "bg-yellow-600 text-white" },
             { key: "historial", label: "Historial", count: null, activeColor: "bg-green-100 text-green-800", badgeActive: "bg-green-600 text-white" },
           ].map((tab) => (
@@ -545,8 +820,8 @@ const AthletePayments = () => {
       {/* Contenido de tabs */}
       <div className="space-y-4">
         {activeTab === "pendientes" && (
-          pendingObligations.length > 0 ? (
-            pendingObligations.map(renderObligationCard)
+          pendingObligationsFiltered.length > 0 ? (
+            pendingObligationsFiltered.map(renderObligationCard)
           ) : (
             <div className="text-center text-gray-500 py-10 bg-white rounded-2xl shadow border border-gray-200">
               <FaCheckCircle className="mx-auto text-3xl text-green-400 mb-2" />
