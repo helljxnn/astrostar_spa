@@ -384,29 +384,6 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
           {renderPermissions(roleData?.permissions)}
         </div>
 
-        {/* Usuarios asignados */}
-        {roleData?.users && roleData.users.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-4">
-              <FaFolderOpen className="text-primary-blue" />
-              Usuarios con este rol ({roleData.users.length})
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {roleData.users.map((user, idx) => (
-                <div
-                  key={idx}
-                  className="border rounded-lg p-3 shadow-sm bg-blue-50 hover:bg-blue-100 transition-colors"
-                >
-                  <p className="font-semibold text-gray-800">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <p className="text-sm text-gray-600">{user.email}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Botón cerrar */}
         <div className="flex justify-center pt-4 border-t">
           <button

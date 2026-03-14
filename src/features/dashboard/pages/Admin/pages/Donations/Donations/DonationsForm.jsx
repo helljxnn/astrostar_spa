@@ -20,7 +20,7 @@ import eventsService from "../../Events/services/eventsService";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import MaterialSearchSelector from "../../../../../../../shared/components/MaterialSearchSelector";
 
 const STATUS_OPTIONS = [
@@ -42,7 +42,13 @@ const DONATION_TYPE_MAP = DONATION_TYPE_OPTIONS.reduce((acc, option) => {
 
 const getTypeMeta = (typeValue) => DONATION_TYPE_MAP[typeValue] || null;
 
-const CHANNELS = ["Transferencia", "Consignacion", "Nequi", "PSE", "Otro"];
+const CHANNELS = [
+  "Transferencia bancaria",
+  "Consignacion",
+  "PSE",
+  "Efectivo",
+  "Otro",
+];
 
 const FOOD_CLASSES = ["Granos", "Proteinas", "Verduras", "Lacteos", "Otros"];
 const DEFAULT_RECEPTION_METHOD = "Donacion directa";
@@ -91,6 +97,8 @@ const DonationsForm = () => {
   const statusOnlyMode = Boolean(location.state?.statusOnly);
   const [donors, setDonors] = useState([]);
   const [loadingDonors, setLoadingDonors] = useState(false);
+  const [administrators, setAdministrators] = useState([]);
+  const [loadingAdministrators, setLoadingAdministrators] = useState(false);
   const [materials, setMaterials] = useState([]);
   const [loadingMaterials, setLoadingMaterials] = useState(false);
   const [events, setEvents] = useState([]);
@@ -104,14 +112,16 @@ const DonationsForm = () => {
   const [form, setForm] = useState({
     isFoodPurchase: false,
     donorSponsorId: "",
+    responsibleId: "",
     type: "",
-    status: "Ejecutada",
+    status: "Recibida",
     program: "",
     eventId: "",
     specificDestination: "",
     donationAt: getLocalDateTimeString(),
     econAmount: "",
     econChannel: "",
+    econChannelOther: "",
     econComprobante: null,
     especieMaterialId: "",
     especieDesc: "",
@@ -121,6 +131,7 @@ const DonationsForm = () => {
     especieSoporte: null,
     foodQty: "",
     foodClass: "",
+    foodClassOther: "",
     foodItems: [],
     foodFactura: null,
     foodEvidence: [],
@@ -137,7 +148,6 @@ const DonationsForm = () => {
         const list = Array.isArray(data) ? data : resp?.data?.data || [];
         setDonors(list);
       } catch (error) {
-        console.error("Error cargando donantes", error);
         showErrorAlert(
           "No se pudo cargar donantes/patrocinadores",
           "Revisa tu conexion o intenta mas tarde.",
@@ -147,6 +157,28 @@ const DonationsForm = () => {
       }
     };
     fetchDonors();
+  }, []);
+
+  useEffect(() => {
+    const fetchAdministrators = async () => {
+      setLoadingAdministrators(true);
+      try {
+        const employeeService = (
+          await import("../../Services/Employees/services/employeeService")
+        ).default;
+        const resp = await employeeService.getAdministratorsWithSignature();
+        const data = resp?.data || [];
+        setAdministrators(data);
+      } catch (error) {
+        showErrorAlert(
+          "No se pudo cargar administradores",
+          "Revisa tu conexion o intenta mas tarde.",
+        );
+      } finally {
+        setLoadingAdministrators(false);
+      }
+    };
+    fetchAdministrators();
   }, []);
 
   useEffect(() => {
@@ -162,7 +194,6 @@ const DonationsForm = () => {
         const data = resp?.data || [];
         setMaterials(data);
       } catch (error) {
-        console.error("Error cargando materiales", error);
         showErrorAlert(
           "No se pudo cargar materiales",
           "Revisa tu conexion o intenta mas tarde.",
@@ -184,6 +215,12 @@ const DonationsForm = () => {
 
     setIsEditing(Boolean(location.state?.isEditing));
     setEditingDonationId(donationState.id);
+
+    // Determinar si el canal es personalizado (no está en la lista predefinida)
+    const isCustomChannel =
+      donationState.econChannel &&
+      !CHANNELS.includes(donationState.econChannel);
+
     setForm((prev) => ({
       ...prev,
       donorSponsorId: donationState.donorSponsorId
@@ -196,7 +233,10 @@ const DonationsForm = () => {
       specificDestination: donationState.specificDestination || "",
       donationAt: donationState.donationAt || prev.donationAt,
       econAmount: donationState.econAmount ?? prev.econAmount,
-      econChannel: donationState.econChannel ?? prev.econChannel,
+      econChannel: isCustomChannel
+        ? "Otro"
+        : (donationState.econChannel ?? prev.econChannel),
+      econChannelOther: isCustomChannel ? donationState.econChannel : "",
       isFoodPurchase: donationState.isFoodPurchase ?? false,
       foodItems: donationState.foodItems || [],
       especieItems: donationState.especieItems || [],
@@ -234,7 +274,6 @@ const DonationsForm = () => {
         });
         setEvents(active.length ? active : list);
       } catch (error) {
-        console.error("Error cargando eventos activos", error);
         setEventsError("No se pudieron cargar los eventos activos.");
       } finally {
         setLoadingEvents(false);
@@ -266,9 +305,18 @@ const DonationsForm = () => {
       if (field === "isFoodPurchase" && !value) {
         next.foodQty = "";
         next.foodClass = "";
+        next.foodClassOther = "";
         next.foodItems = [];
         next.foodFactura = null;
         next.foodEvidence = [];
+      }
+
+      if (field === "econChannel" && value !== "Otro") {
+        next.econChannelOther = "";
+      }
+
+      if (field === "foodClass" && value !== "Otros") {
+        next.foodClassOther = "";
       }
 
       return next;
@@ -277,6 +325,9 @@ const DonationsForm = () => {
       const next = { ...prev, [field]: undefined };
       if (field === "type" || field.startsWith("especie")) {
         next.especieItems = undefined;
+      }
+      if (field === "econChannel") {
+        next.econChannelOther = undefined;
       }
       return next;
     });
@@ -386,15 +437,22 @@ const DonationsForm = () => {
     if (!form.foodClass) {
       entryErrors.foodClass = "Clasificacion del alimento requerida.";
     }
+    if (form.foodClass === "Otros" && !form.foodClassOther?.trim()) {
+      entryErrors.foodClassOther = "Especifica la clasificación.";
+    }
 
     if (Object.keys(entryErrors).length > 0) {
       setErrors((prev) => ({ ...prev, ...entryErrors }));
       return;
     }
 
+    // Usar el valor personalizado si es "Otros", de lo contrario usar el valor del select
+    const finalClassification =
+      form.foodClass === "Otros" ? form.foodClassOther : form.foodClass;
+
     // Verificar si la clasificación ya existe en la lista
     const existingItemIndex = form.foodItems.findIndex(
-      (item) => item.classification === form.foodClass,
+      (item) => item.classification === finalClassification,
     );
 
     setForm((prev) => {
@@ -416,7 +474,7 @@ const DonationsForm = () => {
           ...prev.foodItems,
           {
             quantity: prev.foodQty,
-            classification: prev.foodClass,
+            classification: finalClassification,
           },
         ];
       }
@@ -426,6 +484,7 @@ const DonationsForm = () => {
         foodItems: updatedItems,
         foodQty: "",
         foodClass: "",
+        foodClassOther: "",
       };
     });
 
@@ -433,6 +492,7 @@ const DonationsForm = () => {
       ...prev,
       foodQty: undefined,
       foodClass: undefined,
+      foodClassOther: undefined,
       foodItems: undefined,
     }));
   };
@@ -464,6 +524,9 @@ const DonationsForm = () => {
     if (!form.donorSponsorId) {
       newErrors.donorSponsorId = "Selecciona el donante o patrocinador.";
     }
+    if (!form.responsibleId) {
+      newErrors.responsibleId = "Selecciona el responsable de la donación.";
+    }
     if (!form.donationAt) newErrors.donationAt = "Fecha y hora requeridas.";
     if (!form.type) newErrors.type = "Selecciona el tipo de donacion.";
     if (requiresEvent && !form.eventId) {
@@ -476,6 +539,9 @@ const DonationsForm = () => {
       else if (Number(form.econAmount) > 999999999999)
         newErrors.econAmount = "El valor máximo permitido es $999,999,999,999.";
       if (!form.econChannel) newErrors.econChannel = "Canal de pago requerido.";
+      if (form.econChannel === "Otro" && !form.econChannelOther?.trim()) {
+        newErrors.econChannelOther = "Especifica el canal de pago.";
+      }
       if (!form.econComprobante)
         newErrors.econComprobante =
           "Adjunta el comprobante (PDF/JPG/PNG, 5MB).";
@@ -489,6 +555,10 @@ const DonationsForm = () => {
         } else if (hasPendingFoodItem) {
           newErrors.foodItems =
             "Tienes campos llenos. Presiona 'Agregar item' o borra los campos antes de guardar.";
+        }
+
+        if (form.foodClass === "Otros" && !form.foodClassOther?.trim()) {
+          newErrors.foodClassOther = "Especifica la clasificación.";
         }
 
         if (!form.foodFactura)
@@ -540,7 +610,10 @@ const DonationsForm = () => {
         kind: apiType,
         recordType: "payment",
         amount: Number(form.econAmount),
-        channel: form.econChannel,
+        channel:
+          form.econChannel === "Otro"
+            ? form.econChannelOther
+            : form.econChannel,
       });
       if (isFood) {
         (form.foodItems || []).forEach((item) => {
@@ -599,6 +672,11 @@ const DonationsForm = () => {
     const donorId = Number(form.donorSponsorId);
     if (donorId) {
       payload.donorSponsorId = donorId;
+    }
+
+    const responsibleId = Number(form.responsibleId);
+    if (responsibleId) {
+      payload.responsibleId = responsibleId;
     }
 
     // Add serviceId if event is selected
@@ -684,9 +762,6 @@ const DonationsForm = () => {
       );
       navigate("/dashboard/donations");
     } catch (error) {
-      console.error("Error completo:", error);
-      console.error("Error guardando donacion", error?.response?.data || error);
-
       const firstErrorMsg =
         error?.response?.data?.errors?.[0]?.msg ||
         error?.response?.data?.errors?.[0]?.message;
@@ -725,7 +800,10 @@ const DonationsForm = () => {
     const general = [
       {
         label: "Codigo de donacion",
-        value: "Se genera automaticamente al guardar",
+        value:
+          isEditing && location.state?.donation?.code
+            ? location.state.donation.code
+            : "Se genera automaticamente al guardar",
       },
       { label: "Donante", value: donorLabel },
       { label: "Tipo", value: typeLabel },
@@ -746,7 +824,11 @@ const DonationsForm = () => {
 
     if (selectedType?.apiType === "ECONOMICA") {
       details.push(`Valor donado: $${formatNumber(form.econAmount) || "0"}`);
-      details.push(`Canal de pago: ${form.econChannel || "N/A"}`);
+      const displayChannel =
+        form.econChannel === "Otro"
+          ? form.econChannelOther || "Otro"
+          : form.econChannel || "N/A";
+      details.push(`Canal de pago: ${displayChannel}`);
       files.push(
         form.econComprobante
           ? `Comprobante listo: ${form.econComprobante.name}`
@@ -887,6 +969,43 @@ const DonationsForm = () => {
                 {errors.donorSponsorId && (
                   <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
                     <FaInfoCircle /> {errors.donorSponsorId}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col order-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                  <FaCheckCircle className="text-primary-purple" />
+                  Responsable *
+                </label>
+                <select
+                  value={form.responsibleId}
+                  onChange={(e) =>
+                    handleChange("responsibleId", e.target.value)
+                  }
+                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
+                  disabled={statusOnlyMode}
+                >
+                  <option value="">
+                    {loadingAdministrators
+                      ? "Cargando..."
+                      : "Seleccionar responsable..."}
+                  </option>
+                  {administrators.map((admin) => (
+                    <option key={admin.id} value={admin.id}>
+                      {`${admin.user.firstName} ${admin.user.lastName}`}
+                    </option>
+                  ))}
+                </select>
+                {errors.responsibleId && (
+                  <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                    <FaInfoCircle /> {errors.responsibleId}
+                  </span>
+                )}
+                {administrators.length === 0 && !loadingAdministrators && (
+                  <span className="text-orange-600 text-xs mt-1.5 flex items-center gap-1">
+                    <FaInfoCircle /> No hay administradores con firma
+                    disponibles
                   </span>
                 )}
               </div>
@@ -1134,6 +1253,30 @@ const DonationsForm = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Campo condicional: Especificar otro canal */}
+                {form.econChannel === "Otro" && (
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-gray-700 mb-2">
+                      Especificar canal de pago *
+                    </label>
+                    <input
+                      type="text"
+                      value={form.econChannelOther}
+                      onChange={(e) =>
+                        handleChange("econChannelOther", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-green focus:ring-2 focus:ring-primary-green/20 transition-all"
+                      disabled={statusOnlyMode}
+                      placeholder="Ej: Efectivo, Cheque, etc."
+                    />
+                    {errors.econChannelOther && (
+                      <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                        <FaInfoCircle /> {errors.econChannelOther}
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-col">
                   <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
@@ -1479,6 +1622,30 @@ const DonationsForm = () => {
                       </span>
                     )}
                   </div>
+
+                  {/* Campo personalizado cuando se selecciona "Otros" */}
+                  {form.foodClass === "Otros" && (
+                    <div className="flex flex-col">
+                      <label className="text-sm font-semibold text-gray-700 mb-2">
+                        Especificar clasificación *
+                      </label>
+                      <input
+                        type="text"
+                        value={form.foodClassOther}
+                        onChange={(e) =>
+                          handleChange("foodClassOther", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-pink focus:ring-2 focus:ring-primary-pink/20 transition-all"
+                        disabled={statusOnlyMode}
+                        placeholder="Ej: Frutas, Enlatados, etc."
+                      />
+                      {errors.foodClassOther && (
+                        <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
+                          <FaInfoCircle /> {errors.foodClassOther}
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex flex-col">
                     <button

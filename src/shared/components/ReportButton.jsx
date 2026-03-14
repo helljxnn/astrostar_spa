@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { showErrorAlert } from "../../shared/utils/alerts";
+import { showErrorAlert } from "../../shared/utils/alerts.js";
 import { exportToExcel } from "../../shared/utils/Excel";
 
 const ReportButton = ({

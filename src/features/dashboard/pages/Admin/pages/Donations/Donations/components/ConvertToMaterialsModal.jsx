@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 import { FaBoxOpen, FaPlus, FaTrash, FaCheckCircle } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import donationsService from "../services/donationsService";
-import materialsService from "../../../SportsMaterials/Materials/services/materialsService";
+import materialsService from "../../../SportsMaterials/Materials/services/MaterialsService";
 import eventsService from "../../../Events/services/eventsService";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
   const [materials, setMaterials] = useState([]);
@@ -40,7 +40,6 @@ const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
       const data = response?.data?.data || response?.data || [];
       setMaterials(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error loading materials:", error);
       showErrorAlert("Error", "No se pudieron cargar los materiales");
     } finally {
       setLoadingMaterials(false);
@@ -54,7 +53,6 @@ const ConvertToMaterialsModal = ({ isOpen, onClose, donation, onSuccess }) => {
       const data = response?.data || response?.events || [];
       setEvents(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error loading events:", error);
       showErrorAlert("Error", "No se pudieron cargar los eventos");
     } finally {
       setLoadingEvents(false);

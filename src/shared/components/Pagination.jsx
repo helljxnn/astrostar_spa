@@ -13,10 +13,22 @@ const Pagination = ({
   if (totalPages <= 1) return null;
 
   const getVisiblePages = () => {
-    const delta = 2;
+    const maxVisiblePages = 7; // Máximo 7 páginas visibles
     const range = [];
     const rangeWithDots = [];
 
+    // Si hay 7 o menos páginas, mostrar todas
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        range.push(i);
+      }
+      return range;
+    }
+
+    // Calcular delta (páginas a cada lado de la actual)
+    const delta = 2;
+
+    // Calcular rango de páginas intermedias
     for (
       let i = Math.max(2, currentPage - delta);
       i <= Math.min(totalPages - 1, currentPage + delta);
@@ -25,14 +37,17 @@ const Pagination = ({
       range.push(i);
     }
 
+    // Agregar primera página y "..." si es necesario
     if (currentPage - delta > 2) {
       rangeWithDots.push(1, "...");
     } else {
       rangeWithDots.push(1);
     }
 
+    // Agregar páginas del rango
     rangeWithDots.push(...range);
 
+    // Agregar "..." y última página si es necesario
     if (currentPage + delta < totalPages - 1) {
       rangeWithDots.push("...", totalPages);
     } else {

@@ -1,13 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { Trash2, Recycle, X, AlertCircle, Lock, Edit } from "lucide-react";
 import {
   showSuccessAlert,
   showErrorAlert,
   showWarningAlert,
   showDeleteAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import EventMaterialsService from "../../../../SportsMaterials/Materials/services/EventMaterialsService";
-import MaterialsService from "../../../../SportsMaterials/Materials/services/materialsService";
+import MaterialsService from "../../../../SportsMaterials/Materials/services/MaterialsService";
 import MaterialSearchSelector from "../../../../../../../../../shared/components/MaterialSearchSelector";
 
 const UsableMaterialsTab = ({
@@ -26,7 +26,7 @@ const UsableMaterialsTab = ({
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
 
-  // Estado para edición
+  // Estado para ediciÃ³n
   const [editingItem, setEditingItem] = useState(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -202,14 +202,14 @@ const UsableMaterialsTab = ({
 
     if (!quantity || quantity <= 0) {
       showWarningAlert(
-        "Cantidad inválida",
-        "Por favor ingresa una cantidad válida",
+        "Cantidad invÃ¡lida",
+        "Por favor ingresa una cantidad vÃ¡lida",
       );
       return;
     }
 
     if (!quantityValidation.valid) {
-      showErrorAlert("Cantidad inválida", quantityValidation.message);
+      showErrorAlert("Cantidad invÃ¡lida", quantityValidation.message);
       return;
     }
 
@@ -223,7 +223,7 @@ const UsableMaterialsTab = ({
       const materialName = selectedMaterialData?.nombre || "este material";
       showWarningAlert(
         "Material ya asignado",
-        `${materialName} ya está en la lista. Si deseas cambiar la cantidad, usa el botón de editar.`,
+        `${materialName} ya estÃ¡ en la lista. Si deseas cambiar la cantidad, usa el botÃ³n de editar.`,
       );
       return;
     }
@@ -237,7 +237,7 @@ const UsableMaterialsTab = ({
       const materialName = selectedMaterialData?.nombre || "este material";
       showWarningAlert(
         "Material ya agregado",
-        `${materialName} ya está en la lista de pendientes. Si deseas cambiar la cantidad, elimínalo y agrégalo nuevamente.`,
+        `${materialName} ya estÃ¡ en la lista de pendientes. Si deseas cambiar la cantidad, elimÃ­nalo y agrÃ©galo nuevamente.`,
       );
       return;
     }
@@ -259,8 +259,8 @@ const UsableMaterialsTab = ({
 
   const handleRemove = async (assignmentId, materialName, qty) => {
     const result = await showDeleteAlert(
-      "¿Eliminar material?",
-      `Se eliminará la planificación de ${qty} unidades de ${materialName}`,
+      "Â¿Eliminar material?",
+      `Se eliminarÃ¡ la planificaciÃ³n de ${qty} unidades de ${materialName}`,
     );
 
     if (!result.isConfirmed) return;
@@ -305,12 +305,12 @@ const UsableMaterialsTab = ({
 
     // Para materiales REUTILIZABLES (a usar):
     // - NO se descuenta stock, solo se valida disponibilidad en tiempo
-    // - La cantidad actual YA está incluida en la disponibilidad calculada
-    // - Por lo tanto, el máximo es simplemente la disponibilidad disponible
+    // - La cantidad actual YA estÃ¡ incluida en la disponibilidad calculada
+    // - Por lo tanto, el mÃ¡ximo es simplemente la disponibilidad disponible
     //
     // Ejemplo: Stock 50, Evento1 usa 30, quedan 20 disponibles
-    // - Al crear Evento2: máx 20 ✓
-    // - Al editar Evento2 (tiene 10): máx 20 ✓ (NO 30, porque los 10 ya cuentan en la reserva)
+    // - Al crear Evento2: mÃ¡x 20 âœ“
+    // - Al editar Evento2 (tiene 10): mÃ¡x 20 âœ“ (NO 30, porque los 10 ya cuentan en la reserva)
 
     return {
       availableForEvent: availability.available,
@@ -353,15 +353,15 @@ const UsableMaterialsTab = ({
 
     // Validaciones
     if (!editQuantityValidation.valid) {
-      showWarningAlert("Cantidad inválida", editQuantityValidation.message);
+      showWarningAlert("Cantidad invÃ¡lida", editQuantityValidation.message);
       return;
     }
 
     try {
-      // Eliminar asignación actual
+      // Eliminar asignaciÃ³n actual
       await EventMaterialsService.removeReusable(editingItem.id);
 
-      // Crear nueva asignación con valores actualizados
+      // Crear nueva asignaciÃ³n con valores actualizados
       await EventMaterialsService.assignReusable(event.id, {
         materialId: editingItem.material_id,
         cantidad: newQty,
@@ -395,7 +395,7 @@ const UsableMaterialsTab = ({
       {/* Summary */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-600">Total Ítems</div>
+          <div className="text-sm text-gray-600">Total Ãtems</div>
           <div className="text-2xl font-semibold text-gray-900">
             {totals.totalItems}
           </div>
@@ -435,7 +435,7 @@ const UsableMaterialsTab = ({
             <h3 className="font-medium text-gray-900">Planificar Material</h3>
             {loadingAvailability && (
               <span className="text-xs text-blue-600 flex items-center gap-1">
-                <span className="animate-spin">⏳</span>
+                <span className="animate-spin">â³</span>
                 Verificando disponibilidad...
               </span>
             )}
@@ -449,7 +449,7 @@ const UsableMaterialsTab = ({
               <MaterialSearchSelector
                 materials={materials
                   .filter((m) => {
-                    // Filtrar materiales que ya están asignados o pendientes
+                    // Filtrar materiales que ya estÃ¡n asignados o pendientes
                     const isAssigned = usables.some(
                       (item) => item.material_id === m.id,
                     );
@@ -510,7 +510,7 @@ const UsableMaterialsTab = ({
               {selectedMaterialData &&
                 selectedMaterialData.conflictingEvents?.length > 0 && (
                   <div className="mt-1 text-xs text-amber-600">
-                    ⚠ {selectedMaterialData.usedInConflicts} unidades reservadas
+                    âš  {selectedMaterialData.usedInConflicts} unidades reservadas
                     en {selectedMaterialData.conflictingEvents.length} evento(s)
                     con fechas solapadas
                   </div>
@@ -520,7 +520,7 @@ const UsableMaterialsTab = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Observación (opcional)
+              ObservaciÃ³n (opcional)
             </label>
             <input
               type="text"
@@ -582,7 +582,7 @@ const UsableMaterialsTab = ({
                       {editingMaterialAvailability.totalStock})
                     </>
                   ) : (
-                    <>(Máx: {editingItem.stock_available})</>
+                    <>(MÃ¡x: {editingItem.stock_available})</>
                   )}
                 </span>
               </label>
@@ -611,7 +611,7 @@ const UsableMaterialsTab = ({
               {editingMaterialAvailability &&
                 editingMaterialAvailability.conflictingEvents?.length > 0 && (
                   <div className="mt-1 text-xs text-amber-600">
-                    ⚠ {editingMaterialAvailability.usedInConflicts} unidades
+                    âš  {editingMaterialAvailability.usedInConflicts} unidades
                     reservadas en{" "}
                     {editingMaterialAvailability.conflictingEvents.length}{" "}
                     evento(s) con fechas solapadas
@@ -621,7 +621,7 @@ const UsableMaterialsTab = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Observación (opcional)
+                ObservaciÃ³n (opcional)
               </label>
               <input
                 type="text"
@@ -676,7 +676,7 @@ const UsableMaterialsTab = ({
                       {material?.unidadMedida || "unidades"}
                       {pending.observaciones && (
                         <span className="ml-2 text-gray-500">
-                          • {pending.observaciones}
+                          â€¢ {pending.observaciones}
                         </span>
                       )}
                     </div>
@@ -717,7 +717,7 @@ const UsableMaterialsTab = ({
                   Cantidad Planificada
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
-                  Observación
+                  ObservaciÃ³n
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
                   Acciones
@@ -753,7 +753,7 @@ const UsableMaterialsTab = ({
                         <button
                           onClick={() => handleEditClick(item)}
                           className="p-1 text-gray-600 hover:text-primary-purple hover:bg-purple-50 rounded transition-colors"
-                          title="Editar cantidad y observación"
+                          title="Editar cantidad y observaciÃ³n"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
@@ -788,3 +788,4 @@ const UsableMaterialsTab = ({
 };
 
 export default UsableMaterialsTab;
+

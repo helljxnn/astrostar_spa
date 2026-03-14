@@ -4,7 +4,7 @@ import { Plus, Filter } from "lucide-react";
 import { FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
 import { format } from "date-fns";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import { showErrorAlert } from "../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../shared/utils/alerts.js";
 
 // Importar TUS componentes (asegúrate de que las rutas sean correctas)
 import ScheduleModal from "./components/EmployeesScheduleModal";

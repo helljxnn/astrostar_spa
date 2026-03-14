@@ -9,7 +9,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { MODULE_CONFIG, MODULE_GROUPS } from "../../../../../../../shared/constants/moduleConfig";
 
 // Generar categorías de módulos dinámicamente desde moduleConfig

@@ -34,7 +34,7 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
     });
   };
 
-  const modalContent = (
+  return createPortal(
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -182,7 +182,9 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.4 }}
             >
-              <label className="text-sm font-medium text-gray-600">Correo</label>
+              <label className="text-sm font-medium text-gray-600">
+                Correo
+              </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
                 {fullUser.email}
               </p>
@@ -240,7 +242,9 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.85, duration: 0.4 }}
             >
-              <label className="text-sm font-medium text-gray-600">Estado</label>
+              <label className="text-sm font-medium text-gray-600">
+                Estado
+              </label>
               <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
                 {user.estado}
               </p>
@@ -290,7 +294,8 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 
   return createPortal(modalContent, document.body);

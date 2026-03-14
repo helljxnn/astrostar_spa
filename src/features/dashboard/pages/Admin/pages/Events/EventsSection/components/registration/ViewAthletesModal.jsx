@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
-import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts.js";
 
 const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [searchTerm, setSearchTerm] = useState("");

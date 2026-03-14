@@ -74,9 +74,12 @@ export const useEmployees = () => {
    * Crear empleado
    */
   const createEmployee = useCallback(
-    async (employeeData) => {
+    async (employeeData, signatureFile = null) => {
       try {
-        const response = await employeeService.create(employeeData);
+        const response = await employeeService.create(
+          employeeData,
+          signatureFile,
+        );
 
         if (response.success) {
           // Recargar la lista en segundo plano (no esperar)

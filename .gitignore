@@ -34,3 +34,12 @@ pruebas_automatizadas/**
 coverage/
 jest.config.js
 babel.config.js
+
+#tests
+test-results
+tests
+jest.config.cjs
+__tests__
+setupTests.js
+test
+coverage

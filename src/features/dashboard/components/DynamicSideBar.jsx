@@ -361,8 +361,8 @@ function DynamicSideBar({
             {renderModule("dashboard")}
 
             {/* Módulos individuales principales */}
-            {renderModule("users")}
             {renderModule("roles")}
+            {renderModule("users")}
 
             {/* Para deportistas y acudientes: módulos directos SIN dropdown */}
             {isAthleteOrGuardian && renderModule("appointmentManagement")}

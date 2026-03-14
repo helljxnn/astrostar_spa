@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useCategoryNameValidation } from "../hooks/useCategoryNameValidation";
-import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
   const isEditing = !!category;

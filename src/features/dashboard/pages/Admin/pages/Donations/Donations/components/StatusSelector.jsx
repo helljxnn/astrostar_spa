@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaChevronDown, FaCheck } from "react-icons/fa";
-import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 const STATUS_FLOW = {
   Recibida: {
@@ -42,6 +42,7 @@ const StatusSelector = ({
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const containerRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const statusInfo = STATUS_FLOW[currentStatus] || STATUS_FLOW.Recibida;
   const currentOrder = statusInfo.order;
@@ -49,10 +50,12 @@ const StatusSelector = ({
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target)
-      ) {
+      const clickedInsideTrigger =
+        containerRef.current && containerRef.current.contains(event.target);
+      const clickedInsideDropdown =
+        dropdownRef.current && dropdownRef.current.contains(event.target);
+
+      if (!clickedInsideTrigger && !clickedInsideDropdown) {
         setIsOpen(false);
       }
     };
@@ -76,15 +79,24 @@ const StatusSelector = ({
     setIsOpen(false);
 
     const newStatusInfo = STATUS_FLOW[newStatus];
-    const result = await showConfirmAlert(
-      "Cambiar estado de donación",
-      `¿Estás seguro de cambiar el estado a "${newStatusInfo.label}"? Esta acción no se puede deshacer.`,
-      "Sí, cambiar",
-      "Cancelar",
-    );
 
-    if (result.isConfirmed) {
-      onStatusChange(donationId, newStatus);
+    try {
+      const result = await showConfirmAlert(
+        "Cambiar estado de donación",
+        `¿Estás seguro de cambiar el estado a "${newStatusInfo.label}"?`,
+        {
+          confirmButtonText: "Sí, cambiar",
+          cancelButtonText: "Cancelar",
+        },
+      );
+
+      if (result.isConfirmed) {
+        onStatusChange(donationId, newStatus);
+      }
+    } catch (error) {
+      if (window.confirm(`¿Cambiar estado a "${newStatusInfo.label}"?`)) {
+        onStatusChange(donationId, newStatus);
+      }
     }
   };
 
@@ -114,6 +126,7 @@ const StatusSelector = ({
       {isOpen &&
         createPortal(
           <div
+            ref={dropdownRef}
             style={{
               position: "absolute",
               top: `${dropdownPosition.top}px`,

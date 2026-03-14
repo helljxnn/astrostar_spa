@@ -11,7 +11,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import categoriesService from "../shared/services/CategoriesService";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 

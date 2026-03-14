@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaRegCalendarAlt } from "react-icons/fa";
+import { FaPlus, FaRegCalendarAlt, FaDownload } from "react-icons/fa";
 
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
@@ -13,7 +13,7 @@ import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsServ
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -132,7 +132,7 @@ const Donations = () => {
         });
         setDonorsMap(map);
       } catch (error) {
-        console.error("Error cargando donantes para tabla", error);
+        // Error loading donors for table
       }
     };
 
@@ -145,7 +145,7 @@ const Donations = () => {
       try {
         const resp = await donationsService.list({
           page: currentPage,
-          limit: 10,
+          limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
           search: searchTerm, // Enviar búsqueda al backend
           month: selectedMonth
             ? `${selectedMonth.getFullYear()}-${String(
@@ -196,6 +196,7 @@ const Donations = () => {
 
           return {
             id: d.id ?? idx + 1,
+            code: d.code || "N/A",
             donorName,
             donationDate: d.donationAt
               ? new Date(d.donationAt).toLocaleString("es-CO")
@@ -244,7 +245,7 @@ const Donations = () => {
                   .trim();
               if (name) fetched[id] = name;
             } catch (e) {
-              console.warn("No se pudo obtener donante", id, e?.message || e);
+              // Could not fetch donor
             }
           }
           if (Object.keys(fetched).length) {
@@ -257,7 +258,6 @@ const Donations = () => {
           resp?.pagination?.total || resp?.total || normalized.length,
         );
       } catch (error) {
-        console.error("Error cargando donaciones", error);
         showErrorAlert(
           "No se pudieron cargar las donaciones",
           error?.response?.data?.message || error.message || "Intenta de nuevo",
@@ -276,6 +276,7 @@ const Donations = () => {
   const paginatedData = data;
 
   const reportColumns = [
+    { key: "code", label: "Código" },
     { key: "donorName", label: "Donante" },
     { key: "donationType", label: "Tipo de Donación" },
     { key: "programLabel", label: "Programa/Destino" },
@@ -364,7 +365,9 @@ const Donations = () => {
 
   const handleStatusChange = async (donationId, newStatus) => {
     try {
-      await donationsService.update(donationId, { status: newStatus });
+      const response = await donationsService.update(donationId, {
+        status: newStatus,
+      });
 
       // Actualizar el estado local
       setData((prev) =>
@@ -383,7 +386,6 @@ const Donations = () => {
         "El estado de la donación se actualizó correctamente.",
       );
     } catch (error) {
-      console.error("Error actualizando estado", error);
       showErrorAlert(
         "Error al actualizar",
         error?.response?.data?.message || "No se pudo actualizar el estado.",
@@ -420,6 +422,37 @@ const Donations = () => {
     }
   };
 
+  const handleDownloadCertificate = async (donation) => {
+    try {
+      const response = await donationsService.downloadCertificate(donation.id);
+
+      // Create blob and download
+      const pdfBlob =
+        response instanceof Blob
+          ? response
+          : new Blob([response], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Certificado_${donation.code}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSuccessAlert(
+        "Certificado descargado",
+        "El certificado se ha descargado correctamente",
+      );
+    } catch (error) {
+      showErrorAlert(
+        "Error",
+        error?.response?.data?.message ||
+          "No se pudo descargar el certificado. Verifique que la donación tenga un responsable con firma asignado.",
+      );
+    }
+  };
+
   /* ------------------- Render ------------------- */
   const statusColorMap = {
     Recibida: "bg-primary-blue/10 text-primary-blue",
@@ -432,10 +465,12 @@ const Donations = () => {
 
   const renderStatusChip = (value, row) => {
     const statusKey = value === "En proceso" ? "EnProceso" : value;
+    const donationId = row.id || row._original?.id;
+
     return (
       <StatusSelector
         currentStatus={statusKey}
-        donationId={row.id}
+        donationId={donationId}
         onStatusChange={handleStatusChange}
       />
     );
@@ -446,55 +481,60 @@ const Donations = () => {
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Donaciones</h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si limpia la búsqueda, resetear a página 1
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar donación..."
-          />
-
-          <div className="flex items-center gap-2">
-            <DatePicker
-              selected={selectedMonth}
-              onChange={(date) => {
-                setSelectedMonth(date);
-                setCurrentPage(1);
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center w-full sm:w-auto">
+          <div className="w-full sm:w-auto sm:min-w-[200px]">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si limpia la búsqueda, resetear a página 1
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
               }}
-              dateFormat="MMMM yyyy"
-              showMonthYearPicker
-              customInput={<MonthPickerInput />}
-              calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-              popperPlacement="bottom"
+              placeholder="Buscar donación..."
+              className="w-full"
             />
-            {selectedMonth && (
-              <button
-                className="px-2.5 py-1 text-xs bg-primary-blue/20 text-primary-blue rounded-lg hover:bg-primary-blue/30"
-                onClick={() => setSelectedMonth(null)}
-              >
-                Limpiar
-              </button>
-            )}
           </div>
 
-          <div className="flex items-center gap-3">
-            <ReportButton
-              data={displayData}
-              fileName="Reporte_Donaciones"
-              columns={reportColumns}
-            />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <DatePicker
+                selected={selectedMonth}
+                onChange={(date) => {
+                  setSelectedMonth(date);
+                  setCurrentPage(1);
+                }}
+                dateFormat="MMMM yyyy"
+                showMonthYearPicker
+                customInput={<MonthPickerInput />}
+                calendarClassName="shadow-lg border border-gray-200 rounded-lg"
+                popperPlacement="bottom"
+              />
+              {selectedMonth && (
+                <button
+                  className="px-2.5 py-1 text-xs bg-primary-blue/20 text-primary-blue rounded-lg hover:bg-primary-blue/30 whitespace-nowrap"
+                  onClick={() => setSelectedMonth(null)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
 
-            <button
-              onClick={handleCreate}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all"
-            >
-              <FaPlus /> Crear
-            </button>
+            <div className="flex items-center gap-3">
+              <ReportButton
+                data={displayData}
+                fileName="Reporte_Donaciones"
+                columns={reportColumns}
+              />
+
+              <button
+                onClick={handleCreate}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+              >
+                <FaPlus /> Crear
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -503,6 +543,7 @@ const Donations = () => {
         <Table
           thead={{
             titles: [
+              "Código",
               "Donante",
               "Tipo de Donación",
               "Programa / Destino",
@@ -518,6 +559,7 @@ const Donations = () => {
               _original: donation,
             })),
             dataPropertys: [
+              "code",
               "donorName",
               "donationType",
               "programLabel",
@@ -532,12 +574,19 @@ const Donations = () => {
             },
           }}
           serverPagination
-          rowsPerPage={10}
           totalRows={totalRows}
           currentPage={currentPage}
           onPageChange={(page) => setCurrentPage(page)}
           onView={(row) => handleView(row._original || row)}
-          customActions={[]}
+          customActions={[
+            {
+              icon: FaDownload,
+              onClick: (row) => handleDownloadCertificate(row._original || row),
+              className:
+                "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
+              title: "Descargar Certificado",
+            },
+          ]}
         />
       </div>
 

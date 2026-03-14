@@ -9,7 +9,7 @@ import {
   showDeleteAlert,
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 
 // Importaciones para permisos
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
@@ -96,7 +96,7 @@ const Employees = () => {
     { header: "Fecha Creación", accessor: "fechaCreacion" },
   ];
 
-  const handleSave = async (employeeData) => {
+  const handleSave = async (employeeData, signatureFile = null) => {
     try {
       if (editingEmployee) {
         // Editar - verificar permisos
@@ -122,7 +122,7 @@ const Employees = () => {
           return false;
         }
 
-        const result = await createEmployee(employeeData);
+        const result = await createEmployee(employeeData, signatureFile);
 
         if (result.success) {
           // Mostrar alerta de éxito
@@ -257,7 +257,7 @@ const Employees = () => {
         <>
           <Table
             thead={{
-              titles: ["Nombre Completo", "Identificación", "Rol", "Estado"],
+              titles: ["Nombre", "Identificación", "Rol", "Estado"],
               state: false,
               actions: true,
             }}

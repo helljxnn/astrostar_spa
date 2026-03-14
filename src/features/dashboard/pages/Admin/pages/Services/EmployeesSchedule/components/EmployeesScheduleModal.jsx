@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
 
 export default function ScheduleModal({

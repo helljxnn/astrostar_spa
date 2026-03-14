@@ -2,7 +2,7 @@
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import { showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../shared/utils/alerts.js";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import DonorSponsorModal from "./components/DonorSponsorModal";
 import DonorSponsorViewModal from "./components/DonorSponsorViewModal";

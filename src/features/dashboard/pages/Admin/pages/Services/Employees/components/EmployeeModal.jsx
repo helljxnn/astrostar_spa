@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
+import SignatureUpload from "./SignatureUpload";
 import {
   useFormEmployeeValidation,
   employeeValidationRules,
@@ -11,7 +12,8 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
+import { useLoader } from "../../../../../../../../shared/components/Loader";
 import employeeService from "../services/employeeService";
 
 const EmployeeModal = ({
@@ -51,6 +53,21 @@ const EmployeeModal = ({
     },
     employeeValidationRules,
   );
+
+  const [signatureUrl, setSignatureUrl] = useState(null);
+  const [signatureFile, setSignatureFile] = useState(null);
+  const [localSignaturePreview, setLocalSignaturePreview] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { showLoader, hideLoader } = useLoader();
+
+  // Check if selected role is Administrator
+  const isAdministratorRole = () => {
+    const selectedRole = referenceData.roles.find(
+      (role) => role.id === parseInt(formData.roleId),
+    );
+    return selectedRole?.name === "Administrador";
+  };
 
   // Función para calcular la edad
   const calculateAge = (birthDate) => {
@@ -168,16 +185,93 @@ const EmployeeModal = ({
           roleId: employee.user?.roleId || "",
           status: employee.status || "Activo",
         });
+        // Load signature if exists
+        setSignatureUrl(employee.signatureUrl || null);
+        setLocalSignaturePreview(null);
+        setSignatureFile(null);
         // Limpiar validaciones al cargar datos de edición
         setTimeout(() => resetValidation(), 0);
       } else {
         // Limpiar completamente el formulario para creación
-        setTimeout(() => resetForm(), 0);
+        setTimeout(() => {
+          resetForm();
+          setSignatureUrl(null);
+          setSignatureFile(null);
+          setLocalSignaturePreview(null);
+        }, 0);
       }
     }
   }, [employee, mode, isOpen]);
 
+  const handleSignatureSelect = (file) => {
+    // For create mode, just store the file locally
+    if (mode === "create") {
+      setSignatureFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLocalSignaturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // For edit mode, upload immediately
+    handleSignatureUpload(file);
+  };
+
+  const handleSignatureUpload = async (file) => {
+    if (!employee?.id) {
+      showErrorAlert(
+        "Error",
+        "Debe guardar el empleado antes de subir la firma",
+      );
+      return;
+    }
+
+    try {
+      const response = await employeeService.uploadSignature(employee.id, file);
+      if (response.success) {
+        setSignatureUrl(response.data.signatureUrl);
+        showSuccessAlert("Firma subida", "La firma se ha subido correctamente");
+      }
+    } catch (error) {
+      showErrorAlert("Error", "No se pudo subir la firma");
+      throw error;
+    }
+  };
+
+  const handleSignatureDelete = async () => {
+    // For create mode, just clear local state
+    if (mode === "create") {
+      setSignatureFile(null);
+      setLocalSignaturePreview(null);
+      return;
+    }
+
+    // For edit mode, delete from server
+    if (!employee?.id) {
+      return;
+    }
+
+    try {
+      const response = await employeeService.deleteSignature(employee.id);
+      if (response.success) {
+        setSignatureUrl(null);
+        showSuccessAlert(
+          "Firma eliminada",
+          "La firma se ha eliminado correctamente",
+        );
+      }
+    } catch (error) {
+      showErrorAlert("Error", "No se pudo eliminar la firma");
+      throw error;
+    }
+  };
+
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+
     try {
       const isValid = validateAllFields();
       if (!isValid) {
@@ -188,7 +282,18 @@ const EmployeeModal = ({
         return;
       }
 
-      // Las validaciones de unicidad se manejan en el backend para evitar demoras
+      // Validate signature for administrators
+      if (isAdministratorRole()) {
+        const hasSignature =
+          signatureUrl || localSignaturePreview || signatureFile;
+        if (!hasSignature) {
+          showErrorAlert(
+            "Firma requerida",
+            "Los empleados con rol Administrador deben tener una firma digital.",
+          );
+          return;
+        }
+      }
 
       // Confirmación solo al editar
       if (mode === "edit") {
@@ -199,13 +304,24 @@ const EmployeeModal = ({
         if (!result.isConfirmed) return;
       }
 
+      setIsSubmitting(true);
+
+      // Show global loader
+      showLoader(
+        mode === "edit" ? "Actualizando empleado..." : "Creando empleado...",
+      );
+
       // Llamar onSave y esperar el resultado
-      const success = await onSave(formData);
+      // Pass signature file if in create mode
+      const success = await onSave(formData, signatureFile);
 
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
         // Limpiar completamente el formulario y validaciones
         resetForm();
+        setSignatureUrl(null);
+        setSignatureFile(null);
+        setLocalSignaturePreview(null);
         onClose();
       }
     } catch (error) {
@@ -213,6 +329,9 @@ const EmployeeModal = ({
         "Error al guardar",
         "No se pudo guardar el empleado. Intenta de nuevo.",
       );
+    } finally {
+      hideLoader();
+      setIsSubmitting(false);
     }
   };
 
@@ -237,8 +356,9 @@ const EmployeeModal = ({
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
-            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+            className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onClose}
+            disabled={isSubmitting}
           >
             ✕
           </button>
@@ -478,6 +598,34 @@ const EmployeeModal = ({
                 delay={0.8}
               />
             )}
+
+            {/* Firma Digital - Solo visible si el rol es Administrador */}
+            {isAdministratorRole() && mode !== "view" && (
+              <SignatureUpload
+                mode={mode}
+                employeeId={employee?.id}
+                currentSignatureUrl={signatureUrl || localSignaturePreview}
+                onFileSelect={handleSignatureSelect}
+                onDeleteSuccess={handleSignatureDelete}
+                disabled={mode === "view"}
+              />
+            )}
+
+            {/* Mostrar firma en modo vista si existe */}
+            {mode === "view" && signatureUrl && (
+              <div className="col-span-full">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Firma Digital
+                </label>
+                <div className="border-2 border-gray-300 rounded-lg p-4 bg-gray-50">
+                  <img
+                    src={signatureUrl}
+                    alt="Firma"
+                    className="max-w-xs h-24 object-contain"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -487,6 +635,7 @@ const EmployeeModal = ({
             <div className="flex justify-center">
               <button
                 onClick={onClose}
+            disabled={isSubmitting}
                 className="px-5 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
               >
                 Cerrar
@@ -497,15 +646,17 @@ const EmployeeModal = ({
               <button
                 type="button"
                 onClick={onClose}
+            disabled={isSubmitting}
                 className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSubmit}
-                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg"
+                disabled={isSubmitting}
+                className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-all duration-200 font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {mode === "edit" ? "Guardar Cambios" : "Crear Empleado"}
+                {isSubmitting ? "Guardando..." : mode === "edit" ? "Guardar Cambios" : "Crear Empleado"}
               </button>
             </div>
           )}
@@ -518,3 +669,9 @@ const EmployeeModal = ({
 };
 
 export default EmployeeModal;
+
+
+
+
+
+

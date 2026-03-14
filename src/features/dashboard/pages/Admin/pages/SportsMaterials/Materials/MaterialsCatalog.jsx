@@ -19,7 +19,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import materialsService from "./services/MaterialsService";
 import { formatNumber } from "../../../../../../../shared/utils/numberFormat";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";

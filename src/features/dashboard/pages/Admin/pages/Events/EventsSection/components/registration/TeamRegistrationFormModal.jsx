@@ -8,7 +8,7 @@ import SportsCategoriesService from "../../../../Athletes/SportsCategory/service
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import { AthleteRegistrationFormModal } from "./index";
 
 const TeamRegistrationFormModal = ({
@@ -448,7 +448,7 @@ const TeamRegistrationFormModal = ({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl md:max-w-5xl max-h-[90vh] overflow-hidden flex flex-col modal-content"
         style={{
           zIndex: 1000000,
           position: "relative",
@@ -458,7 +458,7 @@ const TeamRegistrationFormModal = ({
           maxWidth: "80rem",
         }}
       >
-        <div className="bg-primary-purple p-6 text-white">
+        <div className="bg-primary-purple p-4 sm:p-6 text-white">
           <div className="flex items-center gap-4">
             <button
               onClick={onClose}
@@ -467,7 +467,7 @@ const TeamRegistrationFormModal = ({
               <FaArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h2 className="text-2xl font-bold">
+              <h2 className="text-xl sm:text-2xl font-bold">
                 Gestionar {participantType}
               </h2>
               <p className="text-blue-100 mt-1">Evento: {eventName}</p>
@@ -475,7 +475,7 @@ const TeamRegistrationFormModal = ({
           </div>
         </div>
 
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
+        <div className="p-4 sm:p-6 border-b border-gray-200 bg-gray-50">
           <div className="relative mb-3">
             <input
               type="text"
@@ -523,16 +523,16 @@ const TeamRegistrationFormModal = ({
               )}
             </div>
 
-            <div className="flex flex-wrap gap-4 items-start">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 items-start">
               {/* Filtros de tipo */}
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-gray-700">
                   Filtrar por tipo:
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={selectAllTeamTypes}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                       selectedTeamTypes.length === 2
                         ? "bg-primary-purple text-white shadow-md"
                         : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
@@ -542,7 +542,7 @@ const TeamRegistrationFormModal = ({
                   </button>
                   <button
                     onClick={() => toggleTeamType("Fundacion")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                       selectedTeamTypes.includes("Fundacion")
                         ? "bg-blue-600 text-white shadow-md"
                         : "bg-white text-gray-700 border border-gray-300 hover:border-blue-600"
@@ -552,7 +552,7 @@ const TeamRegistrationFormModal = ({
                   </button>
                   <button
                     onClick={() => toggleTeamType("Temporal")}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                       selectedTeamTypes.includes("Temporal")
                         ? "bg-orange-600 text-white shadow-md"
                         : "bg-white text-gray-700 border border-gray-300 hover:border-orange-600"
@@ -572,7 +572,7 @@ const TeamRegistrationFormModal = ({
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={selectAllCategories}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                         selectedCategories.length === availableCategories.length
                           ? "bg-primary-purple text-white shadow-md"
                           : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
@@ -584,7 +584,7 @@ const TeamRegistrationFormModal = ({
                       <button
                         key={category}
                         onClick={() => toggleCategory(category)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
                           selectedCategories.includes(category)
                             ? "bg-primary-purple text-white shadow-md"
                             : "bg-white text-gray-700 border border-gray-300 hover:border-primary-purple"
@@ -876,7 +876,7 @@ const TeamRegistrationFormModal = ({
                   Equipos seleccionados ({selectedTeams.length})
                 </h3>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <AnimatePresence>
                   {selectedTeams.map((team, index) => {
                     const rsvpStatus = getRSVPStatus(team);
@@ -1029,17 +1029,17 @@ const TeamRegistrationFormModal = ({
             </div>
 
             {/* Botones de acción */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 onClick={onClose}
-                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-all hover:scale-105 active:scale-95"
+                className="w-full sm:w-auto px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold transition-all hover:scale-105 active:scale-95"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleSave}
                 disabled={selectedTeams.length === 0}
-                className={`px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2 ${
+                className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                   selectedTeams.length === 0
                     ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                     : "bg-primary-purple text-white hover:bg-primary-blue hover:shadow-xl hover:scale-105 active:scale-95"
