@@ -142,6 +142,64 @@ class TemporaryPersonsService {
       throw error;
     }
   }
+
+  /**
+   * Obtener todas las personas temporales para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de personas temporales
+   */
+  async getAllForReport(params = {}) {
+    try {
+      let allData = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const limit = 100; // Límite máximo permitido por el backend
+      
+      // Hacer peticiones paginadas hasta obtener todos los datos
+      while (hasMorePages) {
+        const requestParams = {
+          ...params,
+          page: currentPage,
+          limit: limit,
+        };
+        
+        const response = await apiClient.get(this.endpoint, requestParams);
+        
+        if (response && response.success) {
+          const pageData = response.data || [];
+          allData = [...allData, ...pageData];
+          
+          // Verificar si hay más páginas
+          hasMorePages = response.pagination?.hasNext || false;
+          currentPage++;
+          
+          // Seguridad: evitar bucle infinito
+          if (currentPage > 100) {
+            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
+            break;
+          }
+        } else {
+          hasMorePages = false;
+        }
+      }
+      
+      return {
+        success: true,
+        data: allData,
+        pagination: {
+          total: allData.length,
+          page: 1,
+          limit: allData.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
+        }
+      };
+    } catch (error) {
+      console.error("❌ Error en getAllForReport:", error);
+      throw error;
+    }
+  }
 }
 
 export default new TemporaryPersonsService();

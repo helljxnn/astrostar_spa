@@ -7,6 +7,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -19,6 +20,11 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 
 const MaterialsMovements = () => {
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    movementsService.getAllForReport.bind(movementsService)
+  );
 
   // Estado para pestañas
   const [activeTab, setActiveTab] = useState("ingresos"); // 'ingresos' | 'salidas'
@@ -472,6 +478,75 @@ const MaterialsMovements = () => {
     }
   });
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    const currentFilters = {
+      search: searchTerm,
+      tipo: activeTab === "ingresos" ? "INGRESO" : "SALIDA",
+      dateFrom: filters.fechaDesde,
+      dateTo: filters.fechaHasta,
+    };
+
+    return await getReportData(
+      currentFilters, // Filtros actuales
+      (movements) => movements.map((m) => { // Mapper de datos
+        const baseData = {
+          fecha: formatDateTime(m.fechaIngreso || m.fecha),
+          material: m.materialNombre,
+          categoria: m.categoria,
+          cantidad: m.cantidad,
+          stockAnterior: m.stockAnterior,
+          stockNuevo: m.stockNuevo,
+        };
+
+        if (activeTab === "ingresos") {
+          return {
+            ...baseData,
+            proveedor: m.proveedor || "Sin proveedor",
+            destino: m.inventario_destino || m.inventarioDestino || "N/A",
+            observaciones: m.observaciones || "N/A",
+          };
+        } else {
+          // Salidas
+          const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || "";
+          let tipo = "Otro";
+          let detalles = "";
+
+          if (
+            tipoMovimiento === "Baja" ||
+            tipoMovimiento === "BAJA" ||
+            m.tipo_baja
+          ) {
+            tipo = "Baja";
+            const tipoBaja = getTipoBajaLabel(m.tipo_baja || m.tipoBaja);
+            const origen = m.inventario_origen || m.inventarioOrigen || "";
+            detalles = `${tipoBaja} - Origen: ${origen} - ${m.descripcion || m.observaciones || "Sin descripción"}`;
+          } else if (tipoMovimiento === "TRANSFERENCIA") {
+            tipo = "Transferencia";
+            const desde = m.inventario_origen || m.inventarioOrigen || "N/A";
+            const hacia = m.inventario_destino || m.inventarioDestino || "N/A";
+            detalles = `De ${desde} a ${hacia}${m.observaciones ? " - " + m.observaciones : ""}`;
+          } else if (
+            tipoMovimiento === "SALIDA_EVENTO" ||
+            tipoMovimiento === "ASIGNACION_EVENTO"
+          ) {
+            tipo = "Salida por Evento";
+            detalles = m.evento_nombre || m.eventoNombre || "Evento finalizado";
+          } else if (tipoMovimiento === "Salida") {
+            tipo = "Salida";
+            detalles = m.observaciones || "Salida de material";
+          }
+
+          return {
+            ...baseData,
+            tipo,
+            detalles,
+          };
+        }
+      })
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
@@ -505,7 +580,7 @@ const MaterialsMovements = () => {
           <div className="flex items-center gap-3">
             <PermissionGuard module="materialsRegistry" action="Ver">
               <ReportButton
-                data={reportData}
+                dataProvider={getCompleteReportData}
                 fileName={`Reporte_${activeTab === "ingresos" ? "Ingresos" : "Salidas"}_Materiales`}
                 columns={
                   activeTab === "ingresos"

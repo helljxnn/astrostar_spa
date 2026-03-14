@@ -160,6 +160,41 @@ class InscriptionsService {
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Obtener todas las inscripciones para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de inscripciones
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const queryParams = {
+        ...params,
+        limit: 10000, // Límite alto para obtener todos los datos
+      };
+
+      // Limpiar parámetros de paginación
+      delete queryParams.page;
+      delete queryParams.pageSize;
+
+      const response = await apiClient.get(this.endpoint, queryParams);
+
+      // Manejar diferentes estructuras de respuesta
+      const data = response.data?.data || response.data || [];
+
+      return {
+        success: true,
+        data: Array.isArray(data) ? data : [],
+      };
+    } catch (error) {
+      console.error("Error getting inscriptions for report:", error);
+      return { 
+        success: false, 
+        error: error.message,
+        data: [],
+      };
+    }
+  }
 }
 
 export default new InscriptionsService();

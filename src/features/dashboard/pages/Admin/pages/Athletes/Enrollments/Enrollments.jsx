@@ -11,6 +11,8 @@ import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import InscriptionsService from "./services/InscriptionsService";
 
 import {
   showSuccessAlert,
@@ -24,6 +26,11 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 
 const Enrollments = () => {
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    InscriptionsService.getAllForReport.bind(InscriptionsService)
+  );
 
   const {
     athletes,
@@ -328,6 +335,92 @@ setSelectedAthlete(currentAthlete);
     await deleteAthlete(athlete.id);
   };
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (athletes) => athletes.map((athlete) => { // Mapper de datos
+        const guardian = getGuardianById(athlete.acudiente);
+        const firstName = athlete.firstName || athlete.nombres || "";
+        const lastName = athlete.lastName || athlete.apellidos || "";
+        const email = athlete.email || athlete.correo || "";
+        const phone = athlete.phoneNumber || athlete.telefono || "";
+        const identification = athlete.identification || athlete.numeroDocumento || "";
+
+        // Obtener tipo de documento del deportista
+        let tipoDocumento = "No especificado";
+        const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
+        if (docTypeId && referenceData?.documentTypes) {
+          const docType = referenceData.documentTypes.find((dt) => dt.id === docTypeId);
+          if (docType) {
+            tipoDocumento = docType.name || docType.label;
+          }
+        }
+
+        // Obtener tipo de documento del acudiente
+        let tipoDocumentoAcudiente = "";
+        if (guardian) {
+          const guardianDocTypeId = guardian.documentTypeId;
+          if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
+            const docType = referenceData.guardianDocumentTypes.find((dt) => dt.id === guardianDocTypeId);
+            if (docType) {
+              tipoDocumentoAcudiente = docType.name || docType.label;
+            }
+          }
+        }
+
+        // Obtener la matrícula más reciente
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+
+        // Formatear fechas
+        let fechaMatricula = "";
+        if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+          const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+          if (!isNaN(fecha.getTime())) {
+            fechaMatricula = fecha.toLocaleDateString("es-ES");
+          }
+        }
+
+        let fechaVencimiento = "";
+        if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
+          const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
+          if (!isNaN(fecha.getTime())) {
+            fechaVencimiento = fecha.toLocaleDateString("es-ES");
+          }
+        } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
+          const fechaInsc = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
+          if (!isNaN(fechaInsc.getTime())) {
+            const fechaVenc = new Date(fechaInsc);
+            fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
+            fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
+          }
+        }
+
+        const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
+
+        return {
+          nombres: firstName,
+          apellidos: lastName,
+          nombreCompleto: `${firstName} ${lastName}`.trim(),
+          tipoDocumento,
+          numeroDocumento: identification,
+          correo: email,
+          telefono: phone,
+          categoria: athlete.categoria || "",
+          estado: athlete.status || athlete.estado || "",
+          fechaMatricula,
+          fechaVencimiento,
+          estadoMatricula,
+          acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+          acudienteTipoDocumento: tipoDocumentoAcudiente,
+          acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
+          acudienteTelefono: guardian?.phone || guardian?.telefono || "",
+          acudienteCorreo: guardian?.email || guardian?.correo || "",
+        };
+      })
+    );
+  };
+
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -373,122 +466,7 @@ setSelectedAthlete(currentAthlete);
 
             <PermissionGuard module="enrollments" action="Ver">
               <ReportButton
-                data={athletes.map((athlete) => {
-                  const guardian = getGuardianById(athlete.acudiente);
-                  const firstName = athlete.firstName || athlete.nombres || "";
-                  const lastName = athlete.lastName || athlete.apellidos || "";
-                  const email = athlete.email || athlete.correo || "";
-                  const phone = athlete.phoneNumber || athlete.telefono || "";
-                  const identification =
-                    athlete.identification || athlete.numeroDocumento || "";
-
-                  // Obtener tipo de documento del deportista
-                  let tipoDocumento = "No especificado";
-                  const docTypeId =
-                    athlete.user?.documentTypeId || athlete.documentTypeId;
-                  if (docTypeId && referenceData?.documentTypes) {
-                    const docType = referenceData.documentTypes.find(
-                      (dt) => dt.id === docTypeId,
-                    );
-                    if (docType) {
-                      tipoDocumento = docType.name || docType.label;
-                    }
-                  }
-
-                  // Obtener tipo de documento del acudiente
-                  let tipoDocumentoAcudiente = "";
-                  if (guardian) {
-                    const guardianDocTypeId = guardian.documentTypeId;
-                    if (
-                      guardianDocTypeId &&
-                      referenceData?.guardianDocumentTypes
-                    ) {
-                      const docType = referenceData.guardianDocumentTypes.find(
-                        (dt) => dt.id === guardianDocTypeId,
-                      );
-                      if (docType) {
-                        tipoDocumentoAcudiente = docType.name || docType.label;
-                      }
-                    }
-                  }
-
-                  // Obtener la matrícula más reciente
-                  const latestEnrollment =
-                    athlete.enrollments?.[0] || athlete.inscripciones?.[0];
-
-                  // Formatear fechas
-                  let fechaMatricula = "";
-                  if (
-                    latestEnrollment?.enrollmentDate ||
-                    latestEnrollment?.fechaInscripcion
-                  ) {
-                    const fecha = new Date(
-                      latestEnrollment.enrollmentDate ||
-                        latestEnrollment.fechaInscripcion,
-                    );
-                    if (!isNaN(fecha.getTime())) {
-                      fechaMatricula = fecha.toLocaleDateString("es-ES");
-                    }
-                  }
-
-                  let fechaVencimiento = "";
-                  if (
-                    latestEnrollment?.expirationDate ||
-                    latestEnrollment?.fechaVencimiento
-                  ) {
-                    const fecha = new Date(
-                      latestEnrollment.expirationDate ||
-                        latestEnrollment.fechaVencimiento,
-                    );
-                    if (!isNaN(fecha.getTime())) {
-                      fechaVencimiento = fecha.toLocaleDateString("es-ES");
-                    }
-                  } else if (
-                    latestEnrollment?.enrollmentDate ||
-                    latestEnrollment?.fechaInscripcion
-                  ) {
-                    const fechaInsc = new Date(
-                      latestEnrollment.enrollmentDate ||
-                        latestEnrollment.fechaInscripcion,
-                    );
-                    if (!isNaN(fechaInsc.getTime())) {
-                      const fechaVenc = new Date(fechaInsc);
-                      fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-                      fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
-                    }
-                  }
-
-                  const estadoMatricula =
-                    latestEnrollment?.status ||
-                    latestEnrollment?.estado ||
-                    "Sin matrícula";
-
-                  return {
-                    nombres: firstName,
-                    apellidos: lastName,
-                    nombreCompleto: `${firstName} ${lastName}`.trim(),
-                    tipoDocumento,
-                    numeroDocumento: identification,
-                    correo: email,
-                    telefono: phone,
-                    categoria: athlete.categoria || "",
-                    estado: athlete.status || athlete.estado || "",
-                    fechaMatricula,
-                    fechaVencimiento,
-                    estadoMatricula,
-                    acudienteNombre: guardian
-                      ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim()
-                      : "Sin acudiente",
-                    acudienteTipoDocumento: tipoDocumentoAcudiente,
-                    acudienteDocumento:
-                      guardian?.identification ||
-                      guardian?.identificacion ||
-                      "",
-                    acudienteTelefono:
-                      guardian?.phone || guardian?.telefono || "",
-                    acudienteCorreo: guardian?.email || guardian?.correo || "",
-                  };
-                })}
+                dataProvider={getCompleteReportData}
                 fileName="Matriculas"
                 columns={[
                   { header: "Nombres", accessor: "nombres" },

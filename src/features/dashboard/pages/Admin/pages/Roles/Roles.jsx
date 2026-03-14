@@ -151,6 +151,11 @@ const Roles = () => {
       {/* Tabla */}
       <div className="w-full">
         <Table
+          serverPagination={true}
+          currentPage={currentPage}
+          totalRows={totalRows}
+          rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+          onPageChange={(page) => setCurrentPage(page)}
           thead={{
             titles: ["Nombre", "Descripción"],
             state: false,

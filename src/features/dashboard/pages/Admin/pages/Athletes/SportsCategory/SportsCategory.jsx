@@ -10,6 +10,8 @@ import SportsCategoryDetailModal from "./components/SportsCategoryDetailModal";
 import AthletesListModal from "./components/AthletesListModal";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import sportsCategoryService from "./services/sportsCategoryService";
 
 import { useSportsCategories } from "./hooks/useSportsCategories";
 import {
@@ -83,6 +85,11 @@ const buildAssociationDetails = (association) => {
 const SportsCategory = () => {
   const { hasPermission } = usePermissions();
 
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    sportsCategoryService.getAllForReport.bind(sportsCategoryService)
+  );
+
   const {
     sportsCategories,
     loading,
@@ -128,6 +135,24 @@ const SportsCategory = () => {
     fechaCreacion: cat.createdAt || "",
     fechaActualizacion: cat.updatedAt || "",
   }));
+
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (categories) => categories.map((cat) => ({ // Mapper de datos
+        nombre: cat.nombre || cat.name || "",
+        descripcion: cat.descripcion || cat.description || "",
+        edadMinima: cat.edadMinima ?? cat.minAge ?? "",
+        edadMaxima: cat.edadMaxima ?? cat.maxAge ?? "",
+        estado: cat.estado || cat.status || "",
+        publicar: (cat.publicar ?? cat.publish) ? "Si" : "No",
+        archivo: cat.archivo || cat.imageUrl || cat.file || "",
+        fechaCreacion: cat.createdAt || "",
+        fechaActualizacion: cat.updatedAt || "",
+      }))
+    );
+  };
 
   const reportColumns = [
     { header: "Nombre", accessor: "nombre" },
@@ -303,7 +328,7 @@ const SportsCategory = () => {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <ReportButton
-              data={reportData}
+              dataProvider={getCompleteReportData}
               fileName="CategoriasDeportivas"
               columns={reportColumns}
             />
