@@ -370,6 +370,40 @@ if (response && response.success) {
       };
     }
   }
+
+  /**
+   * Obtener todos los deportistas para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de deportistas
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(this.endpoint, {
+        ...params,
+        limit: 10000, // Límite alto para obtener todos los datos
+      });
+
+      if (response && response.success) {
+        return {
+          success: true,
+          data: response.data || [],
+        };
+      } else {
+        return {
+          success: false,
+          data: [],
+          error: response?.message || "Error obteniendo deportistas para reporte",
+        };
+      }
+    } catch (error) {
+      console.error("Error obteniendo deportistas para reporte:", error);
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+      };
+    }
+  }
 }
 
 export default new AthletesService();

@@ -106,7 +106,7 @@ const AthletesTrackingGraphic = () => {
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={reportData}
+            dataProvider={async () => reportData}
             fileName="Seguimiento_Deportistas"
             columns={reportColumns}
           />

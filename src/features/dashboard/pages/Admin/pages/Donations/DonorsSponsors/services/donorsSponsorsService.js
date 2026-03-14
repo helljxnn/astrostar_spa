@@ -48,6 +48,14 @@ class DonorsSponsorsService {
     return apiClient.get(`${this.endpoint}/stats`);
   }
 
+  // Método para obtener todos los datos para reportes
+  async getAllForReport(params = {}) {
+    return apiClient.get(this.endpoint, {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    });
+  }
+
   async getReferenceData() {
     return apiClient.get(`${this.endpoint}/reference-data`);
   }

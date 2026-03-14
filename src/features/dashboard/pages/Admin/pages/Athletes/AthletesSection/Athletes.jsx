@@ -10,6 +10,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 
 import AthletesService from "./services/AthletesService.js";
 import GuardiansService from "./services/GuardiansService.js";
@@ -27,6 +28,11 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    AthletesService.getAllForReport.bind(AthletesService)
+  );
 
   // Usar el hook personalizado
   const {

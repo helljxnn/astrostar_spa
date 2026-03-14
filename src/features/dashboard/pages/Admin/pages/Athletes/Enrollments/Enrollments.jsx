@@ -329,39 +329,30 @@ const Enrollments = () => {
                   const identification =
                     athlete.identification || athlete.numeroDocumento || "";
 
-                  // Obtener tipo de documento del deportista
-                  let tipoDocumento = "No especificado";
-                  const docTypeId =
-                    athlete.user?.documentTypeId || athlete.documentTypeId;
-                  if (docTypeId && referenceData?.documentTypes) {
-                    const docType = referenceData.documentTypes.find(
-                      (dt) => dt.id === docTypeId,
-                    );
-                    if (docType) {
-                      tipoDocumento = docType.name || docType.label;
-                    }
-                  }
+        // Obtener tipo de documento del deportista
+        let tipoDocumento = "No especificado";
+        const docTypeId = athlete.user?.documentTypeId || athlete.documentTypeId;
+        if (docTypeId && referenceData?.documentTypes) {
+          const docType = referenceData.documentTypes.find((dt) => dt.id === docTypeId);
+          if (docType) {
+            tipoDocumento = docType.name || docType.label;
+          }
+        }
 
-                  // Obtener tipo de documento del acudiente
-                  let tipoDocumentoAcudiente = "";
-                  if (guardian) {
-                    const guardianDocTypeId = guardian.documentTypeId;
-                    if (
-                      guardianDocTypeId &&
-                      referenceData?.guardianDocumentTypes
-                    ) {
-                      const docType = referenceData.guardianDocumentTypes.find(
-                        (dt) => dt.id === guardianDocTypeId,
-                      );
-                      if (docType) {
-                        tipoDocumentoAcudiente = docType.name || docType.label;
-                      }
-                    }
-                  }
+        // Obtener tipo de documento del acudiente
+        let tipoDocumentoAcudiente = "";
+        if (guardian) {
+          const guardianDocTypeId = guardian.documentTypeId;
+          if (guardianDocTypeId && referenceData?.guardianDocumentTypes) {
+            const docType = referenceData.guardianDocumentTypes.find((dt) => dt.id === guardianDocTypeId);
+            if (docType) {
+              tipoDocumentoAcudiente = docType.name || docType.label;
+            }
+          }
+        }
 
-                  // Obtener la matrícula más reciente
-                  const latestEnrollment =
-                    athlete.enrollments?.[0] || athlete.inscripciones?.[0];
+        // Obtener la matrícula más reciente
+        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
 
                   // Formatear fechas - NOTA: fechaMatricula ahora es fecha de activación
                   let fechaActivacion = "";
@@ -380,10 +371,7 @@ const Enrollments = () => {
                     }
                   }
 
-                  const estadoMatricula =
-                    latestEnrollment?.status ||
-                    latestEnrollment?.estado ||
-                    "Sin matrícula";
+        const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
 
                   return {
                     nombres: firstName,

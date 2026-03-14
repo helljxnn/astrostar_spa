@@ -348,6 +348,11 @@ const TemporaryTeams = () => {
       {formattedData.length > 0 ? (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={pagination.limit}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: [
                 "Nombre",
@@ -376,7 +381,6 @@ const TemporaryTeams = () => {
                   "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
             }}
-            rowsPerPage={1000}
             onEdit={
               hasPermission("temporaryTeams", "Editar") ? handleEdit : null
             }

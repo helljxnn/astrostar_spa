@@ -8,6 +8,7 @@ import Table from "../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../shared/components/ReportButton.jsx";
 import providersService from "./services/ProvidersService.js";
+import { useReportDataWithService } from "../../../../../../shared/hooks/useReportData";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -20,6 +21,12 @@ import { PAGINATION_CONFIG } from "../../../../../../shared/constants/pagination
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    providersService.getAllForReport.bind(providersService)
+  );
+  
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -397,6 +404,28 @@ setProviderToEdit(response.data);
   const displayData = filteredData;
   const displayTotalRows = searchTerm ? filteredData.length : totalRows;
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (providers) => providers.map((provider) => ({ // Mapper de datos
+        razonSocial: provider.razonSocial,
+        nit: provider.nit,
+        tipoEntidad: provider.tipoEntidad,
+        tipoDocumento: provider.tipoDocumento,
+        contactoPrincipal: provider.contactoPrincipal,
+        correo: provider.correo,
+        telefono: provider.telefono,
+        direccion: provider.direccion,
+        ciudad: provider.ciudad,
+        descripcion: provider.descripcion,
+        estado: provider.estado,
+        fechaRegistro: provider.fechaRegistro,
+        updatedAt: provider.updatedAt,
+      }))
+    );
+  };
+
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -418,7 +447,7 @@ setProviderToEdit(response.data);
           <div className="flex flex-col sm:flex-row gap-3">
             <PermissionGuard module="providers" action="Ver">
               <ReportButton
-                data={data}
+                dataProvider={getCompleteReportData}
                 fileName="Proveedores"
                 columns={[
                   { header: "Razón Social", accessor: "razonSocial" },
@@ -494,6 +523,11 @@ setProviderToEdit(response.data);
           <div className="w-full overflow-x-auto bg-white rounded-lg">
             <div className="min-w-full">
               <Table
+                serverPagination={true}
+                currentPage={currentPage}
+                totalRows={displayTotalRows}
+                rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+                onPageChange={(page) => setCurrentPage(page)}
                 thead={{
                   titles: [
                     "Razón Social",
