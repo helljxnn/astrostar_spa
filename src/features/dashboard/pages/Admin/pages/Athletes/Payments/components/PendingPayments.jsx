@@ -9,10 +9,11 @@ import {
   FaMoneyBillWave,
   FaSync
 } from "react-icons/fa";
-import { paymentsService } from "../services/PaymentsService.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
 import PaymentReceiptViewModal from "./PaymentReceiptViewModal.jsx";
 import PaymentRejectModal from "./PaymentRejectModal.jsx";
+import SearchInput from "../../../../../../../../shared/components/SearchInput.jsx";
+import { usePayments } from "../hooks/usePayments.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
 /**
@@ -20,99 +21,75 @@ import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared
  * Incluye renovaciones de matrícula, matrículas iniciales y mensualidades
  */
 const PendingPayments = () => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState('ALL');
+  const {
+    payments,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filters,
+    setFilters,
+    refetch,
+    approvePayment,
+    rejectPayment
+  } = usePayments('pending');
+
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
-  // Cargar pagos pendientes
-  const fetchPendingPayments = async () => {
-    setLoading(true);
-    try {
-      const response = await paymentsService.getPendingPayments();
-      setPayments(response.data || []);
-    } catch (error) {
-      console.error('Error fetching pending payments:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los pagos pendientes');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPendingPayments();
-  }, []);
-
-  // Filtrar pagos por tipo
+  // Filtrar pagos por tipo (el filtro de búsqueda ya se maneja en el hook)
   const filteredPayments = payments.filter(payment => {
-    if (filter === 'ALL') return true;
-    return payment.obligation?.type === filter;
+    if (filters.type === 'ALL' || !filters.type) return true;
+    return payment.obligation?.type === filters.type;
   });
 
   // Aprobar pago
   const handleApprovePayment = async (paymentId) => {
-    try {
-      const response = await paymentsService.approvePayment(paymentId);
+    const result = await approvePayment(paymentId);
+    if (result.success) {
+      const payment = payments.find(p => p.id === paymentId);
+      const isRenewal = payment?.obligation?.type === 'ENROLLMENT_RENEWAL';
       
-      if (response.success) {
-        const payment = payments.find(p => p.id === paymentId);
-        const isRenewal = payment?.obligation?.type === 'ENROLLMENT_RENEWAL';
-        
-        showSuccessAlert(
-          'Pago Aprobado',
-          isRenewal 
-            ? 'Pago aprobado. Nueva matrícula creada automáticamente.'
-            : 'Pago aprobado exitosamente.'
-        );
-        
-        fetchPendingPayments(); // Recargar lista
-      }
-    } catch (error) {
-      console.error('Error approving payment:', error);
-      showErrorAlert('Error', 'No se pudo aprobar el pago');
+      showSuccessAlert(
+        'Pago Aprobado',
+        isRenewal 
+          ? 'Pago aprobado. Nueva matrícula creada automáticamente.'
+          : 'Pago aprobado exitosamente.'
+      );
     }
   };
 
   // Rechazar pago
   const handleRejectPayment = async (paymentId, reason) => {
-    try {
-      const response = await paymentsService.rejectPayment(paymentId, reason);
-      
-      if (response.success) {
-        showSuccessAlert('Pago Rechazado', 'El pago ha sido rechazado');
-        fetchPendingPayments(); // Recargar lista
-      }
-    } catch (error) {
-      console.error('Error rejecting payment:', error);
-      showErrorAlert('Error', 'No se pudo rechazar el pago');
+    const result = await rejectPayment(paymentId, reason);
+    if (result.success) {
+      showSuccessAlert('Pago Rechazado', 'El pago ha sido rechazado');
     }
   };
 
-  // Calcular información de mora para mensualidades
-  const calculateMoraInfo = (payment) => {
-    if (payment.obligation?.type !== 'MONTHLY' || !payment.obligation?.dueEnd) {
-      return { diasMora: 0, diasMoraTexto: "", montoConMora: payment.obligation?.baseAmount || 0 };
+  // ── Usar información de mora del backend directamente ──
+  const getMoraInfoFromBackend = (payment) => {
+    const obligation = payment.obligation;
+    if (!obligation) {
+      return { diasMora: 0, diasMoraTexto: "", montoConMora: 0 };
     }
 
-    const fechaVencimiento = new Date(payment.obligation.dueEnd);
-    const hoy = new Date();
-    const diferenciaDias = Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24));
+    // ✅ Usar datos calculados por el backend (ya corregidos)
+    const diasMora = obligation.daysLate || 0;
+    const montoConMora = obligation.totalAmount || obligation.baseAmount || 0;
     
-    let diasMora = 0;
-    let diasMoraTexto = "";
-    let montoConMora = payment.obligation?.baseAmount || 0;
-    
-    if (diferenciaDias > 5) { // Después del período de gracia
-      diasMora = diferenciaDias - 5;
+    let diasMoraTexto = "Al día";
+    if (diasMora > 0) {
       diasMoraTexto = `${diasMora} días de mora`;
-      // Aplicar recargo de $2,000 por día de mora
-      montoConMora = montoConMora + (diasMora * 2000);
-    } else if (diferenciaDias > 0) {
-      diasMoraTexto = `${5 - diferenciaDias} días restantes`;
-    } else if (diferenciaDias <= 0) {
-      diasMoraTexto = "Al día";
+    } else if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
+      // Verificar si está en período de gracia
+      const fechaVencimiento = new Date(obligation.dueEnd);
+      const hoy = new Date();
+      const diferenciaDias = Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24));
+      
+      if (diferenciaDias > 0 && diferenciaDias <= 5) {
+        diasMoraTexto = `${5 - diferenciaDias} días restantes`;
+      }
     }
     
     return { diasMora, diasMoraTexto, montoConMora };
@@ -165,7 +142,7 @@ const PendingPayments = () => {
         </div>
         
         <button
-          onClick={fetchPendingPayments}
+          onClick={refetch}
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
@@ -174,29 +151,42 @@ const PendingPayments = () => {
         </button>
       </div>
 
-      {/* Filtros */}
+      {/* Filtros y Búsqueda */}
       <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
-        <div className="flex items-center gap-4">
-          <FaFilter className="text-gray-500" />
-          <label className="text-sm font-medium text-gray-700">
-            Filtrar por tipo de pago:
-          </label>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-          >
-            <option value="ALL">Todos los Pagos ({payments.length})</option>
-            <option value="ENROLLMENT_INITIAL">
-              Matrículas Iniciales ({payments.filter(p => p.obligation?.type === 'ENROLLMENT_INITIAL').length})
-            </option>
-            <option value="ENROLLMENT_RENEWAL">
-              Renovaciones ({payments.filter(p => p.obligation?.type === 'ENROLLMENT_RENEWAL').length})
-            </option>
-            <option value="MONTHLY">
-              Mensualidades ({payments.filter(p => p.obligation?.type === 'MONTHLY').length})
-            </option>
-          </select>
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          {/* Filtro por tipo */}
+          <div className="flex items-center gap-4">
+            <FaFilter className="text-gray-500" />
+            <label className="text-sm font-medium text-gray-700">
+              Filtrar por tipo:
+            </label>
+            <select
+              value={filters.type || 'ALL'}
+              onChange={(e) => setFilters({ type: e.target.value === 'ALL' ? '' : e.target.value })}
+              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+            >
+              <option value="ALL">Todos ({payments.length})</option>
+              <option value="ENROLLMENT_INITIAL">
+                Matrículas Iniciales ({payments.filter(p => p.obligation?.type === 'ENROLLMENT_INITIAL').length})
+              </option>
+              <option value="ENROLLMENT_RENEWAL">
+                Renovaciones ({payments.filter(p => p.obligation?.type === 'ENROLLMENT_RENEWAL').length})
+              </option>
+              <option value="MONTHLY">
+                Mensualidades ({payments.filter(p => p.obligation?.type === 'MONTHLY').length})
+              </option>
+            </select>
+          </div>
+
+          {/* Buscador */}
+          <div className="flex-1 max-w-md">
+            <SearchInput
+              value={searchTerm}
+              placeholder="Buscar por deportista, documento, tipo..."
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
 
@@ -215,7 +205,7 @@ const PendingPayments = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPayments.map((payment) => {
-            const moraInfo = calculateMoraInfo(payment);
+            const moraInfo = getMoraInfoFromBackend(payment);
             
             return (
               <div key={payment.id} className="bg-white rounded-xl shadow border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">

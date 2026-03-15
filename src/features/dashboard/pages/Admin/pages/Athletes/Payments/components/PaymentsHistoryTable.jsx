@@ -6,7 +6,7 @@ import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
-const PaymentsHistoryTable = ({ onViewPayment, filters, setFilters }) => {
+const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
   const { hasPermission } = usePermissions();
   const {
     payments: allPayments,
@@ -14,7 +14,7 @@ const PaymentsHistoryTable = ({ onViewPayment, filters, setFilters }) => {
     currentPage,
     totalRows,
     handlePageChange,
-  } = usePayments('all');
+  } = usePayments('all', { search: searchTerm });
   
   const { downloadReceipt, downloading } = useDownloadReceipt();
 
@@ -61,7 +61,7 @@ const PaymentsHistoryTable = ({ onViewPayment, filters, setFilters }) => {
       atletaDoc: payment.athlete?.user?.identification || "",
       obligationType: payment.obligation?.type || "",
       periodoTexto,
-      montoTexto: formatCurrency(payment.obligation?.baseAmount),
+      montoTexto: formatCurrency(payment.obligation?.totalAmount || payment.obligation?.baseAmount || 0),
       fechaTexto: payment.processedAt || payment.updatedAt
         ? new Date(payment.processedAt || payment.updatedAt).toLocaleDateString("es-ES")
         : "—",
@@ -76,15 +76,15 @@ const PaymentsHistoryTable = ({ onViewPayment, filters, setFilters }) => {
     );
   }
 
-  if (allPayments.length === 0) {
+      if (allPayments.length === 0) {
     return (
       <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-        <p>No hay pagos procesados{filters.status || filters.type ? " con los filtros seleccionados" : ""}.</p>
+        <p>No hay pagos procesados{searchTerm ? " con la búsqueda actual" : ""}.</p>
         <div className="text-sm mt-4 p-4 bg-blue-50 rounded-lg">
           <p><strong>💡 Información:</strong></p>
           <p>• Este historial muestra solo pagos <strong>aprobados</strong> o <strong>rechazados</strong></p>
           <p>• Los pagos <strong>pendientes</strong> aparecen en el tab "Pagos Pendientes"</p>
-          <p>• Usa los filtros para buscar pagos específicos</p>
+          <p>• Usa el buscador para encontrar pagos específicos</p>
         </div>
       </div>
     );
@@ -145,6 +145,29 @@ const PaymentsHistoryTable = ({ onViewPayment, filters, setFilters }) => {
                 'ENROLLMENT_RENEWAL': 'Renovación Matrícula'
               };
               return <span className="text-gray-700">{labels[value] || value}</span>;
+            },
+            montoTexto: (value, payment) => {
+              const obligation = payment.obligation;
+              if (!obligation) {
+                return <span className="font-semibold">{value}</span>;
+              }
+
+              // ✅ Usar datos directos del backend (ya corregidos)
+              const baseAmount = obligation.baseAmount || 0;
+              const lateFeeAmount = obligation.lateFeeAmount || 0;
+              const totalAmount = obligation.totalAmount || baseAmount;
+
+              if (lateFeeAmount > 0) {
+                return (
+                  <div>
+                    <div className="font-semibold">{formatCurrency(totalAmount)}</div>
+                    <div className="text-xs text-gray-500">
+                      Base: {formatCurrency(baseAmount)} + Mora: {formatCurrency(lateFeeAmount)}
+                    </div>
+                  </div>
+                );
+              }
+              return <span className="font-semibold">{formatCurrency(totalAmount)}</span>;
             },
             status: (value, payment) => {
               const statusLabels = {

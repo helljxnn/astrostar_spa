@@ -27,6 +27,13 @@ const parentescoBackendToFrontend = {
 // Función para convertir parentesco
 const convertirParentesco = (parentesco) => {
   if (!parentesco) return "N/A";
+  
+  // Si ya viene en español (nuevo comportamiento del backend), devolverlo directamente
+  if (parentesco === "Otro" || parentesco === "Madre" || parentesco === "Padre") {
+    return parentesco;
+  }
+  
+  // Si viene en inglés (comportamiento anterior), convertir
   return parentescoBackendToFrontend[parentesco] || parentesco;
 };
 

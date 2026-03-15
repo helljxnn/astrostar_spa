@@ -284,6 +284,40 @@ class PaymentsService {
   }
 
   /**
+   * Obtener todos los pagos para reporte (sin paginación)
+   * Usa el endpoint /history/report del backend
+   * @param {Object} params - Filtros (search, status, type, etc.)
+   * @returns {Promise<Object>} Todos los pagos
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const queryParams = {
+        search: params.search || '',
+        status: params.status || '',
+        type: params.type || '',
+        startDate: params.dateFrom || '',
+        endDate: params.dateTo || '',
+      };
+      
+      // Limpiar parámetros vacíos
+      Object.keys(queryParams).forEach(key => {
+        if (!queryParams[key]) delete queryParams[key];
+      });
+      
+      // Usar el endpoint correcto del backend: /history/report
+      const response = await apiClient.get(`${this.endpoint}/history/report`, { params: queryParams });
+      
+      return {
+        success: true,
+        data: response.data || response || [],
+      };
+    } catch (error) {
+      console.error('Error fetching payments report:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
+
+  /**
    * Aprobar pago
    * PATCH /api/payments/:paymentId/approve
    */

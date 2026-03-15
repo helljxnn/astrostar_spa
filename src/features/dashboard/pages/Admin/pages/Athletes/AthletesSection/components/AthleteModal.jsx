@@ -104,7 +104,6 @@ const AthleteModal = ({
   const [showGuardianSearch, setShowGuardianSearch] = useState(false);
   const [guardianSearchTerm, setGuardianSearchTerm] = useState("");
   const [currentAge, setCurrentAge] = useState(null);
-  const [otroParentesco, setOtroParentesco] = useState("");
   const [hasDateOfBirth, setHasDateOfBirth] = useState(false);
   const [asyncErrors, setAsyncErrors] = useState({});
   const [checkingEmail, setCheckingEmail] = useState(false);
@@ -462,7 +461,6 @@ const AthleteModal = ({
         parentescoFrontend &&
         !parentescoOptions.some((opt) => opt.value === parentescoFrontend)
       ) {
-        setOtroParentesco(parentescoFrontend);
         setValues((prev) => ({ ...prev, parentesco: "Otro" }));
       }
 
@@ -579,7 +577,6 @@ const AthleteModal = ({
         parentesco: "",
         isScholarship: false,
       });
-      setOtroParentesco("");
       setAsyncErrors({});
       setHasDateOfBirth(false);
     }
@@ -589,11 +586,6 @@ const AthleteModal = ({
     const { name, value } = e.target;
     // Actualizar el valor
     handleChange(e);
-
-    // Limpiar el campo "Otro" si no es necesario
-    if (value !== "Otro") {
-      setOtroParentesco("");
-    }
   };
 
   const filteredGuardians = guardians.filter(
@@ -655,19 +647,6 @@ const AthleteModal = ({
     setTouched(allTouched);
     const isValid = validateAllFields();
     if (!isValid) {
-      return;
-    }
-
-    // Validación especial para "Otro" parentesco
-    if (
-      values.acudiente &&
-      values.parentesco === "Otro" &&
-      !otroParentesco.trim()
-    ) {
-      showErrorAlert(
-        "Parentesco requerido",
-        "Debes especificar el tipo de parentesco en el campo 'Especificar parentesco'.",
-      );
       return;
     }
 
@@ -760,11 +739,6 @@ const AthleteModal = ({
       if (acudienteId) {
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
-        
-        // Si es "Other", incluir el texto libre en otherRelationship
-        if (parentescoBackend === "Other" && otroParentesco.trim()) {
-          athleteData.otherRelationship = otroParentesco.trim();
-        }
       }
       // Incluir isScholarship siempre (solo en ediciÃ³n)
       if (isEditing) {
@@ -790,7 +764,6 @@ const AthleteModal = ({
         await onSave(athleteData);
       }
       resetForm();
-      setOtroParentesco("");
       setHasDateOfBirth(false);
       onClose();
     } catch (error) {
@@ -881,8 +854,6 @@ const AthleteModal = ({
             },
           });
 
-          setOtroParentesco("");
-          
           // Si es menor de edad, marcar campo como touched y mostrar error
           if (isAcudienteRequired) {
             setTouched(prev => ({
@@ -975,7 +946,6 @@ const AthleteModal = ({
     
     // Cerrar el modal normalmente
     resetForm();
-    setOtroParentesco("");
     setHasDateOfBirth(false);
     setShowGuardianSearch(false);
     setGuardianSearchTerm("");
@@ -1540,42 +1510,6 @@ const AthleteModal = ({
                     />
                   </div>
 
-                  {values.parentesco === "Otro" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="space-y-1"
-                    >
-                      <label className="block text-sm font-medium text-gray-700">
-                        Especificar parentesco *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Vecino, Amigo de la familia, Conocido..."
-                        value={otroParentesco}
-                        onChange={(e) => setOtroParentesco(e.target.value)}
-                        onBlur={handleBlur}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all duration-200 text-sm"
-                        required
-                      />
-                      {otroParentesco === "" && touched.parentesco && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-1 flex items-start gap-1 p-2 bg-red-50 border border-red-200 rounded"
-                        >
-                          <FaExclamationCircle
-                            className="text-red-500 mt-0.5 flex-shrink-0"
-                            size={12}
-                          />
-                          <p className="text-red-600 text-xs">
-                            Debes especificar el tipo de parentesco
-                          </p>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  )}
                 </div>
               )}
             </div>
@@ -1619,7 +1553,6 @@ const AthleteModal = ({
                           onClick={() => {
                             handleChange({ target: { name: "acudiente", value: "" } });
                             handleChange({ target: { name: "parentesco", value: "" } });
-                            setOtroParentesco("");
                           }}
                           className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-xs"
                           title="Deseleccionar acudiente"

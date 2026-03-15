@@ -378,9 +378,13 @@ if (response && response.success) {
    */
   async getAllForReport(params = {}) {
     try {
-      const response = await apiClient.get(this.endpoint, {
-        ...params,
-        limit: 10000, // Límite alto para obtener todos los datos
+      // Llamar al endpoint /report del backend
+      const response = await apiClient.get(`${this.endpoint}/report`, {
+        params: {
+          search: params.search || '',
+          status: params.status || '',
+          categoria: params.categoria || '',
+        }
       });
 
       if (response && response.success) {
