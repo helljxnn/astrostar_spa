@@ -21,7 +21,7 @@ export const MissionVisionObjective = () => {
   ];
 
   return (
-    <section className="py-16 px-6 sm:px-10 lg:px-20 bg-white">
+    <section id="mision-vision" className="py-16 px-6 sm:px-10 lg:px-20 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Título de la sección */}
         <motion.div

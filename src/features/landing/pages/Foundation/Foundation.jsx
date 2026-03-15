@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Hero } from "../../components/Hero";
 import { Founder } from "./components/Founder";
 import { MissionVisionObjective } from "./components/MissionVisionObjective";
@@ -6,6 +8,21 @@ import { Team } from "./components/Team";
 import { Allies } from "./components/Allies";
 
 function Foundation() {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Manejar scroll al hash cuando la página carga
+    if (location.hash) {
+      // Delay mínimo para asegurar que el DOM esté listo
+      setTimeout(() => {
+        const element = document.querySelector(location.hash);
+        if (element) {
+          element.scrollIntoView({ behavior: "auto", block: "start" });
+        }
+      }, 50);
+    }
+  }, [location]);
+
   return (
     <>
       {/* Banner solo con imagen, sin texto ni cuadro blanco */}

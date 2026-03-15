@@ -1242,7 +1242,25 @@ const AthleteModal = ({
                   error={errors.categoria}
                   touched={touched.categoria}
                   required
-                  helperText=""
+                  helperText={
+                    values.categoria && values.birthDate
+                      ? (() => {
+                          const age = calculateAge(values.birthDate);
+                          const ageNum = age !== "" && !Number.isNaN(Number(age)) ? Number(age) : null;
+                          const selectedCat = referenceData.sportsCategories.find(c => c.name === values.categoria);
+                          if (selectedCat && ageNum !== null) {
+                            if (ageNum < selectedCat.minAge) {
+                              return `⚠️ Edad ${ageNum} es menor al mínimo (${selectedCat.minAge}). Selecciona una categoría apropiada.`;
+                            } else if (ageNum > selectedCat.maxAge) {
+                              return `ℹ️ Edad ${ageNum} supera el máximo (${selectedCat.maxAge}), pero puede inscribirse en esta categoría superior.`;
+                            } else {
+                              return `✓ Edad ${ageNum} está en el rango de esta categoría (${selectedCat.minAge}-${selectedCat.maxAge})`;
+                            }
+                          }
+                          return "";
+                        })()
+                      : "Selecciona una categoría según la edad de la deportista"
+                  }
                   delay={0.8}
                 />
               </div>

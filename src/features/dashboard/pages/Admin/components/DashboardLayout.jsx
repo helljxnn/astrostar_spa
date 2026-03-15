@@ -60,7 +60,7 @@ function DashboardLayout() {
       {/* Overlay con blur para móvil */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay z-[999]"
           onClick={() => setSidebarOpen(false)}
         />
       )}

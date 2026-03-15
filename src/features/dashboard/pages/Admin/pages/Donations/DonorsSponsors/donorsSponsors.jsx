@@ -7,7 +7,6 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import DonorSponsorModal from "./components/DonorSponsorModal";
 import DonorSponsorViewModal from "./components/DonorSponsorViewModal";
 import useDonorsSponsors from "./hooks/useDonorsSponsors";
-import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import donorsSponsorsService from "./services/donorsSponsorsService";
 
 function DonorsSponsors() {
@@ -31,10 +30,27 @@ function DonorsSponsors() {
     checkIdentificationAvailability,
   } = useDonorsSponsors();
 
-  // Hook para obtener datos completos para reportes
-  const { getReportData } = useReportDataWithService(
-    donorsSponsorsService.getAllForReport.bind(donorsSponsorsService)
-  );
+  // Estado para el contador de "Por confirmar"
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Cargar contador de pendientes
+  useEffect(() => {
+    const loadPendingCount = async () => {
+      try {
+        const response = await donorsSponsorsService.getAll({
+          status: "Por confirmar",
+          limit: 1,
+        });
+        if (response.success && response.pagination) {
+          setPendingCount(response.pagination.total || 0);
+        }
+      } catch (error) {
+        console.error("Error cargando contador de pendientes:", error);
+      }
+    };
+
+    loadPendingCount();
+  }, [donorsSponsors]); // Actualizar cuando cambie la lista
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -180,25 +196,6 @@ function DonorsSponsors() {
             placeholder="Buscar donante o patrocinador..."
           />
 
-          <div className="flex gap-2">
-            {[
-              { label: "Todos", value: "" },
-              { label: "Por confirmar", value: "Por confirmar" },
-            ].map((opt) => (
-              <button
-                key={opt.value || "all"}
-                onClick={() => setStatusFilter(opt.value)}
-                className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
-                  statusFilter === opt.value
-                    ? "bg-primary-purple text-white border-primary-purple"
-                    : "border-gray-200 text-gray-700 hover:border-primary-purple"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex items-center gap-3">
             <ReportButton
               dataProvider={getCompleteReportData}
@@ -223,6 +220,76 @@ function DonorsSponsors() {
               <FaPlus /> Crear
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="mb-6">
+        <div className="inline-flex gap-2">
+          <button
+            onClick={() => setStatusFilter("")}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              statusFilter === ""
+                ? "bg-primary-purple/10 text-primary-purple"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            <span>Todos</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
+                statusFilter === ""
+                  ? "bg-primary-purple text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}
+            >
+              {pagination.total || 0}
+            </span>
+          </button>
+          <button
+            onClick={() => setStatusFilter("Por confirmar")}
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+              statusFilter === "Por confirmar"
+                ? "bg-primary-blue/10 text-primary-blue"
+                : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            <span>Por confirmar</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
+                statusFilter === "Por confirmar"
+                  ? "bg-primary-blue text-white"
+                  : "bg-gray-200 text-gray-600"
+              }`}
+            >
+              {pendingCount}
+            </span>
+          </button>
         </div>
       </div>
 

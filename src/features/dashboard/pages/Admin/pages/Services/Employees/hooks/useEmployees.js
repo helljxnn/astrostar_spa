@@ -5,9 +5,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import employeeService from "../services/employeeService.js";
-import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
-import { useAuth } from "@shared/contexts/authContext.jsx";
-import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 export const useEmployees = () => {
   const { isAuthenticated } = useAuth();

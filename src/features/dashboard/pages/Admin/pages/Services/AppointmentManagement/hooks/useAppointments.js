@@ -489,10 +489,16 @@ export const useAppointments = () => {
   );
 
   const completeAppointment = useCallback(
-    async (id, conclusion) => {
+    async (id, conclusion, file = null) => {
       setLoading(true);
       try {
-        const response = await appointmentService.complete(id, { conclusion });
+        const formData = new FormData();
+        formData.append('conclusion', conclusion);
+        if (file) {
+          formData.append('conclusionFile', file);
+        }
+
+        const response = await appointmentService.complete(id, formData);
 
         if (!response?.success) {
           throw new Error(response?.message || "No se pudo completar la cita");

@@ -305,6 +305,12 @@ const Donations = () => {
         classification: item.classification ?? "",
         channel: item.channel || item.metodo || item.method || "",
       }));
+    const foodItems = details
+      .filter((d) => d.kind === "ALIMENTOS" && d.recordType === "food")
+      .map((item) => ({
+        quantity: item.quantity ?? "",
+        classification: item.classification ?? "",
+      }));
     const foodDetail = details.find(
       (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
     );

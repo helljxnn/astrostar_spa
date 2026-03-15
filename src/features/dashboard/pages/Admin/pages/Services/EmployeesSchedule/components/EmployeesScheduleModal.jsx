@@ -292,8 +292,17 @@ export default function ScheduleModal({
             </div>
 
             {recurrenceLabel && (
-              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200">
-                {recurrenceLabel}
+              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200 flex items-center justify-between">
+                <span>{recurrenceLabel}</span>
+                {!disabledFields && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomModal(true)}
+                    className="ml-3 px-3 py-1 text-xs bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition font-medium"
+                  >
+                    Editar
+                  </button>
+                )}
               </div>
             )}
 
@@ -337,6 +346,7 @@ export default function ScheduleModal({
       {showCustomModal && !disabledFields && (
         <CustomRecurrenceModal
           onClose={() => setShowCustomModal(false)}
+          initialData={form.customRecurrence}
           onSave={(customData) => {
             setForm((prev) => ({
               ...prev,
