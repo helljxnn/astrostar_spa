@@ -17,17 +17,17 @@ const EnrollmentStatusBadge = ({
   // Determinar el color basado en el estado (solo 3 estados)
   const getStatusColor = (status) => {
     if (status === ENROLLMENT_STATUS.PENDING_PAYMENT) {
-      return 'text-yellow-800';
+      return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
     }
     if (status === ENROLLMENT_STATUS.VIGENTE) {
-      return 'text-green-800';
+      return 'bg-green-50 text-green-700 border border-green-200';
     }
     if (status === ENROLLMENT_STATUS.VENCIDA) {
-      return 'text-red-800';
+      return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
     
     // Color por defecto para estados no reconocidos
-    return 'text-gray-800';
+    return 'bg-gray-50 text-gray-600 border border-gray-200';
   };
 
   const colorClasses = getStatusColor(status);
@@ -36,7 +36,7 @@ const EnrollmentStatusBadge = ({
   return (
     <span 
       className={`
-        font-medium text-sm
+        font-medium text-sm px-2 py-1 rounded
         ${colorClasses} 
         ${className}
       `.trim()}

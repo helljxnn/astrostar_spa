@@ -7,18 +7,18 @@ import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/pagi
  * Hook para gestionar pagos (Admin)
  * Puede obtener pagos pendientes o todos los pagos según el contexto
  */
-export const usePayments = (mode = 'all') => {
+export const usePayments = (mode = 'all', initialParams = {}) => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(PAGINATION_CONFIG.DEFAULT_PAGE);
   const [totalRows, setTotalRows] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialParams.search || '');
   const [filters, setFilters] = useState({
-    status: '',
-    type: '',
-    dateFrom: '',
-    dateTo: ''
+    status: initialParams.status || '',
+    type: initialParams.type || '',
+    dateFrom: initialParams.dateFrom || '',
+    dateTo: initialParams.dateTo || ''
   });
 
   const fetchPayments = async () => {
@@ -83,6 +83,13 @@ export const usePayments = (mode = 'all') => {
   useEffect(() => {
     fetchPayments();
   }, [currentPage, searchTerm, filters.status, filters.type, filters.dateFrom, filters.dateTo, mode]);
+
+  // Actualizar searchTerm cuando cambian los parámetros iniciales
+  useEffect(() => {
+    if (initialParams.search !== undefined && initialParams.search !== searchTerm) {
+      setSearchTerm(initialParams.search);
+    }
+  }, [initialParams.search]);
 
   // Resetear a página 1 cuando cambia la búsqueda - PATRÓN ESTÁNDAR
   useEffect(() => {

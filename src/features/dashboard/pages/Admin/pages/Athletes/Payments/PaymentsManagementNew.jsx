@@ -10,6 +10,8 @@ import PaymentsHistoryTable from "./components/PaymentsHistoryTable.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 import { usePayments } from "./hooks/usePayments.js";
 import { formatCurrency } from "./utils/currencyUtils.js";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import PaymentsService from "./services/PaymentsService";
 
 const PaymentsManagementNew = () => {
   const { hasPermission } = usePermissions();
@@ -19,13 +21,16 @@ const PaymentsManagementNew = () => {
     totalRows: totalPendingPayments,
   } = usePayments('pending');
   
-  // Hook para todos los pagos (para reporte y historial)
+  // Hook para rechazar pagos
   const {
-    payments: allPayments,
-    filters: allFilters,
-    updateFilters: setAllFilters,
     rejectPayment,
   } = usePayments('all');
+
+  // Hook para reportes
+  const paymentsServiceInstance = new PaymentsService();
+  const { getReportData } = useReportDataWithService(
+    (params) => paymentsServiceInstance.getAllForReport(params)
+  );
 
   const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,30 +44,15 @@ const PaymentsManagementNew = () => {
   const handleFilterChange = (key, value) => {
     const updated = { ...localFilters, [key]: value };
     setLocalFilters(updated);
-    
-    // Aplicar filtros al backend según el tab
-    if (activeTab === "payments") {
-      // Historial: filtros completos
-      setAllFilters({ status: updated.status, type: updated.type, search: searchTerm });
-    }
-    // Para "pending" los filtros se aplicarán en PendingPaymentsTable mediante props
   };
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    
-    if (activeTab === "payments") {
-      setAllFilters({ search: e.target.value, status: localFilters.status, type: localFilters.type });
-    }
   };
 
   const handleClearFilters = () => {
-    setLocalFilters({ status: "", type: "", dateFrom: "" });
+    setLocalFilters({ status: "", type: "", dateFrom: "", dateTo: "" });
     setSearchTerm("");
-    
-    if (activeTab === "payments") {
-      setAllFilters({ status: "", type: "", search: "" });
-    }
   };
   // ── Rechazar ──
   const handleReject = (payment) => {
@@ -89,54 +79,67 @@ const PaymentsManagementNew = () => {
     setViewModal({ isOpen: false, payment: null });
   };
 
-  // ── Datos para el reporte ──
-  const reportData = allPayments.map((payment) => {
-    let periodoTexto = "—";
-    
-    if (payment.obligation?.period) {
-      periodoTexto = payment.obligation.period;
-    } else if (payment.obligation?.type) {
-      switch (payment.obligation.type) {
-        case "ENROLLMENT_INITIAL":
-          periodoTexto = "Matrícula Inicial";
-          break;
-        case "ENROLLMENT_RENEWAL":
-          periodoTexto = "Renovación Matrícula";
-          break;
-        case "MONTHLY":
-          if (payment.obligation.dueStart) {
-            const fecha = new Date(payment.obligation.dueStart);
-            periodoTexto = fecha.toLocaleDateString("es-ES", { month: 'long', year: 'numeric' });
-          } else {
-            periodoTexto = "Mensualidad";
+  // ── Función para obtener datos completos del reporte ──
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+        status: localFilters.status,
+        type: localFilters.type,
+        dateFrom: localFilters.dateFrom,
+        dateTo: localFilters.dateTo,
+      },
+      (data) => data.map((payment) => {
+        let periodoTexto = "—";
+        
+        if (payment.obligation?.period) {
+          periodoTexto = payment.obligation.period;
+        } else if (payment.obligation?.type) {
+          switch (payment.obligation.type) {
+            case "ENROLLMENT_INITIAL":
+              periodoTexto = "Matrícula Inicial";
+              break;
+            case "ENROLLMENT_RENEWAL":
+              periodoTexto = "Renovación Matrícula";
+              break;
+            case "MONTHLY":
+              if (payment.obligation.dueStart) {
+                const fecha = new Date(payment.obligation.dueStart);
+                periodoTexto = fecha.toLocaleDateString("es-ES", { month: 'long', year: 'numeric' });
+              } else {
+                periodoTexto = "Mensualidad";
+              }
+              break;
+            default:
+              periodoTexto = payment.obligation.type;
           }
-          break;
-        default:
-          periodoTexto = payment.obligation.type;
-      }
-    }
+        }
 
-    return {
-      atleta: `${payment.athlete?.user?.firstName || ""} ${payment.athlete?.user?.lastName || ""}`.trim(),
-      identificacion: payment.athlete?.user?.identification || "",
-      tipo: {
-        MONTHLY: "Mensualidad",
-        ENROLLMENT_INITIAL: "Matrícula Inicial",
-        ENROLLMENT_RENEWAL: "Renovación Matrícula",
-      }[payment.obligation?.type] || "Otro",
-      periodo: periodoTexto,
-      monto: formatCurrency(payment.obligation?.baseAmount),
-      fecha: payment.uploadedAt
-        ? new Date(payment.uploadedAt).toLocaleDateString("es-ES")
-        : "",
-      estado:
-        payment.status === "PENDING"
-          ? "Pendiente"
-          : payment.status === "APPROVED"
-          ? "Aprobado"
-          : "Rechazado",
-    };
-  });
+        return {
+          atleta: `${payment.athlete?.user?.firstName || ""} ${payment.athlete?.user?.lastName || ""}`.trim(),
+          identificacion: payment.athlete?.user?.identification || "",
+          tipo: {
+            MONTHLY: "Mensualidad",
+            ENROLLMENT_INITIAL: "Matrícula Inicial",
+            ENROLLMENT_RENEWAL: "Renovación Matrícula",
+          }[payment.obligation?.type] || "Otro",
+          periodo: periodoTexto,
+          montoBase: formatCurrency(payment.obligation?.baseAmount || 0),
+          mora: formatCurrency(payment.obligation?.lateFeeAmount || 0),
+          total: formatCurrency(payment.obligation?.totalAmount || 0),
+          fechaSubida: payment.uploadedAt
+            ? new Date(payment.uploadedAt).toLocaleDateString("es-ES")
+            : "",
+          estado:
+            payment.status === "PENDING"
+              ? "Pendiente"
+              : payment.status === "APPROVED"
+              ? "Aprobado"
+              : "Rechazado",
+        };
+      })
+    );
+  };
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -171,15 +174,17 @@ const PaymentsManagementNew = () => {
             {activeTab === "payments" && (
               <PermissionGuard module="paymentsManagement" action="Ver">
                 <ReportButton
-                  data={reportData}
-                  fileName="Pagos_Comprobantes"
+                  dataProvider={getCompleteReportData}
+                  fileName="pagos_comprobantes"
                   columns={[
                     { header: "Atleta", accessor: "atleta" },
                     { header: "Identificación", accessor: "identificacion" },
                     { header: "Tipo", accessor: "tipo" },
                     { header: "Período", accessor: "periodo" },
-                    { header: "Monto", accessor: "monto" },
-                    { header: "Fecha Subida", accessor: "fecha" },
+                    { header: "Monto Base", accessor: "montoBase" },
+                    { header: "Mora", accessor: "mora" },
+                    { header: "Total", accessor: "total" },
+                    { header: "Fecha Subida", accessor: "fechaSubida" },
                     { header: "Estado", accessor: "estado" },
                   ]}
                 />
@@ -337,12 +342,12 @@ const PaymentsManagementNew = () => {
           typeFilter={localFilters.type}
           dateFromFilter={localFilters.dateFrom}
           dateToFilter={localFilters.dateTo}
+          searchTerm={searchTerm}
         />
       ) : (
         <PaymentsHistoryTable 
           onViewPayment={handleViewPayment}
-          filters={allFilters}
-          setFilters={setAllFilters}
+          searchTerm={searchTerm}
         />
       )}
 

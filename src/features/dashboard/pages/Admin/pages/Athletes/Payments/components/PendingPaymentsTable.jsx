@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { FaTimes, FaDownload, FaCheck } from "react-icons/fa";
 import Table from "../../../../../../../../shared/components/Table/table.jsx";
-import PermissionGuard from "../../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions.js";
 import { usePayments } from "../hooks/usePayments.js";
 import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
@@ -9,19 +7,18 @@ import { formatCurrency } from "../utils/currencyUtils.js";
 import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
-const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "", dateFromFilter = "", dateToFilter = "" }) => {
+const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "", dateFromFilter = "", dateToFilter = "", searchTerm = "" }) => {
   const { hasPermission } = usePermissions();
   const {
     payments: pendingPayments,
     loading: pendingLoading,
     actionLoading,
-    pagination,
     currentPage,
     totalRows,
     handlePageChange,
     refetch: refetchPending,
     approvePayment: approvePendingPayment,
-  } = usePayments('pending');
+  } = usePayments('pending', { search: searchTerm });
   
   const { downloadReceipt, downloading } = useDownloadReceipt();
 
@@ -46,52 +43,46 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
     await downloadReceipt(payment);
   };
 
-  // ── Calcular información de mora para mensualidades ──
-  const calculateMoraInfo = (payment) => {
-    if (payment.obligation?.type !== 'MONTHLY' || !payment.obligation?.dueEnd) {
-      return { diasMora: 0, diasMoraTexto: "", montoConMora: payment.obligation?.baseAmount || 0, isSuspended: false };
+  // ── Usar información de mora del backend directamente ──
+  const getMoraInfoFromBackend = (payment) => {
+    const obligation = payment.obligation;
+    if (!obligation) {
+      return { diasMora: 0, diasMoraTexto: "—", montoConMora: 0, isSuspended: false };
     }
 
-    // ✅ Verificar si está suspendida
-    const isSuspended = payment.obligation?.metadata?.suspended === true;
+    // Verificar si está suspendida
+    const isSuspended = obligation.metadata?.suspended === true;
     if (isSuspended) {
-      const moraCongelada = payment.obligation.metadata?.moraAtSuspension || 0;
       return {
         diasMora: 0,
         diasMoraTexto: "Suspendida",
-        montoConMora: (payment.obligation?.baseAmount || 0) + moraCongelada,
-        isSuspended: true,
-        moraCongelada
+        montoConMora: obligation.totalAmount || obligation.baseAmount || 0,
+        isSuspended: true
       };
     }
 
-    const fechaVencimiento = new Date(payment.obligation.dueEnd);
-    const hoy = new Date();
-    const diferenciaDias = Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24));
+    // ✅ Usar datos calculados por el backend (ya corregidos)
+    const diasMora = obligation.daysLate || 0;
+    const montoConMora = obligation.totalAmount || obligation.baseAmount || 0;
     
-    let diasMora = 0;
-    let diasMoraTexto = "";
-    let montoConMora = payment.obligation?.baseAmount || 0;
-    
-    // ✅ Aplicar días de gracia (5 días)
-    if (diferenciaDias > 5) {
-      diasMora = diferenciaDias - 5;
-      
-      // ✅ Aplicar límite de 90 días
-      const diasMoraCapped = Math.min(diasMora, 90);
+    let diasMoraTexto = "Al día";
+    if (diasMora > 0) {
       diasMoraTexto = `${diasMora} días`;
+    } else if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
+      // Verificar si está en período de gracia
+      const fechaVencimiento = new Date(obligation.dueEnd);
+      const hoy = new Date();
+      const diferenciaDias = Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24));
       
-      montoConMora = montoConMora + (diasMoraCapped * 2000);
-    } else if (diferenciaDias > 0) {
-      diasMoraTexto = `${5 - diferenciaDias} días restantes`;
-    } else if (diferenciaDias <= 0) {
-      diasMoraTexto = "Al día";
+      if (diferenciaDias > 0 && diferenciaDias <= 5) {
+        diasMoraTexto = `${5 - diferenciaDias} días restantes`;
+      }
     }
     
     return { diasMora, diasMoraTexto, montoConMora, isSuspended: false };
   };
 
-  // ✅ Filtrar pagos por tipo y rango de fechas si hay filtros activos
+  // ✅ Filtrar pagos por tipo y rango de fechas si hay filtros activos (el searchTerm ya se maneja en el backend)
   const filteredPayments = pendingPayments.filter(payment => {
     // Filtro por tipo
     if (typeFilter && payment.obligation?.type !== typeFilter) {
@@ -151,7 +142,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
       }
     }
 
-    const moraInfo = calculateMoraInfo(payment);
+    const moraInfo = getMoraInfoFromBackend(payment);
     
     return {
       ...payment,
@@ -177,18 +168,18 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
   }
 
   if (tableData.length === 0) {
-    const hasFilters = typeFilter || dateFromFilter || dateToFilter;
+    const hasFilters = typeFilter || dateFromFilter || dateToFilter || searchTerm;
     return (
       <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
         <p>
           {hasFilters 
-            ? `No hay pagos pendientes con los filtros seleccionados.`
+            ? `No hay pagos pendientes con los filtros o búsqueda seleccionados.`
             : `No hay pagos pendientes de aprobación.`
           }
         </p>
         {hasFilters && (
           <p className="text-sm mt-2 text-gray-400">
-            Prueba limpiando los filtros para ver todos los pagos pendientes.
+            Prueba limpiando los filtros y la búsqueda para ver todos los pagos pendientes.
           </p>
         )}
       </div>
@@ -300,17 +291,27 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
               }
             },
             montoConMoraTexto: (value, payment) => {
-              if (payment.moraInfo && payment.moraInfo.diasMora > 0) {
+              const obligation = payment.obligation;
+              if (!obligation) {
+                return <span className="font-semibold">{value}</span>;
+              }
+
+              // ✅ Usar datos directos del backend (ya corregidos)
+              const baseAmount = obligation.baseAmount || 0;
+              const lateFeeAmount = obligation.lateFeeAmount || 0;
+              const totalAmount = obligation.totalAmount || baseAmount;
+
+              if (lateFeeAmount > 0) {
                 return (
                   <div>
-                    <div className="font-semibold text-red-600">{value}</div>
+                    <div className="font-semibold text-red-600">{formatCurrency(totalAmount)}</div>
                     <div className="text-xs text-gray-500">
-                      (+{formatCurrency(payment.moraInfo.diasMora * 2000)} mora)
+                      (+{formatCurrency(lateFeeAmount)} mora)
                     </div>
                   </div>
                 );
               }
-              return <span className="font-semibold">{value}</span>;
+              return <span className="font-semibold">{formatCurrency(totalAmount)}</span>;
             },
           },
         }}

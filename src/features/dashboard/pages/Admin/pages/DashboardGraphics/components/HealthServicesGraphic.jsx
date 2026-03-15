@@ -1,12 +1,4 @@
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -14,89 +6,76 @@ import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const HealthServicesGraphic = () => {
-  const baseData = [
-    { mes: "Enero", nutricion: 20, fisioterapia: 12, psicologia: 15 },
-    { mes: "Febrero", nutricion: 22, fisioterapia: 10, psicologia: 14 },
-    { mes: "Marzo", nutricion: 25, fisioterapia: 20, psicologia: 18 },
-    { mes: "Abril", nutricion: 23, fisioterapia: 7, psicologia: 13 },
-    { mes: "Mayo", nutricion: 18, fisioterapia: 12, psicologia: 10 },
-    { mes: "Junio", nutricion: 17, fisioterapia: 9, psicologia: 14 },
-    { mes: "Julio", nutricion: 20, fisioterapia: 13, psicologia: 15 },
-    { mes: "Agosto", nutricion: 19, fisioterapia: 14, psicologia: 14 },
-    { mes: "Septiembre", nutricion: 21, fisioterapia: 15, psicologia: 13 },
-    { mes: "Octubre", nutricion: 23, fisioterapia: 17, psicologia: 16 },
-    { mes: "Noviembre", nutricion: 26, fisioterapia: 19, psicologia: 18 },
-    { mes: "Diciembre", nutricion: 28, fisioterapia: 22, psicologia: 20 },
-  ];
+const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
+const normalizeSpecialty = (val = "") =>
+  String(val).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+
+const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
   const [selectedMonth, setSelectedMonth] = useState("Todos");
-  const [selectedService, setSelectedService] = useState("Todos");
+
+  // Detectar qué especialidades hay en las citas recibidas (ya filtradas desde el padre)
+  const activeSpecialties = useMemo(() => {
+    const set = new Set();
+    appointments.forEach((a) => {
+      const sp = normalizeSpecialty(a.specialty || "");
+      if (sp) set.add(sp);
+    });
+    return Array.from(set);
+  }, [appointments]);
+
+  // Construir datos mensuales desde las citas ya filtradas
+  const monthlyData = useMemo(() => {
+    const map = {};
+    MONTH_NAMES.forEach((mes) => {
+      map[mes] = { mes };
+      activeSpecialties.forEach((sp) => { map[mes][sp] = 0; });
+    });
+
+    appointments.forEach((a) => {
+      const date = new Date(a.appointmentDate || a.start || a.createdAt);
+      if (isNaN(date.getTime())) return;
+      const mes = MONTH_NAMES[date.getMonth()];
+      const sp = normalizeSpecialty(a.specialty || "");
+      if (sp && map[mes]) map[mes][sp] = (map[mes][sp] || 0) + 1;
+    });
+
+    return Object.values(map);
+  }, [appointments, activeSpecialties]);
 
   const filteredData = useMemo(() => {
-    let data = [...baseData];
-    if (selectedMonth !== "Todos") {
-      data = data.filter((item) => item.mes === selectedMonth);
-    }
-    if (selectedService !== "Todos") {
-      data = data.map((item) => ({
-        mes: item.mes,
-        [selectedService.toLowerCase()]: item[selectedService.toLowerCase()],
-      }));
-    }
-    return data;
-  }, [selectedMonth, selectedService]);
+    if (selectedMonth === "Todos") return monthlyData;
+    return monthlyData.filter((d) => d.mes === selectedMonth);
+  }, [monthlyData, selectedMonth]);
 
   const reportColumns = [
     { key: "mes", label: "Mes" },
-    { key: "nutricion", label: "Nutrición" },
-    { key: "fisioterapia", label: "Fisioterapia" },
-    { key: "psicologia", label: "Psicología" },
+    ...activeSpecialties.map((sp) => ({ key: sp, label: sp.charAt(0).toUpperCase() + sp.slice(1) })),
   ];
 
-  const datasets = [];
-  if (selectedService === "Todos" || selectedService === "Nutricion") {
-    datasets.push({
-      label: "Nutrición",
-      data: filteredData.map((i) => i.nutricion || 0),
-      backgroundColor: "rgba(110, 231, 249, 0.75)",
-      borderRadius: 10,
-    });
-  }
-  if (selectedService === "Todos" || selectedService === "Fisioterapia") {
-    datasets.push({
-      label: "Fisioterapia",
-      data: filteredData.map((i) => i.fisioterapia || 0),
-      backgroundColor: "rgba(167, 139, 250, 0.75)",
-      borderRadius: 10,
-    });
-  }
-  if (selectedService === "Todos" || selectedService === "Psicologia") {
-    datasets.push({
-      label: "Psicología",
-      data: filteredData.map((i) => i.psicologia || 0),
-      backgroundColor: "rgba(244, 114, 182, 0.75)",
-      borderRadius: 10,
-    });
-  }
+  const COLORS = [
+    "rgba(110, 231, 249, 0.75)",
+    "rgba(167, 139, 250, 0.75)",
+    "rgba(244, 114, 182, 0.75)",
+    "rgba(52, 211, 153, 0.75)",
+    "rgba(251, 191, 36, 0.75)",
+  ];
 
-  const data = { labels: filteredData.map((i) => i.mes), datasets };
+  const datasets = activeSpecialties.map((sp, i) => ({
+    label: sp.charAt(0).toUpperCase() + sp.slice(1),
+    data: filteredData.map((d) => d[sp] || 0),
+    backgroundColor: COLORS[i % COLORS.length],
+    borderRadius: 10,
+  }));
+
+  const chartData = { labels: filteredData.map((i) => i.mes), datasets };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: "bottom",
-        labels: { usePointStyle: true, color: "#374151", padding: 12, font: { size: 13 } },
-      },
-      tooltip: {
-        backgroundColor: "#1F2937",
-        titleColor: "#fff",
-        bodyColor: "#E5E7EB",
-        cornerRadius: 8,
-        padding: 10,
-      },
+      legend: { position: "bottom", labels: { usePointStyle: true, color: "#374151", padding: 12, font: { size: 13 } } },
+      tooltip: { backgroundColor: "#1F2937", titleColor: "#fff", bodyColor: "#E5E7EB", cornerRadius: 8, padding: 10 },
     },
     scales: {
       y: { beginAtZero: true, ticks: { color: "#6B7280" }, grid: { color: "rgba(0,0,0,0.05)" } },
@@ -125,30 +104,19 @@ const HealthServicesGraphic = () => {
           className="border border-gray-300 bg-white rounded-xl px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-cyan-400"
         >
           <option value="Todos">Todos los meses</option>
-          {baseData.map((item) => (
-            <option key={item.mes} value={item.mes}>
-              {item.mes}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={selectedService}
-          onChange={(e) => setSelectedService(e.target.value)}
-          className="border border-gray-300 bg-white rounded-xl px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-cyan-400"
-        >
-          <option value="Todos">Todos los servicios</option>
-          <option value="Nutricion">Nutrición</option>
-          <option value="Fisioterapia">Fisioterapia</option>
-          <option value="Psicologia">Psicología</option>
+          {MONTH_NAMES.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
 
-      <div className="h-[400px] flex-1">
-        <Bar data={data} options={options} />
+      <div className="h-[380px]">
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400" />
+          </div>
+        ) : (
+          <Bar data={chartData} options={options} />
+        )}
       </div>
-
-      <div className="h-0"></div>
     </motion.div>
   );
 };

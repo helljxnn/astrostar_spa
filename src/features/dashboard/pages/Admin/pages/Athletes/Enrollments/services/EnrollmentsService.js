@@ -1,4 +1,5 @@
 import apiClient from "../../../../../../../../shared/services/apiClient.js";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 // ============================================================================
 // CONSTANTES
@@ -41,6 +42,24 @@ class EnrollmentsService {
   }
 
   /**
+   * Obtener todos los registros para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, estado, etc.)
+   * @returns {Promise<Object>} Todos los registros
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.enrollmentsEndpoint}/report`, { params });
+      return {
+        success: true,
+        data: response.data || response,
+      };
+    } catch (error) {
+      console.error('Error fetching enrollments report:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
+
+  /**
    * Obtiene todas las deportistas con matrículas desde GET /api/enrollments
    * Soporta búsqueda por nombre completo y número de documento
    * @param {Object} filters - { page, pageSize, search, estado }
@@ -49,8 +68,10 @@ class EnrollmentsService {
   async getAll(filters = {}) {
     try {
       const params = {
-        page: filters.page || 1,
-        limit: filters.pageSize || 10,
+        page: filters.page || PAGINATION_CONFIG.DEFAULT_PAGE,
+        limit: filters.pageSize || PAGINATION_CONFIG.ROWS_PER_PAGE,
+        sortBy: 'createdAt',
+        sortOrder: 'desc', // Más recientes primero
         ...(filters.estado && { estado: filters.estado }),
         ...(filters.search && filters.search.trim() && { search: filters.search.trim() }),
       };
@@ -161,12 +182,33 @@ class EnrollmentsService {
       return {
         success: true,
         data,
-        total: response.data.total || data.length,
+        total: response.pagination?.total || data.length,
         hasMore: response.data.hasMore || false,
       };
     } catch (error) {
       console.error("❌ [EnrollmentsService.getAll] Error:", error);
       return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Obtiene el historial completo de matrículas de un deportista específico
+   * @param {number} athleteId - ID del deportista
+   * @returns {Promise<Object>} Todas las matrículas del deportista
+   */
+  async getAthleteEnrollmentHistory(athleteId) {
+    try {
+      // Usar el NUEVO endpoint específico creado por el backend
+      const response = await apiClient.get(`${this.enrollmentsEndpoint}/athlete/${athleteId}/history`);
+      
+      return {
+        success: true,
+        data: response.data || [],
+        message: response.message || 'Historial obtenido exitosamente'
+      };
+    } catch (error) {
+      console.error("❌ [EnrollmentsService.getAthleteEnrollmentHistory] Error:", error);
+      return { success: false, error: error.message, data: [] };
     }
   }
 
