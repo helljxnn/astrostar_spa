@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { addMinutes } from "date-fns";
+import { FaRunning, FaUserMd, FaCalendarAlt, FaFileAlt, FaSyncAlt, FaInfoCircle } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import SearchableSelect from "../../../../../../../../shared/components/SearchableSelect";
 import { DatePickerField } from "../../../../../../../../shared/components/DatePickerField";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import apiClient from "../../../../../../../../shared/services/apiClient";
@@ -31,6 +33,8 @@ const AppointmentForm = ({
   loadingCategories = false,
   defaultAthleteId = "",
   lockAthlete = false,
+  lockSpecialist = false,
+  defaultSpecialistId = "",
   existingAppointments = [],
 }) => {
   const [formData, setFormData] = useState({
@@ -78,25 +82,35 @@ const AppointmentForm = ({
           ? Math.max(15, Math.round((endDate - startDate) / 60000))
           : "60";
 
+      // Auto-completar especialidad desde el especialista bloqueado
+      const autoSpecialty = lockSpecialist && defaultSpecialistId
+        ? specialistList.find(s => String(s.id) === String(defaultSpecialistId))?.specialty || initialData.specialty || ""
+        : initialData.specialty || "";
+
       setFormData({
         athleteId: initialData.athleteId || defaultAthleteId || "",
-        specialty: initialData.specialty || "",
-        specialistId: initialData.specialistId || "",
+        specialty: autoSpecialty,
+        specialistId: initialData.specialistId || defaultSpecialistId || "",
         description: initialData.description || "",
         start: startDate,
         durationMinutes: String(duration),
       });
     } else {
+      // Auto-completar especialidad desde el especialista bloqueado
+      const autoSpecialty = lockSpecialist && defaultSpecialistId
+        ? specialistList.find(s => String(s.id) === String(defaultSpecialistId))?.specialty || ""
+        : "";
+
       setFormData({
         athleteId: defaultAthleteId || "",
-        specialty: "",
-        specialistId: "",
+        specialty: autoSpecialty,
+        specialistId: defaultSpecialistId || "",
         description: "",
         start: null,
         durationMinutes: "60",
       });
     }
-  }, [isOpen, initialData, defaultAthleteId]);
+  }, [isOpen, initialData, defaultAthleteId, defaultSpecialistId, lockSpecialist, specialistList]);
 
   // Validación en tiempo real: deportista ya tiene cita ese día
   useEffect(() => {
@@ -131,6 +145,7 @@ const AppointmentForm = ({
 
   // Cargar deportistas por categoría
   useEffect(() => {
+    if (!selectedCategory) {
       setAthletesByCategory([]);
       return;
     }
@@ -259,9 +274,12 @@ const AppointmentForm = ({
 
   // Opciones de especialistas
   const filteredSpecialists = useMemo(() => {
+    if (lockSpecialist && defaultSpecialistId) {
+      return specialistList.filter(s => String(s.id) === String(defaultSpecialistId));
+    }
     if (!formData.specialty) return specialistList;
     return specialistList.filter((spec) => spec.specialty === formData.specialty);
-  }, [specialistList, formData.specialty]);
+  }, [specialistList, formData.specialty, lockSpecialist, defaultSpecialistId]);
 
   const specialistOptions = useMemo(
     () =>
@@ -604,45 +622,43 @@ const AppointmentForm = ({
           className="flex-1 flex flex-col min-h-0 bg-gray-50"
         >
           <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+
+            {/* Deportista */}
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Deportista</p>
+                <h3 className="text-lg font-semibold text-gray-800">Seleccion y categoria</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Deportista
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Seleccion y categoria
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    label="Categoria Deportiva"
-                    name="category"
-                    type="select"
+                  <label className="block text-sm font-medium text-gray-700">
+                    Categoria Deportiva
+                  </label>
+                  <SearchableSelect
                     options={categoryOptions}
                     value={selectedCategory}
-                    onChange={handleCategoryChange}
+                    onChange={(val) => handleCategoryChange({ target: { value: val } })}
+                    loading={loadingCategories}
                     disabled={loadingCategories || lockAthlete}
                     placeholder={
                       loadingCategories
                         ? "Cargando categorias..."
                         : categoryOptions.length === 0
                         ? "No hay categorias disponibles"
-                        : "Seleccione una categoria"
+                        : "Buscar categoria..."
                     }
                   />
-                  <FormField
-                    label="Deportista"
-                    name="athleteId"
-                    type="select"
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Deportista <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <SearchableSelect
                     options={athleteOptions}
                     value={formData.athleteId}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={errors.athleteId}
-                    touched={touched.athleteId}
-                    required
-                    disabled={!selectedCategory || loadingAthletes2 || lockAthlete}
+                    onChange={(val) => handleChange({ target: { name: "athleteId", value: val } })}
+                    loading={loadingAthletes2}
+                    disabled={!selectedCategory || lockAthlete}
                     placeholder={
                       !selectedCategory
                         ? "Seleccione una categoria primero"
@@ -650,57 +666,57 @@ const AppointmentForm = ({
                         ? "Cargando deportistas..."
                         : athleteOptions.length === 0
                         ? "No hay deportistas en esta categoria"
-                        : "Seleccione un deportista"
+                        : "Buscar deportista..."
                     }
+                    error={touched.athleteId && errors.athleteId ? errors.athleteId : ""}
                   />
                 </div>
-              </section>
+              </div>
+            </section>
 
-              <section className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-4">
+            {/* Especialista */}
+            <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
+              <div className="space-y-1">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Profesional de salud</p>
+                <h3 className="text-lg font-semibold text-gray-800">Especialidad y especialista</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    Profesional de salud
-                  </p>
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Especialidad y especialista
-                  </h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    label="Especialidad"
-                    name="specialty"
-                    type="select"
+                  <label className="block text-sm font-medium text-gray-700">
+                    Especialidad <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <SearchableSelect
                     options={specialtyOptions}
                     value={formData.specialty}
-                    onChange={handleSpecialtyChange}
-                    onBlur={handleBlur}
-                    error={errors.specialty}
-                    touched={touched.specialty}
-                    required
-                    disabled={loadingSpecialists}
-                    placeholder="Seleccione una especialidad"
-                  />
-                  <FormField
-                    label="Especialista"
-                    name="specialistId"
-                    type="select"
-                    options={specialistOptions}
-                    value={formData.specialistId}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    error={errors.specialistId}
-                    touched={touched.specialistId}
-                    required
-                    disabled={!formData.specialty || loadingSpecialists}
-                    placeholder={
-                      !formData.specialty
-                        ? "Seleccione una especialidad primero"
-                        : "Seleccione un especialista"
-                    }
+                    onChange={(val) => handleSpecialtyChange({ target: { name: "specialty", value: val } })}
+                    loading={loadingSpecialists}
+                    disabled={loadingSpecialists || lockSpecialist}
+                    placeholder="Buscar especialidad..."
+                    error={touched.specialty && errors.specialty ? errors.specialty : ""}
                   />
                 </div>
-              </section>
-            </div>
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Especialista <span className="text-red-500 ml-1">*</span>
+                  </label>
+                  <SearchableSelect
+                    options={specialistOptions}
+                    value={formData.specialistId}
+                    onChange={(val) => handleChange({ target: { name: "specialistId", value: val } })}
+                    loading={loadingSpecialists}
+                    disabled={lockSpecialist || !formData.specialty}
+                    placeholder={
+                      lockSpecialist
+                        ? specialistOptions.find(o => o.value === String(formData.specialistId))?.label || "Especialista asignado"
+                        : !formData.specialty
+                        ? "Seleccione una especialidad primero"
+                        : "Buscar especialista..."
+                    }
+                    error={touched.specialistId && errors.specialistId ? errors.specialistId : ""}
+                  />
+                </div>
+              </div>
+            </section>
 
             <section className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm space-y-4">
               <div className="space-y-1">

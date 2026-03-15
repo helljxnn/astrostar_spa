@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { XCircle, AlertCircle, X } from "lucide-react";
 
@@ -35,23 +36,22 @@ const CancelAppointmentModal = ({ isOpen, onClose, onConfirm, appointmentData })
     onClose();
   };
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <>
-          <motion.div
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm"
-            style={{ zIndex: 99998 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={handleClose}
-          />
-          <div 
-            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
-            style={{ zIndex: 99999 }}
-          >
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 9999 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={handleClose}
+        >
+          <div className="pointer-events-none w-full flex items-center justify-center">
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl pointer-events-auto overflow-hidden"
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -157,10 +157,12 @@ const CancelAppointmentModal = ({ isOpen, onClose, onConfirm, appointmentData })
               </div>
             </motion.div>
           </div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default CancelAppointmentModal;
