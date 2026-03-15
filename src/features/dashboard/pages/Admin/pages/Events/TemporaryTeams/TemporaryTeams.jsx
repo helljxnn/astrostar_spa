@@ -6,6 +6,7 @@ import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
 import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
+import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import TeamsService from "./services/TeamsService.js";
 import {
   showSuccessAlert,
@@ -14,10 +15,16 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const TemporaryTeams = () => {
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    TeamsService.getAllForReport.bind(TeamsService)
+  );
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -246,6 +253,25 @@ const TemporaryTeams = () => {
     setIsViewModalOpen(true);
   };
 
+  // Función para obtener datos completos del reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+        teamType: "Temporal",
+      },
+      (data) => data.map(team => ({
+        nombre: team.name || '',
+        descripcion: team.description || '',
+        entrenador: team.coach || '',
+        categoria: team.category || '',
+        tipo: team.teamType === 'Temporal' ? 'Temporal' : 'Permanente',
+        estado: team.status === 'Active' ? 'Activo' : 'Inactivo',
+        fechaCreacion: team.createdAt ? new Date(team.createdAt).toLocaleDateString('es-ES') : '',
+      }))
+    );
+  };
+
   const handleDelete = async (team) => {
     if (!hasPermission("temporaryTeams", "Eliminar")) {
       showErrorAlert(
@@ -329,6 +355,22 @@ const TemporaryTeams = () => {
               placeholder="Buscar equipo..."
             />
           </div>
+
+          <PermissionGuard module="temporaryTeams" action="Ver">
+            <ReportButton
+              dataProvider={getCompleteReportData}
+              fileName="equipos_temporales"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Descripción', accessor: 'descripcion' },
+                { header: 'Entrenador', accessor: 'entrenador' },
+                { header: 'Categoría', accessor: 'categoria' },
+                { header: 'Tipo', accessor: 'tipo' },
+                { header: 'Estado', accessor: 'estado' },
+                { header: 'Fecha Creación', accessor: 'fechaCreacion' },
+              ]}
+            />
+          </PermissionGuard>
 
           <PermissionGuard module="temporaryTeams" action="Crear">
             <button

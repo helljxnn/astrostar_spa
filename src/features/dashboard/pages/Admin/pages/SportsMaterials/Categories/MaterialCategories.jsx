@@ -14,6 +14,8 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import categoriesService from "../shared/services/CategoriesService";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 const MaterialCategories = () => {
   const { hasPermission } = usePermissions();
@@ -29,6 +31,11 @@ const MaterialCategories = () => {
   );
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
+
+  // Hook para reportes
+  const { getReportData } = useReportDataWithService(
+    (params) => categoriesService.getAllForReport(params)
+  );
 
   // Detectar si se debe abrir el modal de crear al llegar desde otra página
   useEffect(() => {
@@ -68,6 +75,22 @@ const MaterialCategories = () => {
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = categories;
+
+  // Función para obtener datos completos del reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+      },
+      (data) => data.map(category => ({
+        nombre: category.nombre || '',
+        descripcion: category.descripcion || 'Sin descripción',
+        estado: category.estado || '',
+        materialesAsociados: category.materialsCount || 0,
+        fechaCreacion: category.createdAt ? new Date(category.createdAt).toLocaleDateString('es-ES') : '',
+      }))
+    );
+  };
 
   const handleCreate = () => {
     if (!hasPermission("materialCategories", "Crear")) {
@@ -232,6 +255,20 @@ const MaterialCategories = () => {
               placeholder="Buscar categoría"
             />
           </div>
+
+          <PermissionGuard module="materialCategories" action="Ver">
+            <ReportButton
+              dataProvider={getCompleteReportData}
+              fileName="categorias_materiales"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Descripción', accessor: 'descripcion' },
+                { header: 'Estado', accessor: 'estado' },
+                { header: 'Materiales Asociados', accessor: 'materialesAsociados' },
+                { header: 'Fecha Creación', accessor: 'fechaCreacion' },
+              ]}
+            />
+          </PermissionGuard>
 
           <PermissionGuard module="materialCategories" action="Crear">
             <button

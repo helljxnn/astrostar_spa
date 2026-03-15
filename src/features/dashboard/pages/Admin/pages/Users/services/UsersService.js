@@ -98,6 +98,24 @@ class UsersService {
       page: 1 
     });
   }
+
+  /**
+   * Obtener todos los registros para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, status, roleId, etc.)
+   * @returns {Promise<Object>} Todos los registros
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      return {
+        success: true,
+        data: response.data || response,
+      };
+    } catch (error) {
+      console.error('Error fetching users report:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
 }
 
 // Exportar instancia única del servicio (Singleton)

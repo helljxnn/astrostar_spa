@@ -277,6 +277,31 @@ class ProvidersService {
 
     return response;
   }
+
+  /**
+   * Obtener todos los registros para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, status, entityType, etc.)
+   * @returns {Promise<Object>} Todos los registros
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      
+      // Transformar datos si es necesario
+      let data = response.data || response;
+      if (Array.isArray(data)) {
+        data = data.map((provider) => this.transformFromBackend(provider));
+      }
+      
+      return {
+        success: true,
+        data: data,
+      };
+    } catch (error) {
+      console.error('Error fetching providers report:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
 }
 
 export default new ProvidersService();

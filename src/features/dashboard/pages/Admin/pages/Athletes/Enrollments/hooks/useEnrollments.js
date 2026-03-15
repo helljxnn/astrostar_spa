@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import EnrollmentsService from "../services/EnrollmentsService";
 import InscriptionsService from "../services/InscriptionsService";
 import GuardiansService from "../../AthletesSection/services/GuardiansService";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -13,8 +14,8 @@ export const useEnrollments = () => {
   const [guardians, setGuardians] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({
-    page: 1,
-    pageSize: 10,
+    page: PAGINATION_CONFIG.DEFAULT_PAGE,
+    pageSize: PAGINATION_CONFIG.ROWS_PER_PAGE,
     total: 0,
     totalPages: 0,
   });
@@ -204,7 +205,9 @@ export const useEnrollments = () => {
           "Matrícula creada",
           "La deportista ha sido matriculada exitosamente"
         );
-        await loadData(pagination.page);
+        
+        // Ir a la primera página para ver la nueva matrícula
+        await loadData(1);
         
         // Retornar toda la información incluyendo credenciales
         return {
