@@ -131,6 +131,7 @@ const AppointmentForm = ({
 
   // Cargar deportistas por categoría
   useEffect(() => {
+    if (!selectedCategory) {
       setAthletesByCategory([]);
       return;
     }
