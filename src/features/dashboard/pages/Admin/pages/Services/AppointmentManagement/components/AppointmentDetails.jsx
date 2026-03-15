@@ -239,42 +239,6 @@ const AppointmentDetails = ({
 
             {/* Footer */}
             <div className="flex flex-wrap items-center justify-end gap-3 border-t border-gray-100 bg-white px-6 py-4">
-              {canActOnAppointment && onEdit && !isAthleteScope && (
-                <button
-                  onClick={() => {
-                    onEdit(appointmentData);
-                    onClose();
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-primary-purple/30 px-4 py-2 text-sm font-semibold text-primary-purple transition hover:bg-primary-purple hover:text-white"
-                >
-                  <PencilLine className="h-4 w-4" />
-                  Editar
-                </button>
-              )}
-
-                {canActOnAppointment && onCancelAppointment && (
-                  <button
-                    onClick={async () => {
-                      await onCancelAppointment(appointmentData);
-                      onClose();
-                    }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Cancelar
-                  </button>
-                )}
-
-                {canActOnAppointment && onMarkAsCompleted && !isAthleteScope && (
-                  <button
-                    onClick={() => onMarkAsCompleted(appointmentData)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary-purple px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#9d7bff]"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Completar
-                  </button>
-                )}
-
               <button
                 type="button"
                 onClick={onClose}

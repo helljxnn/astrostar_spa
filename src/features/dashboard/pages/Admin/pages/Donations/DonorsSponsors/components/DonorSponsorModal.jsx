@@ -161,10 +161,10 @@ const DonorSponsorModal = ({
                   {isNatural && (
                     <>
                       <FormField
-                        label="Nombre Completo / Razón Social"
+                        label="Nombre Completo"
                         name="nombreCompleto"
                         type="text"
-                        placeholder="Ej: Juan Pérez o Empresa S.A."
+                        placeholder="Ej: Juan Pérez"
                         required
                         value={formData.nombreCompleto}
                         onChange={handleChange}

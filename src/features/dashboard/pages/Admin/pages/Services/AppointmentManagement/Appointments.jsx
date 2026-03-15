@@ -57,6 +57,10 @@ function Appointments() {
     appointments,
     athletes,
     specialists,
+    healthSpecialists,
+    healthSpecialtyOptions,
+    isHealthEmployee,
+    currentSpecialistId,
     sportsCategories,
     specialtyOptions,
     loading,
@@ -558,14 +562,16 @@ function Appointments() {
         onSave={handleCreateSubmit}
         initialData={initialSlot}
         athleteList={athletes}
-        specialistList={specialists}
+        specialistList={isHealthEmployee ? healthSpecialists : specialists}
         sportsCategoryOptions={sportsCategories}
-        specialtyOptions={specialtyOptions}
+        specialtyOptions={isHealthEmployee ? healthSpecialtyOptions : specialtyOptions}
         loadingAthletes={loadingAthletes}
         loadingSpecialists={loadingSpecialists}
         loadingCategories={loadingCategories}
         defaultAthleteId={isAthleteScope ? athleteIdFromUser : ""}
         lockAthlete={isAthleteScope}
+        lockSpecialist={isHealthEmployee}
+        defaultSpecialistId={isHealthEmployee ? currentSpecialistId : ""}
         existingAppointments={appointments}
       />
 
