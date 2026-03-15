@@ -29,7 +29,7 @@ export const usePermissions = () => {
           updatedUser.role?.name || updatedUser.rol || updatedUser.role;
 
         // Si es admin, dar todos los permisos
-        if (userRole === "admin" || userRole === "Administrador") {
+        if (userRole === "admin" || userRole === "Administrador" || userRole === "Administrador Sistema") {
           userPermissions = generateAdminPermissions();
         } else {
           userPermissions = updatedUser.role?.permissions || {};
@@ -65,7 +65,7 @@ export const usePermissions = () => {
       let userRole = user.role?.name || user.rol || user.role;
 
       // Si es admin, dar todos los permisos usando función centralizada
-      if (userRole === "admin" || userRole === "Administrador") {
+      if (userRole === "admin" || userRole === "Administrador" || userRole === "Administrador Sistema") {
         userPermissions = generateAdminPermissions();
       } else {
         // Para otros roles, usar los permisos del role si existen
@@ -164,6 +164,9 @@ export const usePermissions = () => {
       user?.role?.name === "admin" ||
       user?.rol === "admin" ||
       user?.role === "admin" ||
-      user?.role?.name === "Administrador",
+      user?.role?.name === "Administrador" ||
+      user?.role?.name === "Administrador Sistema" ||
+      user?.rol === "Administrador" ||
+      user?.rol === "Administrador Sistema",
   };
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
@@ -22,6 +23,7 @@ import {
   showErrorAlert,
   showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
+import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 // Estados de matrícula
 const enrollmentStates = [
@@ -152,30 +154,9 @@ const EnrollmentManagementModal = ({
     fechaConcepto: getCurrentDate(),
   });
 
-  const calculateAge = () => {
-    if (!athlete?.fechaNacimiento) return 0;
-    try {
-      const birthDate = new Date(athlete.fechaNacimiento);
-      const today = new Date();
-      if (isNaN(birthDate.getTime())) return 0;
-
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-      return age;
-    } catch (error) {
-      console.error("Error calculating age:", error);
-      return 0;
-    }
-  };
-
-  const age = calculateAge();
+  // Calcular edad usando la utilidad centralizada
+  const age = athlete?.fechaNacimiento ? calculateAge(athlete.fechaNacimiento) : 0;
+  
   const guardian = guardians?.find(
     (g) => String(g.id) === String(athlete?.acudiente)
   );
@@ -505,7 +486,7 @@ const EnrollmentManagementModal = ({
 
   if (!isOpen || !athlete) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -518,6 +499,7 @@ const EnrollmentManagementModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
@@ -1083,6 +1065,8 @@ const EnrollmentManagementModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default EnrollmentManagementModal;

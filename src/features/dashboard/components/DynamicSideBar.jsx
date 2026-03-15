@@ -24,6 +24,7 @@ import {
   FaDollarSign,
   FaSignOutAlt,
   FaBoxes,
+  FaCreditCard,
 } from "react-icons/fa";
 import { GiWeightLiftingUp } from "react-icons/gi";
 
@@ -60,7 +61,7 @@ function DynamicSideBar({
   }, []);
 
   const location = useLocation();
-  const { userRole, logout } = useAuth();
+  const { user, userRole, logout } = useAuth();
   const {
     visibleModules,
     visibleGroups,
@@ -68,6 +69,10 @@ function DynamicSideBar({
     isGroupVisible,
     getVisibleChildModules,
   } = useSidebarVisibility();
+
+  // Normalizar el rol del usuario
+  const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
 
   const toggleMenu = (menu) => {
     setOpenMenu(openMenu === menu ? null : menu);
@@ -125,6 +130,7 @@ function DynamicSideBar({
       FaRegCalendarAlt: <FaRegCalendarAlt size={size} className="shrink-0" />,
       FaShoppingCart: <FaShoppingCart size={size} className="shrink-0" />,
       FaBoxes: <FaBoxes size={size} className="shrink-0" />,
+      FaCreditCard: <FaCreditCard size={size} className="shrink-0" />,
       GiWeightLiftingUp: <GiWeightLiftingUp size={size} className="shrink-0" />,
     };
     return icons[iconName] || <FaUsers size={size} className="shrink-0" />;
@@ -358,17 +364,16 @@ function DynamicSideBar({
             {renderModule("roles")}
             {renderModule("users")}
 
-            {/* Enlace directo a Gestión de citas para deportista y acudiente */}
-            {isModuleVisible("appointmentManagement") &&
-              (userRole === "deportista" || userRole === "acudiente") &&
-              renderModule("appointmentManagement")}
+            {/* Para deportistas y acudientes: módulos directos SIN dropdown */}
+            {isAthleteOrGuardian && renderModule("appointmentManagement")}
+            {isAthleteOrGuardian && renderModule("myPayments")}
 
-            {/* Grupos de módulos */}
-            {renderGroup("services")}
-            {renderGroup("athletes")}
-            {renderGroup("equipment")}
-            {renderGroup("donations")}
-            {renderGroup("events")}
+            {/* Grupos de módulos - Solo para NO deportistas */}
+            {!isAthleteOrGuardian && renderGroup("equipment")}
+            {!isAthleteOrGuardian && renderGroup("services")}
+            {!isAthleteOrGuardian && renderGroup("athletes")}
+            {!isAthleteOrGuardian && renderGroup("donations")}
+            {!isAthleteOrGuardian && renderGroup("events")}
           </div>
         </nav>
 

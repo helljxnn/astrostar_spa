@@ -1,18 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
-import { FaPlus, FaClipboardList, FaHistory, FaUserPlus, FaFilter } from "react-icons/fa";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { FaPlus, FaHistory, FaUserPlus, FaFilter, FaEye } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
-import RenewEnrollmentModal from "./components/RenewEnrollmentModal.jsx";
 import EnrollmentHistoryModal from "./components/EnrollmentHistoryModal.jsx";
+import EnrollmentDetailsModal from "./components/EnrollmentDetailsModal.jsx";
+import EnrollmentStatusBadge from "./components/EnrollmentStatusBadge.jsx";
+import ExpirationIndicator from "./components/ExpirationIndicator.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
-import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
-import InscriptionsService from "./services/InscriptionsService";
+import { useEnrollmentsContext } from "../../../../../../../shared/contexts/EnrollmentsContext.jsx";
 
 import {
   showSuccessAlert,
@@ -23,14 +24,30 @@ import {
 
 import { useEnrollments } from "./hooks/useEnrollments.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
+import {
+  extractFullName,
+  extractIdentification,
+  extractCreationDate,
+  extractActivationDate,
+  extractExpirationDate,
+  mapEnrollmentStatus,
+  isEnrollmentExpired
+} from "./utils/enrollmentDataExtractor.js";
+import { 
+  filterByExpirationStatus,
+  sortByExpirationPriority,
+  getExpirationStats
+} from "./utils/expirationUtils.js";
+import { 
+  ENROLLMENT_TABLE_COLUMNS, 
+  ENROLLMENT_DATA_PROPERTIES,
+  SEARCH_CONFIG,
+  EXPIRATION_FILTERS
+} from "./constants/enrollmentConstants.js";
 
 const Enrollments = () => {
   const { hasPermission } = usePermissions();
-
-  // Hook para obtener datos completos para reportes
-  const { getReportData } = useReportDataWithService(
-    InscriptionsService.getAllForReport.bind(InscriptionsService)
-  );
+  const { registerListener } = useEnrollmentsContext();
 
   const {
     athletes,
@@ -39,23 +56,26 @@ const Enrollments = () => {
     loading,
     pagination,
     referenceData,
+    searchFilters,
     createEnrollment,
     updateEnrollment,
     deleteAthlete,
     rejectInscription,
     changePage,
     refresh,
+    applyFilters,
     searchGuardians,
+    addInscriptionToState,
+    updateInscriptionEmailInState,
   } = useEnrollments();
 
   // Estados de modales
   const [isAthleteModalOpen, setIsAthleteModalOpen] = useState(false);
   const [selectedInscription, setSelectedInscription] = useState(null);
 
-  const [isRenewModalOpen, setIsRenewModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
-  const [isRenewing, setIsRenewing] = useState(false);
 
   // Estados para modales de acudiente
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -64,88 +84,118 @@ const Enrollments = () => {
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState("matriculas"); // "matriculas" o "inscripciones"
+  const [activeTab, setActiveTab] = useState("matriculas"); // "matriculas", "inscripciones"
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     estado: '',
     fechaDesde: '',
     fechaHasta: '',
+    vencimiento: EXPIRATION_FILTERS.ALL,
   });
   const rowsPerPage = 10;
+  const searchDebounceRef = useRef(null);
 
-  // Auto-refresh cada 30 segundos cuando estamos en la pestaña de inscripciones
+  // Búsqueda en backend (nombre/documento) con debounce 400ms
+  useEffect(() => {
+    if (activeTab !== "matriculas") return;
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      applyFilters(searchTerm, filters.estado);
+      searchDebounceRef.current = null;
+    }, SEARCH_CONFIG.DEBOUNCE_DELAY);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [activeTab, searchTerm, filters.estado, applyFilters]);
+
+  // Auto-refresh optimizado - cada 60 segundos cuando estamos en inscripciones
   useEffect(() => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
       refresh(true); // true = silent mode
-    }, 30000); // 30 segundos - balance entre actualización y rendimiento
+    }, 60000); // 60 segundos - mejor balance entre actualización y rendimiento
 
     return () => clearInterval(interval);
   }, [activeTab, refresh]);
 
-  // Filtrar matrículas
+  // Escuchar notificaciones de nuevas inscripciones y actualizaciones de email
+  useEffect(() => {
+    const unregister = registerListener({
+      onNewInscription: (inscription) => {
+        addInscriptionToState(inscription);
+      },
+      onEmailUpdate: (identification, newEmail) => {
+        // Email actualizado en inscripción
+        updateInscriptionEmailInState(identification, newEmail);
+      },
+    });
+
+    return unregister;
+  }, [registerListener, addInscriptionToState, updateInscriptionEmailInState]);
+  // Matrículas: búsqueda y filtros se hacen en backend (GET /api/enrollments?search=&estado=)
+  // Solo filtro local por fecha cuando aplique (opcional)
   const filteredAthletes = useMemo(() => {
-    let result = athletes;
+    if (activeTab !== "matriculas") return athletes;
 
-    // Filtro de búsqueda
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase().trim();
-      result = result.filter((athlete) => {
-        const textFields = [
-          athlete.firstName,
-          athlete.lastName,
-          athlete.nombres,
-          athlete.apellidos,
-          athlete.email,
-          athlete.correo,
-          athlete.identification,
-          athlete.numeroDocumento,
-          athlete.categoria,
-        ];
+    const withDates = athletes.map((item) => {
+      // Soportar distintos shapes: item puede ser atleta o matrícula con atleta anidado
+      const athlete = item.athlete || item;
+      const enrollment =
+        item.enrollment ||
+        item.latestEnrollment ||
+        athlete.matriculas?.[0] ||
+        athlete.enrollments?.[0] ||
+        athlete.inscripciones?.[0] ||
+        null;
 
-        return textFields.some(
-          (field) => field && String(field).toLowerCase().includes(searchLower),
-        );
-      });
-    }
+      const rawFechaMatricula =
+        enrollment?.fechaMatricula ||
+        enrollment?.enrollmentDate ||
+        enrollment?.fechaInscripcion ||
+        enrollment?.createdAt ||
+        item.fechaMatricula ||
+        item.createdAt ||
+        null;
 
-    // Filtro por estado de matrícula
-    if (filters.estado) {
-      result = result.filter((athlete) => {
-        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
-        const estado = latestEnrollment?.status || latestEnrollment?.estado || '';
-        return estado === filters.estado;
-      });
-    }
+      return {
+        ...item,
+        _athleteForFilters: athlete,
+        _enrollmentForFilters: enrollment,
+        _fechaMatriculaRaw: rawFechaMatricula,
+      };
+    });
 
-    // Filtro por fecha desde
+    let result = withDates;
+
+    // Filtros de fecha
     if (filters.fechaDesde) {
-      result = result.filter((athlete) => {
-        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
-        const fechaMatricula = latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion;
-        if (!fechaMatricula) return false;
-        const fecha = new Date(fechaMatricula);
-        const fechaDesde = new Date(filters.fechaDesde);
-        return fecha >= fechaDesde;
+      const desde = new Date(filters.fechaDesde);
+      result = result.filter((row) => {
+        if (!row._fechaMatriculaRaw) return false;
+        const fecha = new Date(row._fechaMatriculaRaw);
+        return !isNaN(fecha.getTime()) && fecha >= desde;
       });
     }
 
-    // Filtro por fecha hasta
     if (filters.fechaHasta) {
-      result = result.filter((athlete) => {
-        const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
-        const fechaMatricula = latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion;
-        if (!fechaMatricula) return false;
-        const fecha = new Date(fechaMatricula);
-        const fechaHasta = new Date(filters.fechaHasta);
-        fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
-        return fecha <= fechaHasta;
+      const hasta = new Date(filters.fechaHasta);
+      hasta.setHours(23, 59, 59, 999);
+      result = result.filter((row) => {
+        if (!row._fechaMatriculaRaw) return false;
+        const fecha = new Date(row._fechaMatriculaRaw);
+        return !isNaN(fecha.getTime()) && fecha <= hasta;
       });
+    }
+
+    // Filtro por vencimiento
+    result = filterByExpirationStatus(result, filters.vencimiento);
+
+    // Ordenar por prioridad de vencimiento si no es "all"
+    if (filters.vencimiento !== EXPIRATION_FILTERS.ALL) {
+      result = sortByExpirationPriority(result);
     }
 
     return result;
-  }, [athletes, searchTerm, filters]);
+  }, [athletes, activeTab, filters.fechaDesde, filters.fechaHasta, filters.vencimiento]);
 
   // Filtrar inscripciones
   const filteredInscriptions = useMemo(() => {
@@ -170,28 +220,19 @@ const Enrollments = () => {
     });
   }, [inscriptions, searchTerm]);
 
-  // Datos según el tab activo - usar filtrado local cuando hay búsqueda
-  const currentData =
-    activeTab === "matriculas" ? filteredAthletes : filteredInscriptions;
-
-  // Usar paginación local cuando hay búsqueda, sino usar datos del servidor
-  const displayData = searchTerm
-    ? currentData
-    : activeTab === "matriculas"
-      ? athletes
-      : inscriptions;
-  const totalRows = searchTerm ? currentData.length : displayData.length;
+  // Matrículas: backend pagina; inscripciones: filtrado local
+  const currentData = activeTab === "matriculas" ? filteredAthletes : filteredInscriptions;
+  const totalRows = activeTab === "matriculas" ? pagination.total : currentData.length;
   const startIndex = (pagination.page - 1) * PAGINATION_CONFIG.ROWS_PER_PAGE;
+  const paginatedData = activeTab === "matriculas"
+    ? currentData
+    : currentData.slice(startIndex, startIndex + PAGINATION_CONFIG.ROWS_PER_PAGE);
 
-  // Solo paginar localmente cuando hay búsqueda
-  const paginatedData = searchTerm
-    ? currentData.slice(
-        startIndex,
-        startIndex + PAGINATION_CONFIG.ROWS_PER_PAGE,
-      )
-    : displayData;
-
-  // Ya no necesitamos aplicar estilos con JavaScript, solo el badge es suficiente
+  // Calcular estadísticas de vencimiento para los filtros
+  const expirationStats = useMemo(() => {
+    if (activeTab !== "matriculas") return {};
+    return getExpirationStats(athletes);
+  }, [athletes, activeTab]);
 
   const getGuardianById = (guardianId) => {
     return guardians.find((g) => String(g.id) === String(guardianId));
@@ -211,32 +252,24 @@ const Enrollments = () => {
 
   // Guardar matrícula (crear deportista + matrícula)
   const handleSaveEnrollment = async (athleteData) => {
-console.log(
-      "💾 [handleSaveEnrollment] selectedInscription:",
-      selectedInscription,
-    );
-const result = await createEnrollment(athleteData, selectedInscription?.id);
+    // El backend ya NO valida la categoría cuando viene de matrícula
+    // Enviar los datos tal como vienen
+    const result = await createEnrollment(athleteData, selectedInscription?.id);
 
     if (result) {
-console.log("📧 [handleSaveEnrollment] Email enviado:", result.emailSent);
-setIsAthleteModalOpen(false);
+      setIsAthleteModalOpen(false);
       setSelectedInscription(null);
 
       // No mostramos el modal de credenciales, solo el sweet alert que ya se muestra en el hook
-    } else {
-}
+    }
   };
 
-  // Renovar matrícula
-  const handleOpenRenew = (athlete) => {
+  // Ver detalles
+  const handleOpenDetails = (athlete) => {
     if (!athlete || athlete.target) return;
     const currentAthlete = athletes.find((a) => a.id === athlete.id) || athlete;
-console.log(
-      "🔍 [handleOpenRenew] fechaNacimiento:",
-      currentAthlete?.fechaNacimiento,
-    );
-setSelectedAthlete(currentAthlete);
-    setIsRenewModalOpen(true);
+    setSelectedAthlete(currentAthlete);
+    setIsDetailsModalOpen(true);
   };
 
   // Ver historial
@@ -247,105 +280,54 @@ setSelectedAthlete(currentAthlete);
     setIsHistoryModalOpen(true);
   };
 
-  // Renovar matrícula
-  const handleRenewEnrollment = async (enrollmentData) => {
-    if (!selectedAthlete) return;
 
-    try {
-      setIsRenewing(true);
+  return (
+    <div className="p-6 font-questrial w-full max-w-full">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800">
+          Gestión de Matrículas
+        </h1>
 
-      const currentYear = new Date().getFullYear();
-      const comprobanteUrl = URL.createObjectURL(enrollmentData.comprobante);
+        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder={
+                activeTab === "matriculas"
+                  ? SEARCH_CONFIG.PLACEHOLDER_ENROLLMENTS
+                  : SEARCH_CONFIG.PLACEHOLDER_INSCRIPTIONS
+              }
+            />
+          </div>
 
-      const newInscription = {
-        id: crypto.randomUUID(),
-        estado: "Vigente",
-        concepto: `Renovación ${currentYear}`,
-        fechaInscripcion: new Date().toISOString(),
-        categoria: enrollmentData.categoria,
-        fechaConcepto: new Date().toISOString(),
-        tipo: "renovacion",
-        estadoAnterior: selectedAthlete.inscripciones?.[0]?.estado || "Vencida",
-        comprobantePago: {
-          url: comprobanteUrl,
-          nombreArchivo: enrollmentData.comprobante.name,
-          fechaSubida: new Date().toISOString(),
-          tipo: enrollmentData.comprobante.type,
-          tamaño: enrollmentData.comprobante.size,
-        },
-      };
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Botón de Filtros */}
+            {activeTab === "matriculas" && (
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center gap-2 px-4 py-2 border-2 rounded-lg font-medium transition-all ${
+                  showFilters
+                    ? "bg-primary-blue text-white border-primary-blue"
+                    : "border-gray-300 text-gray-700 hover:border-primary-blue hover:text-primary-blue"
+                }`}
+              >
+                <FaFilter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filtros</span>
+              </button>
+            )}
 
-      const updatedAthlete = {
-        ...selectedAthlete,
-        categoria: enrollmentData.categoria,
-        estadoInscripcion: "Vigente",
-        inscripciones: [
-          newInscription,
-          ...(selectedAthlete.inscripciones || []),
-        ],
-      };
-
-      // Aquí deberías llamar al servicio para actualizar en el backend
-      // Por ahora solo actualizamos localmente
-      await updateEnrollment(selectedAthlete.id, updatedAthlete);
-
-      showSuccessAlert(
-        "Matrícula renovada",
-        `Se creó una nueva matrícula vigente para ${selectedAthlete.nombres} ${selectedAthlete.apellidos}.`,
-      );
-
-      setIsRenewModalOpen(false);
-      setSelectedAthlete(null);
-      await refresh();
-    } catch (error) {
-      console.error("Error renovando matrícula:", error);
-      showErrorAlert(
-        "Error al renovar",
-        error.message || "Ocurrió un error al renovar la matrícula.",
-      );
-    } finally {
-      setIsRenewing(false);
-    }
-  };
-
-  // Eliminar deportista
-  const handleDelete = async (athlete) => {
-    if (!hasPermission("enrollments", "Eliminar")) {
-      showErrorAlert(
-        "Sin permisos",
-        "No tienes permisos para eliminar matrículas",
-      );
-      return;
-    }
-
-    if (!athlete || !athlete.id) {
-      return showErrorAlert("Error", "Deportista no válida");
-    }
-
-    const confirmResult = await showDeleteAlert(
-      "¿Estás seguro?",
-      `Se eliminará la matrícula de ${athlete.firstName || athlete.nombres} ${
-        athlete.lastName || athlete.apellidos
-      }.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
-    );
-
-    if (!confirmResult.isConfirmed) return;
-
-    await deleteAthlete(athlete.id);
-  };
-
-  // Función para obtener todos los datos para reporte
-  const getCompleteReportData = async () => {
-    return await getReportData(
-      { search: searchTerm }, // Filtros actuales
-      (athletes) => athletes.map((athlete) => { // Mapper de datos
-        const guardian = getGuardianById(athlete.acudiente);
-        const firstName = athlete.firstName || athlete.nombres || "";
-        const lastName = athlete.lastName || athlete.apellidos || "";
-        const email = athlete.email || athlete.correo || "";
-        const phone = athlete.phoneNumber || athlete.telefono || "";
-        const identification = athlete.identification || athlete.numeroDocumento || "";
+            <PermissionGuard module="enrollments" action="Ver">
+              <ReportButton
+                data={athletes.map((athlete) => {
+                  const guardian = getGuardianById(athlete.acudiente);
+                  const firstName = athlete.firstName || athlete.nombres || "";
+                  const lastName = athlete.lastName || athlete.apellidos || "";
+                  const email = athlete.email || athlete.correo || "";
+                  const phone = athlete.phoneNumber || athlete.telefono || "";
+                  const identification =
+                    athlete.identification || athlete.numeroDocumento || "";
 
         // Obtener tipo de documento del deportista
         let tipoDocumento = "No especificado";
@@ -372,112 +354,62 @@ setSelectedAthlete(currentAthlete);
         // Obtener la matrícula más reciente
         const latestEnrollment = athlete.enrollments?.[0] || athlete.inscripciones?.[0];
 
-        // Formatear fechas
-        let fechaMatricula = "";
-        if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-          const fecha = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
-          if (!isNaN(fecha.getTime())) {
-            fechaMatricula = fecha.toLocaleDateString("es-ES");
-          }
-        }
+                  // Formatear fechas - NOTA: fechaMatricula ahora es fecha de activación
+                  let fechaActivacion = "";
+                  if (latestEnrollment?.fechaInicio) {
+                    const fecha = new Date(latestEnrollment.fechaInicio);
+                    if (!isNaN(fecha.getTime())) {
+                      fechaActivacion = fecha.toLocaleDateString("es-ES");
+                    }
+                  }
 
-        let fechaVencimiento = "";
-        if (latestEnrollment?.expirationDate || latestEnrollment?.fechaVencimiento) {
-          const fecha = new Date(latestEnrollment.expirationDate || latestEnrollment.fechaVencimiento);
-          if (!isNaN(fecha.getTime())) {
-            fechaVencimiento = fecha.toLocaleDateString("es-ES");
-          }
-        } else if (latestEnrollment?.enrollmentDate || latestEnrollment?.fechaInscripcion) {
-          const fechaInsc = new Date(latestEnrollment.enrollmentDate || latestEnrollment.fechaInscripcion);
-          if (!isNaN(fechaInsc.getTime())) {
-            const fechaVenc = new Date(fechaInsc);
-            fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-            fechaVencimiento = fechaVenc.toLocaleDateString("es-ES");
-          }
-        }
+                  let fechaVencimiento = "";
+                  if (latestEnrollment?.fechaVencimiento) {
+                    const fecha = new Date(latestEnrollment.fechaVencimiento);
+                    if (!isNaN(fecha.getTime())) {
+                      fechaVencimiento = fecha.toLocaleDateString("es-ES");
+                    }
+                  }
 
         const estadoMatricula = latestEnrollment?.status || latestEnrollment?.estado || "Sin matrícula";
 
-        return {
-          nombres: firstName,
-          apellidos: lastName,
-          nombreCompleto: `${firstName} ${lastName}`.trim(),
-          tipoDocumento,
-          numeroDocumento: identification,
-          correo: email,
-          telefono: phone,
-          categoria: athlete.categoria || "",
-          estado: athlete.status || athlete.estado || "",
-          fechaMatricula,
-          fechaVencimiento,
-          estadoMatricula,
-          acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
-          acudienteTipoDocumento: tipoDocumentoAcudiente,
-          acudienteDocumento: guardian?.identification || guardian?.identificacion || "",
-          acudienteTelefono: guardian?.phone || guardian?.telefono || "",
-          acudienteCorreo: guardian?.email || guardian?.correo || "",
-        };
-      })
-    );
-  };
-
-  return (
-    <div className="p-6 font-questrial w-full max-w-full">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
-          Gestión de Matrículas
-        </h1>
-
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <div className="w-full sm:w-64">
-            <SearchInput
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder={
-                activeTab === "matriculas"
-                  ? "Buscar deportista..."
-                  : "Buscar inscripción..."
-              }
-            />
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Botón de Filtros */}
-            {activeTab === "matriculas" && (
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors ${
-                  showFilters || filters.estado || filters.fechaDesde || filters.fechaHasta
-                    ? "bg-primary-purple text-white"
-                    : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                }`}
-                title="Filtros"
-              >
-                <FaFilter />
-                Filtros
-                {(filters.estado || filters.fechaDesde || filters.fechaHasta) && (
-                  <span className="bg-white text-primary-purple rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                    {[filters.estado, filters.fechaDesde, filters.fechaHasta].filter(Boolean).length}
-                  </span>
-                )}
-              </button>
-            )}
-
-            <PermissionGuard module="enrollments" action="Ver">
-              <ReportButton
-                dataProvider={getCompleteReportData}
+                  return {
+                    nombres: firstName,
+                    apellidos: lastName,
+                    nombreCompleto: `${firstName} ${lastName}`.trim(),
+                    tipoDocumento,
+                    numeroDocumento: identification,
+                    correo: email,
+                    telefono: phone,
+                    categoria: athlete.categoria || "",
+                    estado: athlete.status || athlete.estado || "",
+                    fechaActivacion, // Cambiado de fechaMatricula
+                    fechaVencimiento,
+                    estadoMatricula,
+                    acudienteNombre: guardian
+                      ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim()
+                      : "Sin acudiente",
+                    acudienteTipoDocumento: tipoDocumentoAcudiente,
+                    acudienteDocumento:
+                      guardian?.identification ||
+                      guardian?.identificacion ||
+                      "",
+                    acudienteTelefono:
+                      guardian?.phone || guardian?.telefono || "",
+                    acudienteCorreo: guardian?.email || guardian?.correo || "",
+                  };
+                })}
                 fileName="Matriculas"
                 columns={[
                   { header: "Nombres", accessor: "nombres" },
                   { header: "Apellidos", accessor: "apellidos" },
-                  { header: "Tipo Documento", accessor: "tipoDocumento" },
                   { header: "Número Documento", accessor: "numeroDocumento" },
+                  { header: "Tipo Documento", accessor: "tipoDocumento" },
                   { header: "Correo", accessor: "correo" },
                   { header: "Teléfono", accessor: "telefono" },
                   { header: "Categoría", accessor: "categoria" },
                   { header: "Estado Deportista", accessor: "estado" },
-                  { header: "Fecha Matrícula", accessor: "fechaMatricula" },
+                  { header: "Fecha de Activación", accessor: "fechaActivacion" }, // Cambiado
                   { header: "Fecha Vencimiento", accessor: "fechaVencimiento" },
                   { header: "Estado Matrícula", accessor: "estadoMatricula" },
                   { header: "Acudiente", accessor: "acudienteNombre" },
@@ -512,6 +444,7 @@ setSelectedAthlete(currentAthlete);
             onClick={() => {
               setActiveTab("matriculas");
               setSearchTerm("");
+              setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
               activeTab === "matriculas"
@@ -547,6 +480,7 @@ setSelectedAthlete(currentAthlete);
             onClick={() => {
               setActiveTab("inscripciones");
               setSearchTerm("");
+              setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
             className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
               activeTab === "inscripciones"
@@ -584,320 +518,238 @@ setSelectedAthlete(currentAthlete);
               </span>
             )}
           </button>
+
         </div>
       </div>
 
-      {/* Panel de Filtros */}
+      {/* Panel de Filtros - Estados actualizados */}
       {showFilters && activeTab === "matriculas" && (
-        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            {/* Filtro por Estado */}
-            <div className="flex-1">
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
+            <button
+              onClick={() => {
+                setFilters({
+                  estado: '',
+                  fechaDesde: '',
+                  fechaHasta: '',
+                  vencimiento: EXPIRATION_FILTERS.ALL,
+                });
+                setShowFilters(false);
+              }}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              Limpiar filtros
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Filtro por Estado - Solo 3 estados */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Estado de Matrícula
               </label>
               <select
                 value={filters.estado}
                 onChange={(e) => setFilters({ ...filters, estado: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               >
                 <option value="">Todos los estados</option>
+                <option value="Pending_Payment">Pendiente de Pago</option>
                 <option value="Vigente">Vigente</option>
                 <option value="Vencida">Vencida</option>
-                <option value="Suspendida">Suspendida</option>
+              </select>
+            </div>
+
+            {/* Filtro por Vencimiento */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado de Vencimiento
+              </label>
+              <select
+                value={filters.vencimiento}
+                onChange={(e) => setFilters({ ...filters, vencimiento: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+              >
+                <option value={EXPIRATION_FILTERS.ALL}>Todas las matrículas</option>
+                <option value={EXPIRATION_FILTERS.CRITICAL}>
+                  🚨 Críticas ({(expirationStats.critical || 0)} matrículas)
+                </option>
+                <option value={EXPIRATION_FILTERS.EXPIRING}>
+                  ⏰ Próximas a vencer ({((expirationStats.warning || 0) + (expirationStats.attention || 0))} matrículas)
+                </option>
+                <option value={EXPIRATION_FILTERS.EXPIRED}>
+                  ❌ Vencidas ({(expirationStats.expired || 0)} matrículas)
+                </option>
               </select>
             </div>
 
             {/* Filtro por Fecha Desde */}
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Desde
+                Desde
               </label>
               <input
                 type="date"
                 value={filters.fechaDesde}
                 onChange={(e) => setFilters({ ...filters, fechaDesde: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               />
             </div>
 
             {/* Filtro por Fecha Hasta */}
-            <div className="flex-1">
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Hasta
+                Hasta
               </label>
               <input
                 type="date"
                 value={filters.fechaHasta}
                 onChange={(e) => setFilters({ ...filters, fechaHasta: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
               />
             </div>
-
-            {/* Botón Limpiar Filtros */}
-            <button
-              onClick={() => setFilters({ estado: '', fechaDesde: '', fechaHasta: '' })}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap"
-            >
-              Limpiar Filtros
-            </button>
           </div>
+
+          {/* Resumen de filtros activos */}
+          {(filters.vencimiento !== EXPIRATION_FILTERS.ALL || filters.estado) && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-blue-800">
+                <span className="font-medium">Filtros activos:</span>
+                {filters.vencimiento !== EXPIRATION_FILTERS.ALL && (
+                  <span className="px-2 py-1 bg-blue-100 rounded text-xs">
+                    {filters.vencimiento === EXPIRATION_FILTERS.CRITICAL && 'Críticas'}
+                    {filters.vencimiento === EXPIRATION_FILTERS.EXPIRING && 'Próximas a vencer'}
+                    {filters.vencimiento === EXPIRATION_FILTERS.EXPIRED && 'Vencidas'}
+                  </span>
+                )}
+                {filters.estado && (
+                  <span className="px-2 py-1 bg-blue-100 rounded text-xs">
+                    Estado: {filters.estado === 'Pending_Payment' ? 'Pendiente de Pago' : 
+                            filters.estado === 'Vigente' ? 'Vigente' : 'Vencida'}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
-
       {/* Contenido según tab activo */}
       {totalRows > 0 ? (
         <>
           <div className="w-full bg-white rounded-lg">
             {activeTab === "matriculas" ? (
               <Table
+                serverPagination={true}
+                totalRows={pagination.total}
+                currentPage={pagination.page}
+                onPageChange={changePage}
+                rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
                 thead={{
-                  titles: [
-                    "Nombre Completo",
-                    "Fecha Matrícula",
-                    "Estado Matrícula",
-                    "Fecha Vencimiento",
-                  ],
+                  titles: ENROLLMENT_TABLE_COLUMNS,
                   state: false,
                   actions: true,
                 }}
                 tbody={{
-                  data: paginatedData.map((a) => {
-                    const guardian = getGuardianById(a.acudiente);
+                  data: paginatedData.map((row) => {
+                    // Extraer datos de diferentes fuentes con fallbacks
+                    const athlete = row.athlete || row._athleteForFilters || row;
+                    const user = athlete.user || row.user || {};
+                    const guardianId = athlete.acudiente || row.acudiente;
+                    const guardian = guardianId ? getGuardianById(guardianId) : null;
 
-                    const firstName = a.firstName || a.nombres || "";
-                    const lastName = a.lastName || a.apellidos || "";
-
-                    // Obtener la matrícula más reciente
+                    // Obtener la matrícula asociada
                     const latestEnrollment =
-                      a.enrollments?.[0] || a.inscripciones?.[0];
+                      row.enrollment ||
+                      row.latestEnrollment ||
+                      athlete.matriculas?.[0] ||
+                      athlete.enrollments?.[0] ||
+                      athlete.inscripciones?.[0] ||
+                      null;
 
-                    // Formatear fecha de matrícula
-                    let fechaMatricula = "N/A";
-                    if (
-                      latestEnrollment?.enrollmentDate ||
-                      latestEnrollment?.fechaInscripcion
-                    ) {
-                      const fecha = new Date(
-                        latestEnrollment.enrollmentDate ||
-                          latestEnrollment.fechaInscripcion,
-                      );
-                      if (!isNaN(fecha.getTime())) {
-                        fechaMatricula = fecha.toLocaleDateString("es-ES");
-                      }
-                    }
+                    // Usar utilidades para extraer datos de forma consistente
+                    const nombreCompleto = extractFullName(athlete, user, row);
+                    const numeroDocumento = extractIdentification(athlete, user, row);
+                    const fechaActivacion = extractActivationDate(latestEnrollment);
+                    
+                    // Obtener estado y procesar fecha de vencimiento
+                    const rawEnrollmentStatus = latestEnrollment?.status || latestEnrollment?.estado;
+                    const fechaVencimiento = extractExpirationDate(latestEnrollment, rawEnrollmentStatus);
+                    const estadoMatricula = mapEnrollmentStatus(rawEnrollmentStatus);
+                    const isVencida = isEnrollmentExpired(latestEnrollment);
 
-                    // Formatear fecha de vencimiento
-                    let fechaVencimiento = "N/A";
-                    if (
-                      latestEnrollment?.expirationDate ||
-                      latestEnrollment?.fechaVencimiento
-                    ) {
-                      const fecha = new Date(
-                        latestEnrollment.expirationDate ||
-                          latestEnrollment.fechaVencimiento,
-                      );
-                      if (!isNaN(fecha.getTime())) {
-                        fechaVencimiento = fecha.toLocaleDateString("es-ES");
-                      }
-                    } else if (
-                      latestEnrollment?.enrollmentDate ||
-                      latestEnrollment?.fechaInscripcion
-                    ) {
-                      // Si no hay fecha de vencimiento, calcularla sumando 1 año a la fecha de inscripción
-                      const fechaInscripcion = new Date(
-                        latestEnrollment.enrollmentDate ||
-                          latestEnrollment.fechaInscripcion,
-                      );
-                      if (!isNaN(fechaInscripcion.getTime())) {
-                        const fechaVenc = new Date(fechaInscripcion);
-                        fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-                        fechaVencimiento =
-                          fechaVenc.toLocaleDateString("es-ES");
-                      }
-                    }
-
-                    // Verificar si la matrícula está vencida
-                    let isVencida = false;
-                    if (
-                      latestEnrollment?.expirationDate ||
-                      latestEnrollment?.fechaVencimiento
-                    ) {
-                      const fechaVenc = new Date(
-                        latestEnrollment.expirationDate ||
-                          latestEnrollment.fechaVencimiento,
-                      );
-                      const hoy = new Date();
-                      isVencida = fechaVenc < hoy;
-} else if (
-                      latestEnrollment?.enrollmentDate ||
-                      latestEnrollment?.fechaInscripcion
-                    ) {
-                      // Si no hay fecha de vencimiento, calcularla
-                      const fechaInscripcion = new Date(
-                        latestEnrollment.enrollmentDate ||
-                          latestEnrollment.fechaInscripcion,
-                      );
-                      const fechaVenc = new Date(fechaInscripcion);
-                      fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-                      const hoy = new Date();
-                      isVencida = fechaVenc < hoy;
-}
-
-                    const estadoMatricula =
-                      latestEnrollment?.status ||
-                      latestEnrollment?.estado ||
-                      "Sin matrícula";
+                    // Guardar fecha de creación para el modal de detalles
+                    const fechaCreacion = extractCreationDate(latestEnrollment, row);
 
                     return {
-                      ...a,
-                      nombreCompleto:
-                        `${firstName} ${lastName}`.trim() || "Sin nombre",
-                      fechaMatricula,
+                      ...row,
+                      nombreCompleto,
+                      numeroDocumento,
+                      fechaActivacion,
                       estadoMatricula,
                       fechaVencimiento,
-                      latestEnrollment, // Guardar para usar en customRenderers
-                      isVencida, // Flag para aplicar estilo de fila
+                      fechaCreacion, // Para usar en el modal de detalles
+                      latestEnrollment,
+                      isVencida,
                     };
                   }),
-                  dataPropertys: [
-                    "nombreCompleto",
-                    "fechaMatricula",
-                    "estadoMatricula",
-                    "fechaVencimiento",
-                  ],
+                  dataPropertys: ENROLLMENT_DATA_PROPERTIES,
                   state: false,
                   customRenderers: {
                     nombreCompleto: (value, row) => {
                       return (
                         <div className="text-left pl-4">
-                          <span className="text-gray-700">{value}</span>
-                        </div>
-                      );
-                    },
-                    fechaMatricula: (value, row) => {
-                      return (
-                        <div className="text-left pl-4">
-                          <span
-                            className={
-                              value === "N/A"
-                                ? "text-gray-400"
-                                : "text-gray-700"
-                            }
-                          >
+                          <span className="text-gray-900">
                             {value}
                           </span>
                         </div>
                       );
                     },
                     estadoMatricula: (value, row) => {
-                      if (row.isVencida) {
-                        return (
-                          <div className="text-left pl-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-300">
-                              Vencida
-                            </span>
-                          </div>
-                        );
-                      }
+                      const rawStatus = row.latestEnrollment?.status || row.latestEnrollment?.estado;
                       return (
                         <div className="text-left pl-4">
-                          <span className="text-gray-700">{value}</span>
+                          <EnrollmentStatusBadge 
+                            status={rawStatus} 
+                            label={value}
+                          />
                         </div>
                       );
                     },
                     fechaVencimiento: (value, row) => {
-                      if (value === "N/A") {
-                        return (
-                          <div className="text-left pl-4">
-                            <span className="text-gray-400">{value}</span>
-                          </div>
-                        );
-                      }
-
-                      // Calcular días hasta vencimiento
                       const latestEnrollment = row.latestEnrollment;
-                      let fechaVenc;
-
-                      if (
-                        latestEnrollment?.expirationDate ||
-                        latestEnrollment?.fechaVencimiento
-                      ) {
-                        fechaVenc = new Date(
-                          latestEnrollment.expirationDate ||
-                            latestEnrollment.fechaVencimiento,
-                        );
-                      } else if (
-                        latestEnrollment?.enrollmentDate ||
-                        latestEnrollment?.fechaInscripcion
-                      ) {
-                        fechaVenc = new Date(
-                          latestEnrollment.enrollmentDate ||
-                            latestEnrollment.fechaInscripcion,
-                        );
-                        fechaVenc.setFullYear(fechaVenc.getFullYear() + 1);
-                      }
-
-                      if (!fechaVenc || isNaN(fechaVenc.getTime())) {
-                        return (
-                          <div className="text-left pl-4">
-                            <span className="text-gray-400">{value}</span>
-                          </div>
-                        );
-                      }
-
-                      const hoy = new Date();
-                      const diasRestantes = Math.ceil(
-                        (fechaVenc - hoy) / (1000 * 60 * 60 * 24),
-                      );
-
-                      let colorClass = "text-gray-700";
-                      if (diasRestantes < 0) {
-                        colorClass = "text-gray-700"; // Cambiar a gris en lugar de rojo
-                      } else if (diasRestantes <= 30) {
-                        colorClass = "text-yellow-600 font-semibold";
-                      }
+                      const rawStatus = latestEnrollment?.status || latestEnrollment?.estado;
+                      const expirationDate = latestEnrollment?.fechaVencimiento;
 
                       return (
-                        <div className="text-left pl-4">
-                          <span className={colorClass}>{value}</span>
-                          {diasRestantes > 0 && diasRestantes <= 30 && (
-                            <div className="text-xs text-yellow-600 mt-1">
-                              ({diasRestantes} días)
-                            </div>
-                          )}
-                          {diasRestantes < 0 && (
-                            <div className="text-xs text-gray-500 mt-1">
-                              (Vencida hace {Math.abs(diasRestantes)} días)
-                            </div>
-                          )}
-                        </div>
+                        <ExpirationIndicator
+                          expirationDate={expirationDate}
+                          enrollmentStatus={rawStatus}
+                          showIcon={false}
+                        />
                       );
                     },
                   },
                 }}
-                onDelete={
-                  hasPermission("enrollments", "Eliminar") ? handleDelete : null
-                }
                 buttonConfig={{
-                  delete: (item) => ({
-                    show: hasPermission("enrollments", "Eliminar"),
+                  delete: () => ({
+                    show: false, // Nunca mostrar botón de eliminar - protección implementada
                   }),
                 }}
                 customActions={[
                   {
-                    onClick: (athlete) => handleOpenRenew(athlete),
-                    label: <FaClipboardList className="w-4 h-4" />,
+                    onClick: (athlete) => handleOpenDetails(athlete),
+                    label: <FaEye />,
                     className:
-                      "p-2 text-primary-purple hover:text-primary-blue hover:bg-purple-50 rounded transition-colors",
-                    tooltip: "Renovar Matrícula",
-                    show: (athlete) => athlete.isVencida, // Solo mostrar si está vencida
+                      "p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors",
+                    tooltip: "Ver Detalles",
                   },
+
                   {
                     onClick: (athlete) => handleOpenHistory(athlete),
-                    label: <FaHistory className="w-4 h-4" />,
+                    label: <FaHistory />,
                     className:
-                      "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
+                      "p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors",
                     tooltip: "Historial de Matrículas",
                   },
                 ]}
@@ -1035,7 +887,6 @@ setSelectedAthlete(currentAthlete);
             : "No hay inscripciones pendientes"}
         </div>
       )}
-
       {/* Modales */}
       <AthleteModal
         isOpen={isAthleteModalOpen}
@@ -1052,6 +903,7 @@ setSelectedAthlete(currentAthlete);
         referenceData={referenceData}
         isEnrollmentMode={true}
         newlyCreatedGuardianId={newlyCreatedGuardianId}
+        loadGuardians={() => searchGuardians("")}
         onCreateGuardian={() => {
           setIsGuardianModalOpen(true);
         }}
@@ -1094,11 +946,11 @@ setSelectedAthlete(currentAthlete);
           setIsGuardianModalOpen(false);
         }}
         onSave={async (guardianData) => {
-const GuardiansService = (
+          const GuardiansService = (
             await import("../AthletesSection/services/GuardiansService.js")
           ).default;
           const result = await GuardiansService.createGuardian(guardianData);
-if (result.success) {
+          if (result.success) {
             setNewlyCreatedGuardianId(result.data.id);
             await searchGuardians(""); // Recargar lista de acudientes
             setIsGuardianModalOpen(false);
@@ -1133,17 +985,7 @@ if (result.success) {
         }}
       />
 
-      <RenewEnrollmentModal
-        isOpen={isRenewModalOpen}
-        onClose={() => {
-          setIsRenewModalOpen(false);
-          setSelectedAthlete(null);
-        }}
-        athlete={selectedAthlete}
-        onRenew={handleRenewEnrollment}
-        sportsCategories={referenceData.sportsCategories || []}
-        isProcessing={isRenewing}
-      />
+
 
       {isHistoryModalOpen && selectedAthlete && (
         <EnrollmentHistoryModal
@@ -1154,6 +996,18 @@ if (result.success) {
           }}
           athlete={selectedAthlete}
           guardians={guardians}
+        />
+      )}
+
+      {isDetailsModalOpen && selectedAthlete && (
+        <EnrollmentDetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedAthlete(null);
+          }}
+          athlete={selectedAthlete}
+          enrollment={selectedAthlete.latestEnrollment}
         />
       )}
     </div>

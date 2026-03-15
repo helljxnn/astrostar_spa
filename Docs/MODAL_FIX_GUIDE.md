@@ -125,7 +125,33 @@ export default ProductModal;
 - ✅ TemporaryPersonModal.jsx
 - ✅ TemporaryPersonViewModal.jsx
 
-**Total: 16 modales arreglados**
+### Matrículas (3 modales)
+
+- ✅ EnrollmentHistoryModal.jsx
+- ✅ EnrollmentManagementModal.jsx
+- ✅ RenewEnrollmentModal.jsx
+
+### Equipos (3 modales)
+
+- ✅ TemporaryTeamModal.jsx
+- ✅ TemporaryTeamViewModal.jsx
+- ✅ SelectionModal.jsx
+
+### Deportistas (2 modales)
+
+- ✅ AthleteModal.jsx
+- ✅ GuardianModal.jsx
+
+### Deportistas - Ver Detalles (2 modales)
+
+- ✅ AthleteViewModal.jsx
+- ✅ GuardianViewModal.jsx
+
+### Usuarios (1 modal)
+
+- ✅ UserViewModal.jsx
+
+**Total: 27 modales arreglados**
 
 ## Notas Importantes
 

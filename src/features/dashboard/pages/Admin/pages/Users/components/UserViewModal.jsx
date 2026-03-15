@@ -24,10 +24,14 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
     return documentTypesLabels[type] || type;
   };
 
-  const formatDate = (date) => {
-    if (!date) return "No especificado";
-    const d = new Date(date);
-    return `${d.toLocaleDateString("es-ES")} ${d.toLocaleTimeString("es-ES")}`;
+  const formatDate = (dateString) => {
+    if (!dateString) return "No especificado";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   return createPortal(
@@ -293,6 +297,8 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
     </motion.div>,
     document.body,
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default UserViewModal;

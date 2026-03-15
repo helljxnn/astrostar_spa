@@ -219,17 +219,19 @@ const MaterialCategories = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar categoría"
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Buscar categoría"
+            />
+          </div>
 
           <PermissionGuard module="materialCategories" action="Crear">
             <button

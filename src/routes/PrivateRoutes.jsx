@@ -23,6 +23,12 @@ import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes
 import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
 import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enrollments/Enrollments.jsx";
 
+/* --- Pagos --- */
+import PaymentsManagement from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsManagementNew";
+import PaymentSettings from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentSettings";
+import AthletePayments from "../features/dashboard/pages/Admin/pages/Athletes/Payments/AthletePayments";
+import PaymentsTest from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsTest";
+
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
 import Roles from "../features/dashboard/pages/Admin/pages/Roles/Roles.jsx";
@@ -129,7 +135,41 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Empleados --- */}
+        {/* --- Módulo: Gestión de Pagos --- */}
+        <Route
+          path="payments-management"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Ver">
+              <PaymentsManagement />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="payment-settings"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Editar">
+              <PaymentSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="athlete-payments"
+          element={
+            <PrivateRoute module="myPayments" action="Ver">
+              <AthletePayments />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="payments-test"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Ver">
+              <PaymentsTest />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Empleados --- */}
         <Route
           path="employees"
           element={
@@ -187,7 +227,7 @@ const PrivateRoutes = () => {
         <Route
           path="materials"
           element={
-            <PrivateRoute module="sportsEquipment" action="Ver">
+            <PrivateRoute module="materials" action="Ver">
               <MaterialsCatalog />
             </PrivateRoute>
           }

@@ -556,14 +556,16 @@ const MaterialsMovements = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder={`Buscar por fecha, material, categoría${activeTab === "ingresos" ? ", proveedor" : ", tipo"}...`}
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder={`Buscar por fecha, material, categoría${activeTab === "ingresos" ? ", proveedor" : ", tipo"}...`}
+            />
+          </div>
 
           <button
             onClick={() => setShowFilters(!showFilters)}

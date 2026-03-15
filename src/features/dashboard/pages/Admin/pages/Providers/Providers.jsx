@@ -42,22 +42,26 @@ const Providers = () => {
   const [totalRows, setTotalRows] = useState(0);
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const { hasPermission } = usePermissions();
+  
+  // Estado para datos filtrados localmente
+  const [allData, setAllData] = useState([]);
+  
   const fetchProviders = async () => {
     try {
       setLoading(true);
+      // NO enviar búsqueda al backend, filtrar localmente
       const response = await providersService.getProviders({
-        page: currentPage,
-        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm, // Enviar búsqueda al backend
+        page: searchTerm ? 1 : currentPage, // Si hay búsqueda, traer página 1
+        limit: searchTerm ? 9999 : PAGINATION_CONFIG.ROWS_PER_PAGE, // Si hay búsqueda, traer todos
       });
       if (response.success) {
         // Enriquecer datos con nombres de tipos de documento
         const enrichedData = await enrichProvidersWithDocumentTypes(
           response.data || [],
         );
-        setData(enrichedData);
+        setAllData(enrichedData); // Guardar todos los datos para filtrado local
         setTotalPages(response.pagination?.pages || 1);
-        setTotalRows(response.pagination?.total || 0);
+        setTotalRows(response.pagination?.total || enrichedData.length);
         checkActivePurchasesForProviders(enrichedData);
       } else {
         showErrorAlert("Error", "No se pudieron cargar los proveedores");
@@ -133,6 +137,45 @@ const Providers = () => {
     });
     setActivePurchasesCheck(purchasesCheck);
   };
+
+  // Filtrado local para TODOS los campos
+  const filteredData = React.useMemo(() => {
+    if (!searchTerm) return allData;
+
+    const searchLower = searchTerm.toLowerCase().trim();
+
+    return allData.filter((provider) => {
+      // Campos de texto básicos
+      const textFields = [
+        provider.razonSocial,
+        provider.nit,
+        provider.contactoPrincipal,
+        provider.correo,
+        provider.telefono,
+        provider.direccion,
+        provider.ciudad,
+        provider.descripcion,
+        provider.estado,
+      ];
+
+      const textMatch = textFields.some(
+        (field) => field && String(field).toLowerCase().includes(searchLower)
+      );
+
+      // Buscar en tipo de entidad (Jurídica/Natural)
+      const tipoEntidadDisplay = provider.tipoEntidad === 'juridica' ? 'jurídica' : 'natural';
+      const tipoEntidadMatch = tipoEntidadDisplay.includes(searchLower) || 
+                               (searchLower.includes('juridica') && provider.tipoEntidad === 'juridica') ||
+                               (searchLower.includes('natural') && provider.tipoEntidad === 'natural');
+
+      // Buscar en tipo de documento
+      const tipoDocumentoMatch = provider.tipoDocumentoNombre && 
+                                 provider.tipoDocumentoNombre.toLowerCase().includes(searchLower);
+
+      return textMatch || tipoEntidadMatch || tipoDocumentoMatch;
+    });
+  }, [allData, searchTerm]);
+
   useEffect(() => {
     fetchProviders();
   }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
@@ -289,12 +332,30 @@ setProviderToEdit(response.data);
     if (!provider || !provider.id) {
       return showErrorAlert("Error", "Proveedor no válido");
     }
+    
+    // Verificar si el proveedor tiene ingresos asociados
     if (activePurchasesCheck[provider.id]) {
       return showErrorAlert(
         "No se puede eliminar",
-        `No se puede eliminar el proveedor "${provider.razonSocial}" porque tiene compras activas asociadas.`,
+        `No se puede eliminar el proveedor "${provider.razonSocial}" porque está asociado a ingresos.`,
       );
     }
+    
+    // Verificar nuevamente en el backend antes de eliminar
+    try {
+      const purchasesCheck = await providersService.checkActivePurchases(provider.id);
+      if (purchasesCheck.hasActivePurchases) {
+        // Actualizar el estado local
+        setActivePurchasesCheck(prev => ({ ...prev, [provider.id]: true }));
+        return showErrorAlert(
+          "No se puede eliminar",
+          `No se puede eliminar el proveedor "${provider.razonSocial}" porque está asociado a ingresos.`,
+        );
+      }
+    } catch (error) {
+      console.error("Error checking active purchases:", error);
+    }
+    
     const confirmResult = await showDeleteAlert(
       "¿Estás seguro?",
       `Se eliminará al proveedor ${provider.razonSocial}. Esta acción no se puede deshacer.`,
@@ -334,14 +395,14 @@ setProviderToEdit(response.data);
       show: hasPermission("providers", "Eliminar"),
       disabled: activePurchasesCheck[provider.id],
       title: activePurchasesCheck[provider.id]
-        ? "No se puede eliminar con compras activas"
+        ? "Proveedor está asociado a ingresos"
         : "Eliminar proveedor",
     }),
   };
 
-  // Usar datos directamente del backend (ya filtrados y paginados)
-  const displayData = data;
-  const displayTotalRows = totalRows;
+  // Usar datos filtrados localmente
+  const displayData = filteredData;
+  const displayTotalRows = searchTerm ? filteredData.length : totalRows;
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
