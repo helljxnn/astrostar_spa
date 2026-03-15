@@ -130,7 +130,18 @@ class ProvidersService {
   }
 
   async checkActivePurchases(providerId) {
-    return apiClient.get(`${this.endpoint}/${providerId}/active-purchases`);
+    // Usar el endpoint correcto del backend: check-ingresos
+    const response = await apiClient.get(`${this.endpoint}/${providerId}/check-ingresos`);
+    
+    // Transformar la respuesta para mantener compatibilidad con el código existente
+    if (response.success && response.hasIngresos !== undefined) {
+      return {
+        ...response,
+        hasActivePurchases: response.hasIngresos
+      };
+    }
+    
+    return response;
   }
 
   async getProviderStats() {
@@ -244,6 +255,27 @@ class ProvidersService {
       // Mantener campos adicionales que puedan venir del backend
       ...backendData,
     };
+  }
+
+  /**
+   * Obtener todos los proveedores para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de proveedores
+   */
+  async getAllForReport(params = {}) {
+    const response = await apiClient.get(this.endpoint, {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    });
+
+    // Transformar la respuesta del backend al formato del frontend
+    if (response.success && response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((provider) =>
+        this.transformFromBackend(provider)
+      );
+    }
+
+    return response;
   }
 }
 

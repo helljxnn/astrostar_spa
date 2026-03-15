@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaEnvelope } from 'react-icons/fa';
 import { FiMail } from 'react-icons/fi';
-import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts';
+import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts.js';
 import apiClient from '../../../shared/services/apiClient';
 
 const EmailVerificationModal = ({ isOpen, onClose, newEmail, onVerify }) => {

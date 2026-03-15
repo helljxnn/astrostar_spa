@@ -15,17 +15,24 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import materialsService from "./services/MaterialsService";
 import { formatNumber } from "../../../../../../../shared/utils/numberFormat";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const MaterialsCatalog = () => {
   const { hasPermission } = usePermissions();
+  
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    materialsService.getAllForReport.bind(materialsService)
+  );
+  
   const [materials, setMaterials] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -375,6 +382,28 @@ const MaterialsCatalog = () => {
     };
   });
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (materials) => materials.map((m) => { // Mapper de datos
+        const stockFundacion = m.stockFundacion || 0;
+        const stockEventos = m.stockEventos || 0;
+        const stockTotal = m.stockTotal || stockFundacion + stockEventos;
+
+        return {
+          nombre: m.nombre,
+          categoria: m.categoria,
+          stockFundacion: stockFundacion,
+          stockEventos: stockEventos,
+          stockTotal: stockTotal,
+          estado: m.estado,
+          descripcion: m.descripcion || "N/A",
+        };
+      })
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
@@ -384,22 +413,24 @@ const MaterialsCatalog = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar material"
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Buscar material"
+            />
+          </div>
 
           <div className="flex items-center gap-3">
             <PermissionGuard module="materials" action="Ver">
               <ReportButton
-                data={reportData}
+                dataProvider={getCompleteReportData}
                 fileName="Reporte_Materiales"
                 columns={[
                   { header: "Nombre", accessor: "nombre" },

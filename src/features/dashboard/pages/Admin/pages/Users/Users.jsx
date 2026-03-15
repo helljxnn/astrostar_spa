@@ -87,15 +87,14 @@ const Users = () => {
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <div className="sm:w-64">
+          <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
               onChange={handleSearchChange}
               placeholder="Buscar usuario..."
-              className="w-full"
             />
           </div>
         </div>
@@ -135,6 +134,11 @@ const Users = () => {
       {!loading && displayTotalRows > 0 && (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: ["Nombre", "Correo", "Identificación", "Rol", "Teléfono"],
               state: true,

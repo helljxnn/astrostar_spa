@@ -15,7 +15,7 @@ import scheduleService from "../services/employeeScheduleService";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 /* -------------------------------------------------------
  * CONSTANTES

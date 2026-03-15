@@ -1,6 +1,7 @@
 /* "use client" */
 
 import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
   UserCheck,
@@ -16,7 +17,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import TeamsService from "../services/TeamsService";
 
 const states = [
@@ -126,9 +127,11 @@ const TemporaryTeamModal = ({
 
   useEffect(() => {
     if (teamType === "fundacion" && selectedAthletes.length > 0) {
-      const categoria = selectedAthletes[0].categoria;
-      setCurrentCategoria(categoria);
-      setFormData((prev) => ({ ...prev, categoria }));
+      // CAMBIO: Ya no asignamos automáticamente la categoría para equipos de fundación
+      // La categoría ahora se selecciona manualmente en el dropdown
+      // const categoria = selectedAthletes[0].categoria;
+      // setCurrentCategoria(categoria);
+      // setFormData((prev) => ({ ...prev, categoria }));
     } else if (teamType === "temporal") {
       setCurrentCategoria(null);
     }
@@ -319,7 +322,7 @@ const TemporaryTeamModal = ({
           const message =
             unavailableAthletes.length === 1
               ? unavailableAthletes[0].message
-              : `Hay ${unavailableAthletes.length} deportistas que ya est�n registradas en otros equipos`;
+              : `Hay ${unavailableAthletes.length} deportistas que ya están registradas en otros equipos`;
 
           // Guardar los IDs de las deportistas no disponibles
           const unavailableIds = temporalAthletes
@@ -337,14 +340,14 @@ const TemporaryTeamModal = ({
           setDuplicateWarnings((prev) => ({ ...prev, athletes: null }));
         }
       } catch (error) {
-        console.error("? Error validando deportistas:", error);
+        console.error("❌ Error validando deportistas:", error);
       }
     };
 
     validateAthletes();
   }, [selectedAthletes, teamToEdit?.id, isInitialLoad, teamToEdit]);
 
-  const shouldShowCategoryField = teamType === "temporal";
+  const shouldShowCategoryField = teamType === "temporal" || teamType === "fundacion"; // CAMBIO: Mostrar campo de categoría para ambos tipos
   const shouldShowSecondTrainer = teamType === "fundacion";
 
   // Cargar categorías deportivas cuando se necesiten
@@ -423,9 +426,9 @@ const TemporaryTeamModal = ({
         }
         break;
       case "categoria":
-        if (teamType === "temporal" && !value?.trim()) {
-          newErrors.categoria =
-            "La categor�a es obligatoria para equipos temporales";
+        // CAMBIO: La categoría ahora es obligatoria para ambos tipos de equipos
+        if (!value?.trim()) {
+          newErrors.categoria = "La categoría es obligatoria";
         } else {
           delete newErrors.categoria;
         }
@@ -487,9 +490,9 @@ const TemporaryTeamModal = ({
       newErrors.deportistas = "Debe seleccionar al menos un deportista";
     }
 
-    if (teamType === "temporal" && !formData.categoria?.trim()) {
-      newErrors.categoria =
-        "La categor�a es obligatoria para equipos temporales";
+    // CAMBIO: La categoría ahora es obligatoria para ambos tipos de equipos
+    if (!formData.categoria?.trim()) {
+      newErrors.categoria = "La categoría es obligatoria";
     }
 
     // La descripción no es obligatoria
@@ -590,18 +593,19 @@ const TemporaryTeamModal = ({
       }
 
       if (firstAthleteType === "fundacion" && athletes.length > 1) {
-        const firstCategory = athletes[0].categoria;
-        const hasMixedCategories = athletes.some(
-          (athlete) => athlete.categoria !== firstCategory,
-        );
+        // CAMBIO: Ahora permitimos deportistas de diferentes categorías en equipos de fundación
+        // const firstCategory = athletes[0].categoria;
+        // const hasMixedCategories = athletes.some(
+        //   (athlete) => athlete.categoria !== firstCategory,
+        // );
 
-        if (hasMixedCategories) {
-          showErrorAlert(
-            "Categorías mixtas no permitidas",
-            "Todas las deportistas de la fundación deben ser de la misma categoría.",
-          );
-          return;
-        }
+        // if (hasMixedCategories) {
+        //   showErrorAlert(
+        //     "Categorías mixtas no permitidas",
+        //     "Todas las deportistas de la fundación deben ser de la misma categoría.",
+        //   );
+        //   return;
+        // }
       }
     }
 
@@ -614,17 +618,17 @@ const TemporaryTeamModal = ({
       setTeamType(athletes[0].type);
     }
 
-    if (teamType === "fundacion") {
-      if (athletes.length > 0) {
-        const categoria = athletes[0].categoria;
-        setCurrentCategoria(categoria);
-        handleChange("categoria", categoria);
-      } else {
-        // Limpiar categoría cuando no hay deportistas seleccionadas
-        setCurrentCategoria(null);
-        handleChange("categoria", "");
-      }
-    }
+    // CAMBIO: Ya no asignamos automáticamente la categoría para equipos de fundación
+    // if (teamType === "fundacion") {
+    //   if (athletes.length > 0) {
+    //     const categoria = athletes[0].categoria;
+    //     setCurrentCategoria(categoria);
+    //     handleChange("categoria", categoria);
+    //   } else {
+    //     setCurrentCategoria(null);
+    //     handleChange("categoria", "");
+    //   }
+    // }
   };
 
   const removeAthlete = (athleteId) => {
@@ -633,13 +637,16 @@ const TemporaryTeamModal = ({
 
     if (updated.length === 0) {
       setTeamType(selectedTrainer?.type || null);
-      setCurrentCategoria(null);
-      handleChange("categoria", "");
-    } else if (teamType === "fundacion") {
-      const categoria = updated[0].categoria;
-      setCurrentCategoria(categoria);
-      handleChange("categoria", categoria);
+      // CAMBIO: Ya no limpiamos la categoría automáticamente
+      // setCurrentCategoria(null);
+      // handleChange("categoria", "");
     }
+    // CAMBIO: Ya no actualizamos la categoría automáticamente
+    // else if (teamType === "fundacion") {
+    //   const categoria = updated[0].categoria;
+    //   setCurrentCategoria(categoria);
+    //   handleChange("categoria", categoria);
+    // }
   };
 
   const handleSubmit = async () => {
@@ -692,18 +699,19 @@ const TemporaryTeamModal = ({
     }
 
     if (teamType === "fundacion" && selectedAthletes.length > 1) {
-      const firstCategory = selectedAthletes[0].categoria;
-      const hasMixedCategories = selectedAthletes.some(
-        (athlete) => athlete.categoria !== firstCategory,
-      );
+      // CAMBIO: Ahora permitimos deportistas de diferentes categorías en equipos de fundación
+      // const firstCategory = selectedAthletes[0].categoria;
+      // const hasMixedCategories = selectedAthletes.some(
+      //   (athlete) => athlete.categoria !== firstCategory,
+      // );
 
-      if (hasMixedCategories) {
-        showErrorAlert(
-          "Error de validación",
-          "Todas las deportistas de la fundación deben ser de la misma categoría.",
-        );
-        return;
-      }
+      // if (hasMixedCategories) {
+      //   showErrorAlert(
+      //     "Error de validación",
+      //     "Todas las deportistas de la fundación deben ser de la misma categoría.",
+      //   );
+      //   return;
+      // }
     }
 
     if (isEditing) {
@@ -776,7 +784,7 @@ const TemporaryTeamModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <>
       <motion.div
         className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
@@ -790,6 +798,7 @@ const TemporaryTeamModal = ({
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
@@ -872,8 +881,8 @@ const TemporaryTeamModal = ({
               </motion.div>
             )}
 
-            {/* Mostrar categoría automática para equipos de fundación */}
-            {teamType === "fundacion" && currentCategoria && (
+            {/* CAMBIO: Eliminado - Ya no mostramos categoría automática para equipos de fundación */}
+            {/* {teamType === "fundacion" && currentCategoria && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -888,7 +897,7 @@ const TemporaryTeamModal = ({
                   </span>
                 </div>
               </motion.div>
-            )}
+            )} */}
 
             {/* Selección de Entrenador */}
             <motion.div
@@ -1057,7 +1066,7 @@ const TemporaryTeamModal = ({
                               {selectedSecondTrainer.phoneNumber && (
                                 <>
                                   <span className="text-xs text-gray-400">
-                                    �
+                                    •
                                   </span>
                                   <span className="text-xs text-gray-600">
                                     {selectedSecondTrainer.phoneNumber}
@@ -1165,7 +1174,7 @@ const TemporaryTeamModal = ({
                         }`}
                       >
                         {selectedAthletes.length > 0
-                          ? "Modificar selecci�n de deportistas"
+                          ? "Modificar selección de deportistas"
                           : "Seleccionar deportistas"}
                       </p>
                       {selectedAthletes.length === 0 && (
@@ -1213,7 +1222,7 @@ const TemporaryTeamModal = ({
                   </>
                 )}
 
-                {/* Campo de categoría para equipos temporales */}
+                {/* Campo de categoría - Ahora para ambos tipos de equipos */}
                 {shouldShowCategoryField && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -1227,10 +1236,10 @@ const TemporaryTeamModal = ({
                       </div>
                     ) : (
                       <FormField
-                        label="Categoría del Equipo Temporal"
+                        label="Categoría del Equipo"
                         name="categoria"
                         type="select"
-                        placeholder="Seleccione una categor�a"
+                        placeholder="Seleccione una categoría"
                         options={categories.map((cat) => ({
                           value: cat.name,
                           label: cat.name,
@@ -1277,7 +1286,7 @@ const TemporaryTeamModal = ({
                             </p>
                             <span className="text-xs px-2 py-0.5 rounded bg-purple-100 text-purple-800">
                               {athlete.type === "fundacion"
-                                ? "Fundaci�n"
+                                ? "Fundación"
                                 : "Temporal"}
                             </span>
                           </div>
@@ -1391,6 +1400,8 @@ const TemporaryTeamModal = ({
       />
     </>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default TemporaryTeamModal;

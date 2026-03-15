@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react";
 import TeamsService from "../services/TeamsService";
@@ -266,15 +267,16 @@ const SelectionModal = ({
 
     // Si no hay selecciones, todo está disponible
     if (selectedItems.length === 0) {
-      // EXCEPCIÓN: Si viene currentCategoria de props (editando equipo), aplicar restricción
-      if (
-        mode === "athletes" &&
-        item.type === "fundacion" &&
-        currentCategoria &&
-        item.categoria
-      ) {
-        return item.categoria === currentCategoria;
-      }
+      // CAMBIO: Eliminada restricción de categoría para equipos de fundación
+      // Ahora permitimos deportistas de diferentes categorías
+      // if (
+      //   mode === "athletes" &&
+      //   item.type === "fundacion" &&
+      //   currentCategoria &&
+      //   item.categoria
+      // ) {
+      //   return item.categoria === currentCategoria;
+      // }
       return true;
     }
 
@@ -282,19 +284,20 @@ const SelectionModal = ({
     const firstSelectedType = selectedItems[0].type;
     if (item.type !== firstSelectedType) return false;
 
-    // Para deportistas de fundación, verificar categoría solo si hay deportistas de fundación seleccionados
-    if (mode === "athletes" && item.type === "fundacion") {
-      const hasFoundationAthletesSelected = selectedItems.some(
-        (s) => s.type === "fundacion" && s.categoria,
-      );
-      if (
-        hasFoundationAthletesSelected &&
-        autoSelectedCategory &&
-        item.categoria
-      ) {
-        return item.categoria === autoSelectedCategory;
-      }
-    }
+    // CAMBIO: Eliminada restricción de categoría para deportistas de fundación
+    // Ahora permitimos deportistas de diferentes categorías en el mismo equipo
+    // if (mode === "athletes" && item.type === "fundacion") {
+    //   const hasFoundationAthletesSelected = selectedItems.some(
+    //     (s) => s.type === "fundacion" && s.categoria,
+    //   );
+    //   if (
+    //     hasFoundationAthletesSelected &&
+    //     autoSelectedCategory &&
+    //     item.categoria
+    //   ) {
+    //     return item.categoria === autoSelectedCategory;
+    //   }
+    // }
 
     return true;
   };
@@ -373,7 +376,7 @@ const SelectionModal = ({
   const teamInfo = getCurrentTeamInfo();
   const availabilityStats = getAvailabilityStats();
 
-  return (
+  const modalContent = (
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
@@ -388,6 +391,7 @@ const SelectionModal = ({
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
           className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
@@ -556,14 +560,15 @@ const SelectionModal = ({
                           ) {
                             return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
                           }
-                          if (
-                            mode === "athletes" &&
-                            item.type === "fundacion" &&
-                            currentCategoria &&
-                            item.categoria !== currentCategoria
-                          ) {
-                            return "Solo se pueden seleccionar deportistas de la misma categoría";
-                          }
+                          // CAMBIO: Eliminado mensaje de categoría mixta
+                          // if (
+                          //   mode === "athletes" &&
+                          //   item.type === "fundacion" &&
+                          //   currentCategoria &&
+                          //   item.categoria !== currentCategoria
+                          // ) {
+                          //   return "Solo se pueden seleccionar deportistas de la misma categoría";
+                          // }
                           return "No disponible";
                         };
 
@@ -779,6 +784,8 @@ const SelectionModal = ({
       </motion.div>
     </AnimatePresence>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default SelectionModal;

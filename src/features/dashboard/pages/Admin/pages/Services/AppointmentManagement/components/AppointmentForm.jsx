@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { addMinutes } from "date-fns";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DatePickerField } from "../../../../../../../../shared/components/DatePickerField";
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import apiClient from "../../../../../../../../shared/services/apiClient";
 
 const DURATION_OPTIONS = [

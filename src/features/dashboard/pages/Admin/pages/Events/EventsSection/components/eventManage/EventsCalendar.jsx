@@ -27,7 +27,7 @@ import {
 import {
   showDeleteAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import { usePermissions } from "../../../../../../../../../shared/hooks/usePermissions";
 
 /**
@@ -713,7 +713,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       dashboardEvent.participants?.length ||
       dashboardEvent._count?.participants ||
       0;
-    const materialCount = dashboardEvent._count?.eventMaterials || 0;
+    const donationMaterialsCount = dashboardEvent.donationMaterialsCount ?? 0;
 
     // No se puede eliminar si está en curso o finalizado
     if (
@@ -730,8 +730,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       return false;
     }
 
-    // No se puede eliminar si tiene materiales asignados
-    if (materialCount > 0) {
+    // No se puede eliminar si tiene materiales a entregar asignados por donación
+    if (donationMaterialsCount > 0) {
       return false;
     }
 
@@ -748,7 +748,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       dashboardEvent.participants?.length ||
       dashboardEvent._count?.participants ||
       0;
-    const materialCount = dashboardEvent._count?.eventMaterials || 0;
+    const donationMaterialsCount = dashboardEvent.donationMaterialsCount ?? 0;
 
     if (estado === "En Curso" || estado === "en_curso") {
       return "No se puede eliminar un evento en curso";
@@ -762,8 +762,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       return `No se puede eliminar: tiene ${participantCount} inscrito(s)`;
     }
 
-    if (materialCount > 0) {
-      return `No se puede eliminar: tiene ${materialCount} material(es) asignado(s)`;
+    if (donationMaterialsCount > 0) {
+      return `No se puede eliminar: tiene ${donationMaterialsCount} material(es) comprometido(s) con donante(s)`;
     }
 
     return "";
@@ -880,10 +880,9 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           {managementActions.length > 0 && (
             <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
               {managementActions.map((action, actionIndex) => {
-                const isDeleteAction = action.variant === "danger";
-                const isDisabled = isDeleteAction && !canDeleteEvent(event);
-                const disabledReason = isDisabled
-                  ? getDeleteDisabledReason(event)
+                const isDisabled = action.isDisabled ? action.isDisabled(event) : false;
+                const disabledReason = isDisabled && action.getDisabledReason
+                  ? action.getDisabledReason(event)
                   : "";
 
                 return (
@@ -967,6 +966,25 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               permission: { module: "events", action: "edit" },
               variant: "edit",
               group: "management",
+              isDisabled: (event) => {
+                const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+                const estado = dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
+                return (
+                  estado === "Finalizado" ||
+                  estado === "finalizado" ||
+                  estado === "En_curso" ||
+                  estado === "en-curso"
+                );
+              },
+              getDisabledReason: (event) => {
+                const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+                const estado = dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
+                if (estado === "Finalizado" || estado === "finalizado")
+                  return "No se puede editar un evento finalizado";
+                if (estado === "En_curso" || estado === "en-curso")
+                  return "No se puede editar un evento en curso";
+                return "";
+              },
             },
           ]
         : []),

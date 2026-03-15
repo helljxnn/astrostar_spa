@@ -3,11 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
-import SportsCategoriesService from "../../../../Athletes/SportsCategory/services/sportsCategoriesService";
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 
 const AthleteRegistrationFormModal = ({
   isOpen,
@@ -100,40 +99,16 @@ const AthleteRegistrationFormModal = ({
     }
   }, [event?.id]);
 
-  // Cargar categorías deportivas desde el módulo de categorías
+  // Cargar solo las categorías deportivas asignadas al evento
   const loadSportsCategories = useCallback(async () => {
-    try {
-      const response = await SportsCategoriesService.getAll({
-        status: "Activo", // Backend espera "Activo" o "Inactivo" en español
-        limit: 100, // Traer todas las categorías activas
-      });
-
-      // Manejar diferentes formatos de respuesta
-      let categories = [];
-      if (response && response.success && response.data) {
-        categories = response.data.map((cat) => ({
-          id: cat.id,
-          nombre: cat.name,
-        }));
-      } else if (response && Array.isArray(response)) {
-        // Si la respuesta es directamente un array
-        categories = response.map((cat) => ({
-          id: cat.id,
-          nombre: cat.name,
-        }));
-      } else if (response && response.data && Array.isArray(response.data)) {
-        categories = response.data.map((cat) => ({
-          id: cat.id,
-          nombre: cat.name,
-        }));
-      }
-
-      setAvailableCategories(categories);
-    } catch (error) {
-      console.error("Error cargando categorías deportivas:", error);
-      setAvailableCategories([]);
+    // Usar directamente las categorías del evento
+    if (event?.sportsCategoriesData && event.sportsCategoriesData.length > 0) {
+      setAvailableCategories(event.sportsCategoriesData.filter((c) => c.nombre));
+      return;
     }
-  }, []);
+    // Fallback por si el evento no tiene categorías asignadas
+    setAvailableCategories([]);
+  }, [event?.sportsCategoriesData]);
 
   // Declarar searchAthletes antes de los useEffect que lo usan
   const searchAthletes = useCallback(

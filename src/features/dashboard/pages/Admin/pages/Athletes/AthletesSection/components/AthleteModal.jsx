@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserShield,
@@ -16,7 +17,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import {
   findCategoryByName,
   resolveCategoryAgeRange,
@@ -29,6 +30,7 @@ import {
 } from "../hooks/useFormAthleteValidation";
 import AthletesService from "../services/AthletesService";
 import { useDocumentValidation } from "../../../../../../../../shared/hooks/useDocumentValidation";
+import { toDateInputFormat, toISOString, calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 // Los tipos de documento y categorías ahora se reciben desde props (cargados desde la API)
 
@@ -55,7 +57,7 @@ const parentescoBackendToFrontend = {
   Mother: "Madre",
   Father: "Padre",
   Grandparent: "Abuelo/a",
-  Uncle_Aunt: "Tío/a",
+  Uncle_Aunt: "TÃ­o/a",
   Sibling: "Hermano/a",
   Cousin: "Primo/a",
   Legal_Guardian: "Tutor/a Legal",
@@ -64,7 +66,7 @@ const parentescoBackendToFrontend = {
   Other: "Otro",
 };
 
-// Mapeo inverso: del frontend (español) al backend (inglés)
+// Mapeo inverso: del frontend (espaÃ±ol) al backend (inglÃ©s)
 const parentescoFrontendToBackend = {
   Madre: "Mother",
   Padre: "Father",
@@ -78,21 +80,7 @@ const parentescoFrontendToBackend = {
   Otro: "Other",
 };
 
-// Función para calcular la edad (igual que empleados)
-const calculateAge = (birthDate) => {
-  if (!birthDate) return "";
-
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-
-  return age >= 0 ? age.toString() : "";
-};
+// ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
 const AthleteModal = ({
   isOpen,
@@ -109,6 +97,7 @@ const AthleteModal = ({
   newlyCreatedGuardianId = null,
   referenceData = { documentTypes: [] },
   isEnrollmentMode = false,
+  loadGuardians,
 }) => {
   const isEditing =
     (mode === "edit" || athleteToEdit !== null) && !isEnrollmentMode;
@@ -165,6 +154,7 @@ const AthleteModal = ({
       estado: "Activo",
       acudiente: "",
       parentesco: "",
+      isScholarship: false,
     },
     athleteValidationRules,
   );
@@ -183,7 +173,7 @@ const AthleteModal = ({
       setValues((prev) => ({
         ...prev,
         [name]: value,
-        age: age,
+        age: age.toString(), // Convertir a string para el formulario
       }));
     } else {
       handleChange({ target: { name, value } });
@@ -210,11 +200,10 @@ const AthleteModal = ({
   }, [values.birthDate]);
 
   useEffect(() => {
-    if (newlyCreatedGuardianId && guardians.length > 0 && !isEditing) {
-      const guardianExists = guardians.find(
-        (g) => g.id === newlyCreatedGuardianId,
-      );
+    if (newlyCreatedGuardianId && guardians.length > 0) {
+      const guardianExists = guardians.find(g => g.id === newlyCreatedGuardianId);
       if (guardianExists) {
+        console.log('✅ [AthleteModal] Asignando acudiente recién creado:', newlyCreatedGuardianId);
         handleChange({
           target: {
             name: "acudiente",
@@ -223,7 +212,15 @@ const AthleteModal = ({
         });
       }
     }
-  }, [newlyCreatedGuardianId, guardians, isEditing]);
+  }, [newlyCreatedGuardianId, guardians]);
+
+  // Cargar acudientes cuando se abre el buscador
+  useEffect(() => {
+    if (showGuardianSearch && loadGuardians && guardians.length === 0) {
+      console.log('🔍 [AthleteModal] Cargando acudientes...');
+      loadGuardians();
+    }
+  }, [showGuardianSearch]); // âœ… SOLO depender de showGuardianSearch para evitar re-renders infinitos
 
   // Re-validar el campo de identificación INSTANTÁNEAMENTE cuando cambia el tipo de documento
   useEffect(() => {
@@ -254,24 +251,13 @@ const AthleteModal = ({
       }
       return;
     }
-    console.log(
-      "🔍 [AthleteModal] Documento a validar:",
-      values.identification,
-    );
+    console.log("🔍 [AthleteModal] Documento a validar:", values.identification);
 
     // Usar el hook de validación con debounce
     validateDocumentDebounced(values.identification, 6);
-  }, [
-    values.identification,
-    isEditing,
-    isEnrollmentMode,
-    validateDocumentDebounced,
-    clearDocumentValidation,
-    setErrors,
-    errors.identification,
-  ]);
+  }, [values.identification, isEditing, isEnrollmentMode]); // âœ… Removidas dependencias problemÃ¡ticas
 
-  // Sincronizar el resultado de la validación con asyncErrors
+  // Sincronizar el resultado de la validaciÃ³n con asyncErrors
   useEffect(() => {
     // Solo actualizar si estamos validando o acabamos de terminar
     if (documentExists) {
@@ -292,24 +278,20 @@ const AthleteModal = ({
       // Validación completada y documento NO existe - limpiar error solo si es de validación async
       setAsyncErrors((prev) => ({ ...prev, identification: null }));
       // Solo limpiar el error si es un error de documento duplicado
-      if (
-        errors.identification &&
-        (errors.identification.includes("ya está matriculado") ||
-          errors.identification.includes("ya tiene una inscripción") ||
-          errors.identification.includes("ya está registrado") ||
-          errors.identification.includes("ya está inscrito"))
-      ) {
-        setErrors((prev) => ({ ...prev, identification: "" }));
-      }
+      setErrors(prev => {
+        if (prev.identification && (
+          prev.identification.includes('ya está matriculado') || 
+          prev.identification.includes('ya tiene una inscripción') ||
+          prev.identification.includes('ya está registrado') ||
+          prev.identification.includes('ya está inscrito')
+        )) {
+          const { identification, ...rest } = prev;
+          return rest;
+        }
+        return prev;
+      });
     }
-  }, [
-    documentExists,
-    documentValidationMessage,
-    isCheckingDocumentValidation,
-    values.identification.length,
-    setErrors,
-    setTouched,
-  ]);
+  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // âœ… Removidas dependencias problemÃ¡ticas
 
   // Validación instantánea de email
   useEffect(() => {
@@ -330,31 +312,20 @@ const AthleteModal = ({
         return;
       }
 
-      // En modo edición, NO validar si el email es el mismo que el original
-      if (
-        isEditing &&
-        !isEnrollmentMode &&
-        athleteToEdit?.email === values.email
-      ) {
-        setAsyncErrors((prev) => ({ ...prev, email: null }));
-        if (errors.email && errors.email.includes("ya está registrado")) {
-          setErrors((prev) => ({ ...prev, email: "" }));
-        }
+      // En modo ediciÃ³n, NO validar si el email es el mismo que el original
+      if (isEditing && !isEnrollmentMode && athleteToEdit?.email === values.email) {
+        console.log('⚠️ [AthleteModal] Email no cambió, no validar');
+        setAsyncErrors(prev => ({ ...prev, email: null }));
         return;
       }
 
       setCheckingEmail(true);
       try {
         console.log("🔍 [AthleteModal] Email a validar:", values.email);
-        console.log(
-          "🔍 [AthleteModal] isEditing:",
-          isEditing,
-          "isEnrollmentMode:",
-          isEnrollmentMode,
-        );
+        console.log("🔍 [AthleteModal] isEditing:", isEditing, "isEnrollmentMode:", isEnrollmentMode);
 
-        // En modo edición, excluir el userId del deportista actual
-        // En modo matrícula o creación, no excluir a nadie
+        // En modo ediciÃ³n, excluir el userId del deportista actual
+        // En modo matrÃ­cula o creaciÃ³n, no excluir a nadie
         const excludeUserId =
           isEditing && !isEnrollmentMode && athleteToEdit?.userId
             ? athleteToEdit.userId
@@ -373,10 +344,16 @@ const AthleteModal = ({
           setErrors((prev) => ({ ...prev, email: errorMsg }));
           setTouched((prev) => ({ ...prev, email: true }));
         } else {
-          setAsyncErrors((prev) => ({ ...prev, email: null }));
-          if (errors.email && errors.email.includes("ya está registrado")) {
-            setErrors((prev) => ({ ...prev, email: "" }));
-          }
+          console.log('✅ [AthleteModal] Email disponible, limpiando errores');
+          setAsyncErrors(prev => ({ ...prev, email: null }));
+          setErrors(prev => {
+            // Solo limpiar si es un error de email duplicado
+            if (prev.email && prev.email.includes('ya está registrado')) {
+              const { email, ...rest } = prev;
+              return rest;
+            }
+            return prev;
+          });
         }
       } catch (error) {
         console.error("❌ [AthleteModal] Error verificando email:", error);
@@ -390,143 +367,35 @@ const AthleteModal = ({
       }
     };
 
-    // Validar INSTANTÁNEAMENTE si:
+    // Validar INSTANTÃNEAMENTE si:
     // 1. El campo ya fue tocado (touched.email)
-    // 2. Estamos en modo matrícula (isEnrollmentMode)
-    // 3. Estamos en modo edición (isEditing)
+    // 2. Estamos en modo matrÃ­cula (isEnrollmentMode)
+    // 3. Estamos en modo ediciÃ³n (isEditing)
     const shouldValidateInstantly =
       touched.email || isEnrollmentMode || isEditing;
     const delay = shouldValidateInstantly ? 0 : 300;
 
     const timeoutId = setTimeout(checkEmail, delay);
     return () => clearTimeout(timeoutId);
-  }, [
-    values.email,
-    isEditing,
-    athleteToEdit,
-    setErrors,
-    setTouched,
-    errors.email,
-    isEnrollmentMode,
-    touched.email,
-  ]);
+  }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // âœ… Removidas dependencias problemÃ¡ticas
 
-  // Validación de categoría vs edad en tiempo real
-  // REGLA: Puede escoger categorías MAYORES a su edad, pero NO MENORES
-  useEffect(() => {
-    // Solo validar si hay fecha de nacimiento y categoría seleccionada
-    if (!values.birthDate || !values.categoria) {
-      // Limpiar error de categoría si no hay datos para validar
-      if (errors.categoria && errors.categoria.includes("edad")) {
-        setErrors((prev) => ({ ...prev, categoria: "" }));
-      }
-      return;
-    }
-
-    // Calcular edad
-    const birthDate = new Date(values.birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (
-      monthDiff < 0 ||
-      (monthDiff === 0 && today.getDate() < birthDate.getDate())
-    ) {
-      age--;
-    }
-
-    // Buscar la categoría seleccionada
-    const selectedCategory = referenceData.sportsCategories?.find(
-      (cat) => cat.name === values.categoria,
-    );
-
-    if (!selectedCategory) {
-      return;
-    }
-
-    // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
-    const minAge = selectedCategory.minAge || 0;
-    const maxAge = selectedCategory.maxAge || 999;
-
-    // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
-    if (age > maxAge) {
-      const errorMsg = `Tu edad es mayor a la edad para la categoría`;
-      setErrors((prev) => ({ ...prev, categoria: errorMsg }));
-      setTouched((prev) => ({ ...prev, categoria: true }));
-    } else {
-      // Limpiar error si la edad es válida (menor o igual al máximo)
-      if (
-        errors.categoria &&
-        (errors.categoria.includes("edad") ||
-          errors.categoria.includes("mayor"))
-      ) {
-        setErrors((prev) => ({ ...prev, categoria: "" }));
-      }
-    }
-  }, [
-    values.birthDate,
-    values.categoria,
-    referenceData.sportsCategories,
-    setErrors,
-    setTouched,
-    errors.categoria,
-  ]);
+  // ✅ VALIDACIÓN DE EDAD VS CATEGORÍA ELIMINADA
+  // Ahora se permite seleccionar cualquier categoría sin importar la edad del deportista
 
   useEffect(() => {
     if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
-      console.log("🔵 [AthleteModal] isEditing:", isEditing);
-      console.log(
-        "🔵 [AthleteModal] Parentesco recibido:",
-        athleteToEdit.parentesco,
-      );
-
-      // Convertir fecha ISO a formato YYYY-MM-DD
-      let birthDate =
-        athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
-      if (birthDate) {
-        try {
-          // Si ya está en formato YYYY-MM-DD, usarla directamente
-          if (
-            typeof birthDate === "string" &&
-            /^\d{4}-\d{2}-\d{2}$/.test(birthDate)
-          ) {
-          }
-          // Si viene en formato DD/MM/YYYY o D/M/YYYY (del landing)
-          else if (
-            typeof birthDate === "string" &&
-            /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(birthDate)
-          ) {
-            const [day, month, year] = birthDate.split("/");
-            // Agregar ceros iniciales si es necesario
-            const dayPadded = day.padStart(2, "0");
-            const monthPadded = month.padStart(2, "0");
-            birthDate = `${year}-${monthPadded}-${dayPadded}`;
-          }
-          // Si viene en formato ISO (YYYY-MM-DDTHH:mm:ss.sssZ), extraer solo la fecha
-          else if (typeof birthDate === "string" && birthDate.includes("T")) {
-            birthDate = birthDate.split("T")[0];
-          }
-          // Si viene en otro formato, intentar convertir
-          else {
-            const date = new Date(birthDate);
-            if (!isNaN(date.getTime())) {
-              // Usar la fecha local sin conversión UTC para evitar cambios de día
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, "0");
-              const day = String(date.getDate()).padStart(2, "0");
-              birthDate = `${year}-${month}-${day}`;
-            } else {
-              console.error(
-                "🔴 [AthleteModal] Fecha inválida, no se puede convertir",
-              );
-              birthDate = "";
-            }
-          }
-        } catch (error) {
-          console.error("🔴 [AthleteModal] Error procesando fecha:", error);
-          birthDate = "";
-        }
-      }
+      console.log('[AthleteModal] Cargando datos:', isEnrollmentMode ? 'para matrícula' : 'para editar', athleteToEdit);
+      console.log('[AthleteModal] isEditing:', isEditing);
+      console.log('[AthleteModal] isEnrollmentMode:', isEnrollmentMode);
+      console.log('[AthleteModal] Parentesco recibido:', athleteToEdit.parentesco);
+      
+      // Convertir fecha usando la utilidad segura
+      const birthDateRaw = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
+      console.log('[AthleteModal] Fecha de nacimiento original:', birthDateRaw, 'Tipo:', typeof birthDateRaw);
+      
+      const birthDate = toDateInputFormat(birthDateRaw);
+      console.log('[AthleteModal] Fecha de nacimiento convertida:', birthDate);
+      
       // Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
       if (
@@ -554,7 +423,7 @@ const AthleteModal = ({
         secondLastName = apellidos.slice(1).join(" ") || "";
       }
       console.log(
-        "🔵 [AthleteModal] Categoría recibida:",
+        "[AthleteModal] Categoría recibida:",
         athleteToEdit.categoria,
       );
       const newValues = {
@@ -570,24 +439,25 @@ const AthleteModal = ({
         phoneNumber: athleteToEdit.phoneNumber || athleteToEdit.telefono || "",
         address: athleteToEdit.address || athleteToEdit.direccion || "",
         birthDate: birthDate,
-        age: calculateAge(birthDate),
+        age: calculateAge(birthDate).toString(),
         categoria: athleteToEdit.categoria || "",
-        // Si estamos en modo matrícula, siempre usar "Activo", de lo contrario usar el estado del atleta
+        // Si estamos en modo matrÃ­cula, siempre usar "Activo", de lo contrario usar el estado del atleta
         estado: isEnrollmentMode ? "Activo" : athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
         parentesco: parentescoFrontend,
+        isScholarship: athleteToEdit.isScholarship === true,
       };
 
       setValues(newValues);
 
       setHasDateOfBirth(!!birthDate);
 
-      // En modo edición, marcar email como touched para activar validación instantánea
+      // En modo ediciÃ³n, marcar email como touched para activar validaciÃ³n instantÃ¡nea
       if (isEditing && !isEnrollmentMode) {
         setTouched((prev) => ({ ...prev, email: true }));
       }
 
-      // Si el parentesco no está en las opciones, es un "Otro" personalizado
+      // Si el parentesco no estÃ¡ en las opciones, es un "Otro" personalizado
       if (
         parentescoFrontend &&
         !parentescoOptions.some((opt) => opt.value === parentescoFrontend)
@@ -596,7 +466,7 @@ const AthleteModal = ({
         setValues((prev) => ({ ...prev, parentesco: "Otro" }));
       }
 
-      // ✅ VALIDACIÓN AUTOMÁTICA: Marcar todos los campos como touched y validar
+      // âœ… VALIDACIÃ“N AUTOMÃTICA: Marcar todos los campos como touched y validar
       if (isEnrollmentMode) {
         console.log("🔍 [AthleteModal] Email a validar:", newValues.email);
         // Marcar todos los campos como touched INMEDIATAMENTE
@@ -677,12 +547,12 @@ const AthleteModal = ({
                 }
               } catch (error) {
                 console.error(
-                  "❌ [AthleteModal] Error verificando email:",
+                  "âŒ [AthleteModal] Error verificando email:",
                   error,
                 );
               }
             } else {
-              // El error de formato ya lo maneja la validación síncrona
+                  // El error de formato ya lo maneja la validación síncrona
             }
           }
 
@@ -707,6 +577,7 @@ const AthleteModal = ({
         estado: "Activo",
         acudiente: "",
         parentesco: "",
+        isScholarship: false,
       });
       setOtroParentesco("");
       setAsyncErrors({});
@@ -740,10 +611,22 @@ const AthleteModal = ({
   const isMinor = currentAge !== null && currentAge < 18;
   const isAcudienteRequired = hasDateOfBirth && isMinor;
 
-  const getFinalParentesco = () => {
-    if (values.parentesco === "Otro" && otroParentesco.trim()) {
-      return otroParentesco.trim();
+  // Limpiar error de acudiente cuando se seleccione uno
+  useEffect(() => {
+    if (values.acudiente) {
+      setErrors(prev => {
+        if (prev.acudiente) {
+          const { acudiente, ...rest } = prev;
+          return rest;
+        }
+        return prev;
+      });
     }
+  }, [values.acudiente]); // âœ… Removida dependencia errors.acudiente
+
+  const getFinalParentesco = () => {
+    // Si es "Otro", siempre devolver "Otro" para el mapeo al backend
+    // El texto libre se manejará por separado en otherRelationship
     return values.parentesco;
   };
 
@@ -764,7 +647,7 @@ const AthleteModal = ({
     if (e && e.preventDefault) {
       e.preventDefault();
     }
-    console.log("🔵 [AthleteModal] Valores actuales:", values);
+    console.log("[AthleteModal] Valores actuales:", values);
 
     // Marcar todos los campos como tocados para mostrar errores
     const allTouched = {};
@@ -810,44 +693,48 @@ const AthleteModal = ({
       );
       return;
     }
+    
+    // NO HAY VALIDACIÃ“N DE EDAD VS CATEGORÃA - Se permite cualquier combinaciÃ³n
+    console.log('â„¹ï¸ [AthleteModal] Sin validaciÃ³n de edad vs categorÃ­a - permitiendo cualquier combinaciÃ³n');
 
-    // NUEVA LÓGICA: Permitir categorías mayores, bloquear categorías menores
-    const minAge = selectedCategory.minAge || 0;
-    const maxAge = selectedCategory.maxAge || 999;
-    console.log(
-      "🔍 [AthleteModal] Edad:",
-      ageNumber,
-      "Categoría:",
-      values.categoria,
-      "Rango:",
-      minAge,
-      "-",
-      maxAge,
-    );
-
-    // Si la edad es MAYOR al máximo de la categoría, NO permitir (está muy grande para esa categoría)
-    if (ageNumber !== null && ageNumber > maxAge) {
-      // NO mostrar sweet alert, el error ya está visible debajo del campo
-      return;
+    // 🔒 VALIDACIÓN CRÍTICA: Menores de edad DEBEN tener acudiente
+    if (ageNumber !== null && ageNumber < 18) {
+      const acudienteId = values.acudiente && values.acudiente.toString().trim() 
+        ? parseInt(values.acudiente) 
+        : null;
+      
+      if (!acudienteId) {
+        console.log('❌ [AthleteModal] Menor de edad sin acudiente!');
+        // Establecer error inline en el campo de acudiente
+        setErrors(prev => ({
+          ...prev,
+          acudiente: "La deportista es menor de edad. Debe asignar un acudiente antes de continuar."
+        }));
+        setTouched(prev => ({
+          ...prev,
+          acudiente: true
+        }));
+        return;
+      }
+      console.log('âœ… [AthleteModal] Menor de edad con acudiente asignado:', acudienteId);
     }
-    console.log(
-      "✅ [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...",
-    );
+
+    console.log('âœ… [AthleteModal] Todas las validaciones pasaron, procediendo a guardar...');
 
     try {
       const finalParentesco = getFinalParentesco();
 
-      // Convertir parentesco del frontend (español) al backend (inglés)
+      // Convertir parentesco del frontend (espaÃ±ol) al backend (inglÃ©s)
       let parentescoBackend = finalParentesco;
       if (parentescoBackend && parentescoFrontendToBackend[parentescoBackend]) {
         parentescoBackend = parentescoFrontendToBackend[parentescoBackend];
       }
       console.log(
-        "🔵 [AthleteModal] Parentesco convertido a inglés:",
+        "ðŸ”µ [AthleteModal] Parentesco convertido a inglÃ©s:",
         parentescoBackend,
       );
 
-      // Convertir acudiente a número o null
+      // Convertir acudiente a nÃºmero o null
       const acudienteId =
         values.acudiente && values.acudiente.toString().trim()
           ? parseInt(values.acudiente)
@@ -864,7 +751,7 @@ const AthleteModal = ({
         email: values.email.trim(),
         phoneNumber: values.phoneNumber,
         address: values.address.trim(),
-        birthDate: values.birthDate,
+        birthDate: toISOString(values.birthDate), // Convertir a ISO para el backend
         categoria: values.categoria,
         estado: values.estado,
       };
@@ -873,20 +760,29 @@ const AthleteModal = ({
       if (acudienteId) {
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
+        
+        // Si es "Other", incluir el texto libre en otherRelationship
+        if (parentescoBackend === "Other" && otroParentesco.trim()) {
+          athleteData.otherRelationship = otroParentesco.trim();
+        }
+      }
+      // Incluir isScholarship siempre (solo en ediciÃ³n)
+      if (isEditing) {
+        athleteData.isScholarship = values.isScholarship === true;
       }
       if (isEditing) {
-        // Detectar si cambió el email
+        // Detectar si cambiÃ³ el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
         const updateData = {
           ...athleteData,
           id: athleteToEdit.id,
           shouldUpdateInscription:
             values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo",
-          emailChanged, // Indicar si cambió el email para reenviar credenciales
+          emailChanged, // Indicar si cambiÃ³ el email para reenviar credenciales
         };
         await onUpdate(updateData);
       } else {
-        // Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
+        // Si estamos en modo matrÃ­cula desde inscripciÃ³n, preservar el ID de la inscripciÃ³n
         if (isEnrollmentMode && athleteToEdit?.id) {
           athleteData.preRegistrationId = athleteToEdit.id;
         }
@@ -898,14 +794,14 @@ const AthleteModal = ({
       setHasDateOfBirth(false);
       onClose();
     } catch (error) {
-      console.error("❌ [AthleteModal] Error en submit:", error);
+      console.error("âŒ [AthleteModal] Error en submit:", error);
       showErrorAlert("Error", error.message);
     }
   };
 
   const handleCreateGuardian = () => {
     console.log(
-      "🟣 [AthleteModal] onCreateGuardian existe?",
+      "ðŸŸ£ [AthleteModal] onCreateGuardian existe?",
       typeof onCreateGuardian,
     );
     if (onCreateGuardian) {
@@ -925,19 +821,47 @@ const AthleteModal = ({
 
     if (!guardian || !onDeleteGuardian) return;
 
+    // Verificar si el acudiente tiene deportistas menores asignados ANTES de mostrar el diÃ¡logo
+    const assignedAthletes = athletes.filter(
+      a => a.acudiente?.toString() === guardian.id?.toString()
+    );
+    
+    const hasMinorAthletes = assignedAthletes.some(athlete => {
+      const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
+      if (!birthDateStr) return false;
+      
+      const today = new Date();
+      const birthDate = new Date(birthDateStr);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age < 18;
+    });
+    
+    // Si tiene deportistas menores, mostrar error y NO permitir eliminar
+    if (hasMinorAthletes) {
+      showErrorAlert(
+        "No se puede eliminar",
+        "Este acudiente estÃ¡ asignado a deportistas menores de edad"
+      );
+      return;
+    }
+
     const isCurrentGuardian = values.acudiente === guardian.id?.toString();
 
     // Mensaje simple y directo
-    const confirmMessage = `¿Eliminar a ${guardian.nombreCompleto}?`;
+    const confirmMessage = `Â¿Eliminar a ${guardian.nombreCompleto}?`;
 
-    // Confirmar eliminación
+    // Confirmar eliminaciÃ³n
     const result = await showDeleteAlert(
-      "Confirmar eliminación",
+      "Confirmar eliminaciÃ³n",
       confirmMessage,
     );
 
     if (result.isConfirmed) {
-      // Intentar eliminar (el backend validará si tiene otros deportistas)
+      // Intentar eliminar
       const success = await onDeleteGuardian(guardian);
 
       if (success) {
@@ -958,12 +882,22 @@ const AthleteModal = ({
           });
 
           setOtroParentesco("");
-
-          // Si es menor de edad, mostrar advertencia
+          
+          // Si es menor de edad, marcar campo como touched y mostrar error
           if (isAcudienteRequired) {
+            setTouched(prev => ({
+              ...prev,
+              acudiente: true
+            }));
+            
+            setErrors(prev => ({
+              ...prev,
+              acudiente: "La deportista es menor de edad. Debe asignar un acudiente antes de continuar."
+            }));
+            
             showErrorAlert(
               "Acudiente requerido",
-              "Debes asignar un nuevo acudiente antes de guardar.",
+              "La deportista es menor de edad. Debes asignar un nuevo acudiente antes de guardar."
             );
           }
         }
@@ -979,7 +913,67 @@ const AthleteModal = ({
     setShowGuardianSearch(false);
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // 🔒 VALIDACIÓN CRÍTICA: Si estamos editando y la deportista es menor de edad
+    // NO permitir cerrar si no tiene acudiente asignado
+    if (isEditing && athleteToEdit) {
+      const birthDateStr = values.birthDate || athleteToEdit.birthDate || athleteToEdit.fechaNacimiento;
+      
+      if (birthDateStr) {
+        const age = calculateAge(birthDateStr);
+        const ageNumber = parseInt(age);
+        
+        // Si es menor de edad
+        if (ageNumber < 18) {
+          const acudienteId = values.acudiente && values.acudiente.toString().trim() 
+            ? parseInt(values.acudiente) 
+            : null;
+          
+          // Si NO tiene acudiente asignado
+          if (!acudienteId) {
+            console.log('❌ [AthleteModal] Intento de cerrar modal con menor de edad sin acudiente');
+            
+            // Mostrar alerta de confirmaciÃ³n
+            const Swal = (await import('sweetalert2')).default;
+            const result = await Swal.fire({
+              title: '⚠️ Acudiente Requerido',
+              html: `
+                <div style="text-align: left;">
+                  <p><strong>La deportista es menor de edad (${ageNumber} años)</strong></p>
+                  <br>
+                  <p>Debe asignar un acudiente antes de cerrar este formulario.</p>
+                  <p style="color: #666; font-size: 0.9em;">Si cierra sin asignar un acudiente, la deportista quedará sin representante legal.</p>
+                </div>
+              `,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Asignar Acudiente',
+              cancelButtonText: 'Cerrar de todos modos',
+              confirmButtonColor: '#8b5cf6',
+              cancelButtonColor: '#ef4444',
+              reverseButtons: true
+            });
+            
+            // Si el usuario decide asignar acudiente, no cerrar el modal
+            if (result.isConfirmed) {
+              console.log('âœ… [AthleteModal] Usuario decidiÃ³ asignar acudiente');
+              // Hacer scroll al campo de acudiente
+              const acudienteField = document.querySelector('[name="acudiente"]');
+              if (acudienteField) {
+                acudienteField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                acudienteField.focus();
+              }
+              return; // NO cerrar el modal
+            }
+            
+            // Si el usuario decide cerrar de todos modos, continuar
+            console.log('⚠️ [AthleteModal] Usuario decidió cerrar sin asignar acudiente');
+          }
+        }
+      }
+    }
+    
+    // Cerrar el modal normalmente
     resetForm();
     setOtroParentesco("");
     setHasDateOfBirth(false);
@@ -991,7 +985,7 @@ const AthleteModal = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -1004,6 +998,7 @@ const AthleteModal = ({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
@@ -1208,13 +1203,7 @@ const AthleteModal = ({
                   error={errors.birthDate}
                   touched={touched.birthDate}
                   required
-                  minAge={5}
-                  maxAge={100}
-                  helperText={
-                    currentAge !== null
-                      ? `Edad: ${currentAge} años ${isMinor ? "(Menor)" : "(Mayor)"}`
-                      : "Ingresa la fecha para determinar si requiere acudiente"
-                  }
+                  helperText=""
                   delay={0.7}
                 />
               </div>
@@ -1290,13 +1279,33 @@ const AthleteModal = ({
                     error={errors.estado}
                     touched={touched.estado}
                     required
-                    helperText={
-                      values.estado === "Activo"
-                        ? "Participa normalmente en actividades"
-                        : "⚠️ Al marcar como Inactivo, la inscripción se suspenderá"
-                    }
+                    helperText=""
                     delay={0.9}
                   />
+                </div>
+              )}
+
+              {/* ── isScholarship (solo en edición) ── */}
+              {isEditing && (
+                <div className="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg col-span-full">
+                  <input
+                    type="checkbox"
+                    id="isScholarship"
+                    name="isScholarship"
+                    checked={values.isScholarship === true}
+                    onChange={(e) =>
+                      handleChange({ target: { name: "isScholarship", value: e.target.checked } })
+                    }
+                    className="mt-0.5 w-4 h-4 text-primary-purple border-gray-300 rounded focus:ring-primary-purple cursor-pointer"
+                  />
+                  <label htmlFor="isScholarship" className="cursor-pointer select-none flex-1">
+                    <span className="block text-sm font-semibold text-purple-800">
+                      🎓 Deportista Becada
+                    </span>
+                    <span className="block text-xs text-purple-600 mt-0.5">
+                      Si está marcada, esta deportista está exenta del pago de mensualidades. El sistema no generará obligaciones de pago para ella.
+                    </span>
+                  </label>
                 </div>
               )}
             </div>
@@ -1385,16 +1394,32 @@ const AthleteModal = ({
                     >
                       {filteredGuardians.length > 0 ? (
                         filteredGuardians.map((guardian) => {
-                          const athleteCount = athletes.filter(
-                            (a) =>
-                              a.acudiente?.toString() ===
-                              guardian.id?.toString(),
-                          ).length;
-                          const canDelete =
-                            athleteCount === 0 ||
-                            (athleteCount === 1 &&
-                              values.acudiente === guardian.id?.toString());
-
+                          // Contar deportistas asignados a este acudiente
+                          const assignedAthletes = athletes.filter(
+                            a => a.acudiente?.toString() === guardian.id?.toString()
+                          );
+                          const athleteCount = assignedAthletes.length;
+                          
+                          // Verificar si alguna deportista asignada es menor de edad
+                          const hasMinorAthletes = assignedAthletes.some(athlete => {
+                            const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
+                            if (!birthDateStr) return false;
+                            
+                            const today = new Date();
+                            const birthDate = new Date(birthDateStr);
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                              age--;
+                            }
+                            return age < 18;
+                          });
+                          
+                          // Solo se puede eliminar si:
+                          // - No tiene deportistas asignados, O
+                          // - Solo tiene deportistas mayores de edad
+                          const canDelete = athleteCount === 0 || !hasMinorAthletes;
+                          
                           return (
                             <div
                               key={guardian.id}
@@ -1425,7 +1450,7 @@ const AthleteModal = ({
                                   } else {
                                     showErrorAlert(
                                       "No se puede eliminar",
-                                      `Este acudiente tiene ${athleteCount} deportistas asignados.`,
+                                      `Este acudiente estÃ¡ asignado a deportistas menores de edad.`
                                     );
                                   }
                                 }}
@@ -1472,21 +1497,45 @@ const AthleteModal = ({
                 <input
                   type="text"
                   value={
-                    values.acudiente
-                      ? guardians.find(
-                          (g) => String(g.id) === String(values.acudiente),
-                        )?.nombreCompleto || "Acudiente seleccionado"
-                      : !hasDateOfBirth
+                    values.acudiente 
+                      ? (() => {
+                          // Buscar en la lista local primero
+                          const localGuardian = guardians.find(g => String(g.id) === String(values.acudiente));
+                          if (localGuardian) return localGuardian.nombreCompleto;
+                          
+                          // Si no estÃ¡ en la lista local, usar el guardian del athleteToEdit
+                          if (athleteToEdit?.guardian) {
+                            return athleteToEdit.guardian.nombreCompleto || 
+                                   `${athleteToEdit.guardian.firstName} ${athleteToEdit.guardian.lastName}`.trim();
+                          }
+                          
+                          return "Acudiente seleccionado";
+                        })()
+                      : !hasDateOfBirth 
                         ? "Primero ingresa la fecha de nacimiento"
                         : "Sin acudiente asignado"
                   }
                   disabled
-                  className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed"
+                  className={`w-full p-3 border rounded-xl bg-gray-50 text-gray-600 cursor-not-allowed ${
+                    isAcudienteRequired && !values.acudiente
+                      ? 'border-red-300 bg-red-50'
+                      : 'border-gray-300'
+                  }`}
                 />
-                {errors.acudiente && touched.acudiente && (
-                  <p className="text-red-500 text-xs mt-1">
-                    {errors.acudiente}
-                  </p>
+                {isAcudienteRequired && !values.acudiente && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 flex items-start gap-2 p-2 bg-red-50 border border-red-200 rounded"
+                  >
+                    <FaExclamationCircle className="text-red-500 mt-0.5 flex-shrink-0" size={14} />
+                    <p className="text-red-600 text-xs">
+                      La deportista es menor de edad. Debes asignar un acudiente antes de guardar.
+                    </p>
+                  </motion.div>
+                )}
+                {errors.acudiente && touched.acudiente && !isAcudienteRequired && (
+                  <p className="text-red-500 text-xs mt-1">{errors.acudiente}</p>
                 )}
               </div>
 
@@ -1505,7 +1554,7 @@ const AthleteModal = ({
                       error={errors.parentesco}
                       touched={touched.parentesco}
                       required
-                      helperText="Relación del acudiente con el deportista"
+                      helperText=""
                     />
                   </div>
 
@@ -1569,7 +1618,7 @@ const AthleteModal = ({
                         {selectedGuardian.identificacion}
                       </div>
                       <div>
-                        <strong>Teléfono:</strong> {selectedGuardian.telefono}
+                          <strong>Teléfono:</strong> {selectedGuardian.telefono}
                       </div>
                       <div>
                         <strong>Correo:</strong> {selectedGuardian.correo}
@@ -1579,6 +1628,23 @@ const AthleteModal = ({
                           <strong>Parentesco:</strong>{" "}
                           <span>{getFinalParentesco()}</span>
                         </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 ml-3">
+                      {!isAcudienteRequired && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleChange({ target: { name: "acudiente", value: "" } });
+                            handleChange({ target: { name: "parentesco", value: "" } });
+                            setOtroParentesco("");
+                          }}
+                          className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors text-xs"
+                          title="Deseleccionar acudiente"
+                        >
+                          <FaTimes size={10} />
+                          Quitar
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1620,7 +1686,7 @@ const AthleteModal = ({
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-blue-800 mb-1 text-sm">
+                    <h4 className="font-medium text-blue-800 mb-1 text-sm">
                     Creación automática
                   </h4>
                   <p className="text-sm text-blue-700">
@@ -1655,7 +1721,7 @@ const AthleteModal = ({
                   </svg>
                 </div>
                 <div>
-                  <h4 className="font-medium text-blue-800 mb-1 text-sm">
+                    <h4 className="font-medium text-blue-800 mb-1 text-sm">
                     Matrícula automática
                   </h4>
                   <p className="text-sm text-blue-700">
@@ -1681,7 +1747,13 @@ const AthleteModal = ({
             <button
               type="button"
               onClick={(event) => handleSubmit(event)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              disabled={isAcudienteRequired && !values.acudiente}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg shadow transition-colors font-medium ${
+                isAcudienteRequired && !values.acudiente
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-primary-blue text-white hover:bg-primary-purple'
+              }`}
+              title={isAcudienteRequired && !values.acudiente ? 'Debes asignar un acudiente antes de guardar' : ''}
             >
               {isEditing
                 ? "Actualizar Deportista"
@@ -1694,6 +1766,9 @@ const AthleteModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AthleteModal;
+

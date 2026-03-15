@@ -158,7 +158,7 @@ const TopDonorsGraphic = ({ donations = [] }) => {
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={reportData}
+            dataProvider={async () => reportData}
             fileName="Top_Donantes"
             columns={reportColumns}
           />

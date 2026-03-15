@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   FaUserTie,
@@ -90,7 +90,7 @@ export default function Home() {
     {
       icon: <FaFutbol />,
       value: 6,
-      text: "Áreas de acción (Deporte, Psicología, Nutrición...)",
+      text: "Areas de acción (Deporte, Psicología, Nutrición...)",
     },
     {
       icon: <FaHandshake />,
@@ -109,7 +109,7 @@ export default function Home() {
       {/* HERO Principal */}
       <HeroMain />
 
-      {/* Sección de Inscripción */}
+      {/* SecciÃ³n de InscripciÃ³n */}
       <InscriptionSection />
 
       {/* Sección de Donación con Video */}

@@ -1,4 +1,4 @@
-// ================================
+﻿// ================================
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
@@ -7,7 +7,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 /* --- Layout general --- */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
-/* --- Páginas principales --- */
+/* --- PÃ¡ginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 
 /* --- Servicios --- */
@@ -19,9 +19,15 @@ import EmployeesSchedule from "../features/dashboard/pages/Admin/pages/Services/
 import Athletes from "../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/Athletes.jsx";
 import SportsCategory from "../features/dashboard/pages/Admin/pages/Athletes/SportsCategory/SportsCategory.jsx";
 import TemporaryPersons from "../features/dashboard/pages/Admin/pages/Services/TemporaryPersons/TemporaryPersons.jsx";
-import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/AssistanceAthletes/AssistanceAthletes.jsx";
+import AssistanceAthletes from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AssistanceAthletes.jsx";
 import AttendanceHistory from "../features/dashboard/pages/Admin/pages/Athletes/Assistanceathletes/AttendanceHistory.jsx";
 import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enrollments/Enrollments.jsx";
+
+/* --- Pagos --- */
+import PaymentsManagement from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsManagementNew";
+import PaymentSettings from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentSettings";
+import AthletePayments from "../features/dashboard/pages/Admin/pages/Athletes/Payments/AthletePayments";
+import PaymentsTest from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsTest";
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -55,7 +61,7 @@ const PrivateRoutes = () => {
         {/* --- Principal --- */}
         <Route index element={<DashboardHome />} />
 
-        {/* --- Dashboard específico (requiere permisos) --- */}
+        {/* --- Dashboard especÃ­fico (requiere permisos) --- */}
         <Route
           path="analytics"
           element={
@@ -65,7 +71,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Citas --- */}
+        {/* --- MÃ³dulo: Citas --- */}
         <Route
           path="appointment-management"
           element={
@@ -75,7 +81,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Deportistas --- */}
+        {/* --- MÃ³dulo: Deportistas --- */}
         <Route
           path="athletes-section"
           element={
@@ -101,7 +107,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Asistencia Deportistas --- */}
+        {/* --- MÃ³dulo: Asistencia Deportistas --- */}
         <Route
           path="athletes-assistance"
           element={
@@ -119,12 +125,46 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Matrículas --- */}
+        {/* --- MÃ³dulo: MatrÃ­culas --- */}
         <Route
           path="enrollments"
           element={
             <PrivateRoute module="enrollments" action="Ver">
               <Enrollments />
+            </PrivateRoute>
+          }
+        />
+
+        {/* --- Módulo: Gestión de Pagos --- */}
+        <Route
+          path="payments-management"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Ver">
+              <PaymentsManagement />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="payment-settings"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Editar">
+              <PaymentSettings />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="athlete-payments"
+          element={
+            <PrivateRoute module="myPayments" action="Ver">
+              <AthletePayments />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="payments-test"
+          element={
+            <PrivateRoute module="paymentsManagement" action="Ver">
+              <PaymentsTest />
             </PrivateRoute>
           }
         />
@@ -147,7 +187,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Usuarios y Roles --- */}
+        {/* --- MÃ³dulo: Usuarios y Roles --- */}
         <Route
           path="users"
           element={
@@ -165,7 +205,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Eventos --- */}
+        {/* --- MÃ³dulo: Eventos --- */}
         <Route
           path="events"
           element={
@@ -183,17 +223,17 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Materiales --- */}
+        {/* --- MÃ³dulo: Materiales --- */}
         <Route
           path="materials"
           element={
-            <PrivateRoute module="sportsEquipment" action="Ver">
+            <PrivateRoute module="materials" action="Ver">
               <MaterialsCatalog />
             </PrivateRoute>
           }
         />
 
-        {/* --- Módulo: Categorías de Materiales --- */}
+        {/* --- MÃ³dulo: CategorÃ­as de Materiales --- */}
         <Route
           path="material-categories"
           element={
@@ -203,7 +243,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Movimientos de Materiales --- */}
+        {/* --- MÃ³dulo: Movimientos de Materiales --- */}
         <Route
           path="materials-movements"
           element={
@@ -213,7 +253,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Donaciones --- */}
+        {/* --- MÃ³dulo: Donaciones --- */}
         <Route
           path="donations"
           element={
@@ -239,7 +279,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Proveedores --- */}
+        {/* --- MÃ³dulo: Proveedores --- */}
         <Route
           path="providers"
           element={
@@ -254,3 +294,4 @@ const PrivateRoutes = () => {
 };
 
 export default PrivateRoutes;
+

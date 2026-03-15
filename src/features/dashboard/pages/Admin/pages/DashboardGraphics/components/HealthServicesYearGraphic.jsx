@@ -171,7 +171,7 @@ const HealthServicesYearGraphic = () => {
             ))}
           </select>
           <ReportButton
-            data={reportData}
+            dataProvider={async () => reportData}
             fileName={`Servicios_Salud_${selectedYear}`}
             columns={reportColumns}
           />

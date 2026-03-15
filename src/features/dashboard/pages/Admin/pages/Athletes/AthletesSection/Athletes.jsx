@@ -10,6 +10,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput.jsx"
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 
 import AthletesService from "./services/AthletesService.js";
 import GuardiansService from "./services/GuardiansService.js";
@@ -28,6 +29,11 @@ const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
 
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    AthletesService.getAllForReport.bind(AthletesService)
+  );
+
   // Usar el hook personalizado
   const {
     athletes,
@@ -35,6 +41,7 @@ const Athletes = () => {
     loading,
     pagination,
     referenceData,
+    loadGuardians,
     createAthlete,
     updateAthlete,
     deleteAthlete,
@@ -51,6 +58,7 @@ const Athletes = () => {
   const [modalMode, setModalMode] = useState("create");
   const [athleteToEdit, setAthleteToEdit] = useState(null);
   const [athleteToView, setAthleteToView] = useState(null);
+  const [requiresGuardianChange, setRequiresGuardianChange] = useState(false); // Nuevo: indica que DEBE cambiar acudiente
 
   // Estados de acudientes
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -69,17 +77,30 @@ const Athletes = () => {
     return guardians.find((g) => String(g.id) === String(guardianId));
   };
 
-  // Cargar deportistas cuando cambia la página o el término de búsqueda
+  // Cargar deportistas cuando cambia el término de búsqueda
   useEffect(() => {
-    const loadData = async () => {
-      await refresh({
-        page: pagination.page,
+    let timeoutId;
+    
+    const loadData = () => {
+      refresh({
+        page: 1, // Resetear a página 1 en búsquedas
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm, // Enviar búsqueda al backend
+        search: searchTerm,
       });
     };
-    loadData();
-  }, [pagination.page, searchTerm]);
+    
+    // Debounce para búsqueda
+    if (searchTerm) {
+      timeoutId = setTimeout(loadData, 300);
+    } else {
+      // Cargar inmediatamente cuando se limpia la búsqueda
+      loadData();
+    }
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [searchTerm, refresh]); // Incluir refresh como dependencia
 
   // Usar datos del servidor directamente (ya vienen filtrados y paginados)
   const totalRows = pagination.total;
@@ -142,7 +163,7 @@ const Athletes = () => {
     if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
       return { 
         canDelete: false, 
-        reason: "Tiene matrícula vigente. No se puede eliminar hasta que venza." 
+        reason: "Tiene matrícula vigente" 
       };
     }
     
@@ -292,6 +313,34 @@ const Athletes = () => {
       return showErrorAlert("Error", "Acudiente no válido");
     }
 
+    // ✅ VALIDAR SI TIENE DEPORTISTAS MENORES ASIGNADOS ANTES DE ELIMINAR
+    const assignedAthletes = athletes.filter(
+      a => a.acudiente?.toString() === guardian.id?.toString()
+    );
+    
+    const hasMinorAthletes = assignedAthletes.some(athlete => {
+      const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
+      if (!birthDateStr) return false;
+      
+      const today = new Date();
+      const birthDate = new Date(birthDateStr);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age < 18;
+    });
+    
+    // Si tiene deportistas menores, NO permitir eliminar
+    if (hasMinorAthletes) {
+      showErrorAlert(
+        "No se puede eliminar",
+        "Este acudiente está asignado a deportistas menores de edad"
+      );
+      return false;
+    }
+
     const success = await deleteGuardian(guardian.id);
 
     if (success) {
@@ -316,6 +365,8 @@ const Athletes = () => {
 
       setCurrentAthleteId(null);
     }
+    
+    return success;
   };
 
   // Nuevo: Gestionar acudiente desde la fila del deportista
@@ -324,7 +375,9 @@ const Athletes = () => {
 
     // Si el deportista tiene acudiente, mostrarlo
     if (athlete.acudiente) {
-      const guardian = getGuardianById(athlete.acudiente);
+      // Priorizar el guardian que viene del backend
+      const guardian = athlete.guardian || getGuardianById(athlete.acudiente);
+      
       if (guardian) {
         setCurrentAthleteId(athlete.id); // Guardar el ID del deportista actual
         setGuardianToView(guardian);
@@ -351,8 +404,40 @@ const Athletes = () => {
     }
 
     try {
-      const response =
-        await GuardiansService.removeGuardianFromAthlete(athleteId);
+      // Si es menor de edad, abrir directamente el modal de edición para cambiar acudiente
+      if (needsNewGuardian) {
+        // Cerrar el modal del acudiente
+        setIsGuardianViewOpen(false);
+        setGuardianToView(null);
+        
+        // Buscar el deportista
+        const athlete = athletes.find((a) => a.id === athleteId);
+        
+        if (athlete) {
+          // Activar modo de cambio obligatorio
+          setRequiresGuardianChange(true);
+          
+          // Abrir modal de edición del deportista
+          setTimeout(() => {
+            setAthleteToEdit(athlete);
+            setModalMode("edit");
+            setIsModalOpen(true);
+            
+            setTimeout(() => {
+              showSuccessAlert(
+                "Cambiar acudiente",
+                "Seleccione el nuevo acudiente para esta deportista.",
+              );
+            }, 300);
+          }, 400);
+        }
+        
+        setCurrentAthleteId(null);
+        return;
+      }
+
+      // Si NO es menor de edad, proceder con la remoción normal
+      const response = await GuardiansService.removeGuardianFromAthlete(athleteId);
 
       if (response.success) {
         // Refrescar datos primero
@@ -362,39 +447,31 @@ const Athletes = () => {
         setIsGuardianViewOpen(false);
         setGuardianToView(null);
 
-        // Si necesita nuevo acudiente, abrir modal de deportista para editar
-        if (needsNewGuardian) {
-          setTimeout(async () => {
-            const updatedAthletes = athletes;
-            const athlete = updatedAthletes.find((a) => a.id === athleteId);
-
-            if (athlete) {
-              setAthleteToEdit(athlete);
-              setModalMode("edit");
-              setIsModalOpen(true);
-
-              setTimeout(() => {
-                showSuccessAlert(
-                  "Asignar nuevo acudiente",
-                  "El acudiente fue removido. Por favor, asigne un nuevo acudiente a esta deportista menor de edad.",
-                );
-              }, 300);
-            }
-          }, 400);
-        } else {
-          showSuccessAlert(
-            "Acudiente removido",
-            "El acudiente fue removido correctamente de esta deportista.",
-          );
-        }
+        showSuccessAlert(
+          "Acudiente removido",
+          "El acudiente fue removido correctamente de esta deportista.",
+        );
 
         setCurrentAthleteId(null);
       } else {
+        // El backend rechazó la operación
         throw new Error(response.error || "Error removiendo acudiente");
       }
     } catch (err) {
       console.error("Error removiendo acudiente:", err);
-      showErrorAlert("Error", err.message || "No se pudo remover el acudiente");
+      
+      // Mostrar el error del backend al usuario
+      let errorMessage = err.message || "No se pudo remover el acudiente";
+      
+      // Si es un error 500, dar más contexto
+      if (errorMessage.includes("Error interno del servidor")) {
+        errorMessage = "Ocurrió un error al validar la deportista. Por favor, verifica que tenga fecha de nacimiento registrada y contacta al administrador del sistema.";
+      }
+      
+      showErrorAlert(
+        "No se puede remover el acudiente", 
+        errorMessage
+      );
     }
   };
 
@@ -408,13 +485,7 @@ const Athletes = () => {
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  changePage(1);
-                }
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Buscar deportista..."
             />
           </div>
@@ -423,7 +494,8 @@ const Athletes = () => {
             <PermissionGuard module="athletesSection" action="Ver">
               <ReportButton
                 data={athletes.map((athlete) => {
-                  const guardian = getGuardianById(athlete.acudiente);
+                  // Priorizar el guardian que viene del backend
+                  const guardian = athlete.guardian || getGuardianById(athlete.acudiente);
                   const firstName = athlete.firstName || athlete.nombres || "";
                   const lastName = athlete.lastName || athlete.apellidos || "";
                   const email = athlete.email || athlete.correo || "";
@@ -563,11 +635,16 @@ const Athletes = () => {
         <>
           <div className="w-full bg-white rounded-lg">
             <Table
+              serverPagination={true}
+              totalRows={pagination.total}
+              currentPage={pagination.page}
+              onPageChange={changePage}
+              rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
               thead={{
                 titles: [
                   "Nombre Completo",
+                  "Identificación",
                   "Categoría",
-                  "Teléfono",
                   "Acudiente",
                 ],
                 state: true,
@@ -575,25 +652,32 @@ const Athletes = () => {
               }}
               tbody={{
                 data: paginatedData.map((a) => {
-                  const guardian = getGuardianById(a.acudiente);
+                  // Priorizar el guardian que viene del backend
+                  const guardian = a.guardian || getGuardianById(a.acudiente);
 
                   // Mapear campos del backend al frontend
-                  const firstName = a.firstName || a.nombres || "";
-                  const lastName = a.lastName || a.apellidos || "";
+                  const firstName = a.firstName || "";
+                  const middleName = a.middleName || "";
+                  const lastName = a.lastName || "";
+                  const secondLastName = a.secondLastName || "";
+                  
+                  const nombreCompleto = [firstName, middleName, lastName, secondLastName]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim() || "Sin nombre";
 
                   return {
                     ...a,
-                    nombreCompleto:
-                      `${firstName} ${lastName}`.trim() || "Sin nombre",
-                    telefono: a.phoneNumber || a.telefono || "Sin teléfono",
-                    acudienteNombre:
-                      guardian?.nombreCompleto || "Sin acudiente",
+                    nombreCompleto,
+                    identificacion: a.identification || a.numeroDocumento || "Sin identificación",
+                    acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
+                    categoria: a.categoria || "Sin categoría",
                   };
                 }),
                 dataPropertys: [
                   "nombreCompleto",
+                  "identificacion",
                   "categoria",
-                  "telefono",
                   "acudienteNombre",
                 ],
                 state: true,
@@ -665,6 +749,7 @@ const Athletes = () => {
         mode={modalMode}
         newlyCreatedGuardianId={newlyCreatedGuardianId}
         referenceData={referenceData}
+        loadGuardians={loadGuardians}
         onCreateGuardian={() => {
           setGuardianToEdit(null);
           setGuardianModalMode("create");
@@ -684,7 +769,9 @@ const Athletes = () => {
         onClose={() => setIsViewModalOpen(false)}
         athlete={athleteToView}
         guardian={
-          athleteToView ? getGuardianById(athleteToView.acudiente) : null
+          athleteToView 
+            ? (athleteToView.guardian || getGuardianById(athleteToView.acudiente))
+            : null
         }
         referenceData={referenceData}
       />

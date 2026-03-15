@@ -4,7 +4,7 @@ import { IoClose } from "react-icons/io5";
 import { FaHandHoldingHeart } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import useDonorSponsorForm from "../hooks/useDonorSponsorForm";
-import { showErrorAlert } from "../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { createPortal } from "react-dom";
 
 const DonorSponsorModal = ({

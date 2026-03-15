@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
-import { showErrorAlert } from "../../shared/utils/alerts";
+import { showErrorAlert } from "../../shared/utils/alerts.js";
 import { exportToExcel } from "../../shared/utils/Excel";
 
 const ReportButton = ({
   data,
+  dataProvider, // Nueva prop para función que retorna datos (puede ser async)
   fileName = "Reporte",
   columns,
   buttonClassName = "",
@@ -60,18 +61,28 @@ const ReportButton = ({
     }, obj);
   };
 
-  const validateData = () => {
-    if (!data || data.length === 0) {
-      showErrorAlert("Error", "No hay datos para generar el reporte");
-      return false;
+  // Función para obtener los datos (síncrona o asíncrona)
+  const getData = async () => {
+    if (dataProvider && typeof dataProvider === 'function') {
+      return await dataProvider();
     }
-    return true;
+    return data || [];
   };
 
-  const confirmLargeExport = () => {
-    if (data.length > 500) {
+  const validateData = async () => {
+    const reportData = await getData();
+    if (!reportData || reportData.length === 0) {
+      showErrorAlert("Error", "No hay datos para generar el reporte");
+      return null;
+    }
+    return reportData;
+  };
+
+  const confirmLargeExport = async () => {
+    const reportData = await getData();
+    if (reportData.length > 500) {
       return window.confirm(
-        `⚠️ Tienes ${data.length} registros. \n¿Deseas continuar con la exportación?`
+        `⚠️ Tienes ${reportData.length} registros. \n¿Deseas continuar con la exportación?`
       );
     }
     return true;
@@ -79,15 +90,17 @@ const ReportButton = ({
 
   const generatePDF = async () => {
     setOpen(false);
-    
-    if (!validateData() || !confirmLargeExport()) return;
-
     setIsGenerating(true);
     
     try {
+      const reportData = await validateData();
+      if (!reportData) return;
+
+      if (!(await confirmLargeExport())) return;
+
       const doc = new jsPDF({ orientation: 'landscape' });
-      const rowsPerPage = 40;
-      const totalPages = Math.ceil(data.length / rowsPerPage);
+      const rowsPerPage = 35; // Reducir filas por página para mejor legibilidad
+      const totalPages = Math.ceil(reportData.length / rowsPerPage);
       const generationDate = new Date().toLocaleDateString();
 
       const addHeader = (pageNumber) => {
@@ -99,7 +112,7 @@ const ReportButton = ({
         doc.setFont(undefined, 'normal');
         doc.text(`Generado: ${generationDate}`, 15, 22);
         doc.text(`Página ${pageNumber} de ${totalPages}`, 15, 29);
-        doc.text(`Total de registros: ${data.length}`, 15, 36);
+        doc.text(`Total de registros: ${reportData.length}`, 15, 36);
       };
 
       const generatePage = (pageNumber) => {
@@ -107,8 +120,8 @@ const ReportButton = ({
         addHeader(pageNumber);
 
         const startIndex = (pageNumber - 1) * rowsPerPage;
-        const endIndex = Math.min(startIndex + rowsPerPage, data.length);
-        const pageData = data.slice(startIndex, endIndex);
+        const endIndex = Math.min(startIndex + rowsPerPage, reportData.length);
+        const pageData = reportData.slice(startIndex, endIndex);
 
         const tableColumn = normalizedColumns.map(col => col.header);
         const tableRows = pageData.map(item => 
@@ -116,28 +129,75 @@ const ReportButton = ({
             const value = col.accessor.includes('.') 
               ? getNestedValue(item, col.accessor)
               : item[col.accessor];
-            return value ? value.toString().substring(0, 30) : '';
+            // Limitar texto pero no tan agresivamente
+            return value ? value.toString().substring(0, 50) : '';
           })
         );
 
         autoTable(doc, {
           head: [tableColumn],
           body: tableRows,
-          startY: 40,
+          startY: 42,
+          margin: { left: 10, right: 10 },
           styles: { 
-            fontSize: 8, 
-            cellPadding: 3,
+            fontSize: 7, // Reducir un poco más el tamaño de fuente
+            cellPadding: 2,
             lineColor: [200, 200, 200],
-            lineWidth: 0.3
+            lineWidth: 0.3,
+            overflow: 'linebreak', // Permitir salto de línea
+            cellWidth: 'wrap', // Ajustar ancho de celda
+            valign: 'top' // Alinear texto arriba
           },
           headStyles: { 
             fillColor: [79, 70, 229], 
             textColor: 255,
             fontStyle: 'bold',
-            fontSize: 9
+            fontSize: 8,
+            cellPadding: 3
           },
           alternateRowStyles: {
             fillColor: [245, 245, 245]
+          },
+          columnStyles: (() => {
+            // Configuración dinámica basada en el número de columnas
+            const numColumns = normalizedColumns.length;
+            const styles = {};
+            
+            if (numColumns <= 6) {
+              // Para pocas columnas, usar anchos generosos
+              const baseWidth = 40;
+              for (let i = 0; i < numColumns; i++) {
+                styles[i] = { cellWidth: baseWidth };
+              }
+            } else if (numColumns <= 10) {
+              // Para columnas medianas, usar anchos moderados
+              const baseWidth = 25;
+              for (let i = 0; i < numColumns; i++) {
+                styles[i] = { cellWidth: baseWidth };
+              }
+            } else {
+              // Para muchas columnas, usar anchos pequeños
+              const baseWidth = 18;
+              for (let i = 0; i < numColumns; i++) {
+                styles[i] = { cellWidth: baseWidth };
+              }
+            }
+            
+            return styles;
+          })(),
+          // Configuración automática de ancho de columnas
+          tableWidth: 'auto',
+          // Permitir que las celdas se expandan verticalmente
+          minCellHeight: 8,
+          // Configurar el comportamiento del texto largo
+          didParseCell: function (data) {
+            // Ajustar altura mínima para celdas con mucho texto
+            if (data.cell.text && data.cell.text.length > 0) {
+              const textLength = data.cell.text.join('').length;
+              if (textLength > 20) {
+                data.cell.minCellHeight = 12;
+              }
+            }
           }
         });
       };
@@ -163,14 +223,16 @@ const ReportButton = ({
 
   const generateExcel = async () => {
     setOpen(false);
-    
-    if (!validateData()) return;
-
     setIsGenerating(true);
     
     try {
+      const reportData = await validateData();
+      if (!reportData) return;
+
+      if (!(await confirmLargeExport())) return;
+
       // Usar las columnas normalizadas
-      await exportToExcel(data, normalizedColumns, fileName);
+      await exportToExcel(reportData, normalizedColumns, fileName);
     } catch (error) {
       console.error("Error generando Excel:", error);
       showErrorAlert("Error", "No se pudo generar el Excel");

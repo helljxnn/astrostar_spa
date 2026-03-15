@@ -7,12 +7,13 @@ import GuardiansService from "../../services/GuardiansService"; // Importar el s
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Table from "../../../../../../../shared/components/Table/table";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
-import GuardianModal from "./components/GuardianModal";
+} from "../../../../../../../shared/utils/alerts.js";
+import GuardianModal from "./GuardianModal";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const Guardians = () => {
@@ -26,6 +27,25 @@ const Guardians = () => {
   );
   const [totalRows, setTotalRows] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Hook para obtener datos completos de reporte
+  const { getReportData } = useReportDataWithService(GuardiansService.getAllForReport);
+
+  // Función para obtener datos completos del reporte con filtros aplicados
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Aplicar los mismos filtros que la vista
+      (data) => data.map((g) => ({
+        tipoDocumento: g.documentType || g.tipoDocumento || "N/A",
+        identificacion: g.identification || g.identificacion || "N/A",
+        nombreCompleto: g.nombreCompleto || `${g.firstName || ""} ${g.lastName || ""}`.trim() || "N/A",
+        correo: g.email || g.correo || "N/A",
+        telefono: g.phone || g.telefono || "N/A",
+        edad: g.age || g.edad || "N/A",
+        estado: g.status || g.estado || "N/A",
+      }))
+    );
+  };
 
   // Cargar acudientes desde el backend
   useEffect(() => {
@@ -188,7 +208,7 @@ const Guardians = () => {
           {/* Botones */}
           <div className="flex items-center gap-3">
             <ReportButton
-              data={displayData}
+              dataProvider={getCompleteReportData}
               fileName="Reporte_Acudientes"
               columns={reportColumns}
             />
@@ -217,6 +237,11 @@ const Guardians = () => {
       ) : displayTotalRows > 0 ? (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: [
                 "Nombre Completo",
@@ -277,9 +302,10 @@ const Guardians = () => {
           setModalMode("create");
         }}
         onSave={handleSave}
-        onDelete={handleDelete}
-        guardian={editingGuardian}
-        mode={modalMode}
+onUpdate={handleSave}
+onDelete={handleDelete}
+guardianToEdit={editingGuardian}
+mode={modalMode}
       />
     </div>
   );

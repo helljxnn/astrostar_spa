@@ -10,7 +10,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import {
   showDeleteAlert,
   showErrorAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import { useEvents } from "./hooks/useEvents";
 
 // Importaciones para permisos
@@ -164,16 +164,7 @@ const Event = () => {
           label: type.name,
         })) || [],
     },
-    {
-      id: "category",
-      label: "Categoría",
-      field: "category",
-      options:
-        referenceData.eventCategories?.map((category) => ({
-          value: category.name,
-          label: category.name,
-        })) || [],
-    },
+
   ];
 
   return (
@@ -269,7 +260,7 @@ const Event = () => {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filters.map((filter) => (
               <div key={filter.id} className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">

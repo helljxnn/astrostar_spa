@@ -10,7 +10,7 @@ import html2canvas from "html2canvas";
 import {
   showErrorAlert,
   showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 const EmployeeScheduleReportGenerator = ({
   data = [],

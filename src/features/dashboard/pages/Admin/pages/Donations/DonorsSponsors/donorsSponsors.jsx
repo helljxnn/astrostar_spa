@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
-import { showConfirmAlert } from "../../../../../../../shared/utils/alerts";
+import { showConfirmAlert } from "../../../../../../../shared/utils/alerts.js";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import DonorSponsorModal from "./components/DonorSponsorModal";
 import DonorSponsorViewModal from "./components/DonorSponsorViewModal";
@@ -136,6 +136,28 @@ function DonorsSponsors() {
     }));
   }, [donorsSponsors]);
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { 
+        search: searchTerm,
+        status: statusFilter || undefined 
+      }, // Filtros actuales
+      (donors) => donors.map((donor) => ({ // Mapper de datos
+        identificacion: donor.identificacion || "",
+        nombre: donor.nombre || "",
+        tipo: donor.tipo || "",
+        tipoPersona: donor.tipoPersona || "",
+        telefono: donor.telefono || "",
+        correo: donor.correo || "",
+        direccion: donor.direccion || "",
+        ciudad: donor.ciudad || "",
+        pais: donor.pais || "",
+        estado: donor.estado || "",
+      }))
+    );
+  };
+
   const tableData = useMemo(() => {
     return (donorsSponsors || []).map((donor) => {
       const isJuridica = donor.tipoPersona === "Juridica";
@@ -176,7 +198,7 @@ function DonorsSponsors() {
 
           <div className="flex items-center gap-3">
             <ReportButton
-              data={reportData}
+              dataProvider={getCompleteReportData}
               fileName="Donantes_y_Patrocinadores"
               columns={[
                 { header: "Identificacion", accessor: "identificacion" },
@@ -273,7 +295,11 @@ function DonorsSponsors() {
 
       <div>
         <Table
+          serverPagination={true}
+          currentPage={pagination.page}
+          totalRows={pagination.total || 0}
           rowsPerPage={pagination.limit || 5}
+          onPageChange={(page) => loadDonorsSponsors({ page })}
           thead={{
             titles: [
               "Nombre",

@@ -7,7 +7,7 @@ import RoleDetailModal from "./components/RoleDetailModal";
 import { useRoles } from "./hooks/useRoles";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
-import { showErrorAlert } from "../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
 const Roles = () => {
@@ -151,6 +151,11 @@ const Roles = () => {
       {/* Tabla */}
       <div className="w-full">
         <Table
+          serverPagination={true}
+          currentPage={currentPage}
+          totalRows={totalRows}
+          rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+          onPageChange={(page) => setCurrentPage(page)}
           thead={{
             titles: ["Nombre", "Descripción"],
             state: false,

@@ -7,7 +7,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 import temporaryPersonsService from "../services/temporaryPersonsService";
 
 // Hook de validación personalizado para personas temporales
@@ -123,24 +123,36 @@ const temporaryPersonValidationRules = {
     if (!validTypes.includes(value)) return "Tipo de persona no válido";
     return "";
   },
-  email: (value) => {
-    if (!value || !value.trim()) return "El correo electrónico es requerido";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      return "El formato del email no es válido";
+  email: (value, allValues) => {
+    // Email requerido solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "El correo electrónico es requerido para entrenadores";
     }
-    if (value.length > 150) {
-      return "El email no puede exceder 150 caracteres";
+    // Si se proporciona, validar formato
+    if (value && value.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        return "El formato del email no es válido";
+      }
+      if (value.length > 150) {
+        return "El email no puede exceder 150 caracteres";
+      }
     }
     return "";
   },
-  phone: (value) => {
-    if (!value || !value.trim()) return "El número telefónico es requerido";
-    const cleanPhone = value.replace(/[\s\-\+\(\)]/g, "");
-    if (!/^[0-9]+$/.test(cleanPhone)) {
-      return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
+  phone: (value, allValues) => {
+    // Teléfono requerido solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "El número telefónico es requerido para entrenadores";
     }
-    if (cleanPhone.length < 7 || cleanPhone.length > 14) {
-      return "El teléfono debe tener entre 7 y 14 dígitos";
+    // Si se proporciona, validar formato
+    if (value && value.trim()) {
+      const cleanPhone = value.replace(/[\s\-\+\(\)]/g, "");
+      if (!/^[0-9]+$/.test(cleanPhone)) {
+        return "El teléfono solo puede contener números, espacios, guiones, paréntesis y el signo +";
+      }
+      if (cleanPhone.length < 7 || cleanPhone.length > 14) {
+        return "El teléfono debe tener entre 7 y 14 dígitos";
+      }
     }
     return "";
   },
@@ -149,23 +161,33 @@ const temporaryPersonValidationRules = {
     // La validación de longitud y formato se maneja automáticamente en DocumentField según el tipo de documento
     return "";
   },
-  documentTypeId: (value) => {
+  documentTypeId: (value, allValues) => {
     if (!value || (typeof value === "string" && !value.trim()))
       return "El tipo de documento es requerido";
     const numValue = parseInt(value);
     if (isNaN(numValue) || numValue < 1) {
       return "Tipo de documento no válido";
     }
+    
+    // Validar que entrenadores no puedan usar Tarjeta de Identidad (ID 2)
+    if (allValues.personType === "Entrenador" && numValue === 2) {
+      return "Los entrenadores no pueden usar Tarjeta de Identidad ya que deben ser mayores de edad";
+    }
+    
     return "";
   },
-  address: (value) => {
-    if (!value || !value.trim()) return "La dirección es requerida";
-    if (value.length > 200) {
+  address: (value, allValues) => {
+    // Dirección requerida solo para Entrenador
+    if (allValues.personType === "Entrenador") {
+      if (!value || !value.trim()) return "La dirección es requerida para entrenadores";
+    }
+    // Si se proporciona, validar longitud
+    if (value && value.length > 200) {
       return "La dirección no puede exceder 200 caracteres";
     }
     return "";
   },
-  birthDate: (value) => {
+  birthDate: (value, allValues) => {
     if (!value || !value.trim()) return "La fecha de nacimiento es requerida";
     const birthDate = new Date(value);
     if (isNaN(birthDate.getTime())) {
@@ -193,6 +215,34 @@ const temporaryPersonValidationRules = {
     if (birthDate > today) {
       return "La fecha de nacimiento no puede ser futura";
     }
+
+    // Calcular edad
+    const age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate()) ? age - 1 : age;
+
+    // Validar que entrenadores sean mayores de edad (18 años)
+    if (allValues.personType === "Entrenador") {
+      if (actualAge < 18) {
+        return "Los entrenadores deben ser mayores de 18 años";
+      }
+    }
+
+    // Validar edad según tipo de documento
+    if (allValues.documentTypeId) {
+      const docTypeId = parseInt(allValues.documentTypeId);
+      // Asumiendo que documentTypeId 1 = CC (Cédula) y 2 = TI (Tarjeta de Identidad)
+      if (docTypeId === 1) { // Cédula de Ciudadanía
+        if (actualAge < 18) {
+          return "Para cédula de ciudadanía la persona debe ser mayor de edad (18 años)";
+        }
+      } else if (docTypeId === 2) { // Tarjeta de Identidad
+        if (actualAge >= 18) {
+          return "Para tarjeta de identidad la persona debe ser menor de edad (menor a 18 años)";
+        }
+      }
+    }
+
     return "";
   },
   team: (value, allValues) => {
@@ -286,8 +336,17 @@ const TemporaryPersonModal = ({
       handleChange(name, value);
       handleChange("age", age);
     } else if (name === "personType") {
-      // Al cambiar el tipo de persona, solo actualizar el valor
+      // Al cambiar el tipo de persona, validar el tipo de documento actual
       handleChange(name, value);
+      
+      // Si es entrenador y tiene seleccionada Tarjeta de Identidad (ID 2), limpiar la selección
+      if (value === "Entrenador" && formData.documentTypeId === "2") {
+        handleChange("documentTypeId", "");
+        setErrors((prev) => ({ 
+          ...prev, 
+          documentTypeId: "Los entrenadores no pueden usar Tarjeta de Identidad ya que deben ser mayores de edad" 
+        }));
+      }
     } else {
       handleChange(name, value);
     }
@@ -541,6 +600,25 @@ const TemporaryPersonModal = ({
         {/* Body */}
         <div className="modal-body flex-1 overflow-y-auto p-3 relative">
           <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
+            {/* Tipo de Persona - PRIMERO */}
+            <FormField
+              label="Tipo de Persona"
+              name="personType"
+              type="select"
+              placeholder="Seleccionar tipo"
+              required={true}
+              options={[
+                { value: "Deportista", label: "Deportista" },
+                { value: "Entrenador", label: "Entrenador" },
+              ]}
+              value={formData.personType}
+              error={errors.personType}
+              touched={touched.personType}
+              onChange={handleCustomChange}
+              onBlur={handleBlur}
+              delay={0.05}
+            />
+
             {/* Tipo Documento */}
             <FormField
               label="Tipo de Documento"
@@ -548,10 +626,18 @@ const TemporaryPersonModal = ({
               type="select"
               placeholder="Seleccionar tipo de documento"
               required={true}
-              options={referenceData.documentTypes.map((type) => ({
-                value: type.id,
-                label: type.name,
-              }))}
+              options={referenceData.documentTypes
+                .filter((type) => {
+                  // Si es entrenador, excluir Tarjeta de Identidad (ID 2)
+                  if (formData.personType === "Entrenador" && type.id === 2) {
+                    return false;
+                  }
+                  return true;
+                })
+                .map((type) => ({
+                  value: type.id,
+                  label: type.name,
+                }))}
               value={formData.documentTypeId}
               error={errors.documentTypeId}
               touched={touched.documentTypeId}
@@ -637,13 +723,13 @@ const TemporaryPersonModal = ({
               delay={0.37}
             />
 
-            {/* Correo */}
+            {/* Correo - Requerido solo para Entrenador */}
             <FormField
               label="Correo Electrónico"
               name="email"
               type="email"
               placeholder="correo@ejemplo.com"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.email}
               error={errors.email}
               touched={touched.email}
@@ -652,13 +738,13 @@ const TemporaryPersonModal = ({
               delay={0.4}
             />
 
-            {/* Teléfono */}
+            {/* Teléfono - Requerido solo para Entrenador */}
             <FormField
               label="Número Telefónico"
               name="phone"
               type="text"
               placeholder="300 123 4567"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.phone}
               error={errors.phone}
               touched={touched.phone}
@@ -668,13 +754,13 @@ const TemporaryPersonModal = ({
               delay={0.42}
             />
 
-            {/* Dirección */}
+            {/* Dirección - Requerido solo para Entrenador */}
             <FormField
               label="Dirección"
               name="address"
               type="text"
               placeholder="Dirección de residencia"
-              required={true}
+              required={formData.personType === "Entrenador"}
               value={formData.address}
               error={errors.address}
               touched={touched.address}
@@ -729,9 +815,8 @@ const TemporaryPersonModal = ({
               />
             )}
 
-            {/* Categoría - Solo para Deportista y Entrenador */}
-            {(formData.personType === "Deportista" ||
-              formData.personType === "Entrenador") && (
+            {/* Categoría - Solo para Deportista */}
+            {formData.personType === "Deportista" && (
               <FormField
                 label="Categoría"
                 name="category"
@@ -745,25 +830,6 @@ const TemporaryPersonModal = ({
                 delay={0.55}
               />
             )}
-
-            {/* Tipo de Persona */}
-            <FormField
-              label="Tipo de Persona"
-              name="personType"
-              type="select"
-              placeholder="Seleccionar tipo"
-              required={true}
-              options={[
-                { value: "Deportista", label: "Deportista" },
-                { value: "Entrenador", label: "Entrenador" },
-              ]}
-              value={formData.personType}
-              error={errors.personType}
-              touched={touched.personType}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              delay={0.57}
-            />
 
             {/* Estado - Solo visible en modo editar */}
             {mode === "edit" && (

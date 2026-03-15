@@ -5,7 +5,7 @@ import GuardiansService from "../../AthletesSection/services/GuardiansService";
 import {
   showSuccessAlert,
   showErrorAlert,
-} from "../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../shared/utils/alerts.js";
 
 export const useEnrollments = () => {
   const [athletes, setAthletes] = useState([]);
@@ -18,6 +18,7 @@ export const useEnrollments = () => {
     total: 0,
     totalPages: 0,
   });
+  const [searchFilters, setSearchFilters] = useState({ search: "", estado: "" });
   const [referenceData, setReferenceData] = useState({
     documentTypes: [],
     guardianDocumentTypes: [],
@@ -64,57 +65,63 @@ export const useEnrollments = () => {
     }
   }, []);
 
-  // Cargar datos iniciales
-  const loadData = useCallback(async (page = 1, silent = false) => {
+  // Cargar datos (búsqueda por nombre completo y documento en backend) - OPTIMIZADO
+  const loadData = useCallback(async (page = 1, silent = false, filtersOverride = null) => {
+    const f = filtersOverride ?? searchFilters;
     try {
-      if (!silent) {
-        setLoading(true);
+      if (!silent) setLoading(true);
+
+      // Procesar matrículas vencidas solo una vez por sesión
+      if (!silent && !sessionStorage.getItem('expiredEnrollmentsProcessed')) {
+        try {
+          await EnrollmentsService.processExpiredEnrollments();
+          sessionStorage.setItem('expiredEnrollmentsProcessed', 'true');
+        } catch (error) {
+          console.error("Error procesando matrículas vencidas:", error);
+        }
       }
 
-      // Procesar matrículas vencidas automáticamente
-      try {
-        await EnrollmentsService.processExpiredEnrollments();
-      } catch (error) {
-        console.error("Error procesando matrículas vencidas:", error);
-        // No mostramos error al usuario, es un proceso silencioso
-      }
-
-      // Cargar deportistas con matrículas
       const athletesResult = await EnrollmentsService.getAll({
+        page,
         pageSize: pagination.pageSize,
+        search: (f.search || "").trim() || undefined,
+        estado: f.estado || undefined,
       });
 
-      // Cargar todas las inscripciones (Pendiente, Procesada, Rechazada)
-      const inscriptionsResult = await InscriptionsService.getAll({
-        // Sin filtro de estado - muestra todas las inscripciones
-      });
-
-      // NO cargamos todos los acudientes aquí
-      // Se cargarán bajo demanda cuando el usuario busque
+      // Cargar inscripciones solo si no es silent
+      let inscriptionsResult = { success: true, data: [] };
+      if (!silent) {
+        inscriptionsResult = await InscriptionsService.getAll({
+          // Sin filtro de estado - muestra todas las inscripciones
+        });
+      }
 
       if (athletesResult.success) {
-console.log('📊 [useEnrollments] Datos:', athletesResult.data);
-        setAthletes(athletesResult.data || []);
+        const list = athletesResult.data || [];
+        const total = athletesResult.total ?? list.length;
+        setAthletes(list);
         setPagination((prev) => ({
           ...prev,
           page,
-          total: athletesResult.data?.length || 0,
-          totalPages: Math.ceil(
-            (athletesResult.data?.length || 0) / prev.pageSize
-          ),
+          total,
+          totalPages: Math.max(1, Math.ceil(total / prev.pageSize)),
+          hasNext: page < Math.ceil(total / prev.pageSize),
+          hasPrev: page > 1,
         }));
       } else {
-}
+        setAthletes([]);
+      }
 
       if (inscriptionsResult.success) {
-// Crear un Set con los documentos de deportistas ya matriculados
+        // Crear un Set con los documentos de deportistas ya matriculados
         const enrolledDocuments = new Set(
           (athletesResult.data || []).map(athlete => {
             const doc = athlete.identification || athlete.numeroDocumento;
-return doc;
+            return doc;
           }).filter(Boolean)
         );
-// Filtrar solo las pendientes Y que NO tengan deportista matriculado
+        
+        // Filtrar solo las pendientes Y que NO tengan deportista matriculado
         const pendingInscriptions = (inscriptionsResult.data || []).filter(
           (inscription) => {
             const estado = (inscription.status || inscription.estado || "").toUpperCase();
@@ -122,13 +129,10 @@ return doc;
             const isPending = estado === "PENDIENTE" || estado === "PENDING";
             const documento = inscription.identification || inscription.numeroDocumento;
             const isAlreadyEnrolled = enrolledDocuments.has(documento);
-            
-            const fullName = `${inscription.firstName || ""} ${inscription.middleName || ""} ${inscription.lastName || ""} ${inscription.secondLastName || ""}`.replace(/\s+/g, ' ').trim();
-// Solo mostrar si está pendiente Y NO está matriculado
+            // Solo mostrar si está pendiente Y NO está matriculado
             return isPending && !isAlreadyEnrolled;
           }
         );
-console.log('📋 [useEnrollments] IDs de inscripciones pendientes:', pendingInscriptions.map(i => i.id));
         setInscriptions(pendingInscriptions);
       } else {
         setInscriptions([]);
@@ -139,39 +143,33 @@ console.log('📋 [useEnrollments] IDs de inscripciones pendientes:', pendingIns
         showErrorAlert("Error", "No se pudieron cargar los datos");
       }
     } finally {
-      if (!silent) {
-        setLoading(false);
-      }
+      if (!silent) setLoading(false);
     }
   }, [pagination.pageSize]);
 
-  // Buscar acudientes bajo demanda
+  // Buscar acudientes bajo demanda - OPTIMIZADO
   const searchGuardians = async (searchTerm) => {
     try {
-// Si el searchTerm está vacío, cargar todos los acudientes (útil después de crear uno nuevo)
+      // Si el searchTerm está vacío, cargar solo algunos acudientes recientes
       if (!searchTerm || searchTerm.length === 0) {
-const result = await GuardiansService.getAll();
-if (result.success) {
-setGuardians(result.data || []);
-        } else {
-setGuardians([]);
+        const result = await GuardiansService.getGuardians({ limit: 20 }); // Reducir de getAll a 20
+        if (result.success) {
+          setGuardians(result.data || []);
         }
         return;
       }
 
-      // Si tiene menos de 2 caracteres pero no está vacío, no buscar
-      if (searchTerm.length < 2) {
-        setGuardians([]);
-        return;
-      }
-const result = await GuardiansService.searchGuardians(searchTerm, 20);
-if (result.success) {
-setGuardians(result.data || []);
+      // Si hay término de búsqueda, usar búsqueda específica
+      if (searchTerm.length >= 2) {
+        const result = await GuardiansService.searchGuardians(searchTerm, 15);
+        if (result.success) {
+          setGuardians(result.data || []);
+        }
       } else {
-setGuardians([]);
+        setGuardians([]);
       }
     } catch (error) {
-      console.error("❌ [useEnrollments] Error searching guardians:", error);
+      console.error("Error buscando acudientes:", error);
       setGuardians([]);
     }
   };
@@ -179,38 +177,34 @@ setGuardians([]);
   useEffect(() => {
     loadReferenceData();
     loadData();
-    // Cargar todos los acudientes al inicio
-    searchGuardians("");
+    // NO cargar todos los acudientes al inicio - se cargarán bajo demanda cuando el usuario busque
   }, []);
 
   // Crear matrícula desde pre-inscripción
   const createEnrollment = async (enrollmentData, preRegistrationId) => {
     try {
-console.log("📝 [createEnrollment] enrollmentData:", enrollmentData);
-console.log("📝 [createEnrollment] preRegistrationId (en data):", enrollmentData.preRegistrationId);
-      
       // Usar el preRegistrationId que viene en los datos si existe, sino usar el parámetro
       const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
-console.log("📝 [createEnrollment] Tipo de preRegistrationId:", typeof finalPreRegistrationId);
       
-      // 🚀 ELIMINACIÓN INMEDIATA: Remover la inscripción del estado local ANTES de crear la matrícula
-      if (finalPreRegistrationId) {
-setInscriptions(prevInscriptions => {
-          const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
-return filtered;
-        });
-      }
+      // ⏳ NO ELIMINAR TODAVÍA - Esperar confirmación del backend
       
       // Pasar el preRegistrationId al servicio
       const result = await EnrollmentsService.createEnrollment(enrollmentData, finalPreRegistrationId);
 
       if (result.success) {
-console.log("📧 [createEnrollment] Email enviado:", result.emailSent);
-showSuccessAlert(
+        // ✅ AHORA SÍ: Eliminar la inscripción del estado local DESPUÉS del éxito
+        if (finalPreRegistrationId) {
+          setInscriptions(prevInscriptions => {
+            const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
+            return filtered;
+          });
+        }
+        
+        showSuccessAlert(
           "Matrícula creada",
           "La deportista ha sido matriculada exitosamente"
         );
-await loadData(pagination.page);
+        await loadData(pagination.page);
         
         // Retornar toda la información incluyendo credenciales
         return {
@@ -219,24 +213,24 @@ await loadData(pagination.page);
           temporaryPassword: result.temporaryPassword
         };
       } else {
-        console.error("❌ [createEnrollment] Error al crear matrícula:", result.error);
+        // ❌ NO ELIMINAR - La inscripción permanece en el estado
         
-        // Si falló, restaurar la inscripción en el estado local
-        if (finalPreRegistrationId) {
-await loadData(pagination.page);
+        // Mensaje más específico para errores de timeout
+        let errorTitle = "Error al crear matrícula";
+        let errorMessage = result.error || "No se pudo crear la matrícula";
+        
+        if (result.error && result.error.includes('servidor está procesando')) {
+          errorTitle = "Servidor ocupado";
+          errorMessage = result.error + "\n\n💡 Tip: Espera unos segundos e intenta nuevamente.";
         }
         
-        showErrorAlert("Error", result.error || "No se pudo crear la matrícula");
+        showErrorAlert(errorTitle, errorMessage);
         return null;
       }
     } catch (error) {
       console.error("❌ [createEnrollment] Excepción:", error);
       
-      // Si falló, restaurar la inscripción en el estado local
-      const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
-      if (finalPreRegistrationId) {
-await loadData(pagination.page);
-      }
+      // ❌ NO ELIMINAR - La inscripción permanece en el estado
       
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
@@ -334,15 +328,60 @@ showSuccessAlert(
     }
   };
 
-  // Cambiar página
   const changePage = (newPage) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
     loadData(newPage);
   };
 
-  // Refrescar datos
   const refresh = (silent = false) => {
     loadData(pagination.page, silent);
   };
+
+  /** Aplica búsqueda y filtros (llamar con debounce). search y estado se envían al backend. */
+  const applyFilters = useCallback(
+    (search = "", estado = "") => {
+      const next = {
+        search: String(search ?? "").trim(),
+        estado: String(estado ?? "").trim(),
+      };
+
+      // Evitar recargas innecesarias si los filtros no cambiaron realmente
+      setSearchFilters((prev) => {
+        if (prev.search === next.search && prev.estado === next.estado) {
+          return prev;
+        }
+        return next;
+      });
+
+      loadData(1, false, next);
+    },
+    [loadData]
+  );
+
+  // Agregar inscripción al estado local instantáneamente (sin esperar al backend)
+  const addInscriptionToState = useCallback((newInscription) => {
+    setInscriptions(prev => {
+      // Verificar que no exista ya (por si acaso)
+      const exists = prev.some(i => i.id === newInscription.id || i.identification === newInscription.identification);
+      if (exists) {
+        return prev;
+      }
+      return [newInscription, ...prev];
+    });
+  }, []);
+
+  // Actualizar email de inscripción en el estado local instantáneamente
+  const updateInscriptionEmailInState = useCallback((identification, newEmail) => {
+    setInscriptions(prev => {
+      const updated = prev.map(inscription => {
+        if (inscription.identification === identification) {
+          return { ...inscription, email: newEmail };
+        }
+        return inscription;
+      });
+      return updated;
+    });
+  }, []);
 
   return {
     athletes,
@@ -351,12 +390,16 @@ showSuccessAlert(
     loading,
     pagination,
     referenceData,
+    searchFilters,
     createEnrollment,
     updateEnrollment,
     deleteAthlete,
     rejectInscription,
     changePage,
     refresh,
+    applyFilters,
     searchGuardians,
+    addInscriptionToState,
+    updateInscriptionEmailInState,
   };
 };

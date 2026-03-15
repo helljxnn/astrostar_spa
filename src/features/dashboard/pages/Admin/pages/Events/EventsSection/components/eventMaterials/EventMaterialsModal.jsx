@@ -4,7 +4,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import Modal from "../../../../../../../../../shared/components/Modal/Modal.jsx";
 import DeliverableMaterialsTab from "./DeliverableMaterialsTab";
 import UsableMaterialsTab from "./UsableMaterialsTab";
@@ -20,6 +20,10 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
   const [pendingDeliverables, setPendingDeliverables] = useState([]);
   const [pendingUsables, setPendingUsables] = useState([]);
   const [hasChanges, setHasChanges] = useState(false);
+
+  const isReadOnly = ["en_curso", "finalizado", "in_progress", "finished", "completed"].includes(
+    (event?.estado || event?.status || "").toLowerCase(),
+  );
 
   useEffect(() => {
     if (isOpen && event?.id) {
@@ -273,7 +277,7 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
           )}
         </div>
 
-        {/* Footer - Siempre visible */}
+        {/* Footer */}
         <div className="flex-shrink-0 border-t border-gray-200 p-3">
           <div className="flex justify-between items-center">
             <button
@@ -281,23 +285,25 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
               className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
               disabled={loading}
             >
-              Cancelar
+              Cerrar
             </button>
-            <div className="flex items-center gap-3">
-              {hasChanges && (
-                <p className="text-sm text-gray-600">
-                  {pendingDeliverables.length + pendingUsables.length}{" "}
-                  material(es) pendiente(s)
-                </p>
-              )}
-              <button
-                onClick={handleSaveAll}
-                disabled={!hasChanges || loading}
-                className="px-6 py-2 bg-primary-purple text-white rounded-lg hover:bg-primary-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-              >
-                {loading ? "Guardando..." : "Guardar"}
-              </button>
-            </div>
+            {!isReadOnly && (
+              <div className="flex items-center gap-3">
+                {hasChanges && (
+                  <p className="text-sm text-gray-600">
+                    {pendingDeliverables.length + pendingUsables.length}{" "}
+                    material(es) pendiente(s)
+                  </p>
+                )}
+                <button
+                  onClick={handleSaveAll}
+                  disabled={!hasChanges || loading}
+                  className="px-6 py-2 bg-primary-purple text-white rounded-lg hover:bg-primary-blue transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {loading ? "Guardando..." : "Guardar"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

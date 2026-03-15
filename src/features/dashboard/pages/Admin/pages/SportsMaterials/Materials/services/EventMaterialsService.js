@@ -467,10 +467,6 @@ class EventMaterialsService {
               backendData.material.unidadMedida ||
               backendData.material.unidad_medida ||
               "unidad",
-            esReutilizable:
-              backendData.material.esReutilizable ||
-              backendData.material.es_reutilizable ||
-              false,
           }
         : null,
     };

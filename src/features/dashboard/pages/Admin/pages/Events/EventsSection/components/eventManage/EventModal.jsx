@@ -7,7 +7,7 @@ import {
   showSuccessAlert,
   showConfirmAlert,
   showErrorAlert,
-} from "../../../../../../../../../shared/utils/alerts";
+} from "../../../../../../../../../shared/utils/alerts.js";
 import CloudinaryUpload from "./CloudinaryUpload";
 import { MultiSelect } from "./MultiSelect";
 

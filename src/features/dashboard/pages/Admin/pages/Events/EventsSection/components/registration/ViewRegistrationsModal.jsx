@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
-import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts";
+import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts.js";
 import ViewAthletesModal from "./ViewAthletesModal";
 
 const ViewRegistrationsModal = ({

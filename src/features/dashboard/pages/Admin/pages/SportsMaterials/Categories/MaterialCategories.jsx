@@ -11,7 +11,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
-} from "../../../../../../../shared/utils/alerts";
+} from "../../../../../../../shared/utils/alerts.js";
 import categoriesService from "../shared/services/CategoriesService";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
@@ -219,17 +219,19 @@ const MaterialCategories = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar categoría"
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Buscar categoría"
+            />
+          </div>
 
           <PermissionGuard module="materialCategories" action="Crear">
             <button
@@ -244,6 +246,11 @@ const MaterialCategories = () => {
 
       {/* Tabla */}
       <Table
+        serverPagination={true}
+        currentPage={currentPage}
+        totalRows={totalRows}
+        rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+        onPageChange={(page) => setCurrentPage(page)}
         thead={{
           titles: ["Nombre", "Descripción"],
           state: true,

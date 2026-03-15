@@ -147,7 +147,7 @@ const EventsGraphic = () => {
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={dashboardData}
+            dataProvider={async () => dashboardData}
             fileName="Reporte_Eventos"
             columns={reportColumns}
           />

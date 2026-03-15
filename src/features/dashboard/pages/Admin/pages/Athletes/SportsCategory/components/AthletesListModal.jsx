@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { FaCalendarAlt, FaEnvelope, FaIdCard, FaSearch, FaTimes, FaUser } from "react-icons/fa";
 import { Modal } from "../../../../../../../../shared/components/Modal";
+import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
 const getFirstValue = (...values) => {
   for (const value of values) {
@@ -15,18 +16,7 @@ const getFirstValue = (...values) => {
   return "";
 };
 
-const calculateAge = (birthDate) => {
-  if (!birthDate) return null;
-  const birth = new Date(birthDate);
-  if (Number.isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age;
-};
+// ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
 const normalizeCategory = (category) => {
   const nombre = getFirstValue(

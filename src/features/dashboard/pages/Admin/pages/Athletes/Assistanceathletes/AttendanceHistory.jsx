@@ -7,7 +7,8 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import DateRangePickerCalendar from "./components/DateRangePickerCalendar";
 import assistanceathletesService from "./services/AssistanceathletesService";
-import { showWarningAlert } from "../../../../../../../shared/utils/Alerts";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import { showWarningAlert } from "../../../../../../../shared/utils/alerts.js";
 
 const DEFAULT_ROWS_PER_PAGE = 10;
 const ALL_CATEGORIES = "Todas";
@@ -47,6 +48,9 @@ export default function AssistanceHistory() {
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
 
+  // Hook para obtener datos completos de reporte
+  const { getReportData } = useReportDataWithService(assistanceathletesService.getAllForReport);
+
   const [historyRows, setHistoryRows] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -65,6 +69,27 @@ export default function AssistanceHistory() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailHistory, setDetailHistory] = useState([]);
   const [detailAthlete, setDetailAthlete] = useState(null);
+
+  // Función para obtener datos completos del reporte con filtros aplicados
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { 
+        startDate: range.startDate || startDate,
+        endDate: range.endDate || endDate,
+        search: searchTerm,
+        categoria: categoryFilter !== ALL_CATEGORIES ? categoryFilter : undefined
+      },
+      (data) => data.map((item) => ({
+        documento: item.documento,
+        nombre: item.nombre,
+        categoria: item.categoria || "Sin categoría",
+        present: item.present,
+        absent: item.absent,
+        total: item.total,
+        percentDisplay: `${item.percent}%`,
+      }))
+    );
+  };
 
   const rangeLabel = useMemo(() => {
     const rangeStart = range.startDate || startDate;
@@ -303,7 +328,7 @@ export default function AssistanceHistory() {
         </div>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <ReportButton
-            data={reportData}
+            dataProvider={getCompleteReportData}
             fileName={reportFileName}
             columns={reportColumns}
           />
@@ -493,4 +518,5 @@ export default function AssistanceHistory() {
     </div>
   );
 }
+
 

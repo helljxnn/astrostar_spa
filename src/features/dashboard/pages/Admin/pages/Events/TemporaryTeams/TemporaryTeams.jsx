@@ -312,7 +312,7 @@ const TemporaryTeams = () => {
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Equipos Temporales
+          Equipos
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
@@ -348,6 +348,11 @@ const TemporaryTeams = () => {
       {formattedData.length > 0 ? (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={pagination.limit}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: [
                 "Nombre",
@@ -376,7 +381,6 @@ const TemporaryTeams = () => {
                   "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
             }}
-            rowsPerPage={1000}
             onEdit={
               hasPermission("temporaryTeams", "Editar") ? handleEdit : null
             }
@@ -407,11 +411,11 @@ const TemporaryTeams = () => {
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
             <p>
-              No se encontraron equipos temporales que coincidan con "
+              No se encontraron equipos que coincidan con "
               {searchTerm}"
             </p>
           ) : (
-            <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
+            <p>No hay equipos registrados. ¡Crea el primero!</p>
           )}
         </div>
       )}
