@@ -12,7 +12,6 @@ class MaterialsService {
       search = "",
       categoriaId = "",
       estado = "",
-      esReutilizable = null,
       stockType = null,
     } = params;
 
@@ -28,10 +27,6 @@ class MaterialsService {
 
     if (estado) {
       queryParams.estado = estado;
-    }
-
-    if (esReutilizable !== null) {
-      queryParams.esReutilizable = esReutilizable;
     }
 
     if (stockType) {
@@ -384,8 +379,6 @@ class MaterialsService {
         backendData.stockTotal ||
         backendData.stock_total ||
         stockFundacion + stockEventos,
-      esReutilizable:
-        backendData.esReutilizable || backendData.es_reutilizable || false,
       estado: backendData.estado || backendData.status || "Activo",
       hasMovements:
         backendData.hasMovements || backendData.has_movements || false,
