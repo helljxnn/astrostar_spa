@@ -39,19 +39,13 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
       
       if (mode === 'pending') {
         // Solo pagos pendientes
-        console.log('🔍 Fetching pending payments...');
         response = await paymentsService.getPendingPayments(paginationParams);
-        console.log('📊 Pending payments response:', response);
       } else if (mode === 'monthly') {
         // Gestión mensual
-        console.log('🔍 Fetching monthly management with filters:', paginationParams);
         response = await paymentsService.getMonthlyPaymentsManagement(paginationParams);
-        console.log('📊 Monthly management response:', response);
       } else {
         // Todos los pagos con filtros
-        console.log('🔍 Fetching all payments with filters:', paginationParams);
         response = await paymentsService.getAllPayments(paginationParams);
-        console.log('📊 All payments response:', response);
       }
       
       // Validación defensiva de la respuesta
@@ -64,7 +58,6 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         const paymentsData = Array.isArray(response.data) ? response.data : [];
         setPayments(paymentsData);
         setTotalRows(response.pagination?.total || paymentsData.length);
-        console.log(`✅ ${mode} payments loaded:`, paymentsData.length, 'payments');
       } else {
         throw new Error(response.message || 'Error en la respuesta del servidor');
       }
@@ -91,12 +84,39 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     }
   }, [initialParams.search]);
 
+  useEffect(() => {
+    const nextFilters = {
+      status: initialParams.status || '',
+      type: initialParams.type || '',
+      dateFrom: initialParams.dateFrom || '',
+      dateTo: initialParams.dateTo || ''
+    };
+
+    setFilters((prev) => {
+      if (
+        prev.status === nextFilters.status &&
+        prev.type === nextFilters.type &&
+        prev.dateFrom === nextFilters.dateFrom &&
+        prev.dateTo === nextFilters.dateTo
+      ) {
+        return prev;
+      }
+      return nextFilters;
+    });
+  }, [initialParams.status, initialParams.type, initialParams.dateFrom, initialParams.dateTo]);
+
   // Resetear a página 1 cuando cambia la búsqueda - PATRÓN ESTÁNDAR
   useEffect(() => {
     if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE && searchTerm) {
       setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
     }
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE) {
+      setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
+    }
+  }, [filters.status, filters.type, filters.dateFrom, filters.dateTo]);
 
   // Función para cambiar página - SIMPLE Y DIRECTA
   const handlePageChange = (newPage) => {

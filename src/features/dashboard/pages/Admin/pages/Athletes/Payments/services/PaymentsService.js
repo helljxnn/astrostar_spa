@@ -1,12 +1,4 @@
 import apiClient from "../../../../../../../../shared/services/apiClient";
-import { formatCurrency } from "../utils/currencyUtils";
-import { 
-  BUSINESS_CONSTANTS, 
-  calculateLateFee, 
-  calculateLateDays,
-  getObligationLateFee,
-  isObligationSuspended 
-} from "../constants/paymentConstants";
 
 /**
  * Servicio para gestión de pagos - Implementación completa
@@ -32,11 +24,37 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/financial-status`);
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404 || error.message?.includes('Route not found')) {
-        console.warn('🔧 Endpoint no implementado, usando datos mock funcionales');
-        return this.getMockAthleteFinancialStatus(athleteId);
+      console.error('❌ Error fetching athlete financial status:', error);
+      throw new Error('No se pudo obtener el estado financiero del atleta');
+    }
+  }
+
+  /**
+   * Obtener historial de pagos del atleta (solo aprobados)
+   * GET /api/payments/athletes/:athleteId/history
+   */
+  async getAthletePaymentHistory(athleteId) {
+    try {
+      // Intentar endpoint específico primero
+      const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/history`);
+      return response.data;
+    } catch (error) {
+      
+      // Fallback: obtener todos los pagos y filtrar los aprobados
+      try {
+        const allPaymentsResponse = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/payments`);
+        const allPayments = allPaymentsResponse.data?.payments || allPaymentsResponse.data || [];
+        
+        // Filtrar solo pagos aprobados (incluir TODOS los tipos: MONTHLY, ENROLLMENT_INITIAL, ENROLLMENT_RENEWAL)
+        const approvedPayments = allPayments.filter(payment => 
+          payment.status === 'APPROVED' || payment.status === 'approved'
+        );
+        
+        return { data: approvedPayments };
+      } catch (fallbackError) {
+        console.error('❌ Error en fallback de historial:', fallbackError);
+        throw new Error('No se pudo obtener el historial de pagos del atleta');
       }
-      throw error;
     }
   }
 
@@ -49,11 +67,8 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/access-check`);
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404 || error.message?.includes('Route not found')) {
-        console.warn('🔧 Endpoint no implementado, usando datos mock funcionales');
-        return this.getMockAthleteAccess(athleteId);
-      }
-      throw error;
+      console.error('❌ Error checking athlete access:', error);
+      throw new Error('No se pudo verificar el acceso del atleta');
     }
   }
 
@@ -200,13 +215,14 @@ class PaymentsService {
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       if (params.search) queryParams.append('search', params.search);
+      if (params.type) queryParams.append('type', params.type);
+      if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+      if (params.dateTo) queryParams.append('dateTo', params.dateTo);
 
       const queryString = queryParams.toString();
       const url = queryString ? `${this.endpoint}/pending?${queryString}` : `${this.endpoint}/pending`;
       
-      console.log('🔍 Calling API endpoint (pending):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for pending payments:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -236,9 +252,7 @@ class PaymentsService {
       queryParams.append('type', 'MONTHLY');
       const url = `${this.endpoint}/all?${queryParams.toString()}`;
       
-      console.log('🔍 Calling API endpoint (monthly simulation):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for monthly management:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -271,9 +285,7 @@ class PaymentsService {
       const queryString = queryParams.toString();
       const url = queryString ? `${this.endpoint}/all?${queryString}` : `${this.endpoint}/all`;
       
-      console.log('🔍 Calling API endpoint (all):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for all payments:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -344,7 +356,7 @@ class PaymentsService {
   async rejectPayment(paymentId, reason) {
     try {
       const response = await apiClient.patch(`${this.endpoint}/${paymentId}/reject`, {
-        reason: reason || 'Comprobante no válido'
+        rejectionReason: reason || 'Comprobante no válido'
       });
       return {
         success: true,
@@ -504,10 +516,10 @@ class PaymentsService {
    */
   getPaymentStatusIcon(status) {
     const iconMap = {
-      'PENDING': '⏳',
-      'APPROVED': '✅',
-      'REJECTED': '❌',
-      null: '📤'
+      'PENDING': '',
+      'APPROVED': '',
+      'REJECTED': '',
+      null: ''
     };
     return iconMap[status] || '❓';
   }
@@ -530,12 +542,12 @@ class PaymentsService {
    */
   getPaymentTypeIcon(type) {
     const iconMap = {
-      'MONTHLY': '📅',
-      'ENROLLMENT_RENEWAL': '🎓',
-      'UNIFORM': '👕',
-      'EVENT': '🏆'
+      'MONTHLY': '',
+      'ENROLLMENT_RENEWAL': '',
+      'UNIFORM': '',
+      'EVENT': ''
     };
-    return iconMap[type] || '💰';
+    return iconMap[type] || '';
   }
 
   /**
@@ -576,132 +588,6 @@ class PaymentsService {
   }
 
   // ============================================================================
-  // MÉTODOS MOCK FUNCIONALES - HASTA QUE EL BACKEND IMPLEMENTE LOS ENDPOINTS
-  // ============================================================================
-
-  /**
-   * Mock funcional para estado financiero del atleta
-   * Simula datos reales basados en el athleteId
-   */
-  getMockAthleteFinancialStatus(athleteId) {
-    // Generar datos mock basados en el ID para consistencia
-    const seed = parseInt(athleteId) || 111;
-    const hasDebt = seed % 3 === 0; // 33% tienen deuda
-    const needsRenewal = seed % 4 === 0; // 25% necesitan renovación
-    const hasInitialEnrollment = seed % 5 === 0; // 20% tienen matrícula inicial pendiente
-
-    const currentDate = new Date();
-    const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-
-    // Generar obligaciones mensuales mock
-    const monthlyDebts = [];
-    if (hasDebt) {
-      // Crear 1-3 mensualidades pendientes
-      const debtCount = (seed % 3) + 1;
-      for (let i = 0; i < debtCount; i++) {
-        const dueDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 15);
-        const daysLate = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
-        
-        monthlyDebts.push({
-          id: `mock-debt-${athleteId}-${i}`,
-          type: 'MONTHLY',
-          baseAmount: 30000,
-          lateFeeAmount: daysLate > 5 ? (daysLate - 5) * 2000 : 0,
-          totalAmount: 30000 + (daysLate > 5 ? (daysLate - 5) * 2000 : 0),
-          dueStart: new Date(dueDate.getFullYear(), dueDate.getMonth(), 1).toISOString(),
-          dueEnd: dueDate.toISOString(),
-          period: dueDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
-          daysLate: Math.max(0, daysLate),
-          paymentStatus: null,
-          receiptUrl: null,
-          uploadedAt: null
-        });
-      }
-    }
-
-    // Estado de matrícula mock
-    let enrollmentStatus = null;
-    if (hasInitialEnrollment) {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_INITIAL',
-        estado: 'Pending_Payment',
-        fechaInicio: null,
-        fechaVencimiento: nextMonth.toISOString(),
-        needsRenewal: false,
-        isInitial: true,
-        baseAmount: 50000,
-        paymentStatus: null,
-        receiptUrl: null
-      };
-    } else if (needsRenewal) {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_RENEWAL',
-        estado: 'Vencida',
-        fechaInicio: new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1).toISOString(),
-        fechaVencimiento: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString(),
-        needsRenewal: true,
-        isInitial: false,
-        baseAmount: 45000,
-        paymentStatus: null,
-        receiptUrl: null
-      };
-    } else {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_ACTIVE',
-        estado: 'Vigente',
-        fechaInicio: new Date(currentDate.getFullYear(), 0, 15).toISOString(),
-        fechaVencimiento: new Date(currentDate.getFullYear() + 1, 0, 15).toISOString(),
-        needsRenewal: false,
-        isInitial: false,
-        baseAmount: 0,
-        paymentStatus: 'APPROVED',
-        receiptUrl: null
-      };
-    }
-
-    // Calcular totales
-    const totalMonthlyAmount = monthlyDebts.reduce((sum, debt) => sum + debt.baseAmount, 0);
-    const totalLateFeeAmount = monthlyDebts.reduce((sum, debt) => sum + debt.lateFeeAmount, 0);
-    const totalAmount = totalMonthlyAmount + totalLateFeeAmount + (enrollmentStatus?.baseAmount || 0);
-    const maxDaysLate = Math.max(0, ...monthlyDebts.map(debt => debt.daysLate));
-
-    return {
-      enrollment: enrollmentStatus,
-      allMonthlyDebts: monthlyDebts,
-      totalDebt: {
-        monthlyAmount: totalMonthlyAmount,
-        lateFeeAmount: totalLateFeeAmount,
-        totalAmount: totalAmount,
-        maxDaysLate: maxDaysLate,
-        obligationsCount: monthlyDebts.length + (enrollmentStatus?.baseAmount > 0 ? 1 : 0)
-      },
-      lastUpdated: currentDate.toISOString(),
-      athleteId: athleteId
-    };
-  }
-
-  /**
-   * Mock funcional para verificación de acceso del atleta
-   */
-  getMockAthleteAccess(athleteId) {
-    const seed = parseInt(athleteId) || 111;
-    const isRestricted = seed % 7 === 0; // 14% tienen restricciones
-
-    return {
-      athleteId: athleteId,
-      canAccess: !isRestricted,
-      restricted: isRestricted,
-      reason: isRestricted ? 'Mora excesiva en pagos mensuales' : null,
-      restrictionType: isRestricted ? 'PAYMENT_OVERDUE' : null,
-      lastChecked: new Date().toISOString()
-    };
-  }
-
-  // ============================================================================
   // UTILIDADES DE NORMALIZACIÓN
   // ============================================================================
 
@@ -730,7 +616,6 @@ class PaymentsService {
       hasPrev: pagination.hasPrev || false
     };
     
-    console.log('✅ Normalized response:', data.length, 'items, pagination:', normalizedPagination);
     
     return {
       success: true,

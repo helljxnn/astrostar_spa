@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   FaUserTie,
@@ -69,7 +69,7 @@ export default function Home() {
     {
       icon: <FaFutbol />,
       value: 6,
-      text: "Ãreas de acciÃ³n (Deporte, PsicologÃ­a, NutriciÃ³n...)",
+      text: "Áreas de acción (Deporte, Psicología, Nutrición...)",
     },
     {
       icon: <FaHandshake />,
@@ -92,13 +92,13 @@ export default function Home() {
         <HeroCarousel />
       </section>
 
-      {/* SecciÃ³n de InscripciÃ³n */}
+      {/* Sección de Inscripción */}
       <InscriptionSection />
 
       {/* Fundadora */}
       <section className="bg-white py-24 relative overflow-hidden">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center px-6">
-          {/* Imagen con animaciÃ³n */}
+          {/* Imagen con animación */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, rotate: -3 }}
             whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
@@ -159,7 +159,7 @@ export default function Home() {
                   Nacida en <strong>Copacabana, Antioquia</strong>, futbolista
                   profesional en la
                   <strong> Real Sociedad</strong> e integrante de la{" "}
-                  <strong>SelecciÃ³n Colombia</strong>.
+                  <strong>Selección Colombia</strong>.
                 </p>
               </motion.div>
 
@@ -172,7 +172,7 @@ export default function Home() {
               >
                 <FaGlobe className="text-[#b595ff] text-xl mt-1" />
                 <p>
-                  Ha jugado en clubes de <strong>EspaÃ±a</strong>, disputando
+                  Ha jugado en clubes de <strong>España</strong>, disputando
                   Champions y Supercopa.
                 </p>
               </motion.div>
@@ -186,7 +186,7 @@ export default function Home() {
               >
                 <FaHandshake className="text-[#b595ff] text-xl mt-1" />
                 <p>
-                  IniciÃ³ en <strong>Formas Ãntimas</strong> y en selecciones
+                  Inició en <strong>Formas Íntimas</strong> y en selecciones
                   Antioquia y Colombia.
                 </p>
               </motion.div>
@@ -200,8 +200,8 @@ export default function Home() {
               >
                 <FaUserTie className="text-[#b595ff] text-xl mt-1" />
                 <p>
-                  Fundadora de la <strong>FundaciÃ³n Manuela Vanegas</strong>{" "}
-                  para impulsar el fÃºtbol femenino. ðŸ’œâš½
+                  Fundadora de la <strong>Fundación Manuela Vanegas</strong>{" "}
+                  para impulsar el fútbol femenino. 💖⚽
                 </p>
               </motion.div>
             </div>
@@ -209,13 +209,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* EstadÃ­sticas */}
+      {/* Estadísticas */}
       <section className="bg-white text-black py-16">
         <motion.h2
           {...statAnim.header}
           className="text-4xl font-bold text-center mb-12"
         >
-          Nuestras EstadÃ­sticas
+          Nuestras Estadísticas
         </motion.h2>
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 text-center font-montserrat">
           {stats.map((stat, i) => (
@@ -244,19 +244,19 @@ export default function Home() {
           <motion.div {...donationImgAnim.img} className="flex justify-center">
             <img
               src={donacionImg}
-              alt="DonaciÃ³n fÃºtbol"
+              alt="Donación fútbol"
               className="rounded-2xl shadow-xl w-[500px] h-[400px] object-cover"
             />
           </motion.div>
 
           <motion.div {...donationTextAnim} className="text-center">
             <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
-              Â¡Haz la diferencia hoy!
+              ¡Haz la diferencia hoy!
             </h2>
             <p className="text-lg text-gray-600 mb-8">
-              Con tu donaciÃ³n apoyas la educaciÃ³n, nutriciÃ³n y desarrollo
-              integral de niÃ±as futbolistas. Cada aporte les brinda un futuro
-              lleno de oportunidades y esperanza. ðŸ’œâš½
+              Con tu donación apoyas la educación, nutrición y desarrollo
+              integral de niñas futbolistas. Cada aporte les brinda un futuro
+              lleno de oportunidades y esperanza. 💖⚽
             </p>
             <motion.a
               href="https://wa.me/573245721322"

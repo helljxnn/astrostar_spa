@@ -1,4 +1,4 @@
-﻿import { GallerySection } from "../AreasProjects/components/GallerySection";
+import { GallerySection } from "../AreasProjects/components/GallerySection";
 
 function Gallery() {
   return <GallerySection />;

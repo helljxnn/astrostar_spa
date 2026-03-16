@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaEdit, FaTrash, FaEye, FaTimes, FaStickyNote } from "react-icons/fa";
 import { useState } from "react";
 import ScheduleDetailsModal from "./ScheduleDetailsModal";
@@ -21,7 +21,7 @@ const EmployeeActionModal = ({
 
   if (!isOpen) return null;
 
-  // === DefiniciÃ³n de acciones disponibles ===
+  // === Definición de acciones disponibles ===
   const canManage = !disabled;
   const actions = [
     {
@@ -30,7 +30,7 @@ const EmployeeActionModal = ({
       icon: <FaEye className="w-4 h-4" />,
       color: "text-blue-600",
       hover: "hover:bg-blue-50",
-      description: "Consultar informaciÃ³n completa del horario",
+      description: "Consultar información completa del horario",
       available: true,
     },
     {
@@ -39,7 +39,7 @@ const EmployeeActionModal = ({
       icon: <FaEdit className="w-4 h-4" />,
       color: "text-green-600",
       hover: "hover:bg-green-50",
-      description: "Modificar fecha, hora o Ã¡rea",
+      description: "Modificar fecha, hora o área",
       available: canManage,
     },
     {
@@ -76,13 +76,13 @@ const EmployeeActionModal = ({
       return;
     }
 
-    // ðŸ”´ ConfirmaciÃ³n antes de eliminar
+    // 🔴 Confirmación antes de eliminar
     if (actionId === "delete") {
       const confirmDelete = await showErrorAlert(
-        "Â¿Eliminar este horario?",
-        "Esta acciÃ³n no se puede deshacer.",
+        "¿Eliminar este horario?",
+        "Esta acción no se puede deshacer.",
         "warning",
-        true // botÃ³n de confirmaciÃ³n
+        true // botón de confirmación
       );
 
       // Si el usuario confirma

@@ -1,4 +1,4 @@
-﻿// SportsCategory.jsx
+// SportsCategory.jsx
 import React, { useState, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 
@@ -75,7 +75,7 @@ const getAssociationMeta = (item = {}) => {
 const buildAssociationDetails = (association) => {
   const details = [];
   if (association.inscriptions)
-    details.push(`${association.inscriptions} inscripciÃ³n(es)`);
+    details.push(`${association.inscriptions} inscripciï¿½n(es)`);
   if (association.participants)
     details.push(`${association.participants} participante(s)`);
   if (association.services) details.push(`${association.services} evento(s)`);
@@ -136,7 +136,7 @@ const SportsCategory = () => {
     fechaActualizacion: cat.updatedAt || "",
   }));
 
-  // Función para obtener todos los datos para reporte
+  // Funciï¿½n para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
       { search: searchTerm }, // Filtros actuales
@@ -156,25 +156,25 @@ const SportsCategory = () => {
 
   const reportColumns = [
     { header: "Nombre", accessor: "nombre" },
-    { header: "DescripciÃ³n", accessor: "descripcion" },
-    { header: "Edad mÃ­nima", accessor: "edadMinima" },
-    { header: "Edad mÃ¡xima", accessor: "edadMaxima" },
+    { header: "Descripciï¿½n", accessor: "descripcion" },
+    { header: "Edad mï¿½nima", accessor: "edadMinima" },
+    { header: "Edad máxima", accessor: "edadMaxima" },
     { header: "Estado", accessor: "estado" },
     { header: "Publicar", accessor: "publicar" },
     { header: "Imagen/Archivo", accessor: "archivo" },
-    { header: "Fecha creaciÃ³n", accessor: "fechaCreacion" },
-    { header: "Fecha actualizaciÃ³n", accessor: "fechaActualizacion" },
+    { header: "Fecha creaciï¿½n", accessor: "fechaCreacion" },
+    { header: "Fecha actualizaciï¿½n", accessor: "fechaActualizacion" },
   ];
 
-  // Cargar categorÃ­as cuando cambia la pÃ¡gina o el tÃ©rmino de bÃºsqueda
+  // Cargar categorï¿½as cuando cambia la pï¿½gina o el tï¿½rmino de bï¿½squeda
   useEffect(() => {
     fetchSportsCategories({
       page: currentPage,
       limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-      search: searchTerm, // Enviar bÃºsqueda al backend
+      search: searchTerm, // Enviar bï¿½squeda al backend
     }).catch((err) => {
-      console.error("Error al cargar categorÃ­as:", err);
-      // El error ya se maneja en el hook, no necesitamos hacer nada aquÃ­
+      console.error("Error al cargar categorï¿½as:", err);
+      // El error ya se maneja en el hook, no necesitamos hacer nada aquï¿½
     });
   }, [currentPage, searchTerm, fetchSportsCategories]);
 
@@ -194,7 +194,7 @@ const SportsCategory = () => {
     if (!canCreate) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para crear categorÃ­as deportivas",
+        "No tienes permisos para crear categorï¿½as deportivas",
       );
       return;
     }
@@ -207,7 +207,7 @@ const SportsCategory = () => {
     if (!canEdit) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para editar categorÃ­as deportivas",
+        "No tienes permisos para editar categorï¿½as deportivas",
       );
       return;
     }
@@ -226,7 +226,7 @@ const SportsCategory = () => {
     if (!canDelete) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para eliminar categorÃ­as deportivas",
+        "No tienes permisos para eliminar categorï¿½as deportivas",
       );
       return;
     }
@@ -238,18 +238,18 @@ const SportsCategory = () => {
       showErrorAlert(
         "No se puede eliminar",
         details.length
-          ? `La categorÃ­a estÃ¡ asociada a ${details.join(", ")}.`
-          : "La categorÃ­a estÃ¡ asociada y no puede eliminarse.",
+          ? `La categorï¿½a está asociada a ${details.join(", ")}.`
+          : "La categorï¿½a está asociada y no puede eliminarse.",
       );
       return;
     }
 
     try {
       const result = await showConfirmAlert(
-        "Â¿Eliminar categorÃ­a?",
-        `Se eliminarÃ¡ la categorÃ­a "${item.nombre ?? item.name}".`,
+        "¿Eliminar categorï¿½a?",
+        `Se eliminará la categorï¿½a "${item.nombre ?? item.name}".`,
         {
-          confirmButtonText: "SÃ­, eliminar",
+          confirmButtonText: "Sï¿½, eliminar",
         },
       );
       if (!result.isConfirmed) return;
@@ -266,7 +266,7 @@ const SportsCategory = () => {
     if (!canView) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para ver detalles de categorÃ­as deportivas",
+        "No tienes permisos para ver detalles de categorï¿½as deportivas",
       );
       return;
     }
@@ -283,7 +283,7 @@ const SportsCategory = () => {
     if (!canList) {
       showErrorAlert(
         "Sin permisos",
-        "No tienes permisos para listar atletas de categorÃ­as deportivas",
+        "No tienes permisos para listar atletas de categorï¿½as deportivas",
       );
       return;
     }
@@ -299,7 +299,7 @@ const SportsCategory = () => {
 
   const handleSearchChange = (value) => {
     setSearchTerm(value);
-    setCurrentPage(1); // Resetear a la primera pÃ¡gina al buscar
+    setCurrentPage(1); // Resetear a la primera pï¿½gina al buscar
   };
 
   const handleClearSearch = () => {
@@ -311,7 +311,7 @@ const SportsCategory = () => {
     <div className="p-6 font-questrial">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
-          CategorÃ­as Deportivas{" "}
+          Categorï¿½as Deportivas{" "}
           {!loading && totalRows > 0 && (
             <span className="text-sm text-gray-600 ml-2">({totalRows})</span>
           )}
@@ -322,7 +322,7 @@ const SportsCategory = () => {
             <SearchInput
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="Buscar categorÃ­a..."
+              placeholder="Buscar categorï¿½a..."
             />
           </div>
 
@@ -338,7 +338,7 @@ const SportsCategory = () => {
               disabled={loading}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FaPlus /> Crear CategorÃ­a
+              <FaPlus /> Crear Categorï¿½a
             </button>
           </div>
         </div>
@@ -346,16 +346,16 @@ const SportsCategory = () => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          <p className="font-medium">âš  Error al cargar categorÃ­as</p>
+          <p className="font-medium">ï¿½aï¿½ Error al cargar categorï¿½as</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
 
       {!loading && totalRows === 0 && searchTerm && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 mb-6">
-          <div className="text-6xl mb-4">ðŸ”</div>
+          <div className="text-6xl mb-4">🔹</div>
           <p className="text-gray-700 font-medium mb-2">
-            No se encontraron categorÃ­as
+            No se encontraron categorï¿½as
           </p>
           <p className="text-gray-600 mb-4">
             No hay resultados para "{searchTerm}"
@@ -364,14 +364,14 @@ const SportsCategory = () => {
             onClick={handleClearSearch}
             className="text-primary-purple hover:text-primary-blue font-medium underline"
           >
-            Limpiar bÃºsqueda
+            Limpiar bï¿½squeda
           </button>
         </div>
       )}
 
       {!loading && totalRows === 0 && !searchTerm && (
         <div className="text-center py-12 text-gray-500">
-          <p>No hay categorÃ­as registradas.</p>
+          <p>No hay categorï¿½as registradas.</p>
         </div>
       )}
 
@@ -380,7 +380,7 @@ const SportsCategory = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <Table
               thead={{
-                titles: ["Nombre", "DescripciÃ³n", "Edad mÃ­nima", "Edad mÃ¡xima"],
+                titles: ["Nombre", "Descripciï¿½n", "Edad mï¿½nima", "Edad máxima"],
                 state: true,
               }}
               tbody={{
@@ -403,12 +403,12 @@ const SportsCategory = () => {
                 view: () => ({
                   show: canView,
                   disabled: false,
-                  title: "Ver detalles de la categorÃ­a",
+                  title: "Ver detalles de la categorï¿½a",
                 }),
                 edit: () => ({
                   show: canEdit,
                   disabled: false,
-                  title: "Editar categorÃ­a",
+                  title: "Editar categorï¿½a",
                 }),
                 delete: (item) => {
                   const association = getAssociationMeta(item);
@@ -421,8 +421,8 @@ const SportsCategory = () => {
                     title: blocked
                       ? details.length
                         ? `No se puede eliminar: asociada a ${details.join(", ")}`
-                        : "No se puede eliminar: categorÃ­a asociada"
-                      : "Eliminar categorÃ­a",
+                        : "No se puede eliminar: categorï¿½a asociada"
+                      : "Eliminar categorï¿½a",
                   };
                 },
               }}
@@ -468,4 +468,5 @@ const SportsCategory = () => {
 };
 
 export default SportsCategory;
+
 

@@ -345,8 +345,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         setShowSuccess(true);
         
         // 🚀 NOTIFICAR INMEDIATAMENTE: Agregar la inscripción al estado local
-        console.log("📢 [PreRegistrationModal] Nueva inscripción creada:", result.data);
-        console.log("📢 [PreRegistrationModal] Notificando al contexto...");
+        // console.log("📢 [PreRegistrationModal] Nueva inscripción creada:", result.data);
+        // console.log("📢 [PreRegistrationModal] Notificando al contexto...");
         
         // Asegurar que la inscripción tenga todos los campos necesarios
         const newInscription = {
@@ -365,9 +365,9 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           ...result.data, // Sobrescribir con datos del backend si existen
         };
         
-        console.log("📢 [PreRegistrationModal] Datos de inscripción a notificar:", newInscription);
+        // console.log("📢 [PreRegistrationModal] Datos de inscripción a notificar:", newInscription);
         notifyNewInscription(newInscription);
-        console.log("✅ [PreRegistrationModal] Notificación enviada");
+        // console.log("✅ [PreRegistrationModal] Notificación enviada");
         
         // Iniciar cooldown de 60 segundos
         setCooldownTime(60);
@@ -439,16 +439,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       return;
     }
     
-    console.log('🔍 [PreRegistrationModal] Validando nuevo email:', newEmail);
+    // console.log('🔍 [PreRegistrationModal] Validando nuevo email:', newEmail);
     setIsValidatingNewEmail(true);
     
     const timeoutId = setTimeout(async () => {
       try {
-        console.log('🔍 [PreRegistrationModal] Verificando email en inscripciones y deportistas...');
+        // console.log('🔍 [PreRegistrationModal] Verificando email en inscripciones y deportistas...');
         
         // Verificar en inscripciones pendientes
         const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);
-        console.log('🔍 [PreRegistrationModal] Resultado inscripciones:', inscriptionResult);
+        // console.log('🔍 [PreRegistrationModal] Resultado inscripciones:', inscriptionResult);
         
         if (inscriptionResult.exists) {
           console.log('❌ [PreRegistrationModal] Email ya existe en inscripciones');
@@ -460,7 +460,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         // Verificar en deportistas matriculados
         const AthletesService = (await import("../../dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService.js")).default;
         const athleteResult = await AthletesService.checkEmailAvailability(newEmail, null);
-        console.log('🔍 [PreRegistrationModal] Resultado deportistas:', athleteResult);
+        // console.log('🔍 [PreRegistrationModal] Resultado deportistas:', athleteResult);
         
         if (!athleteResult.available) {
           console.log('❌ [PreRegistrationModal] Email ya existe en deportistas');
@@ -500,7 +500,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     
     // Validar que el email no esté duplicado antes de enviar
     try {
-      console.log('🔍 [handleResendEmail] Validando email antes de reenviar...');
+      // console.log('🔍 [handleResendEmail] Validando email antes de reenviar...');
       
       // Verificar en inscripciones pendientes
       const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);

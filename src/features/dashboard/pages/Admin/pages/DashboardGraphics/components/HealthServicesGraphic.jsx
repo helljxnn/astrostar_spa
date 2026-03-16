@@ -14,24 +14,25 @@ import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const HealthServicesGraphic = () => {
-  const baseData = [
-    { mes: "Enero", nutricion: 20, fisioterapia: 12, psicologia: 15 },
-    { mes: "Febrero", nutricion: 22, fisioterapia: 10, psicologia: 14 },
-    { mes: "Marzo", nutricion: 25, fisioterapia: 20, psicologia: 18 },
-    { mes: "Abril", nutricion: 23, fisioterapia: 7, psicologia: 13 },
-    { mes: "Mayo", nutricion: 18, fisioterapia: 12, psicologia: 10 },
-    { mes: "Junio", nutricion: 17, fisioterapia: 9, psicologia: 14 },
-    { mes: "Julio", nutricion: 20, fisioterapia: 13, psicologia: 15 },
-    { mes: "Agosto", nutricion: 19, fisioterapia: 14, psicologia: 14 },
-    { mes: "Septiembre", nutricion: 21, fisioterapia: 15, psicologia: 13 },
-    { mes: "Octubre", nutricion: 23, fisioterapia: 17, psicologia: 16 },
-    { mes: "Noviembre", nutricion: 26, fisioterapia: 19, psicologia: 18 },
-    { mes: "Diciembre", nutricion: 28, fisioterapia: 22, psicologia: 20 },
-  ];
-
+const HealthServicesGraphic = ({ healthData, loading }) => {
   const [selectedMonth, setSelectedMonth] = useState("Todos");
   const [selectedService, setSelectedService] = useState("Todos");
+
+  // Usar datos reales o datos por defecto
+  const baseData = healthData?.monthly || [
+    { mes: "Enero", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Febrero", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Marzo", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Abril", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Mayo", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Junio", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Julio", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Agosto", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Septiembre", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Octubre", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Noviembre", nutricion: 0, fisioterapia: 0, psicologia: 0 },
+    { mes: "Diciembre", nutricion: 0, fisioterapia: 0, psicologia: 0 }
+  ];
 
   const filteredData = useMemo(() => {
     let data = [...baseData];
@@ -45,7 +46,7 @@ const HealthServicesGraphic = () => {
       }));
     }
     return data;
-  }, [selectedMonth, selectedService]);
+  }, [baseData, selectedMonth, selectedService]);
 
   const reportColumns = [
     { key: "mes", label: "Mes" },
@@ -145,7 +146,13 @@ const HealthServicesGraphic = () => {
       </div>
 
       <div className="h-[400px] flex-1">
-        <Bar data={data} options={options} />
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <Bar data={data} options={options} />
+        )}
       </div>
 
       <div className="h-0"></div>

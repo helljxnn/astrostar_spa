@@ -49,6 +49,7 @@ const Athletes = () => {
     updateGuardian,
     deleteGuardian,
     changePage,
+    updateAthleteInState,
     refresh,
   } = useAthletes();
 
@@ -182,7 +183,7 @@ const Athletes = () => {
           direccion: address,
           fechaNacimiento: birthDate,
           categoria: athlete.categoria || "",
-          estado: athlete.status || athlete.estado || "",
+          estado: athlete.estado || athlete.status || "",
           estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
           acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
           acudienteTipoDocumento: tipoDocumentoAcudiente,
@@ -207,11 +208,45 @@ const Athletes = () => {
   };
 
   const handleUpdate = async (updatedAthlete) => {
-    const { id, shouldUpdateInscription, ...athleteData } = updatedAthlete;
-    const success = await updateAthlete(id, athleteData);
+    const { id, shouldUpdateInscription, estado, ...athleteData } = updatedAthlete;
+    
+    let success = false;
+    
+    // Si cambió el estado, usar el endpoint específico para cambio de estado
+    if (shouldUpdateInscription) {
+      try {
+        const statusResult = await AthletesService.changeAthleteStatus(id, estado);
+        if (!statusResult.success) {
+          showErrorAlert("Error", statusResult.error || "No se pudo cambiar el estado");
+          return;
+        }
+
+        // Después del cambio de estado, actualizar los demás campos si es necesario
+        if (Object.keys(athleteData).length > 0) {
+          success = await updateAthlete(id, { ...athleteData, estado });
+        } else {
+          success = true;
+        }
+      } catch (error) {
+        showErrorAlert("Error", "Error inesperado al cambiar el estado");
+        return;
+      }
+    } else {
+      // Para otros cambios que no involucran estado, usar updateAthlete normal
+      success = await updateAthlete(id, { ...athleteData, estado });
+    }
 
     if (success) {
       setIsModalOpen(false);
+      await refresh({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+      });
+      const latest = await AthletesService.getAthleteById(id);
+      if (latest.success) {
+        updateAthleteInState(latest.data);
+      }
 
       // Actualizar la vista si estaba abierta
       if (athleteToView && athleteToView.id === id) {

@@ -19,7 +19,13 @@ export const useEnrollments = () => {
     total: 0,
     totalPages: 0,
   });
-  const [searchFilters, setSearchFilters] = useState({ search: "", estado: "" });
+  const [searchFilters, setSearchFilters] = useState({ 
+    search: "", 
+    estado: "",
+    dateFrom: "",
+    dateTo: "",
+    vencimiento: ""
+  });
   const [referenceData, setReferenceData] = useState({
     documentTypes: [],
     guardianDocumentTypes: [],
@@ -87,6 +93,9 @@ export const useEnrollments = () => {
         pageSize: pagination.pageSize,
         search: (f.search || "").trim() || undefined,
         estado: f.estado || undefined,
+        dateFrom: f.dateFrom || undefined,
+        dateTo: f.dateTo || undefined,
+        vencimiento: f.vencimiento || undefined,
       });
 
       // Cargar inscripciones solo si no es silent
@@ -153,18 +162,30 @@ export const useEnrollments = () => {
     try {
       // Si el searchTerm está vacío, cargar solo algunos acudientes recientes
       if (!searchTerm || searchTerm.length === 0) {
-        const result = await GuardiansService.getGuardians({ limit: 20 }); // Reducir de getAll a 20
+        const result = await GuardiansService.getGuardiansWithAthleteInfo({ limit: 20 }); // Usar método con info de deportistas
         if (result.success) {
-          setGuardians(result.data || []);
+          // Si necesita enriquecimiento, obtener datos de deportistas
+          let enrichedData = result.data || [];
+          if (result.needsEnrichment) {
+            enrichedData = await enrichGuardiansWithAthleteInfo(result.data || []);
+          }
+          
+          setGuardians(enrichedData);
         }
         return;
       }
 
       // Si hay término de búsqueda, usar búsqueda específica
       if (searchTerm.length >= 2) {
-        const result = await GuardiansService.searchGuardians(searchTerm, 15);
+        const result = await GuardiansService.searchGuardiansWithAthleteInfo(searchTerm, 15); // Usar método con info de deportistas
         if (result.success) {
-          setGuardians(result.data || []);
+          // Si necesita enriquecimiento, obtener datos de deportistas
+          let enrichedData = result.data || [];
+          if (result.needsEnrichment) {
+            enrichedData = await enrichGuardiansWithAthleteInfo(result.data || []);
+          }
+          
+          setGuardians(enrichedData);
         }
       } else {
         setGuardians([]);
@@ -172,6 +193,64 @@ export const useEnrollments = () => {
     } catch (error) {
       console.error("Error buscando acudientes:", error);
       setGuardians([]);
+    }
+  };
+
+  // Función para enriquecer acudientes con información de deportistas
+  const enrichGuardiansWithAthleteInfo = async (guardians) => {
+    try {
+      // Obtener todos los deportistas para calcular la información
+      const AthletesService = (await import("../../AthletesSection/services/AthletesService.js")).default;
+      const athletesResult = await AthletesService.getAll();
+      
+      if (!athletesResult.success) {
+        console.warn("No se pudieron obtener los deportistas para enriquecer");
+        return guardians;
+      }
+      
+      const allAthletes = athletesResult.data || [];
+      
+      return guardians.map(guardian => {
+        // Encontrar deportistas asignados a este acudiente
+        const guardianAthletes = allAthletes.filter(athlete => 
+          athlete.acudiente === guardian.nombreCompleto || 
+          athlete.guardianId === guardian.id ||
+          athlete.guardian?.id === guardian.id
+        );
+        
+        const totalAthletes = guardianAthletes.length;
+        
+        // Calcular deportistas menores de edad
+        const minorAthletes = guardianAthletes.filter(athlete => {
+          if (athlete.fechaNacimiento || athlete.birthDate) {
+            const birthDate = athlete.fechaNacimiento || athlete.birthDate;
+            const today = new Date();
+            const birth = new Date(birthDate);
+            let age = today.getFullYear() - birth.getFullYear();
+            const monthDiff = today.getMonth() - birth.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+              age--;
+            }
+            return age < 18;
+          }
+          return false;
+        });
+        
+        const minorAthletesCount = minorAthletes.length;
+        const hasMinorAthletes = minorAthletesCount > 0;
+        const minorAthletesNames = minorAthletes.map(a => a.nombreCompleto || `${a.firstName} ${a.lastName}`);
+        
+        return {
+          ...guardian,
+          totalAthletes,
+          minorAthletes: minorAthletesCount,
+          hasMinorAthletes,
+          minorAthletesNames
+        };
+      });
+    } catch (error) {
+      console.error("Error enriqueciendo datos de acudientes:", error);
+      return guardians;
     }
   };
 
@@ -333,24 +412,33 @@ showSuccessAlert(
 
   const changePage = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
-    loadData(newPage);
+    loadData(newPage, false, searchFilters);
   };
 
   const refresh = (silent = false) => {
     loadData(pagination.page, silent);
   };
 
-  /** Aplica búsqueda y filtros (llamar con debounce). search y estado se envían al backend. */
+  /** Aplica búsqueda y filtros (llamar con debounce). */
   const applyFilters = useCallback(
-    (search = "", estado = "") => {
+    (search = "", estado = "", dateFrom = "", dateTo = "", vencimiento = "") => {
       const next = {
         search: String(search ?? "").trim(),
         estado: String(estado ?? "").trim(),
+        dateFrom: String(dateFrom ?? "").trim(),
+        dateTo: String(dateTo ?? "").trim(),
+        vencimiento: String(vencimiento ?? "").trim(),
       };
 
       // Evitar recargas innecesarias si los filtros no cambiaron realmente
       setSearchFilters((prev) => {
-        if (prev.search === next.search && prev.estado === next.estado) {
+        if (
+          prev.search === next.search &&
+          prev.estado === next.estado &&
+          prev.dateFrom === next.dateFrom &&
+          prev.dateTo === next.dateTo &&
+          prev.vencimiento === next.vencimiento
+        ) {
           return prev;
         }
         return next;

@@ -31,7 +31,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustomSchedule.css";
 
 /* ============================================================
-   ðŸ”¹ CONFIGURACIÃ“N LOCALIZADOR Y TEXTOS
+   🔹 CONFIGURACIï¿½N LOCALIZADOR Y TEXTOS
 ============================================================ */
 const locales = { es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -122,7 +122,7 @@ function generateRecurringEvents(event) {
       return [event];
   }
 
-  // ðŸ”¸ Si es personalizado
+  // 🔹 Si es personalizado
   if (event.repeticion === "personalizado" && event.customRecurrence) {
     const { interval, frequency, dias, endType, endDate: endCustom } =
       event.customRecurrence;
@@ -162,7 +162,7 @@ function generateRecurringEvents(event) {
     return events;
   }
 
-  // ðŸ”¸ Si es diaria/semanal/mensual/etc
+  // 🔹 Si es diaria/semanal/mensual/etc
   let current = startDate;
   while (isBefore(current, endDate)) {
     const eventCopy = { ...event };
@@ -177,7 +177,7 @@ function generateRecurringEvents(event) {
 }
 
 /* ============================================================
-   ðŸ”¹ COMPONENTE PRINCIPAL
+   🔹 COMPONENTE PRINCIPAL
 =========================================================== */
 export default function EmployeesScheduleCalendar({
   schedules = [],
@@ -293,7 +293,7 @@ export default function EmployeesScheduleCalendar({
     );
   };
 
-  /* ---------- NavegaciÃ³n ---------- */
+  /* ---------- Navegaciï¿½n ---------- */
   const handleNavigate = (dir) => {
     if (view === "month") setDate(dir === "next" ? addMonths(date, 1) : subMonths(date, 1));
     else if (view === "week") setDate(dir === "next" ? addWeeks(date, 1) : subWeeks(date, 1));
@@ -332,7 +332,7 @@ export default function EmployeesScheduleCalendar({
         : [popover.horario.novedad]).filter(Boolean)
     : [];
   /* ============================================================
-     ðŸ”¹ RENDER PRINCIPAL
+     🔹 RENDER PRINCIPAL
   ============================================================ */
   return (
     <div ref={calendarRef} className="relative employees-schedule-calendar">
@@ -370,7 +370,7 @@ export default function EmployeesScheduleCalendar({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {v === "month" ? "Mes" : v === "week" ? "Semana" : "DÃ­a"}
+              {v === "month" ? "Mes" : v === "week" ? "Semana" : "Día"}
             </button>
           ))}
         </div>

@@ -35,11 +35,7 @@ import {
   mapEnrollmentStatus,
   isEnrollmentExpired
 } from "./utils/enrollmentDataExtractor.js";
-import { 
-  filterByExpirationStatus,
-  sortByExpirationPriority,
-  getExpirationStats
-} from "./utils/expirationUtils.js";
+ 
 import { 
   ENROLLMENT_TABLE_COLUMNS, 
   ENROLLMENT_DATA_PROPERTIES,
@@ -111,11 +107,12 @@ const Enrollments = () => {
     if (activeTab !== "matriculas") return;
     if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
     searchDebounceRef.current = setTimeout(() => {
-      applyFilters(searchTerm, filters.estado);
+      applyFilters(searchTerm, filters.estado, filters.fechaDesde, filters.fechaHasta, filters.vencimiento);
       searchDebounceRef.current = null;
     }, SEARCH_CONFIG.DEBOUNCE_DELAY);
     return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
-  }, [activeTab, searchTerm, filters.estado, applyFilters]);
+  }, [activeTab, searchTerm, filters.estado, filters.fechaDesde, filters.fechaHasta, filters.vencimiento, applyFilters]);
+
 
   // Auto-refresh optimizado - cada 60 segundos cuando estamos en inscripciones
   useEffect(() => {
@@ -177,34 +174,6 @@ const Enrollments = () => {
 
     let result = withDates;
 
-    // Filtros de fecha
-    if (filters.fechaDesde) {
-      const desde = new Date(filters.fechaDesde);
-      result = result.filter((row) => {
-        if (!row._fechaMatriculaRaw) return false;
-        const fecha = new Date(row._fechaMatriculaRaw);
-        return !isNaN(fecha.getTime()) && fecha >= desde;
-      });
-    }
-
-    if (filters.fechaHasta) {
-      const hasta = new Date(filters.fechaHasta);
-      hasta.setHours(23, 59, 59, 999);
-      result = result.filter((row) => {
-        if (!row._fechaMatriculaRaw) return false;
-        const fecha = new Date(row._fechaMatriculaRaw);
-        return !isNaN(fecha.getTime()) && fecha <= hasta;
-      });
-    }
-
-    // Filtro por vencimiento
-    result = filterByExpirationStatus(result, filters.vencimiento);
-
-    // Ordenar por prioridad de vencimiento si no es "all"
-    if (filters.vencimiento !== EXPIRATION_FILTERS.ALL) {
-      result = sortByExpirationPriority(result);
-    }
-
     return result;
   }, [athletes, activeTab, filters.fechaDesde, filters.fechaHasta, filters.vencimiento]);
 
@@ -223,6 +192,9 @@ const Enrollments = () => {
         inscription.email,
         inscription.identification,
         inscription.phoneNumber,
+        inscription.status,
+        inscription.estado,
+        inscription.createdAt,
       ];
 
       return textFields.some(
@@ -238,12 +210,6 @@ const Enrollments = () => {
   const paginatedData = activeTab === "matriculas"
     ? currentData
     : currentData.slice(startIndex, startIndex + PAGINATION_CONFIG.ROWS_PER_PAGE);
-
-  // Calcular estadísticas de vencimiento para los filtros
-  const expirationStats = useMemo(() => {
-    if (activeTab !== "matriculas") return {};
-    return getExpirationStats(athletes);
-  }, [athletes, activeTab]);
 
   const getGuardianById = (guardianId) => {
     return guardians.find((g) => String(g.id) === String(guardianId));
@@ -532,18 +498,10 @@ const Enrollments = () => {
               <select
                 value={filters.vencimiento}
                 onChange={(e) => setFilters({ ...filters, vencimiento: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-primary-blue/30 focus:border-primary-blue transition-colors"
               >
-                <option value={EXPIRATION_FILTERS.ALL}>Todas las matrículas</option>
-                <option value={EXPIRATION_FILTERS.CRITICAL}>
-                  Críticas ({(expirationStats.critical || 0)} matrículas)
-                </option>
-                <option value={EXPIRATION_FILTERS.EXPIRING}>
-                  Próximas a vencer ({((expirationStats.warning || 0) + (expirationStats.attention || 0))} matrículas)
-                </option>
-                <option value={EXPIRATION_FILTERS.EXPIRED}>
-                  Vencidas ({(expirationStats.expired || 0)} matrículas)
-                </option>
+                <option value={EXPIRATION_FILTERS.ALL}>Todas las matriculas</option>
+                <option value={EXPIRATION_FILTERS.EXPIRING}>Proximas a vencer</option>
               </select>
             </div>
 
@@ -574,27 +532,6 @@ const Enrollments = () => {
             </div>
           </div>
 
-          {/* Resumen de filtros activos */}
-          {(filters.vencimiento !== EXPIRATION_FILTERS.ALL || filters.estado) && (
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-blue-800">
-                <span className="font-medium">Filtros activos:</span>
-                {filters.vencimiento !== EXPIRATION_FILTERS.ALL && (
-                  <span className="px-2 py-1 bg-blue-100 rounded text-xs">
-                    {filters.vencimiento === EXPIRATION_FILTERS.CRITICAL && 'Críticas'}
-                    {filters.vencimiento === EXPIRATION_FILTERS.EXPIRING && 'Próximas a vencer'}
-                    {filters.vencimiento === EXPIRATION_FILTERS.EXPIRED && 'Vencidas'}
-                  </span>
-                )}
-                {filters.estado && (
-                  <span className="px-2 py-1 bg-blue-100 rounded text-xs">
-                    Estado: {filters.estado === 'Pending_Payment' ? 'Pendiente de Pago' : 
-                            filters.estado === 'Vigente' ? 'Vigente' : 'Vencida'}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       )}
       {/* Contenido según tab activo */}
@@ -704,7 +641,7 @@ const Enrollments = () => {
                     onClick: (athlete) => handleOpenHistory(athlete),
                     label: <FaHistory />,
                     className:
-                      "p-2 rounded-full bg-primary-blue/10 text-primary-blue hover:bg-primary-blue hover:text-white transition-colors",
+                      "p-2 rounded-full bg-primary-purple/10 text-primary-purple hover:bg-primary-purple hover:text-white transition-colors",
                     tooltip: "Historial de Matrículas",
                   },
                 ]}
@@ -932,9 +869,27 @@ const Enrollments = () => {
         isOpen={isGuardianViewOpen}
         onClose={() => setIsGuardianViewOpen(false)}
         guardian={guardianToView}
-        athletes={athletes.filter(
-          (a) => String(a.acudiente) === String(guardianToView?.id),
-        )}
+        currentAthleteId={guardianToView?.currentAthleteId}
+        athletes={athletes.filter((a) => {
+          // Buscar por ID del acudiente O por nombre del acudiente
+          const matchById = String(a.acudiente) === String(guardianToView?.id);
+          const matchByName = String(a.acudiente) === String(guardianToView?.nombreCompleto);
+          const matchByGuardianId = a.guardianId === guardianToView?.id;
+          
+          // console.log('🔍 [Enrollments] Filtrando atleta:', {
+          //   athleteId: a.id,
+          //   athleteName: a.nombreCompleto,
+          //   athleteAcudiente: a.acudiente,
+          //   athleteGuardianId: a.guardianId,
+          //   guardianId: guardianToView?.id,
+          //   guardianName: guardianToView?.nombreCompleto,
+          //   matchById,
+          //   matchByName,
+          //   matchByGuardianId
+          // });
+          
+          return matchById || matchByName || matchByGuardianId;
+        })}
         referenceData={{
           documentTypes: referenceData.guardianDocumentTypes || [],
         }}

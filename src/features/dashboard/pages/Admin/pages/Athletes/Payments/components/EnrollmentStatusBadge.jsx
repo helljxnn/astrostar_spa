@@ -1,22 +1,18 @@
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaSync } from "react-icons/fa";
-
 /**
- * Badge para mostrar el estado de matrícula con iconos y colores apropiados
- * Integrado con el sistema de renovación automática del backend
+ * Badge para mostrar el estado de matrícula con el mismo estilo que PaymentStatusBadge
+ * Estilo compacto y consistente con el sistema de pagos
  */
 const EnrollmentStatusBadge = ({ 
   status, 
   needsRenewal = false, 
   daysToExpire = null,
-  size = "sm" 
+  className = ""
 }) => {
-  // Determinar configuración basada en el estado y necesidad de renovación
   const getStatusConfig = () => {
     // Casos especiales para renovación
     if (needsRenewal) {
       return {
         color: 'bg-purple-100 text-purple-800 border-purple-200',
-        icon: FaSync,
         text: 'Renovación Pendiente'
       };
     }
@@ -29,71 +25,51 @@ const EnrollmentStatusBadge = ({
           if (daysToExpire < 0) {
             return {
               color: 'bg-red-100 text-red-800 border-red-200',
-              icon: FaExclamationTriangle,
-              text: `Vencida (${Math.abs(daysToExpire)} días)`
+              text: 'Vencida'
             };
           } else if (daysToExpire <= 7) {
             return {
               color: 'bg-orange-100 text-orange-800 border-orange-200',
-              icon: FaClock,
-              text: `Vence en ${daysToExpire} día${daysToExpire !== 1 ? 's' : ''}`
+              text: `Vence en ${daysToExpire}d`
             };
           } else if (daysToExpire <= 30) {
             return {
               color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-              icon: FaClock,
-              text: `Vence en ${daysToExpire} días`
+              text: `Vence en ${daysToExpire}d`
             };
           }
         }
         
         return {
           color: 'bg-green-100 text-green-800 border-green-200',
-          icon: FaCheckCircle,
           text: 'Vigente'
         };
 
       case 'Vencida':
         return {
           color: 'bg-red-100 text-red-800 border-red-200',
-          icon: FaExclamationTriangle,
           text: 'Vencida'
         };
 
       case 'Pending_Payment':
         return {
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
-          icon: FaClock,
-          text: 'Esperando Pago'
+          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+          text: 'Pendiente de pago'
         };
 
       default:
         return {
           color: 'bg-gray-100 text-gray-800 border-gray-200',
-          icon: null,
           text: status || 'Sin Estado'
         };
     }
   };
 
   const config = getStatusConfig();
-  const IconComponent = config.icon;
-  
-  const sizeClasses = {
-    xs: 'px-2 py-0.5 text-xs',
-    sm: 'px-2.5 py-0.5 text-xs',
-    md: 'px-3 py-1 text-sm',
-    lg: 'px-4 py-1.5 text-base'
-  };
 
   return (
-    <span className={`
-      inline-flex items-center gap-1.5 rounded-full font-medium border
-      ${config.color}
-      ${sizeClasses[size]}
-    `}>
-      {IconComponent && <IconComponent className="w-3 h-3 flex-shrink-0" />}
-      <span>{config.text}</span>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.color} ${className}`}>
+      {config.text}
     </span>
   );
 };

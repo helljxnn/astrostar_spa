@@ -1,4 +1,4 @@
-﻿// ================================
+// ================================
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
@@ -7,7 +7,7 @@ import PrivateRoute from "./PrivateRoute.jsx";
 /* --- Layout general --- */
 import DashboardLayout from "../features/dashboard/pages/Admin/components/DashboardLayout.jsx";
 
-/* --- PÃ¡ginas principales --- */
+/* --- Páginas principales --- */
 import Dashboard from "../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard.jsx";
 
 /* --- Servicios --- */
@@ -61,7 +61,7 @@ const PrivateRoutes = () => {
         {/* --- Principal --- */}
         <Route index element={<DashboardHome />} />
 
-        {/* --- Dashboard especÃ­fico (requiere permisos) --- */}
+        {/* --- Dashboard específico (requiere permisos) --- */}
         <Route
           path="analytics"
           element={
@@ -71,7 +71,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Citas --- */}
+        {/* --- Módulo: Citas --- */}
         <Route
           path="appointment-management"
           element={
@@ -81,7 +81,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Deportistas --- */}
+        {/* --- Módulo: Deportistas --- */}
         <Route
           path="athletes-section"
           element={
@@ -107,7 +107,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Asistencia Deportistas --- */}
+        {/* --- Módulo: Asistencia Deportistas --- */}
         <Route
           path="athletes-assistance"
           element={
@@ -125,7 +125,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: MatrÃ­culas --- */}
+        {/* --- Módulo: Matrículas --- */}
         <Route
           path="enrollments"
           element={
@@ -187,7 +187,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Usuarios y Roles --- */}
+        {/* --- Módulo: Usuarios y Roles --- */}
         <Route
           path="users"
           element={
@@ -205,7 +205,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Eventos --- */}
+        {/* --- Módulo: Eventos --- */}
         <Route
           path="events"
           element={
@@ -223,7 +223,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Materiales --- */}
+        {/* --- Módulo: Materiales --- */}
         <Route
           path="materials"
           element={
@@ -233,7 +233,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: CategorÃ­as de Materiales --- */}
+        {/* --- Módulo: Categorías de Materiales --- */}
         <Route
           path="material-categories"
           element={
@@ -243,7 +243,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Movimientos de Materiales --- */}
+        {/* --- Módulo: Movimientos de Materiales --- */}
         <Route
           path="materials-movements"
           element={
@@ -253,7 +253,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Donaciones --- */}
+        {/* --- Módulo: Donaciones --- */}
         <Route
           path="donations"
           element={
@@ -279,7 +279,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- MÃ³dulo: Proveedores --- */}
+        {/* --- Módulo: Proveedores --- */}
         <Route
           path="providers"
           element={

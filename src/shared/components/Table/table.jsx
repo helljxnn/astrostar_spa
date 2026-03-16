@@ -23,7 +23,16 @@ const Table = ({
 }) => {
   const [internalPage, setInternalPage] = useState(1);
 
-  const allData = tbody.data || [];
+  // Safety check for tbody
+  if (!tbody) {
+    return (
+      <div className="p-4 text-center text-gray-400 italic">
+        Error: No se proporcionaron datos para la tabla.
+      </div>
+    );
+  }
+
+  const allData = tbody?.data || [];
   const totalRows = serverPagination
     ? (externalTotalRows ?? allData.length)
     : allData.length;

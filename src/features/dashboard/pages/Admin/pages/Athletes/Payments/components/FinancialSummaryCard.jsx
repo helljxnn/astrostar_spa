@@ -45,10 +45,7 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
   };
 
   const getDebtStatusIcon = () => {
-    if (totalDebt.totalAmount === 0) return "✅";
-    if (totalDebt.maxDaysLate >= 15) return "🚫";
-    if (totalDebt.maxDaysLate > 0) return "⚠️";
-    return "💰";
+    return "";
   };
 
   const getDebtStatusText = () => {
@@ -62,10 +59,9 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-800">
-          💰 Resumen Financiero
+          Resumen Financiero
         </h3>
         <div className={`flex items-center space-x-2 ${getDebtStatusColor()}`}>
-          <span className="text-xl">{getDebtStatusIcon()}</span>
           <span className="font-medium">{getDebtStatusText()}</span>
         </div>
       </div>
@@ -139,7 +135,6 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
           {totalDebt.maxDaysLate > 0 && (
             <span className={`${isAtLateFeeLimit ? 'text-red-600 font-bold' : 'text-orange-600'}`}>
               Mora máxima: {totalDebt.maxDaysLate} días
-              {isAtLateFeeLimit && " ⚠️"}
             </span>
           )}
         </div>

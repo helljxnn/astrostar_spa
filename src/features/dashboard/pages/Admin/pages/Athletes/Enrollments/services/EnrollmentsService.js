@@ -74,6 +74,9 @@ class EnrollmentsService {
         sortOrder: 'desc', // Más recientes primero
         ...(filters.estado && { estado: filters.estado }),
         ...(filters.search && filters.search.trim() && { search: filters.search.trim() }),
+        ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
+        ...(filters.dateTo && { dateTo: filters.dateTo }),
+        ...(filters.vencimiento && filters.vencimiento !== 'all' && { vencimiento: filters.vencimiento }),
       };
 
       const response = await apiClient.get(this.enrollmentsEndpoint, { params });
@@ -179,11 +182,13 @@ class EnrollmentsService {
         console.warn('⚠️ [EnrollmentsService.getAll] Duplicados detectados:', duplicateIds);
       }
 
+      const pagination = response.pagination || response.data?.pagination;
+
       return {
         success: true,
         data,
-        total: response.pagination?.total || data.length,
-        hasMore: response.data.hasMore || false,
+        total: pagination?.total || data.length,
+        hasMore: response.hasMore || response.data?.hasMore || false,
       };
     } catch (error) {
       console.error("❌ [EnrollmentsService.getAll] Error:", error);

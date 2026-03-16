@@ -1,17 +1,27 @@
 import { useState, useEffect, useCallback } from "react";
-import { paymentsService } from "../services/PaymentsService.js";
+import PaymentsService from "../services/PaymentsService.js";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { 
+  getActiveRestrictions, 
+  getHighestPriorityRestriction,
+  hasFullAccess,
+  hasPartialAccess,
+  isCompletelyBlocked 
+} from "../utils/restrictionUtils.js";
 
 /**
  * Hook para gestionar el estado financiero completo de un atleta
  * Incluye renovación de matrículas, mensualidades y restricciones de acceso
- * ✅ ACTUALIZADO: Compatible con nuevos campos del backend (suspensión, límite de mora, prioridades)
+ * ✅ ACTUALIZADO: Usa lógica centralizada de restricciones con prioridades
  */
 export const useAthleteFinancialStatus = (athleteId) => {
   const [financialStatus, setFinancialStatus] = useState(null);
   const [accessStatus, setAccessStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Crear instancia del servicio
+  const paymentsService = new PaymentsService();
 
   const fetchFinancialStatus = useCallback(async () => {
     if (!athleteId) return;
@@ -20,7 +30,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
     setError(null);
 
     try {
-      // Obtener estado financiero completo con fallback automático a mock
+      // Obtener estado financiero completo
       const [financial, access] = await Promise.all([
         paymentsService.getAthleteFinancialStatus(athleteId),
         paymentsService.checkAthleteAccess(athleteId)
@@ -29,28 +39,25 @@ export const useAthleteFinancialStatus = (athleteId) => {
       // ✅ NUEVO: Validar y normalizar respuesta del backend
       const normalizedFinancial = {
         ...financial,
-        // Asegurar que allMonthlyDebts existe (nuevo campo del backend)
+        // Asegurar que allMonthlyDebts existe
         allMonthlyDebts: Array.isArray(financial?.allMonthlyDebts) 
           ? financial.allMonthlyDebts 
           : [],
         
-        // Asegurar estructura de totalDebt con nuevos campos
+        // Asegurar estructura de totalDebt
         totalDebt: {
           monthlyAmount: financial?.totalDebt?.monthlyAmount || 0,
           lateFeeAmount: financial?.totalDebt?.lateFeeAmount || 0,
           totalAmount: financial?.totalDebt?.totalAmount || 0,
           maxDaysLate: financial?.totalDebt?.maxDaysLate || 0,
           obligationsCount: financial?.totalDebt?.obligationsCount || 0,
-          // ✅ NUEVO: Detectar si está en el límite de 90 días
           isAtLateFeeLimit: (financial?.totalDebt?.maxDaysLate || 0) >= 90,
         },
         
-        // Asegurar estructura de enrollment con nuevos campos
+        // Asegurar estructura de enrollment
         enrollment: financial?.enrollment ? {
           ...financial.enrollment,
-          // ✅ NUEVO: Campo isInitial del backend
           isInitial: financial.enrollment.isInitial || false,
-          // ✅ NUEVO: Campo estado del backend
           estado: financial.enrollment.estado || null,
           needsRenewal: financial.enrollment.needsRenewal || false,
         } : null,
@@ -61,14 +68,12 @@ export const useAthleteFinancialStatus = (athleteId) => {
         restricted: access?.restricted || false,
         reason: access?.reason || null,
         message: access?.message || null,
-        // ✅ NUEVO: Prioridad del bloqueo (si existe)
         priority: access?.priority || null,
       };
 
       setFinancialStatus(normalizedFinancial);
       setAccessStatus(normalizedAccess);
     } catch (err) {
-      console.error('Error fetching financial status:', err);
       setError(err.message || 'Error al obtener estado financiero');
       showErrorAlert('Error', 'No se pudo cargar el estado financiero');
       
@@ -101,18 +106,34 @@ export const useAthleteFinancialStatus = (athleteId) => {
     fetchFinancialStatus();
   }, [fetchFinancialStatus]);
 
+  // ✅ NUEVO: Usar lógica centralizada de restricciones
+  const restrictions = financialStatus ? getActiveRestrictions(financialStatus, accessStatus) : [];
+  const highestRestriction = getHighestPriorityRestriction(financialStatus, accessStatus);
+  
+  // Estados de acceso usando lógica centralizada
+  const hasFullSystemAccess = hasFullAccess(financialStatus, accessStatus);
+  const hasPartialSystemAccess = hasPartialAccess(financialStatus, accessStatus);
+  const isSystemBlocked = isCompletelyBlocked(financialStatus, accessStatus);
+
   // Calcular resumen del estado financiero
-  const summary = financialStatus ? paymentsService.getFinancialStatusSummary(financialStatus) : null;
+  const summary = financialStatus ? {
+    hasDebt: (financialStatus.totalDebt?.totalAmount || 0) > 0,
+    totalAmount: financialStatus.totalDebt?.totalAmount || 0,
+    monthlyAmount: financialStatus.totalDebt?.monthlyAmount || 0,
+    lateFeeAmount: financialStatus.totalDebt?.lateFeeAmount || 0,
+    obligationsCount: financialStatus.totalDebt?.obligationsCount || 0,
+    maxDaysLate: financialStatus.totalDebt?.maxDaysLate || 0
+  } : null;
 
   // Verificar si necesita renovación de matrícula
   const needsRenewal = financialStatus?.enrollment?.needsRenewal || false;
 
   // Verificar si tiene restricciones de acceso
-  const isRestricted = accessStatus?.restricted || false;
+  const isRestricted = restrictions.length > 0;
 
-  // ✅ NUEVO: Obtener razón de bloqueo con prioridad
-  const blockingReason = accessStatus?.reason || null;
-  const blockingMessage = accessStatus?.message || null;
+  // Obtener razón de bloqueo con prioridad
+  const blockingReason = highestRestriction?.reason || null;
+  const blockingMessage = highestRestriction?.message || null;
 
   // Obtener obligaciones pendientes agrupadas por tipo
   const pendingObligations = financialStatus?.allMonthlyDebts || [];
@@ -144,7 +165,14 @@ export const useAthleteFinancialStatus = (athleteId) => {
     loading,
     error,
     
-    // Datos procesados
+    // ✅ NUEVO: Restricciones centralizadas
+    restrictions,
+    highestRestriction,
+    hasFullSystemAccess,
+    hasPartialSystemAccess,
+    isSystemBlocked,
+    
+    // Datos procesados (compatibilidad)
     summary,
     needsRenewal,
     isRestricted,
@@ -154,31 +182,31 @@ export const useAthleteFinancialStatus = (athleteId) => {
     enrollmentObligation,
     totalDebt,
     
-    // ✅ NUEVO: Obligaciones suspendidas
+    // Obligaciones suspendidas
     suspendedObligations,
     hasSuspendedObligations,
     
-    // ✅ NUEVO: Límite de mora
+    // Límite de mora
     isAtLateFeeLimit,
     
     // Acciones
     refresh: fetchFinancialStatus,
     refetch: fetchFinancialStatus, // Alias para compatibilidad
     
-    // Utilidades
+    // Utilidades mejoradas
     hasDebt: totalDebt.totalAmount > 0,
-    isBlocked: totalDebt.maxDaysLate >= 15, // ✅ Actualizado: 15 días según backend
+    isBlocked: totalDebt.maxDaysLate >= 15, // 15 días según backend
     
-    // ✅ MEJORADO: Detección de matrícula inicial vs renovación usando campo isInitial
+    // ✅ MEJORADO: Detección precisa usando campo isInitial
     hasInitialEnrollmentPending: enrollmentObligation && (
       enrollmentObligation.isInitial === true ||
-      enrollmentObligation.type === 'INITIAL_ENROLLMENT' ||
+      enrollmentObligation.type === 'ENROLLMENT_INITIAL' ||
       (!enrollmentObligation.needsRenewal && !enrollmentObligation.estado)
     ),
     hasRenewalPending: needsRenewal && enrollmentObligation && (
       enrollmentObligation.needsRenewal === true &&
       enrollmentObligation.isInitial !== true &&
-      enrollmentObligation.type !== 'INITIAL_ENROLLMENT'
+      enrollmentObligation.type !== 'ENROLLMENT_INITIAL'
     )
   };
 };

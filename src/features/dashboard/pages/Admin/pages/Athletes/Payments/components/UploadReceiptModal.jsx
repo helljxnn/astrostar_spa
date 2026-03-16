@@ -93,11 +93,6 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
     }
   };
 
-  const handleAcceptFile = () => {
-    // Solo cierra el modal, el archivo queda seleccionado
-    // El botón de enviar aparecerá fuera del modal
-  };
-
   const handleUpload = async () => {
     if (!selectedFile) {
       showErrorAlert('Error', 'Debe seleccionar un archivo');
@@ -150,8 +145,8 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-hidden relative flex flex-col">
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 relative">
           <button
@@ -167,11 +162,11 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 p-5 min-h-0">
           {/* Obligation Info */}
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-100">
-            <h4 className="font-semibold text-gray-800 mb-3">Información del Pago</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4 border border-blue-100">
+            <h4 className="font-medium text-gray-800 mb-2 text-sm">Información del Pago</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
                 <span className="text-gray-600">Tipo:</span>
                 <p className="font-medium text-gray-900">
@@ -196,9 +191,9 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
                   <p className="font-medium text-orange-600">{formatCurrency(obligation.lateFee)}</p>
                 </div>
               )}
-              <div className="col-span-2 pt-2 border-t border-blue-200">
+              <div className="col-span-2 pt-1 border-t border-blue-200">
                 <span className="text-gray-600">Total a Pagar:</span>
-                <p className="text-lg font-bold text-primary-blue">{formatCurrency(obligation.totalToPay)}</p>
+                <p className="text-sm font-bold text-primary-blue">{formatCurrency(obligation.totalToPay)}</p>
               </div>
             </div>
           </div>
@@ -206,7 +201,7 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
           {/* File Upload Area */}
           {!selectedFile ? (
             <div
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+              className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-all ${
                 dragActive
                   ? 'border-primary-blue bg-blue-50'
                   : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
@@ -225,51 +220,41 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
                 disabled={uploading}
               />
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex justify-center">
                   {getFileIcon()}
                 </div>
                 <div>
-                  <p className="text-gray-700 font-medium text-lg mb-2">
-                    Haz clic para seleccionar un archivo
+                  <p className="text-gray-700 font-medium mb-1">
+                    Seleccionar archivo
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs text-gray-500">
                     o arrastra y suelta aquí
                   </p>
                 </div>
-                <div className="text-xs text-gray-500 space-y-1">
-                  <p>Sube la imagen o PDF del comprobante de pago.</p>
-                  <p>Máximo 5 MB. Formatos aceptados: JPG, PNG, WEBP, PDF.</p>
+                <div className="text-xs text-gray-500">
+                  <p>JPG, PNG, WEBP, PDF • Máx. 5MB</p>
                 </div>
               </div>
             </div>
           ) : (
             /* Preview Area */
-            <div className="space-y-4">
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    {getFileIcon()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-green-800 font-semibold mb-1">Archivo seleccionado</p>
-                    <p className="text-sm text-green-700 font-medium truncate">{selectedFile.name}</p>
-                    <p className="text-xs text-green-600 mt-1">
-                      Tamaño: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
+            <div className="space-y-3">
+              <div className="p-2">
+                <p className="text-green-700 text-sm">
+                  ✓ {selectedFile.name}
+                </p>
               </div>
 
               {/* Image Preview */}
               {previewUrl && (
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-3">Vista previa:</p>
+                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Vista previa:</p>
                   <div className="flex justify-center">
                     <img
                       src={previewUrl}
                       alt="Preview"
-                      className="max-h-64 rounded-lg shadow-md object-contain"
+                      className="max-h-32 rounded object-contain"
                     />
                   </div>
                 </div>
@@ -278,7 +263,7 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
               {/* Change File Button */}
               <button
                 onClick={resetModal}
-                className="w-full py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="w-full py-1.5 text-xs text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
                 disabled={uploading}
               >
                 Cambiar archivo
@@ -287,14 +272,13 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
           )}
 
           {/* Important Notes */}
-          <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <FaExclamationTriangle className="text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <FaExclamationTriangle className="text-gray-500 flex-shrink-0 mt-0.5 text-sm" />
               <div>
-                <h5 className="font-semibold text-amber-800 mb-2">Importante:</h5>
-                <ul className="text-sm text-amber-700 space-y-1">
+                <h5 className="font-medium text-gray-700 mb-1 text-sm">Importante:</h5>
+                <ul className="text-xs text-gray-600 space-y-0.5">
                   <li>• El comprobante debe mostrar claramente el monto pagado</li>
-                  <li>• Incluye fecha y concepto del pago</li>
                   <li>• La imagen debe ser legible y completa</li>
                   <li>• Una vez enviado, estará en revisión por administración</li>
                 </ul>
@@ -305,10 +289,10 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
 
         {/* Footer */}
         <div className="flex-shrink-0 border-t border-gray-200 p-4 bg-gray-50">
-          <div className="flex justify-end gap-3">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <button
               onClick={handleClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+              className="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
               disabled={uploading}
             >
               Cancelar
@@ -317,14 +301,14 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
               <button
                 onClick={handleUpload}
                 disabled={uploading}
-                className="px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-primary-blue text-white rounded hover:bg-primary-purple transition-colors disabled:opacity-50"
               >
                 {uploading ? "Enviando..." : "Enviar Comprobante"}
               </button>
             ) : (
               <button
                 disabled
-                className="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
+                className="px-4 py-2 text-sm bg-gray-300 text-gray-500 rounded cursor-not-allowed"
               >
                 Selecciona un archivo
               </button>

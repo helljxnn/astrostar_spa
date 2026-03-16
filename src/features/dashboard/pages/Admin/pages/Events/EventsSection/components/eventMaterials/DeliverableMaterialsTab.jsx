@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Trash2, Lock, Package, X, AlertCircle, Edit } from "lucide-react";
 import {
   showSuccessAlert,
@@ -24,7 +24,7 @@ const DeliverableMaterialsTab = ({
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
 
-  // Estado para ediciÃ³n
+  // Estado para edición
   const [editingItem, setEditingItem] = useState(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [editNote, setEditNote] = useState("");
@@ -110,14 +110,14 @@ const DeliverableMaterialsTab = ({
 
     if (!quantity || quantity <= 0) {
       showWarningAlert(
-        "Cantidad invÃ¡lida",
-        "Por favor ingresa una cantidad vÃ¡lida",
+        "Cantidad inválida",
+        "Por favor ingresa una cantidad válida",
       );
       return;
     }
 
     if (!quantityValidation.valid) {
-      showErrorAlert("Cantidad invÃ¡lida", quantityValidation.message);
+      showErrorAlert("Cantidad inválida", quantityValidation.message);
       return;
     }
 
@@ -131,7 +131,7 @@ const DeliverableMaterialsTab = ({
       const materialName = selectedMaterialData?.nombre || "este material";
       showWarningAlert(
         "Material ya asignado",
-        `${materialName} ya estÃ¡ en la lista. Si deseas cambiar la cantidad, usa el botÃ³n de editar.`,
+        `${materialName} ya está en la lista. Si deseas cambiar la cantidad, usa el botón de editar.`,
       );
       return;
     }
@@ -145,7 +145,7 @@ const DeliverableMaterialsTab = ({
       const materialName = selectedMaterialData?.nombre || "este material";
       showWarningAlert(
         "Material ya agregado",
-        `${materialName} ya estÃ¡ en la lista de pendientes. Si deseas cambiar la cantidad, elimÃ­nalo y agrÃ©galo nuevamente.`,
+        `${materialName} ya está en la lista de pendientes. Si deseas cambiar la cantidad, elimï¿½nalo y agrï¿½galo nuevamente.`,
       );
       return;
     }
@@ -167,8 +167,8 @@ const DeliverableMaterialsTab = ({
 
   const handleRemoveManual = async (assignmentId, materialName, qty) => {
     const result = await showDeleteAlert(
-      "Â¿Eliminar material?",
-      `Se eliminarÃ¡ ${qty} unidades de ${materialName}`,
+      "¿Eliminar material?",
+      `Se eliminará ${qty} unidades de ${materialName}`,
     );
 
     if (!result.isConfirmed) return;
@@ -208,7 +208,7 @@ const DeliverableMaterialsTab = ({
 
     const qty = parseInt(editQuantity);
     // stock_available es el stock real disponible en eventos
-    // Cuando editamos, liberamos qty_manual actual, asÃ­ que el mÃ¡ximo es stock_available + qty_manual
+    // Cuando editamos, liberamos qty_manual actual, asï¿½ que el máximo es stock_available + qty_manual
     const maxAvailable = editingItem.stock_available + editingItem.qty_manual;
 
     if (qty <= 0) {
@@ -230,17 +230,17 @@ const DeliverableMaterialsTab = ({
 
     // Validaciones
     if (!editQuantityValidation.valid) {
-      showWarningAlert("Cantidad invÃ¡lida", editQuantityValidation.message);
+      showWarningAlert("Cantidad inválida", editQuantityValidation.message);
       return;
     }
 
     try {
-      // Eliminar asignaciÃ³n actual
+      // Eliminar asignación actual
       await EventMaterialsService.removeConsumable(
         editingItem.assignments[0].id,
       );
 
-      // Crear nueva asignaciÃ³n con valores actualizados
+      // Crear nueva asignación con valores actualizados
       await EventMaterialsService.assignConsumable(event.id, {
         materialId: editingItem.material_id,
         cantidad: newQty,
@@ -285,7 +285,7 @@ const DeliverableMaterialsTab = ({
       {/* Summary */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-gray-50 rounded-lg p-4">
-          <div className="text-sm text-gray-600">Total Ãtems</div>
+          <div className="text-sm text-gray-600">Total ítems</div>
           <div className="text-2xl font-semibold text-gray-900">
             {totals.totalItems}
           </div>
@@ -343,7 +343,7 @@ const DeliverableMaterialsTab = ({
               </label>
               <MaterialSearchSelector
                 materials={materials.filter((m) => {
-                  // Filtrar materiales que ya estÃ¡n asignados manualmente o pendientes
+                  // Filtrar materiales que ya están asignados manualmente o pendientes
                   const isAssigned = deliverables.some(
                     (item) => item.material_id === m.id && item.qty_manual > 0,
                   );
@@ -369,7 +369,7 @@ const DeliverableMaterialsTab = ({
                 Cantidad
                 {selectedMaterialData && (
                   <span className="text-xs text-gray-500 ml-2">
-                    (MÃ¡x: {selectedMaterialData.stockEventos})
+                    (Mï¿½x: {selectedMaterialData.stockEventos})
                   </span>
                 )}
               </label>
@@ -398,7 +398,7 @@ const DeliverableMaterialsTab = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              ObservaciÃ³n (opcional)
+              Observaciï¿½n (opcional)
             </label>
             <input
               type="text"
@@ -453,7 +453,7 @@ const DeliverableMaterialsTab = ({
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Cantidad
                 <span className="text-xs text-gray-500 ml-2">
-                  (MÃ¡x: {editingItem.stock_available + editingItem.qty_manual} ={" "}
+                  (Mï¿½x: {editingItem.stock_available + editingItem.qty_manual} ={" "}
                   {editingItem.stock_available} disponibles +{" "}
                   {editingItem.qty_manual} actuales)
                 </span>
@@ -481,7 +481,7 @@ const DeliverableMaterialsTab = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                ObservaciÃ³n (opcional)
+                Observaciï¿½n (opcional)
               </label>
               <input
                 type="text"
@@ -536,7 +536,7 @@ const DeliverableMaterialsTab = ({
                       {material?.unidadMedida || "unidades"}
                       {pending.observaciones && (
                         <span className="ml-2 text-gray-500">
-                          â€¢ {pending.observaciones}
+                          â¬¢ {pending.observaciones}
                         </span>
                       )}
                     </div>
@@ -561,7 +561,7 @@ const DeliverableMaterialsTab = ({
           <Package className="w-12 h-12 text-slate-400 mx-auto mb-3" />
           <p className="text-slate-600">No hay materiales asignados</p>
           <p className="text-sm text-slate-500 mt-1">
-            Agrega materiales desde stock evento o se cargarÃ¡n automÃ¡ticamente
+            Agrega materiales desde stock evento o se cargarï¿½n automï¿½ticamente
             desde donaciones
           </p>
         </div>
@@ -583,7 +583,7 @@ const DeliverableMaterialsTab = ({
                   Total
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-700">
-                  ObservaciÃ³n
+                  Observaciï¿½n
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-slate-700">
                   Acciones
@@ -651,7 +651,7 @@ const DeliverableMaterialsTab = ({
                         <button
                           onClick={() => handleEditClick(item)}
                           className="p-1 text-gray-600 hover:text-primary-purple hover:bg-purple-50 rounded transition-colors"
-                          title="Editar cantidad y observaciÃ³n"
+                          title="Editar cantidad y observación"
                         >
                           <Edit className="w-4 h-4" />
                         </button>

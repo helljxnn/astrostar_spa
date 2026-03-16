@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import KPICard from "../components/KPICard";
 import HealthServicesGraphic from "../components/HealthServicesGraphic";
 import HealthServicesYearGraphic from "../components/HealthServicesYearGraphic";
+import DashboardService from "../services/DashboardService";
 import {
   FaHeartbeat,
   FaAppleAlt,
@@ -9,13 +11,57 @@ import {
 } from "react-icons/fa";
 
 const HealthSection = () => {
+  const [healthData, setHealthData] = useState({
+    stats: {
+      total: 0,
+      nutricion: 0,
+      fisioterapia: 0,
+      psicologia: 0,
+      completadas: 0,
+      programadas: 0,
+      pendientes: 0,
+      canceladas: 0
+    },
+    monthly: [],
+    yearly: {}
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchHealthData();
+  }, []);
+
+  const fetchHealthData = async () => {
+    try {
+      setLoading(true);
+      const response = await DashboardService.getHealthServicesData();
+
+      if (response.success && response.data) {
+        setHealthData(response.data);
+      } else {
+        // Usar datos por defecto si no hay datos reales
+        setHealthData(response.data);
+      }
+    } catch (error) {
+      console.error("Error al cargar datos de servicios de salud:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcular porcentajes para las barras de servicios más solicitados
+  const totalServices = healthData.stats.nutricion + healthData.stats.fisioterapia + healthData.stats.psicologia;
+  const nutricionPercentage = totalServices > 0 ? (healthData.stats.nutricion / totalServices) * 100 : 0;
+  const fisioterapiaPercentage = totalServices > 0 ? (healthData.stats.fisioterapia / totalServices) * 100 : 0;
+  const psicologiaPercentage = totalServices > 0 ? (healthData.stats.psicologia / totalServices) * 100 : 0;
+
   return (
     <div className="space-y-6">
       {/* KPIs específicos de servicios de salud */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Citas"
-          value="156"
+          value={loading ? "..." : healthData.stats.total.toString()}
           icon={FaHeartbeat}
           color="green"
           trend="up"
@@ -23,7 +69,7 @@ const HealthSection = () => {
         />
         <KPICard
           title="Nutrición"
-          value="68"
+          value={loading ? "..." : healthData.stats.nutricion.toString()}
           icon={FaAppleAlt}
           color="blue"
           trend="up"
@@ -31,7 +77,7 @@ const HealthSection = () => {
         />
         <KPICard
           title="Fisioterapia"
-          value="52"
+          value={loading ? "..." : healthData.stats.fisioterapia.toString()}
           icon={FaBriefcaseMedical}
           color="purple"
           trend="up"
@@ -39,7 +85,7 @@ const HealthSection = () => {
         />
         <KPICard
           title="Psicología"
-          value="36"
+          value={loading ? "..." : healthData.stats.psicologia.toString()}
           icon={FaBrain}
           color="pink"
           trend="up"
@@ -49,8 +95,8 @@ const HealthSection = () => {
 
       {/* Gráficas principales */}
       <div className="grid grid-cols-1 gap-6">
-        <HealthServicesGraphic />
-        <HealthServicesYearGraphic />
+        <HealthServicesGraphic healthData={healthData} loading={loading} />
+        <HealthServicesYearGraphic healthData={healthData} loading={loading} />
       </div>
 
       {/* Estadísticas adicionales */}
@@ -60,73 +106,84 @@ const HealthSection = () => {
             <div className="w-1 h-6 bg-gradient-to-b from-primary-green to-primary-blue rounded-full"></div>
             Servicios Más Solicitados
           </h3>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-blue to-blue-400 flex items-center justify-center shadow-md">
-                <FaAppleAlt className="text-white text-xl" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Nutrición
-                  </span>
-                  <span className="text-sm font-bold text-gray-800">
-                    68 citas
-                  </span>
-                </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary-blue to-blue-400"
-                    style={{ width: "68%" }}
-                  ></div>
-                </div>
-              </div>
+          
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
+          ) : totalServices === 0 ? (
+            <div className="text-center text-gray-500 py-8 text-sm">
+              No hay datos de servicios disponibles
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-blue to-blue-400 flex items-center justify-center shadow-md">
+                  <FaAppleAlt className="text-white text-xl" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">
+                      Nutrición
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {healthData.stats.nutricion} citas
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary-blue to-blue-400 transition-all duration-1000"
+                      style={{ width: `${nutricionPercentage}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-purple to-purple-400 flex items-center justify-center shadow-md">
-                <FaBriefcaseMedical className="text-white text-xl" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Fisioterapia
-                  </span>
-                  <span className="text-sm font-bold text-gray-800">
-                    52 citas
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-purple to-purple-400 flex items-center justify-center shadow-md">
+                  <FaBriefcaseMedical className="text-white text-xl" />
                 </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary-purple to-purple-400"
-                    style={{ width: "52%" }}
-                  ></div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">
+                      Fisioterapia
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {healthData.stats.fisioterapia} citas
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary-purple to-purple-400 transition-all duration-1000"
+                      style={{ width: `${fisioterapiaPercentage}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-pink to-pink-400 flex items-center justify-center shadow-md">
-                <FaBrain className="text-white text-xl" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">
-                    Psicología
-                  </span>
-                  <span className="text-sm font-bold text-gray-800">
-                    36 citas
-                  </span>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-pink to-pink-400 flex items-center justify-center shadow-md">
+                  <FaBrain className="text-white text-xl" />
                 </div>
-                <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary-pink to-pink-400"
-                    style={{ width: "36%" }}
-                  ></div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">
+                      Psicología
+                    </span>
+                    <span className="text-sm font-bold text-gray-800">
+                      {healthData.stats.psicologia} citas
+                    </span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary-pink to-pink-400 transition-all duration-1000"
+                      style={{ width: `${psicologiaPercentage}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -134,55 +191,62 @@ const HealthSection = () => {
             <div className="w-1 h-6 bg-gradient-to-b from-primary-purple to-primary-pink rounded-full"></div>
             Estado de Citas
           </h3>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-primary-green/10 rounded-xl hover:bg-primary-green/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary-green shadow-sm"></div>
-                <span className="text-sm font-medium text-gray-700">
-                  Completadas
+          
+          {loading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-primary-green/10 rounded-xl hover:bg-primary-green/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary-green shadow-sm"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Completadas
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
+                  {healthData.stats.completadas}
                 </span>
               </div>
-              <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
-                124
-              </span>
-            </div>
 
-            <div className="flex items-center justify-between p-3 bg-primary-blue/10 rounded-xl hover:bg-primary-blue/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary-blue shadow-sm"></div>
-                <span className="text-sm font-medium text-gray-700">
-                  Programadas
+              <div className="flex items-center justify-between p-3 bg-primary-blue/10 rounded-xl hover:bg-primary-blue/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary-blue shadow-sm"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Programadas
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
+                  {healthData.stats.programadas}
                 </span>
               </div>
-              <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
-                18
-              </span>
-            </div>
 
-            <div className="flex items-center justify-between p-3 bg-primary-yellow/10 rounded-xl hover:bg-primary-yellow/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary-yellow shadow-sm"></div>
-                <span className="text-sm font-medium text-gray-700">
-                  Pendientes
+              <div className="flex items-center justify-between p-3 bg-primary-yellow/10 rounded-xl hover:bg-primary-yellow/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary-yellow shadow-sm"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Pendientes
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
+                  {healthData.stats.pendientes}
                 </span>
               </div>
-              <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
-                8
-              </span>
-            </div>
 
-            <div className="flex items-center justify-between p-3 bg-primary-red/10 rounded-xl hover:bg-primary-red/20 transition-colors">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-primary-red shadow-sm"></div>
-                <span className="text-sm font-medium text-gray-700">
-                  Canceladas
+              <div className="flex items-center justify-between p-3 bg-primary-red/10 rounded-xl hover:bg-primary-red/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-primary-red shadow-sm"></div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Canceladas
+                  </span>
+                </div>
+                <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
+                  {healthData.stats.canceladas}
                 </span>
               </div>
-              <span className="text-sm font-bold text-gray-800 bg-white px-3 py-1 rounded-lg">
-                6
-              </span>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -193,9 +257,10 @@ const HealthSection = () => {
             Tasa de Asistencia
           </h4>
           <p className="text-4xl font-bold bg-gradient-to-r from-primary-green to-green-600 bg-clip-text text-transparent">
-            94%
+            {loading ? "..." : healthData.stats.total > 0 ? 
+              `${Math.round((healthData.stats.completadas / healthData.stats.total) * 100)}%` : "0%"}
           </p>
-          <p className="text-xs text-gray-600 mt-1">Últimos 30 días</p>
+          <p className="text-xs text-gray-600 mt-1">Citas completadas</p>
         </div>
 
         <div className="bg-gradient-to-br from-primary-blue/10 to-primary-blue/5 rounded-2xl shadow-lg p-6 border-2 border-primary-blue/20 hover:border-primary-blue/40 transition-all">

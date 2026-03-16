@@ -40,14 +40,19 @@ export const useAthletes = () => {
     setError(null);
     
     try {
-      const response = await AthletesService.getAthletes({
+      // Agregar parámetros de cache busting más agresivos
+      const enhancedParams = {
         page: params.page || PAGINATION_CONFIG.DEFAULT_PAGE,
         limit: params.limit || PAGINATION_CONFIG.ROWS_PER_PAGE,
         search: params.search,
         status: params.status,
         categoria: params.categoria,
-        estadoInscripcion: params.estadoInscripcion
-      });
+        estadoInscripcion: params.estadoInscripcion,
+        _t: Date.now(),
+        _refresh: Math.random() // Forzar refresh
+      };
+
+      const response = await AthletesService.getAthletes(enhancedParams);
 
       if (response.success) {
         setAthletes(response.data);
@@ -154,7 +159,6 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
         // Para ACUDIENTES: Usar todos EXCEPTO RC, TI y NIT
         const guardianDocTypes = allDocTypes.filter(dt => {
           if (!dt || !dt.label) {
-            console.warn('⚠️ Tipo de documento sin label:', dt);
             return false;
           }
           
@@ -391,6 +395,13 @@ if (response.success) {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
+  const updateAthleteInState = useCallback((updatedAthlete) => {
+    if (!updatedAthlete || !updatedAthlete.id) return;
+    setAthletes(prev =>
+      prev.map(athlete => (athlete.id === updatedAthlete.id ? { ...athlete, ...updatedAthlete } : athlete))
+    );
+  }, []);
+
   // Cargar datos iniciales solo si está autenticado - OPTIMIZADO
   useEffect(() => {
     if (isAuthenticated) {
@@ -436,6 +447,7 @@ if (response.success) {
     deleteGuardian,
     changePage,
     changeLimit,
+    updateAthleteInState,
     
     // Utilidades
     refresh

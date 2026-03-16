@@ -229,10 +229,7 @@ const Guardians = () => {
       {/* Tabla */}
       {loading ? (
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-          <div className="flex flex-col items-center gap-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-purple"></div>
-            <p>Cargando acudientes...</p>
-          </div>
+          <p>Cargando acudientes...</p>
         </div>
       ) : displayTotalRows > 0 ? (
         <>

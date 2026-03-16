@@ -17,7 +17,7 @@ export const EnrollmentsProvider = ({ children }) => {
 
   // Notificar que se creó una nueva inscripción
   const notifyNewInscription = useCallback((inscription) => {
-    console.log("📢 [EnrollmentsContext] Notificando nueva inscripción:", inscription);
+    // console.log("📢 [EnrollmentsContext] Notificando nueva inscripción:", inscription);
     listeners.forEach(listener => {
       if (listener.onNewInscription) {
         listener.onNewInscription(inscription);
@@ -27,7 +27,7 @@ export const EnrollmentsProvider = ({ children }) => {
 
   // Notificar que se actualizó el email de una inscripción
   const notifyEmailUpdate = useCallback((identification, newEmail) => {
-    console.log("📢 [EnrollmentsContext] Notificando actualización de email:", { identification, newEmail });
+    // console.log("📢 [EnrollmentsContext] Notificando actualización de email:", { identification, newEmail });
     listeners.forEach(listener => {
       if (listener.onEmailUpdate) {
         listener.onEmailUpdate(identification, newEmail);

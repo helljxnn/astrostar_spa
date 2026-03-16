@@ -8,20 +8,21 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 export const BUSINESS_CONSTANTS = {
-  // Mora diaria por mensualidad
+  // ✅ SISTEMA EMPRESARIAL ESTÁNDAR (OPCIÓN A)
+  
+  // Mora diaria por mensualidad (sin días de gracia)
   LATE_FEE_DAILY: 2000,
   
   // Días máximos de mora para bloqueo de acceso
   MAX_LATE_DAYS_MONTHLY: 15,
   
-  // Días de gracia antes de empezar a cobrar mora
-  GRACE_DAYS: 5,
+  // Días de gracia: se reflejan en la fecha dueEnd enviada por backend
   
-  // ✅ NUEVO: Límite máximo de días de mora (90 días)
+  // ✅ Límite máximo de días de mora (90 días)
   // Protege a atletas de deudas desproporcionadas
   MAX_LATE_DAYS_CAP: 90,
   
-  // Mora máxima posible
+  // Mora máxima posible (90 días × $2,000)
   MAX_LATE_FEE: 90 * 2000, // $180,000
 };
 
@@ -125,27 +126,34 @@ export const ATHLETE_STATUS = {
 
 /**
  * Calcula la mora con límite de 90 días
+ * Nota: los días de gracia ya vienen reflejados en dueEnd desde backend
+ * REGLA DE NEGOCIO: Mora continua desde vencimiento hasta fecha actual
  * @param {number} lateDays - Días de mora
  * @param {number} dailyFee - Mora diaria (default: 2000)
- * @returns {number} - Mora calculada con límite
+ * @returns {number} - Mora calculada con límite empresarial
  */
 export const calculateLateFee = (lateDays, dailyFee = BUSINESS_CONSTANTS.LATE_FEE_DAILY) => {
   if (lateDays <= 0) return 0;
   
-  // ✅ Aplicar límite de 90 días
+  // ✅ SISTEMA EMPRESARIAL: NO aplicar días de gracia
+  // La mora empieza desde el primer día de vencimiento
+  
+  // ✅ Aplicar límite de 90 días para proteger a atletas
   const cappedLateDays = Math.min(lateDays, BUSINESS_CONSTANTS.MAX_LATE_DAYS_CAP);
   
   return cappedLateDays * dailyFee;
 };
 
 /**
- * Calcula días de mora desde una fecha de vencimiento
+ * Calcula días de mora desde vencimiento hasta FECHA ACTUAL
+ * Nota: los días de gracia ya vienen reflejados en dueEnd desde backend
  * @param {Date|string} dueDate - Fecha de vencimiento
- * @returns {number} - Días de mora
+ * @returns {number} - Días de mora desde vencimiento hasta hoy
  */
 export const calculateLateDays = (dueDate) => {
   if (!dueDate) return 0;
   
+  // ✅ CRÍTICO: Siempre usar fecha actual (no fecha de subida)
   const now = new Date();
   const due = new Date(dueDate);
   const diffTime = now - due;
@@ -164,7 +172,7 @@ export const isObligationSuspended = (obligation) => {
 };
 
 /**
- * Obtiene la mora de una obligación considerando suspensión
+ * Obtiene la mora de una obligación considerando suspensión y días de gracia
  * @param {Object} obligation - Obligación de pago
  * @returns {number} - Mora calculada
  */
@@ -186,7 +194,7 @@ export const getObligationLateFee = (obligation) => {
     return moraAtSuspension + newMora;
   }
   
-  // Cálculo normal
+  // Cálculo normal con días de gracia aplicados
   const lateDays = calculateLateDays(obligation.dueEnd);
   return calculateLateFee(lateDays);
 };

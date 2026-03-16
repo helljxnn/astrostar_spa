@@ -56,7 +56,7 @@ const PaymentsTest = () => {
           Módulo de gestión de pagos funcionando correctamente con todas las funcionalidades
         </p>
         <div className="inline-flex items-center px-4 py-2 bg-green-100 text-green-800 rounded-lg">
-          ✅ ¡Módulo Completamente Implementado!
+          ¡Módulo Completamente Implementado!
         </div>
       </div>
 
@@ -103,7 +103,6 @@ const PaymentsTest = () => {
           className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200"
         >
           <div className="text-center">
-            <div className="text-4xl mb-4">💳</div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Vista Atleta
             </h3>
@@ -168,14 +167,13 @@ const PaymentsTest = () => {
       {/* Financial Summary Demo */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">
-          💰 Resumen Financiero (Demo)
+          Resumen Financiero (Demo)
         </h2>
         <FinancialSummaryCard financialStatus={mockFinancialStatus} />
       </div>
 
       {/* Success Message */}
       <div className="text-center bg-green-50 border border-green-200 rounded-lg p-6">
-        <div className="text-green-600 text-4xl mb-4">🎉</div>
         <h2 className="text-2xl font-bold text-green-900 mb-2">
           ¡Módulo de Pagos Completamente Implementado!
         </h2>

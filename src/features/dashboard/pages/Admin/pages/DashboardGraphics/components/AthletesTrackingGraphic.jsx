@@ -1,4 +1,5 @@
 
+import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -7,30 +8,55 @@ import {
 } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import DashboardService from "../services/DashboardService";
 
 // Registrar componentes de Chart.js
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const AthletesTrackingGraphic = () => {
-  // Datos de ejemplo - puedes conectar esto con tus datos reales
-  const inscripcionesData = {
-    vigentes: 65,
-    suspendidas: 175,
-    vencidas: 84,
+  const [inscripcionesData, setInscripcionesData] = useState({
+    vigentes: 0,
+    vencidas: 0,
+    pendientes: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAthletesTracking();
+  }, []);
+
+  const fetchAthletesTracking = async () => {
+    try {
+      setLoading(true);
+      const response = await DashboardService.getAthletesTracking();
+
+      if (response.success && response.data) {
+        setInscripcionesData({
+          vigentes: response.data.vigentes || 0,
+          vencidas: response.data.vencidas || 0,
+          pendientes: response.data.pendientes || 0
+        });
+      }
+    } catch (error) {
+      console.error("Error al cargar datos de seguimiento:", error);
+      // Mantener datos por defecto en caso de error
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const total = inscripcionesData.vigentes + inscripcionesData.suspendidas + inscripcionesData.vencidas;
+  const total = inscripcionesData.vigentes + inscripcionesData.vencidas + inscripcionesData.pendientes;
 
   // Calcular porcentajes
-  const porcentajeVigentes = ((inscripcionesData.vigentes / total) * 100).toFixed(0);
-  const porcentajeSuspendidas = ((inscripcionesData.suspendidas / total) * 100).toFixed(0);
-  const porcentajeVencidas = ((inscripcionesData.vencidas / total) * 100).toFixed(0);
+  const porcentajeVigentes = total > 0 ? ((inscripcionesData.vigentes / total) * 100).toFixed(0) : 0;
+  const porcentajeVencidas = total > 0 ? ((inscripcionesData.vencidas / total) * 100).toFixed(0) : 0;
+  const porcentajePendientes = total > 0 ? ((inscripcionesData.pendientes / total) * 100).toFixed(0) : 0;
 
-  // Datos para exportar
+  // Datos para exportar - ESTADOS CORRECTOS
   const reportData = [
     { estado: "Vigentes", cantidad: inscripcionesData.vigentes, porcentaje: `${porcentajeVigentes}%` },
-    { estado: "Suspendidas", cantidad: inscripcionesData.suspendidas, porcentaje: `${porcentajeSuspendidas}%` },
     { estado: "Vencidas", cantidad: inscripcionesData.vencidas, porcentaje: `${porcentajeVencidas}%` },
+    { estado: "Pendientes de Pago", cantidad: inscripcionesData.pendientes, porcentaje: `${porcentajePendientes}%` },
     { estado: "Total", cantidad: total, porcentaje: "100%" },
   ];
 
@@ -40,26 +66,26 @@ const AthletesTrackingGraphic = () => {
     { key: "porcentaje", label: "Porcentaje" },
   ];
 
-  // Configuración del gráfico
+  // Configuración del gráfico - ESTADOS CORRECTOS
   const data = {
-    labels: ["Suspendidas", "Vigentes", "Vencidas"],
+    labels: ["Vigentes", "Vencidas", "Pendientes de Pago"],
     datasets: [
       {
-        data: [inscripcionesData.suspendidas, inscripcionesData.vigentes, inscripcionesData.vencidas],
+        data: [inscripcionesData.vigentes, inscripcionesData.vencidas, inscripcionesData.pendientes],
         backgroundColor: [
-          "rgba(167, 139, 250, 0.85)", // morado
-          "rgba(110, 231, 249, 0.85)", // celeste
-          "rgba(251, 191, 36, 0.85)",  // amarillo
+          "rgba(34, 197, 94, 0.85)",   // verde para vigentes
+          "rgba(239, 68, 68, 0.85)",   // rojo para vencidas
+          "rgba(251, 191, 36, 0.85)",  // amarillo para pendientes
         ],
         borderColor: [
-          "rgba(167, 139, 250, 1)",
-          "rgba(110, 231, 249, 1)",
+          "rgba(34, 197, 94, 1)",
+          "rgba(239, 68, 68, 1)",
           "rgba(251, 191, 36, 1)",
         ],
         borderWidth: 2,
         hoverBackgroundColor: [
-          "rgba(167, 139, 250, 1)",
-          "rgba(110, 231, 249, 1)",
+          "rgba(34, 197, 94, 1)",
+          "rgba(239, 68, 68, 1)",
           "rgba(251, 191, 36, 1)",
         ],
         hoverBorderWidth: 3,
@@ -83,7 +109,7 @@ const AthletesTrackingGraphic = () => {
           label: function (context) {
             const label = context.label || "";
             const value = context.parsed || 0;
-            const percentage = ((value / total) * 100).toFixed(1);
+            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
             return `${label}: ${value} (${percentage}%)`;
           },
         },
@@ -115,25 +141,24 @@ const AthletesTrackingGraphic = () => {
 
       {/* Gráfico centrado responsive */}
       <div className="h-[140px] sm:h-[180px] lg:h-[200px] flex justify-center items-center">
-        <Doughnut data={data} options={options} />
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : total === 0 ? (
+          <div className="flex items-center justify-center h-full text-gray-500">
+            No hay datos de matrículas disponibles
+          </div>
+        ) : (
+          <Doughnut data={data} options={options} />
+        )}
       </div>
 
-      {/* Leyenda personalizada responsive */}
+      {/* Leyenda personalizada responsive - ESTADOS CORRECTOS */}
       <div className="space-y-1 sm:space-y-2 mt-2 sm:mt-3">
         <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-400"></div>
-            <span className="text-gray-700">Suspendidas</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.suspendidas}</span>
-            <span className="text-gray-800 font-semibold">({porcentajeSuspendidas}%)</span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-xs sm:text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-cyan-300"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500"></div>
             <span className="text-gray-700">Vigentes</span>
           </div>
           <div className="flex items-center gap-1">
@@ -144,12 +169,23 @@ const AthletesTrackingGraphic = () => {
 
         <div className="flex items-center justify-between text-xs sm:text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400"></div>
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500"></div>
             <span className="text-gray-700">Vencidas</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.vencidas}</span>
             <span className="text-gray-800 font-semibold">({porcentajeVencidas}%)</span>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between text-xs sm:text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-400"></div>
+            <span className="text-gray-700">Pendientes de Pago</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-gray-600 text-xs sm:text-sm">{inscripcionesData.pendientes}</span>
+            <span className="text-gray-800 font-semibold">({porcentajePendientes}%)</span>
           </div>
         </div>
 

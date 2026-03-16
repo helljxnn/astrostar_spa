@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import AttendanceToggle from "./AttendanceToggle";
 
 const AttendanceTable = ({

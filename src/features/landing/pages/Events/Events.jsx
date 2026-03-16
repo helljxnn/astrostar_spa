@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
@@ -42,7 +42,7 @@ export const Events = () => {
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
     
-    // Auto-reset del highlight despuÃ©s de 5 segundos
+    // Auto-reset del highlight después de 5 segundos
     setTimeout(() => {
 
       setHighlightedEventId(null);
@@ -53,7 +53,7 @@ export const Events = () => {
 
     setSelectedDate(date);
 
-    // Buscar eventos en esa fecha (incluyendo eventos multi-dÃ­a)
+    // Buscar eventos en esa fecha (incluyendo eventos multi-día)
     const eventsOnDate = allEvents.filter((event) => {
       // Usar isSameDay con soporte para endDate
       return isSameDay(new Date(event.date), date, event.endDate ? new Date(event.endDate) : null);
@@ -111,7 +111,7 @@ export const Events = () => {
       <Hero
         variant="background"
         title="Eventos"
-        subtitle="Nuestros eventos son el corazÃ³n de la FundaciÃ³n, donde celebramos la pasiÃ³n por el fÃºtbol femenino. Organizamos torneos emocionantes y encuentros inspiradores para nuestras jugadoras y la comunidad. Â¡Consulta nuestro calendario y Ãºnete a la celebraciÃ³n del fÃºtbol femenino!"
+        subtitle="Nuestros eventos son el corazón de la Fundación, donde celebramos la pasión por el fútbol femenino. Organizamos torneos emocionantes y encuentros inspiradores para nuestras jugadoras y la comunidad. ¡Consulta nuestro calendario y únete a la celebración del fútbol femenino!"
         imageUrl="/public/assets/images/EventsHero.png"
       />
 
