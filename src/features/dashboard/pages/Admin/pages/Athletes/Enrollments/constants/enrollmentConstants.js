@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Constantes para el módulo de matrículas
  * Centraliza valores y configuraciones para mejor mantenibilidad
  */

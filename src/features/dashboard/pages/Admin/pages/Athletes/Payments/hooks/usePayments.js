@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
@@ -39,19 +39,13 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
       
       if (mode === 'pending') {
         // Solo pagos pendientes
-        console.log('🔍 Fetching pending payments...');
         response = await paymentsService.getPendingPayments(paginationParams);
-        console.log('📊 Pending payments response:', response);
       } else if (mode === 'monthly') {
         // Gestión mensual
-        console.log('🔍 Fetching monthly management with filters:', paginationParams);
         response = await paymentsService.getMonthlyPaymentsManagement(paginationParams);
-        console.log('📊 Monthly management response:', response);
       } else {
         // Todos los pagos con filtros
-        console.log('🔍 Fetching all payments with filters:', paginationParams);
         response = await paymentsService.getAllPayments(paginationParams);
-        console.log('📊 All payments response:', response);
       }
       
       // Validación defensiva de la respuesta
@@ -64,7 +58,6 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         const paymentsData = Array.isArray(response.data) ? response.data : [];
         setPayments(paymentsData);
         setTotalRows(response.pagination?.total || paymentsData.length);
-        console.log(`✅ ${mode} payments loaded:`, paymentsData.length, 'payments');
       } else {
         throw new Error(response.message || 'Error en la respuesta del servidor');
       }
@@ -177,3 +170,4 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     rejectPayment,
   };
 };
+

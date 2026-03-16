@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient.js";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class AssistanceathletesService {
   async getAttendanceByDate(params = {}) {
@@ -85,3 +85,4 @@ class AssistanceathletesService {
 }
 
 export default new AssistanceathletesService();
+

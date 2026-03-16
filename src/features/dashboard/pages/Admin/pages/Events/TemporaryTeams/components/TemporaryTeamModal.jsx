@@ -1,4 +1,4 @@
-/* "use client" */
+﻿/* "use client" */
 
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -100,12 +100,12 @@ const TemporaryTeamModal = ({
         }
       }
 
-      // Despu�s de cargar todo, marcar como no inicial
+      // Despus de cargar todo, marcar como no inicial
       setTimeout(() => {
         setIsInitialLoad(false);
       }, 500);
     } else if (isOpen && !isEditing) {
-      setIsInitialLoad(false); // No es carga inicial si es creaci�n
+      setIsInitialLoad(false); // No es carga inicial si es creacin
 
       setFormData({
         nombre: "",
@@ -179,7 +179,7 @@ const TemporaryTeamModal = ({
           setDuplicateWarnings((prev) => ({
             ...prev,
             trainer:
-              result.message || "Entrenador ya est� registrado en otro equipo",
+              result.message || "Entrenador ya est registrado en otro equipo",
           }));
         } else {
           setDuplicateWarnings((prev) => ({ ...prev, trainer: null }));
@@ -197,7 +197,7 @@ const TemporaryTeamModal = ({
     const validateName = async () => {
       // No validar si el campo está vacío
       if (!formData.nombre?.trim()) {
-        // Limpiar error si el campo est� vac�o
+        // Limpiar error si el campo est vaco
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.nombre;
@@ -225,7 +225,7 @@ const TemporaryTeamModal = ({
         if (result.success && !result.available) {
           setErrors((prev) => ({
             ...prev,
-            nombre: "Este nombre ya est� registrado",
+            nombre: "Este nombre ya est registrado",
           }));
           // Marcar como tocado para que el error persista
           setTouched((prev) => ({
@@ -376,7 +376,7 @@ const TemporaryTeamModal = ({
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Marcar como tocado inmediatamente para validaci�n en tiempo real
+    // Marcar como tocado inmediatamente para validacin en tiempo real
     setTouched((prev) => ({ ...prev, [field]: true }));
 
     // Validar inmediatamente en tiempo real con el nuevo valor
@@ -434,7 +434,7 @@ const TemporaryTeamModal = ({
         }
         break;
       case "descripcion":
-        // La descripci�n no es obligatoria
+        // La descripcin no es obligatoria
         delete newErrors.descripcion;
         break;
     }
@@ -454,7 +454,7 @@ const TemporaryTeamModal = ({
     // Para el campo nombre, si hay error de duplicado, mostrarlo siempre
     if (
       fieldName === "nombre" &&
-      errors[fieldName] === "Este nombre ya est� registrado"
+      errors[fieldName] === "Este nombre ya est registrado"
     ) {
       return errors[fieldName];
     }
@@ -507,7 +507,7 @@ const TemporaryTeamModal = ({
       setSelectedTrainer(null);
       setFormData((prev) => ({ ...prev, entrenador: "" }));
 
-      // Marcar como tocado para activar validaci�n
+      // Marcar como tocado para activar validacin
       setTouched((prev) => ({ ...prev, entrenador: true }));
 
       // Si no hay deportistas, limpiar el tipo de equipo
@@ -611,7 +611,7 @@ const TemporaryTeamModal = ({
 
     setSelectedAthletes(athletes);
 
-    // Marcar como tocado para activar validaci�n
+    // Marcar como tocado para activar validacin
     setTouched((prev) => ({ ...prev, deportistas: true }));
 
     if (!selectedTrainer && athletes.length > 0) {
@@ -1405,3 +1405,4 @@ const TemporaryTeamModal = ({
 };
 
 export default TemporaryTeamModal;
+

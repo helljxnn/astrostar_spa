@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 // Funciones auxiliares de validación
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
@@ -390,3 +390,4 @@ export const athleteValidationRules = {
     },
   ],
 };
+

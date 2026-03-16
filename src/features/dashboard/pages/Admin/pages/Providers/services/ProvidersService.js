@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../shared/services/apiClient";
 
 class ProvidersService {
   constructor() {
@@ -185,7 +185,6 @@ class ProvidersService {
           });
         }
       } catch (error) {
-        console.error("Error enriching providers with document types:", error);
       }
     }
     
@@ -298,10 +297,10 @@ class ProvidersService {
         data: data,
       };
     } catch (error) {
-      console.error('Error fetching providers report:', error);
       return { success: false, error: error.message, data: [] };
     }
   }
 }
 
 export default new ProvidersService();
+

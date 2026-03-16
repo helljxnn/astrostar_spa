@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { FaPlus, FaUserShield } from "react-icons/fa";
+﻿import { useState, useEffect } from "react";
+import { FaUserShield } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
@@ -28,6 +28,7 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
+  const canManageGuardian = hasPermission("athletesSection", "Acudiente");
 
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
@@ -349,6 +350,10 @@ const Athletes = () => {
   };
 
   const handleSaveGuardian = async (newGuardian) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return null;
+    }
     const guardianData = await createGuardian(newGuardian);
 
     if (guardianData) {
@@ -364,6 +369,10 @@ const Athletes = () => {
   };
 
   const handleUpdateGuardian = async (updatedGuardian) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return;
+    }
     const { id, ...guardianData } = updatedGuardian;
     const success = await updateGuardian(id, guardianData);
 
@@ -381,6 +390,10 @@ const Athletes = () => {
   };
 
   const handleEditGuardian = async (updatedGuardian) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return;
+    }
     if (!updatedGuardian || !updatedGuardian.id) return;
 
     const { id, ...guardianData } = updatedGuardian;
@@ -401,6 +414,10 @@ const Athletes = () => {
   };
 
   const handleDeleteGuardian = async (guardian, needsNewGuardian = false) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return false;
+    }
     if (!guardian || !guardian.id) {
       return showErrorAlert("Error", "Acudiente no válido");
     }
@@ -463,6 +480,10 @@ const Athletes = () => {
 
   // Nuevo: Gestionar acudiente desde la fila del deportista
   const handleManageGuardian = (athlete) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return;
+    }
     if (!athlete || athlete.target) return;
 
     // Si el deportista tiene acudiente, mostrarlo
@@ -491,6 +512,10 @@ const Athletes = () => {
     athleteId,
     needsNewGuardian,
   ) => {
+    if (!canManageGuardian) {
+      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
+      return;
+    }
     if (!guardian || !athleteId) {
       return showErrorAlert("Error", "Datos inválidos");
     }
@@ -717,6 +742,7 @@ const Athletes = () => {
                   className:
                     "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
                   title: "Gestionar Acudiente",
+                  show: () => canManageGuardian,
                 },
               ]}
             />
@@ -807,3 +833,4 @@ const Athletes = () => {
 };
 
 export default Athletes;
+

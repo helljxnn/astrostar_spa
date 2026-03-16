@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaArrowLeft,
@@ -559,3 +559,4 @@ const ViewRegistrationsModal = ({
 };
 
 export default ViewRegistrationsModal;
+

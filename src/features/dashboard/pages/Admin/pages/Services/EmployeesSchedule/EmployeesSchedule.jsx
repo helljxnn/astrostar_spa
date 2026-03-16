@@ -26,6 +26,7 @@ const ROLE_COLORS = {
 
 const ROLE_LABELS = {
   entrenador: "Entrenador",
+  profesionalsalud: "Profesional de la Salud",
   fisioterapia: "Fisioterapeuta",
   nutricion: "Nutricionista",
   psicologia: "Psicologia",
@@ -40,10 +41,39 @@ const ROLE_ALIASES = {
   nutricionista: "nutricion",
   nutricion: "nutricion",
   entrenador: "entrenador",
+  profesionaldelasalud: "profesionalsalud",
+  profesionaldesalud: "profesionalsalud",
   admin: "",
   administrador: "",
   administradora: "",
 };
+
+const SPECIALTY_LABELS = {
+  fisioterapia: "Fisioterapia",
+  nutricion: "Nutrición",
+  psicologia: "Psicología",
+};
+
+const SPECIALTY_ALIASES = {
+  fisioterapeuta: "fisioterapia",
+  fisioterapia: "fisioterapia",
+  nutricionista: "nutricion",
+  nutricion: "nutricion",
+  psicologa: "psicologia",
+  psicologo: "psicologia",
+  psicologia: "psicologia",
+};
+
+const BASE_ROLE_FILTERS = [
+  { id: "entrenador", label: ROLE_LABELS.entrenador },
+  { id: "profesionalsalud", label: ROLE_LABELS.profesionalsalud },
+];
+
+const BASE_SPECIALTY_FILTERS = Object.entries(SPECIALTY_LABELS).map(
+  ([id, label]) => ({ id, label }),
+);
+
+const HEALTH_ROLE_ID = "profesionalsalud";
 
 
 const normalizeRole = (cargo = "") =>
@@ -60,6 +90,26 @@ const normalizeRole = (cargo = "") =>
 const resolveRoleId = (cargo = "") => {
   const key = normalizeRole(cargo);
   return ROLE_ALIASES[key] !== undefined ? ROLE_ALIASES[key] : key;
+};
+
+const resolveSpecialtyId = (value = "") => {
+  const key = normalizeRole(value);
+  return SPECIALTY_ALIASES[key] !== undefined ? SPECIALTY_ALIASES[key] : "";
+};
+
+const resolveRoleFilterId = ({
+  cargo = "",
+  specialty = "",
+  specialtyLabel = "",
+} = {}) => {
+  const cargoId = resolveRoleId(cargo);
+  if (cargoId === "entrenador") return "entrenador";
+  if (cargoId === HEALTH_ROLE_ID) return HEALTH_ROLE_ID;
+
+  const specialtyId = resolveSpecialtyId(
+    specialtyLabel || specialty || cargo || "",
+  );
+  return specialtyId ? HEALTH_ROLE_ID : "";
 };
 
 const getRoleColors = (cargoOrId = "") => {
@@ -143,13 +193,6 @@ const filterActionsForSchedule = (schedule = {}, actions = []) => {
   return actions.filter((action) => ["view", "delete"].includes(action.id));
 };
 
-const BASE_ROLE_FILTERS = [
-  { id: "entrenador", label: ROLE_LABELS.entrenador },
-  { id: "fisioterapia", label: ROLE_LABELS.fisioterapia },
-  { id: "nutricion", label: ROLE_LABELS.nutricion },
-  { id: "psicologia", label: ROLE_LABELS.psicologia },
-];
-
 const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const { hasPermission } = usePermissions();
   const {
@@ -175,6 +218,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
     role: "",
+    specialty: "",
   });
   const containerRef = useRef(null);
   const isLoading = loading || loadingEmployees;
@@ -190,8 +234,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     () => hasPermission("employeesSchedule", "Editar"),
     [hasPermission]
   );
-  const canCreateSchedules = hasPermission("employeesSchedule", "Crear") || true;
-  const canExportSchedules = hasPermission("employeesSchedule", "Ver") || true;
+  const canCreateSchedules = hasPermission("employeesSchedule", "Crear");
+  const canExportSchedules = hasPermission("employeesSchedule", "Ver");
 
   const disabledSchedules = useMemo(
     () =>
@@ -203,48 +247,35 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     [initialSchedules]
   );
 
-  const availableRoles = useMemo(() => {
-    const map = new Map();
-    BASE_ROLE_FILTERS.forEach((role) => map.set(role.id, ROLE_LABELS[role.id] || role.label));
-
-    rawSchedules.forEach((item) => {
-      const key = resolveRoleId(item?.cargo || item?.area || "");
-      if (!key) return;
-      if (!map.has(key)) {
-        map.set(key, ROLE_LABELS[key] || item.cargo || item.area || "Cargo");
-      }
-    });
-
-    employees.forEach((emp) => {
-      const key = resolveRoleId(emp?.cargo || "");
-      if (!key) return;
-      if (!map.has(key)) {
-        map.set(key, ROLE_LABELS[key] || emp.cargo || emp.label || "Cargo");
-      }
-    });
-
-    return Array.from(map.entries()).map(([id, label]) => ({
-      id,
-      label: ROLE_LABELS[id] || label || id,
-    }));
-  }, [rawSchedules, employees]);
-
   const filters = useMemo(
-    () =>
-      isEmployeeScope
-        ? [] // si es empleado, no mostramos filtros por cargo
-        : [
-            {
-              id: "role",
-              label: "Cargo",
-              field: "roleId",
-              options: availableRoles.map((role) => ({
-                value: role.id,
-                label: role.label,
-              })),
-            },
-          ],
-    [availableRoles, isEmployeeScope]
+    () => {
+      if (isEmployeeScope) return [];
+
+      const roleFilter = {
+        id: "role",
+        label: "Cargo",
+        field: "roleId",
+        options: BASE_ROLE_FILTERS.map((role) => ({
+          value: role.id,
+          label: role.label,
+        })),
+      };
+
+      const specialtyFilter = {
+        id: "specialty",
+        label: "Especialidad",
+        field: "specialtyId",
+        options: BASE_SPECIALTY_FILTERS.map((specialty) => ({
+          value: specialty.id,
+          label: specialty.label,
+        })),
+      };
+
+      return selectedFilters.role === HEALTH_ROLE_ID
+        ? [roleFilter, specialtyFilter]
+        : [roleFilter];
+    },
+    [isEmployeeScope, selectedFilters.role]
   );
 
   const hasFilters = filters.length > 0;
@@ -505,7 +536,16 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   };
 
   const handleFiltersChange = (newFilters) => {
-    setSelectedFilters((prev) => ({ ...prev, ...newFilters }));
+    setSelectedFilters((prev) => {
+      const next = { ...prev, ...newFilters };
+      if (
+        Object.prototype.hasOwnProperty.call(newFilters, "role") &&
+        newFilters.role !== HEALTH_ROLE_ID
+      ) {
+        next.specialty = "";
+      }
+      return next;
+    });
   };
 
   const disabledList =
@@ -519,10 +559,18 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         schedule.horaInicio && schedule.horaFin
           ? `${schedule.horaInicio} - ${schedule.horaFin}`
           : schedule.hora || "";
-      const roleKey = resolveRoleId(
-        schedule.cargo || schedule.area || schedule.role || schedule.rol
+      const roleFilterId = resolveRoleFilterId({
+        cargo: schedule.cargo || schedule.area || schedule.role || schedule.rol,
+        specialty: schedule.specialty || "",
+        specialtyLabel: schedule.specialtyLabel || "",
+      });
+      const specialtyId = resolveSpecialtyId(
+        schedule.specialtyLabel || schedule.specialty || schedule.cargo || "",
       );
-      const colors = getRoleColors(roleKey);
+      const colorRoleKey = specialtyId || resolveRoleId(
+        schedule.cargo || schedule.area || schedule.role || schedule.rol,
+      );
+      const colors = getRoleColors(colorRoleKey);
       const title = schedule.empleado
         ? `Turno - ${schedule.empleado}`
         : schedule.title || "Turno";
@@ -538,7 +586,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         fecha: schedule.fecha || date,
         horaInicio: schedule.horaInicio,
         horaFin: schedule.horaFin,
-        roleId: roleKey,
+        roleId: roleFilterId,
+        specialtyId,
         cargo: schedule.cargo,
         area: schedule.area,
         empleado: schedule.empleado,
@@ -927,7 +976,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 };
 
 export default EmployeeSchedule;
-
 
 
 

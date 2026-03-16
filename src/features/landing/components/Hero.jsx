@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion } from "framer-motion";
 import { FaUserPlus } from "react-icons/fa";
 import PreRegistrationModal from "./PreRegistrationModal";
@@ -101,3 +101,4 @@ export const Hero = ({
     </section>
   );
 };
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import KPICard from "../components/KPICard";
 import EventsGraphic from "../components/EventsGraphic";
 import {
@@ -197,3 +197,4 @@ const EventsSection = () => {
 };
 
 export default EventsSection;
+

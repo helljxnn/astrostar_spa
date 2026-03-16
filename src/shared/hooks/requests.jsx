@@ -1,4 +1,4 @@
-import {
+﻿import {
   showGlobalLoader,
   hideGlobalLoader,
 } from "../components/Loader/useLoader";
@@ -40,3 +40,4 @@ const Requests = async (url, data = null, method) => {
 };
 
 export default Requests;
+

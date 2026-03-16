@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
@@ -918,3 +918,4 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 };
 
 export default PreRegistrationModal;
+

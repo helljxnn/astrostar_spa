@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { IoSearch } from 'react-icons/io5';
 
 const SearchInput = ({ value, onChange, placeholder = 'Buscar...', className = '' }) => {
@@ -18,3 +18,4 @@ const SearchInput = ({ value, onChange, placeholder = 'Buscar...', className = '
 };
 
 export default SearchInput;
+

@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 
@@ -29,6 +29,15 @@ const EmployeeViewModal = ({
       Deceased: "Fallecido",
     };
     return statusMap[status] || status || "No especificado";
+  };
+
+  const getSpecialtyLabel = (value) => {
+    const map = {
+      psicologia: "Psicología",
+      fisioterapia: "Fisioterapia",
+      nutricion: "Nutrición",
+    };
+    return map[value] || value || "No especificado";
   };
 
   const formatDate = (dateString) => {
@@ -165,6 +174,13 @@ const EmployeeViewModal = ({
               value={getRoleName(employee.user?.roleId)}
               delay={0.75}
             />
+            {employee.specialty && (
+              <ReadOnlyField
+                label="Especialidad"
+                value={getSpecialtyLabel(employee.specialty)}
+                delay={0.77}
+              />
+            )}
             <ReadOnlyField
               label="Estado"
               value={translateStatus(employee.status)}
@@ -222,3 +238,4 @@ const EmployeeViewModal = ({
 };
 
 export default EmployeeViewModal;
+

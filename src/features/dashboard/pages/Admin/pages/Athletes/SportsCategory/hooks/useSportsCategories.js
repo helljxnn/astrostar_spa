@@ -138,10 +138,10 @@ export function useSportsCategories() {
         return { success: true, data: normalized, pagination: respPagination };
       } catch (err) {
         console.error("fetchSportsCategories error:", err);
-        setError(err?.message || "No se pudieron cargar las categorÃ­as.");
-        // No mostrar alerta automÃ¡ticamente, dejar que el componente decida
-        // showErrorAlert("Error", "No se pudieron cargar las categorÃ­as.");
-        return { success: false, error: err?.message || "No se pudieron cargar las categorÃ­as." };
+        setError(err?.message || "No se pudieron cargar las categorías.");
+        // No mostrar alerta automáticamente, dejar que el componente decida
+        // showErrorAlert("Error", "No se pudieron cargar las categorías.");
+        return { success: false, error: err?.message || "No se pudieron cargar las categorías." };
       } finally {
         setLoading(false);
       }
@@ -153,7 +153,7 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       const response = await apiClient.post(API_URL, data);
-      showSuccessAlert("CategorÃ­a creada");
+      showSuccessAlert("Categoría creada");
       await fetchSportsCategories(params);
       return { success: true, data: response };
     } catch (err) {
@@ -162,7 +162,7 @@ export function useSportsCategories() {
         "Error",
         err?.response?.data?.message ||
           err?.message ||
-          "No se pudo crear la categorÃ­a."
+          "No se pudo crear la categoría."
       );
       throw err;
     } finally {
@@ -174,7 +174,7 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       const response = await apiClient.put(`${API_URL}/${id}`, data);
-      showSuccessAlert("CategorÃ­a actualizada");
+      showSuccessAlert("Categoría actualizada");
       await fetchSportsCategories(params);
       return { success: true, data: response };
     } catch (err) {
@@ -183,7 +183,7 @@ export function useSportsCategories() {
         "Error",
         err?.response?.data?.message ||
           err?.message ||
-          "No se pudo actualizar la categorÃ­a."
+          "No se pudo actualizar la categoría."
       );
       throw err;
     } finally {
@@ -195,14 +195,14 @@ export function useSportsCategories() {
     try {
       setLoading(true);
       await apiClient.delete(`${API_URL}/${id}`);
-      showSuccessAlert("CategorÃ­a eliminada");
+      showSuccessAlert("Categoría eliminada");
       await fetchSportsCategories(params);
     } catch (err) {
       console.error("deleteSportsCategory error:", err);
       const errorMessage =
         err?.response?.data?.message ||
         err?.message ||
-        "No se pudo eliminar la categorÃ­a.";
+        "No se pudo eliminar la categoría.";
       showErrorAlert("Error al eliminar", errorMessage);
       throw err;
     } finally {
@@ -261,4 +261,5 @@ export function useSportsCategories() {
 }
 
 export default useSportsCategories;
+
 

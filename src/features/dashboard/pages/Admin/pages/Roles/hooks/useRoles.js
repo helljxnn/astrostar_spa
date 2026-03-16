@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para gestión de roles - Módulo específico
  * Proporciona funcionalidades completas para el manejo de roles
  */

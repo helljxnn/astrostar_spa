@@ -1,4 +1,4 @@
-import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
+﻿import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 
 export const EmployeesTable = ({ employees }) => {
   return (
@@ -63,3 +63,4 @@ export const EmployeesTable = ({ employees }) => {
     </div>
   );
 };
+

@@ -1,4 +1,4 @@
-const providersData = [
+﻿const providersData = [
   {
     id: 1,
     razonSocial: "Proveedor ABC S.A.S.",
@@ -86,3 +86,4 @@ const providersData = [
 ];
 
 export default providersData;
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -217,21 +217,18 @@ const GuardianModal = ({
   }, [isOpen, isEditing, guardianToEdit, setValues, setTouched, setErrors]);
 
   const handleSubmit = async () => {
-    console.log("🔵 [GuardianModal] Valores actuales:", values);
 
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
 
     const isValid = validateAllFields();
-    console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
     // Verificar si hay errores asíncronos
     const hasAsyncErrors = Object.values(asyncErrors).some(
       (error) => error !== null && error !== "",
     );
 
     if (!isValid || hasAsyncErrors) {
-      console.log("❌ [GuardianModal] Campos con error:");
       Object.keys(errors).forEach((key) => {
         if (errors[key]) {
         }
@@ -263,7 +260,6 @@ const GuardianModal = ({
         address: values.address.trim(), // ✅ Dirección
         birthDate: toISOString(values.fechaNacimiento), // ✅ Convertir a ISO para el backend
       };
-      console.log("📅 Fecha de nacimiento:", values.fechaNacimiento);
       if (isEditing) {
         const updated = await onUpdate({
           ...dataToSend,
@@ -298,11 +294,7 @@ const GuardianModal = ({
   };
 
   if (!isOpen) return null;
-  console.log("VERSIÓN NUEVA", guardianToEdit, mode);
 
-  console.log("🟢 [GuardianModal] Modal abierto, mode:", mode, "isEditing:", isEditing);
-  console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
-  console.log("🟢 [GuardianModal] referenceData:", referenceData);
 
   const modalContent = (
     <motion.div
@@ -497,3 +489,5 @@ const GuardianModal = ({
 };
 
 export default GuardianModal;
+
+

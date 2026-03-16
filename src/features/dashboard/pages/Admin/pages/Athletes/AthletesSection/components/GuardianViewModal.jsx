@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
@@ -46,10 +46,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   // Log para debuggear los datos del guardian
   useEffect(() => {
     if (guardian && isOpen) {
-      console.log('🔍🔍🔍 [GuardianViewModal] Guardian recibido:', guardian);
-      console.log('🔍🔍🔍 [GuardianViewModal] birthDate:', guardian.birthDate);
-      console.log('🔍🔍🔍 [GuardianViewModal] fechaNacimiento:', guardian.fechaNacimiento);
-      console.log('🔍🔍🔍 [GuardianViewModal] Todas las propiedades:', Object.keys(guardian));
     }
   }, [guardian, isOpen]);
   
@@ -79,16 +75,13 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   // Wrapper para asegurar que siempre se llame con 2 parámetros
   const handleChange = (nameOrEvent, value) => {
-    console.log('🎯🎯🎯 [GuardianViewModal.handleChange] nameOrEvent:', nameOrEvent, 'value:', value);
     
     if (typeof nameOrEvent === 'string') {
       // Llamada directa: handleChange('field', 'value')
-      console.log('🎯 [GuardianViewModal] Llamada directa:', nameOrEvent, value);
       hookHandleChange(nameOrEvent, value);
     } else if (nameOrEvent?.target) {
       // Llamada desde evento: handleChange(event)
       const { name, value: val } = nameOrEvent.target;
-      console.log('🎯 [GuardianViewModal] Llamada desde evento:', name, val);
       hookHandleChange(name, val);
     }
   }
@@ -148,11 +141,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     const age = getCurrentAthleteAge();
     if (age === null) return false;
     
-    console.log('🔍 [GuardianViewModal] Verificando edad:', {
-      athleteId: currentAthleteId,
-      age,
-      isMinor: age < 18
-    });
     
     return age < 18;
   };
@@ -237,7 +225,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   useEffect(() => {
     if (guardian && isOpen && referenceData.documentTypes) {
-      console.log('🔍 [GuardianViewModal] Cargando datos del guardian:', guardian);
       
       const nombreCompleto = guardian.nombreCompleto || 
         (guardian.firstName && guardian.lastName 
@@ -258,7 +245,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
       
       // Obtener fecha de nacimiento - mejorado
       const birthDateRaw = guardian.fechaNacimiento || guardian.birthDate || "";
-      console.log('📅 [GuardianViewModal] Fecha de nacimiento raw:', birthDateRaw);
       
       let birthDate = "";
       if (birthDateRaw) {
@@ -267,7 +253,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
           const date = new Date(birthDateRaw);
           if (!isNaN(date.getTime())) {
             birthDate = date.toISOString().split('T')[0];
-            console.log('📅 [GuardianViewModal] Fecha convertida:', birthDate);
           }
         } catch (error) {
           console.error('❌ Error convirtiendo fecha:', error);
@@ -284,7 +269,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         fechaNacimiento: birthDate,
       };
       
-      console.log('✅ [GuardianViewModal] Valores cargados:', newValues);
       
       setValues(newValues);
       setAsyncErrors({});
@@ -314,22 +298,14 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
     
     if (!isValid || hasAsyncErrors) {
-      console.log("❌ [GuardianViewModal] Validación falló");
-      console.log("❌ Errores:", errors);
-      console.log("❌ Errores asíncronos:", asyncErrors);
-      console.log("❌ Valores actuales:", values);
-      console.log("❌ isValid:", isValid);
-      console.log("❌ hasAsyncErrors:", hasAsyncErrors);
       
       // Mostrar cada error específicamente
       Object.keys(errors).forEach(key => {
         if (errors[key]) {
-          console.log(`❌ Error en ${key}:`, errors[key]);
         }
       });
       Object.keys(asyncErrors).forEach(key => {
         if (asyncErrors[key]) {
-          console.log(`❌ Error asíncrono en ${key}:`, asyncErrors[key]);
         }
       });
       
@@ -354,7 +330,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         birthDate: values.fechaNacimiento ? new Date(values.fechaNacimiento).toISOString() : null,
       };
       
-      console.log('📝 [GuardianViewModal] Enviando datos al backend:', updatedData);
       
       await onEdit(updatedData)
       showSuccessAlert("Acudiente actualizado", "Los cambios se guardaron correctamente")
@@ -883,3 +858,4 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 }
 
 export default GuardianViewModal
+

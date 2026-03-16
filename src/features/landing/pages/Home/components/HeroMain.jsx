@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from "framer-motion";
+﻿import { motion, useScroll, useTransform } from "framer-motion";
 import { FaArrowRight, FaHeart } from "react-icons/fa";
 import { useRef, useState } from "react";
 import heroImage from "../images/1.jpg";
@@ -214,3 +214,4 @@ export default function HeroMain() {
     </section>
   );
 }
+

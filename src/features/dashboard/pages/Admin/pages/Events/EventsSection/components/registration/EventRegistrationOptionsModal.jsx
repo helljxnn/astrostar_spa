@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { FaUserPlus, FaEdit, FaEye } from "react-icons/fa";
 import { createPortal } from "react-dom";
 
@@ -131,3 +131,4 @@ const EventRegistrationOptionsModal = ({
 };
 
 export default EventRegistrationOptionsModal;
+

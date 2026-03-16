@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar eventos
  * Maneja todas las peticiones HTTP al backend de eventos
  */
@@ -138,3 +138,4 @@ class EventsService {
 }
 
 export default new EventsService();
+

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaUpload, FaImage, FaFilePdf, FaExclamationTriangle } from "react-icons/fa";
 import { useUploadReceipt } from "../hooks/useUploadReceipt";
@@ -339,3 +339,4 @@ const UploadReceiptModal = ({ isOpen, onClose, obligation, onSuccess }) => {
 };
 
 export default UploadReceiptModal;
+

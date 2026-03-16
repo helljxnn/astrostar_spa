@@ -1,4 +1,4 @@
-import { motion, useScroll } from "framer-motion";
+﻿import { motion, useScroll } from "framer-motion";
 import { useRef, useState, useEffect } from "react";
 
 export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEvent }) => {

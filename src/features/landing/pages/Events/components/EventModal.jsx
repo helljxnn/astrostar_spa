@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { motion } from "framer-motion";
 
 export const EventModal = ({ event, onClose }) => {
@@ -104,3 +104,4 @@ export const EventModal = ({ event, onClose }) => {
     </div>
   );
 };
+

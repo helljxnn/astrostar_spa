@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import donationsService from "../../Donations/Donations/services/donationsService";
 
 const DonationsSectionDebug = () => {
@@ -145,3 +145,4 @@ const DonationsSectionDebug = () => {
 };
 
 export default DonationsSectionDebug;
+

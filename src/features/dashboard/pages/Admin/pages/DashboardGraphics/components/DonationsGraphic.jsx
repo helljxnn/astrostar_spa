@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -204,3 +204,4 @@ const DonationsGraphic = ({ donations = [] }) => {
 };
 
 export default DonationsGraphic;
+

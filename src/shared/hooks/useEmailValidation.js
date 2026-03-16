@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+﻿import { useState, useCallback, useRef } from 'react';
 import AthletesService from '../../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService';
 import InscriptionsService from '../../features/dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService';
 
@@ -84,3 +84,4 @@ export const useEmailValidation = (excludeUserId = null, checkInscriptions = fal
     clearValidation,
   };
 };
+

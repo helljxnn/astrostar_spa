@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+﻿import { useState, useMemo, useEffect, useRef } from "react";
 import { FaPlus, FaHistory, FaUserPlus, FaFilter } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
@@ -105,6 +105,8 @@ const Enrollments = () => {
   });
   const rowsPerPage = 10;
   const searchDebounceRef = useRef(null);
+  const canAcceptEnrollments = hasPermission("enrollments", "Aceptar");
+  const canRejectEnrollments = hasPermission("enrollments", "Rechazar");
 
   // Búsqueda en backend (nombre/documento) con debounce 400ms
   useEffect(() => {
@@ -286,12 +288,20 @@ const Enrollments = () => {
 
   // Crear matrícula desde cero (sin inscripción previa)
   const handleCreateFromScratch = () => {
+    if (!canAcceptEnrollments) {
+      showErrorAlert("Sin permisos", "No tienes permisos para aceptar inscripciones.");
+      return;
+    }
     setSelectedInscription(null);
     setIsAthleteModalOpen(true);
   };
 
   // Seleccionar inscripción y abrir formulario
   const handleSelectInscription = (inscription) => {
+    if (!canAcceptEnrollments) {
+      showErrorAlert("Sin permisos", "No tienes permisos para aceptar inscripciones.");
+      return;
+    }
     setSelectedInscription(inscription);
     setIsAthleteModalOpen(true);
   };
@@ -395,7 +405,7 @@ const Enrollments = () => {
             )}
 
             {activeTab === "matriculas" && (
-              <PermissionGuard module="enrollments" action="Crear">
+              <PermissionGuard module="enrollments" action="Aceptar">
                 <button
                   onClick={handleCreateFromScratch}
                   className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors"
@@ -801,6 +811,7 @@ const Enrollments = () => {
                       "p-2 text-primary-blue hover:text-primary-purple rounded transition-colors",
                     title: "Matricular",
                     show: (inscription) => {
+                      if (!canAcceptEnrollments) return false;
                       const estado = (inscription.estado || inscription.status || "").toUpperCase();
                       // Aceptar tanto inglés como español
                       return estado !== "PROCESADA" && estado !== "PROCESSED" && 
@@ -829,6 +840,7 @@ const Enrollments = () => {
                     className:
                       "p-2 text-red-600 hover:text-red-900 hover:bg-red-50 rounded transition-colors font-bold",
                     title: "Rechazar",
+                    show: () => canRejectEnrollments,
                   },
                 ]}
               />
@@ -958,3 +970,4 @@ const Enrollments = () => {
 };
 
 export default Enrollments;
+

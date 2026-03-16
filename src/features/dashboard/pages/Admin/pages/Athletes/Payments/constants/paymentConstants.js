@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Constantes del Sistema de Pagos
  * Sincronizadas con el backend para mantener consistencia
  */
@@ -219,3 +219,4 @@ export const getHighestPriorityBlock = (blockingReasons) => {
     return priorityA - priorityB;
   })[0];
 };
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Adaptador para transformar eventos entre el formato del dashboard y el calendario genérico
  * GENÉRICO - Sin lógica específica de módulos
  */
@@ -236,3 +236,4 @@ export const getSearchFields = () => [
   "extendedProps.categoria",
   "extendedProps.ubicacion",
 ];
+

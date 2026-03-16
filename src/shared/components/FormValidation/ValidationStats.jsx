@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Componente para mostrar estadísticas de validación de datos
  */
 

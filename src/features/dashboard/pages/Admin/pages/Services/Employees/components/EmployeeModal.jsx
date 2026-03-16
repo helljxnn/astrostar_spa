@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -49,6 +49,8 @@ const EmployeeModal = ({
       identification: "",
       documentTypeId: "",
       roleId: "",
+      specialty: "",
+      roleNameNormalized: "",
       status: "Activo",
     },
     employeeValidationRules,
@@ -68,6 +70,17 @@ const EmployeeModal = ({
     );
     return selectedRole?.name === "Administrador";
   };
+
+  const normalizeText = (value = "") =>
+    String(value)
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+
+  const isHealthProfessionalRole = () =>
+    formData.roleNameNormalized === "profesionaldesalud" ||
+    formData.roleNameNormalized === "profesionaldelasalud";
 
   // Función para calcular la edad
   const calculateAge = (birthDate) => {
@@ -90,6 +103,24 @@ const EmployeeModal = ({
 
   // Función personalizada para manejar cambios
   const handleCustomChange = (name, value) => {
+    if (name === "roleId") {
+      const selectedRole = referenceData.roles.find(
+        (role) => role.id === parseInt(value),
+      );
+      const roleNameNormalized = normalizeText(selectedRole?.name || "");
+      setFormData((prev) => ({
+        ...prev,
+        roleId: value,
+        roleNameNormalized,
+        specialty:
+          roleNameNormalized === "profesionaldesalud" ||
+          roleNameNormalized === "profesionaldelasalud"
+            ? prev.specialty
+            : "",
+      }));
+      return;
+    }
+
     if (name === "birthDate") {
       const age = calculateAge(value);
       setFormData((prev) => ({
@@ -155,7 +186,6 @@ const EmployeeModal = ({
             }
           } catch (error) {
             // Continuar sin bloquear si hay error en la validación
-            console.warn("Error en validación de unicidad:", error);
           }
         }, 300); // Debounce de 300ms
       }
@@ -183,6 +213,8 @@ const EmployeeModal = ({
           identification: employee.user?.identification || "",
           documentTypeId: employee.user?.documentTypeId || "",
           roleId: employee.user?.roleId || "",
+          specialty: employee.specialty || "",
+          roleNameNormalized: normalizeText(employee.user?.role?.name || ""),
           status: employee.status || "Activo",
         });
         // Load signature if exists
@@ -295,6 +327,14 @@ const EmployeeModal = ({
         }
       }
 
+      if (isHealthProfessionalRole() && !formData.specialty) {
+        showErrorAlert(
+          "Especialidad requerida",
+          "Debe seleccionar la especialidad para Profesional de Salud.",
+        );
+        return;
+      }
+
       // Confirmación solo al editar
       if (mode === "edit") {
         const result = await showConfirmAlert(
@@ -313,7 +353,8 @@ const EmployeeModal = ({
 
       // Llamar onSave y esperar el resultado
       // Pass signature file if in create mode
-      const success = await onSave(formData, signatureFile);
+      const { roleNameNormalized, ...payload } = formData;
+      const success = await onSave(payload, signatureFile);
 
       // Solo cerrar el modal si la operación fue exitosa
       if (success) {
@@ -570,10 +611,32 @@ const EmployeeModal = ({
               value={formData.roleId}
               error={errors.roleId}
               touched={touched.roleId}
-              onChange={handleChange}
+              onChange={handleCustomChange}
               onBlur={handleBlur}
               delay={0.75}
             />
+
+            {isHealthProfessionalRole() && (
+              <FormField
+                label="Especialidad"
+                name="specialty"
+                type="select"
+                placeholder="Seleccione la especialidad"
+                required={mode !== "view"}
+                disabled={mode === "view"}
+                options={[
+                  { value: "psicologia", label: "Psicología" },
+                  { value: "fisioterapia", label: "Fisioterapia" },
+                  { value: "nutricion", label: "Nutrición" },
+                ]}
+                value={formData.specialty}
+                error={errors.specialty}
+                touched={touched.specialty}
+                onChange={handleCustomChange}
+                onBlur={handleBlur}
+                delay={0.77}
+              />
+            )}
 
             {/* Estado - Solo visible en modo editar o ver */}
             {mode !== "create" && (
@@ -669,6 +732,8 @@ const EmployeeModal = ({
 };
 
 export default EmployeeModal;
+
+
 
 
 

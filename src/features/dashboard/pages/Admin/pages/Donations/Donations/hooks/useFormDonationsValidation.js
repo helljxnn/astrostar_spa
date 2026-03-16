@@ -1,4 +1,4 @@
-// ./hooks/useFormDonationsValidation.js
+﻿// ./hooks/useFormDonationsValidation.js
 import { useState } from "react";
 
 // Reglas de validación
@@ -71,3 +71,4 @@ export const useFormDonationsValidation = (rules) => {
 
   return { errors, validateField, validateForm };
 };
+

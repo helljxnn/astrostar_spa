@@ -1,4 +1,4 @@
-import { showGlobalLoader, hideGlobalLoader } from "./useLoader";
+﻿import { showGlobalLoader, hideGlobalLoader } from "./useLoader";
 
 // Contador de peticiones activas
 let activeRequests = 0;
@@ -55,3 +55,4 @@ export const withoutLoader = (config) => ({
   ...config,
   skipLoader: true,
 });
+

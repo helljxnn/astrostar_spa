@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { formatCurrency } from "../utils/currencyUtils";
 import LateFeeDisplay from "./LateFeeDisplay";
 import SuspendedObligationBadge from "./SuspendedObligationBadge";

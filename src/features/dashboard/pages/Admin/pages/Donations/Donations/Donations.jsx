@@ -1,16 +1,18 @@
-import { useState, useEffect, forwardRef } from "react";
+﻿import { useState, useEffect, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaPlus, FaRegCalendarAlt, FaDownload } from "react-icons/fa";
 
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import CancelDonationModal from "./components/CancelDonationModal";
 import DonationViewModal from "./components/DonationViewModal";
 import StatusSelector from "./components/StatusSelector";
 import donationsService from "./services/donationsService";
 import donorsSponsorsService from "../DonorsSponsors/services/donorsSponsorsService";
 import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -87,6 +89,7 @@ const getDonorDisplayName = (donation, donorsMap = {}) => {
 };
 
 const Donations = () => {
+  const { hasPermission } = usePermissions();
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
     donationsService.getAllForReport.bind(donationsService)
@@ -367,15 +370,33 @@ const Donations = () => {
 
   /* ------------------- Handlers ------------------- */
   const handleCreate = () => {
+    if (!hasPermission("donationsManagement", "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear donaciones.");
+      return;
+    }
     navigate("/dashboard/donations/form", { state: { isEditing: false } });
   };
 
   const handleView = (donation) => {
+    if (!hasPermission("donationsManagement", "Ver")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para ver detalles de donaciones.",
+      );
+      return;
+    }
     const raw = donation._raw || donation;
     setViewingDonation(raw);
   };
 
   const handleStatusChange = async (donationId, newStatus) => {
+    if (!hasPermission("donationsManagement", "Editar")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para cambiar el estado de donaciones.",
+      );
+      return;
+    }
     try {
       const response = await donationsService.update(donationId, {
         status: newStatus,
@@ -435,6 +456,13 @@ const Donations = () => {
   };
 
   const handleDownloadCertificate = async (donation) => {
+    if (!hasPermission("donationsManagement", "Ver")) {
+      showErrorAlert(
+        "Sin permisos",
+        "No tienes permisos para generar o descargar certificados.",
+      );
+      return;
+    }
     try {
       const response = await donationsService.downloadCertificate(donation.id);
 
@@ -484,6 +512,7 @@ const Donations = () => {
         currentStatus={statusKey}
         donationId={donationId}
         onStatusChange={handleStatusChange}
+        disabled={!hasPermission("donationsManagement", "Editar")}
       />
     );
   };
@@ -553,18 +582,22 @@ const Donations = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <ReportButton
-                dataProvider={getCompleteReportData}
-                fileName="Reporte_Donaciones"
-                columns={reportColumns}
-              />
+              <PermissionGuard module="donationsManagement" action="Ver">
+                <ReportButton
+                  dataProvider={getCompleteReportData}
+                  fileName="Reporte_Donaciones"
+                  columns={reportColumns}
+                />
+              </PermissionGuard>
 
-              <button
-                onClick={handleCreate}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
-              >
-                <FaPlus /> Crear
-              </button>
+              <PermissionGuard module="donationsManagement" action="Crear">
+                <button
+                  onClick={handleCreate}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+                >
+                  <FaPlus /> Crear
+                </button>
+              </PermissionGuard>
             </div>
           </div>
         </div>
@@ -608,16 +641,32 @@ const Donations = () => {
           totalRows={totalRows}
           currentPage={currentPage}
           onPageChange={(page) => setCurrentPage(page)}
-          onView={(row) => handleView(row._original || row)}
-          customActions={[
-            {
-              icon: FaDownload,
-              onClick: (row) => handleDownloadCertificate(row._original || row),
-              className:
-                "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
-              title: "Descargar Certificado",
-            },
-          ]}
+          onView={
+            hasPermission("donationsManagement", "Ver")
+              ? (row) => handleView(row._original || row)
+              : null
+          }
+          customActions={
+            hasPermission("donationsManagement", "Ver")
+              ? [
+                  {
+                    icon: FaDownload,
+                    onClick: (row) =>
+                      handleDownloadCertificate(row._original || row),
+                    className:
+                      "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
+                    title: "Descargar Certificado",
+                  },
+                ]
+              : []
+          }
+          buttonConfig={{
+            view: () => ({
+              show: hasPermission("donationsManagement", "Ver"),
+              disabled: false,
+              title: "Ver detalles",
+            }),
+          }}
         />
       </div>
 
@@ -648,3 +697,4 @@ const Donations = () => {
 };
 
 export default Donations;
+

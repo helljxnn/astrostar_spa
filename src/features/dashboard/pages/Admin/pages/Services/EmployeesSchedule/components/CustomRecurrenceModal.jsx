@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion } from "framer-motion";
 
 const diasSemana = [
@@ -197,3 +197,4 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
     </div>
   );
 }
+

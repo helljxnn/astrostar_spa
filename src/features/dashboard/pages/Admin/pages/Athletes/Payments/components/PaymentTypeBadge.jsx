@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 /**
  * Badge para mostrar el tipo de pago/obligación

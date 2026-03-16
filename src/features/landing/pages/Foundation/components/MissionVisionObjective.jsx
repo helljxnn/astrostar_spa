@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { FaHeart, FaBullseye, FaHandshake } from "react-icons/fa";
 
 export const MissionVisionObjective = () => {
@@ -256,3 +256,4 @@ export const MissionVisionObjective = () => {
     </section>
   );
 };
+

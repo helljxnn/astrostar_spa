@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { FaArrowRight, FaTimes } from "react-icons/fa";
 
@@ -95,3 +95,4 @@ export default function AreaModal({ isOpen, onClose, area }) {
     </AnimatePresence>
   );
 }
+

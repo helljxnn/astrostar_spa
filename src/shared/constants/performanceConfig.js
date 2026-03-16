@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Configuración de rendimiento para optimizar la aplicación
  */
 

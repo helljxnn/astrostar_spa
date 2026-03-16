@@ -1,4 +1,4 @@
-// src/shared/utils/alerts.js
+﻿// src/shared/utils/alerts.js
 import Swal from "sweetalert2";
 
 // Aquí está la configuración de los alertas
@@ -180,3 +180,4 @@ export const showDeleteAlert = (title, text = "", options = {}) => {
     }
   });
 };
+

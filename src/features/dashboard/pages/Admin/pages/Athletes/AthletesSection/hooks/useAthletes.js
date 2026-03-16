@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para manejar deportistas
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -441,3 +441,4 @@ if (response.success) {
     refresh
   };
 };
+

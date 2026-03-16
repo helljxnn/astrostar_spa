@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Componente para mostrar mensajes de validación
  */
 

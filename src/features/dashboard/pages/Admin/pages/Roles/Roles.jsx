@@ -10,18 +10,33 @@ import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
 import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
+const PROTECTED_SYSTEM_ROLES = new Set([
+  "administrador",
+  "deportista",
+  "entrenador",
+  "profesionaldelasalud",
+  "profesionaldesalud",
+]);
+
+const normalizeRoleName = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+const isProtectedRole = (roleName = "") =>
+  PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
+
 const Roles = () => {
   const { roles, pagination, fetchRoles, createRole, updateRole, deleteRole } =
     useRoles();
 
   const { hasPermission } = usePermissions();
 
-  // Estado para crear/editar
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [selectedRole, setSelectedRole] = useState(null);
-
-  // Estado para ver detalle
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,7 +44,6 @@ const Roles = () => {
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
 
-  // Effect to handle search and pagination with API
   useEffect(() => {
     const delayedSearch = setTimeout(
       () => {
@@ -40,16 +54,14 @@ const Roles = () => {
         });
       },
       searchTerm ? 300 : 0,
-    ); // Debounce only for search, immediate for pagination
+    );
 
     return () => clearTimeout(delayedSearch);
-  }, [searchTerm, currentPage, fetchRoles]); // Remove fetchRoles to avoid circular dependency
+  }, [searchTerm, currentPage, fetchRoles]);
 
-  // Use API data directly (no local filtering since API handles search and pagination)
   const totalRows = pagination.total || 0;
-  const paginatedData = roles; // API already returns paginated data
+  const paginatedData = roles;
 
-  // Guardar rol (crear o editar)
   const handleSave = async (newRole) => {
     try {
       const currentParams = {
@@ -71,13 +83,11 @@ const Roles = () => {
     }
   };
 
-  // Editar rol
   const handleEdit = (role) => {
-    // No permitir editar el rol de Administrador
-    if (role.name === "Administrador") {
+    if (isProtectedRole(role.name)) {
       showErrorAlert(
-        "Acción no permitida",
-        "El rol de Administrador es un rol del sistema y no puede ser editado.",
+        "Accion no permitida",
+        `El rol ${role.name} es un rol base del sistema y no puede ser editado.`,
       );
       return;
     }
@@ -87,19 +97,16 @@ const Roles = () => {
     setIsModalOpen(true);
   };
 
-  // Ver rol
   const handleView = (role) => {
     setSelectedRole(role);
     setIsDetailOpen(true);
   };
 
-  // Eliminar rol con confirmación
   const handleDelete = async (role) => {
-    // Verificar si es el rol de administrador
-    if (role.name === "Administrador") {
+    if (isProtectedRole(role.name)) {
       showErrorAlert(
-        "Acción no permitida",
-        "El rol de Administrador es un rol del sistema y no puede ser eliminado.",
+        "Accion no permitida",
+        `El rol ${role.name} es un rol base del sistema y no puede ser eliminado.`,
       );
       return;
     }
@@ -119,7 +126,6 @@ const Roles = () => {
 
   return (
     <div className="p-6 font-questrial">
-      {/* Header con buscador y botón Crear */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Roles</h1>
 
@@ -148,7 +154,6 @@ const Roles = () => {
         </div>
       </div>
 
-      {/* Tabla */}
       <div className="w-full">
         <Table
           serverPagination={true}
@@ -157,7 +162,7 @@ const Roles = () => {
           rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
           onPageChange={(page) => setCurrentPage(page)}
           thead={{
-            titles: ["Nombre", "Descripción"],
+            titles: ["Nombre", "Descripcion"],
             state: false,
           }}
           tbody={{
@@ -171,29 +176,25 @@ const Roles = () => {
           buttonConfig={{
             edit: (role) => ({
               show: hasPermission("roles", "Editar"),
-              disabled: role.name === "Administrador",
-              className:
-                role.name === "Administrador"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "",
-              title:
-                role.name === "Administrador"
-                  ? "El rol de Administrador no puede ser editado"
-                  : "Editar rol",
+              disabled: isProtectedRole(role.name),
+              className: isProtectedRole(role.name)
+                ? "opacity-50 cursor-not-allowed"
+                : "",
+              title: isProtectedRole(role.name)
+                ? "Rol base del sistema: no editable"
+                : "Editar rol",
             }),
             delete: (role) => ({
               show: hasPermission("roles", "Eliminar"),
-              disabled: role.name === "Administrador",
-              className:
-                role.name === "Administrador"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "",
-              title:
-                role.name === "Administrador"
-                  ? "El rol de Administrador no puede ser eliminado"
-                  : "Eliminar rol",
+              disabled: isProtectedRole(role.name),
+              className: isProtectedRole(role.name)
+                ? "opacity-50 cursor-not-allowed"
+                : "",
+              title: isProtectedRole(role.name)
+                ? "Rol base del sistema: no eliminable"
+                : "Eliminar rol",
             }),
-            view: (role) => ({
+            view: () => ({
               show: hasPermission("roles", "Ver"),
               disabled: false,
               className: "",
@@ -203,7 +204,6 @@ const Roles = () => {
         />
       </div>
 
-      {/* Modal Crear/Editar */}
       {isModalOpen && (
         <RoleModal
           isOpen={isModalOpen}
@@ -213,7 +213,6 @@ const Roles = () => {
         />
       )}
 
-      {/* Modal Ver detalle */}
       {isDetailOpen && selectedRole && (
         <RoleDetailModal
           isOpen={isDetailOpen}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/authContext';
 import apiClient from '../services/apiClient';
 
@@ -47,12 +47,6 @@ export const useDynamicPermissions = () => {
             // 1. Estado es "Vigente" Y 2. Tiene fecha de inicio (fue pagada y activada)
             const reallyHasActiveEnrollment = enrollment?.estado === 'Vigente' && enrollment?.fechaInicio;
             
-            console.log('🔍 Verificación de matrícula activa:', {
-              backendSays: response.data.hasActiveEnrollment,
-              enrollmentStatus: enrollment?.estado,
-              startDate: enrollment?.fechaInicio,
-              reallyActive: reallyHasActiveEnrollment
-            });
             
             // Sobrescribir el valor del backend si es necesario
             setHasActiveEnrollment(reallyHasActiveEnrollment);
@@ -63,11 +57,6 @@ export const useDynamicPermissions = () => {
           }
         }
         
-        console.log('✅ Permisos dinámicos cargados:', {
-          permissions: response.data.permissions,
-          hasActiveEnrollment: response.data.hasActiveEnrollment,
-          accessRestrictions
-        });
       } else {
         throw new Error(response.message || 'Error obteniendo permisos');
       }
@@ -160,3 +149,4 @@ export const useDynamicPermissions = () => {
     refreshPermissions
   };
 };
+

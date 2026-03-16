@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+﻿import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { addMinutes } from "date-fns";
@@ -18,6 +18,47 @@ const DURATION_OPTIONS = [
 ];
 
 const MAX_DESCRIPTION_LENGTH = 500;
+
+const parseDateOnlyLocal = (value) => {
+  if (!value) return null;
+  if (typeof value === "string") {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return new Date(
+        Number(match[1]),
+        Number(match[2]) - 1,
+        Number(match[3]),
+        0,
+        0,
+        0,
+        0,
+      );
+    }
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const isLikelyDateOnlyUtc =
+    date.getUTCHours() === 0 &&
+    date.getUTCMinutes() === 0 &&
+    date.getUTCSeconds() === 0 &&
+    date.getUTCMilliseconds() === 0;
+
+  if (isLikelyDateOnlyUtc) {
+    return new Date(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      0,
+      0,
+      0,
+      0,
+    );
+  }
+
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+};
 
 const AppointmentForm = ({
   isOpen,
@@ -53,6 +94,8 @@ const AppointmentForm = ({
   const [loadingAthletes2, setLoadingAthletes2] = useState(false);
   const [specialistSchedules, setSpecialistSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [specialistSchedulesCache, setSpecialistSchedulesCache] = useState({});
+  const [loadingSpecialistAvailability, setLoadingSpecialistAvailability] = useState(false);
   const [athleteDateWarning, setAthleteDateWarning] = useState(null);
 
   // Resetear formulario
@@ -70,6 +113,8 @@ const AppointmentForm = ({
       setErrors({});
       setTouched({});
       setAthletesByCategory([]);
+      setSpecialistSchedules([]);
+      setSpecialistSchedulesCache({});
       setAthleteDateWarning(null);
       return;
     }
@@ -192,10 +237,25 @@ const AppointmentForm = ({
     }
   }, []);
 
+  const parseSchedules = useCallback((schedules) => {
+    if (!Array.isArray(schedules)) return [];
+    return schedules.map((schedule) => ({
+      ...schedule,
+      customRecurrence: parseCustomRecurrence(schedule.customRecurrence),
+    }));
+  }, [parseCustomRecurrence]);
+
   // Cargar horarios del especialista seleccionado
   useEffect(() => {
     if (!formData.specialistId) {
       setSpecialistSchedules([]);
+      return;
+    }
+
+    const specialistKey = String(formData.specialistId);
+    const cachedSchedules = specialistSchedulesCache[specialistKey];
+    if (cachedSchedules) {
+      setSpecialistSchedules(cachedSchedules);
       return;
     }
 
@@ -204,16 +264,13 @@ const AppointmentForm = ({
       try {
         const response = await apiClient.get(`/schedules/employee/${formData.specialistId}`);
         const schedules = response?.data?.data || response?.data || [];
-        
-        // Parsear customRecurrence si viene como string
-        const parsedSchedules = Array.isArray(schedules) 
-          ? schedules.map(schedule => ({
-              ...schedule,
-              customRecurrence: parseCustomRecurrence(schedule.customRecurrence)
-            }))
-          : [];
-        
+        const parsedSchedules = parseSchedules(schedules);
+
         setSpecialistSchedules(parsedSchedules);
+        setSpecialistSchedulesCache((prev) => ({
+          ...prev,
+          [specialistKey]: parsedSchedules,
+        }));
       } catch (error) {
         console.error("Error cargando horarios:", error);
         setSpecialistSchedules([]);
@@ -223,7 +280,7 @@ const AppointmentForm = ({
     };
 
     loadSchedules();
-  }, [formData.specialistId, isOpen, parseCustomRecurrence]); // Recargar cuando se abre el modal
+  }, [formData.specialistId, isOpen, parseSchedules, specialistSchedulesCache]); // Recargar cuando se abre el modal
 
   // Función para refrescar horarios manualmente
   const refreshSchedules = useCallback(async () => {
@@ -233,23 +290,21 @@ const AppointmentForm = ({
     try {
       const response = await apiClient.get(`/schedules/employee/${formData.specialistId}`);
       const schedules = response?.data?.data || response?.data || [];
-      
-      // Parsear customRecurrence si viene como string
-      const parsedSchedules = Array.isArray(schedules) 
-        ? schedules.map(schedule => ({
-            ...schedule,
-            customRecurrence: parseCustomRecurrence(schedule.customRecurrence)
-          }))
-        : [];
-      
+      const parsedSchedules = parseSchedules(schedules);
+      const specialistKey = String(formData.specialistId);
+
       setSpecialistSchedules(parsedSchedules);
+      setSpecialistSchedulesCache((prev) => ({
+        ...prev,
+        [specialistKey]: parsedSchedules,
+      }));
     } catch (error) {
       console.error("Error cargando horarios:", error);
       showErrorAlert("Error", "No se pudieron cargar los horarios");
     } finally {
       setLoadingSchedules(false);
     }
-  }, [formData.specialistId, parseCustomRecurrence]);
+  }, [formData.specialistId, parseSchedules]);
 
   // Opciones de categorías
   const categoryOptions = useMemo(() => {
@@ -281,42 +336,55 @@ const AppointmentForm = ({
     return specialistList.filter((spec) => spec.specialty === formData.specialty);
   }, [specialistList, formData.specialty, lockSpecialist, defaultSpecialistId]);
 
-  const specialistOptions = useMemo(
-    () =>
-      filteredSpecialists.map((specialist) => {
-        const name = specialist.label || specialist.nombre || "Especialista";
-        const role = specialist.cargo || specialist.role || "";
-        const specialty = specialist.specialtyLabel || "";
-        
-        // Formato: Nombre - Rol (Especialidad)
-        if (role && specialty) {
-          return {
-            value: String(specialist.id || specialist.specialistId),
-            label: `${name} - ${role} (${specialty})`,
-          };
+  useEffect(() => {
+    if (!isOpen || filteredSpecialists.length === 0) return;
+
+    const specialistIds = filteredSpecialists
+      .map((spec) => String(spec.id || spec.specialistId || ""))
+      .filter(Boolean);
+
+    const missingIds = specialistIds.filter((id) => specialistSchedulesCache[id] === undefined);
+    if (missingIds.length === 0) return;
+
+    let cancelled = false;
+    const loadSpecialistsSchedules = async () => {
+      setLoadingSpecialistAvailability(true);
+      try {
+        const entries = await Promise.all(
+          missingIds.map(async (id) => {
+            try {
+              const response = await apiClient.get(`/schedules/employee/${id}`);
+              const schedules = response?.data?.data || response?.data || [];
+              return [id, parseSchedules(schedules)];
+            } catch (error) {
+              console.error(`Error cargando horarios del especialista ${id}:`, error);
+              return [id, []];
+            }
+          }),
+        );
+
+        if (cancelled) return;
+
+        setSpecialistSchedulesCache((prev) => {
+          const next = { ...prev };
+          entries.forEach(([id, schedules]) => {
+            next[id] = schedules;
+          });
+          return next;
+        });
+      } finally {
+        if (!cancelled) {
+          setLoadingSpecialistAvailability(false);
         }
-        // Si solo tiene especialidad
-        if (specialty) {
-          return {
-            value: String(specialist.id || specialist.specialistId),
-            label: `${name} (${specialty})`,
-          };
-        }
-        // Si solo tiene rol
-        if (role) {
-          return {
-            value: String(specialist.id || specialist.specialistId),
-            label: `${name} - ${role}`,
-          };
-        }
-        // Solo nombre
-        return {
-          value: String(specialist.id || specialist.specialistId),
-          label: name,
-        };
-      }),
-    [filteredSpecialists]
-  );
+      }
+    };
+
+    loadSpecialistsSchedules();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [filteredSpecialists, isOpen, parseSchedules, specialistSchedulesCache]);
 
   const handleChange = (e) => {
     if (!e || !e.target) {
@@ -381,11 +449,10 @@ const AppointmentForm = ({
   // Verificar si un horario aplica para una fecha (considerando recurrencias)
   const isScheduleActiveOnDate = useCallback((schedule, targetDate) => {
     if (!schedule?.scheduleDate) return false;
-    
-    const scheduleDate = new Date(schedule.scheduleDate);
-    scheduleDate.setHours(0, 0, 0, 0);
-    const checkDate = new Date(targetDate);
-    checkDate.setHours(0, 0, 0, 0);
+
+    const scheduleDate = parseDateOnlyLocal(schedule.scheduleDate);
+    const checkDate = parseDateOnlyLocal(targetDate);
+    if (!scheduleDate || !checkDate) return false;
     
     // Si la fecha objetivo es anterior a la fecha del horario, no aplica
     if (checkDate < scheduleDate) return false;
@@ -439,8 +506,8 @@ const AppointmentForm = ({
 
       // Verificar fecha límite
       if (endDateValue) {
-        const limit = new Date(endDateValue);
-        limit.setHours(0, 0, 0, 0);
+        const limit = parseDateOnlyLocal(endDateValue);
+        if (!limit) return false;
         if (checkDate > limit) return false;
       }
 
@@ -486,6 +553,98 @@ const AppointmentForm = ({
     
     return false;
   }, [differenceInDays, differenceInWeeks, differenceInMonths, differenceInYears]);
+
+  const hasAvailabilityOnDate = useCallback((schedules, targetDate) => {
+    if (!Array.isArray(schedules) || schedules.length === 0 || !targetDate) {
+      return false;
+    }
+
+    return schedules.some((schedule) => isScheduleActiveOnDate(schedule, targetDate));
+  }, [isScheduleActiveOnDate]);
+
+  const specialistAvailabilityById = useMemo(() => {
+    const targetDate = formData.start ? new Date(formData.start) : null;
+    return filteredSpecialists.reduce((acc, specialist) => {
+      const specialistId = String(specialist.id || specialist.specialistId || "");
+      if (!specialistId) return acc;
+
+      const schedules = specialistSchedulesCache[specialistId];
+      if (schedules === undefined) {
+        acc[specialistId] = undefined;
+        return acc;
+      }
+
+      if (!Array.isArray(schedules) || schedules.length === 0) {
+        acc[specialistId] = false;
+        return acc;
+      }
+
+      acc[specialistId] = targetDate ? hasAvailabilityOnDate(schedules, targetDate) : true;
+      return acc;
+    }, {});
+  }, [filteredSpecialists, formData.start, hasAvailabilityOnDate, specialistSchedulesCache]);
+
+  const specialistOptions = useMemo(
+    () =>
+      filteredSpecialists
+      .filter((specialist) => {
+        if (lockSpecialist) return true;
+        const specialistId = String(specialist.id || specialist.specialistId || "");
+        const isCurrentSelection = specialistId === String(formData.specialistId || "");
+        const isAvailable = specialistAvailabilityById[specialistId];
+        return isCurrentSelection || isAvailable === true;
+      })
+      .map((specialist) => {
+        const name = specialist.label || specialist.nombre || "Especialista";
+        const role = specialist.cargo || specialist.role || "";
+        const specialty = specialist.specialtyLabel || "";
+        
+        // Formato: Nombre - Rol (Especialidad)
+        if (role && specialty) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} - ${role} (${specialty})`,
+          };
+        }
+        // Si solo tiene especialidad
+        if (specialty) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} (${specialty})`,
+          };
+        }
+        // Si solo tiene rol
+        if (role) {
+          return {
+            value: String(specialist.id || specialist.specialistId),
+            label: `${name} - ${role}`,
+          };
+        }
+        // Solo nombre
+        return {
+          value: String(specialist.id || specialist.specialistId),
+          label: name,
+        };
+      }),
+    [filteredSpecialists, formData.specialistId, lockSpecialist, specialistAvailabilityById]
+  );
+
+  useEffect(() => {
+    if (lockSpecialist || !formData.specialistId) return;
+
+    const specialistId = String(formData.specialistId);
+    const isAvailable = specialistAvailabilityById[specialistId];
+    if (isAvailable !== false) return;
+
+    setFormData((prev) => ({ ...prev, specialistId: "" }));
+    setTouched((prev) => ({ ...prev, specialistId: true }));
+    setErrors((prev) => ({
+      ...prev,
+      specialistId: formData.start
+        ? "Ese especialista no tiene disponibilidad para la fecha seleccionada"
+        : "Ese especialista no tiene horarios configurados",
+    }));
+  }, [formData.specialistId, formData.start, lockSpecialist, specialistAvailabilityById]);
 
   // Filtrar días disponibles según horarios del especialista
   const filterAvailableDates = useCallback((date) => {
@@ -541,13 +700,112 @@ const AppointmentForm = ({
     return hasActiveSchedule;
   }, [formData.specialistId, specialistSchedules, isScheduleActiveOnDate]);
 
+  const validateField = useCallback(
+    (field, data = formData) => {
+      if (field === "athleteId") {
+        if (!data.athleteId) return "Seleccione un deportista";
+        return "";
+      }
+
+      if (field === "specialty") {
+        if (!data.specialty) return "Seleccione una especialidad";
+        return "";
+      }
+
+      if (field === "specialistId") {
+        if (!data.specialistId) return "Seleccione un especialista";
+
+        const cachedSchedules = specialistSchedulesCache[String(data.specialistId)] || [];
+        if (cachedSchedules.length === 0) {
+          return "El especialista seleccionado no tiene horarios configurados";
+        }
+
+        if (data.start && !hasAvailabilityOnDate(cachedSchedules, data.start)) {
+          return "El especialista no tiene disponibilidad en la fecha seleccionada";
+        }
+
+        return "";
+      }
+
+      if (field === "description") {
+        const text = data.description?.trim() || "";
+        if (!text) return "Ingrese una descripción";
+        if (text.length < 10) return "La descripción debe tener al menos 10 caracteres";
+        if (text.length > MAX_DESCRIPTION_LENGTH) {
+          return `La descripción no puede superar ${MAX_DESCRIPTION_LENGTH} caracteres`;
+        }
+        return "";
+      }
+
+      if (field === "start") {
+        if (!data.start) return "Seleccione fecha y hora";
+
+        const selected =
+          data.start instanceof Date ? data.start : new Date(data.start);
+        if (Number.isNaN(selected.getTime())) {
+          return "La fecha y hora seleccionadas no son válidas";
+        }
+
+        // Tolerancia de 1 minuto para evitar falsos negativos por segundos.
+        if (selected.getTime() < Date.now() - 60 * 1000) {
+          return "No puede seleccionar una fecha u hora pasada";
+        }
+
+        if (athleteDateWarning) {
+          return athleteDateWarning;
+        }
+
+        if (data.specialistId) {
+          if (specialistSchedules.length === 0) {
+            return "El especialista no tiene horarios configurados";
+          }
+
+          const isAvailableDate = filterAvailableDates(selected);
+          const isAvailableTime = filterAvailableTimes(selected);
+          if (!isAvailableDate || !isAvailableTime) {
+            return "El especialista no tiene disponibilidad en esa fecha y hora";
+          }
+        }
+
+        return "";
+      }
+
+      return "";
+    },
+    [
+      athleteDateWarning,
+      filterAvailableDates,
+      filterAvailableTimes,
+      formData,
+      hasAvailabilityOnDate,
+      specialistSchedulesCache,
+      specialistSchedules.length,
+    ],
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const touchedFields = Object.keys(touched).filter((field) => touched[field]);
+    if (touchedFields.length === 0) return;
+
+    setErrors((prev) => {
+      const next = { ...prev };
+      touchedFields.forEach((field) => {
+        const message = validateField(field, formData);
+        if (message) next[field] = message;
+        else delete next[field];
+      });
+      return next;
+    });
+  }, [formData, touched, validateField, isOpen]);
+
   const validateForm = () => {
+    const fields = ["athleteId", "specialty", "specialistId", "description", "start"];
     const newErrors = {};
-    if (!formData.athleteId) newErrors.athleteId = "Seleccione un deportista";
-    if (!formData.specialty) newErrors.specialty = "Seleccione una especialidad";
-    if (!formData.specialistId) newErrors.specialistId = "Seleccione un especialista";
-    if (!formData.description?.trim()) newErrors.description = "Ingrese una descripción";
-    if (!formData.start) newErrors.start = "Seleccione fecha y hora";
+    fields.forEach((field) => {
+      const message = validateField(field, formData);
+      if (message) newErrors[field] = message;
+    });
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -591,7 +849,7 @@ const AppointmentForm = ({
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2 }}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-gray-100"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-gray-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -704,16 +962,26 @@ const AppointmentForm = ({
                     value={formData.specialistId}
                     onChange={(val) => handleChange({ target: { name: "specialistId", value: val } })}
                     loading={loadingSpecialists}
-                    disabled={lockSpecialist || !formData.specialty}
+                    disabled={lockSpecialist || !formData.specialty || loadingSpecialistAvailability}
                     placeholder={
                       lockSpecialist
                         ? specialistOptions.find(o => o.value === String(formData.specialistId))?.label || "Especialista asignado"
                         : !formData.specialty
                         ? "Seleccione una especialidad primero"
+                        : loadingSpecialistAvailability
+                        ? "Validando disponibilidad de especialistas..."
+                        : specialistOptions.length === 0
+                        ? "No hay especialistas con horario disponible"
                         : "Buscar especialista..."
                     }
                     error={touched.specialistId && errors.specialistId ? errors.specialistId : ""}
                   />
+                  {!loadingSpecialistAvailability && formData.specialty && specialistOptions.length === 0 && (
+                    <p className="text-xs text-amber-700 mt-1">
+                      No hay especialistas disponibles para esta especialidad
+                      {formData.start ? " en la fecha seleccionada" : ""}.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
@@ -855,7 +1123,7 @@ const AppointmentForm = ({
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 bg-gradient-to-r from-primary-purple to-primary-blue text-white rounded-lg hover:opacity-90 transition-all duration-200 font-medium shadow-lg"
+                className="px-6 py-2.5 bg-primary-purple text-white rounded-lg hover:bg-primary-blue transition-colors duration-200 font-medium shadow-lg"
               >
                 {initialData?.id ? "Guardar Cambios" : "Agendar Cita"}
               </button>
@@ -870,6 +1138,8 @@ const AppointmentForm = ({
 };
 
 export default AppointmentForm;
+
+
 
 
 

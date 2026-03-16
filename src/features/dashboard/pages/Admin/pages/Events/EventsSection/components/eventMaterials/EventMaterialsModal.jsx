@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { X, Package, Recycle } from "lucide-react";
 import {
   showSuccessAlert,
@@ -312,3 +312,4 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
 };
 
 export default EventMaterialsModal;
+

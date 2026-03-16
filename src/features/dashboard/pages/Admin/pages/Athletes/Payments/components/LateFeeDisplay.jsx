@@ -1,4 +1,4 @@
-import { FaExclamationTriangle, FaInfoCircle, FaCheckCircle } from "react-icons/fa";
+﻿import { FaExclamationTriangle, FaInfoCircle, FaCheckCircle } from "react-icons/fa";
 import { formatCurrency } from "../utils/currencyUtils";
 import { BUSINESS_CONSTANTS } from "../constants/paymentConstants";
 
@@ -100,3 +100,4 @@ const LateFeeDisplay = ({ lateDays, lateFeeAmount, showDetails = false }) => {
 };
 
 export default LateFeeDisplay;
+

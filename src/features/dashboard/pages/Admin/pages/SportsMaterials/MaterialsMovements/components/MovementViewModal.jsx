@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 import { formatDate } from "../../shared/utils/stockCalculations";
 import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
 import { getTipoBajaLabel } from "../../shared/utils/tipoBajaLabels";
@@ -332,3 +332,4 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
 };
 
 export default MovementViewModal;
+

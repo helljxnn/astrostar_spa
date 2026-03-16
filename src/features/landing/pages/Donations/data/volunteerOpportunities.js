@@ -1,4 +1,4 @@
-// Importar imágenes
+﻿// Importar imágenes
 import deporteImage from "../images/deporte y recreacion.jpeg";
 import formacionImage from "../images/formacion integral.JPG";
 import arteImage from "../images/Arte.jpeg";
@@ -97,3 +97,4 @@ export const volunteerOpportunities = [
     ]
   }
 ];
+

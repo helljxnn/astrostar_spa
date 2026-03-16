@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para validar documentos en tiempo real
  * Verifica si un documento ya está registrado en el sistema o en inscripciones pendientes
  * 
@@ -190,3 +190,4 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
     clearCache,
   };
 };
+

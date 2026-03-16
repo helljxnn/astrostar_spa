@@ -1,11 +1,16 @@
 import React from "react";
 
-const AttendanceToggle = ({ checked, onChange, gradient }) => (
-  <label className="relative inline-flex items-center cursor-pointer select-none">
+const AttendanceToggle = ({ checked, onChange, gradient, disabled = false }) => (
+  <label
+    className={`relative inline-flex items-center select-none ${
+      disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+    }`}
+  >
     <input
       type="checkbox"
       checked={checked}
       onChange={onChange}
+      disabled={disabled}
       className="sr-only"
     />
     <span

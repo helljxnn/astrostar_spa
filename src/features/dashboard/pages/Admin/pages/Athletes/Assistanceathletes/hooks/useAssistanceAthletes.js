@@ -189,7 +189,11 @@ export const useAssistanceAthletes = () => {
       );
     } catch (error) {
       console.error("Error saving attendance:", error);
-      showErrorAlert("No se pudo guardar la asistencia.");
+      const backendMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "No se pudo guardar la asistencia.";
+      showErrorAlert("No se pudo guardar la asistencia.", backendMessage);
     }
   };
 
@@ -233,3 +237,4 @@ export const useAssistanceAthletes = () => {
     handleSave,
   };
 };
+

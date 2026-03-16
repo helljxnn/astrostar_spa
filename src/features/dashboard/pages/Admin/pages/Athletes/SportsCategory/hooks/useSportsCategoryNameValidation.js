@@ -1,4 +1,4 @@
-// useSportsCategoryNameValidation.js
+﻿// useSportsCategoryNameValidation.js
 import { useState, useRef, useEffect, useCallback } from "react";
 import useSportsCategories from "./useSportsCategories";
 
@@ -134,3 +134,4 @@ export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
 };
 
 export default useSportsCategoryNameValidation;
+

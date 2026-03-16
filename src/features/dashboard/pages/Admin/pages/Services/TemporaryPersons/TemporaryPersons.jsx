@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import TemporaryPersonModal from "./components/TemporaryPersonModal.jsx";
 import TemporaryPersonViewModal from "./components/TemporaryPersonViewModal.jsx";
@@ -442,3 +442,4 @@ const TemporaryPersons = () => {
 };
 
 export default TemporaryPersons;
+

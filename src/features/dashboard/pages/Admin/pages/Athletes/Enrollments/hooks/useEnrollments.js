@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import EnrollmentsService from "../services/EnrollmentsService";
 import InscriptionsService from "../services/InscriptionsService";
 import GuardiansService from "../../AthletesSection/services/GuardiansService";
@@ -406,3 +406,4 @@ showSuccessAlert(
     updateInscriptionEmailInState,
   };
 };
+

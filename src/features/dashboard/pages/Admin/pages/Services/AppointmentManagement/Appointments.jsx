@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -85,9 +85,13 @@ function Appointments() {
   const userRole = (user?.role?.name || user?.rol || "").toString().toLowerCase();
   const isAthleteView = userRole === "athlete" || userRole === "deportista" || isAthleteScope;
   
-  const canViewAppointments = hasPermission("appointmentManagement", "Ver") || true;
-  const canCreateAppointments =
-    hasPermission("appointmentManagement", "Crear") || true;
+  const canViewAppointments = hasPermission("appointmentManagement", "Ver");
+  const canCreateAppointments = hasPermission(
+    "appointmentManagement",
+    "Crear",
+  );
+  const canEditAppointments = hasPermission("appointmentManagement", "Editar");
+  const canCancelAppointments = hasPermission("appointmentManagement", "Cancelar");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -260,7 +264,6 @@ function Appointments() {
       const apptDate = new Date(appointmentDate);
       apptDate.setHours(0, 0, 0, 0);
       if (apptDate > today) {
-        alert(`No se puede completar una cita que aún no ha ocurrido. La cita está programada para el ${apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}.`);
         return;
       }
     }
@@ -268,6 +271,16 @@ function Appointments() {
     setIsCompleteModalOpen(true);
   };
 
+
+  const canCompleteByDate = useCallback((event) => {
+    const appointmentDate = event?.appointmentDate || event?.date;
+    if (!appointmentDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const apptDate = new Date(appointmentDate);
+    apptDate.setHours(0, 0, 0, 0);
+    return apptDate <= today;
+  }, []);
   const handleConfirmComplete = async (conclusion, shouldReschedule, file = null) => {
     if (appointmentToComplete) {
       try {
@@ -320,6 +333,7 @@ function Appointments() {
         : "bg-blue-100 text-blue-700";
 
     const isEditable = event.status === "Programado";
+    const canComplete = isEditable && canCompleteByDate(event);
 
     return (
       <div className="space-y-1.5">
@@ -362,7 +376,7 @@ function Appointments() {
           >
             Ver
           </button>
-          {isEditable && !isAthleteView && (
+          {isEditable && !isAthleteView && canEditAppointments && (
             <>
               <button
                 onClick={(e) => {
@@ -376,15 +390,22 @@ function Appointments() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!canComplete) return;
                   handleMarkAsCompleted(event);
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-green-600 hover:bg-green-50"
+                disabled={!canComplete}
+                title={!canComplete ? "Disponible el dia de la cita" : "Completar cita"}
+                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors ${
+                  canComplete
+                    ? "text-green-600 hover:bg-green-50"
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed"
+                }`}
               >
                 Completar
               </button>
             </>
           )}
-          {isEditable && (
+          {isEditable && canCancelAppointments && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -611,3 +632,7 @@ function Appointments() {
 }
 
 export default Appointments;
+
+
+
+

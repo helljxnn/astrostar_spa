@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -119,3 +119,4 @@ export const Navbar = () => {
     </>
   );
 };
+

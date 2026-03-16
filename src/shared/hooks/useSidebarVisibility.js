@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { usePermissions } from "./usePermissions";
 import { useAuth } from "../contexts/authContext";
 import { useDynamicPermissions } from "./useDynamicPermissions";
@@ -136,3 +136,4 @@ export const useSidebarVisibility = () => {
     permissionsLoading
   };
 };
+

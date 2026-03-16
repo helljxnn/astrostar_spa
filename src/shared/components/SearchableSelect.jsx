@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { FaSearch, FaTimes, FaChevronDown } from "react-icons/fa";
 
 /**
@@ -192,3 +192,4 @@ const SearchableSelect = ({
 };
 
 export default SearchableSelect;
+

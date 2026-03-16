@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class AppointmentService {
   constructor() {
@@ -65,3 +65,4 @@ class AppointmentService {
 }
 
 export default new AppointmentService();
+
