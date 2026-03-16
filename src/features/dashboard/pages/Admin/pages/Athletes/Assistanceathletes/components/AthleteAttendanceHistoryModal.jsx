@@ -1,5 +1,6 @@
-﻿import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const Stat = ({ label, value, tone }) => (
   <div className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-2">
@@ -16,8 +17,6 @@ const AthleteAttendanceHistoryModal = ({
   loading,
   rangeLabel,
 }) => {
-  if (!isOpen) return null;
-
   const summary = useMemo(() => {
     const total = history.length;
     const present = history.filter((item) => item.asistencia).length;
@@ -43,7 +42,9 @@ const AthleteAttendanceHistoryModal = ({
     });
   };
 
-  return (
+  if (!isOpen) return null;
+
+  const modalContent = (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
         <div className="flex items-start justify-between px-6 py-5 bg-white text-gray-800 border-b border-gray-200">
@@ -148,6 +149,8 @@ const AthleteAttendanceHistoryModal = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AthleteAttendanceHistoryModal;

@@ -13,7 +13,12 @@ const diasSemana = [
 
 export default function CustomRecurrenceModal({ onClose, onSave, initialData = null }) {
   const [interval, setInterval] = useState(initialData?.interval || 1);
-  const [frequency, setFrequency] = useState(initialData?.frequency || "semana");
+  const initialFrequency =
+    String(initialData?.frequency || "semana")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase() || "semana";
+  const [frequency, setFrequency] = useState(initialFrequency);
   const [dias, setDias] = useState(initialData?.dias || []);
   const [endType, setEndType] = useState(initialData?.endType || "nunca");
   const [endDate, setEndDate] = useState(initialData?.endDate || "");
@@ -26,9 +31,15 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
   };
 
   const handleSave = () => {
-    let label = `Cada ${interval} ${frequency}${interval > 1 ? "s" : ""}`;
+    const frequencyLabelMap = {
+      dia: interval > 1 ? "días" : "día",
+      semana: interval > 1 ? "semanas" : "semana",
+      mes: interval > 1 ? "meses" : "mes",
+      anio: interval > 1 ? "años" : "año",
+    };
+    let label = `Cada ${interval} ${frequencyLabelMap[frequency] || frequency}`;
     
-    if (frequency === "semana" && dias.length > 0) {
+    if (["semana", "mes", "anio"].includes(frequency) && dias.length > 0) {
       const diasLabels = dias
         .sort((a, b) => a - b)
         .map((d) => diasSemana.find(x => x.value === d)?.label)
@@ -85,18 +96,18 @@ export default function CustomRecurrenceModal({ onClose, onSave, initialData = n
             <option value="dia">Día</option>
             <option value="semana">Semana</option>
             <option value="mes">Mes</option>
-            <option value="año">Año</option>
+            <option value="anio">Año</option>
           </select>
         </div>
 
         {/* Se repite el */}
-        {frequency === "semana" && (
+        {["semana", "mes", "anio"].includes(frequency) && (
           <div className="mb-6">
             <p className="text-gray-700 text-sm font-medium text-center mb-2">
               Se repite los días
             </p>
             <p className="text-xs text-gray-500 text-center mb-3">
-              (Opcional: deja vacío para repetir el mismo día de la semana)
+              (Opcional: deja vacío para repetir la fecha base)
             </p>
             <div className="flex justify-center gap-2">
               {diasSemana.map((dia) => (

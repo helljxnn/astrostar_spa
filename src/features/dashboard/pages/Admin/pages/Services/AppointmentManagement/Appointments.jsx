@@ -104,7 +104,7 @@ function Appointments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
-    specialistId: "",
+    specialty: "",
     status: "",
   });
 
@@ -115,22 +115,28 @@ function Appointments() {
     loadSportsCategories();
   }, [loadAppointments, loadAthletes, loadSpecialists, loadSportsCategories]);
 
-  const specialistFilterOptions = useMemo(
-    () =>
-      specialists.map((spec) => ({
-        value: spec.id || spec.specialistId,
-        label: spec.label || spec.nombre || "Especialista",
-      })),
-    [specialists]
-  );
+  const specialtyFilterOptions = useMemo(() => {
+    const labelByKey = {
+      psicologia: "Psicología",
+      nutricion: "Nutrición",
+      fisioterapia: "Fisioterapia",
+    };
+
+    return healthSpecialtyOptions
+      .filter((opt) => ["psicologia", "nutricion", "fisioterapia"].includes(opt.value))
+      .map((opt) => ({
+        value: opt.value,
+        label: labelByKey[opt.value] || opt.label,
+      }));
+  }, [healthSpecialtyOptions]);
 
   const filters = useMemo(
     () => [
       {
-        id: "specialistId",
-        label: "Especialista",
-        field: "specialistId",
-        options: specialistFilterOptions,
+        id: "specialty",
+        label: "Especialidad",
+        field: "specialty",
+        options: specialtyFilterOptions,
       },
       {
         id: "status",
@@ -143,7 +149,7 @@ function Appointments() {
         ],
       },
     ],
-    [specialistFilterOptions]
+    [specialtyFilterOptions]
   );
 
   const handleFiltersChange = (nextFilters) => {
@@ -520,13 +526,13 @@ function Appointments() {
             ))}
           </div>
 
-          {(selectedFilters.specialistId ||
+          {(selectedFilters.specialty ||
             selectedFilters.status) && (
             <div className="mt-4">
               <button
                 onClick={() =>
                   setSelectedFilters({
-                    specialistId: "",
+                    specialty: "",
                     status: "",
                   })
                 }
