@@ -52,29 +52,29 @@ export default function Home() {
   const areas = [
     {
       id: 1,
-      title: "FORMACIÓN DEPORTIVA",
-      description: "Desarrollo técnico, disciplina y trabajo en equipo dentro y fuera de la cancha.",
+      title: "FORMACIN DEPORTIVA",
+      description: "Desarrollo tcnico, disciplina y trabajo en equipo dentro y fuera de la cancha.",
       image: "/src/features/landing/pages/Home/images/6.jpg",
       link: "/areas-proyectos#formacion-deportiva"
     },
     {
       id: 2,
-      title: "ACOMPAÑAMIENTO PSICOSOCIAL",
+      title: "ACOMPAAMIENTO PSICOSOCIAL",
       description: "Apoyo profesional que fortalece el bienestar emocional y social.",
       image: "/src/features/landing/pages/Home/images/7.jpg",
       link: "/areas-proyectos#acompanamiento-psicosocial"
     },
     {
       id: 3,
-      title: "ORIENTACIÓN NUTRICIONAL",
-      description: "Hábitos alimenticios saludables para el rendimiento y bienestar.",
+      title: "ORIENTACIN NUTRICIONAL",
+      description: "Hbitos alimenticios saludables para el rendimiento y bienestar.",
       image: "/src/features/landing/pages/Home/images/8.jpg",
       link: "/areas-proyectos#orientacion-nutricional"
     },
     {
       id: 4,
-      title: "BIENESTAR FÍSICO",
-      description: "Prevención y cuidado físico mediante fisioterapia para una práctica deportiva segura.",
+      title: "BIENESTAR FSICO",
+      description: "Prevencin y cuidado fsico mediante fisioterapia para una prctica deportiva segura.",
       image: "/src/features/landing/pages/Home/images/9.jpg",
       link: "/areas-proyectos#bienestar-fisico"
     }
@@ -90,7 +90,7 @@ export default function Home() {
     {
       icon: <FaFutbol />,
       value: 6,
-      text: "Areas de acción (Deporte, Psicología, Nutrición...)",
+      text: "Areas de accin (Deporte, Psicologa, Nutricin...)",
     },
     {
       icon: <FaHandshake />,
@@ -109,18 +109,18 @@ export default function Home() {
       {/* HERO Principal */}
       <HeroMain />
 
-      {/* SecciÃ³n de InscripciÃ³n */}
+      {/* Sección de Inscripción */}
       <InscriptionSection />
 
-      {/* Sección de Donación con Video */}
+      {/* Seccin de Donacin con Video */}
       <section className="relative bg-white py-16 px-6 sm:px-10 lg:px-20 overflow-hidden">
-        {/* Decoración de fondo sutil */}
+        {/* Decoracin de fondo sutil */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-[#B595FF]/5 to-transparent rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[#9BE9FF]/5 to-transparent rounded-full blur-3xl" />
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Video con diseño limpio */}
+            {/* Video con diseo limpio */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -128,7 +128,7 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               className="relative group"
             >
-              {/* Círculos decorativos */}
+              {/* Crculos decorativos */}
               <div className="absolute -top-6 -right-6 w-20 h-20 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full opacity-60 group-hover:opacity-80 transition-opacity" />
               <div className="absolute -bottom-4 -left-4 w-16 h-16 bg-gradient-to-br from-[#9BE9FF] to-[#B595FF] rounded-full opacity-50 group-hover:opacity-70 transition-opacity" />
               
@@ -150,7 +150,7 @@ export default function Home() {
               <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-2xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity" />
             </motion.div>
 
-            {/* Contenido de donación */}
+            {/* Contenido de donacin */}
             <motion.div
               initial={{ opacity: 0, x: 50 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -158,24 +158,24 @@ export default function Home() {
               transition={{ duration: 0.8 }}
               className="space-y-6"
             >
-              {/* Título */}
+              {/* Ttulo */}
               <div>
                 <h3 className="text-4xl sm:text-5xl font-bold text-gray-900 font-montserrat leading-tight">
-                  Apoya Nuestro Sueño
+                  Apoya Nuestro Sueo
                 </h3>
               </div>
 
-              {/* Descripción */}
+              {/* Descripcin */}
               <div className="space-y-4 text-gray-600 leading-relaxed text-lg">
                 <p>
-                  Tu donación nos permite seguir brindando oportunidades deportivas, educativas y de desarrollo personal a niñas y jóvenes de nuestra fundación.
+                  Tu donacin nos permite seguir brindando oportunidades deportivas, educativas y de desarrollo personal a nias y jvenes de nuestra fundacin.
                 </p>
                 <p>
-                  Cada aporte contribuye directamente a la formación de futuras líderes, fortaleciendo sus habilidades y construyendo un futuro lleno de posibilidades.
+                  Cada aporte contribuye directamente a la formacin de futuras lderes, fortaleciendo sus habilidades y construyendo un futuro lleno de posibilidades.
                 </p>
               </div>
 
-              {/* Botón de donación */}
+              {/* Botn de donacin */}
               <div className="pt-4">
                 <a
                   href="/donacion"
@@ -189,19 +189,19 @@ export default function Home() {
                 </a>
               </div>
 
-              {/* Stats mejorados - sin cifras específicas */}
+              {/* Stats mejorados - sin cifras especficas */}
               <div className="grid grid-cols-3 gap-4 pt-4">
                 <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#B595FF]/30 transition-colors">
-                  <div className="text-2xl font-bold text-[#B595FF] mb-1">💜</div>
+                  <div className="text-2xl font-bold text-[#B595FF] mb-1">+</div>
                   <div className="text-xs text-gray-600">Impacto social</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#9BE9FF]/30 transition-colors">
-                  <div className="text-2xl font-bold text-[#9BE9FF] mb-1">⚽</div>
+                  <div className="text-2xl font-bold text-[#9BE9FF] mb-1">+</div>
                   <div className="text-xs text-gray-600">Desarrollo deportivo</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-xl border border-gray-100 hover:border-[#B595FF]/30 transition-colors">
-                  <div className="text-2xl font-bold text-[#B595FF] mb-1">🌟</div>
-                  <div className="text-xs text-gray-600">Formación integral</div>
+                  <div className="text-2xl font-bold text-[#B595FF] mb-1">+</div>
+                  <div className="text-xs text-gray-600">Formacin integral</div>
                 </div>
               </div>
             </motion.div>
@@ -214,7 +214,7 @@ export default function Home() {
       {/* Impacto en Cifras */}
       <section id="impacto" className="py-16 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto">
-          {/* Título */}
+          {/* Ttulo */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -274,12 +274,12 @@ export default function Home() {
                 </motion.div>
               </div>
               
-              {/* Número */}
+              {/* Nmero */}
               <div className="text-5xl font-bold text-[#B595FF] mb-3 text-center relative z-10">
                 + DE 800
               </div>
               
-              {/* Descripción */}
+              {/* Descripcin */}
               <p className="text-gray-800 font-semibold text-lg text-center relative z-10">
                 Mercados Familiares
               </p>
@@ -331,12 +331,12 @@ export default function Home() {
                 </motion.div>
               </div>
               
-              {/* Número */}
+              {/* Nmero */}
               <div className="text-5xl font-bold text-[#B595FF] mb-3 text-center relative z-10">
                 + DE 1000
               </div>
               
-              {/* Descripción */}
+              {/* Descripcin */}
               <p className="text-gray-800 font-semibold text-lg text-center relative z-10">
                 Deportistas
               </p>
@@ -390,12 +390,12 @@ export default function Home() {
                 </motion.div>
               </div>
               
-              {/* Número */}
+              {/* Nmero */}
               <div className="text-5xl font-bold text-[#B595FF] mb-3 text-center relative z-10">
                 + DE 60
               </div>
               
-              {/* Descripción */}
+              {/* Descripcin */}
               <p className="text-gray-800 font-semibold text-lg text-center relative z-10">
                 Familias impactadas
               </p>
@@ -407,7 +407,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Áreas y Proyectos */}
+      {/* reas y Proyectos */}
       <section className="py-16 px-6 sm:px-10 lg:px-20 bg-white">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -419,14 +419,14 @@ export default function Home() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 font-montserrat mb-4">
-              Áreas Y Proyectos
+              reas Y Proyectos
             </h2>
             <p className="text-gray-700 leading-relaxed text-lg max-w-3xl mx-auto">
-              Desarrollamos programas que integran deporte, bienestar y acompañamiento profesional para potenciar el crecimiento personal y deportivo de niñas y jóvenes.
+              Desarrollamos programas que integran deporte, bienestar y acompaamiento profesional para potenciar el crecimiento personal y deportivo de nias y jvenes.
             </p>
           </motion.div>
 
-          {/* Grid de 4 áreas */}
+          {/* Grid de 4 reas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
             {areas.map((area, index) => (
               <motion.div
@@ -463,14 +463,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modal de Áreas */}
+      {/* Modal de reas */}
       <AreaModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         area={selectedArea}
       />
 
-      {/* Sección de Historias */}
+      {/* Seccin de Historias */}
       <section className="py-24 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-white via-gray-50 to-white relative overflow-hidden">
         {/* Efectos de fondo sutiles */}
         <div className="absolute inset-0">
@@ -496,20 +496,20 @@ export default function Home() {
               className="inline-block mb-4"
             >
               <span className="px-4 py-2 bg-gradient-to-r from-[#B595FF]/10 to-[#9BE9FF]/10 backdrop-blur-sm border border-[#B595FF]/20 rounded-full text-[#B595FF] text-sm font-semibold">
-                ✨ Nuestras Estrellas
+                ( Nuestras Estrellas
               </span>
             </motion.div>
             <h2 className="text-5xl sm:text-6xl font-bold text-gray-900 font-montserrat mb-6 leading-tight">
               Historias que Inspiran
             </h2>
             <p className="text-gray-600 leading-relaxed text-xl max-w-3xl mx-auto">
-              Ellas son el corazón de nuestro impacto. Sus historias reflejan el poder del acompañamiento, el deporte y las oportunidades.
+              Ellas son el corazn de nuestro impacto. Sus historias reflejan el poder del acompaamiento, el deporte y las oportunidades.
             </p>
           </motion.div>
 
-          {/* Grid de historias con diseño moderno y claro */}
+          {/* Grid de historias con diseo moderno y claro */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
-            {/* Historia 1 - María Antonia */}
+            {/* Historia 1 - Mara Antonia */}
             <motion.div
               initial={{ opacity: 0, y: 50, rotateY: -15 }}
               whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
@@ -526,12 +526,12 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-[#B595FF]/10 to-[#9BE9FF]/10 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <img
                     src="/src/features/landing/pages/Home/images/Maria Antonia.jpeg"
-                    alt="María Antonia Tascón"
+                    alt="Mara Antonia Tascn"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-20" />
                   
-                  {/* Badge flotante con animación */}
+                  {/* Badge flotante con animacin */}
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
                     whileInView={{ scale: 1, rotate: 0 }}
@@ -542,7 +542,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] rounded-full blur-md opacity-50" />
                       <div className="relative bg-white backdrop-blur-md px-5 py-2.5 rounded-full border border-[#B595FF]/20 shadow-lg">
-                        <span className="text-sm font-bold text-[#B595FF]">11 años</span>
+                        <span className="text-sm font-bold text-[#B595FF]">11 aos</span>
                       </div>
                     </div>
                   </motion.div>
@@ -550,20 +550,20 @@ export default function Home() {
                   {/* Nombre sobre la imagen */}
                   <div className="absolute bottom-6 left-6 right-6 z-30">
                     <h3 className="text-3xl font-bold text-white mb-2 font-montserrat drop-shadow-lg">
-                      María Antonia Tascón
+                      Mara Antonia Tascn
                     </h3>
                   </div>
                 </div>
 
                 {/* Contenido limpio */}
                 <div className="relative p-8 bg-white">
-                  {/* Descripción */}
+                  {/* Descripcin */}
                   <p className="text-gray-600 text-base leading-relaxed">
-                    Una historia de superación y dedicación que inspira a toda nuestra comunidad.
+                    Una historia de superacin y dedicacin que inspira a toda nuestra comunidad.
                   </p>
                 </div>
 
-                {/* Línea decorativa animada */}
+                {/* Lnea decorativa animada */}
                 <motion.div
                   className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#B595FF] to-transparent"
                   initial={{ scaleX: 0 }}
@@ -574,7 +574,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Historia 2 - Gaby Rodríguez */}
+            {/* Historia 2 - Gaby Rodrguez */}
             <motion.div
               initial={{ opacity: 0, y: 50, scale: 0.9 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -591,12 +591,12 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-[#9BE9FF]/10 to-[#B595FF]/10 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <img
                     src="/src/features/landing/pages/Home/images/Gabi rodriguez.jpg"
-                    alt="Gaby Rodríguez"
+                    alt="Gaby Rodrguez"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-20" />
                   
-                  {/* Badge flotante con animación */}
+                  {/* Badge flotante con animacin */}
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
                     whileInView={{ scale: 1, rotate: 0 }}
@@ -607,7 +607,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-[#9BE9FF] to-[#B595FF] rounded-full blur-md opacity-50" />
                       <div className="relative bg-white backdrop-blur-md px-5 py-2.5 rounded-full border border-[#9BE9FF]/20 shadow-lg">
-                        <span className="text-sm font-bold text-[#9BE9FF]">8 años</span>
+                        <span className="text-sm font-bold text-[#9BE9FF]">8 aos</span>
                       </div>
                     </div>
                   </motion.div>
@@ -615,20 +615,20 @@ export default function Home() {
                   {/* Nombre sobre la imagen */}
                   <div className="absolute bottom-6 left-6 right-6 z-30">
                     <h3 className="text-3xl font-bold text-white mb-2 font-montserrat drop-shadow-lg">
-                      Gaby Rodríguez
+                      Gaby Rodrguez
                     </h3>
                   </div>
                 </div>
 
                 {/* Contenido limpio */}
                 <div className="relative p-8 bg-white">
-                  {/* Descripción */}
+                  {/* Descripcin */}
                   <p className="text-gray-600 text-base leading-relaxed">
-                    El deporte como herramienta de transformación y crecimiento personal.
+                    El deporte como herramienta de transformacin y crecimiento personal.
                   </p>
                 </div>
 
-                {/* Línea decorativa animada */}
+                {/* Lnea decorativa animada */}
                 <motion.div
                   className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#9BE9FF] to-transparent"
                   initial={{ scaleX: 0 }}
@@ -639,7 +639,7 @@ export default function Home() {
               </div>
             </motion.div>
 
-            {/* Historia 3 - Sofía Alejandra */}
+            {/* Historia 3 - Sofa Alejandra */}
             <motion.div
               initial={{ opacity: 0, y: 50, rotateY: 15 }}
               whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
@@ -656,12 +656,12 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-br from-[#B595FF]/10 to-[#9BE9FF]/10 mix-blend-overlay z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   <img
                     src="/src/features/landing/pages/Home/images/Sofia alejandra.jpg"
-                    alt="Sofía Alejandra Castro"
+                    alt="Sofa Alejandra Castro"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-20" />
                   
-                  {/* Badge flotante con animación */}
+                  {/* Badge flotante con animacin */}
                   <motion.div
                     initial={{ scale: 0, rotate: -180 }}
                     whileInView={{ scale: 1, rotate: 0 }}
@@ -672,7 +672,7 @@ export default function Home() {
                     <div className="relative">
                       <div className="absolute inset-0 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] rounded-full blur-md opacity-50" />
                       <div className="relative bg-white backdrop-blur-md px-5 py-2.5 rounded-full border border-[#B595FF]/20 shadow-lg">
-                        <span className="text-sm font-bold text-[#B595FF]">11 años</span>
+                        <span className="text-sm font-bold text-[#B595FF]">11 aos</span>
                       </div>
                     </div>
                   </motion.div>
@@ -680,20 +680,20 @@ export default function Home() {
                   {/* Nombre sobre la imagen */}
                   <div className="absolute bottom-6 left-6 right-6 z-30">
                     <h3 className="text-3xl font-bold text-white mb-2 font-montserrat drop-shadow-lg">
-                      Sofía Alejandra Castro
+                      Sofa Alejandra Castro
                     </h3>
                   </div>
                 </div>
 
                 {/* Contenido limpio */}
                 <div className="relative p-8 bg-white">
-                  {/* Descripción */}
+                  {/* Descripcin */}
                   <p className="text-gray-600 text-base leading-relaxed">
-                    Construyendo sueños a través del compromiso y la pasión por el fútbol.
+                    Construyendo sueos a travs del compromiso y la pasin por el ftbol.
                   </p>
                 </div>
 
-                {/* Línea decorativa animada */}
+                {/* Lnea decorativa animada */}
                 <motion.div
                   className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#B595FF] to-transparent"
                   initial={{ scaleX: 0 }}
@@ -710,3 +710,4 @@ export default function Home() {
   );
 }
           
+

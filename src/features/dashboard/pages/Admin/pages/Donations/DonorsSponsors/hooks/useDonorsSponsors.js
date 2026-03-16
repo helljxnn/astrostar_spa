@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import donorsSponsorsService from "../services/donorsSponsorsService.js";
 import {
   showErrorAlert,
@@ -97,7 +97,6 @@ export const useDonorsSponsors = () => {
         setReferenceData(response.data || {});
       }
     } catch (err) {
-      console.error("Error cargando datos de referencia:", err);
     }
   }, []);
 
@@ -207,7 +206,6 @@ export const useDonorsSponsors = () => {
         excludeId
       );
     } catch (err) {
-      console.error("Error verificando identificaci\u00f3n:", err);
       return { available: false, message: "Error verificando identificaci\u00f3n" };
     }
   }, []);
@@ -216,7 +214,6 @@ export const useDonorsSponsors = () => {
     try {
       return await donorsSponsorsService.checkEmailAvailability(email, excludeId);
     } catch (err) {
-      console.error("Error verificando correo:", err);
       return { available: false, message: "Error verificando correo" };
     }
   }, []);
@@ -265,3 +262,4 @@ export const useDonorsSponsors = () => {
 };
 
 export default useDonorsSponsors;
+

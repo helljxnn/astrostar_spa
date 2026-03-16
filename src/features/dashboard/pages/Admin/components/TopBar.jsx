@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { FaUserTie, FaBars } from "react-icons/fa";
 import PerfilLog from "./perfilLog";
 import { useAuth } from "../../../../../shared/contexts/authContext.jsx";
@@ -91,3 +91,4 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
     </header>
   );
 };
+

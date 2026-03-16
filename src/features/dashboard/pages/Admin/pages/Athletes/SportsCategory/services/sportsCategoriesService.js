@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient"; // Ajusta la ruta según tu proyecto
+﻿import apiClient from "../../../../../../../../shared/services/apiClient"; // Ajusta la ruta según tu proyecto
 
 class SportsCategoriesService {
   /**

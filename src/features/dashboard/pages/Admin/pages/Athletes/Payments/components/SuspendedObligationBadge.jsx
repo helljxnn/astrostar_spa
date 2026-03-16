@@ -1,4 +1,4 @@
-import { FaPause, FaPlay } from "react-icons/fa";
+﻿import { FaPause, FaPlay } from "react-icons/fa";
 
 /**
  * Badge para mostrar el estado de suspensión de una obligación
@@ -32,3 +32,4 @@ const SuspendedObligationBadge = ({ obligation }) => {
 };
 
 export default SuspendedObligationBadge;
+

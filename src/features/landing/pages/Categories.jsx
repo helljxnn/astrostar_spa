@@ -1,4 +1,4 @@
-import { Hero } from "../components/Hero";
+﻿import { Hero } from "../components/Hero";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import apiClient from "../../../shared/services/apiClient";
@@ -225,3 +225,4 @@ export default function Categories() {
     </div>
   );
 }
+

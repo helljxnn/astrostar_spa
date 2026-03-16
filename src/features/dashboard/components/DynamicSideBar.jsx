@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
 import { useSidebarVisibility } from "../../../shared/hooks/useSidebarVisibility.js";
@@ -369,9 +369,9 @@ function DynamicSideBar({
             {isAthleteOrGuardian && renderModule("myPayments")}
 
             {/* Grupos de módulos - Solo para NO deportistas */}
-            {!isAthleteOrGuardian && renderGroup("equipment")}
             {!isAthleteOrGuardian && renderGroup("services")}
             {!isAthleteOrGuardian && renderGroup("athletes")}
+            {!isAthleteOrGuardian && renderGroup("equipment")}
             {!isAthleteOrGuardian && renderGroup("donations")}
             {!isAthleteOrGuardian && renderGroup("events")}
           </div>
@@ -416,3 +416,4 @@ function DynamicSideBar({
 }
 
 export default DynamicSideBar;
+

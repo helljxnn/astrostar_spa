@@ -1,4 +1,4 @@
-// UTILIDADES PARA FECHAS CON SOPORTE MULTI-DÍA
+﻿// UTILIDADES PARA FECHAS CON SOPORTE MULTI-DÍA
 
 // Combina fecha (Date o string) + hora ("HH:mm") en una Date local segura
 // ⚠️ RETORNA Date POR DEFECTO para compatibilidad, pero puede retornar { start, end }

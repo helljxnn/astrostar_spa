@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaTimes } from "react-icons/fa";
 
@@ -102,3 +102,4 @@ export const ScheduleSelector = ({ value = [], onChange, error, touched }) => {
     </div>
   );
 };
+

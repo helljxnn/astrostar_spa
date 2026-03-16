@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../contexts/authContext";
 import permissionsService from "../services/permissionsService";
 import { generateAdminPermissions } from "../constants/modulePermissions";
@@ -170,3 +170,4 @@ export const usePermissions = () => {
       user?.rol === "Administrador Sistema",
   };
 };
+

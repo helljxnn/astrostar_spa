@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio de Personas Temporales - Integración con Backend API
  * Maneja todas las operaciones CRUD de personas temporales
  */

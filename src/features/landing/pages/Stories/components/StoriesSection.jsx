@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { StoryCard } from "./StoryCard";
 import { storiesData } from "../data/storiesData";
 

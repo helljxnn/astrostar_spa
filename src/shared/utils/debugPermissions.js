@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidad para depurar problemas de permisos
  * Usar en la consola del navegador
  */
@@ -60,3 +60,4 @@ if (typeof window !== "undefined") {
 }
 
 export default debugPermissions;
+

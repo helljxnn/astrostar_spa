@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 
 export default function VolunteerModal({ opportunity, isOpen, onClose }) {
   if (!isOpen || !opportunity) return null;
@@ -109,3 +109,4 @@ export default function VolunteerModal({ opportunity, isOpen, onClose }) {
     </motion.div>
   );
 }
+

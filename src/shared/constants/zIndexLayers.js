@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Configuración centralizada de z-index para evitar conflictos
  * Los valores están organizados por capas lógicas
  */
@@ -83,3 +83,4 @@ export const Z_INDEX_CLASSES = {
 };
 
 export default Z_INDEX_LAYERS;
+

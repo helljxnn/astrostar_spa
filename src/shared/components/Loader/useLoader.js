@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+﻿import { useState, useCallback, useEffect } from "react";
 
 // Estado global del loader
 let globalLoaderState = {
@@ -70,3 +70,4 @@ export const setGlobalLoaderMessage = (message) => {
   globalLoaderState.message = message;
   notifyListeners();
 };
+

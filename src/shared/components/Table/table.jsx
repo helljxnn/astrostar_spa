@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import Thead from "./thead";
 import Tbody from "./tbody";
 import Pagination from "./Pagination";
@@ -252,3 +252,4 @@ const Table = ({
 };
 
 export default Table;
+

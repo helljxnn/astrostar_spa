@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidades para manejo seguro de fechas sin problemas de zona horaria
  */
 
@@ -147,3 +147,4 @@ export const formatDateForDisplay = (dateValue) => {
     return "";
   }
 };
+

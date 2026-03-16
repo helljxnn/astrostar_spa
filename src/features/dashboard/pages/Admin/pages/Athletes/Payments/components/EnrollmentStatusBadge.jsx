@@ -1,4 +1,4 @@
-import { FaCheckCircle, FaExclamationTriangle, FaClock, FaSync } from "react-icons/fa";
+﻿import { FaCheckCircle, FaExclamationTriangle, FaClock, FaSync } from "react-icons/fa";
 
 /**
  * Badge para mostrar el estado de matrícula con iconos y colores apropiados

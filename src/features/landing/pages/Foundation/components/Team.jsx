@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
 import CircularGallery from "./bits/CircularGallery";
 
@@ -239,3 +239,4 @@ export const Team = () => {
     </section>
   );
 };
+

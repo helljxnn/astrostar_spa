@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar deportistas
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
@@ -411,3 +411,4 @@ if (response && response.success) {
 }
 
 export default new AthletesService();
+

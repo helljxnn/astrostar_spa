@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
 import SearchableSelect from '../../../../../../../../shared/components/SearchableSelect';
@@ -50,7 +50,6 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
         setMaterials(materialsWithStock);
       }
     } catch (error) {
-      console.error('Error al cargar materiales:', error);
       setMaterials([]);
     } finally {
       setLoadingMaterials(false);
@@ -277,3 +276,4 @@ AssignMaterialModal.propTypes = {
 };
 
 export default AssignMaterialModal;
+

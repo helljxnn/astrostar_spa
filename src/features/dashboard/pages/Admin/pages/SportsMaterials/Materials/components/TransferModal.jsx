@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -294,3 +294,4 @@ TransferModal.propTypes = {
 };
 
 export default TransferModal;
+

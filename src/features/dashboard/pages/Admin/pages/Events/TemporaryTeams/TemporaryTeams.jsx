@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
@@ -136,7 +136,6 @@ const TemporaryTeams = () => {
         }
       }
     } catch (error) {
-      console.error("Error cargando equipos:", error);
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
     } finally {
@@ -190,6 +189,11 @@ const TemporaryTeams = () => {
 
   // Guardar nuevo equipo
   const handleSave = async (newTeam) => {
+    if (!hasPermission("temporaryTeams", "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear equipos");
+      return;
+    }
+
     try {
       const result = await TeamsService.createTeam(newTeam);
 
@@ -205,13 +209,17 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo crear el equipo");
       }
     } catch (error) {
-      console.error("Error creando equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo crear el equipo");
     }
   };
 
   // Actualizar equipo
   const handleUpdate = async (updatedTeam) => {
+    if (!hasPermission("temporaryTeams", "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar equipos");
+      return;
+    }
+
     try {
       const result = await TeamsService.updateTeam(updatedTeam.id, updatedTeam);
 
@@ -226,7 +234,6 @@ const TemporaryTeams = () => {
         );
       }
     } catch (error) {
-      console.error("Error actualizando equipo:", error);
       showErrorAlert(
         "Error",
         error.message || "No se pudo actualizar el equipo",
@@ -329,7 +336,6 @@ const TemporaryTeams = () => {
         );
       }
     } catch (error) {
-      console.error("Error eliminando equipo:", error);
       showErrorAlert("Error", "Error al eliminar el equipo en el servidor");
     }
   };
@@ -481,3 +487,4 @@ const TemporaryTeams = () => {
 };
 
 export default TemporaryTeams;
+

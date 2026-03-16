@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -169,3 +169,4 @@ const EventsGraphic = () => {
 };
 
 export default EventsGraphic;
+

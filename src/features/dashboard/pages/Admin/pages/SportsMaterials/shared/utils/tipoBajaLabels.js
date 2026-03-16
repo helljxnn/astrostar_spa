@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidad para manejar tipos de baja de materiales
  * 
  * IMPORTANTE: El backend actualmente espera valores con tildes y espacios
@@ -50,3 +50,4 @@ export const getTipoBajaOptions = () => {
     label: value,
   }));
 };
+

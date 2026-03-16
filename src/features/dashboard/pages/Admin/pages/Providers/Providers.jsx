@@ -1,4 +1,4 @@
-// src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
+﻿// src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
@@ -103,7 +103,6 @@ const Providers = () => {
         });
       }
     } catch (error) {
-      console.error("Error enriching providers with document types:", error);
     }
     return providers.map((provider) => ({
       ...provider,
@@ -222,7 +221,6 @@ const Providers = () => {
         return { success: false, message: response.message }; // ← Retornar error
       }
     } catch (error) {
-      console.error("Error saving provider:", error);
       showErrorAlert("Error", "Error al crear el proveedor en el servidor");
       throw error; // ← Lanzar el error para que el modal lo capture
     }
@@ -260,7 +258,6 @@ const Providers = () => {
         return { success: false, message: response.message }; // Retornar error
       }
     } catch (error) {
-      console.error("Error updating provider:", error);
       showErrorAlert(
         "Error",
         "Error al actualizar el proveedor en el servidor",
@@ -291,7 +288,6 @@ setProviderToEdit(response.data);
         );
       }
     } catch (error) {
-      console.error("Error loading provider for edit:", error);
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
@@ -317,7 +313,6 @@ setProviderToEdit(response.data);
         );
       }
     } catch (error) {
-      console.error("Error loading provider for view:", error);
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
@@ -353,7 +348,6 @@ setProviderToEdit(response.data);
         );
       }
     } catch (error) {
-      console.error("Error checking active purchases:", error);
     }
     
     const confirmResult = await showDeleteAlert(
@@ -588,3 +582,4 @@ setProviderToEdit(response.data);
   );
 };
 export default Providers;
+

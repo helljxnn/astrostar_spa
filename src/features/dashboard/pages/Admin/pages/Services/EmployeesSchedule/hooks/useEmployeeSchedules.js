@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "../../../../../../../../shared/contexts/authContext";
 import {
   addDays,
@@ -127,6 +127,21 @@ const getNoveltiesForDate = (schedule, dateKey) => {
     user.role?.name ||
     "Empleado";
 
+  const specialty =
+    apiSchedule.specialty ||
+    employeeData.specialty ||
+    employeeMap[apiSchedule.employeeId]?.specialty ||
+    "";
+
+  const specialtyLabel =
+    apiSchedule.specialtyLabel ||
+    employeeMap[apiSchedule.employeeId]?.specialtyLabel ||
+    ({
+      psicologia: "Psicologia",
+      fisioterapia: "Fisioterapia",
+      nutricion: "Nutricion",
+    }[specialty] || "");
+
   const fechaBase = apiSchedule.scheduleDate || apiSchedule.fecha;
   const fecha = fechaBase
     ? format(new Date(fechaBase), "yyyy-MM-dd")
@@ -224,6 +239,8 @@ const getNoveltiesForDate = (schedule, dateKey) => {
     empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
     empleado: name,
     cargo,
+    specialty,
+    specialtyLabel,
     fecha,
     horaInicio,
     horaFin,
@@ -472,6 +489,8 @@ export const useEmployeeSchedules = () => {
         ...schedule,
         empleado: schedule.empleado || employeeInfo.label,
         cargo: schedule.cargo || employeeInfo.cargo,
+        specialty: schedule.specialty || employeeInfo.specialty || "",
+        specialtyLabel: schedule.specialtyLabel || employeeInfo.specialtyLabel || "",
       };
     },
     [employeeMap]
@@ -524,10 +543,20 @@ export const useEmployeeSchedules = () => {
       const formatted = list.map((emp) => {
         const fullName = emp.nombre || emp.label || emp.name || "Empleado sin nombre";
         const cargo = emp.cargo || "Empleado";
+        const specialty = emp.specialty || "";
+        const specialtyLabel =
+          emp.specialtyLabel ||
+          ({
+            psicologia: "Psicologia",
+            fisioterapia: "Fisioterapia",
+            nutricion: "Nutricion",
+          }[specialty] || "");
         return {
           value: emp.empleadoId || emp.id,
           label: fullName,
           cargo,
+          specialty,
+          specialtyLabel,
         };
       });
 

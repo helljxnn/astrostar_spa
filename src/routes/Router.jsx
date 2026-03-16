@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 /* Landing Pages*/
@@ -51,3 +51,4 @@ function AppRoutes() {
 }
 
 export default AppRoutes;
+

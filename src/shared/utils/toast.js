@@ -1,4 +1,4 @@
-// Toast utility con notificaciones temporales
+﻿// Toast utility con notificaciones temporales
 const createToast = (message, type = "info", duration = 3000) => {
   // Crear elemento de toast
   const toast = document.createElement("div");
@@ -116,3 +116,4 @@ export const toast = {
 };
 
 export default toast;
+

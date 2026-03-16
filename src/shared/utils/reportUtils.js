@@ -1,4 +1,4 @@
-import { jsPDF } from "jspdf";
+﻿import { jsPDF } from "jspdf";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
@@ -222,3 +222,4 @@ const extractTime = (dateValue) => {
     return null;
   }
 };
+

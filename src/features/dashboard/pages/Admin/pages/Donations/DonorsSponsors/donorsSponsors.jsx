@@ -1,15 +1,22 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import Table from "../../../../../../../shared/components/Table/table";
 import { FaPlus } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import { showConfirmAlert } from "../../../../../../../shared/utils/alerts.js";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
+import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import DonorSponsorModal from "./components/DonorSponsorModal";
 import DonorSponsorViewModal from "./components/DonorSponsorViewModal";
 import useDonorsSponsors from "./hooks/useDonorsSponsors";
 import donorsSponsorsService from "./services/donorsSponsorsService";
 
 function DonorsSponsors() {
+  const { hasPermission } = usePermissions();
+  const { getReportData } = useReportDataWithService(
+    donorsSponsorsService.getAllForReport.bind(donorsSponsorsService)
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -45,7 +52,6 @@ function DonorsSponsors() {
           setPendingCount(response.pagination.total || 0);
         }
       } catch (error) {
-        console.error("Error cargando contador de pendientes:", error);
       }
     };
 
@@ -65,12 +71,14 @@ function DonorsSponsors() {
   }, [searchTerm, statusFilter, loadDonorsSponsors]);
 
   const handleOpenCreateModal = () => {
+    if (!hasPermission("donorsSponsors", "Crear")) return;
     setSelectedDonor(null);
     setModalMode("create");
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
+    if (!hasPermission("donorsSponsors", "Editar")) return;
     setSelectedDonor(item);
     setModalMode("edit");
     setIsModalOpen(true);
@@ -96,6 +104,7 @@ function DonorsSponsors() {
   };
 
   const handleDelete = async (itemToDelete) => {
+    if (!hasPermission("donorsSponsors", "Eliminar")) return;
     const result = await showConfirmAlert(
       "Estas seguro de eliminar?",
       `"${itemToDelete.nombre}" se eliminara permanentemente.`,
@@ -112,6 +121,7 @@ function DonorsSponsors() {
   };
 
   const handleView = (item) => {
+    if (!hasPermission("donorsSponsors", "Ver")) return;
     setSelectedDonor(item);
     setIsViewModalOpen(true);
   };
@@ -197,28 +207,32 @@ function DonorsSponsors() {
           />
 
           <div className="flex items-center gap-3">
-            <ReportButton
-              dataProvider={getCompleteReportData}
-              fileName="Donantes_y_Patrocinadores"
-              columns={[
-                { header: "Identificacion", accessor: "identificacion" },
-                { header: "Nombre / Razon Social", accessor: "nombre" },
-                { header: "Tipo", accessor: "tipo" },
-                { header: "Tipo Persona", accessor: "tipoPersona" },
-                { header: "Telefono", accessor: "telefono" },
-                { header: "Correo", accessor: "correo" },
-                { header: "Direccion", accessor: "direccion" },
-                { header: "Ciudad", accessor: "ciudad" },
-                { header: "Pais", accessor: "pais" },
-                { header: "Estado", accessor: "estado" },
-              ]}
-            />
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
-            >
-              <FaPlus /> Crear
-            </button>
+            <PermissionGuard module="donorsSponsors" action="Ver">
+              <ReportButton
+                dataProvider={getCompleteReportData}
+                fileName="Donantes_y_Patrocinadores"
+                columns={[
+                  { header: "Identificacion", accessor: "identificacion" },
+                  { header: "Nombre / Razon Social", accessor: "nombre" },
+                  { header: "Tipo", accessor: "tipo" },
+                  { header: "Tipo Persona", accessor: "tipoPersona" },
+                  { header: "Telefono", accessor: "telefono" },
+                  { header: "Correo", accessor: "correo" },
+                  { header: "Direccion", accessor: "direccion" },
+                  { header: "Ciudad", accessor: "ciudad" },
+                  { header: "Pais", accessor: "pais" },
+                  { header: "Estado", accessor: "estado" },
+                ]}
+              />
+            </PermissionGuard>
+            <PermissionGuard module="donorsSponsors" action="Crear">
+              <button
+                onClick={handleOpenCreateModal}
+                className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
+              >
+                <FaPlus /> Crear
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>
@@ -332,9 +346,26 @@ function DonorsSponsors() {
               tipo: "whitespace-normal",
             },
           }}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onView={handleView}
+          onEdit={hasPermission("donorsSponsors", "Editar") ? handleEdit : null}
+          onDelete={hasPermission("donorsSponsors", "Eliminar") ? handleDelete : null}
+          onView={hasPermission("donorsSponsors", "Ver") ? handleView : null}
+          buttonConfig={{
+            view: () => ({
+              show: hasPermission("donorsSponsors", "Ver"),
+              disabled: false,
+              title: "Ver detalles",
+            }),
+            edit: () => ({
+              show: hasPermission("donorsSponsors", "Editar"),
+              disabled: false,
+              title: "Editar",
+            }),
+            delete: () => ({
+              show: hasPermission("donorsSponsors", "Eliminar"),
+              disabled: false,
+              title: "Eliminar",
+            }),
+          }}
           loading={loading}
         />
       </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/contexts/authContext.jsx";
 import { usePermissions } from "../shared/hooks/usePermissions";
@@ -204,3 +204,4 @@ const AccessDenied = () => {
 };
 
 export default PrivateRoute;
+

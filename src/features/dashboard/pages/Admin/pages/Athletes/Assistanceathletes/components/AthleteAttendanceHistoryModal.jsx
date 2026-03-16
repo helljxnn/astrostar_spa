@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+﻿import React, { useMemo } from "react";
 import { X } from "lucide-react";
 
 const Stat = ({ label, value, tone }) => (
@@ -151,3 +151,4 @@ const AthleteAttendanceHistoryModal = ({
 };
 
 export default AthleteAttendanceHistoryModal;
+

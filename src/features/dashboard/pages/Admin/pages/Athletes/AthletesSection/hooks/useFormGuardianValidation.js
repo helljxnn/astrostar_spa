@@ -1,4 +1,4 @@
-// hooks/useFormGuardianValidation.js
+﻿// hooks/useFormGuardianValidation.js
 import { useState } from "react";
 
 // Funciones auxiliares de validación
@@ -130,14 +130,11 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
         ? { name: nameOrEvent, val: value }
         : { name: nameOrEvent.target.name, val: nameOrEvent.target.value };
     
-    console.log('🔥🔥🔥 [handleChange] EJECUTADO:', name, val);
-    console.log('🔥🔥🔥 [handleChange] touched[name]:', touched[name]);
     
     setValues((prev) => ({ ...prev, [name]: val }));
     setTouched((prev) => ({ ...prev, [name]: true }));
     
     const error = validateField(name, val);
-    console.log('🔥🔥🔥 [handleChange] Error calculado:', error);
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
@@ -171,3 +168,5 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
     resetForm,
   };
 };
+
+

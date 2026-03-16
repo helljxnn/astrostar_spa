@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, FileText, X, AlertCircle } from "lucide-react";
@@ -175,3 +175,4 @@ const CompleteAppointmentModal = ({ isOpen, onClose, onConfirm, appointmentData 
 };
 
 export default CompleteAppointmentModal;
+

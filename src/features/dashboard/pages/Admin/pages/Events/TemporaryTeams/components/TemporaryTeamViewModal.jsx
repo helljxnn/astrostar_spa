@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X, UserCheck, Users } from "lucide-react";
@@ -375,3 +375,4 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
 };
 
 export default TemporaryTeamViewModal;
+

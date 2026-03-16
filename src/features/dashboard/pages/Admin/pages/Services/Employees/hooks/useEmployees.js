@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para manejar empleados
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -83,9 +83,7 @@ export const useEmployees = () => {
 
         if (response.success) {
           // Recargar la lista en segundo plano (no esperar)
-          loadEmployees().catch((err) =>
-            console.warn("Error recargando lista:", err),
-          );
+          loadEmployees().catch(() => {});
 
           // Retornar toda la respuesta para que el componente pueda manejar las credenciales
           return {
@@ -276,3 +274,5 @@ export const useEmployees = () => {
     refresh: loadEmployees,
   };
 };
+
+

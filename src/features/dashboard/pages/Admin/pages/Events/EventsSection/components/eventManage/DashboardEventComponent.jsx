@@ -1,4 +1,4 @@
-import { FaMapMarkerAlt } from "react-icons/fa";
+﻿import { FaMapMarkerAlt } from "react-icons/fa";
 import { format } from "date-fns";
 import { getEventsModuleColor } from "../../adapters/eventsColorAdapter";
 
@@ -107,3 +107,4 @@ export const DashboardEventComponent = ({ event, view = "month" }) => {
     </div>
   );
 };
+

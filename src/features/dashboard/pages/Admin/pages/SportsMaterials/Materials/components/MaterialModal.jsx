@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
@@ -97,7 +97,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error("Error al cargar categorías:", error);
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -240,7 +239,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
         handleClose();
       }
     } catch (error) {
-      console.error("Error al guardar material:", error);
     } finally {
       setLoading(false);
     }
@@ -481,3 +479,4 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
 };
 
 export default MaterialModal;
+

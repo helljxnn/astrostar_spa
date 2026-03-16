@@ -1,4 +1,4 @@
-import {
+﻿import {
   format,
   parseISO,
   isValid,
@@ -230,3 +230,4 @@ export const getEventDisplayTitle = (event) => {
 export const getEventDisplayDescription = (event) => {
   return event.description || event.descripcion || event.observaciones || "";
 };
+

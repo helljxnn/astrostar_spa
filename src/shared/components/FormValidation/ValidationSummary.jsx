@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Componente para mostrar un resumen de errores de validación
  */
 

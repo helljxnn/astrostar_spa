@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 
 // Un hook de validación simple para el formulario de citas
 export const useAppointmentValidation = (initialValues, validationRules) => {
@@ -132,3 +132,4 @@ export const appointmentValidationRules = {
     },
   ],
 };
+

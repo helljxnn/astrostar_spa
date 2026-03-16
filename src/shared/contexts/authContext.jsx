@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+﻿import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import apiClient from "../services/apiClient";
 
 const AuthContext = createContext();
@@ -321,3 +321,4 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   return useContext(AuthContext);
 };
+

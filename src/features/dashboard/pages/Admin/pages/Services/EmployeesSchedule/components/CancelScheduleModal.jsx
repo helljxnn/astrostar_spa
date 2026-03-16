@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaExclamationTriangle, FaStickyNote } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
@@ -313,3 +313,4 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
 };
 
 export default CancelScheduleModal;
+

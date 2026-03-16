@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook genérico para obtener datos completos para reportes
  * Resuelve el problema de paginación en reportes de forma global
  */

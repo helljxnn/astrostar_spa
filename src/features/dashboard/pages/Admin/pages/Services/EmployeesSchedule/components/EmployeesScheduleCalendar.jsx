@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+﻿import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import {
   format,
@@ -32,7 +32,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "../Styles/calendarCustomSchedule.css";
 
 /* ============================================================
-   ðŸ”¹ CONFIGURACIÃ“N LOCALIZADOR Y TEXTOS
+   x CONFIGURACIN LOCALIZADOR Y TEXTOS
 ============================================================ */
 const locales = { es };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -92,7 +92,7 @@ const getRoleColors = (cargo = "") => {
   return ROLE_COLORS[key] || ROLE_COLORS.default;
 };
 
-// ðŸ"¸ Si es personalizado
+// x" Si es personalizado
   if (event.repeticion === "personalizado" && event.customRecurrence) {
     const { interval, frequency, dias, endType, endDate: endCustom } =
       event.customRecurrence;
@@ -104,7 +104,7 @@ const getRoleColors = (cargo = "") => {
     };
     const addStep = freqMap[frequency] || addWeeks;
 
-    // Siempre incluir la fecha base (el día que se creó el horario)
+    // Siempre incluir la fecha base (el da que se cre el horario)
     const baseEvent = { ...event };
     baseEvent.fecha = startDate.toISOString().split("T")[0];
     baseEvent.start = startDate;
@@ -119,14 +119,14 @@ const getRoleColors = (cargo = "") => {
 
     while (isBefore(current, limit)) {
       if (dias && dias.length > 0) {
-        // Si hay días específicos, generar eventos para esos días de la semana
+        // Si hay das especficos, generar eventos para esos das de la semana
         const weekStart = current;
         dias.forEach((dayOfWeek) => {
-          // Calcular la fecha del día de la semana especificado
+          // Calcular la fecha del da de la semana especificado
           const daysToAdd = (dayOfWeek - weekStart.getDay() + 7) % 7;
           const next = addDays(weekStart, daysToAdd);
 
-          // Solo agregar si está dentro del límite y no es la fecha base
+          // Solo agregar si est dentro del lmite y no es la fecha base
           if (isBefore(next, limit) && !isSameDay(next, startDate)) {
             const eventCopy = { ...event };
             eventCopy.fecha = next.toISOString().split("T")[0];
@@ -136,7 +136,7 @@ const getRoleColors = (cargo = "") => {
           }
         });
       } else {
-        // Sin días específicos, repetir el mismo día de la semana
+        // Sin das especficos, repetir el mismo da de la semana
         const eventCopy = { ...event };
         eventCopy.fecha = current.toISOString().split("T")[0];
         eventCopy.start = current;
@@ -150,7 +150,7 @@ const getRoleColors = (cargo = "") => {
 
 
 /* ============================================================
-   ðŸ”¹ COMPONENTE PRINCIPAL
+   x COMPONENTE PRINCIPAL
 =========================================================== */
 export default function EmployeesScheduleCalendar({
   schedules = [],
@@ -266,7 +266,7 @@ export default function EmployeesScheduleCalendar({
     );
   };
 
-  /* ---------- NavegaciÃ³n ---------- */
+  /* ---------- Navegación ---------- */
   const handleNavigate = (dir) => {
     if (view === "month") setDate(dir === "next" ? addMonths(date, 1) : subMonths(date, 1));
     else if (view === "week") setDate(dir === "next" ? addWeeks(date, 1) : subWeeks(date, 1));
@@ -305,7 +305,7 @@ export default function EmployeesScheduleCalendar({
         : [popover.horario.novedad]).filter(Boolean)
     : [];
   /* ============================================================
-     ðŸ”¹ RENDER PRINCIPAL
+     x RENDER PRINCIPAL
   ============================================================ */
   return (
     <div ref={calendarRef} className="relative employees-schedule-calendar">
@@ -343,7 +343,7 @@ export default function EmployeesScheduleCalendar({
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {v === "month" ? "Mes" : v === "week" ? "Semana" : "DÃ­a"}
+              {v === "month" ? "Mes" : v === "week" ? "Semana" : "Día"}
             </button>
           ))}
         </div>
@@ -494,3 +494,4 @@ export default function EmployeesScheduleCalendar({
     </div>
   );
 }
+

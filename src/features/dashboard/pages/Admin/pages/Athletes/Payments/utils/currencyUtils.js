@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidades para formateo de moneda en el módulo de pagos
  */
 

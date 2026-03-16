@@ -1,4 +1,4 @@
-// src/features/dashboard/pages/Admin/pages/Users/components/UserViewModal.jsx
+﻿// src/features/dashboard/pages/Admin/pages/Users/components/UserViewModal.jsx
 import React from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
@@ -302,3 +302,4 @@ const UserViewModal = ({ isOpen, onClose, user }) => {
 };
 
 export default UserViewModal;
+

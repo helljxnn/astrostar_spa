@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidades para extraer y normalizar datos de matrículas
  * Siguiendo las mejores prácticas de escalabilidad y mantenibilidad
  */

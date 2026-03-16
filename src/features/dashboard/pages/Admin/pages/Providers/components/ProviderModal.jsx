@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
@@ -165,7 +165,6 @@ const ProviderModal = ({
             });
           }
         } catch (error) {
-          console.error(`Error checking ${name} availability:`, error);
           // Continuar sin bloquear si hay error en la validación
         }
       }
@@ -246,7 +245,6 @@ const ProviderModal = ({
           return;
         }
       } catch (error) {
-        console.error("Error checking NIT availability:", error);
       }
     }
     
@@ -271,7 +269,6 @@ const ProviderModal = ({
           return;
         }
       } catch (error) {
-        console.error("Error checking business name availability:", error);
       }
     }
     
@@ -290,7 +287,6 @@ const ProviderModal = ({
           return;
         }
       } catch (error) {
-        console.error("Error checking email availability:", error);
       }
     }
     
@@ -343,10 +339,6 @@ const ProviderModal = ({
         );
       }
     } catch (error) {
-      console.error(
-        `Error al ${isEditing ? "actualizar" : "crear"} proveedor:`,
-        error,
-      );
       showErrorAlert(
         "Error",
         error.message ||
@@ -386,7 +378,6 @@ const ProviderModal = ({
           setEmployeeDocumentTypes(response.data);
         }
       } catch (error) {
-        console.error("Error fetching document types:", error);
       }
     };
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
@@ -843,3 +834,4 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
   return createPortal(modalContent, document.body);
 };
 export default ProviderModal;
+

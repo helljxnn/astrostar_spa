@@ -1,4 +1,4 @@
-import styled from "styled-components";
+﻿import styled from "styled-components";
 
 const Loader = ({ isVisible = false, message = "Cargando..." }) => {
   if (!isVisible) return null;
@@ -113,3 +113,4 @@ const StyledWrapper = styled.div`
 `;
 
 export default Loader;
+

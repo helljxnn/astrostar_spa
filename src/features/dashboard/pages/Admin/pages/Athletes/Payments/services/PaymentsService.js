@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 import { formatCurrency } from "../utils/currencyUtils";
 import { 
   BUSINESS_CONSTANTS, 
@@ -167,8 +167,8 @@ class PaymentsService {
         if (obligation.dueStart) {
           const fecha = new Date(obligation.dueStart);
           const mes = fecha.toLocaleDateString("es-ES", { month: 'long' });
-          const año = fecha.getFullYear();
-          return `${mes}_${año}`;
+          const ano = fecha.getFullYear();
+          return `${mes}_${ano}`;
         }
         return "Mensualidad";
       default:
@@ -204,9 +204,7 @@ class PaymentsService {
       const queryString = queryParams.toString();
       const url = queryString ? `${this.endpoint}/pending?${queryString}` : `${this.endpoint}/pending`;
       
-      console.log('🔍 Calling API endpoint (pending):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for pending payments:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -236,9 +234,7 @@ class PaymentsService {
       queryParams.append('type', 'MONTHLY');
       const url = `${this.endpoint}/all?${queryParams.toString()}`;
       
-      console.log('🔍 Calling API endpoint (monthly simulation):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for monthly management:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -271,9 +267,7 @@ class PaymentsService {
       const queryString = queryParams.toString();
       const url = queryString ? `${this.endpoint}/all?${queryString}` : `${this.endpoint}/all`;
       
-      console.log('🔍 Calling API endpoint (all):', url);
       const response = await apiClient.get(url);
-      console.log('📊 Raw API response for all payments:', response);
       
       // Normalizar respuesta
       return this.normalizeResponse(response);
@@ -730,7 +724,6 @@ class PaymentsService {
       hasPrev: pagination.hasPrev || false
     };
     
-    console.log('✅ Normalized response:', data.length, 'items, pagination:', normalizedPagination);
     
     return {
       success: true,
@@ -772,3 +765,5 @@ export default PaymentsService;
 
 // También exportar una instancia singleton para compatibilidad
 export const paymentsService = new PaymentsService();
+
+

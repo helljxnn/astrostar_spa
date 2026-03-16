@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 const RegisteredPlayers = () => {

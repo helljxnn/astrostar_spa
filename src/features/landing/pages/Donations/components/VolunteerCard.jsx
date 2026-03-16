@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 
 export default function VolunteerCard({ opportunity, onClick }) {
   return (
@@ -63,3 +63,4 @@ export default function VolunteerCard({ opportunity, onClick }) {
     </motion.div>
   );
 }
+

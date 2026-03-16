@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
@@ -238,3 +238,4 @@ const InscriptionSelector = ({
 };
 
 export default InscriptionSelector;
+

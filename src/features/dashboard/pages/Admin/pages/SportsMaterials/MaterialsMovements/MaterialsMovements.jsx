@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { FaPlus, FaFilter } from "react-icons/fa";
 import MovementModal from "./components/MovementModal";
 import MovementViewModal from "./components/MovementViewModal";
@@ -99,7 +99,6 @@ const MaterialsMovements = () => {
         setTotalRows(total);
       }
     } catch (error) {
-      console.error("Error al cargar movimientos:", error);
       setMovements([]);
       setTotalRows(0);
     } finally {
@@ -232,7 +231,7 @@ const MaterialsMovements = () => {
   const displayData = hasLocalFilters ? filteredData : movements;
 
   const handleRegister = () => {
-    if (!hasPermission("materialsRegistry", "Crear")) {
+    if (!hasPermission("materialsRegistry", "Editar")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para registrar movimientos",
@@ -291,7 +290,6 @@ const MaterialsMovements = () => {
           return false;
         }
       } catch (error) {
-        console.error("Error al actualizar ingreso:", error);
         showErrorAlert(
           "Error",
           error.message || "No se pudo actualizar el ingreso",
@@ -299,7 +297,7 @@ const MaterialsMovements = () => {
         return false;
       }
     } else {
-      if (!hasPermission("materialsRegistry", "Crear")) {
+      if (!hasPermission("materialsRegistry", "Editar")) {
         showErrorAlert(
           "Sin permisos",
           "No tienes permisos para registrar movimientos",
@@ -326,7 +324,6 @@ const MaterialsMovements = () => {
           return false;
         }
       } catch (error) {
-        console.error("Error al registrar ingreso:", error);
         showErrorAlert(
           "Error",
           error.message || "No se pudo registrar el ingreso",
@@ -612,7 +609,7 @@ const MaterialsMovements = () => {
             </PermissionGuard>
 
             {activeTab === "ingresos" && (
-              <PermissionGuard module="materialsRegistry" action="Crear">
+              <PermissionGuard module="materialsRegistry" action="Editar">
                 <button
                   onClick={handleRegister}
                   className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors"
@@ -872,3 +869,4 @@ const MaterialsMovements = () => {
 };
 
 export default MaterialsMovements;
+
