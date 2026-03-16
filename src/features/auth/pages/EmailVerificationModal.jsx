@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaEnvelope } from 'react-icons/fa';
 import { FiMail } from 'react-icons/fi';
@@ -289,3 +289,4 @@ const EmailVerificationModal = ({ isOpen, onClose, newEmail, onVerify }) => {
 };
 
 export default EmailVerificationModal;
+

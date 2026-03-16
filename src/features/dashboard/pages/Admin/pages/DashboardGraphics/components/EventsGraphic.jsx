@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -147,7 +147,7 @@ const EventsGraphic = () => {
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={dashboardData}
+            dataProvider={async () => dashboardData}
             fileName="Reporte_Eventos"
             columns={reportColumns}
           />
@@ -169,3 +169,4 @@ const EventsGraphic = () => {
 };
 
 export default EventsGraphic;
+

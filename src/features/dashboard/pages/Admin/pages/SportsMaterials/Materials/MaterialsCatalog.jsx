@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import {
   FaPlus,
   FaMinusCircle,
@@ -15,6 +15,7 @@ import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -26,6 +27,12 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 
 const MaterialsCatalog = () => {
   const { hasPermission } = usePermissions();
+  
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    materialsService.getAllForReport.bind(materialsService)
+  );
+  
   const [materials, setMaterials] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -60,7 +67,6 @@ const MaterialsCatalog = () => {
         setTotalRows(total);
       }
     } catch (error) {
-      console.error("Error al cargar materiales:", error);
       setMaterials([]);
       setTotalRows(0);
     } finally {
@@ -128,7 +134,6 @@ const MaterialsCatalog = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error al guardar material:", error);
       showErrorAlert(
         "Error",
         error.message ||
@@ -205,7 +210,6 @@ const MaterialsCatalog = () => {
         );
       }
     } catch (error) {
-      console.error("Error al eliminar material:", error);
       showErrorAlert(
         "Error",
         error.message || "Error al eliminar el material en el servidor",
@@ -214,7 +218,7 @@ const MaterialsCatalog = () => {
   };
 
   const handleDischarge = (material) => {
-    if (!hasPermission("materials", "Editar")) {
+    if (!hasPermission("materials", "Registrar Baja de Material")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para registrar bajas de materiales",
@@ -228,7 +232,7 @@ const MaterialsCatalog = () => {
   };
 
   const handleSaveDischarge = async (dischargeData) => {
-    if (!hasPermission("materials", "Editar")) {
+    if (!hasPermission("materials", "Registrar Baja de Material")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para registrar bajas de materiales",
@@ -258,7 +262,6 @@ const MaterialsCatalog = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error al registrar baja:", error);
       showErrorAlert(
         "Error",
         error.message || "Error al registrar la baja en el servidor",
@@ -268,7 +271,7 @@ const MaterialsCatalog = () => {
   };
 
   const handleTransfer = (material) => {
-    if (!hasPermission("materials", "Editar")) {
+    if (!hasPermission("materials", "Transferir Stock")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para transferir stock",
@@ -281,7 +284,7 @@ const MaterialsCatalog = () => {
   };
 
   const handleSaveTransfer = async (transferData) => {
-    if (!hasPermission("materials", "Editar")) {
+    if (!hasPermission("materials", "Transferir Stock")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para transferir stock",
@@ -311,14 +314,13 @@ const MaterialsCatalog = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error al transferir:", error);
       showErrorAlert("Error", error.message || "Error al transferir stock");
       return false;
     }
   };
 
   const handleViewAssignments = (material) => {
-    if (!hasPermission("materials", "Ver")) {
+    if (!hasPermission("materials", "Ver Asignaciones del Material")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para ver asignaciones",
@@ -375,6 +377,28 @@ const MaterialsCatalog = () => {
     };
   });
 
+  // Función para obtener todos los datos para reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { search: searchTerm }, // Filtros actuales
+      (materials) => materials.map((m) => { // Mapper de datos
+        const stockFundacion = m.stockFundacion || 0;
+        const stockEventos = m.stockEventos || 0;
+        const stockTotal = m.stockTotal || stockFundacion + stockEventos;
+
+        return {
+          nombre: m.nombre,
+          categoria: m.categoria,
+          stockFundacion: stockFundacion,
+          stockEventos: stockEventos,
+          stockTotal: stockTotal,
+          estado: m.estado,
+          descripcion: m.descripcion || "N/A",
+        };
+      })
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
@@ -384,22 +408,24 @@ const MaterialsCatalog = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar material"
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Buscar material"
+            />
+          </div>
 
           <div className="flex items-center gap-3">
             <PermissionGuard module="materials" action="Ver">
               <ReportButton
-                data={reportData}
+                dataProvider={getCompleteReportData}
                 fileName="Reporte_Materiales"
                 columns={[
                   { header: "Nombre", accessor: "nombre" },
@@ -451,8 +477,9 @@ const MaterialsCatalog = () => {
         onEdit={hasPermission("materials", "Editar") ? handleEdit : null}
         onDelete={hasPermission("materials", "Eliminar") ? handleDelete : null}
         customActions={
-          hasPermission("materials", "Editar") ||
-          hasPermission("materials", "Ver")
+          hasPermission("materials", "Ver Asignaciones del Material") ||
+          hasPermission("materials", "Transferir Stock") ||
+          hasPermission("materials", "Registrar Baja de Material")
             ? [
                 {
                   onClick: handleViewAssignments,
@@ -460,7 +487,7 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-green-50 border border-green-200 text-green-600 hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-colors",
                   label: <FaCalendarAlt />,
                   title: "Ver Asignaciones a Eventos",
-                  // Siempre mostrar el botón (sin condición show)
+                  show: () => hasPermission("materials", "Ver Asignaciones del Material"),
                 },
                 {
                   onClick: handleTransfer,
@@ -468,7 +495,7 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 transition-colors",
                   label: <FaExchangeAlt />,
                   title: "Transferir Stock",
-                  show: (item) => hasPermission("materials", "Editar"),
+                  show: () => hasPermission("materials", "Transferir Stock"),
                 },
                 {
                   onClick: handleDischarge,
@@ -476,7 +503,8 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-[#f5ebe8] border border-[#f0e0da] text-[#c3a096] hover:text-[#a88a7f] hover:border-[#e5d5cf] transition-colors",
                   label: <FaMinusCircle />,
                   title: "Registrar Baja",
-                  show: (item) => hasPermission("materials", "Editar"),
+                  show: () =>
+                    hasPermission("materials", "Registrar Baja de Material"),
                 },
               ]
             : undefined
@@ -593,3 +621,5 @@ const MaterialsCatalog = () => {
 };
 
 export default MaterialsCatalog;
+
+

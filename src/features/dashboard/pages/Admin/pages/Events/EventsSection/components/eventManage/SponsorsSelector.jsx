@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaChevronDown, FaTimes } from "react-icons/fa";
 
@@ -166,3 +166,4 @@ export const SponsorsSelector = ({
     </div>
   );
 };
+

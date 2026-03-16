@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X, UserCheck, Users } from "lucide-react";
 
@@ -44,7 +45,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   const cantidadDeportistas =
     team.cantidadDeportistas ?? deportistasList.length ?? 0;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       initial={{ opacity: 0 }}
@@ -57,6 +58,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
@@ -368,6 +370,9 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default TemporaryTeamViewModal;
+

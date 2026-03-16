@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar deportistas
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
@@ -314,7 +314,7 @@ if (response && response.success) {
   }
 
   /**
-   * Verificar disponibilidad de email (busca en TODOS los usuarios)
+   * Verificar disponibilidad de email (busca en TODOS los usuarios) - OPTIMIZADO
    */
   async checkEmailAvailability(email, excludeId = null) {
     try {
@@ -324,7 +324,10 @@ if (response && response.success) {
         params.excludeUserId = excludeId;
       }
 
-      const response = await apiClient.get("/users/check-email", { params });
+      const response = await apiClient.get("/users/check-email", { 
+        params, 
+        skipLoader: true // No mostrar loader para verificaciones
+      });
 
       return {
         available: response.available !== false,
@@ -340,7 +343,7 @@ if (response && response.success) {
   }
 
   /**
-   * Verificar disponibilidad de identificación (busca en TODOS los usuarios)
+   * Verificar disponibilidad de identificación (busca en TODOS los usuarios) - OPTIMIZADO
    */
   async checkIdentificationAvailability(identification, excludeId = null) {
     try {
@@ -350,7 +353,10 @@ if (response && response.success) {
         params.excludeUserId = excludeId;
       }
 
-      const response = await apiClient.get("/users/check-identification", { params, skipLoader: true });
+      const response = await apiClient.get("/users/check-identification", { 
+        params, 
+        skipLoader: true // No mostrar loader para verificaciones
+      });
 
       return {
         available: response.available !== false,
@@ -364,6 +370,45 @@ if (response && response.success) {
       };
     }
   }
+
+  /**
+   * Obtener todos los deportistas para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de deportistas
+   */
+  async getAllForReport(params = {}) {
+    try {
+      // Llamar al endpoint /report del backend
+      const response = await apiClient.get(`${this.endpoint}/report`, {
+        params: {
+          search: params.search || '',
+          status: params.status || '',
+          categoria: params.categoria || '',
+        }
+      });
+
+      if (response && response.success) {
+        return {
+          success: true,
+          data: response.data || [],
+        };
+      } else {
+        return {
+          success: false,
+          data: [],
+          error: response?.message || "Error obteniendo deportistas para reporte",
+        };
+      }
+    } catch (error) {
+      console.error("Error obteniendo deportistas para reporte:", error);
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+      };
+    }
+  }
 }
 
 export default new AthletesService();
+

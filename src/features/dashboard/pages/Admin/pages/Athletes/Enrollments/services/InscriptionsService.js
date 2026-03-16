@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient.js";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class InscriptionsService {
   constructor() {
@@ -102,6 +102,36 @@ class InscriptionsService {
     }
   }
 
+  // Verificar si un email ya está inscrito o matriculado
+  async checkEmailExists(email) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/check-email/${email}`, { skipLoader: true });
+      
+      const exists = response.data?.exists ?? response.exists ?? false;
+      const message = response.data?.message ?? response.message ?? null;
+      const details = response.data?.details ?? response.details ?? null;
+      
+      return {
+        success: true,
+        exists: exists,
+        message: message,
+        details: details,
+      };
+    } catch (error) {
+      console.error("Error checking email:", error);
+      
+      if (error.message.includes("404") || error.message.includes("Not Found")) {
+        return { success: true, error: "Endpoint no implementado", exists: false };
+      }
+      
+      if (error.message.includes("prisma") || error.message.includes("Invalid")) {
+        return { success: true, error: "Error de backend", exists: false };
+      }
+      
+      return { success: true, error: error.message, exists: false };
+    }
+  }
+
   // Crear inscripción (desde el landing)
   async create(inscriptionData) {
     try {
@@ -160,6 +190,42 @@ class InscriptionsService {
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Obtener todas las inscripciones para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de inscripciones
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const queryParams = {
+        ...params,
+        limit: 10000, // Límite alto para obtener todos los datos
+      };
+
+      // Limpiar parámetros de paginación
+      delete queryParams.page;
+      delete queryParams.pageSize;
+
+      const response = await apiClient.get(this.endpoint, queryParams);
+
+      // Manejar diferentes estructuras de respuesta
+      const data = response.data?.data || response.data || [];
+
+      return {
+        success: true,
+        data: Array.isArray(data) ? data : [],
+      };
+    } catch (error) {
+      console.error("Error getting inscriptions for report:", error);
+      return { 
+        success: false, 
+        error: error.message,
+        data: [],
+      };
+    }
+  }
 }
 
 export default new InscriptionsService();
+

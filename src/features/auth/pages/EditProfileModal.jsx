@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { FaTimes } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
@@ -367,3 +367,4 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
 };
 
 export default EditProfileModal;
+

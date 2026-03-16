@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PAGINATION_CONFIG } from "../constants/paginationConfig";
 
@@ -121,3 +121,4 @@ const Pagination = ({
 };
 
 export default Pagination;
+

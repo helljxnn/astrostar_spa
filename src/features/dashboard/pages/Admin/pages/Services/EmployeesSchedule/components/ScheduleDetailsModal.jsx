@@ -30,6 +30,22 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
     [employee.horaInicio, employee.horaFin].filter(Boolean).join(" - ") ||
     "Sin horario asignado";
 
+  const cargoKey = String(employee.cargo || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+  const isHealthProfessionalCargo =
+    cargoKey === "profesional de la salud" || cargoKey === "profesional de salud";
+
+  const specialtyLabel =
+    employee.specialtyLabel ||
+    ({
+      psicologia: "Psicologia",
+      fisioterapia: "Fisioterapia",
+      nutricion: "Nutricion",
+    }[employee.specialty] || "");
+
   const detailFields = [
     { key: "empleado", label: "Empleado", value: employee.empleado },
     {
@@ -37,6 +53,15 @@ const ScheduleDetailsModal = ({ isOpen, onClose, employee }) => {
       label: "Cargo",
       value: employee.cargo || "Sin cargo asignado",
     },
+    ...(isHealthProfessionalCargo
+      ? [
+          {
+            key: "specialty",
+            label: "Especialidad",
+            value: specialtyLabel || "Sin especialidad",
+          },
+        ]
+      : []),
     ...(employee.area
       ? [
           {

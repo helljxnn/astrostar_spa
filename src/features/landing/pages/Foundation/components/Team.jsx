@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
 import CircularGallery from "./bits/CircularGallery";
 
@@ -118,7 +118,7 @@ export const Team = () => {
   );
 
   return (
-    <section className="py-16 px-6 sm:px-10 lg:px-20 bg-white">
+    <section id="equipo" className="py-16 px-6 sm:px-10 lg:px-20 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Título de la sección */}
         <motion.div
@@ -239,3 +239,4 @@ export const Team = () => {
     </section>
   );
 };
+

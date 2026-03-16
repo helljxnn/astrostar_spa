@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import { FaSearch, FaTimes, FaBoxOpen, FaChevronDown } from "react-icons/fa";
 
 /**
@@ -267,3 +267,4 @@ const MaterialSearchSelector = ({
 };
 
 export default MaterialSearchSelector;
+

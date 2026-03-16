@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class MovementsService {
   constructor() {
@@ -317,6 +317,32 @@ class MovementsService {
         backendData.createdByName || backendData.created_by_name || "",
     };
   }
+
+  /**
+   * Obtener todos los movimientos para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de movimientos
+   */
+  async getAllForReport(params = {}) {
+    const queryParams = {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    };
+
+    // Limpiar parámetros de paginación
+    delete queryParams.page;
+
+    const response = await apiClient.get(this.endpoint, queryParams);
+
+    if (response.success && response.data) {
+      response.data = response.data.map((movement) =>
+        this.transformFromBackend(movement),
+      );
+    }
+
+    return response;
+  }
 }
 
 export default new MovementsService();
+

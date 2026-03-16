@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
@@ -6,6 +6,7 @@ import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
 import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
+import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import TeamsService from "./services/TeamsService.js";
 import {
   showSuccessAlert,
@@ -14,10 +15,16 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const TemporaryTeams = () => {
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    TeamsService.getAllForReport.bind(TeamsService)
+  );
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -129,7 +136,6 @@ const TemporaryTeams = () => {
         }
       }
     } catch (error) {
-      console.error("Error cargando equipos:", error);
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
     } finally {
@@ -183,6 +189,11 @@ const TemporaryTeams = () => {
 
   // Guardar nuevo equipo
   const handleSave = async (newTeam) => {
+    if (!hasPermission("temporaryTeams", "Crear")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para crear equipos");
+      return;
+    }
+
     try {
       const result = await TeamsService.createTeam(newTeam);
 
@@ -198,13 +209,17 @@ const TemporaryTeams = () => {
         showErrorAlert("Error", result.error || "No se pudo crear el equipo");
       }
     } catch (error) {
-      console.error("Error creando equipo:", error);
       showErrorAlert("Error", error.message || "No se pudo crear el equipo");
     }
   };
 
   // Actualizar equipo
   const handleUpdate = async (updatedTeam) => {
+    if (!hasPermission("temporaryTeams", "Editar")) {
+      showErrorAlert("Sin permisos", "No tienes permisos para editar equipos");
+      return;
+    }
+
     try {
       const result = await TeamsService.updateTeam(updatedTeam.id, updatedTeam);
 
@@ -219,7 +234,6 @@ const TemporaryTeams = () => {
         );
       }
     } catch (error) {
-      console.error("Error actualizando equipo:", error);
       showErrorAlert(
         "Error",
         error.message || "No se pudo actualizar el equipo",
@@ -244,6 +258,25 @@ const TemporaryTeams = () => {
     }
     setTeamToView(team);
     setIsViewModalOpen(true);
+  };
+
+  // Función para obtener datos completos del reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+        teamType: "Temporal",
+      },
+      (data) => data.map(team => ({
+        nombre: team.name || '',
+        descripcion: team.description || '',
+        entrenador: team.coach || '',
+        categoria: team.category || '',
+        tipo: team.teamType === 'Temporal' ? 'Temporal' : 'Permanente',
+        estado: team.status === 'Active' ? 'Activo' : 'Inactivo',
+        fechaCreacion: team.createdAt ? new Date(team.createdAt).toLocaleDateString('es-ES') : '',
+      }))
+    );
   };
 
   const handleDelete = async (team) => {
@@ -303,7 +336,6 @@ const TemporaryTeams = () => {
         );
       }
     } catch (error) {
-      console.error("Error eliminando equipo:", error);
       showErrorAlert("Error", "Error al eliminar el equipo en el servidor");
     }
   };
@@ -312,7 +344,7 @@ const TemporaryTeams = () => {
     <div className="p-6 font-questrial w-full max-w-full">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
-          Equipos Temporales
+          Equipos
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
@@ -329,6 +361,22 @@ const TemporaryTeams = () => {
               placeholder="Buscar equipo..."
             />
           </div>
+
+          <PermissionGuard module="temporaryTeams" action="Ver">
+            <ReportButton
+              dataProvider={getCompleteReportData}
+              fileName="equipos_temporales"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Descripción', accessor: 'descripcion' },
+                { header: 'Entrenador', accessor: 'entrenador' },
+                { header: 'Categoría', accessor: 'categoria' },
+                { header: 'Tipo', accessor: 'tipo' },
+                { header: 'Estado', accessor: 'estado' },
+                { header: 'Fecha Creación', accessor: 'fechaCreacion' },
+              ]}
+            />
+          </PermissionGuard>
 
           <PermissionGuard module="temporaryTeams" action="Crear">
             <button
@@ -348,6 +396,11 @@ const TemporaryTeams = () => {
       {formattedData.length > 0 ? (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={pagination.limit}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: [
                 "Nombre",
@@ -376,7 +429,6 @@ const TemporaryTeams = () => {
                   "bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs",
               },
             }}
-            rowsPerPage={1000}
             onEdit={
               hasPermission("temporaryTeams", "Editar") ? handleEdit : null
             }
@@ -407,11 +459,11 @@ const TemporaryTeams = () => {
         <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
           {searchTerm ? (
             <p>
-              No se encontraron equipos temporales que coincidan con "
+              No se encontraron equipos que coincidan con "
               {searchTerm}"
             </p>
           ) : (
-            <p>No hay equipos temporales registrados. ¡Crea el primero!</p>
+            <p>No hay equipos registrados. ¡Crea el primero!</p>
           )}
         </div>
       )}
@@ -435,3 +487,4 @@ const TemporaryTeams = () => {
 };
 
 export default TemporaryTeams;
+

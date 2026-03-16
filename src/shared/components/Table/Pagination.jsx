@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { PAGINATION_CONFIG } from "../../constants/paginationConfig";
 
@@ -144,3 +144,4 @@ const Pagination = ({
 };
 
 export default Pagination;
+

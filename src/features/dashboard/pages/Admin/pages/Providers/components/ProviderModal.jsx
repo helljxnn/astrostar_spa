@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { FormField } from "../../../../../../../shared/components/FormField";
@@ -76,7 +76,7 @@ const ProviderModal = ({
   // HandleChange personalizado
   const handleChange = (name, value) => {
     if (name === "tipoEntidad") {
-// Si estamos editando y volvemos al tipo original, restaurar valores originales
+      // Si estamos editando y volvemos al tipo original, restaurar valores originales
       if (isEditing && value === providerToEdit?.tipoEntidad) {
         setValues((prev) => ({
           ...prev,
@@ -91,6 +91,8 @@ const ProviderModal = ({
     } else {
       originalHandleChange(name, value);
     }
+    
+    // NO limpiar errores al cambiar de campo - mantener persistencia
   };
   // HandleChange personalizado para NIT que solo permite números
   const handleNitChange = (name, value) => {
@@ -152,11 +154,17 @@ const ProviderModal = ({
                     ? "nombre/razón social"
                     : "correo"
               } ya está registrado`;
-            // Establecer el error de unicidad
+            // Establecer el error de unicidad y marcarlo como tocado
             setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+            setTouched((prev) => ({ ...prev, [name]: true }));
+          } else if (response && response.available) {
+            // Solo limpiar el error si la validación fue exitosa
+            setErrors((prev) => {
+              const { [name]: removed, ...rest } = prev;
+              return rest;
+            });
           }
         } catch (error) {
-          console.error(`Error checking ${name} availability:`, error);
           // Continuar sin bloquear si hay error en la validación
         }
       }
@@ -205,11 +213,22 @@ const ProviderModal = ({
     }
   }, [isOpen, isEditing, providerToEdit, setValues, setTouched]);
   const handleSubmit = async () => {
+    // Marcar todos los campos como tocados para mostrar errores
     touchAllFields();
+    
+    // Validar todos los campos
     const hasValidationErrors = !validateAllFields();
+    
+    // Si hay errores de validación, NO hacer nada (sin alert, sin acción)
     if (hasValidationErrors) {
-      return;
+      return; // Simplemente retornar sin hacer nada
     }
+    
+    // Verificar si hay errores en el estado actual
+    if (Object.keys(errors).length > 0) {
+      return; // No hacer nada si hay errores
+    }
+    
     // Validar unicidad de NIT/documento antes del envío
     if (values.nit && !errors.nit) {
       try {
@@ -220,13 +239,15 @@ const ProviderModal = ({
           values.tipoEntidad,
         );
         if (!nitCheck.available) {
-          showErrorAlert("Error", nitCheck.message);
+          // Establecer el error en lugar de mostrar alert
+          setErrors((prev) => ({ ...prev, nit: nitCheck.message }));
+          setTouched((prev) => ({ ...prev, nit: true }));
           return;
         }
       } catch (error) {
-        console.error("Error checking NIT availability:", error);
       }
     }
+    
     // Validar unicidad de razón social/nombre antes del envío (solo para jurídicas)
     if (
       values.razonSocial &&
@@ -242,13 +263,15 @@ const ProviderModal = ({
             values.tipoEntidad,
           );
         if (!businessNameCheck.available) {
-          showErrorAlert("Error", businessNameCheck.message);
+          // Establecer el error en lugar de mostrar alert
+          setErrors((prev) => ({ ...prev, razonSocial: businessNameCheck.message }));
+          setTouched((prev) => ({ ...prev, razonSocial: true }));
           return;
         }
       } catch (error) {
-        console.error("Error checking business name availability:", error);
       }
     }
+    
     // Validar unicidad de email antes del envío
     if (values.correo && !errors.correo) {
       try {
@@ -258,13 +281,15 @@ const ProviderModal = ({
           excludeId,
         );
         if (!emailCheck.available) {
-          showErrorAlert("Error", emailCheck.message);
+          // Establecer el error en lugar de mostrar alert
+          setErrors((prev) => ({ ...prev, correo: emailCheck.message }));
+          setTouched((prev) => ({ ...prev, correo: true }));
           return;
         }
       } catch (error) {
-        console.error("Error checking email availability:", error);
       }
     }
+    
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -278,6 +303,7 @@ const ProviderModal = ({
         return;
       }
     }
+    
     try {
       const providerData = {
         ...values,
@@ -313,10 +339,6 @@ const ProviderModal = ({
         );
       }
     } catch (error) {
-      console.error(
-        `Error al ${isEditing ? "actualizar" : "crear"} proveedor:`,
-        error,
-      );
       showErrorAlert(
         "Error",
         error.message ||
@@ -356,7 +378,6 @@ const ProviderModal = ({
           setEmployeeDocumentTypes(response.data);
         }
       } catch (error) {
-        console.error("Error fetching document types:", error);
       }
     };
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
@@ -813,3 +834,4 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
   return createPortal(modalContent, document.body);
 };
 export default ProviderModal;
+

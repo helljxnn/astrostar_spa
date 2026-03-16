@@ -26,6 +26,15 @@ dist-ssr
 # Private
 .env
 
+# Pruebas automatizadas - No subir al repositorio
+pruebas_automatizadas/
+pruebas_automatizadas/**
+*.test.js
+*.test.jsx
+coverage/
+jest.config.js
+babel.config.js
+
 #tests
 test-results
 tests

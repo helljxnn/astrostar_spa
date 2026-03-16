@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+﻿import { useState, useCallback, useEffect } from "react";
 
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
 const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
@@ -282,8 +282,9 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
         if (error) {
           return { ...prev, [name]: error };
         } else {
-          const { [name]: removed, ...newErrors } = prev;
-          return newErrors;
+          // NO eliminar errores existentes - mantener persistencia
+          // Solo actualizar si hay un nuevo error
+          return prev;
         }
       });
     }, 0);
@@ -298,10 +299,7 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
       // Limpiar el campo nit cuando se cambia el tipo de documento
       setTimeout(() => {
         setValues(prev => ({ ...prev, nit: '' }));
-        setErrors(prev => {
-          const { nit: removed, ...newErrors } = prev;
-          return newErrors;
-        });
+        // Mantener el error de nit si existe
       }, 0);
     }
 
@@ -324,8 +322,9 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
       if (error) {
         return { ...prev, [name]: error };
       } else {
-        const { [name]: removed, ...newErrors } = prev;
-        return newErrors;
+        // NO eliminar el error si ya existe - mantener persistencia
+        // Solo actualizar si hay un nuevo error
+        return prev;
       }
     });
   };

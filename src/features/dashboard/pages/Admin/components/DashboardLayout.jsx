@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import DynamicSideBar from "../../../components/DynamicSideBar";
 import { TopBar } from "../components/TopBar";
@@ -60,7 +60,7 @@ function DashboardLayout() {
       {/* Overlay con blur para móvil */}
       {sidebarOpen && isMobile && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm lg:hidden sidebar-overlay z-[999]"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -109,3 +109,4 @@ function DashboardLayout() {
 }
 
 export default DashboardLayout;
+

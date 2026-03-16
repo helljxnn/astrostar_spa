@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+﻿import { useState, useMemo } from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import { motion } from "framer-motion";
@@ -171,7 +171,7 @@ const HealthServicesYearGraphic = () => {
             ))}
           </select>
           <ReportButton
-            data={reportData}
+            dataProvider={async () => reportData}
             fileName={`Servicios_Salud_${selectedYear}`}
             columns={reportColumns}
           />

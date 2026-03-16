@@ -1,4 +1,4 @@
-// src/pages/components/Table/Tbody.jsx
+﻿// src/pages/components/Table/Tbody.jsx
 import React from "react";
 import { motion } from "framer-motion";
 import { FaEye, FaRegEdit, FaTrash, FaList } from "react-icons/fa";
@@ -262,6 +262,7 @@ const Tbody = ({ options }) => {
 };
 
 export default Tbody;
+
 
 
 

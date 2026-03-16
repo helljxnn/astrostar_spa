@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar acudientes
  * Maneja todas las peticiones HTTP al backend de acudientes
  */
@@ -322,6 +322,60 @@ if (response && response.success) {
   }
 
   /**
+   * Obtener todos los acudientes para reportes (sin paginación)
+   * Aplica los mismos filtros que la vista principal
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const { search = "", status = "" } = params;
+
+      let allData = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+      const limit = 100; // Límite máximo permitido por el backend
+      
+      // Hacer peticiones paginadas hasta obtener todos los datos
+      while (hasMorePages) {
+        const response = await apiClient.get(this.endpoint, {
+          page: currentPage,
+          limit: limit,
+          search,
+          status,
+        });
+
+        if (response && response.success) {
+          const pageData = response.data || [];
+          allData = [...allData, ...pageData];
+          
+          // Verificar si hay más páginas
+          hasMorePages = response.pagination?.hasNext || false;
+          currentPage++;
+          
+          // Seguridad: evitar bucle infinito
+          if (currentPage > 100) {
+            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
+            break;
+          }
+        } else {
+          hasMorePages = false;
+        }
+      }
+
+      return {
+        success: true,
+        data: allData,
+      };
+    } catch (error) {
+      console.error("Error al obtener acudientes para reporte:", error);
+      return {
+        success: false,
+        data: [],
+        error: error.message,
+      };
+    }
+  }
+
+  /**
    * Remover acudiente de un deportista específico (desasociar)
    */
   async removeGuardianFromAthlete(athleteId) {
@@ -356,3 +410,4 @@ if (response && response.success) {
 }
 
 export default new GuardiansService();
+

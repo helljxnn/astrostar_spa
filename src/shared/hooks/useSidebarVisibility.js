@@ -1,5 +1,7 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { usePermissions } from "./usePermissions";
+import { useAuth } from "../contexts/authContext";
+import { useDynamicPermissions } from "./useDynamicPermissions";
 import {
   MODULE_CONFIG,
   MODULE_GROUPS,
@@ -8,24 +10,60 @@ import {
 
 /**
  * Hook mejorado para determinar qué módulos son visibles en el sidebar
- * Usa la configuración centralizada y es completamente escalable
+ * Usa permisos dinámicos del backend y configuración centralizada
  */
 export const useSidebarVisibility = () => {
-  const { hasModuleAccess, isAdmin } = usePermissions();
+  const { hasModuleAccess: hasStaticAccess, isAdmin } = usePermissions();
+  const { user, userRole } = useAuth();
+  const { 
+    hasModuleAccess: hasDynamicAccess, 
+    hasActiveEnrollment,
+    loading: permissionsLoading 
+  } = useDynamicPermissions();
+
+  // Normalizar el rol del usuario
+  const normalizedRole = useMemo(() => {
+    return (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  }, [user, userRole]);
+
+  const isAthleteOrGuardian = useMemo(() => {
+    return normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
+  }, [normalizedRole]);
 
   /**
    * Calcula qué módulos individuales son visibles
+   * Usa permisos dinámicos para deportistas y estáticos para otros roles
    */
   const visibleModules = useMemo(() => {
     const visible = {};
 
+    // Si los permisos dinámicos están cargando, no mostrar nada aún
+    if (isAthleteOrGuardian && permissionsLoading) {
+      return {};
+    }
+
     // Iterar sobre todos los módulos configurados
     Object.keys(MODULE_CONFIG).forEach((moduleId) => {
-      visible[moduleId] = isAdmin || hasModuleAccess(moduleId);
+      // Lógica específica para deportistas y acudientes
+      if (isAthleteOrGuardian) {
+        // Usar permisos dinámicos del backend
+        visible[moduleId] = hasDynamicAccess(moduleId);
+      }
+      // Lógica para administradores y otros roles
+      else {
+        // "Mis Pagos" solo para deportistas y acudientes
+        if (moduleId === "myPayments") {
+          visible[moduleId] = false;
+        }
+        // Otros módulos según permisos normales
+        else {
+          visible[moduleId] = isAdmin || hasStaticAccess(moduleId);
+        }
+      }
     });
 
     return visible;
-  }, [hasModuleAccess, isAdmin]);
+  }, [hasStaticAccess, isAdmin, isAthleteOrGuardian, hasDynamicAccess, permissionsLoading]);
 
   /**
    * Calcula qué grupos de módulos son visibles
@@ -94,5 +132,8 @@ export const useSidebarVisibility = () => {
     getVisibleChildModules,
     getVisibleModuleConfig,
     getAllVisibleModules,
+    hasActiveEnrollment, // Exponer para uso en otros componentes
+    permissionsLoading
   };
 };
+

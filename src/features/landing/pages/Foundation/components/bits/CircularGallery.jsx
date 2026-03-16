@@ -1,4 +1,4 @@
-import {
+﻿import {
   Camera,
   Mesh,
   Plane,
@@ -732,3 +732,4 @@ export default function CircularGallery({
 
   return <div className="circular-gallery" ref={containerRef} />;
 }
+

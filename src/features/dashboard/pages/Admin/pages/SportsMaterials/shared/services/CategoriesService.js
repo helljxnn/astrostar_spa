@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class CategoriesService {
   constructor() {
@@ -156,6 +156,24 @@ class CategoriesService {
       materialsCount: backendData._count?.materials || 0,
     };
   }
+
+  /**
+   * Obtener todas las categorías para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, estado, etc.)
+   * @returns {Promise<Object>} Todas las categorías
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      return {
+        success: true,
+        data: response.data || response,
+      };
+    } catch (error) {
+      return { success: false, error: error.message, data: [] };
+    }
+  }
 }
 
 export default new CategoriesService();
+

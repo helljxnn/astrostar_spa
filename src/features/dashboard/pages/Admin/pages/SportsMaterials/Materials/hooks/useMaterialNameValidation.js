@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+﻿import { useState, useCallback } from 'react';
 import materialsService from '../services/MaterialsService';
 
 export const useMaterialNameValidation = (materialId = null) => {
@@ -75,7 +75,6 @@ export const useMaterialNameValidation = (materialId = null) => {
 
         return { available: true, message: '' };
       } catch (err) {
-        console.error('Error validando nombre:', err);
         setNameValidation({
           isChecking: false,
           isDuplicate: false,
@@ -103,3 +102,4 @@ export const useMaterialNameValidation = (materialId = null) => {
     resetNameValidation,
   };
 };
+

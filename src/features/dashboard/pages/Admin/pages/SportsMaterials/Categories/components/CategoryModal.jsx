@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { useCategoryNameValidation } from "../hooks/useCategoryNameValidation";
@@ -163,7 +163,6 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
         handleClose();
       }
     } catch (error) {
-      console.error("Error al guardar categoría:", error);
     } finally {
       setLoading(false);
     }
@@ -307,3 +306,4 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
 };
 
 export default CategoryModal;
+

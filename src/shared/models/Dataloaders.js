@@ -1,4 +1,4 @@
-// src/utils/dataLoaders.js
+﻿// src/utils/dataLoaders.js
 // Utilidades para cargar datos desde localStorage o archivos data.jsx
 
 // DATOS REALES DE LOS MÓDULOS

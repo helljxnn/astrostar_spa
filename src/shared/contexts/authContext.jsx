@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from "react";
+﻿import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import apiClient from "../services/apiClient";
 
 const AuthContext = createContext();
@@ -37,7 +37,23 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           const result = await response.json();
           const accessToken = result.data.accessToken;
+          const userData = result.data.user;
+
+          // ✅ VALIDACIÓN: Verificar que el usuario siga activo
+          if (userData && userData.status !== "Active") {
+            console.warn("Usuario inactivado durante la sesión");
+            alert("Tu cuenta ha sido inactivada. Contacta al administrador.");
+            logout();
+            return;
+          }
+
           apiClient.setAccessToken(accessToken);
+
+          // Actualizar datos del usuario si vienen en el refresh
+          if (userData) {
+            setUser(userData);
+            localStorage.setItem("user", JSON.stringify(userData));
+          }
 
           // Programar el siguiente refresh
           scheduleTokenRefresh();
@@ -174,6 +190,14 @@ export const AuthProvider = ({ children }) => {
           const userToStore = result.data.user;
           const accessToken = result.data.accessToken;
 
+          // ✅ VALIDACIÓN: Verificar que el usuario esté activo
+          if (userToStore.status !== "Active") {
+            return { 
+              success: false, 
+              message: "Tu cuenta está inactiva. Contacta al administrador para más información." 
+            };
+          }
+
           // Almacenar access token SOLO en memoria del apiClient
           apiClient.setAccessToken(accessToken);
 
@@ -231,6 +255,17 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  // Función para refrescar permisos después de acciones importantes
+  const refreshUserPermissions = async () => {
+    try {
+      // Esto disparará el hook useDynamicPermissions para refrescar
+      // No necesitamos hacer nada aquí, solo cambiar el timestamp para forzar re-render
+      setUser(prevUser => ({ ...prevUser, lastPermissionRefresh: Date.now() }));
+    } catch (error) {
+      console.error('Error refreshing permissions:', error);
+    }
+  };
+
   const logout = async () => {
     try {
       // Limpiar timers
@@ -274,6 +309,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         updateUser,
+        refreshUserPermissions,
         isLoading,
       }}
     >
@@ -285,3 +321,4 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   return useContext(AuthContext);
 };
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FaTrash, FaCheckCircle } from 'react-icons/fa';
 import AssignMaterialModal from './AssignMaterialModal';
@@ -26,7 +26,6 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
         setMaterials(response.data || []);
       }
     } catch (error) {
-      console.error('Error al cargar materiales del evento:', error);
       setMaterials([]);
     } finally {
       setLoading(false);
@@ -49,7 +48,6 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
         return false;
       }
     } catch (error) {
-      console.error('Error al asignar material:', error);
       showErrorAlert('Error', error.message || 'Error al asignar material al evento');
       return false;
     }
@@ -77,7 +75,6 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
         showErrorAlert('Error', response.message || 'No se pudo eliminar la asignación');
       }
     } catch (error) {
-      console.error('Error al eliminar asignación:', error);
       showErrorAlert('Error', error.message || 'Error al eliminar la asignación');
     }
   };
@@ -115,7 +112,6 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
         showErrorAlert('Error', response.message || 'No se pudo finalizar el evento');
       }
     } catch (error) {
-      console.error('Error al finalizar evento:', error);
       showErrorAlert('Error', error.message || 'Error al finalizar el evento');
     }
   };
@@ -305,3 +301,4 @@ EventMaterialsSection.propTypes = {
 };
 
 export default EventMaterialsSection;
+

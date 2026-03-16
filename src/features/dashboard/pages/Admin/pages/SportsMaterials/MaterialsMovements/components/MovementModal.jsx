@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaPlus } from "react-icons/fa";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
@@ -105,7 +105,6 @@ const MovementModal = ({
         setMaterials(activeMaterials);
       }
     } catch (error) {
-      console.error("Error al cargar materiales:", error);
       setMaterials([]);
     } finally {
       setLoadingMaterials(false);
@@ -120,7 +119,6 @@ const MovementModal = ({
         setProviders(response.data);
       }
     } catch (error) {
-      console.error("Error al cargar proveedores:", error);
       setProviders([]);
     } finally {
       setLoadingProviders(false);
@@ -368,7 +366,6 @@ const MovementModal = ({
       }
       return response;
     } catch (error) {
-      console.error("Error al crear proveedor:", error);
       throw error;
     }
   };
@@ -665,3 +662,4 @@ const MovementModal = ({
 };
 
 export default MovementModal;
+

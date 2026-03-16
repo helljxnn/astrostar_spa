@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 const RegisteredPlayers = () => {
@@ -57,7 +57,7 @@ const RegisteredPlayers = () => {
         </h2>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={data}
+            dataProvider={async () => data}
             fileName="Jugadoras_Activas"
             columns={reportColumns}
           />

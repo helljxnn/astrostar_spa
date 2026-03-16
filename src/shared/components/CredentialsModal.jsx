@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'framer-motion';
 
 const CredentialsModal = ({ isOpen, onClose, employeeData, credentials }) => {

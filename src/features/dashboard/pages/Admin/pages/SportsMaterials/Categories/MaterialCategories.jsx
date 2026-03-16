@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CategoryModal from "./components/CategoryModal";
@@ -14,6 +14,8 @@ import {
 } from "../../../../../../../shared/utils/alerts.js";
 import categoriesService from "../shared/services/CategoriesService";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import ReportButton from "../../../../../../../shared/components/ReportButton";
 
 const MaterialCategories = () => {
   const { hasPermission } = usePermissions();
@@ -29,6 +31,11 @@ const MaterialCategories = () => {
   );
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
+
+  // Hook para reportes
+  const { getReportData } = useReportDataWithService(
+    (params) => categoriesService.getAllForReport(params)
+  );
 
   // Detectar si se debe abrir el modal de crear al llegar desde otra página
   useEffect(() => {
@@ -58,7 +65,6 @@ const MaterialCategories = () => {
         setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
-      console.error("Error al cargar categorías:", error);
       setCategories([]);
       setTotalRows(0);
     } finally {
@@ -68,6 +74,22 @@ const MaterialCategories = () => {
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = categories;
+
+  // Función para obtener datos completos del reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+      },
+      (data) => data.map(category => ({
+        nombre: category.nombre || '',
+        descripcion: category.descripcion || 'Sin descripción',
+        estado: category.estado || '',
+        materialesAsociados: category.materialsCount || 0,
+        fechaCreacion: category.createdAt ? new Date(category.createdAt).toLocaleDateString('es-ES') : '',
+      }))
+    );
+  };
 
   const handleCreate = () => {
     if (!hasPermission("materialCategories", "Crear")) {
@@ -126,7 +148,6 @@ const MaterialCategories = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error al guardar categoría:", error);
       showErrorAlert(
         "Error",
         error.message ||
@@ -190,7 +211,6 @@ const MaterialCategories = () => {
         );
       }
     } catch (error) {
-      console.error("Error al eliminar categoría:", error);
       showErrorAlert(
         "Error",
         error.message || "Error al eliminar la categoría en el servidor",
@@ -219,17 +239,33 @@ const MaterialCategories = () => {
         </h1>
 
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <SearchInput
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-              if (!e.target.value) {
-                setCurrentPage(1);
-              }
-            }}
-            placeholder="Buscar categoría"
-          />
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
+                if (!e.target.value) {
+                  setCurrentPage(1);
+                }
+              }}
+              placeholder="Buscar categoría"
+            />
+          </div>
+
+          <PermissionGuard module="materialCategories" action="Ver">
+            <ReportButton
+              dataProvider={getCompleteReportData}
+              fileName="categorias_materiales"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Descripción', accessor: 'descripcion' },
+                { header: 'Estado', accessor: 'estado' },
+                { header: 'Materiales Asociados', accessor: 'materialesAsociados' },
+                { header: 'Fecha Creación', accessor: 'fechaCreacion' },
+              ]}
+            />
+          </PermissionGuard>
 
           <PermissionGuard module="materialCategories" action="Crear">
             <button
@@ -244,6 +280,11 @@ const MaterialCategories = () => {
 
       {/* Tabla */}
       <Table
+        serverPagination={true}
+        currentPage={currentPage}
+        totalRows={totalRows}
+        rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+        onPageChange={(page) => setCurrentPage(page)}
         thead={{
           titles: ["Nombre", "Descripción"],
           state: true,
@@ -313,3 +354,4 @@ const MaterialCategories = () => {
 };
 
 export default MaterialCategories;
+

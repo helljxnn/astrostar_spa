@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -183,7 +183,7 @@ const DonationsGraphic = ({ donations = [] }) => {
         </h3>
         <div className="order-1 sm:order-2">
           <ReportButton
-            data={donationsData}
+            dataProvider={async () => donationsData}
             fileName="Reporte_Donaciones"
             columns={reportColumns}
           />
@@ -204,3 +204,4 @@ const DonationsGraphic = ({ donations = [] }) => {
 };
 
 export default DonationsGraphic;
+

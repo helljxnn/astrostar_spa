@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FaTimes,
@@ -16,7 +17,10 @@ import {
   FaFileImage,
   FaExpand,
   FaReceipt,
+  FaSpinner,
 } from "react-icons/fa";
+import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
+import EnrollmentsService from "../services/EnrollmentsService";
 
 // Helpers para iconos y colores
 const getStateIcon = (state) => {
@@ -68,7 +72,7 @@ const formatDateTime = (dateString) => {
 const ComprobanteModal = ({ comprobante, onClose }) => {
   if (!comprobante) return null;
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
       initial={{ opacity: 0 }}
@@ -119,13 +123,44 @@ const ComprobanteModal = ({ comprobante, onClose }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedComprobante, setSelectedComprobante] = useState(null);
+  const [enrollmentHistory, setEnrollmentHistory] = useState([]);
+  const [loading, setLoading] = useState(false);
   const itemsPerPage = 5;
+
+  // Cargar historial de matrículas cuando se abre el modal
+  useEffect(() => {
+    if (isOpen && athlete?.id) {
+      loadEnrollmentHistory();
+    }
+  }, [isOpen, athlete?.id]);
+
+  const loadEnrollmentHistory = async () => {
+    if (!athlete?.id) return;
+    
+    setLoading(true);
+    try {
+      const result = await EnrollmentsService.getAthleteEnrollmentHistory(athlete.id);
+      if (result.success) {
+        setEnrollmentHistory(result.data || []);
+      } else {
+        console.error("Error cargando historial:", result.error);
+        setEnrollmentHistory([]);
+      }
+    } catch (error) {
+      console.error("Error cargando historial:", error);
+      setEnrollmentHistory([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
   if (!athlete) {
@@ -135,39 +170,22 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 
   // Validar datos críticos
   const safeAthlete = athlete || {};
-  const safeInscriptions = Array.isArray(safeAthlete.inscripciones) 
-    ? safeAthlete.inscripciones 
+  
+  // Usar el historial cargado desde el backend (ya viene con estados corregidos)
+  const safeInscriptions = Array.isArray(enrollmentHistory) 
+    ? enrollmentHistory 
     : [];
 
-  const calculateAge = () => {
-    if (!safeAthlete?.fechaNacimiento) return 0;
-    try {
-      const birthDate = new Date(safeAthlete.fechaNacimiento);
-      const today = new Date();
-      if (isNaN(birthDate.getTime())) return 0;
+  // El backend ya maneja la lógica de estados correctos, no necesitamos procesamiento adicional
 
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-      return age;
-    } catch (error) {
-      return 0;
-    }
-  };
+  // Calcular edad usando la utilidad centralizada
+  const age = safeAthlete?.fechaNacimiento ? calculateAge(safeAthlete.fechaNacimiento) : 0;
 
   const guardian = Array.isArray(guardians) 
     ? guardians.find((g) => String(g?.id) === String(safeAthlete?.acudiente))
     : null;
 
-  const age = calculateAge();
-
-  // Ordenar inscripciones por fecha - CON MÁS VALIDACIONES
+  // Ordenar matrículas - ACTUAL PRIMERO, luego las anteriores por fecha (más reciente a más antigua)
   const sortedInscriptions = useMemo(() => {
     if (!safeInscriptions || !Array.isArray(safeInscriptions)) {
       return [];
@@ -175,35 +193,52 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     
     try {
       return [...safeInscriptions].sort((a, b) => {
-        const dateA = new Date(a?.fechaConcepto || a?.fechaInscripcion || 0);
-        const dateB = new Date(b?.fechaConcepto || b?.fechaInscripcion || 0);
-        return dateB - dateA;
+        // Primero la matrícula vigente
+        if (a.estado === "Vigente" && b.estado !== "Vigente") return -1;
+        if (b.estado === "Vigente" && a.estado !== "Vigente") return 1;
+        
+        // Luego ordenar por fecha de creación (más reciente primero)
+        const dateA = new Date(a?.createdAt || 0);
+        const dateB = new Date(b?.createdAt || 0);
+        return dateB - dateA; // Más reciente primero
       });
     } catch (error) {
-      console.error("Error sorting inscriptions:", error);
+      console.error("Error sorting enrollments:", error);
       return safeInscriptions;
     }
   }, [safeInscriptions]);
 
-  // BUSCADOR GENERAL
+  // BUSCADOR MEJORADO - Incluye búsqueda por fechas formateadas
   const filteredInscriptions = useMemo(() => {
     if (!searchTerm.trim()) {
       return [...sortedInscriptions];
     }
 
     const search = searchTerm.toLowerCase();
-    return sortedInscriptions.filter((inscription) => {
-      if (!inscription) return false;
+    return sortedInscriptions.filter((enrollment) => {
+      if (!enrollment) return false;
       
-      // Buscar en todos los campos relevantes
+      // Buscar en campos reales de matrícula incluyendo fechas formateadas
       const searchableFields = [
-        inscription.concepto,
-        inscription.categoria,
-        inscription.estado,
-        inscription.estadoAnterior,
-        inscription.tipo,
-        formatDateTime(inscription.fechaInscripcion),
-        formatDateTime(inscription.fechaConcepto)
+        enrollment.estado,
+        enrollment.athlete?.user?.firstName,
+        enrollment.athlete?.user?.lastName,
+        enrollment.athlete?.user?.identification,
+        // Fechas en múltiples formatos para mejor búsqueda
+        enrollment.createdAt ? new Date(enrollment.createdAt).toLocaleDateString('es-ES') : null,
+        enrollment.createdAt ? new Date(enrollment.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : null,
+        enrollment.fechaInicio ? new Date(enrollment.fechaInicio).toLocaleDateString('es-ES') : null,
+        enrollment.fechaInicio ? new Date(enrollment.fechaInicio).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : null,
+        enrollment.fechaVencimiento ? new Date(enrollment.fechaVencimiento).toLocaleDateString('es-ES') : null,
+        enrollment.fechaVencimiento ? new Date(enrollment.fechaVencimiento).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : null,
+        // Años para búsqueda por año
+        enrollment.createdAt ? new Date(enrollment.createdAt).getFullYear().toString() : null,
+        enrollment.fechaInicio ? new Date(enrollment.fechaInicio).getFullYear().toString() : null,
+        enrollment.fechaVencimiento ? new Date(enrollment.fechaVencimiento).getFullYear().toString() : null,
+        // Meses para búsqueda por mes
+        enrollment.createdAt ? new Date(enrollment.createdAt).toLocaleDateString('es-ES', { month: 'long' }) : null,
+        enrollment.fechaInicio ? new Date(enrollment.fechaInicio).toLocaleDateString('es-ES', { month: 'long' }) : null,
+        enrollment.fechaVencimiento ? new Date(enrollment.fechaVencimiento).toLocaleDateString('es-ES', { month: 'long' }) : null
       ];
 
       return searchableFields.some(field => 
@@ -224,7 +259,9 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const currentInscription = sortedInscriptions[0] || {};
+  // La matrícula actual es la que tiene estado "Vigente" (el backend ya maneja esto correctamente)
+  const currentInscription = sortedInscriptions.find(enrollment => enrollment.estado === "Vigente") || 
+                            sortedInscriptions[sortedInscriptions.length - 1] || {};
   const totalInscriptions = sortedInscriptions.length;
 
   const handleClearSearch = () => {
@@ -241,7 +278,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  return (
+  const modalContent = (
     <motion.div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
@@ -254,6 +291,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 z-10">
@@ -284,15 +322,14 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
           <div className="p-6 space-y-6">
             {/* Información Resumida */}
             <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-500 mb-1">Edad actual</p>
-                  <p className="text-2xl font-bold text-gray-900">{age} años</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  <p className="text-xs text-gray-500 mb-1">Categoría actual</p>
-                  <p className="text-xl font-bold text-gray-900">
-                    {safeAthlete.categoria || "Sin asignar"}
+                  <p className="text-xs text-gray-500 mb-1">Renovaciones</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {Math.max(0, totalInscriptions - 1)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {totalInscriptions > 1 ? "Ha renovado su matrícula" : "Sin renovaciones"}
                   </p>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-gray-200">
@@ -305,8 +342,8 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                   <p className="text-xs text-gray-500 mb-1">Estado actual</p>
                   <div className="flex items-center gap-2 mt-1">
                     {getStateIcon(currentInscription?.estado)}
-                    <p className="text-sm font-bold text-gray-900">
-                      {currentInscription?.estado || "Sin estado"}
+                    <p className="text-xl font-bold text-gray-900">
+                      {currentInscription?.estado === "Pending_Payment" ? "Pendiente de Pago" : currentInscription?.estado || "Sin estado"}
                     </p>
                   </div>
                 </div>
@@ -325,7 +362,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Buscar por concepto, categoría, estado, tipo, fechas..."
+                  placeholder="Buscar por estado, nombre, documento, fechas (ej: 2024, marzo, vigente)..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-purple focus:border-primary-purple transition-all"
@@ -351,39 +388,53 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
               )}
             </div>
 
-            {/* Timeline de Inscripciones */}
-            {filteredInscriptions.length > 0 ? (
+            {/* Timeline de Matrículas */}
+            {loading ? (
+              <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="mx-auto text-primary-purple mb-3">
+                  <svg className="animate-spin h-12 w-12 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                <p className="text-gray-600 font-medium">
+                  Cargando historial de matrículas...
+                </p>
+              </div>
+            ) : filteredInscriptions.length > 0 ? (
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
                   <FaHistory className="text-primary-purple" />
-                  Registros ({filteredInscriptions.length})
+                  Historial de Matrículas ({filteredInscriptions.length})
                 </h3>
 
                 <div className="space-y-4">
-                  {paginatedInscriptions.map((inscription, index) => {
-                    if (!inscription) return null;
+                  {paginatedInscriptions.map((enrollment, index) => {
+                    if (!enrollment) return null;
                     
-                    const globalIndex = sortedInscriptions.findIndex(
-                      (i) => i?.id === inscription?.id
-                    );
-                    const isFirst = globalIndex === 0;
-                    const isCambioEstado = inscription.tipo === "cambio_estado";
-                    const isRenovacion = inscription.tipo === "renovacion";
-                    const tieneComprobante = inscription.comprobantePago; 
+                    // La matrícula actual es la que tiene estado "Vigente"
+                    const isActive = enrollment.estado === "Vigente";
+                    const isPending = enrollment.estado === "Pending_Payment";
+                    const isExpired = enrollment.estado === "Vencida";
+
+                    // Determinar si es la matrícula inicial (la más antigua por fecha de creación)
+                    const isInitialEnrollment = sortedInscriptions.length > 0 && 
+                      enrollment.id === sortedInscriptions
+                        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0]?.id;
 
                     return (
                       <motion.div
-                        key={inscription.id || index}
+                        key={enrollment.id || index}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.05 }}
                         className={`relative border rounded-xl p-5 bg-white ${
-                          isFirst
+                          isActive
                             ? "border-primary-purple border-2 shadow-md"
                             : "border-gray-200"
                         }`}
                       >
-                        {isFirst && (
+                        {isActive && (
                           <div className="absolute -top-3 left-4">
                             <span className="px-3 py-1 bg-primary-purple text-white text-xs font-semibold rounded-full shadow">
                               ACTUAL
@@ -393,166 +444,104 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 
                         <div className="flex items-start gap-4">
                           <div className="flex-shrink-0 mt-1">
-                            {getStateIcon(inscription.estado)}
+                            {getStateIcon(enrollment.estado)}
                           </div>
 
                           <div className="flex-1 space-y-3">
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div className="flex items-center gap-3">
                                 <h4 className="text-lg font-bold text-gray-900">
-                                  {inscription.estado}
+                                  Matrícula {isActive ? "Actual" : "Anterior"}
                                 </h4>
                                 <span
                                   className={`px-2 py-1 rounded-md text-xs font-medium border ${getStateBadgeColor(
-                                    inscription.estado
+                                    enrollment.estado
                                   )}`}
                                 >
-                                  {inscription.estado}
+                                  {enrollment.estado === "Pending_Payment" ? "Pendiente de Pago" : enrollment.estado}
+                                </span>
+                                {/* Indicador de tipo de matrícula - CORREGIDO */}
+                                <span className="px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300">
+                                  {isInitialEnrollment ? "Matrícula inicial" : "Renovación"}
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-2">
-                                {isCambioEstado && (
-                                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded border border-blue-300 font-medium">
-                                    Cambio de estado
-                                  </span>
-                                )}
-                                {isRenovacion && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
-                                    Renovación
-                                  </span>
-                                )}
-                                {!isCambioEstado && !isRenovacion && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-300">
-                                    Matrícula inicial
-                                  </span>
-                                )}
-                                
-                                {/* Mini botón para ver comprobante */}
-                                {tieneComprobante && (
-                                  <motion.button
-                                    onClick={() => setSelectedComprobante(inscription.comprobantePago)}
-                                    className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded border border-green-300 hover:bg-green-200 transition-colors font-medium group relative"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    title="Ver comprobante de pago"
-                                  >
-                                    <FaFileImage size={10} />
-                                    <FaExpand size={8} />
-                                    {/* Tooltip */}
-                                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                      Ver comprobante
-                                    </div>
-                                  </motion.button>
-                                )}
+                              <div className="text-xs text-gray-500">
+                                Creada: {new Date(enrollment.createdAt).toLocaleDateString('es-ES')}
                               </div>
                             </div>
 
-                            {isCambioEstado && inscription.estadoAnterior && (
-                              <div className="flex items-center gap-2 bg-blue-50 rounded-lg p-3 border border-blue-200">
-                                <span className="text-sm text-gray-600">
-                                  Cambió de:
-                                </span>
-                                <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${getStateBadgeColor(
-                                    inscription.estadoAnterior
-                                  )}`}
-                                >
-                                  {inscription.estadoAnterior}
-                                </span>
-                                <FaArrowRight className="text-blue-500" size={12} />
-                                <span
-                                  className={`px-2 py-1 rounded text-xs font-medium ${getStateBadgeColor(
-                                    inscription.estado
-                                  )}`}
-                                >
-                                  {inscription.estado}
-                                </span>
-                              </div>
-                            )}
-
-                            {inscription.concepto && (
-                              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                <p className="text-sm font-semibold text-gray-700 mb-1">
-                                  {isCambioEstado ? "Motivo del cambio:" : "Concepto:"}
-                                </p>
-                                <p className="text-gray-900">{inscription.concepto}</p>
-                              </div>
-                            )}
-
-                            {/* Sección de comprobante si existe */}
-                            {tieneComprobante && (
-                              <div className="bg-green-50 rounded-lg p-3 border border-green-200">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <FaReceipt className="text-green-600" size={16} />
-                                    <div>
-                                      <p className="text-sm font-semibold text-green-700 mb-1">
-                                        Comprobante de pago:
-                                      </p>
-                                      <p className="text-xs text-green-600">
-                                        {inscription.comprobantePago.nombreArchivo}
-                                      </p>
-                                      <p className="text-xs text-green-500 mt-1">
-                                        Subido: {new Date(inscription.comprobantePago.fechaSubida).toLocaleDateString('es-ES')} • 
-                                        Tamaño: {formatFileSize(inscription.comprobantePago.tamaño)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <motion.button
-                                    onClick={() => setSelectedComprobante(inscription.comprobantePago)}
-                                    className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                  >
-                                    <FaExpand size={12} />
-                                    Ver Comprobante
-                                  </motion.button>
-                                </div>
-                              </div>
-                            )}
-
+                            {/* Información principal de la matrícula - DISEÑO SIMPLIFICADO */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              <div className="bg-gray-50 rounded-lg p-3">
                                 <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
                                   <FaCalendarAlt size={10} />
-                                  Fecha de matrícula:
+                                  Fecha de creación:
                                 </p>
                                 <p className="text-sm text-gray-900 font-medium">
-                                  {formatDateTime(inscription.fechaInscripcion)}
+                                  {new Date(enrollment.createdAt).toLocaleDateString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
                                 </p>
-                                {inscription.estado === "Vigente" && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    Vence:{" "}
-                                    {new Date(
-                                      new Date(inscription.fechaInscripcion).setFullYear(
-                                        new Date(inscription.fechaInscripcion).getFullYear() +
-                                          1
-                                      )
-                                    ).toLocaleDateString("es-ES")}
-                                  </p>
-                                )}
                               </div>
 
-                              {inscription.fechaConcepto && (
-                                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                              {enrollment.fechaInicio && (
+                                <div className="bg-gray-50 rounded-lg p-3">
                                   <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
-                                    <FaClock size={10} />
-                                    Fecha del registro:
+                                    <FaCheckCircle size={10} />
+                                    Fecha de activación:
                                   </p>
                                   <p className="text-sm text-gray-900 font-medium">
-                                    {formatDateTime(inscription.fechaConcepto)}
+                                    {new Date(enrollment.fechaInicio).toLocaleDateString('es-ES', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
                                   </p>
                                 </div>
                               )}
+
+                              {enrollment.fechaVencimiento && (
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                                    <FaClock size={10} />
+                                    Fecha de vencimiento:
+                                  </p>
+                                  <p className="text-sm text-gray-900 font-medium">
+                                    {new Date(enrollment.fechaVencimiento).toLocaleDateString('es-ES', {
+                                      year: 'numeric',
+                                      month: 'long',
+                                      day: 'numeric'
+                                    })}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="bg-gray-50 rounded-lg p-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">
+                                  Estado:
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  {getStateIcon(enrollment.estado)}
+                                  <p className="text-sm text-gray-900 font-medium">
+                                    {enrollment.estado === "Pending_Payment" ? "Pendiente de Pago" : enrollment.estado}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
 
-                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                            {/* Información del deportista */}
+                            <div className="bg-gray-50 rounded-lg p-3">
                               <p className="text-xs font-semibold text-gray-600 mb-1">
-                                Categoría:
+                                Deportista:
                               </p>
                               <p className="text-sm text-gray-900 font-medium">
-                                {inscription.categoria}
+                                {enrollment.athlete?.user?.firstName} {enrollment.athlete?.user?.lastName}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">
+                                Documento: {enrollment.athlete?.user?.identification}
                               </p>
                             </div>
                           </div>
@@ -640,6 +629,8 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default EnrollmentHistoryModal;

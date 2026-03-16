@@ -1,5 +1,7 @@
+﻿import React from "react";
 import AppRoutes from "./routes/Router";
 import { AuthProvider } from "./shared/contexts/authContext";
+import { EnrollmentsProvider } from "./shared/contexts/EnrollmentsContext";
 import { useInstantTooltip } from "./shared/hooks/useInstantTooltip";
 import GlobalLoader from "./shared/components/Loader/GlobalLoader";
 
@@ -9,10 +11,13 @@ function App() {
 
   return (
     <AuthProvider>
-      <AppRoutes />
-      <GlobalLoader />
+      <EnrollmentsProvider>
+        <AppRoutes />
+        <GlobalLoader />
+      </EnrollmentsProvider>
     </AuthProvider>
   );
 }
 
 export default App;
+

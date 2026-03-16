@@ -1,11 +1,11 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { useState } from "react";
 
 export const History = () => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   return (
-    <section className="py-16 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-gray-50 to-white">
+    <section id="historia" className="py-16 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-gray-50 to-white">
       <div className="max-w-7xl mx-auto">
         {/* Título de la sección */}
         <motion.div
@@ -117,3 +117,4 @@ export const History = () => {
     </section>
   );
 };
+

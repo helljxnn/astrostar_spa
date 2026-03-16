@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+﻿import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import es from "date-fns/locale/es";
 import { FaTimes } from "react-icons/fa";
@@ -59,3 +59,4 @@ const DayEventsModal = ({ isOpen, onClose, date, events }) => {
 };
 
 export default DayEventsModal;
+

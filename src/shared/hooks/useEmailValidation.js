@@ -1,12 +1,14 @@
-import { useState, useCallback, useRef } from 'react';
+﻿import { useState, useCallback, useRef } from 'react';
 import AthletesService from '../../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService';
+import InscriptionsService from '../../features/dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService';
 
 /**
  * Hook para validar email duplicado en tiempo real
  * @param {number|null} excludeUserId - ID del usuario a excluir de la validación (para modo edición)
+ * @param {boolean} checkInscriptions - Si debe verificar también en inscripciones pendientes
  * @returns {Object} Estado y funciones de validación
  */
-export const useEmailValidation = (excludeUserId = null) => {
+export const useEmailValidation = (excludeUserId = null, checkInscriptions = false) => {
   const [isChecking, setIsChecking] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -30,15 +32,31 @@ export const useEmailValidation = (excludeUserId = null) => {
 
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const result = await AthletesService.checkEmailAvailability(email, excludeUserId);
+        // Verificar en deportistas matriculados
+        const athleteResult = await AthletesService.checkEmailAvailability(email, excludeUserId);
 
-        if (!result.available) {
+        if (!athleteResult.available) {
           setEmailExists(true);
-          setValidationMessage('Este email ya está registrado');
-        } else {
-          setEmailExists(false);
-          setValidationMessage('');
+          setValidationMessage('Este email ya está matriculado en la fundación');
+          setIsChecking(false);
+          return;
         }
+
+        // Si checkInscriptions es true, también verificar en inscripciones pendientes
+        if (checkInscriptions) {
+          const inscriptionResult = await InscriptionsService.checkEmailExists(email);
+          
+          if (inscriptionResult.exists) {
+            setEmailExists(true);
+            setValidationMessage(inscriptionResult.message || 'Este email ya tiene una inscripción pendiente');
+            setIsChecking(false);
+            return;
+          }
+        }
+
+        // Si llegamos aquí, el email está disponible
+        setEmailExists(false);
+        setValidationMessage('');
       } catch (error) {
         // Error silencioso - no mostrar en consola para evitar ruido
         setEmailExists(false);
@@ -47,7 +65,7 @@ export const useEmailValidation = (excludeUserId = null) => {
         setIsChecking(false);
       }
     }, delay);
-  }, [excludeUserId]);
+  }, [excludeUserId, checkInscriptions]);
 
   const clearValidation = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -66,3 +84,4 @@ export const useEmailValidation = (excludeUserId = null) => {
     clearValidation,
   };
 };
+

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
@@ -12,6 +13,12 @@ import {
   guardianValidationRules,
 } from "../hooks/useFormGuardianValidation";
 import GuardiansService from "../services/GuardiansService";
+import { toDateInputFormat, toISOString, calculateAge } from "../../../../../../../../shared/utils/dateUtils";
+
+const states = [
+  { value: "Activo", label: "Activo" },
+  { value: "Inactivo", label: "Inactivo" },
+];
 
 const GuardianModal = ({
   isOpen,
@@ -26,31 +33,37 @@ const GuardianModal = ({
   const [asyncErrors, setAsyncErrors] = useState({});
   const [checkingDocument, setCheckingDocument] = useState(false);
   const [checkingEmail, setCheckingEmail] = useState(false);
+  const [guardianAge, setGuardianAge] = useState(null);
 
-  const {
-    values,
-    errors,
-    touched,
-    handleChange,
-    handleBlur,
-    validateAllFields,
-    resetForm,
-    setTouched,
-    setValues,
-    setErrors,
-  } = useFormGuardianValidation(
-    {
-      nombreCompleto: "",
-      documentTypeId: "",
-      identification: "",
-      email: "",
-      phoneNumber: "",
-      address: "",
-      fechaNacimiento: "",
-      estado: "Activo",
-    },
-    guardianValidationRules,
-  );
+  // ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
+
+  
+  const { values, errors, touched, handleChange: hookHandleChange, handleBlur, validateAllFields, resetForm, setTouched, setValues, setErrors } =
+    useFormGuardianValidation(
+      {
+        nombreCompleto: "",
+        documentTypeId: "",
+        identification: "",
+        email: "",
+        phoneNumber: "",
+        address: "",
+        fechaNacimiento: "",
+        estado: "Activo",
+      },
+      guardianValidationRules
+    );
+
+  // Wrapper optimizado para manejar eventos y llamadas directas
+  const handleChange = useCallback((nameOrEvent, value) => {
+    if (typeof nameOrEvent === 'string') {
+      hookHandleChange(nameOrEvent, value);
+    } else if (nameOrEvent?.target) {
+      const { name, value: val } = nameOrEvent.target;
+      hookHandleChange(name, val);
+    }
+  }, [hookHandleChange]);
+
+
 
   // Validación instantánea de documento
   useEffect(() => {
@@ -85,12 +98,13 @@ const GuardianModal = ({
           } else {
             setAsyncErrors((prev) => ({ ...prev, identification: null }));
             // Solo limpiar el error si es un error de duplicado
-            if (
-              errors.identification &&
-              errors.identification.includes("ya está registrado")
-            ) {
-              setErrors((prev) => ({ ...prev, identification: "" }));
-            }
+            setErrors(prev => {
+              if (prev.identification && prev.identification.includes('ya está registrado')) {
+                const { identification, ...rest } = prev;
+                return rest;
+              }
+              return prev;
+            });
           }
         }
       } catch (error) {
@@ -103,89 +117,88 @@ const GuardianModal = ({
     // Debounce de 500ms
     const timeoutId = setTimeout(checkDocument, 500);
     return () => clearTimeout(timeoutId);
-  }, [
-    values.identification,
-    isEditing,
-    guardianToEdit?.id,
-    setErrors,
-    setTouched,
-  ]);
+  }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
 
-  // Validación instantánea de email
+  // ❌ VALIDACIÓN DE EMAIL ELIMINADA PARA ACUDIENTES
+  // Los acudientes pueden compartir email con deportistas o entre ellos
+  // porque no tienen credenciales de acceso al sistema
+
+  // Validación instantánea de edad del acudiente (debe ser mayor de 18 años)
   useEffect(() => {
-    const checkEmail = async () => {
-      if (!values.email || !values.email.includes("@")) {
-        setAsyncErrors((prev) => ({ ...prev, email: null }));
-        return;
-      }
+    if (!values.fechaNacimiento) {
+      setGuardianAge(null);
+      setAsyncErrors(prev => ({ ...prev, fechaNacimiento: null }));
+      return;
+    }
 
-      // Validar formato de email primero (antes de consultar al backend)
-      // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
-      const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      if (!emailRegex.test(values.email)) {
-        // Si el formato es inválido, no hacer la consulta al backend
-        // El error de formato ya lo maneja la validación síncrona
-        setAsyncErrors((prev) => ({ ...prev, email: null }));
-        return;
-      }
+    // Marcar como touched INMEDIATAMENTE cuando hay una fecha
+    setTouched(prev => ({ ...prev, fechaNacimiento: true }));
 
-      setCheckingEmail(true);
-      try {
-        // Obtener todos los acudientes
-        const result = await GuardiansService.getAll();
+    const age = calculateAge(values.fechaNacimiento);
+    setGuardianAge(age);
 
-        if (result.success) {
-          // Buscar si existe un acudiente con el mismo email
-          const existingGuardian = result.data.find((g) => {
-            const guardianEmail = g.correo || g.email;
-            const isSameEmail =
-              guardianEmail &&
-              guardianEmail.toLowerCase() === values.email.toLowerCase();
-            const isDifferentGuardian =
-              !isEditing || g.id !== guardianToEdit?.id;
-            return isSameEmail && isDifferentGuardian;
-          });
-
-          if (existingGuardian) {
-            const errorMsg = `Este email ya está registrado`;
-            setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
-            setErrors((prev) => ({ ...prev, email: errorMsg }));
-            setTouched((prev) => ({ ...prev, email: true }));
-          } else {
-            setAsyncErrors((prev) => ({ ...prev, email: null }));
-            // Solo limpiar el error si es un error de duplicado
-            if (errors.email && errors.email.includes("ya está registrado")) {
-              setErrors((prev) => ({ ...prev, email: "" }));
-            }
-          }
+    if (age !== null && age < 18) {
+      const errorMsg = "El acudiente debe ser mayor de 18 años";
+      setAsyncErrors(prev => ({ ...prev, fechaNacimiento: errorMsg }));
+      setErrors(prev => ({ ...prev, fechaNacimiento: errorMsg }));
+    } else {
+      setAsyncErrors(prev => ({ ...prev, fechaNacimiento: null }));
+      // Solo limpiar el error si es un error de edad
+      setErrors(prev => {
+        if (prev.fechaNacimiento && prev.fechaNacimiento.includes('18 años')) {
+          const { fechaNacimiento, ...rest } = prev;
+          return rest;
         }
-      } catch (error) {
-        console.error("Error verificando email:", error);
-      } finally {
-        setCheckingEmail(false);
-      }
-    };
-
-    // Debounce de 500ms
-    const timeoutId = setTimeout(checkEmail, 500);
-    return () => clearTimeout(timeoutId);
-  }, [values.email, isEditing, guardianToEdit?.id, setErrors, setTouched]);
+        return prev;
+      });
+    }
+  }, [values.fechaNacimiento, setTouched, setErrors]);
 
   useEffect(() => {
     if (isOpen && isEditing && guardianToEdit) {
-      setValues({
+      const birthDateRaw = guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "";
+      const birthDate = toDateInputFormat(birthDateRaw);
+      
+      const newValues = {
         nombreCompleto: guardianToEdit.nombreCompleto || "",
         documentTypeId: guardianToEdit.documentTypeId || "",
-        identification:
-          guardianToEdit.identificacion || guardianToEdit.identification || "",
+        identification: guardianToEdit.identificacion || guardianToEdit.identification || "",
         email: guardianToEdit.correo || guardianToEdit.email || "",
-        phoneNumber:
-          guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
+        phoneNumber: guardianToEdit.telefono || guardianToEdit.phoneNumber || "",
         address: guardianToEdit.address || guardianToEdit.direccion || "",
-        fechaNacimiento:
-          guardianToEdit.fechaNacimiento || guardianToEdit.birthDate || "",
+        fechaNacimiento: birthDate,
         estado: guardianToEdit.estado || "Activo",
+      };
+      
+      // Calcular errores iniciales con los valores cargados
+      const initialErrors = {};
+      Object.keys(guardianValidationRules).forEach((fieldName) => {
+        const rules = guardianValidationRules[fieldName];
+        if (rules) {
+          for (const rule of rules) {
+            const error = rule(newValues[fieldName], newValues);
+            if (error) {
+              initialErrors[fieldName] = error;
+              break;
+            }
+          }
+        }
       });
+      
+      // Establecer valores, touched y errores AL MISMO TIEMPO
+      setValues(newValues);
+      setTouched({
+        nombreCompleto: true,
+        documentTypeId: true,
+        identification: true,
+        email: true,
+        phoneNumber: true,
+        address: true,
+        fechaNacimiento: true,
+        estado: true,
+      });
+      setErrors(initialErrors);
+      
     } else if (isOpen && !isEditing) {
       setValues({
         nombreCompleto: "",
@@ -198,25 +211,24 @@ const GuardianModal = ({
         estado: "Activo",
       });
       setAsyncErrors({});
+      setErrors({});
+      setTouched({});
     }
-  }, [isOpen, isEditing, guardianToEdit, setValues]);
+  }, [isOpen, isEditing, guardianToEdit, setValues, setTouched, setErrors]);
 
   const handleSubmit = async () => {
-    console.log("🔵 [GuardianModal] Valores actuales:", values);
 
     const allTouched = {};
     Object.keys(guardianValidationRules).forEach((f) => (allTouched[f] = true));
     setTouched(allTouched);
 
     const isValid = validateAllFields();
-    console.log("🔵 [GuardianModal] Errores:", JSON.stringify(errors, null, 2));
     // Verificar si hay errores asíncronos
     const hasAsyncErrors = Object.values(asyncErrors).some(
       (error) => error !== null && error !== "",
     );
 
     if (!isValid || hasAsyncErrors) {
-      console.log("❌ [GuardianModal] Campos con error:");
       Object.keys(errors).forEach((key) => {
         if (errors[key]) {
         }
@@ -246,9 +258,8 @@ const GuardianModal = ({
         email: values.email.trim(), // ✅ En inglés
         phoneNumber: values.phoneNumber, // ✅ En inglés
         address: values.address.trim(), // ✅ Dirección
-        birthDate: values.fechaNacimiento, // ✅ En inglés
+        birthDate: toISOString(values.fechaNacimiento), // ✅ Convertir a ISO para el backend
       };
-      console.log("📅 Fecha de nacimiento:", values.fechaNacimiento);
       if (isEditing) {
         const updated = await onUpdate({
           ...dataToSend,
@@ -283,20 +294,23 @@ const GuardianModal = ({
   };
 
   if (!isOpen) return null;
-  console.log("🟢 [GuardianModal] onSave existe?", typeof onSave);
-  return (
+
+
+  const modalContent = (
     <motion.div
+      key={`guardian-modal-${isEditing ? guardianToEdit?.id || 'edit' : 'create'}`} 
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden relative flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col"
         initial={{ scale: 0.8, opacity: 0, y: 50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.8, opacity: 0, y: 50 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
@@ -377,7 +391,7 @@ const GuardianModal = ({
               value={values.email}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.email || asyncErrors.email}
+              error={errors.email}
               touched={touched.email}
               required
               delay={0.4}
@@ -419,7 +433,7 @@ const GuardianModal = ({
               value={values.fechaNacimiento}
               onChange={handleChange}
               onBlur={handleBlur}
-              error={errors.fechaNacimiento}
+              error={errors.fechaNacimiento || asyncErrors.fechaNacimiento}
               touched={touched.fechaNacimiento}
               required
               minAge={18}
@@ -470,6 +484,10 @@ const GuardianModal = ({
       </motion.div>
     </motion.div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default GuardianModal;
+
+

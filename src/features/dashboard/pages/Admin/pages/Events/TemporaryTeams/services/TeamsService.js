@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 class TeamsService {
   constructor() {
     this.endpoint = "/teams";
@@ -533,5 +533,24 @@ const response = await apiClient.get(
       };
     }
   }
+
+  /**
+   * Obtener todos los registros para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, status, teamType, etc.)
+   * @returns {Promise<Object>} Todos los registros
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      return {
+        success: true,
+        data: response.data || response,
+      };
+    } catch (error) {
+      console.error('Error fetching teams report:', error);
+      return { success: false, error: error.message, data: [] };
+    }
+  }
 }
 export default new TeamsService();
+

@@ -1,4 +1,4 @@
-// useFormEventValidation.js
+﻿// useFormEventValidation.js
 import { useState } from "react";
 import apiClient from "../../../../../../../../shared/services/apiClient";
 
@@ -243,3 +243,4 @@ export const useFormEventValidation = () => {
 
   return { errors, touched, validate, handleBlur, touchAllFields, isCheckingName };
 };
+

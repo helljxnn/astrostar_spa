@@ -7,6 +7,7 @@ import Pagination from "../../../../../../../shared/components/Table/Pagination"
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import DateRangePickerCalendar from "./components/DateRangePickerCalendar";
 import assistanceathletesService from "./services/AssistanceathletesService";
+import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import { showWarningAlert } from "../../../../../../../shared/utils/alerts.js";
 
 const DEFAULT_ROWS_PER_PAGE = 10;
@@ -20,14 +21,35 @@ const formatDate = (value) => {
   return `${parts[2]}/${parts[1]}/${parts[0]}`;
 };
 
+const formatInputValue = (value) => {
+  const cleaned = value.replace(/\D/g, "");
+  if (cleaned.length <= 2) return cleaned;
+  if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+  return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+};
+
+const parseInputToISO = (input) => {
+  if (!input || input.length !== 10) return "";
+  const parts = input.split("/");
+  if (parts.length !== 3) return "";
+  const [day, month, year] = parts;
+  if (!day || !month || !year || year.length !== 4) return "";
+  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+};
+
 export default function AssistanceHistory() {
   const navigate = useNavigate();
 
   const [startDate, setStartDate] = useState(() => todayISO());
   const [endDate, setEndDate] = useState(() => todayISO());
+  const [startDateInput, setStartDateInput] = useState(() => formatDate(todayISO()));
+  const [endDateInput, setEndDateInput] = useState(() => formatDate(todayISO()));
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(ALL_CATEGORIES);
   const [categories, setCategories] = useState([ALL_CATEGORIES]);
+
+  // Hook para obtener datos completos de reporte
+  const { getReportData } = useReportDataWithService(assistanceathletesService.getAllForReport);
 
   const [historyRows, setHistoryRows] = useState([]);
   const [pagination, setPagination] = useState({
@@ -47,6 +69,27 @@ export default function AssistanceHistory() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailHistory, setDetailHistory] = useState([]);
   const [detailAthlete, setDetailAthlete] = useState(null);
+
+  // Función para obtener datos completos del reporte con filtros aplicados
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      { 
+        startDate: range.startDate || startDate,
+        endDate: range.endDate || endDate,
+        search: searchTerm,
+        categoria: categoryFilter !== ALL_CATEGORIES ? categoryFilter : undefined
+      },
+      (data) => data.map((item) => ({
+        documento: item.documento,
+        nombre: item.nombre,
+        categoria: item.categoria || "Sin categoría",
+        present: item.present,
+        absent: item.absent,
+        total: item.total,
+        percentDisplay: `${item.percent}%`,
+      }))
+    );
+  };
 
   const rangeLabel = useMemo(() => {
     const rangeStart = range.startDate || startDate;
@@ -197,8 +240,8 @@ export default function AssistanceHistory() {
   }, []);
 
   const handleConsult = () => {
-    const parsedStart = startDateInput || "";
-    const parsedEnd = endDateInput || "";
+    const parsedStart = parseInputToISO(startDateInput);
+    const parsedEnd = parseInputToISO(endDateInput);
 
     if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
       setError("La fecha inicial no puede ser mayor a la fecha final.");
@@ -221,8 +264,8 @@ export default function AssistanceHistory() {
     const today = todayISO();
     setStartDate(today);
     setEndDate(today);
-    setStartDateInput(today);
-    setEndDateInput(today);
+    setStartDateInput(formatDate(today));
+    setEndDateInput(formatDate(today));
     setSearchTerm("");
     setCategoryFilter(ALL_CATEGORIES);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -285,7 +328,7 @@ export default function AssistanceHistory() {
         </div>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <ReportButton
-            data={reportData}
+            dataProvider={getCompleteReportData}
             fileName={reportFileName}
             columns={reportColumns}
           />
@@ -475,5 +518,6 @@ export default function AssistanceHistory() {
     </div>
   );
 }
+
 
 

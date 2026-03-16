@@ -1,4 +1,4 @@
-// Datos de ejemplo de categorías deportivas
+﻿// Datos de ejemplo de categorías deportivas
 const SportsCategoryData = [
   {
     id: 1,
@@ -51,3 +51,4 @@ const SportsCategoryData = [
 ];
 
 export default SportsCategoryData;
+

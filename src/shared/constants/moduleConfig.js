@@ -1,37 +1,37 @@
 ﻿/**
- * Configuración centralizada de módulos del sistema
- * Este archivo define todos los módulos y se auto-mantiene
+ * Configuraci?n centralizada de m?dulos del sistema
+ * Este archivo define todos los m?dulos y se auto-mantiene
  */
 
 /**
- * Configuración de módulos con sus metadatos
- * Cada módulo tiene:
- * - id: identificador único
+ * Configuraci?n de m?dulos con sus metadatos
+ * Cada m?dulo tiene:
+ * - id: identificador ?nico
  * - name: nombre para mostrar
  * - path: ruta base
  * - icon: icono a usar
- * - category: categoría para agrupación
- * - requiredRole: roles mínimos (opcional)
+ * - category: categor?a para agrupaci?n
+ * - requiredRole: roles m?nimos (opcional)
  */
 export const MODULE_CONFIG = {
-  // === MÓDULOS PRINCIPALES ===
+  // === M?"DULOS PRINCIPALES ===
   dashboard: {
     id: "dashboard",
     name: "Dashboard",
     path: "/dashboard/analytics",
     icon: "MdDashboard",
     category: "main",
-    description: "Panel principal con estadísticas",
+    description: "Panel principal con estad?sticas",
   },
 
-  // === GESTIÓN DE USUARIOS ===
+  // === GESTI?"N DE USUARIOS ===
   users: {
     id: "users",
     name: "Usuarios",
     path: "/dashboard/users",
     icon: "FaUsers",
     category: "admin",
-    description: "Gestión de usuarios del sistema",
+    description: "Gesti?n de usuarios del sistema",
   },
 
   roles: {
@@ -40,7 +40,7 @@ export const MODULE_CONFIG = {
     path: "/dashboard/roles",
     icon: "FaUserShield",
     category: "admin",
-    description: "Gestión de roles y permisos",
+    description: "Gesti?n de roles y permisos",
   },
 
   // === SERVICIOS ===
@@ -51,7 +51,7 @@ export const MODULE_CONFIG = {
     icon: "FaUsers",
     category: "services",
     parent: "services",
-    description: "Gestión de empleados",
+    description: "Gesti?n de empleados",
   },
 
   employeesSchedule: {
@@ -66,33 +66,33 @@ export const MODULE_CONFIG = {
 
   appointmentManagement: {
     id: "appointmentManagement",
-    name: "Gestión de Citas",
+    name: "Gesti?n de Citas",
     path: "/dashboard/appointment-management",
     icon: "FaRegCalendarAlt",
     category: "services",
     parent: "services",
-    description: "Gestión de citas médicas",
+    description: "Gesti?n de citas m?dicas",
   },
 
   // === DEPORTISTAS ===
   sportsCategory: {
     id: "sportsCategory",
-    name: "Categoría Deportiva",
+    name: "Categor?a Deportiva",
     path: "/dashboard/sports-category",
     icon: "FaMedal",
     category: "athletes",
     parent: "athletes",
-    description: "Categorías deportivas",
+    description: "Categor?as deportivas",
   },
 
   athletesSection: {
     id: "athletesSection",
-    name: "Gestión de Deportistas",
+    name: "Gesti?n de Deportistas",
     path: "/dashboard/athletes-section",
     icon: "FaRunning",
     category: "athletes",
     parent: "athletes",
-    description: "Gestión de deportistas",
+    description: "Gesti?n de deportistas",
   },
 
   athletesAssistance: {
@@ -107,23 +107,43 @@ export const MODULE_CONFIG = {
 
   enrollments: {
     id: "enrollments",
-    name: "Gestión de Matrículas",
+    name: "Gesti?n de Matr?culas",
     path: "/dashboard/enrollments",
     icon: "FaFileContract",
     category: "athletes",
     parent: "athletes",
-    description: "Gestión de matrículas",
+    description: "Gesti?n de matr?culas",
+  },
+
+  paymentsManagement: {
+    id: "paymentsManagement",
+    name: "Gesti?n de Pagos",
+    path: "/dashboard/payments-management",
+    icon: "FaCreditCard",
+    category: "athletes",
+    parent: "athletes",
+    description: "Gesti?n de pagos y comprobantes",
+  },
+
+  myPayments: {
+    id: "myPayments",
+    name: "Mis Pagos",
+    path: "/dashboard/athlete-payments",
+    icon: "FaCreditCard",
+    category: "athletes",
+    parent: "athletes",
+    description: "Estado financiero y comprobantes de pago",
   },
 
   // === EVENTOS ===
   eventsManagement: {
     id: "eventsManagement",
-    name: "Gestión de Eventos",
+    name: "Gesti?n de Eventos",
     path: "/dashboard/events",
     icon: "FaCalendarStar",
     category: "events",
     parent: "events",
-    description: "Gestión de eventos deportivos",
+    description: "Gesti?n de eventos deportivos",
   },
 
   temporaryWorkers: {
@@ -138,12 +158,12 @@ export const MODULE_CONFIG = {
 
   temporaryTeams: {
     id: "temporaryTeams",
-    name: "Equipos Temporales",
+    name: "Equipos",
     path: "/dashboard/temporary-teams",
     icon: "FaUsers",
     category: "events",
     parent: "events",
-    description: "Equipos temporales para eventos",
+    description: "Equipos para eventos",
   },
 
   // === DONACIONES ===
@@ -154,7 +174,7 @@ export const MODULE_CONFIG = {
     icon: "FaHandHoldingHeart",
     category: "donations",
     parent: "donations",
-    description: "Gestión de donantes y patrocinadores",
+    description: "Gesti?n de donantes y patrocinadores",
   },
 
   donationsManagement: {
@@ -164,28 +184,28 @@ export const MODULE_CONFIG = {
     icon: "FaDonate",
     category: "donations",
     parent: "donations",
-    description: "Gestión de donaciones",
+    description: "Gesti?n de donaciones",
   },
 
   // === MATERIALES ===
   materials: {
     id: "materials",
-    name: "Gestión de Materiales",
+    name: "Gesti?n de Materiales",
     path: "/dashboard/materials",
     icon: "GiWeightLiftingUp",
     category: "equipment",
     parent: "equipment",
-    description: "Gestión de materiales",
+    description: "Gesti?n de materiales",
   },
 
   materialCategories: {
     id: "materialCategories",
-    name: "Categorías de Materiales",
+    name: "Categor?as de Materiales",
     path: "/dashboard/material-categories",
     icon: "FaTags",
     category: "equipment",
     parent: "equipment",
-    description: "Gestión de categorías de materiales",
+    description: "Gesti?n de categor?as de materiales",
   },
 
   materialsRegistry: {
@@ -205,12 +225,12 @@ export const MODULE_CONFIG = {
     icon: "FaTruck",
     category: "equipment",
     parent: "equipment",
-    description: "Gestión de proveedores",
+    description: "Gesti?n de proveedores",
   },
 };
 
 /**
- * Configuración de grupos de módulos (para el sidebar)
+ * Configuraci?n de grupos de m?dulos (para el sidebar)
  */
 export const MODULE_GROUPS = {
   equipment: {
@@ -235,6 +255,8 @@ export const MODULE_GROUPS = {
       "sportsCategory",
       "enrollments",
       "athletesSection",
+      "paymentsManagement",
+      "myPayments",
       "athletesAssistance",
     ],
   },
@@ -257,13 +279,68 @@ export const MODULE_GROUPS = {
 /**
  * Acciones disponibles en el sistema
  */
-export const AVAILABLE_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar", "Listar"];
+export const DEFAULT_ACTIONS = ["Crear", "Ver", "Editar", "Eliminar"];
+export const AVAILABLE_ACTIONS = [
+  ...DEFAULT_ACTIONS,
+  "Aceptar",
+  "Rechazar",
+  "Aprobar",
+  "Descargar",
+  "Acudiente",
+  "Materiales",
+  "Inscribir",
+  "Ver inscritos",
+  "Cancelar",
+  "Listar deportistas",
+  "Ver Asignaciones del Material",
+  "Transferir Stock",
+  "Registrar Baja de Material",
+];
+
+export const MODULE_ALLOWED_ACTIONS = {
+  dashboard: ["Ver"],
+  users: ["Ver"],
+  roles: ["Crear", "Ver", "Editar", "Eliminar"],
+  employees: ["Crear", "Ver", "Editar", "Eliminar"],
+  employeesSchedule: ["Crear", "Ver", "Editar", "Eliminar"],
+  appointmentManagement: ["Crear", "Ver", "Editar", "Cancelar"],
+  eventsManagement: [
+    "Crear",
+    "Ver",
+    "Editar",
+    "Eliminar",
+    "Materiales",
+    "Inscribir",
+    "Ver inscritos",
+  ],
+  temporaryWorkers: ["Crear", "Ver", "Editar", "Eliminar"],
+  temporaryTeams: ["Crear", "Ver", "Editar", "Eliminar"],
+  sportsCategory: ["Crear", "Ver", "Editar", "Eliminar", "Listar deportistas"],
+  athletesSection: ["Ver", "Editar", "Eliminar", "Acudiente"],
+  athletesAssistance: ["Crear", "Ver", "Editar"],
+  materials: [
+    "Crear",
+    "Ver",
+    "Editar",
+    "Eliminar",
+    "Ver Asignaciones del Material",
+    "Transferir Stock",
+    "Registrar Baja de Material",
+  ],
+  materialCategories: ["Crear", "Ver", "Editar", "Eliminar"],
+  materialsRegistry: ["Ver", "Editar"],
+  providers: ["Crear", "Ver", "Editar", "Eliminar"],
+  donorsSponsors: ["Crear", "Ver", "Editar", "Eliminar"],
+  donationsManagement: ["Crear", "Ver", "Editar"],
+  enrollments: ["Ver", "Aceptar", "Rechazar"],
+  paymentsManagement: ["Ver", "Descargar", "Aprobar", "Rechazar"],
+};
 
 /**
  * Funciones de utilidad auto-generadas
  */
 
-// Auto-generar lista de todos los módulos
+// Auto-generar lista de todos los m?dulos
 export const ALL_MODULES = Object.keys(MODULE_CONFIG);
 
 // Auto-generar mapeo de ID a nombre (para componentes de UI)
@@ -280,32 +357,39 @@ export const generateAdminPermissions = () => {
   const permissions = {};
   ALL_MODULES.forEach((module) => {
     permissions[module] = {};
+    const allowedActions = MODULE_ALLOWED_ACTIONS[module] || DEFAULT_ACTIONS;
     AVAILABLE_ACTIONS.forEach((action) => {
-      permissions[module][action] = true;
+      permissions[module][action] = allowedActions.includes(action);
     });
   });
   return permissions;
 };
 
-// Obtener módulos por categoría
+export const getModuleAllowedActions = (moduleId) =>
+  MODULE_ALLOWED_ACTIONS[moduleId] || DEFAULT_ACTIONS;
+
+// Obtener m?dulos por categor?a
 export const getModulesByCategory = (category) => {
   return ALL_MODULES.filter(
     (moduleId) => MODULE_CONFIG[moduleId].category === category,
   );
 };
 
-// Obtener módulos hijos de un grupo
+// Obtener m?dulos hijos de un grupo
 export const getChildModules = (groupId) => {
   return MODULE_GROUPS[groupId]?.children || [];
 };
 
-// Verificar si un módulo existe
+// Verificar si un m?dulo existe
 export const moduleExists = (moduleId) => {
-  return MODULE_CONFIG.hasOwnProperty(moduleId);
+  return Object.prototype.hasOwnProperty.call(MODULE_CONFIG, moduleId);
 };
 
-// Obtener configuración de un módulo
+// Obtener configuraci?n de un m?dulo
 export const getModuleConfig = (moduleId) => {
   return MODULE_CONFIG[moduleId];
 };
+
+
+
 

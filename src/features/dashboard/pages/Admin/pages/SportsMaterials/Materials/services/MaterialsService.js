@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class MaterialsService {
   constructor() {
@@ -12,7 +12,6 @@ class MaterialsService {
       search = "",
       categoriaId = "",
       estado = "",
-      esReutilizable = null,
       stockType = null,
     } = params;
 
@@ -28,10 +27,6 @@ class MaterialsService {
 
     if (estado) {
       queryParams.estado = estado;
-    }
-
-    if (esReutilizable !== null) {
-      queryParams.esReutilizable = esReutilizable;
     }
 
     if (stockType) {
@@ -384,8 +379,6 @@ class MaterialsService {
         backendData.stockTotal ||
         backendData.stock_total ||
         stockFundacion + stockEventos,
-      esReutilizable:
-        backendData.esReutilizable || backendData.es_reutilizable || false,
       estado: backendData.estado || backendData.status || "Activo",
       hasMovements:
         backendData.hasMovements || backendData.has_movements || false,
@@ -406,6 +399,32 @@ class MaterialsService {
       category: backendData.category || null,
     };
   }
+
+  /**
+   * Obtener todos los materiales para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de materiales
+   */
+  async getAllForReport(params = {}) {
+    const queryParams = {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    };
+
+    const response = await apiClient.get(this.endpoint, queryParams);
+
+    // El backend puede devolver los materiales en response.materials o response.data
+    const materialsArray = response.materials || response.data || [];
+
+    if (response.success && materialsArray.length > 0) {
+      response.data = materialsArray.map((material) =>
+        this.transformFromBackend(material),
+      );
+    }
+
+    return response;
+  }
 }
 
 export default new MaterialsService();
+

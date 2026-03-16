@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { usePermissions } from "../hooks/usePermissions";
+import { useAuth } from "../contexts/authContext";
 import Loader from "./Loader/Loader";
 
 /**
@@ -9,11 +10,16 @@ import Loader from "./Loader/Loader";
  */
 const SmartRedirect = () => {
   const { hasModuleAccess, isAdmin, loading } = usePermissions();
+  const { user, userRole } = useAuth();
 
   // Mostrar loading mientras se cargan los permisos
   if (loading) {
     return <Loader isVisible={true} message="Cargando..." />;
   }
+
+  // Normalizar el rol del usuario
+  const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
+  const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
 
   /**
    * Orden de prioridad para la redirección
@@ -24,6 +30,7 @@ const SmartRedirect = () => {
     { path: "/dashboard/analytics", module: "dashboard", label: "Dashboard" },
 
     // 2. Gestión de citas (común para deportistas y acudientes)
+    // NOTA: Los deportistas siempre tienen acceso a citas, incluso sin permisos explícitos
     {
       path: "/dashboard/appointment-management",
       module: "appointmentManagement",
@@ -93,7 +100,7 @@ const SmartRedirect = () => {
     { path: "/dashboard/roles", module: "roles", label: "Roles" },
     {
       path: "/dashboard/materials",
-      module: "sportsEquipment",
+      module: "materials",
       label: "Materiales",
     },
     {
@@ -108,6 +115,11 @@ const SmartRedirect = () => {
     return <Navigate to="/dashboard/analytics" replace />;
   }
 
+  // Si es deportista o acudiente, redirigir a Mis Pagos
+  if (isAthleteOrGuardian) {
+    return <Navigate to="/dashboard/athlete-payments" replace />;
+  }
+
   // Buscar la primera página a la que tiene acceso
   for (const route of redirectPriority) {
     if (hasModuleAccess(route.module)) {
@@ -120,3 +132,4 @@ const SmartRedirect = () => {
 };
 
 export default SmartRedirect;
+

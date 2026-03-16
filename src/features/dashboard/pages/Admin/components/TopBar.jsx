@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { FaUserTie, FaBars } from "react-icons/fa";
 import PerfilLog from "./perfilLog";
 import { useAuth } from "../../../../../shared/contexts/authContext.jsx";
@@ -6,17 +6,6 @@ import { motion } from "framer-motion";
 
 export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
   const { user } = useAuth();
-
-  // Función para formatear el rol para mostrar
-  const formatRole = (role) => {
-    if (!role) return "";
-
-    // Convertir formato snake_case a Título Capitalizado
-    const words = role.split("_");
-    return words
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
 
   // Función para obtener el nombre completo del usuario
   const getUserDisplayName = () => {
@@ -30,10 +19,10 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
       return `${user.nombre} ${user.apellido || ""}`.trim();
     }
 
-    // Prioridad 3: Rol formateado
+    // Prioridad 3: Rol sin traducir (para ver qué llega del backend)
     const role = user?.role?.name || user?.rol;
     if (role) {
-      return formatRole(role);
+      return role; // Mostrar directamente sin traducir
     }
 
     // Fallback: Usuario
@@ -102,3 +91,4 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
     </header>
   );
 };
+

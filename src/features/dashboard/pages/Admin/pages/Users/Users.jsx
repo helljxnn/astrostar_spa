@@ -1,16 +1,23 @@
-// src/features/dashboard/pages/Admin/pages/Users/Users.jsx
+﻿// src/features/dashboard/pages/Admin/pages/Users/Users.jsx
 import React, { useState, useEffect } from "react";
 import UserViewModal from "./components/UserViewModal.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput";
+import ReportButton from "../../../../../../shared/components/ReportButton";
 import { showErrorAlert } from "../../../../../../shared/utils/alerts.js";
 import Table from "../../../../../../shared/components/Table/table";
 import PermissionGuard from "../../../../../../shared/components/PermissionGuard";
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
+import { useReportDataWithService } from "../../../../../../shared/hooks/useReportData";
 import usersService from "./services/UsersService";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig";
 
 const Users = () => {
   const { hasPermission } = usePermissions();
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(
+    usersService.getAllForReport.bind(usersService)
+  );
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,27 +82,66 @@ const Users = () => {
   }, [searchTerm]);
 
   const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  
   const handleView = (user) => {
     setUserToView(user);
     setIsViewModalOpen(true);
   };
+  
   const handleCloseViewModal = () => {
     setIsViewModalOpen(false);
     setUserToView(null);
   };
 
+  // Función para obtener datos completos del reporte
+  const getCompleteReportData = async () => {
+    return await getReportData(
+      {
+        search: searchTerm,
+      },
+      (data) => data.map(user => ({
+        nombre: user.firstName || '',
+        apellido: user.lastName || '',
+        correo: user.email || '',
+        telefono: user.phoneNumber || '',
+        identificacion: user.identification || '',
+        tipoDocumento: user.documentType?.name || '',
+        rol: user.role?.name || '',
+        estado: user.status === 'Active' ? 'Activo' : 'Inactivo',
+        fechaRegistro: user.createdAt ? new Date(user.createdAt).toLocaleDateString('es-ES') : '',
+      }))
+    );
+  };
+
   return (
     <div className="p-6 font-questrial">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <div className="sm:w-64">
+          <PermissionGuard module="users" action="Ver">
+            <ReportButton
+              dataProvider={getCompleteReportData}
+              fileName="usuarios"
+              columns={[
+                { header: 'Nombre', accessor: 'nombre' },
+                { header: 'Apellido', accessor: 'apellido' },
+                { header: 'Correo', accessor: 'correo' },
+                { header: 'Teléfono', accessor: 'telefono' },
+                { header: 'Identificación', accessor: 'identificacion' },
+                { header: 'Tipo Documento', accessor: 'tipoDocumento' },
+                { header: 'Rol', accessor: 'rol' },
+                { header: 'Estado', accessor: 'estado' },
+                { header: 'Fecha Registro', accessor: 'fechaRegistro' },
+              ]}
+            />
+          </PermissionGuard>
+          
+          <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
               onChange={handleSearchChange}
               placeholder="Buscar usuario..."
-              className="w-full"
             />
           </div>
         </div>
@@ -135,6 +181,11 @@ const Users = () => {
       {!loading && displayTotalRows > 0 && (
         <>
           <Table
+            serverPagination={true}
+            currentPage={currentPage}
+            totalRows={displayTotalRows}
+            rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+            onPageChange={(page) => setCurrentPage(page)}
             thead={{
               titles: ["Nombre", "Correo", "Identificación", "Rol", "Teléfono"],
               state: true,
@@ -179,3 +230,4 @@ const Users = () => {
 };
 
 export default Users;
+

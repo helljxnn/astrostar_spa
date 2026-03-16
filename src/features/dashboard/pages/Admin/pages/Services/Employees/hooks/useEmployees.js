@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Hook personalizado para manejar empleados
  * Proporciona estado y funciones para operaciones CRUD
  */
 
 import { useState, useEffect, useCallback } from "react";
 import employeeService from "../services/employeeService.js";
-import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
-import { useAuth } from "@shared/contexts/authContext.jsx";
-import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 export const useEmployees = () => {
   const { isAuthenticated } = useAuth();
@@ -83,9 +83,7 @@ export const useEmployees = () => {
 
         if (response.success) {
           // Recargar la lista en segundo plano (no esperar)
-          loadEmployees().catch((err) =>
-            console.warn("Error recargando lista:", err),
-          );
+          loadEmployees().catch(() => {});
 
           // Retornar toda la respuesta para que el componente pueda manejar las credenciales
           return {
@@ -220,6 +218,26 @@ export const useEmployees = () => {
     setPagination((prev) => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
+  /**
+   * Obtener todos los empleados para reporte (sin paginación)
+   */
+  const getAllEmployeesForReport = useCallback(
+    async (filters = {}) => {
+      try {
+        const response = await employeeService.getAllForReport(filters);
+        if (response.success) {
+          return response.data;
+        } else {
+          throw new Error(response.message || "Error obteniendo empleados para reporte");
+        }
+      } catch (err) {
+        showErrorAlert("Error", "No se pudieron obtener los empleados para el reporte");
+        throw err;
+      }
+    },
+    [],
+  );
+
   // Cargar datos iniciales solo si está autenticado
   useEffect(() => {
     if (isAuthenticated) {
@@ -250,8 +268,11 @@ export const useEmployees = () => {
     checkIdentificationAvailability,
     changePage,
     changeLimit,
+    getAllEmployeesForReport,
 
     // Utilidades
     refresh: loadEmployees,
   };
 };
+
+

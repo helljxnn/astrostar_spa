@@ -1,3 +1,4 @@
+﻿import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 /* Landing Pages*/
@@ -5,6 +6,7 @@ import LayoutLanding from "../features/landing/components/LayoutLanding.jsx";
 import Foundation from "../features/landing/pages/Foundation/Foundation.jsx";
 import AreasProjects from "../features/landing/pages/AreasProjects/AreasProjects.jsx";
 import Gallery from "../features/landing/pages/Gallery/Gallery.jsx";
+import Stories from "../features/landing/pages/Stories/Stories.jsx";
 import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
@@ -26,6 +28,7 @@ function AppRoutes() {
         <Route path="/fundacion" element={<Foundation />} />
         <Route path="/areas-proyectos" element={<AreasProjects />} />
         <Route path="/galeria" element={<Gallery />} />
+        <Route path="/historias" element={<Stories />} />
         <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
         <Route path="/services" element={<Services />} />
@@ -48,3 +51,4 @@ function AppRoutes() {
 }
 
 export default AppRoutes;
+

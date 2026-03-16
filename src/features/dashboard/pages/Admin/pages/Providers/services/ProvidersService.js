@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../shared/services/apiClient";
 
 class ProvidersService {
   constructor() {
@@ -130,7 +130,18 @@ class ProvidersService {
   }
 
   async checkActivePurchases(providerId) {
-    return apiClient.get(`${this.endpoint}/${providerId}/active-purchases`);
+    // Usar el endpoint correcto del backend: check-ingresos
+    const response = await apiClient.get(`${this.endpoint}/${providerId}/check-ingresos`);
+    
+    // Transformar la respuesta para mantener compatibilidad con el código existente
+    if (response.success && response.hasIngresos !== undefined) {
+      return {
+        ...response,
+        hasActivePurchases: response.hasIngresos
+      };
+    }
+    
+    return response;
   }
 
   async getProviderStats() {
@@ -174,7 +185,6 @@ class ProvidersService {
           });
         }
       } catch (error) {
-        console.error("Error enriching providers with document types:", error);
       }
     }
     
@@ -245,6 +255,52 @@ class ProvidersService {
       ...backendData,
     };
   }
+
+  /**
+   * Obtener todos los proveedores para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de proveedores
+   */
+  async getAllForReport(params = {}) {
+    const response = await apiClient.get(this.endpoint, {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    });
+
+    // Transformar la respuesta del backend al formato del frontend
+    if (response.success && response.data && Array.isArray(response.data)) {
+      response.data = response.data.map((provider) =>
+        this.transformFromBackend(provider)
+      );
+    }
+
+    return response;
+  }
+
+  /**
+   * Obtener todos los registros para reporte (sin paginación)
+   * @param {Object} params - Filtros (search, status, entityType, etc.)
+   * @returns {Promise<Object>} Todos los registros
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      
+      // Transformar datos si es necesario
+      let data = response.data || response;
+      if (Array.isArray(data)) {
+        data = data.map((provider) => this.transformFromBackend(provider));
+      }
+      
+      return {
+        success: true,
+        data: data,
+      };
+    } catch (error) {
+      return { success: false, error: error.message, data: [] };
+    }
+  }
 }
 
 export default new ProvidersService();
+

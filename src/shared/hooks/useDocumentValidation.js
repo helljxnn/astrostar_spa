@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para validar documentos en tiempo real
  * Verifica si un documento ya está registrado en el sistema o en inscripciones pendientes
  * 
@@ -86,14 +86,16 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
       // Prioridad 1: Ya está registrado como deportista (matriculado)
       if (athleteCheck && !athleteCheck.available) {
         exists = true;
-        message = 'Este número de documento ya está matriculado';
+        // Forzar mensaje simple y consistente
+        message = 'Este documento ya está matriculado';
         console.log('✅ [useDocumentValidation] Documento MATRICULADO detectado');
       }
       // Prioridad 2: Ya tiene una inscripción pendiente (del landing)
       // IMPORTANTE: Solo si NO está matriculado, NO se saltó la verificación, y el backend de inscripciones respondió correctamente
       else if (!skipInscriptionCheck && inscriptionCheck && inscriptionCheck.exists && inscriptionCheck.success !== false) {
         exists = true;
-        message = 'Este número de documento ya tiene una inscripción pendiente';
+        // Forzar mensaje simple y consistente
+        message = 'Este documento ya está inscrito';
         console.log('✅ [useDocumentValidation] Documento INSCRITO detectado');
       } else {
         console.log('✅ [useDocumentValidation] Documento DISPONIBLE');
@@ -188,3 +190,4 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
     clearCache,
   };
 };
+

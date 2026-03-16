@@ -1,4 +1,4 @@
-import styled from "styled-components";
+﻿import styled from "styled-components";
 
 const InlineLoader = ({ message = "Cargando...", size = "medium" }) => {
   const sizeConfig = {
@@ -103,3 +103,4 @@ const StyledWrapper = styled.div`
 `;
 
 export default InlineLoader;
+

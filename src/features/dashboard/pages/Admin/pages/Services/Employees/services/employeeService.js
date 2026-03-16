@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio de Empleados - Integración con Backend API
  * Maneja todas las operaciones CRUD de empleados
  */
@@ -18,6 +18,20 @@ class EmployeeService {
   async getAll(params = {}) {
     try {
       const response = await apiClient.get(this.endpoint, params);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener todos los empleados para reporte (sin paginación)
+   * @param {Object} params - Parámetros de filtrado
+   * @returns {Promise} Lista completa de empleados
+   */
+  async getAllForReport(params = {}) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/report`, params);
       return response;
     } catch (error) {
       throw error;
@@ -231,3 +245,4 @@ class EmployeeService {
 }
 
 export default new EmployeeService();
+

@@ -1,4 +1,4 @@
-import { Swiper, SwiperSlide } from "swiper/react";
+﻿import { Swiper, SwiperSlide } from "swiper/react";
 import {
   EffectFade,
   Autoplay,
@@ -129,3 +129,4 @@ export default function HeroCarousel() {
     </div>
   );
 }
+

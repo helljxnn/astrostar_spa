@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class EventMaterialsService {
   constructor() {
@@ -467,10 +467,6 @@ class EventMaterialsService {
               backendData.material.unidadMedida ||
               backendData.material.unidad_medida ||
               "unidad",
-            esReutilizable:
-              backendData.material.esReutilizable ||
-              backendData.material.es_reutilizable ||
-              false,
           }
         : null,
     };
@@ -512,3 +508,4 @@ class EventMaterialsService {
 }
 
 export default new EventMaterialsService();
+

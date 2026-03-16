@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { Z_INDEX_LAYERS } from "../constants/zIndexLayers";
 
 /**
@@ -113,3 +113,4 @@ export const useModal = (isOpen, modalType = "default") => {
 };
 
 export default useModal;
+

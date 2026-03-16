@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Componente para mostrar indicadores de validación en tiempo real
  */
 
