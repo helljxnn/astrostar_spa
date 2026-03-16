@@ -25,9 +25,9 @@ const resolveSpecialtyLabel = (key) =>
   key ? key.charAt(0).toUpperCase() + key.slice(1) : "";
 
 const APPOINTMENT_SPECIALTY_LABELS = {
-  psicologia: "Psicologia",
+  psicologia: "Psicología",
   fisioterapia: "Fisioterapia",
-  nutricion: "Nutricion",
+  nutricion: "Nutrición",
 };
 
 const APPOINTMENT_ALLOWED_SPECIALTY_KEYS = new Set(
@@ -111,7 +111,7 @@ const normalizeAppointmentFromApi = (apiAppointment) => {
     apiAppointment.specialist ||
     "Especialista";
 
-  const specialtyKey = resolveSpecialtyKey(
+  const specialtyKey = resolveAppointmentSpecialtyKey(
     apiAppointment.specialty || apiAppointment.especialidad || ""
   );
 
@@ -123,7 +123,7 @@ const normalizeAppointmentFromApi = (apiAppointment) => {
       apiAppointment.specialistId || specialist.id || apiAppointment.specialist,
     specialistName,
     specialty: specialtyKey,
-    specialtyLabel: resolveSpecialtyLabel(specialtyKey),
+    specialtyLabel: resolveAppointmentSpecialtyLabel(specialtyKey),
     description:
       apiAppointment.description || apiAppointment.motivo || apiAppointment.notes || "",
     status: apiAppointment.status || "Programado",
