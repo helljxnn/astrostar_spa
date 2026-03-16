@@ -185,7 +185,13 @@ const TopDonorsGraphic = ({ donations = [] }) => {
               </div>
               <div className="flex items-center gap-2 ml-2">
                 <span className="text-gray-600 text-xs">
-                  ${(donor.monto / 1000).toFixed(0)}K
+                  {donor.monto >= 1_000_000_000
+                    ? `$${(donor.monto / 1_000_000_000).toFixed(1)}B`
+                    : donor.monto >= 1_000_000
+                    ? `$${(donor.monto / 1_000_000).toFixed(1)}M`
+                    : donor.monto >= 1_000
+                    ? `$${(donor.monto / 1_000).toFixed(0)}K`
+                    : `$${donor.monto}`}
                 </span>
                 <span className="text-gray-800 font-semibold">
                   ({percentage}%)

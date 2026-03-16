@@ -82,7 +82,7 @@ const KPICard = ({ title, value, icon: Icon, color, trend, trendValue }) => {
         </div>
 
         <h3 className="text-sm text-gray-500 font-medium mb-2">{title}</h3>
-        <p className="text-3xl font-bold text-gray-800">{value}</p>
+        <p className="text-2xl font-bold text-gray-800 break-all leading-tight">{value}</p>
       </div>
     </motion.div>
   );

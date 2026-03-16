@@ -10,6 +10,14 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 const fmt = (n) =>
   Number(n || 0).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
+const fmtCompact = (n) => {
+  const num = Number(n || 0);
+  if (num >= 1_000_000_000) return `$${(num / 1_000_000_000).toFixed(1)}B`;
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+  return `$${fmt(num)}`;
+};
+
 const DonationsSummaryGraphic = ({ donations = [] }) => {
   const stats = useMemo(() => {
     const validas = donations.filter((d) => d.status !== "Anulada");

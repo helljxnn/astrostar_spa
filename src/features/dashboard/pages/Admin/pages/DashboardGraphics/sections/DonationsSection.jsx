@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import KPICard from "../components/KPICard";
 import DonationsSummaryGraphic from "../components/DonationsSummaryGraphic";
 import TopDonorsGraphic from "../components/TopDonorsGraphic";
-import { FaDollarSign, FaBox, FaHandHoldingHeart, FaUsers } from "react-icons/fa";
+import { FaDollarSign, FaBox, FaHandHoldingHeart } from "react-icons/fa";
 import donationsService from "../../Donations/Donations/services/donationsService";
 import donorsSponsorsService from "../../Donations/DonorsSponsors/services/donorsSponsorsService";
 
@@ -67,14 +67,19 @@ const DonationsSection = () => {
 
     const totalDonaciones = validas.length;
 
-    const donantesUnicos = new Set(
-      validas.filter((d) => d.donorSponsorId).map((d) => d.donorSponsorId)
-    ).size;
-
-    return { totalMonetario, totalEspecie, totalDonaciones, donantesUnicos };
+    return { totalMonetario, totalEspecie, totalDonaciones };
   }, [allDonations]);
 
   const fmt = (n) => Number(n || 0).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+  // Formato compacto para valores grandes en KPI cards
+  const fmtCompact = (n) => {
+    const num = Number(n || 0);
+    if (num >= 1_000_000_000) return `$${(num / 1_000_000_000).toFixed(1)}B`;
+    if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+    return `$${fmt(num)}`;
+  };
 
   if (loading) {
     return (
@@ -87,7 +92,7 @@ const DonationsSection = () => {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <KPICard
           title="Total Donaciones"
           value={stats.totalDonaciones}
@@ -105,12 +110,6 @@ const DonationsSection = () => {
           value={fmt(stats.totalEspecie)}
           icon={FaBox}
           color="purple"
-        />
-        <KPICard
-          title="Donantes Únicos"
-          value={stats.donantesUnicos}
-          icon={FaUsers}
-          color="blue"
         />
       </div>
 
