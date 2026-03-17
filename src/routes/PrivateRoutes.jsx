@@ -27,7 +27,6 @@ import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enroll
 import PaymentsManagement from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsManagementNew";
 import PaymentSettings from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentSettings";
 import AthletePayments from "../features/dashboard/pages/Admin/pages/Athletes/Payments/AthletePayments";
-import PaymentsTest from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsTest";
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -157,14 +156,6 @@ const PrivateRoutes = () => {
           element={
             <PrivateRoute module="myPayments" action="Ver">
               <AthletePayments />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="payments-test"
-          element={
-            <PrivateRoute module="paymentsManagement" action="Ver">
-              <PaymentsTest />
             </PrivateRoute>
           }
         />
