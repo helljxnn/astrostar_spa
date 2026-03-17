@@ -1,4 +1,3 @@
-﻿import React from "react";
 import { Routes, Route } from "react-router-dom";
 
 /* Landing Pages*/
@@ -7,7 +6,6 @@ import Foundation from "../features/landing/pages/Foundation/Foundation.jsx";
 import AreasProjects from "../features/landing/pages/AreasProjects/AreasProjects.jsx";
 import Gallery from "../features/landing/pages/Gallery/Gallery.jsx";
 import Stories from "../features/landing/pages/Stories/Stories.jsx";
-import Categories from "../features/landing/pages/Categories.jsx";
 import { Events } from "../features/landing/pages/Events/Events.jsx";
 import Home from "../features/landing/pages/Home/Home.jsx";
 import Donations from "../features/landing/pages/Donations/Donations.jsx";
@@ -15,8 +13,8 @@ import Login from "../features/auth/pages/Login.jsx";
 import ForgotPassword from "../features/auth/pages/ForgotPassword.jsx";
 import VerifyCode from "../features/auth/pages/VerifyCode.jsx";
 import ResetPassword from "../features/auth/pages/ResetPassword.jsx";
-import Services from "../features/landing/pages/Services/Services.jsx";
 import { Unauthorized } from "../shared/components/Unauthorized.jsx";
+import { NotFound } from "../shared/components/NotFound.jsx";
 import PrivateRoutes from "./PrivateRoutes.jsx";
 
 function AppRoutes() {
@@ -29,9 +27,7 @@ function AppRoutes() {
         <Route path="/areas-proyectos" element={<AreasProjects />} />
         <Route path="/galeria" element={<Gallery />} />
         <Route path="/historias" element={<Stories />} />
-        <Route path="/categories" element={<Categories />} />
         <Route path="/events" element={<Events />} />
-        <Route path="/services" element={<Services />} />
         <Route path="/donacion" element={<Donations />} />
       </Route>
 
@@ -45,10 +41,26 @@ function AppRoutes() {
       <Route path="/unauthorized" element={<Unauthorized />} />
 
       {/* Rutas Privadas */}
-      <Route path="/*" element={<PrivateRoutes />} />
+      <Route path="/dashboard/*" element={<PrivateRoutes />} />
+
+      {/* Catch-all público */}
+      <Route
+        path="*"
+        element={
+          <NotFound
+            title="Oops, esta ruta no existe"
+            description="Revisa la URL o vuelve a una seccion principal para continuar."
+            primaryHref="/"
+            primaryLabel="Ir al inicio"
+            secondaryHref="/dashboard"
+            secondaryLabel="Ir al dashboard"
+          />
+        }
+      />
     </Routes>
   );
 }
 
 export default AppRoutes;
+
 

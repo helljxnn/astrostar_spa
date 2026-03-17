@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/authContext';
 import apiClient from '../services/apiClient';
 
@@ -15,6 +15,11 @@ export const useDynamicPermissions = () => {
   const [error, setError] = useState(null);
   const [accessRestrictions, setAccessRestrictions] = useState(null);
 
+  const isRouteNotFoundError = (err) => {
+    const message = String(err?.message || "").toLowerCase();
+    return message.includes("route not found") || message.includes("404");
+  };
+
   const fetchPermissions = useCallback(async () => {
     if (!isAuthenticated || !user) {
       setLoading(false);
@@ -25,8 +30,26 @@ export const useDynamicPermissions = () => {
       setLoading(true);
       setError(null);
       
-      // Llamar al nuevo endpoint del backend
-      const response = await apiClient.get('/auth/permissions');
+      // Endpoint principal para permisos dinámicos.
+      let response;
+      try {
+        response = await apiClient.get('/auth/permissions');
+      } catch (permissionsError) {
+        // Fallback para entornos donde aún no exista ese endpoint.
+        if (isRouteNotFoundError(permissionsError)) {
+          response = {
+            success: true,
+            data: {
+              permissions: user?.role?.permissions || {},
+              hasActiveEnrollment: Boolean(user?.athleteId || user?.athlete_id)
+                ? false
+                : true,
+            },
+          };
+        } else {
+          throw permissionsError;
+        }
+      }
       
       if (response.success) {
         setPermissions(response.data.permissions);

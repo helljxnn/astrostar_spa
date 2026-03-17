@@ -16,12 +16,7 @@ class EmployeeService {
    * @returns {Promise} Lista de empleados con paginación
    */
   async getAll(params = {}) {
-    try {
-      const response = await apiClient.get(this.endpoint, params);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(this.endpoint, params);
   }
 
   /**
@@ -30,12 +25,7 @@ class EmployeeService {
    * @returns {Promise} Lista completa de empleados
    */
   async getAllForReport(params = {}) {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/report`, params);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/report`, params);
   }
 
   /**
@@ -44,12 +34,7 @@ class EmployeeService {
    * @returns {Promise} Datos del empleado
    */
   async getById(id) {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/${id}`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/${id}`);
   }
 
   /**
@@ -59,31 +44,19 @@ class EmployeeService {
    * @returns {Promise} Empleado creado
    */
   async create(employeeData, signatureFile = null) {
-    try {
-      // If signature file is provided, use FormData
-      if (signatureFile) {
-        const formData = new FormData();
+    if (signatureFile) {
+      const formData = new FormData();
+      formData.append("employeeData", JSON.stringify(employeeData));
+      formData.append("signature", signatureFile);
 
-        // Append employee data as JSON string
-        formData.append("employeeData", JSON.stringify(employeeData));
-
-        // Append signature file
-        formData.append("signature", signatureFile);
-
-        const response = await apiClient.post(this.endpoint, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        return response;
-      }
-
-      // Otherwise, send as regular JSON
-      const response = await apiClient.post(this.endpoint, employeeData);
-      return response;
-    } catch (error) {
-      throw error;
+      return await apiClient.post(this.endpoint, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
     }
+
+    return await apiClient.post(this.endpoint, employeeData);
   }
 
   /**
@@ -93,15 +66,7 @@ class EmployeeService {
    * @returns {Promise} Empleado actualizado
    */
   async update(id, employeeData) {
-    try {
-      const response = await apiClient.put(
-        `${this.endpoint}/${id}`,
-        employeeData,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.put(`${this.endpoint}/${id}`, employeeData);
   }
 
   /**
@@ -110,12 +75,7 @@ class EmployeeService {
    * @returns {Promise} Confirmación de eliminación
    */
   async delete(id) {
-    try {
-      const response = await apiClient.delete(`${this.endpoint}/${id}`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.delete(`${this.endpoint}/${id}`);
   }
 
   /**
@@ -123,12 +83,7 @@ class EmployeeService {
    * @returns {Promise} Estadísticas
    */
   async getStats() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/stats`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/stats`);
   }
 
   /**
@@ -136,12 +91,7 @@ class EmployeeService {
    * @returns {Promise} Tipos de empleado, roles, tipos de documento
    */
   async getReferenceData() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/reference-data`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/reference-data`);
   }
 
   /**
@@ -151,18 +101,10 @@ class EmployeeService {
    * @returns {Promise} Disponibilidad del email
    */
   async checkEmailAvailability(email, excludeUserId = null) {
-    try {
-      const params = { email };
-      if (excludeUserId) params.excludeUserId = excludeUserId;
+    const params = { email };
+    if (excludeUserId) params.excludeUserId = excludeUserId;
 
-      const response = await apiClient.get(
-        `${this.endpoint}/check-email`,
-        params,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/check-email`, params);
   }
 
   /**
@@ -172,18 +114,10 @@ class EmployeeService {
    * @returns {Promise} Disponibilidad de la identificación
    */
   async checkIdentificationAvailability(identification, excludeUserId = null) {
-    try {
-      const params = { identification };
-      if (excludeUserId) params.excludeUserId = excludeUserId;
+    const params = { identification };
+    if (excludeUserId) params.excludeUserId = excludeUserId;
 
-      const response = await apiClient.get(
-        `${this.endpoint}/check-identification`,
-        params,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/check-identification`, params);
   }
 
   /**
@@ -193,23 +127,14 @@ class EmployeeService {
    * @returns {Promise} Upload result
    */
   async uploadSignature(id, file) {
-    try {
-      const formData = new FormData();
-      formData.append("signature", file);
+    const formData = new FormData();
+    formData.append("signature", file);
 
-      const response = await apiClient.post(
-        `${this.endpoint}/${id}/signature`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.post(`${this.endpoint}/${id}/signature`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   }
 
   /**
@@ -218,14 +143,7 @@ class EmployeeService {
    * @returns {Promise} Delete result
    */
   async deleteSignature(id) {
-    try {
-      const response = await apiClient.delete(
-        `${this.endpoint}/${id}/signature`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.delete(`${this.endpoint}/${id}/signature`);
   }
 
   /**
@@ -233,16 +151,8 @@ class EmployeeService {
    * @returns {Promise} List of administrators with signatures
    */
   async getAdministratorsWithSignature() {
-    try {
-      const response = await apiClient.get(
-        `${this.endpoint}/administrators/with-signature`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return await apiClient.get(`${this.endpoint}/administrators/with-signature`);
   }
 }
 
 export default new EmployeeService();
-

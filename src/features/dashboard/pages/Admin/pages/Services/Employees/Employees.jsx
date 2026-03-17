@@ -24,7 +24,6 @@ const Employees = () => {
   const { hasPermission } = usePermissions();
   const {
     employees,
-    loading,
     pagination,
     referenceData,
     loadEmployees,
@@ -70,7 +69,7 @@ const Employees = () => {
       limit: pagination.limit,
       search: searchTerm, // Enviar búsqueda al backend
     });
-  }, [pagination.page, searchTerm]);
+  }, [loadEmployees, pagination.page, pagination.limit, searchTerm]);
 
   // Usar datos del servidor directamente (ya vienen filtrados y paginados)
   const totalRows = pagination.total;
@@ -120,10 +119,6 @@ const Employees = () => {
           return false;
         }
         await updateEmployee(editingEmployee.id, employeeData);
-        showSuccessAlert(
-          "Empleado Actualizado",
-          "El empleado ha sido actualizado exitosamente",
-        );
       } else {
         // Crear - verificar permisos
         if (!hasPermission("employees", "Crear")) {
@@ -148,7 +143,7 @@ const Employees = () => {
       setEditingEmployee(null);
       setIsModalOpen(false);
       return true;
-    } catch (error) {
+    } catch {
       // El error ya se maneja en el hook
       return false;
     }
@@ -214,9 +209,9 @@ const Employees = () => {
       );
 
       if (result.isConfirmed) {
-        await deleteEmployee(employee.id, employeeName);
+        await deleteEmployee(employee.id);
       }
-    } catch (error) {
+    } catch {
       // Error ya manejado por el hook
     }
   };
