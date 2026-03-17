@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Hook personalizado para manejar empleados
  * Proporciona estado y funciones para operaciones CRUD
  */
 
 import { useState, useEffect, useCallback } from "react";
 import employeeService from "../services/employeeService.js";
-import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
-import { useAuth } from "@shared/contexts/authContext.jsx";
-import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 export const useEmployees = () => {
   const { isAuthenticated } = useAuth();
@@ -83,9 +83,7 @@ export const useEmployees = () => {
 
         if (response.success) {
           // Recargar la lista en segundo plano (no esperar)
-          loadEmployees().catch((err) =>
-            console.warn("Error recargando lista:", err),
-          );
+          loadEmployees().catch(() => {});
 
           // Retornar toda la respuesta para que el componente pueda manejar las credenciales
           return {
@@ -276,3 +274,5 @@ export const useEmployees = () => {
     refresh: loadEmployees,
   };
 };
+
+

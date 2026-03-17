@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import { EventCard } from "./EventCard";
 import { useEffect, useRef } from "react";
 

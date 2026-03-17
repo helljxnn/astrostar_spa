@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useModal } from "../../hooks/useModal";
 
@@ -88,3 +88,4 @@ const Modal = ({
 };
 
 export default Modal;
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar deportistas
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
@@ -510,3 +510,4 @@ class AthletesService {
 }
 
 export default new AthletesService();
+

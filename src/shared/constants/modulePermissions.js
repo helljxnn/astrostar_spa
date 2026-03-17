@@ -1,4 +1,4 @@
-import {
+﻿import {
   ALL_MODULES,
   AVAILABLE_ACTIONS,
   generateAdminPermissions,
@@ -77,3 +77,4 @@ export const completePermissions = (permissions = {}, defaultValue = false) => {
 
   return completePerms;
 };
+

@@ -1,4 +1,4 @@
-// 📌 shared/models/initialDonationsData.js
+﻿// 📌 shared/models/initialDonationsData.js
 
 const donationsData = [
   {
@@ -40,3 +40,4 @@ const donationsData = [
 ];
 
 export default donationsData;
+

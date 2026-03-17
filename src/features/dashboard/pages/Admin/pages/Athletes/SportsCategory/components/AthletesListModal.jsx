@@ -298,3 +298,4 @@ const AthletesListModal = ({ isOpen, onClose, category, athletes = [] }) => {
 };
 
 export default AthletesListModal;
+

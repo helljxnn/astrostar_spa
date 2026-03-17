@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/authContext.jsx";
 import { useSidebarVisibility } from "../../../shared/hooks/useSidebarVisibility.js";
@@ -306,7 +306,7 @@ function DynamicSideBar({
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar lg:translate-x-0"
+        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar lg:translate-x-0 z-[1000]"
         initial={{ x: isMobile ? -288 : 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
@@ -369,9 +369,9 @@ function DynamicSideBar({
             {isAthleteOrGuardian && renderModule("myPayments")}
 
             {/* Grupos de módulos - Solo para NO deportistas */}
-            {!isAthleteOrGuardian && renderGroup("equipment")}
             {!isAthleteOrGuardian && renderGroup("services")}
             {!isAthleteOrGuardian && renderGroup("athletes")}
+            {!isAthleteOrGuardian && renderGroup("equipment")}
             {!isAthleteOrGuardian && renderGroup("donations")}
             {!isAthleteOrGuardian && renderGroup("events")}
           </div>
@@ -417,4 +417,7 @@ function DynamicSideBar({
 
 export default DynamicSideBar;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> c8f3b22b8250b4ae4e4c350be7c9fe7f8ce526f5

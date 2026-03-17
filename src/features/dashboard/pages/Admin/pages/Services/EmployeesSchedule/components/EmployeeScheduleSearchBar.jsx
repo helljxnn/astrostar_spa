@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 
 const EmployeeScheduleSearchBar = ({ onSearch }) => {
@@ -32,3 +32,4 @@ const EmployeeScheduleSearchBar = ({ onSearch }) => {
 };
 
 export default EmployeeScheduleSearchBar;
+

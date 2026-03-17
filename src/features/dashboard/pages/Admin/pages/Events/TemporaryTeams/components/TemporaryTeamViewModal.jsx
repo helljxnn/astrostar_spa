@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X, UserCheck, Users } from "lucide-react";
@@ -40,6 +40,13 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
   };
 
   const teamTypeInfo = getTeamTypeInfo();
+  const secondTrainerName =
+    team.segundoEntrenador ||
+    team.segundoEntrenadorData?.name ||
+    team.secondCoach ||
+    null;
+  const shouldShowSecondTrainer =
+    Boolean(secondTrainerName) || Boolean(team.segundoEntrenadorData);
 
   const deportistasList = team.deportistas || team.jugadoras || [];
   const cantidadDeportistas =
@@ -197,7 +204,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
           </motion.div>
 
           {/* Información del Segundo Entrenador - Solo si existe */}
-          {team.segundoEntrenador && (
+          {shouldShowSecondTrainer && (
             <motion.div
               className="mb-3"
               initial={{ opacity: 0, y: 10 }}
@@ -215,7 +222,7 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
                   </label>
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <p className="text-gray-900 text-sm font-medium">
-                      {team.segundoEntrenador}
+                      {secondTrainerName || "No especificado"}
                     </p>
                   </div>
                 </div>
@@ -375,3 +382,4 @@ const TemporaryTeamViewModal = ({ isOpen, onClose, team }) => {
 };
 
 export default TemporaryTeamViewModal;
+

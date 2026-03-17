@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Hook personalizado para manejar eventos
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -91,6 +91,10 @@ export const useEvents = () => {
       categoria: eventCategory, // Categoría del evento (EventCategory)
       categoriasDeportivas: categoryNames.join(", ") || "", // Categorías deportivas para mostrar
       categoryIds: categoryIds, // IDs de categorías deportivas para el formulario
+      sportsCategoriesData: categories.map((sc) => ({ // Array completo para filtros
+        id: sc.sportsCategoryId,
+        nombre: sc.sportsCategory?.nombre || "",
+      })),
       estado: estadoParaLista, // Para mostrar en la lista
       estadoOriginal: estadoParaModal, // Para el modal de edición
       publicar: event.publish,
@@ -106,7 +110,8 @@ export const useEvents = () => {
       end: createLocalDate(endDate, event.endTime),
       title: event.name,
       // Preservar _count para validaciones
-      _count: event._count || { participants: 0, eventMaterials: 0 },
+      _count: event._count || { participants: 0 },
+      donationMaterialsCount: event.donationMaterialsCount ?? 0,
     };
   };
 
@@ -384,3 +389,4 @@ export const useEvents = () => {
     refresh: loadEvents,
   };
 };
+

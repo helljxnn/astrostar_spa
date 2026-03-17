@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+﻿import { useEffect } from 'react';
 import { initInstantTooltips } from '../utils/instantTooltip';
 
 /**
@@ -14,3 +14,4 @@ export function useInstantTooltip() {
     return cleanup;
   }, []);
 }
+

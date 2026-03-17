@@ -1,4 +1,4 @@
-// 📊 DATOS DE EVENTOS - Con soporte completo para eventos multi-día
+﻿// 📊 DATOS DE EVENTOS - Con soporte completo para eventos multi-día
 export const eventsData = [
   {
     id: 1,
@@ -415,3 +415,4 @@ export const getCountdownEvent = (events) => {
 
   return upcomingEvents[0] || null;
 };
+

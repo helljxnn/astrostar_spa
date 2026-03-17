@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio de Empleados - Integración con Backend API
  * Maneja todas las operaciones CRUD de empleados
  */
@@ -245,3 +245,4 @@ class EmployeeService {
 }
 
 export default new EmployeeService();
+

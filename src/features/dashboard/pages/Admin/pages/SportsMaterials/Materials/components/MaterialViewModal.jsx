@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 import { FaEdit } from "react-icons/fa";
 import { formatDate } from "../../shared/utils/stockCalculations";
 import { formatStock } from "../../../../../../../../shared/utils/numberFormat";
@@ -174,3 +174,4 @@ const MaterialViewModal = ({ isOpen, onClose, material, onEdit, canEdit }) => {
 };
 
 export default MaterialViewModal;
+

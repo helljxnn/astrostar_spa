@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, UserCheck, X, Check, Filter, Info } from "lucide-react";
+import { Users, UserCheck, X, Check } from "lucide-react";
 import TeamsService from "../services/TeamsService";
 import Pagination from "../../../../../../../../shared/components/Table/Pagination";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig";
@@ -14,20 +14,17 @@ const SelectionModal = ({
   mode = "trainer",
   onSelect,
   selectedItems = [],
-  currentCategoria = null,
   teamType = null,
   forceFoundationType = false,
   excludeTrainerId = null, // ID del entrenador a excluir (para segundo entrenador)
   initialTabType = null, // Tipo inicial para abrir el tab correcto (fundacion o temporal)
   unavailableAthleteIds = [], // IDs de deportistas que ya están en otros equipos
-  excludeTeamId = null, // ID del equipo actual (para edición)
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState(0);
   const [currentPage, setCurrentPage] = useState(
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE;
@@ -50,7 +47,6 @@ const SelectionModal = ({
       // Limpiar datos cuando se cierra
       setData([]);
       setSearchTerm("");
-      setSelectedCategory("");
       setCurrentPage(1);
       setActiveTab(0);
     }
@@ -149,28 +145,6 @@ const SelectionModal = ({
     }
   }, [isOpen, groupedData, initialTabType, activeTab]);
 
-  // Detectar la categoría seleccionada automáticamente
-  const autoSelectedCategory = useMemo(() => {
-    if (mode !== "athletes") return null;
-    if (selectedItems.length === 0) return null;
-
-    // Buscar el primer deportista de fundación seleccionado
-    const firstFoundationAthlete = selectedItems.find(
-      (item) => item.type === "fundacion" && item.categoria,
-    );
-    return firstFoundationAthlete?.categoria || null;
-  }, [selectedItems, mode]);
-
-  // Actualizar el filtro de categoría cuando se detecta una categoría seleccionada
-  useEffect(() => {
-    if (autoSelectedCategory && selectedCategory !== autoSelectedCategory) {
-      setSelectedCategory(autoSelectedCategory);
-    } else if (!autoSelectedCategory && selectedCategory !== "") {
-      // Si no hay categoría seleccionada, limpiar el filtro
-      setSelectedCategory("");
-    }
-  }, [autoSelectedCategory]);
-
   // ✅ CORRECTO: Usar solo los datos del tab actual
   const currentGroupData = useMemo(() => {
     const groupData = groupedData[activeTab]?.items || [];
@@ -178,36 +152,8 @@ const SelectionModal = ({
   }, [groupedData, activeTab]);
 
   const availableItems = useMemo(() => {
-    let items = currentGroupData;
-
-    // Solo filtrar si hay deportistas de fundación seleccionados con categoría
-    const hasFoundationAthletesSelected = selectedItems.some(
-      (item) => item.type === "fundacion" && item.categoria,
-    );
-
-    if (
-      mode === "athletes" &&
-      autoSelectedCategory &&
-      hasFoundationAthletesSelected &&
-      groupedData[activeTab]?.source === "fundacion"
-    ) {
-      items = items.filter((item) => {
-        // Mantener los ya seleccionados
-        if (selectedItems.some((s) => s.id === item.id)) return true;
-        // Solo mostrar deportistas de la misma categoría
-        return item.categoria === autoSelectedCategory;
-      });
-    }
-
-    return items;
-  }, [
-    currentGroupData,
-    mode,
-    autoSelectedCategory,
-    groupedData,
-    activeTab,
-    selectedItems,
-  ]);
+    return currentGroupData;
+  }, [currentGroupData]);
 
   const filteredItems = useMemo(() => {
     let filtered = availableItems;
@@ -222,20 +168,8 @@ const SelectionModal = ({
             item.categoria?.toLowerCase().includes(search)),
       );
     }
-
-    // Filtro de categoría (solo para deportistas de fundación)
-    if (selectedCategory && mode === "athletes") {
-      filtered = filtered.filter((item) => item.categoria === selectedCategory);
-    }
-
-    if (mode === "athletes" && selectedCategory) {
-      filtered = filtered.filter((item) => {
-        if (item.type === "temporal") return true;
-        return item.categoria === selectedCategory;
-      });
-    }
     return filtered;
-  }, [availableItems, searchTerm, selectedCategory, mode]);
+  }, [availableItems, searchTerm, mode]);
 
   const totalRows = filteredItems.length;
   const totalPages = Math.ceil(totalRows / rowsPerPage);
@@ -267,37 +201,12 @@ const SelectionModal = ({
 
     // Si no hay selecciones, todo está disponible
     if (selectedItems.length === 0) {
-      // CAMBIO: Eliminada restricción de categoría para equipos de fundación
-      // Ahora permitimos deportistas de diferentes categorías
-      // if (
-      //   mode === "athletes" &&
-      //   item.type === "fundacion" &&
-      //   currentCategoria &&
-      //   item.categoria
-      // ) {
-      //   return item.categoria === currentCategoria;
-      // }
       return true;
     }
 
     // Si hay elementos seleccionados, solo permitir del mismo tipo
     const firstSelectedType = selectedItems[0].type;
     if (item.type !== firstSelectedType) return false;
-
-    // CAMBIO: Eliminada restricción de categoría para deportistas de fundación
-    // Ahora permitimos deportistas de diferentes categorías en el mismo equipo
-    // if (mode === "athletes" && item.type === "fundacion") {
-    //   const hasFoundationAthletesSelected = selectedItems.some(
-    //     (s) => s.type === "fundacion" && s.categoria,
-    //   );
-    //   if (
-    //     hasFoundationAthletesSelected &&
-    //     autoSelectedCategory &&
-    //     item.categoria
-    //   ) {
-    //     return item.categoria === autoSelectedCategory;
-    //   }
-    // }
 
     return true;
   };
@@ -351,30 +260,41 @@ const SelectionModal = ({
   const handleTabChange = (index) => {
     setActiveTab(index);
     setSearchTerm("");
-    setSelectedCategory("");
     setCurrentPage(1);
-  };
-
-  const getCurrentTeamInfo = () => {
-    if (!currentTeamType) return { type: null, category: null };
-
-    const type = currentTeamType === "fundacion" ? "Fundación" : "Temporales";
-    const category = currentCategoria || null;
-    return { type, category };
-  };
-
-  const getAvailabilityStats = () => {
-    const totalInCurrentTab = currentGroupData.length;
-    const availableCount = availableItems.length;
-    const unavailableCount = totalInCurrentTab - availableCount;
-
-    return { totalInCurrentTab, availableCount, unavailableCount };
   };
 
   if (!isOpen) return null;
 
-  const teamInfo = getCurrentTeamInfo();
-  const availabilityStats = getAvailabilityStats();
+  const selectableFilteredItems = filteredItems.filter((item) => {
+    const isTemporalUnavailable =
+      mode === "athletes" &&
+      item.type === "temporal" &&
+      unavailableAthleteIds.includes(item.id);
+    return isItemAvailable(item) && !isTemporalUnavailable;
+  });
+
+  const allFilteredSelected =
+    isMultiSelect &&
+    selectableFilteredItems.length > 0 &&
+    selectableFilteredItems.every((item) =>
+      selectedItems.some((selected) => selected.id === item.id),
+    );
+
+  const handleToggleSelectAll = () => {
+    if (!isMultiSelect || selectableFilteredItems.length === 0) return;
+
+    if (allFilteredSelected) {
+      const selectableIds = new Set(selectableFilteredItems.map((item) => item.id));
+      onSelect(selectedItems.filter((item) => !selectableIds.has(item.id)));
+      return;
+    }
+
+    const selectedIds = new Set(selectedItems.map((item) => item.id));
+    const itemsToAdd = selectableFilteredItems
+      .filter((item) => !selectedIds.has(item.id))
+      .map((item) => prepareItemData(item));
+    onSelect([...selectedItems, ...itemsToAdd]);
+  };
 
   const modalContent = (
     <AnimatePresence>
@@ -394,7 +314,7 @@ const SelectionModal = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-primary-purple to-primary-blue p-4 sm:p-6 text-white">
+          <div className="bg-primary-purple p-4 sm:p-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {icon}
@@ -473,42 +393,33 @@ const SelectionModal = ({
                   />
                 </div>
               </div>
-              {mode === "athletes" &&
-                groupedData[activeTab]?.source === "fundacion" && (
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4 text-gray-500" />
-                    <select
-                      value={selectedCategory}
-                      onChange={(e) => {
-                        setSelectedCategory(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-purple focus:border-transparent"
-                    >
-                      <option value="">Todas las categorías</option>
-                      {[
-                        ...new Set(
-                          currentGroupData
-                            .filter((item) => item.categoria)
-                            .map((item) => item.categoria),
-                        ),
-                      ].map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+              {isMultiSelect && (
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  disabled={selectableFilteredItems.length === 0}
+                  className={`w-full md:w-auto px-4 py-3 rounded-lg text-sm font-semibold border transition-colors ${
+                    selectableFilteredItems.length === 0
+                      ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
+                      : allFilteredSelected
+                        ? "border-primary-purple text-primary-purple bg-purple-50 hover:bg-purple-100"
+                        : "border-primary-purple bg-primary-purple text-white hover:opacity-90"
+                  }`}
+                >
+                  {allFilteredSelected
+                    ? `Quitar selección (${selectableFilteredItems.length})`
+                    : `Seleccionar todas (${selectableFilteredItems.length})`}
+                </button>
+              )}
             </div>
           </div>
 
           {/* Contenido - Tabla */}
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="p-4 sm:p-6 flex-1 overflow-auto">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto border border-gray-200 rounded-xl">
                 <table className="w-full">
-                  <thead>
+                  <thead className="bg-gray-50">
                     <tr className="border-b border-gray-200">
                       <th className="text-left py-3 px-4 font-semibold text-gray-700">
                         Seleccionar
@@ -560,15 +471,6 @@ const SelectionModal = ({
                           ) {
                             return `No se pueden seleccionar ${mode === "trainer" ? "entrenadores" : "deportistas"} de este tipo`;
                           }
-                          // CAMBIO: Eliminado mensaje de categoría mixta
-                          // if (
-                          //   mode === "athletes" &&
-                          //   item.type === "fundacion" &&
-                          //   currentCategoria &&
-                          //   item.categoria !== currentCategoria
-                          // ) {
-                          //   return "Solo se pueden seleccionar deportistas de la misma categoría";
-                          // }
                           return "No disponible";
                         };
 
@@ -578,8 +480,8 @@ const SelectionModal = ({
                             className={`border-b border-gray-100 transition-colors relative group ${
                               selected && isTemporalUnavailable
                                 ? "bg-rose-50 cursor-pointer"
-                                : selected
-                                  ? "bg-purple-50 cursor-pointer"
+                              : selected
+                                  ? "bg-purple-50/70 cursor-pointer"
                                   : isTemporalUnavailable
                                     ? "bg-rose-50/50 cursor-not-allowed opacity-80 hover:bg-rose-50"
                                     : !isAvailable
@@ -606,19 +508,18 @@ const SelectionModal = ({
                             <td className="py-3 px-4">
                               <div className="flex items-center">
                                 {isMultiSelect ? (
-                                  <input
-                                    type="checkbox"
-                                    className={`w-4 h-4 focus:ring-primary-purple border-gray-300 rounded ${
+                                  <button
+                                    type="button"
+                                    className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${
                                       selected
-                                        ? "text-primary-purple"
-                                        : "text-gray-300"
+                                        ? "bg-primary-purple border-primary-purple"
+                                        : !isAvailable &&
+                                            !(isTemporalUnavailable && selected)
+                                          ? "border-gray-300 bg-gray-100"
+                                          : "border-gray-300 bg-white hover:border-primary-purple"
                                     }`}
-                                    checked={selected}
-                                    disabled={
-                                      !isAvailable &&
-                                      !(isTemporalUnavailable && selected)
-                                    }
-                                    onChange={(e) => {
+                                    disabled={!isAvailable && !(isTemporalUnavailable && selected)}
+                                    onClick={(e) => {
                                       e.stopPropagation();
                                       // Permitir deseleccionar si está seleccionada y es temporal no disponible
                                       if (isTemporalUnavailable && selected) {
@@ -630,7 +531,9 @@ const SelectionModal = ({
                                         handleSelect(item);
                                       }
                                     }}
-                                  />
+                                  >
+                                    {selected && <Check className="w-3.5 h-3.5 text-white" />}
+                                  </button>
                                 ) : (
                                   <div
                                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
@@ -717,15 +620,14 @@ const SelectionModal = ({
                         >
                           <div className="text-4xl mb-4">🔍</div>
                           <p>
-                            {searchTerm || selectedCategory
+                            {searchTerm
                               ? "No se encontraron resultados con los filtros aplicados"
                               : "No hay elementos disponibles"}
                           </p>
-                          {(searchTerm || selectedCategory) && (
+                          {searchTerm && (
                             <button
                               onClick={() => {
                                 setSearchTerm("");
-                                setSelectedCategory("");
                               }}
                               className="mt-2 text-primary-purple hover:underline"
                             >
@@ -789,3 +691,4 @@ const SelectionModal = ({
 };
 
 export default SelectionModal;
+

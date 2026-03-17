@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class CategoriesService {
   constructor() {
@@ -170,10 +170,10 @@ class CategoriesService {
         data: response.data || response,
       };
     } catch (error) {
-      console.error('Error fetching categories report:', error);
       return { success: false, error: error.message, data: [] };
     }
   }
 }
 
 export default new CategoriesService();
+

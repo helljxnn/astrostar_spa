@@ -1,4 +1,4 @@
-const guardiansData = [
+﻿const guardiansData = [
   {
     id: 101,
     nombreCompleto: "Monica María Sosa Calle",
@@ -35,3 +35,4 @@ const guardiansData = [
 ];
 
 export default guardiansData;
+

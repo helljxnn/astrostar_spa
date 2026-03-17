@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidades para formateo de moneda en el módulo de pagos
  */
 
@@ -31,3 +31,4 @@ export const formatNumber = (amount) => {
 
   return new Intl.NumberFormat('es-CO').format(amount);
 };
+

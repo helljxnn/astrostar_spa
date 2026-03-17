@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { FaUpload, FaTrash, FaImage } from "react-icons/fa";
 
@@ -181,3 +181,4 @@ const SignatureUpload = ({
 };
 
 export default SignatureUpload;
+

@@ -1,4 +1,4 @@
-// Utilidad para tooltips instantáneos sin modificar componentes
+﻿// Utilidad para tooltips instantáneos sin modificar componentes
 
 let tooltipElement = null;
 
@@ -80,3 +80,4 @@ export function initInstantTooltips() {
     }
   };
 }
+

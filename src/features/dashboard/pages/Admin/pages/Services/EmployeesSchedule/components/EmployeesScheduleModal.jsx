@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import SearchableSelect from "../../../../../../../../shared/components/SearchableSelect";
 import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
@@ -22,6 +23,8 @@ export default function ScheduleModal({
     empleadoId: "",
     empleado: "",
     cargo: "",
+    specialty: "",
+    specialtyLabel: "",
     fecha: "",
     horaInicio: "",
     horaFin: "",
@@ -42,12 +45,24 @@ export default function ScheduleModal({
     return map;
   }, [employeesOptions]);
 
+  const employeeSearchOptions = useMemo(
+    () =>
+      employeesOptions.map((emp) => ({
+        value: String(emp.value),
+        label: emp.label,
+        sublabel: emp.cargo || "",
+      })),
+    [employeesOptions],
+  );
+
   useEffect(() => {
     if (!schedule) return;
     const filledForm = {
       empleadoId: schedule.empleadoId || "",
       empleado: schedule.empleado || "",
       cargo: schedule.cargo || "",
+      specialty: schedule.specialty || "",
+      specialtyLabel: schedule.specialtyLabel || "",
       fecha: schedule.fecha || "",
       horaInicio: schedule.horaInicio || "",
       horaFin: schedule.horaFin || "",
@@ -65,11 +80,25 @@ export default function ScheduleModal({
     if (!isNew) setOriginalForm(filledForm);
   }, [schedule, isNew]);
 
+  useEffect(() => {
+    if (!form.empleadoId) return;
+    if (form.specialty && form.specialtyLabel) return;
+    const emp = employeesMap[form.empleadoId] || employeesMap[Number(form.empleadoId)];
+    if (!emp) return;
+    setForm((prev) => ({
+      ...prev,
+      specialty: prev.specialty || emp.specialty || "",
+      specialtyLabel: prev.specialtyLabel || emp.specialtyLabel || "",
+      cargo: prev.cargo || emp.cargo || "",
+    }));
+  }, [form.empleadoId, form.specialty, form.specialtyLabel, employeesMap]);
+
   const handleChange = (name, value) => {
     if (isReadOnly) return;
     if (name === "repeticion") {
       if (value === "personalizado") {
         setShowCustomModal(true);
+        return;
       }
       setForm((prev) => ({
         ...prev,
@@ -93,6 +122,8 @@ export default function ScheduleModal({
       empleadoId: parsedValue,
       empleado: emp?.label || "",
       cargo: emp?.cargo || "",
+      specialty: emp?.specialty || "",
+      specialtyLabel: emp?.specialtyLabel || "",
     }));
     handleChangeValidation("empleadoId", parsedValue, { ...form, empleadoId: parsedValue });
   };
@@ -155,6 +186,25 @@ export default function ScheduleModal({
       ? form.customRecurrence.label
       : "";
 
+  const isHealthProfessionalCargo = useMemo(() => {
+    const cargoKey = String(form.cargo || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+    return cargoKey === "profesional de la salud" || cargoKey === "profesional de salud";
+  }, [form.cargo]);
+
+  const specialtyDisplay = useMemo(() => {
+    if (form.specialtyLabel) return form.specialtyLabel;
+    const labels = {
+      psicologia: "Psicologia",
+      fisioterapia: "Fisioterapia",
+      nutricion: "Nutricion",
+    };
+    return labels[form.specialty] || "";
+  }, [form.specialty, form.specialtyLabel]);
+
   const disabledFields = isReadOnly;
 
   return createPortal(
@@ -165,7 +215,7 @@ export default function ScheduleModal({
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
           transition={{ type: "spring", damping: 20, stiffness: 200 }}
-          className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] border border-gray-100 flex flex-col overflow-hidden"
+          className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[92vh] border border-gray-100 flex flex-col overflow-hidden"
         >
           <div className="flex-shrink-0 relative px-6 py-5 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-primary-purple to-primary-blue text-transparent bg-clip-text">
@@ -186,33 +236,25 @@ export default function ScheduleModal({
             </button>
           </div>
 
-          <div className="modal-body flex-1 overflow-y-auto px-6 py-6">
+          <div className="modal-body flex-1 overflow-y-auto md:overflow-visible px-6 py-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="md:col-span-2 space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   Empleado *
                 </label>
-                <select
-                  value={form.empleadoId}
-                  onChange={(e) => handleEmployeeChange(e.target.value)}
-                  onBlur={() => handleBlur("empleadoId", form.empleadoId, form)}
-                  className="w-full border rounded-xl px-4 py-3 bg-gray-50 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30 outline-none disabled:bg-gray-100"
-                  required
-                  disabled={disabledFields || isLoadingEmployees || lockEmployeeSelection}
-                >
-                  <option value="">-- Selecciona un empleado --</option>
-                  {employeesOptions.map((emp) => (
-                    <option key={emp.value} value={emp.value}>
-                      {emp.label}
-                      {emp.cargo ? ` - ${emp.cargo}` : ""}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  options={employeeSearchOptions}
+                  value={String(form.empleadoId || "")}
+                  onChange={(val) => handleEmployeeChange(val)}
+                  loading={isLoadingEmployees}
+                  disabled={
+                    disabledFields || isLoadingEmployees || lockEmployeeSelection
+                  }
+                  placeholder="Buscar empleado..."
+                  error={touched.empleadoId && errors.empleadoId ? errors.empleadoId : ""}
+                />
                 {isLoadingEmployees && (
                   <p className="text-xs text-gray-500">Cargando empleados...</p>
-                )}
-                {errors.empleadoId && touched.empleadoId && (
-                  <p className="text-red-500 text-sm">{errors.empleadoId}</p>
                 )}
               </div>
 
@@ -228,6 +270,21 @@ export default function ScheduleModal({
                   placeholder="Cargo del empleado"
                 />
               </div>
+
+              {isHealthProfessionalCargo && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Especialidad
+                  </label>
+                  <input
+                    type="text"
+                    value={specialtyDisplay || "Sin especialidad"}
+                    readOnly
+                    className="w-full border rounded-xl px-4 py-3 bg-gray-100 cursor-not-allowed text-gray-700"
+                    placeholder="Especialidad del profesional"
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <FormField
@@ -292,8 +349,17 @@ export default function ScheduleModal({
             </div>
 
             {recurrenceLabel && (
-              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200">
-                {recurrenceLabel}
+              <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border border-dashed border-gray-200 flex items-center justify-between">
+                <span>{recurrenceLabel}</span>
+                {!disabledFields && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomModal(true)}
+                    className="ml-3 px-3 py-1 text-xs bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition font-medium"
+                  >
+                    Editar
+                  </button>
+                )}
               </div>
             )}
 
@@ -337,6 +403,7 @@ export default function ScheduleModal({
       {showCustomModal && !disabledFields && (
         <CustomRecurrenceModal
           onClose={() => setShowCustomModal(false)}
+          initialData={form.customRecurrence}
           onSave={(customData) => {
             setForm((prev) => ({
               ...prev,

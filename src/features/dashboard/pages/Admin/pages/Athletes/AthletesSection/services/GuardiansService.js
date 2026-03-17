@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio para gestionar acudientes
  * Maneja todas las peticiones HTTP al backend de acudientes
  */
@@ -526,3 +526,4 @@ if (response && response.success) {
 }
 
 export default new GuardiansService();
+

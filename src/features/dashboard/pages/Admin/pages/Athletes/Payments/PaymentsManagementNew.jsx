@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { FaFilter } from "react-icons/fa";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
 import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
@@ -91,7 +91,7 @@ const PaymentsManagementNew = () => {
   };
   // ── Rechazar ──
   const handleReject = (payment) => {
-    if (!hasPermission("paymentsManagement", "Editar")) return;
+    if (!hasPermission("paymentsManagement", "Rechazar")) return;
     setPaymentToReject(payment);
     setIsRejectModalOpen(true);
   };

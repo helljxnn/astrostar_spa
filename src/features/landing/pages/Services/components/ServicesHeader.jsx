@@ -1,4 +1,4 @@
-// src/features/services/components/ServicesHeader.jsx
+﻿// src/features/services/components/ServicesHeader.jsx
 import { motion } from "framer-motion";
 
 export const ServicesHeader = () => {
@@ -30,3 +30,4 @@ export const ServicesHeader = () => {
     </header>
   );
 };
+

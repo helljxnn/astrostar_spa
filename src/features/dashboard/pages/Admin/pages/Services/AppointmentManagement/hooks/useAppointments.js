@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+﻿import { useState, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "../../../../../../../../shared/contexts/authContext";
 import { addMinutes, format } from "date-fns";
 import appointmentService from "../services/appointmentService";
@@ -9,13 +9,6 @@ import {
   showSuccessAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
 
-const SPECIALTY_LABELS = {
-  psicologia: "Psicología Deportiva",
-  fisioterapia: "Fisioterapia",
-  nutricion: "Nutrición",
-  medicina: "Medicina Deportiva",
-};
-
 const normalizeKey = (value = "") =>
   String(value)
     .toLowerCase()
@@ -25,16 +18,37 @@ const normalizeKey = (value = "") =>
 
 const resolveSpecialtyKey = (value) => {
   const key = normalizeKey(value);
+  return key || "";
+};
+
+const resolveSpecialtyLabel = (key) =>
+  key ? key.charAt(0).toUpperCase() + key.slice(1) : "";
+
+const APPOINTMENT_SPECIALTY_LABELS = {
+  psicologia: "Psicología",
+  fisioterapia: "Fisioterapia",
+  nutricion: "Nutrición",
+};
+
+const APPOINTMENT_ALLOWED_SPECIALTY_KEYS = new Set(
+  Object.keys(APPOINTMENT_SPECIALTY_LABELS),
+);
+
+const resolveAppointmentSpecialtyKey = (value) => {
+  const key = resolveSpecialtyKey(value);
   if (!key) return "";
   if (key.includes("psicolog")) return "psicologia";
   if (key.includes("fisioterap") || key.includes("fisio")) return "fisioterapia";
   if (key.includes("nutric")) return "nutricion";
-  if (key.includes("medic")) return "medicina";
   return key;
 };
 
-const resolveSpecialtyLabel = (key) =>
-  SPECIALTY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : "");
+const resolveAppointmentSpecialtyLabel = (key) =>
+  APPOINTMENT_SPECIALTY_LABELS[key] || resolveSpecialtyLabel(key);
+
+const FIXED_APPOINTMENT_SPECIALTY_OPTIONS = Object.entries(
+  APPOINTMENT_SPECIALTY_LABELS,
+).map(([value, label]) => ({ value, label }));
 
 const buildFullName = (user = {}) =>
   `${user.firstName || user.nombres || ""} ${user.middleName || ""} ${
@@ -97,7 +111,7 @@ const normalizeAppointmentFromApi = (apiAppointment) => {
     apiAppointment.specialist ||
     "Especialista";
 
-  const specialtyKey = resolveSpecialtyKey(
+  const specialtyKey = resolveAppointmentSpecialtyKey(
     apiAppointment.specialty || apiAppointment.especialidad || ""
   );
 
@@ -109,7 +123,7 @@ const normalizeAppointmentFromApi = (apiAppointment) => {
       apiAppointment.specialistId || specialist.id || apiAppointment.specialist,
     specialistName,
     specialty: specialtyKey,
-    specialtyLabel: resolveSpecialtyLabel(specialtyKey),
+    specialtyLabel: resolveAppointmentSpecialtyLabel(specialtyKey),
     description:
       apiAppointment.description || apiAppointment.motivo || apiAppointment.notes || "",
     status: apiAppointment.status || "Programado",
@@ -204,27 +218,44 @@ export const useAppointments = () => {
     [isAthleteUser, isAdminUser, athleteIdFromUser]
   );
 
-  const specialtyOptions = useMemo(() => {
-    const map = new Map();
-    specialists.forEach((spec) => {
-      if (!spec.specialty) return;
-      if (!map.has(spec.specialty)) {
-        map.set(
-          spec.specialty,
-          spec.specialtyLabel || resolveSpecialtyLabel(spec.specialty)
-        );
-      }
+  // Especialistas de salud: solo los que tienen especialidad de salud (excluye Administrador, etc.)
+  const healthSpecialists = useMemo(() => {
+    return specialists.filter((spec) => {
+      if (!spec.specialty) return false;
+      const key = resolveAppointmentSpecialtyKey(spec.specialty);
+      return APPOINTMENT_ALLOWED_SPECIALTY_KEYS.has(key);
     });
-    const computed = Array.from(map.entries()).map(([value, label]) => ({
-      value,
-      label,
-    }));
-    if (computed.length > 0) return computed;
-    return Object.entries(SPECIALTY_LABELS).map(([value, label]) => ({
-      value,
-      label,
-    }));
   }, [specialists]);
+
+  // Especialidades de citas siempre visibles (regla de negocio)
+  const healthSpecialtyOptions = useMemo(
+    () => FIXED_APPOINTMENT_SPECIALTY_OPTIONS,
+    [],
+  );
+
+  // ¿El usuario logueado es empleado de salud?
+  const isHealthEmployee = useMemo(() => {
+    if (isAdminUser || isAthleteUser) return false;
+    const roleName = (user?.role?.name || user?.rol || "").toString().toLowerCase();
+    // Cualquier rol que no sea admin ni deportista se considera empleado de salud
+    return roleName !== "" && roleName !== "admin" && roleName !== "administrador" && roleName !== "athlete" && roleName !== "deportista";
+  }, [user, isAdminUser, isAthleteUser]);
+
+  // ID del especialista correspondiente al usuario logueado
+  const currentSpecialistId = useMemo(() => {
+    if (!isHealthEmployee) return null;
+    const userId = user?.id || user?.userId;
+    if (!userId) return null;
+    const match = specialists.find(
+      (s) => String(s.id) === String(userId) || String(s.specialistId) === String(userId)
+    );
+    return match ? match.id : null;
+  }, [isHealthEmployee, user, specialists]);
+
+  const specialtyOptions = useMemo(
+    () => FIXED_APPOINTMENT_SPECIALTY_OPTIONS,
+    [],
+  );
 
   const loadAppointments = useCallback(async (params = {}) => {
     setLoading(true);
@@ -318,7 +349,12 @@ export const useAppointments = () => {
       const response = await appointmentService.getSpecialists();
       const rawList = response?.data || response?.specialists || [];
       const formatted = rawList.map((spec) => {
-        const specialtyKey = resolveSpecialtyKey(spec.specialty || spec.cargo);
+        const specialtyKey = resolveAppointmentSpecialtyKey(
+          spec.specialty || spec.cargo || spec.role,
+        );
+        if (!APPOINTMENT_ALLOWED_SPECIALTY_KEYS.has(specialtyKey)) {
+          return null;
+        }
         return {
           id: spec.id || spec.specialistId,
           specialistId: spec.id || spec.specialistId,
@@ -326,9 +362,10 @@ export const useAppointments = () => {
           nombre: spec.nombre || spec.name || "",
           cargo: spec.cargo || spec.role || "",
           specialty: specialtyKey,
-          specialtyLabel: spec.specialtyLabel || resolveSpecialtyLabel(specialtyKey),
+          specialtyLabel:
+            spec.specialtyLabel || resolveAppointmentSpecialtyLabel(specialtyKey),
         };
-      });
+      }).filter(Boolean);
       setSpecialists(formatted);
     } catch (error) {
       console.error(error);
@@ -489,10 +526,18 @@ export const useAppointments = () => {
   );
 
   const completeAppointment = useCallback(
-    async (id, conclusion) => {
+    async (id, conclusion, file = null) => {
       setLoading(true);
       try {
-        const response = await appointmentService.complete(id, { conclusion });
+        let response;
+        if (file) {
+          const formData = new FormData();
+          formData.append('conclusion', conclusion);
+          formData.append('conclusionFile', file);
+          response = await appointmentService.complete(id, formData);
+        } else {
+          response = await appointmentService.complete(id, { conclusion });
+        }
 
         if (!response?.success) {
           throw new Error(response?.message || "No se pudo completar la cita");
@@ -540,6 +585,10 @@ export const useAppointments = () => {
     appointments,
     athletes,
     specialists,
+    healthSpecialists,
+    healthSpecialtyOptions,
+    isHealthEmployee,
+    currentSpecialistId,
     sportsCategories,
     specialtyOptions,
     loading,
@@ -562,3 +611,4 @@ export const useAppointments = () => {
 };
 
 export default useAppointments;
+

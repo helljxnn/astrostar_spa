@@ -8,6 +8,7 @@ const AttendanceTable = ({
   onAttendanceChange,
   onObservationChange,
   onViewHistory,
+  canEdit = true,
 }) => (
   <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
     <div className="overflow-x-auto w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
@@ -49,6 +50,7 @@ const AttendanceTable = ({
                     checked={a.asistencia}
                     onChange={() => onAttendanceChange(a.id)}
                     gradient={gradient}
+                    disabled={!canEdit}
                   />
                 </div>
               </td>
@@ -58,6 +60,7 @@ const AttendanceTable = ({
                   value={a.observacion}
                   onChange={(e) => onObservationChange(a.id, e.target.value)}
                   placeholder="Observación..."
+                  disabled={!canEdit}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300 text-sm resize-none bg-gray-50"
                   rows="1"
                   style={{ minHeight: "34px", maxHeight: "60px" }}
@@ -74,6 +77,4 @@ const AttendanceTable = ({
 );
 
 export default AttendanceTable;
-
-
 

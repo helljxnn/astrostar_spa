@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Componente para validación de filtros de selección
  */
 

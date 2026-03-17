@@ -1,4 +1,4 @@
-import apiClient from '../../../shared/services/apiClient';
+﻿import apiClient from '../../../shared/services/apiClient';
 
 class AuthService {
   /**
@@ -24,3 +24,4 @@ class AuthService {
 }
 
 export default new AuthService();
+

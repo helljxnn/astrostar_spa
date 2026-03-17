@@ -1,4 +1,4 @@
-import { calculateDaysToExpiration, getExpirationStatus } from '../utils/expirationUtils.js';
+﻿import { calculateDaysToExpiration, getExpirationStatus } from '../utils/expirationUtils.js';
 
 /**
  * Componente para mostrar el indicador de días hasta vencimiento

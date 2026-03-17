@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -201,3 +201,4 @@ const PaymentRejectModal = ({ isOpen, onClose, payment, onReject, loading = fals
 };
 
 export default PaymentRejectModal;
+

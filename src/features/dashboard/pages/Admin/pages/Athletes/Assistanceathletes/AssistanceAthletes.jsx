@@ -8,12 +8,15 @@ import AttendanceTable from "./components/AttendanceTable";
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import { useAssistanceAthletes } from "./hooks/useAssistanceAthletes";
 import assistanceathletesService from "./services/AssistanceathletesService";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 const GRADIENT = "linear-gradient(90deg, #b595ff 0%, #9be9ff 100%)";
 
 
 export default function AssistanceAthletes() {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  const canEditAttendance = hasPermission("athletesAssistance", "Editar");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyData, setHistoryData] = useState([]);
@@ -73,8 +76,6 @@ export default function AssistanceAthletes() {
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-questrial">
       <AttendanceHeader
-        totalRows={totalRows}
-        totalCount={totalCount}
         selectedDate={selectedDate}
         onDateChange={updateSelectedDate}
         searchTerm={searchTerm}
@@ -84,6 +85,7 @@ export default function AssistanceAthletes() {
         categories={categories}
         onSave={handleSave}
         onHistory={goToHistory}
+        canSave={canEditAttendance}
       />
 
       {totalRows === 0 ? (
@@ -107,6 +109,7 @@ export default function AssistanceAthletes() {
             onAttendanceChange={handleAttendanceChange}
             onObservationChange={handleObservationChange}
             onViewHistory={handleViewHistory}
+            canEdit={canEditAttendance}
           />
           <div className="mt-4">
             <Pagination
@@ -131,9 +134,6 @@ export default function AssistanceAthletes() {
     </div>
   );
 }
-
-
-
 
 
 

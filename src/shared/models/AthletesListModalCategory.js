@@ -1,4 +1,4 @@
-// ================================
+﻿// ================================
 
 const MockAthletesData = [
   // Categoría Juvenil
@@ -111,3 +111,4 @@ const MockAthletesData = [
 ];
 
 export default MockAthletesData;
+

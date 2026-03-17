@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+﻿import { useEffect, useRef, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 /**
@@ -55,3 +55,4 @@ export const useInactivityTimeout = (timeout = 30 * 60 * 1000) => {
     };
   }, [resetTimer, isAuthenticated]);
 };
+

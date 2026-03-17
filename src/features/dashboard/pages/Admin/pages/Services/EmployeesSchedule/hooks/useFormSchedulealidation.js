@@ -1,4 +1,4 @@
-// useFormScheduleValidation.js
+﻿// useFormScheduleValidation.js
 import { useState } from "react";
 
 export const useFormScheduleValidation = () => {
@@ -85,3 +85,4 @@ export const useFormScheduleValidation = () => {
 
   return { errors, touched, validate, handleBlur, handleChangeValidation, touchAllFields, hasChanges };
 };
+

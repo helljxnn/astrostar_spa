@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 const PaymentsManagement = () => {
 
@@ -50,3 +50,4 @@ const PaymentsManagement = () => {
 };
 
 export default PaymentsManagement;
+

@@ -1,4 +1,4 @@
-// hooks/useFormGuardianValidation.js
+﻿// hooks/useFormGuardianValidation.js
 import { useState } from "react";
 
 // Funciones auxiliares de validación
@@ -168,3 +168,5 @@ export const useFormGuardianValidation = (initialValues, validationRules) => {
     resetForm,
   };
 };
+
+

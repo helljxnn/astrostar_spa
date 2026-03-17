@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   useLoader,
   showGlobalLoader,
@@ -135,3 +135,4 @@ hideGlobalLoader();`}
 };
 
 export default LoaderUsageExample;
+

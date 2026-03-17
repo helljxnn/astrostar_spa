@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CategoryModal from "./components/CategoryModal";
@@ -65,7 +65,6 @@ const MaterialCategories = () => {
         setTotalRows(response.pagination?.total || response.data?.length || 0);
       }
     } catch (error) {
-      console.error("Error al cargar categorías:", error);
       setCategories([]);
       setTotalRows(0);
     } finally {
@@ -149,7 +148,6 @@ const MaterialCategories = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error al guardar categoría:", error);
       showErrorAlert(
         "Error",
         error.message ||
@@ -213,7 +211,6 @@ const MaterialCategories = () => {
         );
       }
     } catch (error) {
-      console.error("Error al eliminar categoría:", error);
       showErrorAlert(
         "Error",
         error.message || "Error al eliminar la categoría en el servidor",
@@ -357,3 +354,4 @@ const MaterialCategories = () => {
 };
 
 export default MaterialCategories;
+

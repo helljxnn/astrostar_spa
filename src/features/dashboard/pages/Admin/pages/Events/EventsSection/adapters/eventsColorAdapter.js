@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Adaptador de colores específico para el módulo de EVENTOS
  * Extiende la funcionalidad genérica del calendario con lógica específica de eventos
  */
@@ -62,3 +62,4 @@ export const EVENTS_MODULE_COLORS = {
     cancelado: "#ef4444",
   },
 };
+

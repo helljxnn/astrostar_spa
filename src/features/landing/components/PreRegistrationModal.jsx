@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaTimes, FaCheckCircle } from "react-icons/fa";
 import { FormField } from "../../../shared/components/FormField";
@@ -642,184 +642,201 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
           {!showSuccess ? (
-            <>
-              {/* Header Minimalista */}
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
-                <button
-                  className="absolute top-4 right-4 text-gray-300 hover:text-gray-400 transition-colors"
-                  onClick={handleClose}
-                >
-                  <FaTimes size={20} />
-                </button>
-                <h2 className="text-2xl font-bold text-gray-900 text-center">
-                  Inscripción
-                </h2>
-              </div>
+            <div className="flex w-full">
+              {/* Left Side - Form */}
+              <div className="w-full lg:w-1/2 flex flex-col">
+                {/* Header Minimalista */}
+                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
+                  <button
+                    className="absolute top-4 right-4 text-gray-300 hover:text-gray-400 transition-colors"
+                    onClick={handleClose}
+                  >
+                    <FaTimes size={20} />
+                  </button>
+                  <h2 className="text-2xl font-bold text-gray-900 text-center">
+                    Inscripción
+                  </h2>
+                </div>
 
-              {/* Body con scroll */}
-              <div className="flex-1 overflow-y-auto">
-                <form onSubmit={handleSubmit} className="p-6">
-                  <div className="space-y-4">
-                    {/* Nombres y Apellidos en Grid 2x2 */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Body con scroll */}
+                <div className="flex-1 overflow-y-auto">
+                  <form onSubmit={handleSubmit} className="p-6">
+                    <div className="space-y-4">
+                      {/* Nombres y Apellidos en Grid 2x2 */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          label="Primer Nombre"
+                          name="firstName"
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) =>
+                            handleChange("firstName", e.target.value)
+                          }
+                          onBlur={() => handleBlur("firstName")}
+                          error={errors.firstName}
+                          touched={touched.firstName}
+                          required
+                        />
+
+                        <FormField
+                          label="Segundo Nombre"
+                          name="middleName"
+                          type="text"
+                          value={formData.middleName}
+                          onChange={(e) =>
+                            handleChange("middleName", e.target.value)
+                          }
+                          onBlur={() => handleBlur("middleName")}
+                          error={errors.middleName}
+                          touched={touched.middleName}
+                          placeholder="Opcional"
+                        />
+
+                        <FormField
+                          label="Primer Apellido"
+                          name="lastName"
+                          type="text"
+                          value={formData.lastName}
+                          onChange={(e) =>
+                            handleChange("lastName", e.target.value)
+                          }
+                          onBlur={() => handleBlur("lastName")}
+                          error={errors.lastName}
+                          touched={touched.lastName}
+                          required
+                        />
+
+                        <FormField
+                          label="Segundo Apellido"
+                          name="secondLastName"
+                          type="text"
+                          value={formData.secondLastName}
+                          onChange={(e) =>
+                            handleChange("secondLastName", e.target.value)
+                          }
+                          onBlur={() => handleBlur("secondLastName")}
+                          error={errors.secondLastName}
+                          touched={touched.secondLastName}
+                          placeholder="Opcional"
+                        />
+                      </div>
+
+                      {/* Resto de campos en columna única */}
                       <FormField
-                        label="Primer Nombre"
-                        name="firstName"
+                        label="Número de Documento"
+                        name="identification"
                         type="text"
-                        value={formData.firstName}
+                        value={formData.identification}
                         onChange={(e) =>
-                          handleChange("firstName", e.target.value)
+                          handleChange("identification", e.target.value)
                         }
-                        onBlur={() => handleBlur("firstName")}
-                        error={errors.firstName}
-                        touched={touched.firstName}
+                        onBlur={() => handleBlur("identification")}
+                        error={errors.identification}
+                        touched={touched.identification}
+                        required
+                        isLoading={isCheckingDocumentValidation}
+                      />
+
+                      <FormField
+                        label="Fecha de Nacimiento"
+                        name="birthDate"
+                        type="date"
+                        value={formData.birthDate}
+                        onChange={(e) =>
+                          handleChange("birthDate", e.target.value)
+                        }
+                        onBlur={() => handleBlur("birthDate")}
+                        error={errors.birthDate}
+                        touched={touched.birthDate}
+                        required
+                        minAge={5}
+                        maxAge={100}
+                      />
+
+                      <FormField
+                        label="Teléfono"
+                        name="phoneNumber"
+                        type="tel"
+                        value={formData.phoneNumber}
+                        onChange={(e) =>
+                          handleChange("phoneNumber", e.target.value)
+                        }
+                        onBlur={() => handleBlur("phoneNumber")}
+                        error={errors.phoneNumber}
+                        touched={touched.phoneNumber}
                         required
                       />
 
                       <FormField
-                        label="Segundo Nombre"
-                        name="middleName"
-                        type="text"
-                        value={formData.middleName}
-                        onChange={(e) =>
-                          handleChange("middleName", e.target.value)
-                        }
-                        onBlur={() => handleBlur("middleName")}
-                        error={errors.middleName}
-                        touched={touched.middleName}
-                        placeholder="Opcional"
-                      />
-
-                      <FormField
-                        label="Primer Apellido"
-                        name="lastName"
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) =>
-                          handleChange("lastName", e.target.value)
-                        }
-                        onBlur={() => handleBlur("lastName")}
-                        error={errors.lastName}
-                        touched={touched.lastName}
+                        label="Correo Electrónico"
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        onBlur={() => handleBlur("email")}
+                        error={errors.email}
+                        touched={touched.email}
                         required
-                      />
-
-                      <FormField
-                        label="Segundo Apellido"
-                        name="secondLastName"
-                        type="text"
-                        value={formData.secondLastName}
-                        onChange={(e) =>
-                          handleChange("secondLastName", e.target.value)
-                        }
-                        onBlur={() => handleBlur("secondLastName")}
-                        error={errors.secondLastName}
-                        touched={touched.secondLastName}
-                        placeholder="Opcional"
+                        isLoading={isCheckingEmailValidation}
                       />
                     </div>
+                  </form>
+                </div>
 
-                    {/* Resto de campos en columna única */}
-                    <FormField
-                      label="Número de Documento"
-                      name="identification"
-                      type="text"
-                      value={formData.identification}
-                      onChange={(e) =>
-                        handleChange("identification", e.target.value)
-                      }
-                      onBlur={() => handleBlur("identification")}
-                      error={errors.identification}
-                      touched={touched.identification}
-                      required
-                      isLoading={isCheckingDocumentValidation}
-                    />
-
-                    <FormField
-                      label="Fecha de Nacimiento"
-                      name="birthDate"
-                      type="date"
-                      value={formData.birthDate}
-                      onChange={(e) =>
-                        handleChange("birthDate", e.target.value)
-                      }
-                      onBlur={() => handleBlur("birthDate")}
-                      error={errors.birthDate}
-                      touched={touched.birthDate}
-                      required
-                      minAge={5}
-                      maxAge={100}
-                    />
-
-                    <FormField
-                      label="Teléfono"
-                      name="phoneNumber"
-                      type="tel"
-                      value={formData.phoneNumber}
-                      onChange={(e) =>
-                        handleChange("phoneNumber", e.target.value)
-                      }
-                      onBlur={() => handleBlur("phoneNumber")}
-                      error={errors.phoneNumber}
-                      touched={touched.phoneNumber}
-                      required
-                    />
-
-                    <FormField
-                      label="Correo Electrónico"
-                      name="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      onBlur={() => handleBlur("email")}
-                      error={errors.email}
-                      touched={touched.email}
-                      required
-                      isLoading={isCheckingEmailValidation}
-                    />
-                  </div>
-                </form>
+                {/* Footer Minimalista */}
+                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                  <button
+                    type="submit"
+                    onClick={handleSubmit}
+                    disabled={
+                      isSubmitting ||
+                      cooldownTime > 0 ||
+                      documentExists ||
+                      emailExistsValidation ||
+                      isCheckingDocumentValidation ||
+                      isCheckingEmailValidation
+                    }
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Enviando...
+                      </>
+                    ) : cooldownTime > 0 ? (
+                      `Espera ${cooldownTime}s para enviar otra inscripción`
+                    ) : documentExists ? (
+                      "Documento ya inscrito"
+                    ) : emailExistsValidation ? (
+                      "Email ya registrado"
+                    ) : (
+                      "Enviar Inscripción"
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Footer Minimalista */}
-              <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-                <button
-                  type="submit"
-                  onClick={handleSubmit}
-                  disabled={
-                    isSubmitting ||
-                    cooldownTime > 0 ||
-                    documentExists ||
-                    emailExistsValidation ||
-                    isCheckingDocumentValidation ||
-                    isCheckingEmailValidation
-                  }
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Enviando...
-                    </>
-                  ) : cooldownTime > 0 ? (
-                    `Espera ${cooldownTime}s para enviar otra inscripción`
-                  ) : documentExists ? (
-                    "Documento ya inscrito"
-                  ) : emailExistsValidation ? (
-                    "Email ya registrado"
-                  ) : (
-                    "Enviar Inscripción"
-                  )}
-                </button>
+              {/* Right Side - Image (hidden on mobile) */}
+              <div className="hidden lg:block lg:w-1/2 relative">
+                <img
+                  src="/assets/images/Foundation/team/Eliana_Jiménez.jpg"
+                  alt="Únete a la Fundación"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#B595FF]/40 to-transparent" />
+                <div className="absolute bottom-8 left-8 right-8 text-white">
+                  <h3 className="text-3xl font-bold mb-2">¡Únete a Nosotros!</h3>
+                  <p className="text-lg">Fundación Manuela Vanegas</p>
+                </div>
               </div>
-            </>
+            </div>
           ) : (
             /* Success Message */
             <div className="p-8">
@@ -901,3 +918,4 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 };
 
 export default PreRegistrationModal;
+

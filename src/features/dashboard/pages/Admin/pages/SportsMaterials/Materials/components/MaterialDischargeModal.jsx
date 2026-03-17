@@ -68,7 +68,6 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
         });
       }
     } catch (error) {
-      console.error("Error checking future assignments:", error);
       // En caso de error, asumir que no hay asignaciones
       setAssignmentInfo({
         hasAssignments: false,
@@ -92,7 +91,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
       newErrors.cantidad = "La cantidad debe ser mayor a 0";
     }
 
-    // Validar stock suficiente segï¿½n el origen
+    // Validar stock suficiente según el origen
     // Si es EVENTOS, debe considerar el stock reservado
     const stockMax =
       formData.inventarioOrigen === "FUNDACION"
@@ -116,7 +115,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Calcular stock máximo disponible segï¿½n el origen seleccionado
+  // Calcular stock máximo disponible según el origen seleccionado
   const getStockMaximo = () => {
     if (!formData.inventarioOrigen) return 0;
 
@@ -189,7 +188,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
             className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={onClose}
           >
-            ï¿½S"
+            X
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             Registrar Baja de Material
@@ -235,7 +234,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               </div>
             </div>
 
-            {/* Informaciï¿½n de disponibilidad para Fundación */}
+            {/* Información de disponibilidad para Fundación */}
             {formData.inventarioOrigen === "FUNDACION" &&
               assignmentInfo.hasAssignments && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -317,7 +316,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               assignmentInfo.availableForDischarge === 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <span className="text-amber-600 text-lg">ï¿½aï¿½ï¸</span>
+                    <span className="text-amber-600 text-lg">a️</span>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-amber-900">
                         No hay stock disponible para dar de baja
@@ -351,8 +350,8 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
             <FormField
               label={
                 formData.tipo_baja === "OTRO"
-                  ? "Descripciï¿½n (especifica el motivo)"
-                  : "Descripciï¿½n detallada"
+                  ? "Descripción (especifica el motivo)"
+                  : "Descripción detallada"
               }
               name="descripcion"
               type="textarea"
@@ -365,7 +364,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               placeholder={
                 formData.tipo_baja === "OTRO"
                   ? "Ej: Ajuste de inventario, material vencido"
-                  : "Ej: Se rompiï¿½ durante el torneo infantil"
+                  : "Ej: Se rompió durante el torneo infantil"
               }
               rows={2}
             />
@@ -414,4 +413,5 @@ MaterialDischargeModal.propTypes = {
 };
 
 export default MaterialDischargeModal;
+
 

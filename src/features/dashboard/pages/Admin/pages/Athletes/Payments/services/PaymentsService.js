@@ -204,8 +204,8 @@ class PaymentsService {
         if (obligation.dueStart) {
           const fecha = new Date(obligation.dueStart);
           const mes = fecha.toLocaleDateString("es-ES", { month: 'long' });
-          const año = fecha.getFullYear();
-          return `${mes}_${año}`;
+          const ano = fecha.getFullYear();
+          return `${mes}_${ano}`;
         }
         return "Mensualidad";
       default:

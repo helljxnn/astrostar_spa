@@ -1,4 +1,4 @@
-// RecurrenceGenerator.jsx
+﻿// RecurrenceGenerator.jsx
 import { addDays, addWeeks, addMonths, addYears, isBefore } from "date-fns";
 
 /**
@@ -94,3 +94,4 @@ function makeSchedule(schedule, cursor, start, end) {
     title: `${schedule.empleado} - ${schedule.cargo}`,
   };
 }
+

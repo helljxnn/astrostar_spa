@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../../shared/components/FormField";
@@ -751,3 +751,4 @@ export const EventModal = ({
   // Renderizar el modal usando un portal para evitar problemas de z-index
   return createPortal(modalContent, document.body);
 };
+

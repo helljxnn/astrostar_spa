@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+﻿import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -57,6 +57,10 @@ function Appointments() {
     appointments,
     athletes,
     specialists,
+    healthSpecialists,
+    healthSpecialtyOptions,
+    isHealthEmployee,
+    currentSpecialistId,
     sportsCategories,
     specialtyOptions,
     loading,
@@ -81,9 +85,13 @@ function Appointments() {
   const userRole = (user?.role?.name || user?.rol || "").toString().toLowerCase();
   const isAthleteView = userRole === "athlete" || userRole === "deportista" || isAthleteScope;
   
-  const canViewAppointments = hasPermission("appointmentManagement", "Ver") || true;
-  const canCreateAppointments =
-    hasPermission("appointmentManagement", "Crear") || true;
+  const canViewAppointments = hasPermission("appointmentManagement", "Ver");
+  const canCreateAppointments = hasPermission(
+    "appointmentManagement",
+    "Crear",
+  );
+  const canEditAppointments = hasPermission("appointmentManagement", "Editar");
+  const canCancelAppointments = hasPermission("appointmentManagement", "Cancelar");
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -96,7 +104,7 @@ function Appointments() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedFilters, setSelectedFilters] = useState({
-    specialistId: "",
+    specialty: "",
     status: "",
   });
 
@@ -107,22 +115,28 @@ function Appointments() {
     loadSportsCategories();
   }, [loadAppointments, loadAthletes, loadSpecialists, loadSportsCategories]);
 
-  const specialistFilterOptions = useMemo(
-    () =>
-      specialists.map((spec) => ({
-        value: spec.id || spec.specialistId,
-        label: spec.label || spec.nombre || "Especialista",
-      })),
-    [specialists]
-  );
+  const specialtyFilterOptions = useMemo(() => {
+    const labelByKey = {
+      psicologia: "Psicología",
+      nutricion: "Nutrición",
+      fisioterapia: "Fisioterapia",
+    };
+
+    return healthSpecialtyOptions
+      .filter((opt) => ["psicologia", "nutricion", "fisioterapia"].includes(opt.value))
+      .map((opt) => ({
+        value: opt.value,
+        label: labelByKey[opt.value] || opt.label,
+      }));
+  }, [healthSpecialtyOptions]);
 
   const filters = useMemo(
     () => [
       {
-        id: "specialistId",
-        label: "Especialista",
-        field: "specialistId",
-        options: specialistFilterOptions,
+        id: "specialty",
+        label: "Especialidad",
+        field: "specialty",
+        options: specialtyFilterOptions,
       },
       {
         id: "status",
@@ -135,7 +149,7 @@ function Appointments() {
         ],
       },
     ],
-    [specialistFilterOptions]
+    [specialtyFilterOptions]
   );
 
   const handleFiltersChange = (nextFilters) => {
@@ -249,15 +263,47 @@ function Appointments() {
   };
 
   const handleMarkAsCompleted = async (appointmentToComplete) => {
+    const appointmentDate = appointmentToComplete?.appointmentDate || appointmentToComplete?.date;
+    if (appointmentDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const apptDate = new Date(appointmentDate);
+      apptDate.setHours(0, 0, 0, 0);
+      if (apptDate > today) {
+        return;
+      }
+    }
     setAppointmentToComplete(appointmentToComplete);
     setIsCompleteModalOpen(true);
   };
 
-  const handleConfirmComplete = async (conclusion) => {
+
+  const canCompleteByDate = useCallback((event) => {
+    const appointmentDate = event?.appointmentDate || event?.date;
+    if (!appointmentDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const apptDate = new Date(appointmentDate);
+    apptDate.setHours(0, 0, 0, 0);
+    return apptDate <= today;
+  }, []);
+  const handleConfirmComplete = async (conclusion, shouldReschedule, file = null) => {
     if (appointmentToComplete) {
       try {
-        await completeAppointment(appointmentToComplete.id, conclusion);
+        await completeAppointment(appointmentToComplete.id, conclusion, file);
         setIsCompleteModalOpen(false);
+        
+        // Si se debe re-agendar, abrir el formulario con los datos pre-cargados
+        if (shouldReschedule) {
+          setInitialSlot({
+            athleteId: appointmentToComplete.athleteId,
+            specialistId: appointmentToComplete.specialistId,
+            specialty: appointmentToComplete.specialty,
+            description: `Seguimiento de cita anterior (ID: ${appointmentToComplete.id})`,
+          });
+          setIsCreateModalOpen(true);
+        }
+        
         setAppointmentToComplete(null);
         handleCloseViewModal();
       } catch (error) {
@@ -293,6 +339,7 @@ function Appointments() {
         : "bg-blue-100 text-blue-700";
 
     const isEditable = event.status === "Programado";
+    const canComplete = isEditable && canCompleteByDate(event);
 
     return (
       <div className="space-y-1.5">
@@ -335,7 +382,7 @@ function Appointments() {
           >
             Ver
           </button>
-          {isEditable && !isAthleteView && (
+          {isEditable && !isAthleteView && canEditAppointments && (
             <>
               <button
                 onClick={(e) => {
@@ -349,15 +396,22 @@ function Appointments() {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!canComplete) return;
                   handleMarkAsCompleted(event);
                 }}
-                className="flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors text-green-600 hover:bg-green-50"
+                disabled={!canComplete}
+                title={!canComplete ? "Disponible el dia de la cita" : "Completar cita"}
+                className={`flex items-center gap-1 px-2 py-0.5 text-[11px] rounded transition-colors ${
+                  canComplete
+                    ? "text-green-600 hover:bg-green-50"
+                    : "text-gray-400 bg-gray-100 cursor-not-allowed"
+                }`}
               >
                 Completar
               </button>
             </>
           )}
-          {isEditable && (
+          {isEditable && canCancelAppointments && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -472,13 +526,13 @@ function Appointments() {
             ))}
           </div>
 
-          {(selectedFilters.specialistId ||
+          {(selectedFilters.specialty ||
             selectedFilters.status) && (
             <div className="mt-4">
               <button
                 onClick={() =>
                   setSelectedFilters({
-                    specialistId: "",
+                    specialty: "",
                     status: "",
                   })
                 }
@@ -535,14 +589,17 @@ function Appointments() {
         onSave={handleCreateSubmit}
         initialData={initialSlot}
         athleteList={athletes}
-        specialistList={specialists}
+        specialistList={isHealthEmployee ? healthSpecialists : specialists}
         sportsCategoryOptions={sportsCategories}
-        specialtyOptions={specialtyOptions}
+        specialtyOptions={isHealthEmployee ? healthSpecialtyOptions : specialtyOptions}
         loadingAthletes={loadingAthletes}
         loadingSpecialists={loadingSpecialists}
         loadingCategories={loadingCategories}
         defaultAthleteId={isAthleteScope ? athleteIdFromUser : ""}
         lockAthlete={isAthleteScope}
+        lockSpecialist={isHealthEmployee}
+        defaultSpecialistId={isHealthEmployee ? currentSpecialistId : ""}
+        existingAppointments={appointments}
       />
 
       <AppointmentDetails
@@ -554,6 +611,7 @@ function Appointments() {
         onMarkAsCompleted={handleMarkAsCompleted}
         onCancelAppointment={handleCancelAppointment}
         isAthleteScope={isAthleteView}
+        allAppointments={appointments}
       />
 
       <CancelAppointmentModal
@@ -580,3 +638,7 @@ function Appointments() {
 }
 
 export default Appointments;
+
+
+
+

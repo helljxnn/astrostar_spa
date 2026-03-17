@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 class TeamsService {
   constructor() {
     this.endpoint = "/teams";
@@ -229,52 +229,14 @@ class TeamsService {
   }
   async getTrainers() {
     try {
-      const employeesResponse = await apiClient.get("/employees");
-      const temporalResponse = await apiClient.get("/temporary-workers");
-      const trainers = [];
-      // Transformar empleados (fundación) - Filtrar solo entrenadores
-      if (employeesResponse?.success && Array.isArray(employeesResponse.data)) {
-        if (employeesResponse.data.length > 0) {
-}
-        const entrenadores = employeesResponse.data.filter(
-          (emp) => emp.user?.role?.name === "Entrenador",
-        );
-        const foundationTrainers = entrenadores.map((emp) => ({
-          id: emp.id,
-          name: `${emp.user?.firstName || ""} ${emp.user?.middleName || ""} ${emp.user?.lastName || ""} ${emp.user?.secondLastName || ""}`
-            .trim()
-            .replace(/\s+/g, " "),
-          identification: emp.user?.identification,
-          phoneNumber: emp.user?.phoneNumber,
-          type: "fundacion",
-        }));
-        trainers.push(...foundationTrainers);
-      }
-      // Transformar temporales - Filtrar solo entrenadores
-      if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
-        if (temporalResponse.data.length > 0) {
-}
-        const entrenadoresTemp = temporalResponse.data.filter(
-          (temp) => temp.personType === "Entrenador",
-        );
-
-        const temporalTrainers = entrenadoresTemp.map((temp) => ({
-          id: temp.id,
-          name: `${temp.firstName || ""} ${temp.middleName || ""} ${temp.lastName || ""} ${temp.secondLastName || ""}`
-            .trim()
-            .replace(/\s+/g, " "),
-          identification: temp.identification,
-          phoneNumber: temp.phone || temp.phoneNumber,
-          type: "temporal",
-        }));
-        trainers.push(...temporalTrainers);
-      }
+      const response = await apiClient.get("/trainers");
       return {
-        success: true,
-        data: trainers,
+        success: Boolean(response?.success),
+        data:
+          response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("❌ Error obteniendo entrenadores:", error);
+      console.error("❌ Error obteniendo entrenadores (ruta equipos):", error);
       return {
         success: false,
         data: [],
@@ -284,61 +246,14 @@ class TeamsService {
   }
   async getAthletes() {
     try {
-      const athletesResponse = await apiClient.get("/athletes");
-      const temporalResponse = await apiClient.get("/temporary-workers");
-      const athletes = [];
-      // Transformar deportistas de fundación - Excluir inactivos
-      if (athletesResponse?.success && Array.isArray(athletesResponse.data)) {
-
-        // Log de todos los status
-        athletesResponse.data.forEach((ath, index) => {
-          const name = `${ath.firstName || ""} ${ath.lastName || ""}`.trim();
-
-        });
-        const foundationAthletes = athletesResponse.data
-          .filter((ath) => {
-            const isActive = ath.status !== "Inactivo";
-            if (!isActive) {
-
-            }
-            return isActive;
-          })
-          .map((ath) => ({
-            id: ath.id,
-            name: `${ath.firstName || ""} ${ath.middleName || ""} ${ath.lastName || ""} ${ath.secondLastName || ""}`
-              .trim()
-              .replace(/\s+/g, " "),
-            identification: ath.identification,
-            phoneNumber: ath.phoneNumber,
-            categoria: ath.sportsCategory?.name || ath.categoria,
-            type: "fundacion",
-          }));
-
-        athletes.push(...foundationAthletes);
-      }
-      // Transformar deportistas temporales
-      if (temporalResponse?.success && Array.isArray(temporalResponse.data)) {
-const deportistas = temporalResponse.data.filter(
-          (temp) => temp.personType === "Deportista",
-        );
-        const temporalAthletes = deportistas.map((temp) => ({
-          id: temp.id,
-          name: `${temp.firstName || ""} ${temp.middleName || ""} ${temp.lastName || ""} ${temp.secondLastName || ""}`
-            .trim()
-            .replace(/\s+/g, " "),
-          identification: temp.identification,
-          phoneNumber: temp.phone || temp.phoneNumber,
-          type: "temporal",
-        }));
-
-        athletes.push(...temporalAthletes);
-      }
+      const response = await apiClient.get("/teams-athletes");
       return {
-        success: true,
-        data: athletes,
+        success: Boolean(response?.success),
+        data:
+          response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("❌ Error obteniendo deportistas:", error);
+      console.error("❌ Error obteniendo deportistas (ruta equipos):", error);
       return {
         success: false,
         data: [],
@@ -553,3 +468,4 @@ const response = await apiClient.get(
   }
 }
 export default new TeamsService();
+

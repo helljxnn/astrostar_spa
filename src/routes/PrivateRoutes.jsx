@@ -135,7 +135,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Gestión de Pagos --- */}
+        {/* --- Mdulo: Gestin de Pagos --- */}
         <Route
           path="payments-management"
           element={
@@ -147,7 +147,7 @@ const PrivateRoutes = () => {
         <Route
           path="payment-settings"
           element={
-            <PrivateRoute module="paymentsManagement" action="Editar">
+            <PrivateRoute module="paymentsManagement" action="Aprobar">
               <PaymentSettings />
             </PrivateRoute>
           }
@@ -169,7 +169,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Módulo: Empleados --- */}
+        {/* --- Mdulo: Empleados --- */}
         <Route
           path="employees"
           element={
@@ -294,4 +294,5 @@ const PrivateRoutes = () => {
 };
 
 export default PrivateRoutes;
+
 

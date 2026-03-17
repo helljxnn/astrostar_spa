@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Reglas de validación para tipos de documento en Colombia
  */
 
@@ -238,3 +238,4 @@ export const requiresDigitoVerificacion = (documentType) => {
   const rules = documentValidationRules[documentType];
   return rules?.hasDigitoVerificacion || false;
 };
+

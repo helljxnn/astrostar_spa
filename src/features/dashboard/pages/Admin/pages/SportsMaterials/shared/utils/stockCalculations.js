@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Calcula el nuevo stock después de un movimiento
  * @param {number} stockActual - Stock actual del material
  * @param {number} cantidad - Cantidad del movimiento
@@ -90,3 +90,4 @@ export const formatDateTime = (dateString) => {
   if (!dateString) return 'N/A';
   return new Date(dateString).toLocaleString('es-CO');
 };
+

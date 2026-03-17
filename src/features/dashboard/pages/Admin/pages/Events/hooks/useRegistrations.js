@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 import RegistrationsService from "../EventsSection/services/RegistrationsService";
 import { toast } from "react-toastify";
 
@@ -119,3 +119,4 @@ export const useRegistrations = () => {
 };
 
 export default useRegistrations;
+

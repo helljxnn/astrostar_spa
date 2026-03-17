@@ -1,4 +1,4 @@
-import { createPortal } from "react-dom";
+﻿import { createPortal } from "react-dom";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 
 const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
@@ -144,3 +144,4 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
 };
 
 export default CategoryViewModal;
+

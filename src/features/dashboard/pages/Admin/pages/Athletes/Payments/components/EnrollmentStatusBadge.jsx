@@ -75,3 +75,4 @@ const EnrollmentStatusBadge = ({
 };
 
 export default EnrollmentStatusBadge;
+

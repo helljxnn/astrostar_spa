@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { FaUserPlus, FaStar, FaTrophy } from "react-icons/fa";
 import { motion } from "framer-motion";
 import PreRegistrationModal from "../../../components/PreRegistrationModal";
@@ -111,3 +111,4 @@ export default function InscriptionSection() {
     </>
   );
 }
+

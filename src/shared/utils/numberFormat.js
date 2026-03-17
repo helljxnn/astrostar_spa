@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Formatea un número con separadores de miles según el estándar colombiano
  * @param {number|string} value - El número a formatear
  * @returns {string} - Número formateado con punto como separador de miles
@@ -47,3 +47,4 @@ export const formatNumber = (value) => {
 export const formatStock = (value, unit = 'unidades') => {
   return `${formatNumber(value)} ${unit}`;
 };
+

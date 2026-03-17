@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient.js";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 // ============================================================================
@@ -410,3 +410,4 @@ class EnrollmentsService {
 }
 
 export default new EnrollmentsService();
+

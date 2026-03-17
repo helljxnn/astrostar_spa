@@ -22,20 +22,18 @@ const formatDate = (value) => {
 };
 
 const formatInputValue = (value) => {
-  // Remove non-numeric characters except /
-  const cleaned = value.replace(/[^\d/]/g, "");
-  
-  // Auto-format as dd/mm/yyyy
+  const cleaned = value.replace(/\D/g, "");
   if (cleaned.length <= 2) return cleaned;
-  if (cleaned.length <= 4) return cleaned.slice(0, 2) + "/" + cleaned.slice(2);
-  return cleaned.slice(0, 2) + "/" + cleaned.slice(2, 4) + "/" + cleaned.slice(4, 8);
+  if (cleaned.length <= 4) return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+  return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
 };
 
-const parseInputDate = (inputValue) => {
-  if (!inputValue || inputValue.length !== 10) return "";
-  const parts = inputValue.split("/");
+const parseInputToISO = (input) => {
+  if (!input || input.length !== 10) return "";
+  const parts = input.split("/");
   if (parts.length !== 3) return "";
   const [day, month, year] = parts;
+  if (!day || !month || !year || year.length !== 4) return "";
   return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
 };
 
@@ -242,8 +240,8 @@ export default function AssistanceHistory() {
   }, []);
 
   const handleConsult = () => {
-    const parsedStart = parseInputDate(startDateInput) || "";
-    const parsedEnd = parseInputDate(endDateInput) || "";
+    const parsedStart = parseInputToISO(startDateInput);
+    const parsedEnd = parseInputToISO(endDateInput);
 
     if (parsedStart && parsedEnd && parsedStart > parsedEnd) {
       setError("La fecha inicial no puede ser mayor a la fecha final.");
@@ -266,8 +264,8 @@ export default function AssistanceHistory() {
     const today = todayISO();
     setStartDate(today);
     setEndDate(today);
-    setStartDateInput(today);
-    setEndDateInput(today);
+    setStartDateInput(formatDate(today));
+    setEndDateInput(formatDate(today));
     setSearchTerm("");
     setCategoryFilter(ALL_CATEGORIES);
     setPagination((prev) => ({ ...prev, page: 1 }));
@@ -520,5 +518,6 @@ export default function AssistanceHistory() {
     </div>
   );
 }
+
 
 

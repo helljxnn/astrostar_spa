@@ -76,7 +76,7 @@ const EmployeeActionModal = ({
       return;
     }
 
-    // 🔴 Confirmación antes de eliminar
+    // x Confirmación antes de eliminar
     if (actionId === "delete") {
       const confirmDelete = await showErrorAlert(
         "¿Eliminar este horario?",
@@ -224,4 +224,5 @@ const EmployeeActionModal = ({
 };
 
 export default EmployeeActionModal;
+
 

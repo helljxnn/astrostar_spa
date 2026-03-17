@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class MovementsService {
   constructor() {
@@ -345,3 +345,4 @@ class MovementsService {
 }
 
 export default new MovementsService();
+

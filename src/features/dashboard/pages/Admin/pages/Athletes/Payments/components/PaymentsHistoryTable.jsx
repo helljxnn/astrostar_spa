@@ -1,4 +1,4 @@
-import { FaDownload } from "react-icons/fa";
+﻿import { FaDownload } from "react-icons/fa";
 import Table from "../../../../../../../../shared/components/Table/table.jsx";
 import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions.js";
 import { usePayments } from "../hooks/usePayments.js";
@@ -38,6 +38,7 @@ const PaymentsHistoryTable = ({
 
   // ── Descargar comprobante ──
   const handleDownloadPayment = async (payment) => {
+    if (!hasPermission("paymentsManagement", "Descargar")) return;
     if (!payment.receiptUrl) return;
     await downloadReceipt(payment);
   };
@@ -251,7 +252,9 @@ const PaymentsHistoryTable = ({
             className:
               "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
             tooltip: "Descargar comprobante",
-            show: (payment) => payment.receiptUrl,
+            show: (payment) =>
+              payment.receiptUrl &&
+              hasPermission("paymentsManagement", "Descargar"),
           },
         ]}
       />

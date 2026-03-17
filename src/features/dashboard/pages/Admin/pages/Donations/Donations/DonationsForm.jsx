@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -240,6 +240,12 @@ const DonationsForm = () => {
       isFoodPurchase: donationState.isFoodPurchase ?? false,
       foodItems: donationState.foodItems || [],
       especieItems: donationState.especieItems || [],
+      // Archivos existentes
+      econComprobante: econComprobanteFile || null,
+      especieSoporte: especieSoporteFile || null,
+      foodFactura: foodFacturaFile || null,
+      foodEvidence: foodEvidenceFiles.length > 0 ? foodEvidenceFiles : [],
+      existingFiles: existingFiles, // Guardar todos los archivos para referencia
     }));
 
     setPrefilledFromState(true);
@@ -1913,3 +1919,4 @@ const DonationsForm = () => {
 };
 
 export default DonationsForm;
+

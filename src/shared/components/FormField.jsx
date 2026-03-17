@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import CustomSelect from "./CustomSelect";
 
@@ -200,7 +200,7 @@ export const FormField = ({
             animate={{ opacity: 1, y: 0, height: "auto" }}
             exit={{ opacity: 0, y: -6, height: 0 }}
             transition={{ duration: 0.2 }}
-            className="text-gray-500 text-xs"
+            className={`text-xs ${helperText.includes('excedido') ? 'text-red-500 font-medium' : 'text-gray-500'}`}
           >
             {helperText}
           </motion.div>
@@ -209,3 +209,4 @@ export const FormField = ({
     </motion.div>
   );
 };
+

@@ -35,7 +35,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
 
   // ── Aprobar ──
   const handleApprove = async (payment) => {
-    if (!hasPermission("paymentsManagement", "Editar")) return;
+    if (!hasPermission("paymentsManagement", "Aprobar")) return;
 
     const confirmResult = await showConfirmAlert(
       "¿Aprobar comprobante?",
@@ -53,6 +53,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
 
   // ── Descargar comprobante ──
   const handleDownloadPayment = async (payment) => {
+    if (!hasPermission("paymentsManagement", "Descargar")) return;
     if (!payment.receiptUrl) return;
     await downloadReceipt(payment);
   };
@@ -339,7 +340,9 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
             className:
               "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
             tooltip: "Descargar comprobante",
-            show: (payment) => payment.receiptUrl,
+            show: (payment) =>
+              payment.receiptUrl &&
+              hasPermission("paymentsManagement", "Descargar"),
           },
           {
             onClick: (payment) => handleApprove(payment),
@@ -349,7 +352,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
             tooltip: "Aprobar pago",
             show: (payment) =>
               payment.status === "PENDING" &&
-              hasPermission("paymentsManagement", "Editar"),
+              hasPermission("paymentsManagement", "Aprobar"),
           },
           {
             onClick: (payment) => onRejectPayment(payment),
@@ -359,7 +362,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
             tooltip: "Rechazar pago",
             show: (payment) =>
               payment.status === "PENDING" &&
-              hasPermission("paymentsManagement", "Editar"),
+              hasPermission("paymentsManagement", "Rechazar"),
           },
         ]}
       />

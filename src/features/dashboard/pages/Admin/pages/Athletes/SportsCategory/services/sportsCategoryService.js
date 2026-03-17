@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Servicio de Categorías Deportivas - Integración con Backend API
  */
 

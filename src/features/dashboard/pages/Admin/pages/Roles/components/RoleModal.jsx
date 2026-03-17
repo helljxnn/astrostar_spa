@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+﻿import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -10,59 +10,57 @@ import {
   showConfirmAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts.js";
-import { MODULE_CONFIG, MODULE_GROUPS } from "../../../../../../../shared/constants/moduleConfig";
+import {
+  MODULE_CONFIG,
+  MODULE_GROUPS,
+  getModuleAllowedActions,
+} from "../../../../../../../shared/constants/moduleConfig";
 
-// Generar categorías de módulos dinámicamente desde moduleConfig
+const PROTECTED_SYSTEM_ROLES = new Set([
+  "administrador",
+  "deportista",
+  "entrenador",
+  "profesionaldelasalud",
+  "profesionaldesalud",
+]);
+
+const normalizeRoleName = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+const isProtectedRole = (roleName = "") =>
+  PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
+
+// Generar categorias de modulos dinamicamente desde moduleConfig
 const generateModuleCategories = () => {
   const categories = {};
-  
-  // Mapeo de iconos por módulo (puedes moverlo a moduleConfig si prefieres)
-  const iconMap = {
-    dashboard: "📊",
-    users: "👤",
-    roles: "🛡️",
-    materials: "🏋️",
-    materialCategories: "🏷️",
-    materialsRegistry: "📋",
-    providers: "🏪",
-    employees: "👥",
-    employeesSchedule: "⏰",
-    appointmentManagement: "📅",
-    classes: "👨‍🏫",
-    sportsCategory: "🏆",
-    athletesSection: "🏃",
-    athletesAssistance: "✅",
-    enrollments: "📝",
-    eventsManagement: "📅",
-    temporaryWorkers: "👷",
-    temporaryTeams: "⚽",
-    donorsSponsors: "🤝",
-    donationsManagement: "❤️",
-  };
 
-  // Módulos sin grupo (Dashboard, Usuarios, Roles)
-  Object.values(MODULE_CONFIG).forEach(module => {
-    if (!module.parent) {
-      const categoryName = module.name;
-      if (!categories[categoryName]) {
-        categories[categoryName] = [];
-      }
-      categories[categoryName].push({
+  const standaloneOrder = ["dashboard", "roles", "users"];
+  const groupOrder = ["services", "athletes", "equipment", "donations", "events"];
+
+  standaloneOrder.forEach((moduleId) => {
+    const module = MODULE_CONFIG[moduleId];
+    if (!module) return;
+    categories[module.name] = [
+      {
         name: module.name,
-        icon: iconMap[module.id] || "📄",
         key: module.id,
-      });
-    }
+      },
+    ];
   });
 
-  // Módulos agrupados
-  Object.entries(MODULE_GROUPS).forEach(([groupId, group]) => {
-    const categoryName = group.name;
-    categories[categoryName] = group.children.map(moduleId => ({
-      name: MODULE_CONFIG[moduleId].name,
-      icon: iconMap[moduleId] || "📄",
-      key: moduleId,
-    }));
+  groupOrder.forEach((groupId) => {
+    const group = MODULE_GROUPS[groupId];
+    if (!group) return;
+    categories[group.name] = group.children
+      .filter((moduleId) => Boolean(MODULE_CONFIG[moduleId]))
+      .map((moduleId) => ({
+        name: MODULE_CONFIG[moduleId].name,
+        key: moduleId,
+      }));
   });
 
   return categories;
@@ -72,11 +70,25 @@ const moduleCategories = generateModuleCategories();
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Editar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Eliminar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
-  { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
-  { name: "Listar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Ver Asignaciones del Material", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Transferir Stock", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Registrar Baja de Material", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Aprobar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Descargar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Acudiente", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Aceptar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Rechazar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Cancelar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Listar deportistas", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
 ];
+
+const getAllowedActionsForModule = (moduleKey) => {
+  const allowedNames = getModuleAllowedActions(moduleKey);
+  return actions.filter((action) => allowedNames.includes(action.name));
+};
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Usar ref para mantener el ID del rol y evitar re-renders
@@ -87,7 +99,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     roleIdRef.current = roleData?.id;
   }, [roleData?.id]);
 
-  // Hook de validación
+  // Hook de validacion
   const {
     values: formData,
     errors,
@@ -105,7 +117,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     roleValidationRules,
   );
 
-  // Hook para validación de nombres duplicados - usar el ref
+  // Hook para validacion de nombres duplicados - usar el ref
   const { nameValidation, validateRoleName, clearValidation, reloadRoles } =
     useRoleNameValidation(roleIdRef.current);
 
@@ -115,7 +127,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Flag para saber si ya se cargaron los datos iniciales
   const dataLoadedRef = useRef(false);
 
-  // Manejar cambios en el nombre con validación de duplicados
+  // Manejar cambios en el nombre con validacion de duplicados
   const handleNameChange = (name, value) => {
     handleChange(name, value);
     if (name === "nombre") {
@@ -126,11 +138,11 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Si recibimos roleData (editar), precargamos los datos
   useEffect(() => {
     if (roleData && !dataLoadedRef.current) {
-      // Verificar si es el rol de Administrador
-      if (roleData.name === "Administrador") {
+      // Verificar si es un rol base protegido
+      if (isProtectedRole(roleData.name)) {
         showErrorAlert(
-          "Acción no permitida",
-          "El rol de Administrador es un rol del sistema y no puede ser editado.",
+          "Accion no permitida",
+          `El rol ${roleData.name} es un rol base del sistema y no puede ser editado.`,
         );
         onClose();
         return;
@@ -143,7 +155,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         permisos: roleData.permissions || roleData.permisos || {},
       });
 
-      // Limpiar validación de nombres al cargar datos
+      // Limpiar validacion de nombres al cargar datos
       clearValidation();
 
       // Marcar que los datos ya se cargaron
@@ -157,7 +169,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleData?.id, isOpen]); // Solo ejecutar cuando cambia el ID del rol o se abre/cierra el modal
 
-  // Validación de permisos
+  // Validacion de permisos
   useEffect(() => {
     const totalPermissions = Object.values(formData.permisos).reduce(
       (total, modulePerms) => {
@@ -176,7 +188,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     }
   }, [formData.permisos, touched]);
 
-  // Manejo de permisos simplificado (cada módulo es independiente)
+  // Manejo de permisos simplificado (cada modulo es independiente)
   const handlePermissionChange = (moduleKey, action) => {
     setFormData((prev) => {
       const current = prev.permisos[moduleKey] || {};
@@ -205,15 +217,11 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       const newPermisos = { ...prev.permisos };
 
       moduleCategories[categoryName].forEach((module) => {
-        // Para Dashboard y Usuarios, solo permitir "Ver"
-        if (module.key === "dashboard" || module.key === "users") {
-          newPermisos[module.key] = { Ver: true };
-        } else {
-          newPermisos[module.key] = actions.reduce(
-            (acc, action) => ({ ...acc, [action.name]: true }),
-            {},
-          );
-        }
+        const allowedActions = getAllowedActionsForModule(module.key);
+        newPermisos[module.key] = allowedActions.reduce(
+          (acc, action) => ({ ...acc, [action.name]: true }),
+          {},
+        );
       });
 
       return {
@@ -243,14 +251,10 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       ...prev,
       permisos: {
         ...prev.permisos,
-        [moduleKey]:
-          // Para Dashboard y Usuarios, solo permitir "Ver"
-          moduleKey === "dashboard" || moduleKey === "users"
-            ? { Ver: true }
-            : actions.reduce(
-                (acc, action) => ({ ...acc, [action.name]: true }),
-                {},
-              ),
+        [moduleKey]: getAllowedActionsForModule(moduleKey).reduce(
+          (acc, action) => ({ ...acc, [action.name]: true }),
+          {},
+        ),
       },
     }));
   };
@@ -275,11 +279,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
   const getCategoryTotalPermissions = (categoryName) => {
     return moduleCategories[categoryName].reduce((total, module) => {
-      // Para Dashboard y Usuarios, solo hay 1 acción disponible (Ver)
-      if (module.key === "dashboard" || module.key === "users") {
-        return total + 1;
-      }
-      return total + actions.length;
+      // Para Dashboard y Usuarios, solo hay 1 accion disponible (Ver)
+      return total + getAllowedActionsForModule(module.key).length;
     }, 0);
   };
 
@@ -322,11 +323,11 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     };
 
     try {
-      // alerta de confirmación si se está editando
+      // Alerta de confirmacion si se esta editando
       if (roleData) {
         const result = await showConfirmAlert(
-          "¿Estás seguro de actualizar este rol?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
+          "¿Estas seguro de actualizar este rol?",
+          "Los cambios se guardaran y no se podran deshacer facilmente.",
         );
 
         if (!result.isConfirmed) return;
@@ -335,7 +336,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       // Guardar rol
       await onSave(roleToSave);
 
-      // Recargar roles para validación futura
+      // Recargar roles para validacion futura
       await reloadRoles();
 
       showSuccessAlert(
@@ -387,7 +388,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full"
             onClick={onClose}
           >
-            ✕
+            X
           </button>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {roleData ? "Editar Rol" : "Crear Rol"}
@@ -396,7 +397,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
         {/* Contenido del formulario */}
         <div className="p-6 space-y-6">
-          {/* Campos básicos */}
+          {/* Campos basicos */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <FormField
@@ -415,7 +416,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                 onBlur={handleBlur}
                 delay={0.1}
               />
-              {/* Estados de validación en tiempo real */}
+              {/* Estados de validacion en tiempo real */}
               {nameValidation.isChecking && (
                 <div className="text-blue-500 text-sm flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -425,26 +426,25 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 
               {!nameValidation.isChecking && nameValidation.isDuplicate && (
                 <div className="text-red-500 text-sm flex items-center gap-1">
-                  <span>❌</span>
+                  <span>X</span>
                   <span>Nombre no disponible</span>
                 </div>
               )}
 
-              {!nameValidation.isChecking &&
-                nameValidation.isAvailable &&
-                formData.nombre.trim().length >= 2 && (
-                  <div className="text-green-500 text-sm flex items-center gap-1">
-                    <span>✅</span>
-                    <span>Nombre disponible</span>
-                  </div>
-                )}
+	              {!nameValidation.isChecking &&
+	                nameValidation.isAvailable &&
+	                formData.nombre.trim().length >= 2 && (
+	                  <div className="text-green-500 text-sm flex items-center gap-1">
+	                    <span>Nombre disponible</span>
+	                  </div>
+	                )}
             </div>
 
             <FormField
-              label="Descripción"
+              label="Descripcion"
               name="descripcion"
               type="textarea"
-              placeholder="Descripción del rol"
+              placeholder="Descripcion del rol"
               required
               value={formData.descripcion}
               error={errors.descripcion}
@@ -462,17 +462,16 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
             transition={{ delay: 0.4 }}
             className="space-y-4"
           >
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <span className="text-purple-600">🛡️</span>
-                Permisos del Rol <span className="text-red-500">*</span>
-              </h3>
+	            <div className="flex items-center justify-between">
+	              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+	                Permisos del Rol <span className="text-red-500">*</span>
+	              </h3>
               <div className="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-medium">
                 {totalPermissions} permisos seleccionados
               </div>
             </div>
 
-            {/* Módulos organizados por categorías */}
+            {/* Modulos organizados por categorias */}
             <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-100">
               <div className="space-y-6">
                 {Object.entries(moduleCategories).map(
@@ -491,7 +490,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                         transition={{ delay: 0.05 * categoryIndex }}
                         className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
                       >
-                        {/* Header de categoría */}
+                        {/* Header de categoria */}
                         <div
                           className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:from-purple-50 hover:to-blue-50 transition-all duration-200"
                           onClick={() => toggleCategoryExpansion(categoryName)}
@@ -540,13 +539,13 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                 transition={{ duration: 0.2 }}
                                 className="text-gray-500"
                               >
-                                ▼
+                                v
                               </motion.div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Módulos de la categoría */}
+                        {/* Modulos de la categoria */}
                         <AnimatePresence>
                           {isExpanded && (
                             <motion.div
@@ -575,12 +574,9 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                         }}
                                         className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-sm transition-all duration-200"
                                       >
-                                        {/* Header del módulo */}
+                                        {/* Header del modulo */}
                                         <div className="flex items-center justify-between mb-3">
                                           <div className="flex items-center gap-2">
-                                            <span className="text-lg">
-                                              {module.icon}
-                                            </span>
                                             <span className="font-semibold text-gray-800 text-sm">
                                               {module.name}
                                             </span>
@@ -589,16 +585,17 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                             {permissionCount > 0 && (
                                               <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
                                                 {permissionCount}/
-                                                {module.key === "dashboard" ||
-                                                module.key === "users"
-                                                  ? 1
-                                                  : actions.length}
+                                                {
+                                                  getAllowedActionsForModule(
+                                                    module.key,
+                                                  ).length
+                                                }
                                               </span>
                                             )}
                                           </div>
                                         </div>
 
-                                        {/* Botones de control del módulo */}
+                                        {/* Botones de control del modulo */}
                                         <div className="flex gap-1 mb-3">
                                           <button
                                             type="button"
@@ -624,19 +621,11 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                           </button>
                                         </div>
 
-                                        {/* Permisos del módulo */}
+                                        {/* Permisos del modulo */}
                                         <div className="grid grid-cols-2 gap-2">
-                                          {actions
-                                            .filter((action) => {
-                                              // Para Dashboard y Usuarios, solo mostrar "Ver"
-                                              if (
-                                                module.key === "dashboard" ||
-                                                module.key === "users"
-                                              ) {
-                                                return action.name === "Ver";
-                                              }
-                                              return true;
-                                            })
+                                          {getAllowedActionsForModule(
+                                            module.key,
+                                          )
                                             .map((action) => {
                                               const isChecked =
                                                 formData.permisos[module.key]?.[
@@ -684,12 +673,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                                                         animate={{
                                                           scale: 1,
                                                         }}
-                                                        className={`text-xs ${action.color.replace(
-                                                          "bg-",
-                                                          "text-",
-                                                        )}`}
+                                                        className="w-1.5 h-1.5 rounded-full bg-gray-700"
                                                       >
-                                                        ✓
                                                       </motion.div>
                                                     )}
                                                   </div>
@@ -725,7 +710,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
                   transition={{ duration: 0.2 }}
                   className="text-red-500 text-sm flex items-center gap-1"
                 >
-                  <span>⚠️</span>
+                  <span>!</span>
                   <span>{permissionError}</span>
                 </motion.div>
               )}
@@ -769,3 +754,7 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
 };
 
 export default RoleModal;
+
+
+
+

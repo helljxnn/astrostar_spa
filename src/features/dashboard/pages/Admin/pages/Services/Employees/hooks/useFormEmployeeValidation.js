@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 
 export const useFormEmployeeValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
@@ -89,7 +89,7 @@ export const employeeValidationRules = {
     (value) =>
       value?.length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
     (value) =>
-      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "")
+      !/^[\p{L}\p{M}\s]+$/u.test(value || "")
         ? "Solo se permiten letras"
         : "",
   ],
@@ -98,14 +98,14 @@ export const employeeValidationRules = {
     (value) =>
       value?.length < 2 ? "El apellido debe tener al menos 2 caracteres" : "",
     (value) =>
-      !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]+$/.test(value || "")
+      !/^[\p{L}\p{M}\s]+$/u.test(value || "")
         ? "Solo se permiten letras"
         : "",
   ],
   middleName: [
     (value) => {
       if (!value) return ""; // Campo opcional
-      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value)
+      return !/^[\p{L}\p{M}\s]*$/u.test(value)
         ? "Solo se permiten letras"
         : "";
     },
@@ -113,7 +113,7 @@ export const employeeValidationRules = {
   secondLastName: [
     (value) => {
       if (!value) return ""; // Campo opcional
-      return !/^[a-zA-ZÁÉÍÓÚáéíóúñÑ\s]*$/.test(value)
+      return !/^[\p{L}\p{M}\s]*$/u.test(value)
         ? "Solo se permiten letras"
         : "";
     },
@@ -154,6 +154,18 @@ export const employeeValidationRules = {
     (value) => (!value ? "Debe seleccionar el tipo de documento" : ""),
   ],
   roleId: [(value) => (!value ? "Debe seleccionar un rol" : "")],
+  specialty: [
+    (value, formData) => {
+      if (!formData?.roleNameNormalized) return "";
+      if (
+        formData.roleNameNormalized !== "profesionaldesalud" &&
+        formData.roleNameNormalized !== "profesionaldelasalud"
+      ) {
+        return "";
+      }
+      return !value ? "Debe seleccionar una especialidad" : "";
+    },
+  ],
   status: [
     // El estado solo es requerido en modo editar, en crear se asigna automáticamente como "Activo"
     (value, formData, mode) =>
@@ -202,3 +214,5 @@ export const employeeValidationRules = {
       value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
   ],
 };
+
+

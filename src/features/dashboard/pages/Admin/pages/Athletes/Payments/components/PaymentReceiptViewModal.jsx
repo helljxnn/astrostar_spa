@@ -179,3 +179,4 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment, initialTab = "recei
 };
 
 export default PaymentReceiptViewModal;
+

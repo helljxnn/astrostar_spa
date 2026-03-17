@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class AppointmentService {
   constructor() {
@@ -41,10 +41,20 @@ class AppointmentService {
     });
   }
 
-  async complete(id, payload = {}) {
+  async complete(id, formDataOrPayload = {}) {
+    // Si es FormData, enviarlo directamente
+    if (formDataOrPayload instanceof FormData) {
+      return apiClient.request(`${this.endpoint}/${id}/complete`, {
+        method: "PATCH",
+        body: formDataOrPayload,
+        // No establecer Content-Type, el navegador lo hará automáticamente con boundary
+      });
+    }
+    
+    // Si es un objeto normal, enviarlo como JSON
     return apiClient.request(`${this.endpoint}/${id}/complete`, {
       method: "PATCH",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(formDataOrPayload),
       headers: { "Content-Type": "application/json" },
     });
   }
@@ -55,3 +65,4 @@ class AppointmentService {
 }
 
 export default new AppointmentService();
+

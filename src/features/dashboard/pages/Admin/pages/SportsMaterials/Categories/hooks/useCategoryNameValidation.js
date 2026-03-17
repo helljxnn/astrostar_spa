@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+﻿import { useState, useRef, useCallback } from 'react';
 import categoriesService from '../../shared/services/CategoriesService';
 
 export const useCategoryNameValidation = (currentCategoryId = null) => {
@@ -34,7 +34,6 @@ export const useCategoryNameValidation = (currentCategoryId = null) => {
         
         return { available: true, message: 'Nombre disponible' };
       } catch (err) {
-        console.error('Error validando nombre:', err);
         return { available: true, message: '' };
       }
     },
@@ -96,3 +95,4 @@ export const useCategoryNameValidation = (currentCategoryId = null) => {
 };
 
 export default useCategoryNameValidation;
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 
 // Funciones auxiliares
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
@@ -141,3 +141,4 @@ export const userValidationRules = {
   telefono: [validatePhone],
   estado: [(v) => !v ? "Debe seleccionar un estado" : ""]
 };
+

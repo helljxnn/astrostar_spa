@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "../../../../../../../../shared/contexts/authContext";
 import {
   addDays,
@@ -9,6 +9,10 @@ import {
   format,
   differenceInCalendarDays,
   differenceInCalendarWeeks,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  endOfYear,
 } from "date-fns";
 
 import scheduleService from "../services/employeeScheduleService";
@@ -37,6 +41,35 @@ const parseCustomRecurrence = (raw) => {
     console.warn("No se pudo parsear customRecurrence", err);
     return null;
   }
+};
+
+const normalizeCustomFrequency = (value) => {
+  if (!value) return "semana";
+  const normalized = String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+  if (["dia", "semana", "mes", "anio"].includes(normalized)) return normalized;
+  return "semana";
+};
+
+const normalizeRecurrenceDays = (days = []) =>
+  [...new Set((Array.isArray(days) ? days : []).map((day) => Number(day)))]
+    .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+    .sort((a, b) => a - b);
+
+const normalizeCustomRecurrence = (value) => {
+  const parsed = parseCustomRecurrence(value);
+  if (!parsed || typeof parsed !== "object") return null;
+
+  return {
+    ...parsed,
+    interval: Math.max(1, Number(parsed.interval) || 1),
+    frequency: normalizeCustomFrequency(parsed.frequency),
+    dias: normalizeRecurrenceDays(parsed.dias),
+  };
 };
 
 const toDateKey = (value) => {
@@ -126,6 +159,21 @@ const getNoveltiesForDate = (schedule, dateKey) => {
     employeeMap[apiSchedule.employeeId]?.cargo ||
     user.role?.name ||
     "Empleado";
+
+  const specialty =
+    apiSchedule.specialty ||
+    employeeData.specialty ||
+    employeeMap[apiSchedule.employeeId]?.specialty ||
+    "";
+
+  const specialtyLabel =
+    apiSchedule.specialtyLabel ||
+    employeeMap[apiSchedule.employeeId]?.specialtyLabel ||
+    ({
+      psicologia: "Psicologia",
+      fisioterapia: "Fisioterapia",
+      nutricion: "Nutricion",
+    }[specialty] || "");
 
   const fechaBase = apiSchedule.scheduleDate || apiSchedule.fecha;
   const fecha = fechaBase
@@ -224,11 +272,13 @@ const getNoveltiesForDate = (schedule, dateKey) => {
     empleadoId: apiSchedule.employeeId || apiSchedule.empleadoId,
     empleado: name,
     cargo,
+    specialty,
+    specialtyLabel,
     fecha,
     horaInicio,
     horaFin,
     repeticion: apiSchedule.recurrence || apiSchedule.repeticion || "no",
-    customRecurrence: parseCustomRecurrence(apiSchedule.customRecurrence),
+    customRecurrence: normalizeCustomRecurrence(apiSchedule.customRecurrence),
     descripcion: apiSchedule.description || apiSchedule.descripcion || "",
     observaciones: apiSchedule.description || apiSchedule.descripcion || "",
     novedad: primaryNovedad,
@@ -291,36 +341,62 @@ const buildOccurrence = (schedule, date, occurrenceIndex) => {
 };
 
 const expandCustomRecurrence = (schedule, startDate, limitDate) => {
-  const { dias = [], interval = 1, frequency = "semana" } =
-    schedule.customRecurrence || {};
+  const customRecurrence = normalizeCustomRecurrence(schedule.customRecurrence);
+  const { dias = [], interval = 1, frequency = "semana" } = customRecurrence || {};
 
   const events = [];
   let idx = 0;
+  const emittedDateKeys = new Set();
 
-  events.push(buildOccurrence(schedule, startDate, idx++));
+  const pushOccurrenceIfNeeded = (date) => {
+    const dateKey = format(date, "yyyy-MM-dd");
+    if (emittedDateKeys.has(dateKey)) return;
+    emittedDateKeys.add(dateKey);
+    events.push(buildOccurrence(schedule, date, idx++));
+  };
+
+  pushOccurrenceIfNeeded(startDate);
 
   // Si se seleccionaron días específicos
   if (dias.length > 0) {
-    let walker = startDate;
+    if (frequency === "dia" || frequency === "semana") {
+      let walker = startDate;
 
-    while (!isAfter(walker, limitDate) && events.length < 120) {
-      walker = addDays(walker, 1);
-      if (isAfter(walker, limitDate)) break;
+      while (!isAfter(walker, limitDate) && events.length < 120) {
+        walker = addDays(walker, 1);
+        if (isAfter(walker, limitDate)) break;
 
-      const day = walker.getDay();
-      const daysDiff = differenceInCalendarDays(walker, startDate);
-      const weeksDiff = differenceInCalendarWeeks(walker, startDate);
+        const day = walker.getDay();
+        const daysDiff = differenceInCalendarDays(walker, startDate);
+        const weeksDiff = differenceInCalendarWeeks(walker, startDate);
 
-      if (frequency === "dia" && daysDiff % interval !== 0) continue;
-      if (frequency === "semana" && weeksDiff % interval !== 0) continue;
+        if (frequency === "dia" && daysDiff % interval !== 0) continue;
+        if (frequency === "semana" && weeksDiff % interval !== 0) continue;
+        if (!dias.includes(day)) continue;
 
-      if ((frequency === "mes" || frequency === "anio") && daysDiff % 7 !== 0) {
-        continue;
+        pushOccurrenceIfNeeded(walker);
+      }
+      return events;
+    }
+
+    let anchor = startDate;
+    while (!isAfter(anchor, limitDate) && events.length < 120) {
+      const periodStart = frequency === "anio" ? startOfYear(anchor) : startOfMonth(anchor);
+      const periodEnd = frequency === "anio" ? endOfYear(anchor) : endOfMonth(anchor);
+
+      let walker = periodStart;
+      while (!isAfter(walker, periodEnd) && events.length < 120) {
+        if (
+          !isAfter(startDate, walker) &&
+          !isAfter(walker, limitDate) &&
+          dias.includes(walker.getDay())
+        ) {
+          pushOccurrenceIfNeeded(walker);
+        }
+        walker = addDays(walker, 1);
       }
 
-      if (dias.includes(day)) {
-        events.push(buildOccurrence(schedule, walker, idx++));
-      }
+      anchor = frequency === "anio" ? addYears(anchor, interval) : addMonths(anchor, interval);
     }
     return events;
   }
@@ -331,7 +407,6 @@ const expandCustomRecurrence = (schedule, startDate, limitDate) => {
     semana: addWeeks,
     mes: addMonths,
     anio: addYears,
-    año: addYears,
   };
 
   const stepFn = stepMap[frequency] || addWeeks;
@@ -350,14 +425,18 @@ const expandScheduleOccurrences = (schedule) => {
   if (!schedule.fecha || !schedule.horaInicio || !schedule.horaFin) return [];
 
   const baseDate = new Date(`${schedule.fecha}T00:00:00`);
+  const customFrequency = normalizeCustomFrequency(schedule.customRecurrence?.frequency);
 
   let limitDate = schedule.customRecurrence?.endDate
     ? new Date(schedule.customRecurrence.endDate)
     : schedule.customRecurrence?.afterDate
     ? new Date(schedule.customRecurrence.afterDate)
+    : customFrequency === "anio"
+    ? addYears(baseDate, 2)
     : addMonths(baseDate, 2);
 
-  const hardLimit = addMonths(baseDate, 6);
+  const hardLimit =
+    customFrequency === "anio" ? addYears(baseDate, 5) : addYears(baseDate, 1);
   if (isAfter(limitDate, hardLimit)) limitDate = hardLimit;
 
   const events = [];
@@ -472,6 +551,8 @@ export const useEmployeeSchedules = () => {
         ...schedule,
         empleado: schedule.empleado || employeeInfo.label,
         cargo: schedule.cargo || employeeInfo.cargo,
+        specialty: schedule.specialty || employeeInfo.specialty || "",
+        specialtyLabel: schedule.specialtyLabel || employeeInfo.specialtyLabel || "",
       };
     },
     [employeeMap]
@@ -524,10 +605,20 @@ export const useEmployeeSchedules = () => {
       const formatted = list.map((emp) => {
         const fullName = emp.nombre || emp.label || emp.name || "Empleado sin nombre";
         const cargo = emp.cargo || "Empleado";
+        const specialty = emp.specialty || "";
+        const specialtyLabel =
+          emp.specialtyLabel ||
+          ({
+            psicologia: "Psicologia",
+            fisioterapia: "Fisioterapia",
+            nutricion: "Nutricion",
+          }[specialty] || "");
         return {
           value: emp.empleadoId || emp.id,
           label: fullName,
           cargo,
+          specialty,
+          specialtyLabel,
         };
       });
 
@@ -608,6 +699,7 @@ export const useEmployeeSchedules = () => {
       data.empleadoId !== undefined && data.empleadoId !== null && data.empleadoId !== ""
         ? Number(data.empleadoId)
         : data.empleado?.id || data.empleado;
+    const customRecurrence = normalizeCustomRecurrence(data.customRecurrence);
 
     return {
       empleadoId,
@@ -615,7 +707,7 @@ export const useEmployeeSchedules = () => {
       horaInicio: data.horaInicio,
       horaFin: data.horaFin,
       repeticion: data.repeticion || "no",
-      customRecurrence: data.customRecurrence || null,
+      customRecurrence,
       descripcion: data.descripcion || data.observaciones || "",
     };
   };

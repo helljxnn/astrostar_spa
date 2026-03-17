@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Hook personalizado para manejar personas temporales
  * Proporciona estado y funciones para operaciones CRUD
  */
 
 import { useState, useEffect, useCallback } from "react";
 import temporaryPersonsService from "../services/temporaryPersonsService.js";
-import { showSuccessAlert, showErrorAlert } from "@shared/utils/alerts.js";
-import { useAuth } from "@shared/contexts/authContext.jsx";
-import { PAGINATION_CONFIG } from "@shared/constants/paginationConfig.js";
+import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
+import { useAuth } from "../../../../../../../../shared/contexts/authContext.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 export const useTemporaryPersons = () => {
   const { isAuthenticated } = useAuth();
@@ -70,7 +70,7 @@ export const useTemporaryPersons = () => {
         setReferenceData(response.data);
       }
     } catch (err) {
-      console.error("Error cargando datos de referencia:", err);
+      setError(err.message);
     }
   }, []);
 
@@ -182,7 +182,7 @@ export const useTemporaryPersons = () => {
         );
         return response;
       } catch (err) {
-        console.error("Error verificando email:", err);
+        
         return { available: false, message: "Error verificando email" };
       }
     },
@@ -202,7 +202,7 @@ export const useTemporaryPersons = () => {
           );
         return response;
       } catch (err) {
-        console.error("Error verificando identificación:", err);
+        
         return {
           available: false,
           message: "Error verificando identificación",
@@ -256,3 +256,5 @@ export const useTemporaryPersons = () => {
     refresh: loadTemporaryPersons,
   };
 };
+
+

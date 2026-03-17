@@ -116,3 +116,4 @@ const BlockingAlert = ({ financialStatus, accessStatus, className = "" }) => {
 };
 
 export default BlockingAlert;
+

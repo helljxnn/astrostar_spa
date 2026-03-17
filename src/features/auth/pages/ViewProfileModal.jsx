@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+﻿import { motion } from "framer-motion";
 import {
   FaTimes,
   FaIdCard,
@@ -292,3 +292,4 @@ const ViewProfileModal = ({ isOpen, onClose, user }) => {
 };
 
 export default ViewProfileModal;
+

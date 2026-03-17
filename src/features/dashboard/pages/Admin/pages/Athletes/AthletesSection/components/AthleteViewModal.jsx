@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { createPortal } from "react-dom";
@@ -426,3 +426,4 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
 };
 
 export default AthleteViewModal;
+

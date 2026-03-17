@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 
 // Un hook de validación simple para el formulario de citas
 export const useAppointmentValidation = (initialValues, validationRules) => {
@@ -112,6 +112,10 @@ export const appointmentValidationRules = {
       value?.trim().length < 10
         ? "La descripción debe tener al menos 10 caracteres"
         : "",
+    (value) =>
+      value?.length > 500
+        ? "La descripción no puede exceder los 500 caracteres"
+        : "",
   ],
   start: [
     (value) => (!value ? "Debe seleccionar una fecha y hora para la cita" : ""),
@@ -128,3 +132,4 @@ export const appointmentValidationRules = {
     },
   ],
 };
+

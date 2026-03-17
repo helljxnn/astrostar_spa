@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { FaSync, FaExclamationTriangle, FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { paymentsService } from "../services/PaymentsService.js";
 
@@ -117,3 +117,4 @@ const RenewalNotificationBanner = ({ onNavigateToRenewals }) => {
 };
 
 export default RenewalNotificationBanner;
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { FaSave, FaUndo } from "react-icons/fa";
 
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
@@ -42,7 +42,7 @@ const PaymentSettings = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!hasPermission("paymentsManagement", "Editar")) {
+    if (!hasPermission("paymentsManagement", "Aprobar")) {
       showErrorAlert(
         "Sin permisos",
         "No tienes permisos para modificar la configuración"
@@ -185,7 +185,7 @@ const PaymentSettings = () => {
                   Restablecer
                 </button>
                 
-                <PermissionGuard module="paymentsManagement" action="Editar">
+                <PermissionGuard module="paymentsManagement" action="Aprobar">
                   <button
                     type="submit"
                     disabled={saving}

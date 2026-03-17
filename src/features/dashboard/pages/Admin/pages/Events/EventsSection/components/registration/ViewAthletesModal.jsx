@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
@@ -308,3 +308,4 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
 };
 
 export default ViewAthletesModal;
+

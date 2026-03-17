@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+﻿import { useState, useRef } from "react";
 import { Plus, Filter } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EventModal } from "./components/eventManage/EventModal";
@@ -40,7 +40,7 @@ const Event = () => {
   // Ref para controlar el calendario
   const calendarRef = useRef(null);
 
-  // Estados para modales de inscripción
+  // Estados para modales de inscripci?n
   const [inscriptionModal, setInscriptionModal] = useState({
     isOpen: false,
     eventName: "",
@@ -58,11 +58,11 @@ const Event = () => {
   });
 
   // Permisos
-  const canCreateEvents = hasPermission("events", "create") || true; // Temporalmente siempre true
-  const canExportEvents = hasPermission("events", "export") || true; // Temporalmente siempre true
+  const canCreateEvents = hasPermission("eventsManagement", "Crear");
+  const canExportEvents = hasPermission("eventsManagement", "Ver");
 
   /**
-   * Manejar creación exitosa de evento
+   * Manejar creaci?n exitosa de evento
    */
   const handleEventCreated = () => {
     setIsModalOpen(false);
@@ -71,7 +71,7 @@ const Event = () => {
   };
 
   /**
-   * Manejar apertura del modal de creación desde el calendario
+   * Manejar apertura del modal de creaci?n desde el calendario
    */
   const handleCreateFromCalendar = () => {
     setSelectedEvent(null);
@@ -81,7 +81,7 @@ const Event = () => {
   };
 
   /**
-   * Manejar búsqueda
+   * Manejar b?squeda
    */
   const handleSearch = (event) => {
     const term = event.target ? event.target.value : event;
@@ -96,10 +96,10 @@ const Event = () => {
   };
 
   /**
-   * Manejar generación de reportes
+   * Manejar generaci?n de reportes
    */
   const handleGenerateReport = (reportData) => {
-    // Aquí se implementaría la lógica de generación de reportes
+    // Aqu? se implementar?a la l?gica de generaci?n de reportes
   };
 
   /**
@@ -110,7 +110,7 @@ const Event = () => {
       if (isNew) {
         await createEvent(eventData);
       } else {
-        // Pasar las categorías originales para verificar cambios
+        // Pasar las categor?as originales para verificar cambios
         const originalCategoryIds = selectedEvent?.categoryIds || [];
         await updateEvent(eventData.id, eventData, originalCategoryIds);
       }
@@ -122,7 +122,7 @@ const Event = () => {
     }
   };
 
-  // Cerrar modales de inscripción
+  // Cerrar modales de inscripci?n
   const closeAllModals = () => {
     setInscriptionModal({
       isOpen: false,
@@ -141,7 +141,7 @@ const Event = () => {
     });
   };
 
-  // Configuración de filtros
+  // Configuraci?n de filtros
   const filters = [
     {
       id: "status",
@@ -164,28 +164,19 @@ const Event = () => {
           label: type.name,
         })) || [],
     },
-    {
-      id: "category",
-      label: "Categoría",
-      field: "category",
-      options:
-        referenceData.eventCategories?.map((category) => ({
-          value: category.name,
-          label: category.name,
-        })) || [],
-    },
+
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header con controles genéricos */}
+      {/* Header con controles gen?ricos */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Eventos</h1>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          {/* Buscador genérico */}
+          {/* Buscador gen?rico */}
           <div className="w-full sm:w-auto sm:min-w-[200px]">
             <SearchInput
               placeholder="Buscar eventos..."
@@ -195,9 +186,9 @@ const Event = () => {
             />
           </div>
 
-          {/* Botones de acción */}
+          {/* Botones de acci?n */}
           <div className="flex flex-wrap gap-2">
-            {/* Botón crear evento */}
+            {/* Bot?n crear evento */}
             {canCreateEvents && (
               <motion.button
                 onClick={handleCreateFromCalendar}
@@ -210,7 +201,7 @@ const Event = () => {
               </motion.button>
             )}
 
-            {/* Botón de filtros */}
+            {/* Bot?n de filtros */}
             <motion.button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
@@ -225,7 +216,7 @@ const Event = () => {
               <span>Filtros</span>
             </motion.button>
 
-            {/* Generador de reportes genérico */}
+            {/* Generador de reportes gen?rico */}
             {canExportEvents && (
               <CalendarReportGenerator
                 events={events}
@@ -237,10 +228,10 @@ const Event = () => {
                   { key: "tipo", label: "Tipo de Evento" },
                   {
                     key: "categoriasDeportivas",
-                    label: "Categorías Deportivas",
+                    label: "Categor?as Deportivas",
                   },
-                  { key: "ubicacion", label: "Ubicación" },
-                  { key: "telefono", label: "Teléfono" },
+                  { key: "ubicacion", label: "Ubicaci?n" },
+                  { key: "telefono", label: "Tel?fono" },
                   { key: "estado", label: "Estado" },
                   { key: "publicar", label: "Publicado" },
                 ]}
@@ -265,11 +256,11 @@ const Event = () => {
               onClick={() => setShowFilters(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ✕
+              ?o.
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filters.map((filter) => (
               <div key={filter.id} className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -329,7 +320,7 @@ const Event = () => {
         />
       )}
 
-      {/* Modales de inscripción */}
+      {/* Modales de inscripci?n */}
       {inscriptionModal.isOpen &&
         inscriptionModal.action === "viewRegistrations" && (
           <ViewRegistrationsModal
@@ -358,3 +349,6 @@ const Event = () => {
 };
 
 export default Event;
+
+
+

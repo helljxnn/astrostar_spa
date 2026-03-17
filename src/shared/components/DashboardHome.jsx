@@ -1,4 +1,4 @@
-import { usePermissions } from "../hooks/usePermissions";
+﻿import { usePermissions } from "../hooks/usePermissions";
 import SmartRedirect from "./SmartRedirect";
 import Dashboard from "../../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard";
 
@@ -24,3 +24,4 @@ const DashboardHome = () => {
 };
 
 export default DashboardHome;
+

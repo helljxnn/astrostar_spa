@@ -1,4 +1,4 @@
-import apiClient from "../../../../../../../../shared/services/apiClient.js";
+﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class InscriptionsService {
   constructor() {
@@ -228,3 +228,4 @@ class InscriptionsService {
 }
 
 export default new InscriptionsService();
+

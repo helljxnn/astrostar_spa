@@ -279,7 +279,62 @@ export const MODULE_GROUPS = {
 /**
  * Acciones disponibles en el sistema
  */
-export const AVAILABLE_ACTIONS = ["Ver", "Crear", "Editar", "Eliminar", "Listar"];
+export const DEFAULT_ACTIONS = ["Crear", "Ver", "Editar", "Eliminar"];
+export const AVAILABLE_ACTIONS = [
+  ...DEFAULT_ACTIONS,
+  "Aceptar",
+  "Rechazar",
+  "Aprobar",
+  "Descargar",
+  "Acudiente",
+  "Materiales",
+  "Inscribir",
+  "Ver inscritos",
+  "Cancelar",
+  "Listar deportistas",
+  "Ver Asignaciones del Material",
+  "Transferir Stock",
+  "Registrar Baja de Material",
+];
+
+export const MODULE_ALLOWED_ACTIONS = {
+  dashboard: ["Ver"],
+  users: ["Ver"],
+  roles: ["Crear", "Ver", "Editar", "Eliminar"],
+  employees: ["Crear", "Ver", "Editar", "Eliminar"],
+  employeesSchedule: ["Crear", "Ver", "Editar", "Eliminar"],
+  appointmentManagement: ["Crear", "Ver", "Editar", "Cancelar"],
+  eventsManagement: [
+    "Crear",
+    "Ver",
+    "Editar",
+    "Eliminar",
+    "Materiales",
+    "Inscribir",
+    "Ver inscritos",
+  ],
+  temporaryWorkers: ["Crear", "Ver", "Editar", "Eliminar"],
+  temporaryTeams: ["Crear", "Ver", "Editar", "Eliminar"],
+  sportsCategory: ["Crear", "Ver", "Editar", "Eliminar", "Listar deportistas"],
+  athletesSection: ["Ver", "Editar", "Eliminar", "Acudiente"],
+  athletesAssistance: ["Crear", "Ver", "Editar"],
+  materials: [
+    "Crear",
+    "Ver",
+    "Editar",
+    "Eliminar",
+    "Ver Asignaciones del Material",
+    "Transferir Stock",
+    "Registrar Baja de Material",
+  ],
+  materialCategories: ["Crear", "Ver", "Editar", "Eliminar"],
+  materialsRegistry: ["Ver", "Editar"],
+  providers: ["Crear", "Ver", "Editar", "Eliminar"],
+  donorsSponsors: ["Crear", "Ver", "Editar", "Eliminar"],
+  donationsManagement: ["Crear", "Ver", "Editar"],
+  enrollments: ["Ver", "Aceptar", "Rechazar"],
+  paymentsManagement: ["Ver", "Descargar", "Aprobar", "Rechazar"],
+};
 
 /**
  * Funciones de utilidad auto-generadas
@@ -302,12 +357,16 @@ export const generateAdminPermissions = () => {
   const permissions = {};
   ALL_MODULES.forEach((module) => {
     permissions[module] = {};
+    const allowedActions = MODULE_ALLOWED_ACTIONS[module] || DEFAULT_ACTIONS;
     AVAILABLE_ACTIONS.forEach((action) => {
-      permissions[module][action] = true;
+      permissions[module][action] = allowedActions.includes(action);
     });
   });
   return permissions;
 };
+
+export const getModuleAllowedActions = (moduleId) =>
+  MODULE_ALLOWED_ACTIONS[moduleId] || DEFAULT_ACTIONS;
 
 // Obtener módulos por categoría
 export const getModulesByCategory = (category) => {
@@ -323,11 +382,14 @@ export const getChildModules = (groupId) => {
 
 // Verificar si un módulo existe
 export const moduleExists = (moduleId) => {
-  return MODULE_CONFIG.hasOwnProperty(moduleId);
+  return Object.prototype.hasOwnProperty.call(MODULE_CONFIG, moduleId);
 };
 
 // Obtener configuración de un módulo
 export const getModuleConfig = (moduleId) => {
   return MODULE_CONFIG[moduleId];
 };
+
+
+
 

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 const FinancialStatusBadge = ({ financialStatus }) => {
   if (!financialStatus) {
@@ -67,3 +67,4 @@ const FinancialStatusBadge = ({ financialStatus }) => {
 };
 
 export default FinancialStatusBadge;
+

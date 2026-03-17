@@ -1,4 +1,4 @@
-export const testimonialsData = [
+﻿export const testimonialsData = [
   {
     id: 1,
     text: "En la fundación prima el desarrollo íntegro de las niñas, les brindan oportunidades muy valiosas.",

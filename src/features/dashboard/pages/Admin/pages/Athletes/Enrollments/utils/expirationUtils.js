@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Utilidades para manejo de vencimientos de matrículas
  * Implementa lógica para identificar matrículas próximas a vencer
  */

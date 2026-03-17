@@ -1,6 +1,6 @@
-/* "use client" */
+﻿/* "use client" */
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -12,9 +12,9 @@ import {
   Plus,
 } from "lucide-react";
 import { FormField } from "../../../../../../../../shared/components/FormField";
+import SearchableSelect from "../../../../../../../../shared/components/SearchableSelect";
 import SelectionModal from "../components/SelectionModal";
 import {
-  showSuccessAlert,
   showErrorAlert,
   showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
@@ -43,7 +43,6 @@ const TemporaryTeamModal = ({
   const [selectedSecondTrainer, setSelectedSecondTrainer] = useState(null);
   const [selectedAthletes, setSelectedAthletes] = useState([]);
   const [teamType, setTeamType] = useState(null);
-  const [currentCategoria, setCurrentCategoria] = useState(null);
   const [formData, setFormData] = useState({
     nombre: "",
     entrenador: "",
@@ -62,11 +61,6 @@ const TemporaryTeamModal = ({
   });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [unavailableAthleteIds, setUnavailableAthleteIds] = useState([]);
-
-  // Debug: Mostrar el estado de duplicateWarnings
-  useEffect(() => {
-    // Estado duplicateWarnings actualizado
-  }, [duplicateWarnings]);
 
   useEffect(() => {
     if (isOpen && isEditing && teamToEdit) {
@@ -92,20 +86,14 @@ const TemporaryTeamModal = ({
 
       if (Array.isArray(teamToEdit.deportistas)) {
         setSelectedAthletes(teamToEdit.deportistas);
-        if (
-          teamToEdit.teamType === "fundacion" &&
-          teamToEdit.deportistas.length > 0
-        ) {
-          setCurrentCategoria(teamToEdit.deportistas[0].categoria);
-        }
       }
 
-      // Después de cargar todo, marcar como no inicial
+      // Despus de cargar todo, marcar como no inicial
       setTimeout(() => {
         setIsInitialLoad(false);
       }, 500);
     } else if (isOpen && !isEditing) {
-      setIsInitialLoad(false); // No es carga inicial si es creación
+      setIsInitialLoad(false); // No es carga inicial si es creacin
 
       setFormData({
         nombre: "",
@@ -119,23 +107,10 @@ const TemporaryTeamModal = ({
       setSelectedSecondTrainer(null);
       setSelectedAthletes([]);
       setTeamType(null);
-      setCurrentCategoria(null);
       setErrors({});
       setTouched({});
     }
   }, [isOpen, isEditing, teamToEdit]);
-
-  useEffect(() => {
-    if (teamType === "fundacion" && selectedAthletes.length > 0) {
-      // CAMBIO: Ya no asignamos automáticamente la categoría para equipos de fundación
-      // La categoría ahora se selecciona manualmente en el dropdown
-      // const categoria = selectedAthletes[0].categoria;
-      // setCurrentCategoria(categoria);
-      // setFormData((prev) => ({ ...prev, categoria }));
-    } else if (teamType === "temporal") {
-      setCurrentCategoria(null);
-    }
-  }, [selectedAthletes, teamType]);
 
   // Actualizar validación de deportistas cuando cambie la selección
   useEffect(() => {
@@ -179,7 +154,7 @@ const TemporaryTeamModal = ({
           setDuplicateWarnings((prev) => ({
             ...prev,
             trainer:
-              result.message || "Entrenador ya está registrado en otro equipo",
+              result.message || "Entrenador ya est registrado en otro equipo",
           }));
         } else {
           setDuplicateWarnings((prev) => ({ ...prev, trainer: null }));
@@ -197,7 +172,7 @@ const TemporaryTeamModal = ({
     const validateName = async () => {
       // No validar si el campo está vacío
       if (!formData.nombre?.trim()) {
-        // Limpiar error si el campo está vacío
+        // Limpiar error si el campo est vaco
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.nombre;
@@ -225,7 +200,7 @@ const TemporaryTeamModal = ({
         if (result.success && !result.available) {
           setErrors((prev) => ({
             ...prev,
-            nombre: "Este nombre ya está registrado",
+            nombre: "Este nombre ya est registrado",
           }));
           // Marcar como tocado para que el error persista
           setTouched((prev) => ({
@@ -376,7 +351,7 @@ const TemporaryTeamModal = ({
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Marcar como tocado inmediatamente para validación en tiempo real
+    // Marcar como tocado inmediatamente para validacin en tiempo real
     setTouched((prev) => ({ ...prev, [field]: true }));
 
     // Validar inmediatamente en tiempo real con el nuevo valor
@@ -434,7 +409,7 @@ const TemporaryTeamModal = ({
         }
         break;
       case "descripcion":
-        // La descripción no es obligatoria
+        // La descripcin no es obligatoria
         delete newErrors.descripcion;
         break;
     }
@@ -454,7 +429,7 @@ const TemporaryTeamModal = ({
     // Para el campo nombre, si hay error de duplicado, mostrarlo siempre
     if (
       fieldName === "nombre" &&
-      errors[fieldName] === "Este nombre ya está registrado"
+      errors[fieldName] === "Este nombre ya est registrado"
     ) {
       return errors[fieldName];
     }
@@ -507,7 +482,7 @@ const TemporaryTeamModal = ({
       setSelectedTrainer(null);
       setFormData((prev) => ({ ...prev, entrenador: "" }));
 
-      // Marcar como tocado para activar validación
+      // Marcar como tocado para activar validacin
       setTouched((prev) => ({ ...prev, entrenador: true }));
 
       // Si no hay deportistas, limpiar el tipo de equipo
@@ -611,7 +586,7 @@ const TemporaryTeamModal = ({
 
     setSelectedAthletes(athletes);
 
-    // Marcar como tocado para activar validación
+    // Marcar como tocado para activar validacin
     setTouched((prev) => ({ ...prev, deportistas: true }));
 
     if (!selectedTrainer && athletes.length > 0) {
@@ -770,7 +745,6 @@ const TemporaryTeamModal = ({
     setSelectedSecondTrainer(null);
     setSelectedAthletes([]);
     setTeamType(null);
-    setCurrentCategoria(null);
     setErrors({});
     setTouched({});
     setDuplicateWarnings({ trainer: null, athletes: null });
@@ -881,24 +855,6 @@ const TemporaryTeamModal = ({
               </motion.div>
             )}
 
-            {/* CAMBIO: Eliminado - Ya no mostramos categoría automática para equipos de fundación */}
-            {/* {teamType === "fundacion" && currentCategoria && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-700">
-                    Categoría del equipo:
-                  </span>
-                  <span className="text-sm text-gray-700 bg-gray-200 px-2 py-1 rounded-full">
-                    {currentCategoria}
-                  </span>
-                </div>
-              </motion.div>
-            )} */}
-
             {/* Selección de Entrenador */}
             <motion.div
               className="space-y-3 mb-3"
@@ -984,7 +940,6 @@ const TemporaryTeamModal = ({
                           : null,
                       );
                       handleChange("entrenador", "");
-                      setCurrentCategoria(null);
                       // Limpiar segundo entrenador si se quita el principal
                       setSelectedSecondTrainer(null);
                       handleChange("segundoEntrenador", "");
@@ -1102,7 +1057,6 @@ const TemporaryTeamModal = ({
                             : null,
                         );
                         handleChange("entrenador", "");
-                        setCurrentCategoria(null);
                         // Limpiar segundo entrenador si se quita el principal
                         setSelectedSecondTrainer(null);
                         handleChange("segundoEntrenador", "");
@@ -1235,24 +1189,23 @@ const TemporaryTeamModal = ({
                         Cargando categorías...
                       </div>
                     ) : (
-                      <FormField
-                        label="Categoría del Equipo"
-                        name="categoria"
-                        type="select"
-                        placeholder="Seleccione una categoría"
-                        options={categories.map((cat) => ({
-                          value: cat.name,
-                          label: cat.name,
-                        }))}
-                        value={formData.categoria}
-                        onChange={(name, value) =>
-                          handleChange("categoria", value)
-                        }
-                        onBlur={() => handleBlur("categoria")}
-                        error={getCombinedError("categoria")}
-                        touched={isFieldTouched("categoria")}
-                        required
-                      />
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Categoría del Equipo{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <SearchableSelect
+                          options={categories
+                            .map((cat) => cat?.name || cat?.nombre || "")
+                            .filter(Boolean)
+                            .map((name) => ({ value: name, label: name }))}
+                          value={formData.categoria}
+                          onChange={(value) => handleChange("categoria", value)}
+                          placeholder="Buscar y seleccionar categoría..."
+                          loading={loadingCategories}
+                          error={getCombinedError("categoria") || ""}
+                        />
+                      </div>
                     )}
                   </motion.div>
                 )}
@@ -1380,11 +1333,9 @@ const TemporaryTeamModal = ({
         mode="athletes"
         onSelect={handleAthletesSelect}
         selectedItems={selectedAthletes}
-        currentCategoria={teamType === "fundacion" ? currentCategoria : null}
         teamType={teamType}
         initialTabType={teamType}
         unavailableAthleteIds={unavailableAthleteIds}
-        excludeTeamId={teamToEdit?.id}
       />
 
       <SelectionModal
@@ -1405,3 +1356,4 @@ const TemporaryTeamModal = ({
 };
 
 export default TemporaryTeamModal;
+

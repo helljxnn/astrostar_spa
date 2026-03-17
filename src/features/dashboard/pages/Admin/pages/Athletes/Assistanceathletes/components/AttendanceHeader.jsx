@@ -3,8 +3,6 @@ import { FaSave, FaHistory } from "react-icons/fa";
 import SearchInput from "../../../../../../../../shared/components/SearchInput";
 
 const AttendanceHeader = ({
-  totalRows,
-  totalCount,
   selectedDate,
   onDateChange,
   searchTerm,
@@ -14,20 +12,14 @@ const AttendanceHeader = ({
   categories,
   onSave,
   onHistory,
+  canSave = true,
 }) => {
 
   return (
     <div className="flex flex-col gap-4 mb-6">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            Asistencia de Deportistas{" "}
-            {totalRows !== totalCount && (
-              <span className="text-sm text-gray-600 ml-1">
-                ({totalRows} de {totalCount})
-              </span>
-            )}
-          </h1>
+          <h1 className="text-2xl font-semibold text-gray-800">Asistencia de Deportistas</h1>
         </div>
       </div>
 
@@ -60,9 +52,14 @@ const AttendanceHeader = ({
 
         <button
           onClick={onSave}
-          className="flex items-center justify-center h-10 w-10 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors"
+          disabled={!canSave}
+          className={`flex items-center justify-center h-10 w-10 rounded-lg shadow transition-colors ${
+            canSave
+              ? "bg-primary-purple text-white hover:bg-primary-blue"
+              : "bg-gray-200 text-gray-400 cursor-not-allowed"
+          }`}
           aria-label="Guardar asistencia"
-          title="Guardar asistencia"
+          title={canSave ? "Guardar asistencia" : "No tienes permiso para editar asistencia"}
         >
           <FaSave size={18} />
         </button>
@@ -82,7 +79,6 @@ const AttendanceHeader = ({
 };
 
 export default AttendanceHeader;
-
 
 
 
