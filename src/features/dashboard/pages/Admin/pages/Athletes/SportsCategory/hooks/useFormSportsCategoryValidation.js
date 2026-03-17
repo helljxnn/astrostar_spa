@@ -22,10 +22,6 @@ export const sportsCategoryValidationRules = {
     isNumber: true,
     message: "Edad maxima obligatoria y numerica",
   },
-  archivo: {
-    required: true,
-    message: "La imagen es obligatoria",
-  },
 };
 
 export const useFormSportsCategoryValidation = (

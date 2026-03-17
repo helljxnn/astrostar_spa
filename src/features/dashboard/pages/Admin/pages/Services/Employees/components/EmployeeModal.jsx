@@ -1,6 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import { FormField } from "../../../../../../../../shared/components/FormField";
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField";
 import SignatureUpload from "./SignatureUpload";
@@ -184,7 +185,7 @@ const EmployeeModal = ({
               // Establecer el error de unicidad
               setErrors((prev) => ({ ...prev, [name]: errorMessage }));
             }
-          } catch (error) {
+          } catch {
             // Continuar sin bloquear si hay error en la validación
           }
         }, 300); // Debounce de 300ms
@@ -233,7 +234,7 @@ const EmployeeModal = ({
         }, 0);
       }
     }
-  }, [employee, mode, isOpen]);
+  }, [employee, isOpen, mode, resetForm, resetValidation, setFormData]);
 
   const handleSignatureSelect = (file) => {
     // For create mode, just store the file locally
@@ -353,7 +354,8 @@ const EmployeeModal = ({
 
       // Llamar onSave y esperar el resultado
       // Pass signature file if in create mode
-      const { roleNameNormalized, ...payload } = formData;
+      const payload = { ...formData };
+      delete payload.roleNameNormalized;
       const success = await onSave(payload, signatureFile);
 
       // Solo cerrar el modal si la operación fue exitosa
@@ -365,7 +367,7 @@ const EmployeeModal = ({
         setLocalSignaturePreview(null);
         onClose();
       }
-    } catch (error) {
+    } catch {
       showErrorAlert(
         "Error al guardar",
         "No se pudo guardar el empleado. Intenta de nuevo.",
@@ -731,7 +733,52 @@ const EmployeeModal = ({
   return createPortal(modalContent, document.body);
 };
 
+EmployeeModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  employee: PropTypes.shape({
+    id: PropTypes.number,
+    status: PropTypes.string,
+    specialty: PropTypes.string,
+    signatureUrl: PropTypes.string,
+    user: PropTypes.shape({
+      id: PropTypes.number,
+      firstName: PropTypes.string,
+      middleName: PropTypes.string,
+      lastName: PropTypes.string,
+      secondLastName: PropTypes.string,
+      email: PropTypes.string,
+      phoneNumber: PropTypes.string,
+      address: PropTypes.string,
+      birthDate: PropTypes.string,
+      identification: PropTypes.string,
+      documentTypeId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      roleId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+      role: PropTypes.shape({
+        name: PropTypes.string,
+      }),
+    }),
+  }),
+  mode: PropTypes.oneOf(["create", "edit", "view"]),
+  referenceData: PropTypes.shape({
+    roles: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        name: PropTypes.string.isRequired,
+      }),
+    ),
+    documentTypes: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.number.isRequired,
+        name: PropTypes.string.isRequired,
+      }),
+    ),
+  }),
+};
+
 export default EmployeeModal;
+
 
 
 

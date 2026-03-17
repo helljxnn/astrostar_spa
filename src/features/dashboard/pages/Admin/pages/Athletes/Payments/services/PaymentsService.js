@@ -11,6 +11,14 @@ class PaymentsService {
     this.enrollmentsEndpoint = "/enrollments";
   }
 
+  isRouteNotFoundError(error) {
+    const message = String(error?.message || "").toLowerCase();
+    return (
+      message.includes("route not found") ||
+      message.includes("404")
+    );
+  }
+
   // ============================================================================
   // ATLETAS - Estado financiero y comprobantes
   // ============================================================================
@@ -241,15 +249,29 @@ class PaymentsService {
       if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
       if (params.dateTo) queryParams.append('dateTo', params.dateTo);
 
-      const queryString = queryParams.toString();
-      const url = queryString ? `${this.endpoint}/pending?${queryString}` : `${this.endpoint}/pending`;
-      
-      const response = await apiClient.get(url);
-      
-      // Normalizar respuesta
+      const response = await apiClient.get(`${this.endpoint}/pending`, {
+        params: queryParams,
+      });
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching pending payments:', error);
+      if (this.isRouteNotFoundError(error)) {
+        try {
+          // Fallback para backends que solo exponen /payments con filtros.
+          const fallbackResponse = await apiClient.get(`${this.endpoint}`, {
+            params: {
+              page: params.page,
+              limit: params.limit,
+              search: params.search,
+              status: "PENDING",
+            },
+          });
+          return this.normalizeResponse(fallbackResponse);
+        } catch (fallbackError) {
+          console.error("❌ Error fetching pending payments (fallback):", fallbackError);
+          return this.handleError(fallbackError);
+        }
+      }
+      console.error("❌ Error fetching pending payments:", error);
       return this.handleError(error);
     }
   }
@@ -290,29 +312,43 @@ class PaymentsService {
    */
   async getAllPayments(params = {}) {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params.page) queryParams.append('page', params.page);
-      if (params.limit) queryParams.append('limit', params.limit);
-      if (params.search) queryParams.append('search', params.search);
-      if (params.status) queryParams.append('status', params.status);
-      if (params.type) queryParams.append('type', params.type);
-      if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-      if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-      
-      // IMPORTANTE: Excluir pagos PENDING del historial
-      // El historial solo debe mostrar pagos procesados (APPROVED/REJECTED)
-      queryParams.append('excludeStatus', 'PENDING');
-
-      const queryString = queryParams.toString();
-      const url = queryString ? `${this.endpoint}/all?${queryString}` : `${this.endpoint}/all`;
-      
-      const response = await apiClient.get(url);
-      
-      // Normalizar respuesta
+      const response = await apiClient.get(`${this.endpoint}/all`, {
+        params: {
+          page: params.page,
+          limit: params.limit,
+          search: params.search,
+          status: params.status,
+          type: params.type,
+          dateFrom: params.dateFrom,
+          dateTo: params.dateTo,
+          // El historial solo debe mostrar pagos procesados (APPROVED/REJECTED)
+          excludeStatus: "PENDING",
+        },
+      });
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching all payments:', error);
+      if (this.isRouteNotFoundError(error)) {
+        try {
+          // Fallback para backends con listado general en /payments.
+          const fallbackResponse = await apiClient.get(`${this.endpoint}`, {
+            params: {
+              page: params.page,
+              limit: params.limit,
+              search: params.search,
+              status: params.status,
+              type: params.type,
+              dateFrom: params.dateFrom,
+              dateTo: params.dateTo,
+              excludeStatus: "PENDING",
+            },
+          });
+          return this.normalizeResponse(fallbackResponse);
+        } catch (fallbackError) {
+          console.error("❌ Error fetching all payments (fallback):", fallbackError);
+          return this.handleError(fallbackError);
+        }
+      }
+      console.error("❌ Error fetching all payments:", error);
       return this.handleError(error);
     }
   }
