@@ -1,25 +1,20 @@
 ﻿import { motion, useScroll, useTransform } from "framer-motion";
-import { FaArrowRight, FaHeart } from "react-icons/fa";
-import { useRef, useState } from "react";
+import { FaArrowRight } from "react-icons/fa";
+import { useState } from "react";
 import heroImage from "../images/1.jpg";
 import misionVisionImage from "../images/2.jpg";
 import historiaImage from "../images/3.jpg";
 import equipoImage from "../images/4.jpg";
-import donationVideo from "../images/5.mov";
 import PreRegistrationModal from "../../../components/PreRegistrationModal";
 
 export default function HeroMain() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
+  const { scrollY } = useScroll();
 
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  const y = useTransform(scrollY, [0, 900], ["0%", "20%"]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <section ref={ref} className="relative overflow-hidden bg-white">
+    <section className="relative overflow-hidden bg-white">
       {/* Hero Section - Text over Image */}
       <div className="relative min-h-screen flex items-center justify-start group cursor-pointer">
         {/* Background Image */}
@@ -214,4 +209,5 @@ export default function HeroMain() {
     </section>
   );
 }
+
 

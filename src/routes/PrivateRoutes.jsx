@@ -52,12 +52,13 @@ import Providers from "../features/dashboard/pages/Admin/pages/Providers/Provide
 
 /* --- Componentes generales --- */
 import DashboardHome from "../shared/components/DashboardHome.jsx";
+import { NotFound } from "../shared/components/NotFound.jsx";
 
 const PrivateRoutes = () => {
   return (
     <Routes>
       {/* Todas las rutas bajo el layout /dashboard */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route path="/" element={<DashboardLayout />}>
         {/* --- Principal --- */}
         <Route index element={<DashboardHome />} />
 
@@ -288,7 +289,22 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
+
       </Route>
+
+      <Route
+        path="*"
+        element={
+          <NotFound
+            title="Esta vista no existe dentro del panel"
+            description="La seccion que intentas abrir no esta disponible o ya no existe."
+            primaryHref="/dashboard"
+            primaryLabel="Volver al inicio del panel"
+            secondaryHref="/"
+            secondaryLabel="Ir al inicio publico"
+          />
+        }
+      />
     </Routes>
   );
 };
