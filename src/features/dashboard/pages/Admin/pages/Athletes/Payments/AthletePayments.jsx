@@ -316,16 +316,13 @@ const HistorialPagosSection = ({ athleteId }) => {
       setError(null);
 
       try {
-        // Historial de pagos (intentos) y filtrar solo mensualidades
+        // Historial de pagos (intentos) - incluir mensualidades y matrículas
         const response = await paymentsService.getAthletePaymentHistory(athleteId);
         const raw = response?.data || response || [];
-        const filtered = Array.isArray(raw)
-          ? raw.filter((payment) => payment?.obligation?.type === "MONTHLY")
-          : [];
-        setHistorialPagos(filtered);
+        setHistorialPagos(Array.isArray(raw) ? raw : []);
       } catch (err) {
         console.error('Error fetching payment history:', err);
-        setError('No se pudo cargar el historial de mensualidades');
+        setError('No se pudo cargar el historial de pagos');
         setHistorialPagos([]);
       } finally {
         setLoading(false);
@@ -352,6 +349,8 @@ const HistorialPagosSection = ({ athleteId }) => {
 
   const getPeriodText = (obligation) => {
     if (!obligation) return "—";
+    if (obligation.type === "ENROLLMENT_INITIAL") return "Matrícula Inicial";
+    if (obligation.type === "ENROLLMENT_RENEWAL") return "Renovación Matrícula";
     if (obligation.period) {
       const date = new Date(`${obligation.period}-01T00:00:00`);
       if (!Number.isNaN(date.getTime())) {
@@ -363,7 +362,7 @@ const HistorialPagosSection = ({ athleteId }) => {
       const fecha = new Date(obligation.dueStart);
       return fecha.toLocaleDateString("es-ES", { month: 'long', year: 'numeric' });
     }
-    return "Mensualidad";
+    return obligation.type === "MONTHLY" ? "Mensualidad" : "Pago";
   };
 
   if (loading) {
@@ -385,7 +384,7 @@ const HistorialPagosSection = ({ athleteId }) => {
   if (!historialPagos || historialPagos.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-        <p className="text-gray-600">No tienes historial de mensualidades aún.</p>
+        <p className="text-gray-600">No tienes historial de pagos aún.</p>
         <p className="text-sm text-gray-500 mt-2">
           Aquí verás los intentos aprobados y rechazados con su estado.
         </p>
@@ -510,7 +509,7 @@ const HistorialPagosSection = ({ athleteId }) => {
                     <div>
                       <div className="font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</div>
                       <div className="text-xs text-gray-500 space-y-0.5">
-                        <div>Base: {formatCurrency(row.baseAmount)}</div>
+                        <div>Cuota: {formatCurrency(row.baseAmount)}</div>
                         <div className="text-red-600">
                           Mora: {formatCurrency(row.lateFeeAmount)}
                           {row.daysLate > 0 && ` (${row.daysLate} días)`}
@@ -914,13 +913,13 @@ const AthletePayments = () => {
               <div className="text-xl sm:text-2xl font-bold text-gray-800">
                 {formatCurrency(totalDebt.totalAmount)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">Total pendiente (Base + Mora)</div>
+              <div className="text-xs text-gray-600 mt-1">Total pendiente (mensualidades + mora)</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-xl sm:text-2xl font-bold text-gray-800">
                 {formatCurrency(totalDebt.monthlyAmount)}
               </div>
-              <div className="text-xs text-gray-600 mt-1">Base de mensualidades pendientes</div>
+              <div className="text-xs text-gray-600 mt-1">Mensualidades pendientes</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
               <div className="text-xl sm:text-2xl font-bold text-gray-800">
@@ -940,7 +939,7 @@ const AthletePayments = () => {
                   {totalDebt.maxDaysLate > 0 && ` Mora más alta: ${totalDebt.maxDaysLate} días.`}
                 </p>
                 <p className="text-xs text-blue-700 mt-1">
-                  El total pendiente = base pendiente ({formatCurrency(totalDebt.monthlyAmount)}) + mora ({formatCurrency(totalDebt.lateFeeAmount)}).
+                  El total pendiente = mensualidades pendientes ({formatCurrency(totalDebt.monthlyAmount)}) + mora ({formatCurrency(totalDebt.lateFeeAmount)}).
                 </p>
               </div>
             </div>
@@ -1090,7 +1089,7 @@ const AthletePayments = () => {
                         <div className="font-semibold text-gray-900">{formatCurrency(row.totalAmount || row.totalToPay || row.baseAmount || 0)}</div>
                         {(row.lateFee || 0) > 0 && (
                           <div className="text-xs text-gray-500">
-                            Base: {formatCurrency(row.baseAmount)}
+                            Cuota: {formatCurrency(row.baseAmount)}
                           </div>
                         )}
                       </div>
@@ -1251,4 +1250,3 @@ const AthletePayments = () => {
 };
 
 export default AthletePayments;
-

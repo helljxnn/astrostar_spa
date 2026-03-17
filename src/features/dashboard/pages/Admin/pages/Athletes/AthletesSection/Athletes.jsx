@@ -626,10 +626,10 @@ const Athletes = () => {
     const days = summary.maxDaysLate || 0;
 
     if ((summary.lateFeeAmount || 0) > 0) {
-      return `Base ${base} + Mora ${mora} (${days} días)`;
+      return `Mensualidad ${base} + Mora ${mora} (${days} días)`;
     }
 
-    return `Base ${base} (sin mora)`;
+    return `Mensualidad ${base} (sin mora)`;
   };
 
   const handleOpenMonthlyHistory = async (athlete) => {
@@ -776,7 +776,7 @@ const Athletes = () => {
 
                     return (
                       <div className="text-sm">
-                        <div className="font-medium text-gray-900">Base {base}</div>
+                        <div className="font-medium text-gray-900">Mensualidad {base}</div>
                         {(summary.lateFeeAmount || 0) > 0 ? (
                           <div className="text-red-600">
                             Mora {mora} ({days} días)

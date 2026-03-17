@@ -117,7 +117,7 @@ const MonthlyHistoryModal = ({
           {hasSummary ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="p-3 rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-500">Base pendiente (mensualidades sin pagar)</p>
+                <p className="text-xs text-gray-500">Mensualidades pendientes</p>
                 <p className="text-sm font-semibold text-gray-800">
                   {formatCurrency(summary.baseAmount)}
                 </p>
@@ -129,7 +129,7 @@ const MonthlyHistoryModal = ({
                 </p>
               </div>
               <div className="p-3 rounded-lg border border-gray-200">
-                <p className="text-xs text-gray-500">Total pendiente (Base + Mora)</p>
+                <p className="text-xs text-gray-500">Total pendiente (mensualidades + mora)</p>
                 <p className="text-sm font-semibold text-gray-800">
                   {formatCurrency(summary.totalAmount)}
                 </p>
@@ -162,7 +162,7 @@ const MonthlyHistoryModal = ({
               <thead className="bg-gray-50 text-gray-700">
                 <tr>
                   <th className="text-left px-4 py-3">Período</th>
-                  <th className="text-left px-4 py-3">Base</th>
+                  <th className="text-left px-4 py-3">Mensualidad</th>
                   <th className="text-left px-4 py-3">Mora</th>
                   <th className="text-left px-4 py-3">Total</th>
                   <th className="text-left px-4 py-3">Estado</th>
