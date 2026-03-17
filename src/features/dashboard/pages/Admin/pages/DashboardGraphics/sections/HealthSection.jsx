@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaHeartbeat, FaAppleAlt, FaBriefcaseMedical, FaBrain, FaFilter } from "react-icons/fa";
 import KPICard from "../components/KPICard";
 import HealthServicesGraphic from "../components/HealthServicesGraphic";

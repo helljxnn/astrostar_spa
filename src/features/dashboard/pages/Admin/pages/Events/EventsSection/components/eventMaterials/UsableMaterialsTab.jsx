@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Trash2, Recycle, X, AlertCircle, Lock, Edit } from "lucide-react";
 import {
   showSuccessAlert,

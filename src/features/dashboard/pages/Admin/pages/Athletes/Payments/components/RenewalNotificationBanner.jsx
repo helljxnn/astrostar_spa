@@ -117,3 +117,4 @@ const RenewalNotificationBanner = ({ onNavigateToRenewals }) => {
 };
 
 export default RenewalNotificationBanner;
+

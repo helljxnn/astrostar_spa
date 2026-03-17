@@ -41,3 +41,4 @@ const PaymentTypeBadge = ({ type }) => {
 };
 
 export default PaymentTypeBadge;
+

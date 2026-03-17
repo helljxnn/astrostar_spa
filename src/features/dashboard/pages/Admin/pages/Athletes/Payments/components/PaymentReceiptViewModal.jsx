@@ -1,16 +1,25 @@
-﻿import { createPortal } from "react-dom";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaEye, FaFileAlt, FaImage } from "react-icons/fa";
+import { FaFileAlt, FaImage } from "react-icons/fa";
 
 /**
  * Modal simple para visualizar solo el comprobante de pago
  * Enfocado únicamente en mostrar el archivo, sin información redundante
  */
-const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
+const PaymentReceiptViewModal = ({ isOpen, onClose, payment, initialTab = "receipt" }) => {
   if (!isOpen || !payment) return null;
 
   const receiptUrl = payment.receiptUrl;
   const hasReceipt = Boolean(receiptUrl);
+  const hasRejection = payment.status === "REJECTED" && (payment.rejectionReason || payment.reason);
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(hasRejection ? initialTab : "receipt");
+    }
+  }, [isOpen, initialTab, hasRejection]);
 
   // Determinar tipo de archivo
   const getFileType = () => {
@@ -20,12 +29,6 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
   };
 
   const fileType = getFileType();
-
-  const handleViewInNewTab = () => {
-    if (hasReceipt) {
-      window.open(receiptUrl, "_blank", "noopener,noreferrer");
-    }
-  };
 
   const modalContent = (
     <AnimatePresence>
@@ -57,31 +60,44 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
               </h2>
             </div>
 
-            {/* Body - Solo el comprobante */}
+            {/* Body */}
             <div className="flex-1 overflow-y-auto p-3">
-              {/* Mostrar motivo de rechazo si el pago fue rechazado */}
-              {payment.status === 'REJECTED' && (payment.rejectionReason || payment.reason) && (
-                <div className="mb-4 p-4 bg-red-50 rounded-lg">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mt-0.5">
-                      <span className="text-red-600 text-sm font-bold">!</span>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-base font-semibold text-red-800 mb-2">
-                        Comprobante Rechazado
-                      </h4>
-                      <div className="bg-white p-3 rounded-md">
-                        <p className="text-sm font-medium text-gray-700 mb-1">Motivo del rechazo:</p>
-                        <p className="text-sm text-red-700 leading-relaxed">
-                          {payment.rejectionReason || payment.reason || 'No se especificó un motivo'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              {hasRejection && (
+                <div className="mb-3 flex gap-3">
+                  <button
+                    onClick={() => setActiveTab("receipt")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                      activeTab === "receipt"
+                        ? "bg-primary-purple text-white border-primary-purple"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-primary-purple"
+                    }`}
+                  >
+                    Comprobante
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("rejection")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                      activeTab === "rejection"
+                        ? "bg-red-500 text-white border-red-500"
+                        : "bg-white text-red-600 border-red-200 hover:border-red-400"
+                    }`}
+                  >
+                    Rechazo
+                  </button>
                 </div>
               )}
 
-              {hasReceipt ? (
+              {activeTab === "rejection" && hasRejection ? (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">
+                  <div className="font-semibold mb-1">Motivo del rechazo</div>
+                  <div
+                    className="max-h-56 overflow-y-auto whitespace-pre-wrap break-words"
+                    title={payment.rejectionReason || payment.reason || "No se especificó un motivo"}
+                  >
+                    {payment.rejectionReason || payment.reason || "No se especificó un motivo"}
+                  </div>
+                </div>
+              ) : hasReceipt ? (
                 <div className="space-y-4">
                   {/* Vista previa para imágenes */}
                   {fileType === 'image' && (
@@ -106,13 +122,23 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
 
                   {/* Vista para PDFs */}
                   {fileType === 'pdf' && (
-                    <div className="bg-gray-50 rounded-lg p-8 text-center">
+                    <div
+                      className="bg-gray-50 rounded-lg p-8 text-center cursor-pointer"
+                      onClick={() => receiptUrl && window.open(receiptUrl, "_blank", "noopener,noreferrer")}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          receiptUrl && window.open(receiptUrl, "_blank", "noopener,noreferrer");
+                        }
+                      }}
+                    >
                       <FaFileAlt className="w-20 h-20 mx-auto mb-4 text-red-500" />
                       <h3 className="text-xl font-semibold text-gray-800 mb-2">
                         Documento PDF
                       </h3>
                       <p className="text-gray-600 mb-6">
-                        El comprobante es un archivo PDF. Haz clic en el botón de abajo para abrirlo en una nueva pestaña.
+                        El comprobante es un archivo PDF. Haz clic en el documento para abrirlo en una nueva pestaña.
                       </p>
                     </div>
                   )}
@@ -135,15 +161,6 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
             {/* Footer */}
             <div className="flex-shrink-0 border-t border-gray-100 p-3">
               <div className="flex justify-center gap-3">
-                {hasReceipt && (
-                  <button
-                    onClick={handleViewInNewTab}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary-purple hover:bg-primary-blue text-white rounded-lg transition-colors font-medium text-sm"
-                  >
-                    <FaEye className="w-4 h-4" />
-                    Abrir en Nueva Pestaña
-                  </button>
-                )}
                 <button
                   onClick={onClose}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium text-sm"
@@ -162,3 +179,4 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment }) => {
 };
 
 export default PaymentReceiptViewModal;
+

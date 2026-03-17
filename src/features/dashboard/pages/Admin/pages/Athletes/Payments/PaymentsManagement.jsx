@@ -50,3 +50,4 @@ const PaymentsManagement = () => {
 };
 
 export default PaymentsManagement;
+

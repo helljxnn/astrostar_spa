@@ -345,8 +345,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         setShowSuccess(true);
         
         // 🚀 NOTIFICAR INMEDIATAMENTE: Agregar la inscripción al estado local
-        console.log("📢 [PreRegistrationModal] Nueva inscripción creada:", result.data);
-        console.log("📢 [PreRegistrationModal] Notificando al contexto...");
+        // console.log("📢 [PreRegistrationModal] Nueva inscripción creada:", result.data);
+        // console.log("📢 [PreRegistrationModal] Notificando al contexto...");
         
         // Asegurar que la inscripción tenga todos los campos necesarios
         const newInscription = {
@@ -365,9 +365,9 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           ...result.data, // Sobrescribir con datos del backend si existen
         };
         
-        console.log("📢 [PreRegistrationModal] Datos de inscripción a notificar:", newInscription);
+        // console.log("📢 [PreRegistrationModal] Datos de inscripción a notificar:", newInscription);
         notifyNewInscription(newInscription);
-        console.log("✅ [PreRegistrationModal] Notificación enviada");
+        // console.log("✅ [PreRegistrationModal] Notificación enviada");
         
         // Iniciar cooldown de 60 segundos
         setCooldownTime(60);
@@ -439,16 +439,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       return;
     }
     
-    console.log('🔍 [PreRegistrationModal] Validando nuevo email:', newEmail);
+    // console.log('🔍 [PreRegistrationModal] Validando nuevo email:', newEmail);
     setIsValidatingNewEmail(true);
     
     const timeoutId = setTimeout(async () => {
       try {
-        console.log('🔍 [PreRegistrationModal] Verificando email en inscripciones y deportistas...');
+        // console.log('🔍 [PreRegistrationModal] Verificando email en inscripciones y deportistas...');
         
         // Verificar en inscripciones pendientes
         const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);
-        console.log('🔍 [PreRegistrationModal] Resultado inscripciones:', inscriptionResult);
+        // console.log('🔍 [PreRegistrationModal] Resultado inscripciones:', inscriptionResult);
         
         if (inscriptionResult.exists) {
           console.log('❌ [PreRegistrationModal] Email ya existe en inscripciones');
@@ -460,7 +460,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         // Verificar en deportistas matriculados
         const AthletesService = (await import("../../dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService.js")).default;
         const athleteResult = await AthletesService.checkEmailAvailability(newEmail, null);
-        console.log('🔍 [PreRegistrationModal] Resultado deportistas:', athleteResult);
+        // console.log('🔍 [PreRegistrationModal] Resultado deportistas:', athleteResult);
         
         if (!athleteResult.available) {
           console.log('❌ [PreRegistrationModal] Email ya existe en deportistas');
@@ -500,7 +500,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     
     // Validar que el email no esté duplicado antes de enviar
     try {
-      console.log('🔍 [handleResendEmail] Validando email antes de reenviar...');
+      // console.log('🔍 [handleResendEmail] Validando email antes de reenviar...');
       
       // Verificar en inscripciones pendientes
       const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);
@@ -642,16 +642,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
           {!showSuccess ? (
-            <div className="flex w-full">
-              {/* Left Side - Form */}
-              <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="w-full">
+              {/* Form */}
+              <div className="w-full flex flex-col">
                 {/* Header Minimalista */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
                   <button
@@ -820,20 +820,6 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                       "Enviar Inscripción"
                     )}
                   </button>
-                </div>
-              </div>
-
-              {/* Right Side - Image (hidden on mobile) */}
-              <div className="hidden lg:block lg:w-1/2 relative">
-                <img
-                  src="/assets/images/Foundation/team/Eliana_Jiménez.jpg"
-                  alt="Únete a la Fundación"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#B595FF]/40 to-transparent" />
-                <div className="absolute bottom-8 left-8 right-8 text-white">
-                  <h3 className="text-3xl font-bold mb-2">¡Únete a Nosotros!</h3>
-                  <p className="text-lg">Fundación Manuela Vanegas</p>
                 </div>
               </div>
             </div>

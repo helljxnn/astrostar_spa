@@ -49,10 +49,7 @@ export const useDownloadReceipt = () => {
         link.click();
         document.body.removeChild(link);
         
-        showErrorAlert(
-          "Descarga alternativa", 
-          "El archivo se abrirá en una nueva pestaña. Usa 'Guardar como' para elegir el nombre."
-        );
+        // Sin alerta: abrir en nueva pestaña sin interrumpir
       } catch (fallbackError) {
         console.error('Error en fallback de descarga:', fallbackError);
         showErrorAlert(
@@ -72,3 +69,4 @@ export const useDownloadReceipt = () => {
 };
 
 export default useDownloadReceipt;
+

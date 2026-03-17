@@ -1,4 +1,4 @@
-﻿// useSportsCategories.js
+// useSportsCategories.js
 import { useState, useCallback } from "react";
 import apiClient from "../../../../../../../../shared/services/apiClient";
 import {

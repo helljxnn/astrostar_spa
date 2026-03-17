@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { FaSave, FaHistory } from "react-icons/fa";
 import SearchInput from "../../../../../../../../shared/components/SearchInput";
 

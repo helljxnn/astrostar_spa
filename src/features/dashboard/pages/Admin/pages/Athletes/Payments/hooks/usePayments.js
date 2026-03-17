@@ -84,12 +84,39 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     }
   }, [initialParams.search]);
 
+  useEffect(() => {
+    const nextFilters = {
+      status: initialParams.status || '',
+      type: initialParams.type || '',
+      dateFrom: initialParams.dateFrom || '',
+      dateTo: initialParams.dateTo || ''
+    };
+
+    setFilters((prev) => {
+      if (
+        prev.status === nextFilters.status &&
+        prev.type === nextFilters.type &&
+        prev.dateFrom === nextFilters.dateFrom &&
+        prev.dateTo === nextFilters.dateTo
+      ) {
+        return prev;
+      }
+      return nextFilters;
+    });
+  }, [initialParams.status, initialParams.type, initialParams.dateFrom, initialParams.dateTo]);
+
   // Resetear a página 1 cuando cambia la búsqueda - PATRÓN ESTÁNDAR
   useEffect(() => {
     if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE && searchTerm) {
       setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
     }
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE) {
+      setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
+    }
+  }, [filters.status, filters.type, filters.dateFrom, filters.dateTo]);
 
   // Función para cambiar página - SIMPLE Y DIRECTA
   const handlePageChange = (newPage) => {
@@ -170,4 +197,3 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     rejectPayment,
   };
 };
-

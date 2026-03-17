@@ -264,4 +264,3 @@ const PaymentSettings = () => {
 };
 
 export default PaymentSettings;
-

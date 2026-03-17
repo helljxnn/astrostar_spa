@@ -182,10 +182,7 @@ const PaymentRejectModal = ({ isOpen, onClose, payment, onReject, loading = fals
                 disabled={loading || !formData.rejectionReason.trim()}
               >
                 {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                    <span>Rechazando...</span>
-                  </>
+                  <span>Rechazando...</span>
                 ) : (
                   <>
                     <FaExclamationTriangle className="w-4 h-4" />
@@ -204,3 +201,4 @@ const PaymentRejectModal = ({ isOpen, onClose, payment, onReject, loading = fals
 };
 
 export default PaymentRejectModal;
+

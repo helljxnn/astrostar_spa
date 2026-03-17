@@ -57,7 +57,7 @@ const parentescoBackendToFrontend = {
   Mother: "Madre",
   Father: "Padre",
   Grandparent: "Abuelo/a",
-  Uncle_Aunt: "T?o/a",
+  Uncle_Aunt: "Tío/a",
   Sibling: "Hermano/a",
   Cousin: "Primo/a",
   Legal_Guardian: "Tutor/a Legal",
@@ -66,7 +66,7 @@ const parentescoBackendToFrontend = {
   Other: "Otro",
 };
 
-// Mapeo inverso: del frontend (espa?ol) al backend (ingl?s)
+// Mapeo inverso: del frontend (español) al backend (inglés)
 const parentescoFrontendToBackend = {
   Madre: "Mother",
   Padre: "Father",
@@ -161,6 +161,7 @@ const AthleteModal = ({
   // Debug: Ver qu? tipos de documento se est?n recibiendo
   useEffect(() => {
     if (isOpen && referenceData.documentTypes) {
+      // Document types loaded
     }
   }, [isOpen, referenceData.documentTypes]);
 
@@ -184,6 +185,48 @@ const AthleteModal = ({
     setTouched((prev) => ({ ...prev, email: true }));
     // Luego actualizar el valor
     handleChange(e);
+  };
+
+  // Validación de unicidad del documento (igual que empleados)
+  const handleCustomBlur = async (name) => {
+    handleBlur(name);
+
+    if (name !== "identification") return;
+    if (!values.identification) return;
+
+    // Validación básica antes de consultar backend
+    const validationRule = athleteValidationRules[name];
+    let validationError = "";
+    if (validationRule) {
+      for (const rule of validationRule) {
+        validationError = rule(values.identification, values);
+        if (validationError) break;
+      }
+    }
+    if (validationError) return;
+
+    const currentUserId =
+      isEditing && !isEnrollmentMode && athleteToEdit?.userId
+        ? athleteToEdit.userId
+        : null;
+
+    try {
+      const result = await AthletesService.checkIdentificationAvailability(
+        values.identification,
+        currentUserId
+      );
+      const isAvailable = result?.available ?? true;
+      if (!isAvailable) {
+        const errorMsg =
+          result?.message || "Este documento ya está registrado";
+        setErrors((prev) => ({ ...prev, identification: errorMsg }));
+        setAsyncErrors((prev) => ({ ...prev, identification: errorMsg }));
+      } else {
+        setAsyncErrors((prev) => ({ ...prev, identification: null }));
+      }
+    } catch (error) {
+      console.warn("Error en validación de documento:", error);
+    }
   };
 
   useEffect(() => {
@@ -216,7 +259,7 @@ const AthleteModal = ({
     if (showGuardianSearch && loadGuardians && guardians.length === 0) {
       loadGuardians();
     }
-  }, [showGuardianSearch]); // ? SOLO depender de showGuardianSearch para evitar re-renders infinitos
+  }, [showGuardianSearch]); // ✅ SOLO depender de showGuardianSearch para evitar re-renders infinitos
 
   // Re-validar el campo de identificaci?n INSTANT?NEAMENTE cuando cambia el tipo de documento
   useEffect(() => {
@@ -250,9 +293,9 @@ const AthleteModal = ({
 
     // Usar el hook de validaci?n con debounce
     validateDocumentDebounced(values.identification, 6);
-  }, [values.identification, isEditing, isEnrollmentMode]); // ? Removidas dependencias problem?ticas
+  }, [values.identification, isEditing, isEnrollmentMode]); // ✅ Removidas dependencias problemáticas
 
-  // Sincronizar el resultado de la validaci?n con asyncErrors
+  // Sincronizar el resultado de la validación con asyncErrors
   useEffect(() => {
     // Solo actualizar si estamos validando o acabamos de terminar
     if (documentExists) {
@@ -286,7 +329,7 @@ const AthleteModal = ({
         return prev;
       });
     }
-  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // ? Removidas dependencias problem?ticas
+  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // ✅ Removidas dependencias problemáticas
 
   // Validaci?n instant?nea de email
   useEffect(() => {
@@ -307,7 +350,7 @@ const AthleteModal = ({
         return;
       }
 
-      // En modo edici?n, NO validar si el email es el mismo que el original
+      // En modo edición, NO validar si el email es el mismo que el original
       if (isEditing && !isEnrollmentMode && athleteToEdit?.email === values.email) {
         setAsyncErrors(prev => ({ ...prev, email: null }));
         return;
@@ -315,9 +358,8 @@ const AthleteModal = ({
 
       setCheckingEmail(true);
       try {
-
-        // En modo edici?n, excluir el userId del deportista actual
-        // En modo matr?cula o creaci?n, no excluir a nadie
+        // En modo edición, excluir el userId del deportista actual
+        // En modo matrícula o creación, no excluir a nadie
         const excludeUserId =
           isEditing && !isEnrollmentMode && athleteToEdit?.userId
             ? athleteToEdit.userId
@@ -356,24 +398,23 @@ const AthleteModal = ({
       }
     };
 
-    // Validar INSTANT?NEAMENTE si:
+    // Validar INSTANTÁNEAMENTE si:
     // 1. El campo ya fue tocado (touched.email)
-    // 2. Estamos en modo matr?cula (isEnrollmentMode)
-    // 3. Estamos en modo edici?n (isEditing)
+    // 2. Estamos en modo matrícula (isEnrollmentMode)
+    // 3. Estamos en modo edición (isEditing)
     const shouldValidateInstantly =
       touched.email || isEnrollmentMode || isEditing;
     const delay = shouldValidateInstantly ? 0 : 300;
 
     const timeoutId = setTimeout(checkEmail, delay);
     return () => clearTimeout(timeoutId);
-  }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // ? Removidas dependencias problem?ticas
+  }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // ✅ Removidas dependencias problemáticas
 
   // ? VALIDACI?N DE EDAD VS CATEGOR?A ELIMINADA
   // Ahora se permite seleccionar cualquier categor?a sin importar la edad del deportista
 
   useEffect(() => {
     if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
-      
       // Convertir fecha usando la utilidad segura
       const birthDateRaw = athleteToEdit.birthDate || athleteToEdit.fechaNacimiento || "";
       
@@ -420,7 +461,7 @@ const AthleteModal = ({
         birthDate: birthDate,
         age: calculateAge(birthDate).toString(),
         categoria: athleteToEdit.categoria || "",
-        // Si estamos en modo matr?cula, siempre usar "Activo", de lo contrario usar el estado del atleta
+        // Si estamos en modo matrícula, siempre usar "Activo", de lo contrario usar el estado del atleta
         estado: isEnrollmentMode ? "Activo" : athleteToEdit.estado || "Activo",
         acudiente: athleteToEdit.acudiente?.toString() || "",
         parentesco: parentescoFrontend,
@@ -431,12 +472,12 @@ const AthleteModal = ({
 
       setHasDateOfBirth(!!birthDate);
 
-      // En modo edici?n, marcar email como touched para activar validaci?n instant?nea
+      // En modo edición, marcar email como touched para activar validación instantánea
       if (isEditing && !isEnrollmentMode) {
         setTouched((prev) => ({ ...prev, email: true }));
       }
 
-      // Si el parentesco no est? en las opciones, es un "Otro" personalizado
+      // Si el parentesco no está en las opciones, es un "Otro" personalizado
       if (
         parentescoFrontend &&
         !parentescoOptions.some((opt) => opt.value === parentescoFrontend)
@@ -444,7 +485,7 @@ const AthleteModal = ({
         setValues((prev) => ({ ...prev, parentesco: "Otro" }));
       }
 
-      // ? VALIDACI?N AUTOM?TICA: Marcar todos los campos como touched y validar
+      // ✅ VALIDACIÓN AUTOMÁTICA: Marcar todos los campos como touched y validar
       if (isEnrollmentMode) {
         // Marcar todos los campos como touched INMEDIATAMENTE
         const allTouched = {
@@ -503,7 +544,6 @@ const AthleteModal = ({
           const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
           if (newValues.email && newValues.email.includes("@")) {
-
             if (emailRegex.test(newValues.email)) {
               try {
                 // En modo matr?cula desde landing, no hay usuario previo, as? que no excluir nada
@@ -520,7 +560,7 @@ const AthleteModal = ({
                 }
               } catch (error) {
                 console.error(
-                  "? [AthleteModal] Error verificando email:",
+                  "❌ [AthleteModal] Error verificando email:",
                   error,
                 );
               }
@@ -589,7 +629,7 @@ const AthleteModal = ({
         return prev;
       });
     }
-  }, [values.acudiente]); // ? Removida dependencia errors.acudiente
+  }, [values.acudiente]); // ✅ Removida dependencia errors.acudiente
 
   const getFinalParentesco = () => {
     // Si es "Otro", siempre devolver "Otro" para el mapeo al backend
@@ -642,7 +682,7 @@ const AthleteModal = ({
       return;
     }
     
-    // NO HAY VALIDACI?N DE EDAD VS CATEGOR?A - Se permite cualquier combinaci?n
+    // NO HAY VALIDACIÓN DE EDAD VS CATEGORÍA - Se permite cualquier combinación
 
     // ?? VALIDACI?N CR?TICA: Menores de edad DEBEN tener acudiente
     if (ageNumber !== null && ageNumber < 18) {
@@ -664,21 +704,21 @@ const AthleteModal = ({
       }
     }
 
-
     try {
       const finalParentesco = getFinalParentesco();
 
-      // Convertir parentesco del frontend (espa?ol) al backend (ingl?s)
+      // Convertir parentesco del frontend (español) al backend (inglés)
       let parentescoBackend = finalParentesco;
       if (parentescoBackend && parentescoFrontendToBackend[parentescoBackend]) {
         parentescoBackend = parentescoFrontendToBackend[parentescoBackend];
       }
 
-      // Convertir acudiente a n?mero o null
+      // Convertir acudiente a número o null
       const acudienteId =
         values.acudiente && values.acudiente.toString().trim()
           ? parseInt(values.acudiente)
           : null;
+      
 
       // Preparar datos base del deportista
       const athleteData = {
@@ -693,31 +733,33 @@ const AthleteModal = ({
         address: values.address.trim(),
         birthDate: toISOString(values.birthDate), // Convertir a ISO para el backend
         categoria: values.categoria,
-        estado: values.estado,
+        estado: values.estado, // Usar 'estado' que es lo que espera el backend
       };
 
       // Solo agregar acudiente y parentesco si hay un acudiente seleccionado
       if (acudienteId) {
         athleteData.acudiente = acudienteId;
         athleteData.parentesco = parentescoBackend;
+      } else {
+        // No se envía parentesco cuando no hay acudiente
       }
-      // Incluir isScholarship siempre (solo en edici?n)
+      // Incluir isScholarship siempre (solo en edición)
       if (isEditing) {
         athleteData.isScholarship = values.isScholarship === true;
       }
       if (isEditing) {
-        // Detectar si cambi? el email
+        // Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
         const updateData = {
           ...athleteData,
           id: athleteToEdit.id,
           shouldUpdateInscription:
-            values.estado === "Inactivo" && athleteToEdit.estado !== "Inactivo",
-          emailChanged, // Indicar si cambi? el email para reenviar credenciales
+            values.estado !== athleteToEdit.estado, // Cualquier cambio de estado
+          emailChanged, // Indicar si cambió el email para reenviar credenciales
         };
         await onUpdate(updateData);
       } else {
-        // Si estamos en modo matr?cula desde inscripci?n, preservar el ID de la inscripci?n
+        // Si estamos en modo matrícula desde inscripción, preservar el ID de la inscripción
         if (isEnrollmentMode && athleteToEdit?.id) {
           athleteData.preRegistrationId = athleteToEdit.id;
         }
@@ -728,7 +770,7 @@ const AthleteModal = ({
       setHasDateOfBirth(false);
       onClose();
     } catch (error) {
-      console.error("? [AthleteModal] Error en submit:", error);
+      console.error("❌ [AthleteModal] Error en submit:", error);
       showErrorAlert("Error", error.message);
     }
   };
@@ -736,13 +778,21 @@ const AthleteModal = ({
   const handleCreateGuardian = () => {
     if (onCreateGuardian) {
       onCreateGuardian();
-    } else {
     }
   };
 
   const handleViewGuardian = () => {
     if (selectedGuardian && onViewGuardian) {
-      onViewGuardian(selectedGuardian);
+      // Pasar información adicional sobre la deportista actual
+      const guardianWithContext = {
+        ...selectedGuardian,
+        currentAthleteId: athleteToEdit?.id || null,
+        currentAthleteName: athleteToEdit?.nombreCompleto || values.nombreCompleto || null,
+        currentAthleteRelationship: values.parentesco || athleteToEdit?.parentesco || null
+      };
+      
+      
+      onViewGuardian(guardianWithContext);
     }
   };
 
@@ -751,7 +801,7 @@ const AthleteModal = ({
 
     if (!guardian || !onDeleteGuardian) return;
 
-    // Verificar si el acudiente tiene deportistas menores asignados ANTES de mostrar el di?logo
+    // Verificar si el acudiente tiene deportistas menores asignados ANTES de mostrar el diálogo
     const assignedAthletes = athletes.filter(
       a => a.acudiente?.toString() === guardian.id?.toString()
     );
@@ -774,7 +824,7 @@ const AthleteModal = ({
     if (hasMinorAthletes) {
       showErrorAlert(
         "No se puede eliminar",
-        "Este acudiente est? asignado a deportistas menores de edad"
+        "Este acudiente está asignado a deportistas menores de edad"
       );
       return;
     }
@@ -782,11 +832,11 @@ const AthleteModal = ({
     const isCurrentGuardian = values.acudiente === guardian.id?.toString();
 
     // Mensaje simple y directo
-    const confirmMessage = `?Eliminar a ${guardian.nombreCompleto}?`;
+    const confirmMessage = `¿Eliminar a ${guardian.nombreCompleto}?`;
 
-    // Confirmar eliminaci?n
+    // Confirmar eliminación
     const result = await showDeleteAlert(
-      "Confirmar eliminaci?n",
+      "Confirmar eliminación",
       confirmMessage,
     );
 
@@ -860,7 +910,7 @@ const AthleteModal = ({
           // Si NO tiene acudiente asignado
           if (!acudienteId) {
             
-            // Mostrar alerta de confirmaci?n
+            // Mostrar alerta de confirmación
             const Swal = (await import('sweetalert2')).default;
             const result = await Swal.fire({
               title: '?? Acudiente Requerido',
@@ -983,7 +1033,7 @@ const AthleteModal = ({
                   }
                   value={values.identification}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onBlur={() => handleCustomBlur("identification")}
                   error={errors.identification || asyncErrors.identification}
                   touched={touched.identification}
                   required
@@ -993,7 +1043,7 @@ const AthleteModal = ({
                 />
                 {isCheckingDocumentValidation && (
                   <div className="absolute right-3 top-9">
-                    <div className="w-5 h-5 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-500">Validando...</span>
                   </div>
                 )}
               </div>
@@ -1078,7 +1128,7 @@ const AthleteModal = ({
                 />
                 {checkingEmail && (
                   <div className="absolute right-3 top-9">
-                    <div className="w-5 h-5 border-2 border-primary-purple border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-xs text-gray-500">Validando...</span>
                   </div>
                 )}
               </div>
@@ -1209,29 +1259,6 @@ const AthleteModal = ({
                 </div>
               )}
 
-              {/* -- isScholarship (solo en edici?n) -- */}
-              {isEditing && (
-                <div className="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg col-span-full">
-                  <input
-                    type="checkbox"
-                    id="isScholarship"
-                    name="isScholarship"
-                    checked={values.isScholarship === true}
-                    onChange={(e) =>
-                      handleChange({ target: { name: "isScholarship", value: e.target.checked } })
-                    }
-                    className="mt-0.5 w-4 h-4 text-primary-purple border-gray-300 rounded focus:ring-primary-purple cursor-pointer"
-                  />
-                  <label htmlFor="isScholarship" className="cursor-pointer select-none flex-1">
-                    <span className="block text-sm font-semibold text-purple-800">
-                      ?? Deportista Becada
-                    </span>
-                    <span className="block text-xs text-purple-600 mt-0.5">
-                      Si est? marcada, esta deportista est? exenta del pago de mensualidades. El sistema no generar? obligaciones de pago para ella.
-                    </span>
-                  </label>
-                </div>
-              )}
             </div>
           </div>
 
@@ -1318,26 +1345,34 @@ const AthleteModal = ({
                     >
                       {filteredGuardians.length > 0 ? (
                         filteredGuardians.map((guardian) => {
-                          // Contar deportistas asignados a este acudiente
-                          const assignedAthletes = athletes.filter(
-                            a => a.acudiente?.toString() === guardian.id?.toString()
-                          );
-                          const athleteCount = assignedAthletes.length;
+                          // 🔥 CALCULAR INFORMACIÓN DE DEPORTISTAS LOCALMENTE (FALLBACK)
+                          // Si el backend no devuelve la información, la calculamos aquí
+                          let athleteCount = guardian.totalAthletes || 0;
+                          let hasMinorAthletes = guardian.hasMinorAthletes || false;
+                          let minorAthletes = guardian.minorAthletes || 0;
+                          let minorAthletesNames = guardian.minorAthletesNames || [];
                           
-                          // Verificar si alguna deportista asignada es menor de edad
-                          const hasMinorAthletes = assignedAthletes.some(athlete => {
-                            const birthDateStr = athlete.birthDate || athlete.fechaNacimiento;
-                            if (!birthDateStr) return false;
+                          // Si no hay información del backend, calcular localmente
+                          if (athleteCount === 0 && athletes && athletes.length > 0) {
+                            const guardianAthletes = athletes.filter(athlete => 
+                              athlete.acudiente === guardian.nombreCompleto || 
+                              athlete.guardianId === guardian.id
+                            );
                             
-                            const today = new Date();
-                            const birthDate = new Date(birthDateStr);
-                            let age = today.getFullYear() - birthDate.getFullYear();
-                            const monthDiff = today.getMonth() - birthDate.getMonth();
-                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                              age--;
-                            }
-                            return age < 18;
-                          });
+                            athleteCount = guardianAthletes.length;
+                            
+                            const minorAthletesLocal = guardianAthletes.filter(athlete => {
+                              if (athlete.fechaNacimiento) {
+                                const age = calculateAge(athlete.fechaNacimiento);
+                                return age < 18;
+                              }
+                              return false;
+                            });
+                            
+                            minorAthletes = minorAthletesLocal.length;
+                            hasMinorAthletes = minorAthletes > 0;
+                            minorAthletesNames = minorAthletesLocal.map(a => a.nombreCompleto);
+                          }
                           
                           // Solo se puede eliminar si:
                           // - No tiene deportistas asignados, O
@@ -1374,7 +1409,9 @@ const AthleteModal = ({
                                   } else {
                                     showErrorAlert(
                                       "No se puede eliminar",
-                                      `Este acudiente est? asignado a deportistas menores de edad.`
+                                      hasMinorAthletes 
+                                        ? `Este acudiente está asignado a ${minorAthletes} deportista(s) menor(es) de edad: ${minorAthletesNames?.join(', ')}`
+                                        : "Este acudiente está asignado a deportistas."
                                     );
                                   }
                                 }}
@@ -1387,7 +1424,9 @@ const AthleteModal = ({
                                 title={
                                   canDelete
                                     ? "Eliminar acudiente"
-                                    : `Tiene ${athleteCount} deportistas asignados`
+                                    : hasMinorAthletes
+                                      ? `Tiene ${guardian.minorAthletes} deportista(s) menor(es) asignado(s)`
+                                      : `Tiene ${athleteCount} deportista(s) asignado(s)`
                                 }
                               >
                                 <FaTrash size={12} />
@@ -1427,7 +1466,7 @@ const AthleteModal = ({
                           const localGuardian = guardians.find(g => String(g.id) === String(values.acudiente));
                           if (localGuardian) return localGuardian.nombreCompleto;
                           
-                          // Si no est? en la lista local, usar el guardian del athleteToEdit
+                          // Si no está en la lista local, usar el guardian del athleteToEdit
                           if (athleteToEdit?.guardian) {
                             return athleteToEdit.guardian.nombreCompleto || 
                                    `${athleteToEdit.guardian.firstName} ${athleteToEdit.guardian.lastName}`.trim();
@@ -1658,7 +1697,6 @@ const AthleteModal = ({
 };
 
 export default AthleteModal;
-
 
 
 

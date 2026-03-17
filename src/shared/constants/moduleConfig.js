@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Configuración centralizada de módulos del sistema
  * Este archivo define todos los módulos y se auto-mantiene
  */

@@ -220,6 +220,123 @@ if (response && response.success) {
   }
 
   /**
+   * Obtener acudientes con información de deportistas asignados
+   * Para uso en modales de matrícula donde se necesita saber cuántos deportistas tiene cada acudiente
+   */
+  async getGuardiansWithAthleteInfo(params = {}) {
+    try {
+      const { page = 1, limit = 10, search = "", status = "" } = params;
+
+      // Intentar primero el endpoint específico
+      let response = await apiClient.get(`${this.endpoint}/with-athletes`, {
+        page,
+        limit,
+        search,
+        status,
+      });
+
+      // Si falla, usar el endpoint normal como fallback
+      if (!response || !response.success) {
+        response = await apiClient.get(this.endpoint, {
+          page,
+          limit,
+          search,
+          status,
+        });
+        
+        // Marcar que necesitamos enriquecer los datos
+        if (response && response.success) {
+          response.needsEnrichment = true;
+        }
+      }
+
+      if (response && response.success) {
+        return {
+          success: true,
+          data: response.data || [],
+          needsEnrichment: response.needsEnrichment || false,
+          pagination: response.pagination || {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      }
+    } catch (error) {
+      console.error("Error al obtener acudientes con información de deportistas:", error);
+      
+      // Intentar fallback en caso de error
+      try {
+        const response = await apiClient.get(this.endpoint, {
+          page: params.page || 1,
+          limit: params.limit || 10,
+          search: params.search || "",
+          status: params.status || "",
+        });
+        
+        if (response && response.success) {
+          return {
+            success: true,
+            data: response.data || [],
+            needsEnrichment: true,
+            pagination: response.pagination || {
+              page: parseInt(params.page || 1),
+              limit: parseInt(params.limit || 10),
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          };
+        }
+      } catch (fallbackError) {
+        console.error("Error en fallback:", fallbackError);
+      }
+      
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          page: params.page || 1,
+          limit: params.limit || 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Buscar acudientes con información de deportistas asignados
+   */
+  async searchGuardiansWithAthleteInfo(searchTerm, limit = 20) {
+    return this.getGuardiansWithAthleteInfo({
+      search: searchTerm,
+      limit,
+      page: 1,
+    });
+  }
+
+  /**
    * Obtener acudientes activos
    */
   async getActiveGuardians() {
@@ -353,7 +470,6 @@ if (response && response.success) {
           
           // Seguridad: evitar bucle infinito
           if (currentPage > 100) {
-            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
             break;
           }
         } else {

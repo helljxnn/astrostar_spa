@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Filter } from "lucide-react";
 import { FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";

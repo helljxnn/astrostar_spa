@@ -1,9 +1,10 @@
-﻿import { useState, useEffect } from "react";
-import { FaUserShield } from "react-icons/fa";
+import { useState, useEffect } from "react";
+import { FaPlus, FaUserShield, FaRegCalendarAlt } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
+import MonthlyHistoryModal from "../AthletesSection/components/MonthlyHistoryModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
@@ -28,7 +29,6 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
-  const canManageGuardian = hasPermission("athletesSection", "Acudiente");
 
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
@@ -50,6 +50,7 @@ const Athletes = () => {
     updateGuardian,
     deleteGuardian,
     changePage,
+    updateAthleteInState,
     refresh,
   } = useAthletes();
 
@@ -69,6 +70,10 @@ const Athletes = () => {
   const [guardianModalMode, setGuardianModalMode] = useState("create");
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
   const [currentAthleteId, setCurrentAthleteId] = useState(null); // ID del deportista actual al ver acudiente
+  const [monthlyModalOpen, setMonthlyModalOpen] = useState(false);
+  const [monthlyAthlete, setMonthlyAthlete] = useState(null);
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
@@ -183,7 +188,7 @@ const Athletes = () => {
           direccion: address,
           fechaNacimiento: birthDate,
           categoria: athlete.categoria || "",
-          estado: athlete.status || athlete.estado || "",
+          estado: athlete.estado || athlete.status || "",
           estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
           acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
           acudienteTipoDocumento: tipoDocumentoAcudiente,
@@ -208,11 +213,45 @@ const Athletes = () => {
   };
 
   const handleUpdate = async (updatedAthlete) => {
-    const { id, shouldUpdateInscription, ...athleteData } = updatedAthlete;
-    const success = await updateAthlete(id, athleteData);
+    const { id, shouldUpdateInscription, estado, ...athleteData } = updatedAthlete;
+    
+    let success = false;
+    
+    // Si cambió el estado, usar el endpoint específico para cambio de estado
+    if (shouldUpdateInscription) {
+      try {
+        const statusResult = await AthletesService.changeAthleteStatus(id, estado);
+        if (!statusResult.success) {
+          showErrorAlert("Error", statusResult.error || "No se pudo cambiar el estado");
+          return;
+        }
+
+        // Después del cambio de estado, actualizar los demás campos si es necesario
+        if (Object.keys(athleteData).length > 0) {
+          success = await updateAthlete(id, { ...athleteData, estado });
+        } else {
+          success = true;
+        }
+      } catch (error) {
+        showErrorAlert("Error", "Error inesperado al cambiar el estado");
+        return;
+      }
+    } else {
+      // Para otros cambios que no involucran estado, usar updateAthlete normal
+      success = await updateAthlete(id, { ...athleteData, estado });
+    }
 
     if (success) {
       setIsModalOpen(false);
+      await refresh({
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm,
+      });
+      const latest = await AthletesService.getAthleteById(id);
+      if (latest.success) {
+        updateAthleteInState(latest.data);
+      }
 
       // Actualizar la vista si estaba abierta
       if (athleteToView && athleteToView.id === id) {
@@ -350,10 +389,6 @@ const Athletes = () => {
   };
 
   const handleSaveGuardian = async (newGuardian) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return null;
-    }
     const guardianData = await createGuardian(newGuardian);
 
     if (guardianData) {
@@ -369,10 +404,6 @@ const Athletes = () => {
   };
 
   const handleUpdateGuardian = async (updatedGuardian) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return;
-    }
     const { id, ...guardianData } = updatedGuardian;
     const success = await updateGuardian(id, guardianData);
 
@@ -390,10 +421,6 @@ const Athletes = () => {
   };
 
   const handleEditGuardian = async (updatedGuardian) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return;
-    }
     if (!updatedGuardian || !updatedGuardian.id) return;
 
     const { id, ...guardianData } = updatedGuardian;
@@ -414,10 +441,6 @@ const Athletes = () => {
   };
 
   const handleDeleteGuardian = async (guardian, needsNewGuardian = false) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return false;
-    }
     if (!guardian || !guardian.id) {
       return showErrorAlert("Error", "Acudiente no válido");
     }
@@ -480,10 +503,6 @@ const Athletes = () => {
 
   // Nuevo: Gestionar acudiente desde la fila del deportista
   const handleManageGuardian = (athlete) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return;
-    }
     if (!athlete || athlete.target) return;
 
     // Si el deportista tiene acudiente, mostrarlo
@@ -512,10 +531,6 @@ const Athletes = () => {
     athleteId,
     needsNewGuardian,
   ) => {
-    if (!canManageGuardian) {
-      showErrorAlert("Sin permisos", "No tienes permisos para gestionar acudientes");
-      return;
-    }
     if (!guardian || !athleteId) {
       return showErrorAlert("Error", "Datos inválidos");
     }
@@ -592,6 +607,53 @@ const Athletes = () => {
     }
   };
 
+  const formatCurrency = (value) => {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getMonthlySummaryLabel = (summary) => {
+    if (!summary || summary.obligationsCount === 0) {
+      return "Al día";
+    }
+
+    const base = formatCurrency(summary.baseAmount || 0);
+    const mora = formatCurrency(summary.lateFeeAmount || 0);
+    const days = summary.maxDaysLate || 0;
+
+    if ((summary.lateFeeAmount || 0) > 0) {
+      return `Mensualidad ${base} + Mora ${mora} (${days} días)`;
+    }
+
+    return `Mensualidad ${base} (sin mora)`;
+  };
+
+  const handleOpenMonthlyHistory = async (athlete) => {
+    try {
+      setMonthlyAthlete(athlete);
+      setMonthlyHistory([]);
+      setMonthlyLoading(true);
+      setMonthlyModalOpen(true);
+
+      const result = await AthletesService.getMonthlyHistory(athlete.id);
+      if (result.success) {
+        setMonthlyHistory(result.data || []);
+      } else {
+        setMonthlyHistory([]);
+        showErrorAlert("Error", result.error || "No se pudo cargar el historial de mensualidades");
+      }
+    } catch (err) {
+      showErrorAlert("Error", "No se pudo cargar el historial de mensualidades");
+      setMonthlyHistory([]);
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -664,7 +726,7 @@ const Athletes = () => {
                   "Nombre Completo",
                   "Identificación",
                   "Categoría",
-                  "Acudiente",
+                  "Mensualidad",
                 ],
                 state: true,
                 actions: true,
@@ -691,15 +753,41 @@ const Athletes = () => {
                     identificacion: a.identification || a.numeroDocumento || "Sin identificación",
                     acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
                     categoria: a.categoria || "Sin categoría",
+                    mensualidadResumen: getMonthlySummaryLabel(a.monthlySummary),
                   };
                 }),
                 dataPropertys: [
                   "nombreCompleto",
                   "identificacion",
                   "categoria",
-                  "acudienteNombre",
+                  "mensualidadResumen",
                 ],
                 state: true,
+                customRenderers: {
+                  mensualidadResumen: (_value, row) => {
+                    const summary = row.monthlySummary;
+                    if (!summary || summary.obligationsCount === 0) {
+                      return <span className="text-gray-600">Al día</span>;
+                    }
+
+                    const base = formatCurrency(summary.baseAmount || 0);
+                    const mora = formatCurrency(summary.lateFeeAmount || 0);
+                    const days = summary.maxDaysLate || 0;
+
+                    return (
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900">Mensualidad {base}</div>
+                        {(summary.lateFeeAmount || 0) > 0 ? (
+                          <div className="text-red-600">
+                            Mora {mora} ({days} días)
+                          </div>
+                        ) : (
+                          <div className="text-gray-500">Sin mora</div>
+                        )}
+                      </div>
+                    );
+                  },
+                },
                 stateMap: {
                   Vigente: "bg-green-100 text-green-800",
                   Suspendida: "bg-orange-100 text-orange-800",
@@ -737,12 +825,18 @@ const Athletes = () => {
               }}
               customActions={[
                 {
+                  onClick: (athlete) => handleOpenMonthlyHistory(athlete),
+                  label: <FaRegCalendarAlt className="w-4 h-4" />,
+                  className:
+                    "p-2 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors",
+                  title: "Ver mensualidades",
+                },
+                {
                   onClick: (athlete) => handleManageGuardian(athlete),
                   label: <FaUserShield className="w-4 h-4" />,
                   className:
                     "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
                   title: "Gestionar Acudiente",
-                  show: () => canManageGuardian,
                 },
               ]}
             />
@@ -828,9 +922,20 @@ const Athletes = () => {
           documentTypes: referenceData.guardianDocumentTypes || [],
         }}
       />
+
+      <MonthlyHistoryModal
+        isOpen={monthlyModalOpen}
+        onClose={() => setMonthlyModalOpen(false)}
+        athleteName={
+          monthlyAthlete?.nombreCompleto ||
+          `${monthlyAthlete?.firstName || ""} ${monthlyAthlete?.lastName || ""}`.trim()
+        }
+        summary={monthlyAthlete?.monthlySummary || null}
+        history={monthlyHistory}
+        loading={monthlyLoading}
+      />
     </div>
   );
 };
 
 export default Athletes;
-

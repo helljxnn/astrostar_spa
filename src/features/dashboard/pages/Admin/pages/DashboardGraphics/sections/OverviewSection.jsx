@@ -1,4 +1,5 @@
-﻿import KPICard from "../components/KPICard";
+import { useState, useEffect } from "react";
+import KPICard from "../components/KPICard";
 import {
   FaCalendarAlt,
   FaRunning,
@@ -7,15 +8,47 @@ import {
 } from "react-icons/fa";
 import EventsGraphic from "../components/EventsGraphic";
 import AthletesTrackingGraphic from "../components/AthletesTrackingGraphic";
+import DashboardService from "../services/DashboardService";
 
 const OverviewSection = () => {
+  const [kpis, setKpis] = useState({
+    totalEvents: 0,
+    totalAthletes: 0,
+    healthAppointments: 0,
+    donations: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchOverviewData();
+  }, []);
+
+  const fetchOverviewData = async () => {
+    try {
+      setLoading(true);
+      const response = await DashboardService.getKPIs();
+
+      if (response.success && response.data) {
+        setKpis({
+          totalEvents: response.data.totalEvents || 0,
+          totalAthletes: response.data.totalAthletes || 0,
+          healthAppointments: response.data.healthAppointments || 0,
+          donations: response.data.donations || 0
+        });
+      }
+    } catch (error) {
+      console.error("Error al cargar datos del resumen:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="space-y-6">
       {/* KPIs Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Eventos Realizados"
-          value="48"
+          value={loading ? "..." : kpis.totalEvents.toString()}
           icon={FaCalendarAlt}
           color="blue"
           trend="up"
@@ -23,7 +56,7 @@ const OverviewSection = () => {
         />
         <KPICard
           title="Deportistas Activos"
-          value="324"
+          value={loading ? "..." : kpis.totalAthletes.toString()}
           icon={FaRunning}
           color="pink"
           trend="up"
@@ -31,7 +64,7 @@ const OverviewSection = () => {
         />
         <KPICard
           title="Citas de Salud"
-          value="156"
+          value={loading ? "..." : kpis.healthAppointments.toString()}
           icon={FaHeartbeat}
           color="green"
           trend="up"
@@ -39,7 +72,7 @@ const OverviewSection = () => {
         />
         <KPICard
           title="Donaciones Recibidas"
-          value="$2.5M"
+          value={loading ? "..." : `$${(kpis.donations / 1000000).toFixed(1)}M`}
           icon={FaHandHoldingHeart}
           color="yellow"
           trend="up"

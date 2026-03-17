@@ -31,3 +31,4 @@ export const formatNumber = (amount) => {
 
   return new Intl.NumberFormat('es-CO').format(amount);
 };
+

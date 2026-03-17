@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaCalendarAlt, FaEnvelope, FaIdCard, FaSearch, FaTimes, FaUser } from "react-icons/fa";
 import { Modal } from "../../../../../../../../shared/components/Modal";
 import { calculateAge } from "../../../../../../../../shared/utils/dateUtils";
