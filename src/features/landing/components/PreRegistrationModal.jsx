@@ -642,16 +642,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden relative flex"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
           {!showSuccess ? (
-            <div className="flex w-full">
-              {/* Left Side - Form */}
-              <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="w-full">
+              {/* Form */}
+              <div className="w-full flex flex-col">
                 {/* Header Minimalista */}
                 <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
                   <button
@@ -820,20 +820,6 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                       "Enviar Inscripción"
                     )}
                   </button>
-                </div>
-              </div>
-
-              {/* Right Side - Image (hidden on mobile) */}
-              <div className="hidden lg:block lg:w-1/2 relative">
-                <img
-                  src="/assets/images/Foundation/team/Eliana_Jiménez.jpg"
-                  alt="Únete a la Fundación"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#B595FF]/40 to-transparent" />
-                <div className="absolute bottom-8 left-8 right-8 text-white">
-                  <h3 className="text-3xl font-bold mb-2">¡Únete a Nosotros!</h3>
-                  <p className="text-lg">Fundación Manuela Vanegas</p>
                 </div>
               </div>
             </div>
