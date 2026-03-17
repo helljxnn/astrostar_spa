@@ -40,9 +40,9 @@ export const useDynamicPermissions = () => {
         setHasActiveEnrollment(response.data.hasActiveEnrollment);
         
         // Si es atleta, verificar restricciones adicionales
-        if (user.athleteId || user.athlete_id) {
+        if (user.athleteId || user.athlete_id || user?.role?.name === "Deportista") {
           try {
-            const athleteId = user.athleteId || user.athlete_id;
+            const athleteId = user.athleteId || user.athlete_id || user.id;
             
             // Obtener estado financiero y restricciones
             const [accessResponse, financialResponse] = await Promise.all([

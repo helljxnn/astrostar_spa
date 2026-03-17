@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { FaPlus, FaUserShield } from "react-icons/fa";
+import { FaPlus, FaUserShield, FaRegCalendarAlt } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
 import GuardianModal from "../../Athletes/AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
+import MonthlyHistoryModal from "../AthletesSection/components/MonthlyHistoryModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
@@ -69,6 +70,10 @@ const Athletes = () => {
   const [guardianModalMode, setGuardianModalMode] = useState("create");
   const [newlyCreatedGuardianId, setNewlyCreatedGuardianId] = useState(null);
   const [currentAthleteId, setCurrentAthleteId] = useState(null); // ID del deportista actual al ver acudiente
+  const [monthlyModalOpen, setMonthlyModalOpen] = useState(false);
+  const [monthlyAthlete, setMonthlyAthlete] = useState(null);
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
 
   // Estados comunes
   const [searchTerm, setSearchTerm] = useState("");
@@ -602,6 +607,53 @@ const Athletes = () => {
     }
   };
 
+  const formatCurrency = (value) => {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getMonthlySummaryLabel = (summary) => {
+    if (!summary || summary.obligationsCount === 0) {
+      return "Al día";
+    }
+
+    const base = formatCurrency(summary.baseAmount || 0);
+    const mora = formatCurrency(summary.lateFeeAmount || 0);
+    const days = summary.maxDaysLate || 0;
+
+    if ((summary.lateFeeAmount || 0) > 0) {
+      return `Base ${base} + Mora ${mora} (${days} días)`;
+    }
+
+    return `Base ${base} (sin mora)`;
+  };
+
+  const handleOpenMonthlyHistory = async (athlete) => {
+    try {
+      setMonthlyAthlete(athlete);
+      setMonthlyHistory([]);
+      setMonthlyLoading(true);
+      setMonthlyModalOpen(true);
+
+      const result = await AthletesService.getMonthlyHistory(athlete.id);
+      if (result.success) {
+        setMonthlyHistory(result.data || []);
+      } else {
+        setMonthlyHistory([]);
+        showErrorAlert("Error", result.error || "No se pudo cargar el historial de mensualidades");
+      }
+    } catch (err) {
+      showErrorAlert("Error", "No se pudo cargar el historial de mensualidades");
+      setMonthlyHistory([]);
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
   return (
     <div className="p-6 font-questrial w-full max-w-full">
       {/* Header */}
@@ -674,7 +726,7 @@ const Athletes = () => {
                   "Nombre Completo",
                   "Identificación",
                   "Categoría",
-                  "Acudiente",
+                  "Mensualidad",
                 ],
                 state: true,
                 actions: true,
@@ -701,15 +753,41 @@ const Athletes = () => {
                     identificacion: a.identification || a.numeroDocumento || "Sin identificación",
                     acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
                     categoria: a.categoria || "Sin categoría",
+                    mensualidadResumen: getMonthlySummaryLabel(a.monthlySummary),
                   };
                 }),
                 dataPropertys: [
                   "nombreCompleto",
                   "identificacion",
                   "categoria",
-                  "acudienteNombre",
+                  "mensualidadResumen",
                 ],
                 state: true,
+                customRenderers: {
+                  mensualidadResumen: (_value, row) => {
+                    const summary = row.monthlySummary;
+                    if (!summary || summary.obligationsCount === 0) {
+                      return <span className="text-gray-600">Al día</span>;
+                    }
+
+                    const base = formatCurrency(summary.baseAmount || 0);
+                    const mora = formatCurrency(summary.lateFeeAmount || 0);
+                    const days = summary.maxDaysLate || 0;
+
+                    return (
+                      <div className="text-sm">
+                        <div className="font-medium text-gray-900">Base {base}</div>
+                        {(summary.lateFeeAmount || 0) > 0 ? (
+                          <div className="text-red-600">
+                            Mora {mora} ({days} días)
+                          </div>
+                        ) : (
+                          <div className="text-gray-500">Sin mora</div>
+                        )}
+                      </div>
+                    );
+                  },
+                },
                 stateMap: {
                   Vigente: "bg-green-100 text-green-800",
                   Suspendida: "bg-orange-100 text-orange-800",
@@ -746,6 +824,13 @@ const Athletes = () => {
                 }),
               }}
               customActions={[
+                {
+                  onClick: (athlete) => handleOpenMonthlyHistory(athlete),
+                  label: <FaRegCalendarAlt className="w-4 h-4" />,
+                  className:
+                    "p-2 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors",
+                  title: "Ver mensualidades",
+                },
                 {
                   onClick: (athlete) => handleManageGuardian(athlete),
                   label: <FaUserShield className="w-4 h-4" />,
@@ -836,6 +921,18 @@ const Athletes = () => {
         referenceData={{
           documentTypes: referenceData.guardianDocumentTypes || [],
         }}
+      />
+
+      <MonthlyHistoryModal
+        isOpen={monthlyModalOpen}
+        onClose={() => setMonthlyModalOpen(false)}
+        athleteName={
+          monthlyAthlete?.nombreCompleto ||
+          `${monthlyAthlete?.firstName || ""} ${monthlyAthlete?.lastName || ""}`.trim()
+        }
+        summary={monthlyAthlete?.monthlySummary || null}
+        history={monthlyHistory}
+        loading={monthlyLoading}
       />
     </div>
   );

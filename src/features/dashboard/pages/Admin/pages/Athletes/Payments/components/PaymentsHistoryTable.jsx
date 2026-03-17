@@ -192,7 +192,7 @@ const PaymentsHistoryTable = ({
               // Mostrar desglose si hay mora
               if (lateFeeAmount > 0) {
                 return (
-                  <div>
+                  <div className="max-w-[140px] whitespace-normal break-words">
                     <div className="font-semibold text-gray-900">{formatCurrency(totalAmount)}</div>
                     <div className="text-xs text-gray-500 space-y-0.5">
                       <div>Base: {formatCurrency(baseAmount)}</div>
@@ -205,7 +205,11 @@ const PaymentsHistoryTable = ({
                 );
               }
               
-              return <span className="font-semibold text-gray-900">{formatCurrency(totalAmount)}</span>;
+              return (
+                <span className="font-semibold text-gray-900 max-w-[140px] whitespace-normal break-words block">
+                  {formatCurrency(totalAmount)}
+                </span>
+              );
             },
             status: (value, payment) => {
               const statusLabels = {

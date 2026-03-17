@@ -187,6 +187,48 @@ const AthleteModal = ({
     handleChange(e);
   };
 
+  // Validación de unicidad del documento (igual que empleados)
+  const handleCustomBlur = async (name) => {
+    handleBlur(name);
+
+    if (name !== "identification") return;
+    if (!values.identification) return;
+
+    // Validación básica antes de consultar backend
+    const validationRule = athleteValidationRules[name];
+    let validationError = "";
+    if (validationRule) {
+      for (const rule of validationRule) {
+        validationError = rule(values.identification, values);
+        if (validationError) break;
+      }
+    }
+    if (validationError) return;
+
+    const currentUserId =
+      isEditing && !isEnrollmentMode && athleteToEdit?.userId
+        ? athleteToEdit.userId
+        : null;
+
+    try {
+      const result = await AthletesService.checkIdentificationAvailability(
+        values.identification,
+        currentUserId
+      );
+      const isAvailable = result?.available ?? true;
+      if (!isAvailable) {
+        const errorMsg =
+          result?.message || "Este documento ya está registrado";
+        setErrors((prev) => ({ ...prev, identification: errorMsg }));
+        setAsyncErrors((prev) => ({ ...prev, identification: errorMsg }));
+      } else {
+        setAsyncErrors((prev) => ({ ...prev, identification: null }));
+      }
+    } catch (error) {
+      console.warn("Error en validación de documento:", error);
+    }
+  };
+
   useEffect(() => {
     if (values.birthDate) {
       const age = calculateAge(values.birthDate);
@@ -991,7 +1033,7 @@ const AthleteModal = ({
                   }
                   value={values.identification}
                   onChange={handleChange}
-                  onBlur={handleBlur}
+                  onBlur={() => handleCustomBlur("identification")}
                   error={errors.identification || asyncErrors.identification}
                   touched={touched.identification}
                   required
@@ -1199,29 +1241,6 @@ const AthleteModal = ({
                 </div>
               )}
 
-              {/* ── isScholarship (solo en edición) ── */}
-              {isEditing && (
-                <div className="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg col-span-full">
-                  <input
-                    type="checkbox"
-                    id="isScholarship"
-                    name="isScholarship"
-                    checked={values.isScholarship === true}
-                    onChange={(e) =>
-                      handleChange({ target: { name: "isScholarship", value: e.target.checked } })
-                    }
-                    className="mt-0.5 w-4 h-4 text-primary-purple border-gray-300 rounded focus:ring-primary-purple cursor-pointer"
-                  />
-                  <label htmlFor="isScholarship" className="cursor-pointer select-none flex-1">
-                    <span className="block text-sm font-semibold text-purple-800">
-                      🎓 Deportista Becada
-                    </span>
-                    <span className="block text-xs text-purple-600 mt-0.5">
-                      Si está marcada, esta deportista está exenta del pago de mensualidades. El sistema no generará obligaciones de pago para ella.
-                    </span>
-                  </label>
-                </div>
-              )}
             </div>
           </div>
 

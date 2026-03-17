@@ -119,7 +119,7 @@ const Enrollments = () => {
     if (activeTab !== "inscripciones") return;
 
     const interval = setInterval(() => {
-      refresh(true); // true = silent mode
+      refresh(true, { includeInscriptions: true }); // silent + mantener inscripciones actualizadas
     }, 60000); // 60 segundos - mejor balance entre actualización y rendimiento
 
     return () => clearInterval(interval);
@@ -184,6 +184,29 @@ const Enrollments = () => {
     const searchLower = searchTerm.toLowerCase().trim();
 
     return inscriptions.filter((inscription) => {
+      const formatDateVariants = (value) => {
+        if (!value) return [];
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return [];
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        const dd = String(day).padStart(2, "0");
+        const mm = String(month).padStart(2, "0");
+        return [
+          `${day}/${month}/${year}`,
+          `${dd}/${mm}/${year}`,
+          date.toLocaleDateString("es-CO"),
+        ];
+      };
+
+      const createdAtVariants = formatDateVariants(
+        inscription.fechaInscripcion || inscription.fechaPreRegistro || inscription.createdAt
+      );
+      const birthDateVariants = formatDateVariants(
+        inscription.birthDate || inscription.fechaNacimiento
+      );
+
       const textFields = [
         inscription.firstName,
         inscription.middleName,
@@ -195,6 +218,8 @@ const Enrollments = () => {
         inscription.status,
         inscription.estado,
         inscription.createdAt,
+        ...createdAtVariants,
+        ...birthDateVariants,
       ];
 
       return textFields.some(

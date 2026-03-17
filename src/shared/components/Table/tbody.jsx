@@ -234,6 +234,10 @@ const Tbody = ({ options }) => {
                           : {};
                         const isDisabled = config.disabled || false;
                         const title = config.title || action.title;
+                        const label =
+                          typeof action.label === "function"
+                            ? action.label(item)
+                            : action.label;
 
                         return (
                           <button
@@ -248,7 +252,7 @@ const Tbody = ({ options }) => {
                             disabled={isDisabled}
                           >
                             {action.icon && <action.icon />}
-                            {action.label}
+                            {label}
                           </button>
                         );
                       }))}

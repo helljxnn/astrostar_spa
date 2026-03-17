@@ -104,6 +104,65 @@ class AthletesService {
   }
 
   /**
+   * Resumen de mensualidades para varios atletas (admin)
+   */
+  async getMonthlySummaryByAthletes(athleteIds = []) {
+    try {
+      const ids = (athleteIds || []).map((id) => id?.toString()).filter(Boolean);
+      if (ids.length === 0) {
+        return { success: true, data: {} };
+      }
+      const response = await apiClient.get("/payments/monthly-summary", {
+        athleteIds: ids.join(","),
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error("Error al obtener resumen de mensualidades:", error);
+      return { success: false, data: {}, error: error.message };
+    }
+  }
+
+  /**
+   * Historial mensual de un atleta (admin)
+   */
+  async getMonthlyHistory(athleteId) {
+    try {
+      const response = await apiClient.get(`/payments/athletes/${athleteId}/monthly-history`, {
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error("Error al obtener historial mensual:", error);
+      return { success: false, data: [], error: error.message };
+    }
+  }
+
+  /**
+   * Historial de intentos de pago mensual (aprobados/rechazados)
+   */
+  async getMonthlyAttempts(athleteId) {
+    try {
+      const response = await apiClient.get(`/payments/athletes/${athleteId}/history`, {
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+      console.error("Error al obtener historial de intentos:", error);
+      return { success: false, data: [], error: error.message };
+    }
+  }
+
+  /**
    * Obtener un deportista por ID
    */
   async getAthleteById(id) {

@@ -19,6 +19,9 @@ import { paymentsService } from "./services/PaymentsService.js";
 import { useAthleteFinancialStatus } from "./hooks/useAthleteFinancialStatus.js";
 import { formatCurrency } from "./utils/currencyUtils.js";
 import { showErrorAlert, showSuccessAlert } from "../../../../../../../shared/utils/alerts.js";
+import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
+import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
+import PaymentReceiptViewModal from "./components/PaymentReceiptViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -297,25 +300,32 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Componente de Historial de Pagos para Deportistas
 // ─────────────────────────────────────────────────────────────────────────────
-const HistorialPagosSection = ({ athleteId, financialStatus }) => {
+const HistorialPagosSection = ({ athleteId }) => {
   const [historialPagos, setHistorialPagos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(PAGINATION_CONFIG.DEFAULT_PAGE);
+  const [receiptModal, setReceiptModal] = useState({ isOpen: false, payment: null, initialTab: "receipt" });
 
   useEffect(() => {
     const fetchHistorial = async () => {
       if (!athleteId) return;
-      
+
       setLoading(true);
       setError(null);
-      
+
       try {
-        // Obtener historial de pagos aprobados del atleta
+        // Historial de pagos (intentos) y filtrar solo mensualidades
         const response = await paymentsService.getAthletePaymentHistory(athleteId);
-        setHistorialPagos(response.data || response || []);
+        const raw = response?.data || response || [];
+        const filtered = Array.isArray(raw)
+          ? raw.filter((payment) => payment?.obligation?.type === "MONTHLY")
+          : [];
+        setHistorialPagos(filtered);
       } catch (err) {
         console.error('Error fetching payment history:', err);
-        setError('No se pudo cargar el historial de pagos');
+        setError('No se pudo cargar el historial de mensualidades');
         setHistorialPagos([]);
       } finally {
         setLoading(false);
@@ -342,25 +352,18 @@ const HistorialPagosSection = ({ athleteId, financialStatus }) => {
 
   const getPeriodText = (obligation) => {
     if (!obligation) return "—";
-    
     if (obligation.period) {
+      const date = new Date(`${obligation.period}-01T00:00:00`);
+      if (!Number.isNaN(date.getTime())) {
+        return date.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+      }
       return obligation.period;
     }
-    
-    switch (obligation.type) {
-      case "ENROLLMENT_INITIAL":
-        return "Matrícula Inicial";
-      case "ENROLLMENT_RENEWAL":
-        return "Renovación Matrícula";
-      case "MONTHLY":
-        if (obligation.dueStart) {
-          const fecha = new Date(obligation.dueStart);
-          return fecha.toLocaleDateString("es-ES", { month: 'long', year: 'numeric' });
-        }
-        return "Mensualidad";
-      default:
-        return obligation.type || "—";
+    if (obligation.dueStart) {
+      const fecha = new Date(obligation.dueStart);
+      return fecha.toLocaleDateString("es-ES", { month: 'long', year: 'numeric' });
     }
+    return "Mensualidad";
   };
 
   if (loading) {
@@ -382,43 +385,40 @@ const HistorialPagosSection = ({ athleteId, financialStatus }) => {
   if (!historialPagos || historialPagos.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
-        <p className="text-gray-600">No tienes pagos aprobados aún.</p>
+        <p className="text-gray-600">No tienes historial de mensualidades aún.</p>
         <p className="text-sm text-gray-500 mt-2">
-          Cuando tus comprobantes sean aprobados, aparecerán aquí.
+          Aquí verás los intentos aprobados y rechazados con su estado.
         </p>
       </div>
     );
   }
 
   const tableData = historialPagos.map((payment) => {
-    const obligation = payment.obligation;
-    const baseAmount = obligation?.baseAmount || 0;
-    const totalAmount = obligation?.totalAmount || baseAmount;
-    const lateFeeAmount = obligation?.lateFeeAmount || 0;
-    
-    // Calcular días de mora si hay información disponible
-    let daysLate = 0;
-    if (obligation?.type === 'MONTHLY' && obligation?.dueEnd && payment.processedAt) {
-      const dueDate = new Date(obligation.dueEnd);
-      const processedDate = new Date(payment.processedAt);
-      if (processedDate > dueDate) {
-        daysLate = Math.ceil((processedDate - dueDate) / (1000 * 60 * 60 * 24));
-      }
-    }
+    const obligation = payment.obligation || {};
+    const status = String(payment?.status || "").toUpperCase();
+    const statusLabel =
+      status === "APPROVED"
+        ? "Aprobado"
+      : status === "REJECTED"
+        ? "Rechazado"
+        : status || "—";
+
+    const reviewedAt = payment.reviewedAt || payment.processedAt || payment.approvedAt || payment.updatedAt;
+
+    const baseAmount = obligation.baseAmount || 0;
+    const totalAmount = obligation.totalAmount ?? payment?.totalAmount ?? baseAmount;
+    const lateFeeAmount = obligation.lateFee ?? obligation.lateFeeAmount ?? payment?.lateFee ?? 0;
+    const daysLate = obligation.lateDays ?? payment?.lateDays ?? 0;
 
     return {
       ...payment,
-      periodoTexto: getPeriodText(payment.obligation),
+      status,
+      statusLabel,
+      periodoTexto: getPeriodText(obligation),
       montoTexto: formatCurrency(totalAmount),
-      fechaTexto: payment.processedAt || payment.approvedAt || payment.updatedAt
-        ? new Date(payment.processedAt || payment.approvedAt || payment.updatedAt).toLocaleDateString("es-ES")
+      fechaTexto: reviewedAt
+        ? new Date(reviewedAt).toLocaleDateString("es-ES")
         : "—",
-      statusBadge: (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-          <FaCheckCircle size={12} />
-          Aprobado
-        </span>
-      ),
       daysLate,
       lateFeeAmount,
       baseAmount,
@@ -426,97 +426,167 @@ const HistorialPagosSection = ({ athleteId, financialStatus }) => {
     };
   });
 
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredData = !normalizedSearch
+    ? tableData
+    : tableData.filter((row) => {
+        const pieces = [
+          row.periodoTexto,
+          row.montoTexto,
+          row.fechaTexto,
+          row.status,
+          row.statusLabel,
+          row.rejectionReason,
+          row.reason,
+          row.baseAmount,
+          row.totalAmount,
+          row.dueStart,
+          row.dueEnd,
+          row.receiptName,
+          row.receiptUrl,
+        ];
+        const haystack = pieces
+          .filter((v) => v !== undefined && v !== null)
+          .join(" ")
+          .toString()
+          .toLowerCase();
+        return haystack.includes(normalizedSearch);
+      });
+
+  const rowsPerPage = PAGINATION_CONFIG.ROWS_PER_PAGE;
+  const totalRows = filteredData.length;
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedData = filteredData.slice(startIndex, startIndex + rowsPerPage);
+
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="p-4 sm:p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-            <FaHistory className="text-green-600" size={16} />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Historial de Pagos</h3>
-            <p className="text-sm text-gray-600">
-              {historialPagos.length} pago{historialPagos.length !== 1 ? 's' : ''} aprobado{historialPagos.length !== 1 ? 's' : ''}
-            </p>
-          </div>
+    <>
+      <div className="flex justify-end mb-3">
+        <div className="w-full sm:w-64">
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
+            }}
+            placeholder="Buscar deportista o identificación..."
+          />
         </div>
       </div>
-      
-      <div className="overflow-x-auto">
-        {tableData && tableData.length > 0 ? (
-          <Table
-            thead={{
-              titles: [
-                "Período",
-                "Monto",
-                "Fecha Aprobación", 
-                "Estado"
-              ],
-              state: false,
-              actions: true,
-            }}
-            tbody={{
-              data: tableData,
-              dataPropertys: [
-                "periodoTexto",
-                "montoTexto", 
-                "fechaTexto",
-                "statusBadge"
-              ],
-              state: false,
-              customRenderers: {
-                periodoTexto: (value, row) => (
-                  <div>
-                    <div className="font-medium text-gray-900">{value}</div>
-                    <div className="text-xs text-gray-500">
-                      {row.obligation?.type === 'MONTHLY' ? 'Mensualidad' : 
-                       row.obligation?.type === 'ENROLLMENT_INITIAL' ? 'Matrícula Inicial' :
-                       row.obligation?.type === 'ENROLLMENT_RENEWAL' ? 'Renovación Matrícula' : 'Pago'}
-                    </div>
-                  </div>
+
+      {filteredData && filteredData.length > 0 ? (
+        <Table
+          serverPagination={true}
+          currentPage={currentPage}
+          totalRows={totalRows}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setCurrentPage}
+          thead={{
+            titles: [
+              "Período",
+              "Monto",
+              "Fecha", 
+              "Estado"
+            ],
+            state: false,
+            actions: true,
+          }}
+          tbody={{
+            data: paginatedData,
+            dataPropertys: [
+              "periodoTexto",
+              "montoTexto", 
+              "fechaTexto",
+              "statusBadge"
+            ],
+            state: false,
+            customRenderers: {
+                periodoTexto: (value) => (
+                  <div className="font-medium text-gray-900">{value}</div>
                 ),
-                montoTexto: (value, row) => {
-                  // Mostrar desglose si hay mora
-                  if (row.lateFeeAmount > 0) {
-                    return (
-                      <div>
-                        <div className="font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</div>
-                        <div className="text-xs text-gray-500 space-y-0.5">
-                          <div>Base: {formatCurrency(row.baseAmount)}</div>
-                          <div className="text-red-600">
-                            Mora: {formatCurrency(row.lateFeeAmount)}
-                            {row.daysLate > 0 && ` (${row.daysLate} días)`}
-                          </div>
+              montoTexto: (value, row) => {
+                // Mostrar desglose si hay mora
+                if (row.lateFeeAmount > 0) {
+                  return (
+                    <div>
+                      <div className="font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</div>
+                      <div className="text-xs text-gray-500 space-y-0.5">
+                        <div>Base: {formatCurrency(row.baseAmount)}</div>
+                        <div className="text-red-600">
+                          Mora: {formatCurrency(row.lateFeeAmount)}
+                          {row.daysLate > 0 && ` (${row.daysLate} días)`}
                         </div>
                       </div>
-                    );
-                  }
-                  return <div className="font-semibold text-gray-900">{value}</div>;
-                },
-                fechaTexto: (value) => (
-                  <div className="text-sm text-gray-600">{value}</div>
-                ),
-                statusBadge: (value) => value
-              }
-            }}
-            customActions={[
-              {
-                onClick: (payment) => handleDownloadReceipt(payment),
-                label: <FaDownload className="w-4 h-4" />,
-                className: "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
-                tooltip: "Descargar comprobante",
-                show: (payment) => payment.receiptUrl,
+                    </div>
+                  );
+                }
+                return <div className="font-semibold text-gray-900">{value}</div>;
               },
-            ]}
-            emptyMessage="No hay pagos en el historial"
-          />
-        ) : (
-          <div className="p-4 text-center text-gray-500">
-            No hay datos para mostrar en el historial.
-          </div>
-        )}
-      </div>
-    </div>
+              fechaTexto: (value) => (
+                <div className="text-sm text-gray-600">{value}</div>
+              ),
+              statusBadge: (_value, row) => {
+                const isRejected = row.status === "REJECTED";
+                const isApproved = row.status === "APPROVED";
+                const isPending = row.status === "PENDING";
+                return (
+                  <div className="space-y-1">
+                    {isApproved && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                        Aprobado
+                      </span>
+                    )}
+                    {isRejected && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                        Rechazado
+                      </span>
+                    )}
+                    {isPending && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        En revisión
+                      </span>
+                    )}
+                    {!isApproved && !isRejected && !isPending && (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200">
+                        Sin comprobante
+                      </span>
+                    )}
+                  </div>
+                );
+              }
+            }
+          }}
+          onView={(payment) => setReceiptModal({ isOpen: true, payment, initialTab: "receipt" })}
+          buttonConfig={{
+            view: (payment) => ({
+              show: Boolean(payment.receiptUrl),
+              disabled: false,
+              title: "Ver comprobante",
+            }),
+          }}
+          customActions={[
+            {
+              onClick: (payment) => handleDownloadReceipt(payment),
+              label: <FaDownload className="w-4 h-4" />,
+              className: "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
+              tooltip: "Descargar comprobante",
+              show: (payment) => payment.receiptUrl,
+            },
+          ]}
+          emptyMessage="No hay pagos en el historial"
+        />
+      ) : (
+        <div className="p-4 text-center text-gray-500">
+          No hay datos para mostrar en el historial.
+        </div>
+      )}
+
+      <PaymentReceiptViewModal
+        isOpen={receiptModal.isOpen}
+        onClose={() => setReceiptModal({ isOpen: false, payment: null, initialTab: "receipt" })}
+        payment={receiptModal.payment}
+        initialTab={receiptModal.initialTab}
+      />
+    </>
   );
 };
 
@@ -534,6 +604,7 @@ const AthletePayments = () => {
     error,
     summary,
     isRestricted,
+    highestRestriction,
     pendingObligations,
     enrollmentObligation,
     totalDebt,
@@ -544,6 +615,28 @@ const AthletePayments = () => {
   const [activeTab, setActiveTab] = useState("pendientes");
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedObligationId, setSelectedObligationId] = useState(null);
+  const [pendingReceiptModal, setPendingReceiptModal] = useState({ isOpen: false, payment: null, initialTab: "receipt" });
+  const [monthlyHistory, setMonthlyHistory] = useState([]);
+  const [monthlyHistoryLoading, setMonthlyHistoryLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMonthlyHistory = async () => {
+      if (!athleteId) return;
+      setMonthlyHistoryLoading(true);
+      try {
+        const response = await paymentsService.getAthleteMonthlyHistory(athleteId);
+        const history = response?.history || response?.data?.history || response?.data || [];
+        setMonthlyHistory(Array.isArray(history) ? history : []);
+      } catch (err) {
+        console.error("Error fetching monthly history:", err);
+        setMonthlyHistory([]);
+      } finally {
+        setMonthlyHistoryLoading(false);
+      }
+    };
+
+    fetchMonthlyHistory();
+  }, [athleteId]);
 
   // ── Lógica de matrícula ──
   const isReallyInitialEnrollment = enrollmentObligation && (
@@ -586,13 +679,15 @@ const AthletePayments = () => {
   };
 
   // Filtrar obligaciones
-  const pendingObligationsFiltered = pendingObligations?.filter(
-    (d) => d.paymentStatus === null || d.paymentStatus === "REJECTED"
-  ) || [];
+  const monthlySource = (monthlyHistory && monthlyHistory.length > 0) ? monthlyHistory : (pendingObligations || []);
 
-  const inReviewObligations = pendingObligations?.filter(
+  const pendingObligationsFiltered = monthlySource.filter(
+    (d) => d.paymentStatus === null || d.paymentStatus === "REJECTED"
+  );
+
+  const inReviewObligations = monthlySource.filter(
     (d) => d.paymentStatus === "PENDING"
-  ) || [];
+  );
 
   // ── Loading ──
   if (loading) {
@@ -796,7 +891,7 @@ const AthletePayments = () => {
       </div>
 
       {/* Banner de restricción */}
-      {isRestricted && accessStatus && (
+      {isRestricted && accessStatus && highestRestriction?.blockType === "total" && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
           <div className="flex items-start gap-3">
             <FaLock className="text-red-600 flex-shrink-0 mt-0.5" size={16} />
@@ -816,30 +911,40 @@ const AthletePayments = () => {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Resumen Financiero</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xl sm:text-2xl font-bold text-gray-800">{formatCurrency(totalDebt.totalAmount)}</div>
-              <div className="text-xs text-gray-600 mt-1">Total pendiente</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                {formatCurrency(totalDebt.totalAmount)}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">Total pendiente (Base + Mora)</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xl sm:text-2xl font-bold text-gray-800">{formatCurrency(totalDebt.monthlyAmount)}</div>
-              <div className="text-xs text-gray-600 mt-1">Mensualidades</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                {formatCurrency(totalDebt.monthlyAmount)}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">Base de mensualidades pendientes</div>
             </div>
             <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xl sm:text-2xl font-bold text-gray-800">{formatCurrency(totalDebt.lateFeeAmount)}</div>
-              <div className="text-xs text-gray-600 mt-1">Mora acumulada</div>
+              <div className="text-xl sm:text-2xl font-bold text-gray-800">
+                {formatCurrency(totalDebt.lateFeeAmount)}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">Mora acumulada (días de atraso)</div>
             </div>
           </div>
 
-          {totalDebt.maxDaysLate > 0 && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <FaExclamationTriangle className="text-yellow-600 flex-shrink-0" size={14} />
-                <p className="text-sm text-yellow-800">
-                  {totalDebt.obligationsCount} obligación{totalDebt.obligationsCount !== 1 ? "es" : ""} pendiente
-                  {totalDebt.maxDaysLate > 0 && ` • Mora máxima: ${totalDebt.maxDaysLate} días`}
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <FaExclamationTriangle className="text-blue-600 flex-shrink-0 mt-0.5" size={14} />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium">Resumen claro:</p>
+                <p>
+                  {totalDebt.obligationsCount} mensualidad{totalDebt.obligationsCount !== 1 ? "es" : ""} pendiente{totalDebt.obligationsCount !== 1 ? "s" : ""}.
+                  {totalDebt.maxDaysLate > 0 && ` Mora más alta: ${totalDebt.maxDaysLate} días.`}
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  El total pendiente = base pendiente ({formatCurrency(totalDebt.monthlyAmount)}) + mora ({formatCurrency(totalDebt.lateFeeAmount)}).
                 </p>
               </div>
             </div>
-          )}
+          </div>
         </div>
       )}
 
@@ -954,135 +1059,97 @@ const AthletePayments = () => {
         {activeTab === "pendientes" && (
           <>
             {pendingObligationsFiltered.length > 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                {/* Header de la tabla mejorado */}
-                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-800">Pagos Pendientes</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Mostrando {pendingObligationsFiltered.length} obligación{pendingObligationsFiltered.length !== 1 ? 'es' : ''} pendiente{pendingObligationsFiltered.length !== 1 ? 's' : ''}
-                  </p>
-                </div>
-
-                {/* Tabla responsiva mejorada */}
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Período
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Monto
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Mora
-                        </th>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Estado
-                        </th>
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                          Acciones
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {pendingObligationsFiltered.map((obligation, index) => {
-                        const statusBadge = getStatusBadge(obligation.paymentStatus);
-                        const StatusIcon = statusBadge.icon;
-                        const canUpload = obligation.paymentStatus === null || obligation.paymentStatus === "REJECTED";
-                        
-                        return (
-                          <tr key={obligation.id} className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                            {/* Período */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">
-                                {obligation.period 
-                                  ? new Date(obligation.period + "-01").toLocaleDateString("es-ES", { month: 'long', year: 'numeric' })
-                                  : "Mensualidad"
-                                }
-                              </div>
-                            </td>
-
-                            {/* Monto */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm">
-                                <div className="font-semibold text-gray-900">
-                                  {formatCurrency(obligation.totalToPay || obligation.baseAmount)}
-                                </div>
-                                {obligation.lateFee > 0 && (
-                                  <div className="text-xs text-gray-500">
-                                    Base: {formatCurrency(obligation.baseAmount)}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Mora */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {obligation.daysLate > 0 ? (
-                                <div className="text-sm">
-                                  <div className="font-medium text-red-600">
-                                    {obligation.daysLate} días
-                                  </div>
-                                  <div className="text-xs text-red-500">
-                                    {formatCurrency(obligation.lateFee || 0)}
-                                  </div>
-                                </div>
-                              ) : (
-                                <span className="text-sm text-gray-400">—</span>
-                              )}
-                            </td>
-
-                            {/* Estado */}
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${statusBadge.color}`}>
-                                <StatusIcon size={12} />
-                                {statusBadge.text}
-                              </div>
-                              {obligation.paymentStatus === "REJECTED" && obligation.rejectionReason && (
-                                obligation.rejectionReason.length > 80 ? (
-                                  <>
-                                    <div className="mt-2 text-xs text-red-600 sm:hidden">
-                                      Motivo: ver detalle
-                                    </div>
-                                    <div className="mt-2 text-xs text-red-600 max-w-[260px] hidden sm:block">
-                                      Motivo: {obligation.rejectionReason}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <div className="mt-2 text-xs text-red-600 max-w-[260px]">
-                                    Motivo: {obligation.rejectionReason}
-                                  </div>
-                                )
-                              )}
-                            </td>
-
-                            {/* Acciones mejoradas */}
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                              {canUpload ? (
-                                <button
-                                  onClick={() => handleUploadReceipt(obligation.id)}
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary-blue text-white text-sm font-medium rounded-lg hover:bg-primary-purple transition-all duration-200 shadow-sm hover:shadow-md"
-                                >
-                                  <FaUpload className="w-4 h-4" />
-                                  <span className="hidden sm:inline">
-                                    {obligation.paymentStatus === "REJECTED" ? "Resubir" : "Subir"}
-                                  </span>
-                                  <span className="sm:hidden">Subir</span>
-                                </button>
-                              ) : (
-                                <div className="text-xs text-gray-400">
-                                  No disponible
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <Table
+                thead={{
+                  titles: ["Período", "Monto", "Mora", "Estado"],
+                  state: false,
+                  actions: true,
+                }}
+                tbody={{
+                  data: pendingObligationsFiltered.map((obligation) => {
+                    const statusLabel =
+                      obligation.paymentStatus === "REJECTED"
+                        ? "Rechazado"
+                        : obligation.paymentStatus === "PENDING"
+                          ? "En revisión"
+                          : "Pendiente";
+                    return {
+                      ...obligation,
+                      periodText: obligation.period
+                        ? new Date(obligation.period + "-01T00:00:00").toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+                        : "Mensualidad",
+                      amountText: formatCurrency(obligation.totalAmount || obligation.totalToPay || obligation.baseAmount || 0),
+                      statusLabel,
+                    };
+                  }),
+                  dataPropertys: ["periodText", "amountText", "lateText", "statusText"],
+                  state: false,
+                  customRenderers: {
+                    amountText: (_value, row) => (
+                      <div>
+                        <div className="font-semibold text-gray-900">{formatCurrency(row.totalAmount || row.totalToPay || row.baseAmount || 0)}</div>
+                        {(row.lateFee || 0) > 0 && (
+                          <div className="text-xs text-gray-500">
+                            Base: {formatCurrency(row.baseAmount)}
+                          </div>
+                        )}
+                      </div>
+                    ),
+                    lateText: (_value, row) =>
+                      row.daysLate > 0 ? (
+                        <div className="text-sm">
+                          <div className="font-medium text-red-600">
+                            {row.daysLate} días
+                          </div>
+                          <div className="text-xs text-red-500">
+                            {formatCurrency(row.lateFee || 0)}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400">—</span>
+                      ),
+                    statusText: (_value, row) => (
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        row.statusLabel === "Rechazado"
+                          ? "bg-red-50 text-red-700 border border-red-200"
+                          : row.statusLabel === "En revisión"
+                            ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                            : "bg-gray-50 text-gray-700 border border-gray-200"
+                      }`}>
+                        {row.statusLabel}
+                      </span>
+                    ),
+                  },
+                }}
+                onView={(row) =>
+                  setPendingReceiptModal({
+                    isOpen: true,
+                    payment: { ...row, status: row.paymentStatus },
+                    initialTab: row.paymentStatus === "REJECTED" ? "rejection" : "receipt",
+                  })
+                }
+                buttonConfig={{
+                  view: (row) => ({
+                    show: Boolean(row.receiptUrl),
+                    disabled: false,
+                    title: "Ver comprobante",
+                  }),
+                }}
+                customActions={[
+                  {
+                    onClick: (row) => handleUploadReceipt(row.id),
+                    label: (row) => (
+                      <span className="inline-flex items-center gap-2">
+                        <FaUpload className="w-4 h-4" />
+                        {row.paymentStatus === "REJECTED" ? "Resubir" : "Subir"}
+                      </span>
+                    ),
+                    className: "inline-flex items-center gap-2 px-4 py-2 bg-primary-blue text-white text-sm font-medium rounded-lg hover:bg-primary-purple transition-all duration-200 shadow-sm hover:shadow-md",
+                    tooltip: "Subir comprobante",
+                    show: (row) => row.paymentStatus === null || row.paymentStatus === "REJECTED",
+                  },
+                ]}
+              />
             ) : (
               <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                 <FaCheckCircle className="mx-auto text-4xl text-green-400 mb-3" />
@@ -1095,108 +1162,59 @@ const AthletePayments = () => {
         {activeTab === "revision" && (
           <>
             {inReviewObligations.length > 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                {/* Header de la tabla mejorado */}
-                <div className="bg-gradient-to-r from-blue-50 via-white to-purple-50 px-6 py-4 border-b border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-white shadow-sm border border-blue-100 flex items-center justify-center">
-                      <FaClock className="text-primary-blue" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Pagos en Revisión</h3>
-                      <p className="text-sm text-gray-600">
-                        {inReviewObligations.length} comprobante{inReviewObligations.length !== 1 ? 's' : ''} siendo revisado{inReviewObligations.length !== 1 ? 's' : ''} por administración
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lista de pagos en revisión */}
-                <div className="divide-y divide-gray-200">
-                  {inReviewObligations.map((obligation, index) => {
-                    const statusBadge = getStatusBadge(obligation.paymentStatus);
-                    const StatusIcon = statusBadge.icon;
-                    
-                    return (
-                      <div key={obligation.id} className={`p-6 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                          {/* Información principal */}
-                          <div className="flex-1">
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-3">
-                              <h4 className="text-lg font-semibold text-gray-800">
-                                Mensualidad {obligation.period 
-                                  ? new Date(obligation.period + "-01").toLocaleDateString("es-ES", { month: 'long', year: 'numeric' })
-                                  : ""
-                                }
-                              </h4>
-                              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border ${statusBadge.color}`}>
-                                <StatusIcon size={12} />
-                                {statusBadge.text}
-                              </div>
-                            </div>
-                            
-                            {/* Grid de información */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                              <div>
-                                <span className="text-gray-500 block">Monto base:</span>
-                                <div className="font-medium text-gray-900">{formatCurrency(obligation.baseAmount)}</div>
-                              </div>
-                              {obligation.daysLate > 0 && (
-                                <div>
-                                  <span className="text-gray-500 block">Mora:</span>
-                                  <div className="font-medium text-red-600">
-                                    {obligation.daysLate} días
-                                  </div>
-                                  <div className="text-xs text-red-500">
-                                    {formatCurrency(obligation.lateFee || 0)}
-                                  </div>
-                                </div>
-                              )}
-                              <div>
-                                <span className="text-gray-500 block">Total:</span>
-                                <div className="font-semibold text-primary-blue text-lg">
-                                  {formatCurrency(obligation.totalToPay || obligation.baseAmount)}
-                                </div>
-                              </div>
-                              <div>
-                                <span className="text-gray-500 block">Fecha envío:</span>
-                                <div className="font-medium text-gray-700 text-xs">
-                                  {obligation.uploadedAt 
-                                    ? new Date(obligation.uploadedAt).toLocaleString("es-ES", { 
-                                        day: 'numeric', 
-                                        month: 'short',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })
-                                    : "—"
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Banner de estado */}
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-xl">
-                          <div className="flex items-start gap-3">
-                            <FaClock className="text-primary-blue flex-shrink-0 mt-0.5" size={16} />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-800 mb-1">
-                                Comprobante en revisión
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                Tu comprobante está siendo verificado por nuestro equipo administrativo. 
-                                Te notificaremos por email cuando tengamos una respuesta.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+              <Table
+                thead={{
+                  titles: ["Período", "Monto", "Fecha envío", "Estado"],
+                  state: false,
+                  actions: true,
+                }}
+                tbody={{
+                  data: inReviewObligations.map((obligation) => ({
+                    ...obligation,
+                    periodText: obligation.period
+                      ? new Date(obligation.period + "-01T00:00:00").toLocaleDateString("es-ES", { month: "long", year: "numeric" })
+                      : "Mensualidad",
+                    amountText: formatCurrency(obligation.totalAmount || obligation.totalToPay || obligation.baseAmount || 0),
+                    uploadedText: obligation.uploadedAt
+                      ? new Date(obligation.uploadedAt).toLocaleString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—",
+                  })),
+                  dataPropertys: ["periodText", "amountText", "uploadedText", "statusText"],
+                  state: false,
+                  customRenderers: {
+                    amountText: (_value, row) => (
+                      <div className="font-semibold text-gray-900">
+                        {formatCurrency(row.totalAmount || row.totalToPay || row.baseAmount || 0)}
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
+                    ),
+                    statusText: () => (
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        En revisión
+                      </span>
+                    ),
+                  },
+                }}
+                onView={(row) =>
+                  setPendingReceiptModal({
+                    isOpen: true,
+                    payment: { ...row, status: row.paymentStatus || "PENDING" },
+                    initialTab: "receipt",
+                  })
+                }
+                buttonConfig={{
+                  view: (row) => ({
+                    show: Boolean(row.receiptUrl),
+                    disabled: false,
+                    title: "Ver comprobante",
+                  }),
+                }}
+              />
             ) : (
               <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
                 <FaClock className="mx-auto text-4xl text-gray-300 mb-3" />
@@ -1210,10 +1228,7 @@ const AthletePayments = () => {
         )}
 
         {activeTab === "historial" && (
-          <HistorialPagosSection 
-            athleteId={athleteId} 
-            financialStatus={financialStatus}
-          />
+          <HistorialPagosSection athleteId={athleteId} />
         )}
       </div>
 
@@ -1223,6 +1238,13 @@ const AthletePayments = () => {
         onClose={() => setUploadModalOpen(false)}
         obligationId={selectedObligationId}
         onSuccess={fetchFinancialStatus}
+      />
+
+      <PaymentReceiptViewModal
+        isOpen={pendingReceiptModal.isOpen}
+        onClose={() => setPendingReceiptModal({ isOpen: false, payment: null, initialTab: "receipt" })}
+        payment={pendingReceiptModal.payment}
+        initialTab={pendingReceiptModal.initialTab}
       />
     </div>
   );

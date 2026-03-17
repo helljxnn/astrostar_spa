@@ -151,6 +151,11 @@ export const isCompletelyBlocked = (financialStatus, accessStatus) => {
  */
 export const getAllowedModules = (financialStatus, accessStatus) => {
   const allModules = ['Perfil', 'Pagos', 'Citas', 'Eventos', 'Inscripciones', 'Materiales'];
+
+  // ✅ Prioridad: si el backend marca restricción por mora, limitar a Perfil + Pagos
+  if (accessStatus?.restricted && accessStatus?.reason === 'MONTHLY_OVERDUE') {
+    return ['Perfil', 'Pagos'];
+  }
   
   if (hasFullAccess(financialStatus, accessStatus)) {
     return allModules;

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { FaTimes, FaDownload, FaCheck } from "react-icons/fa";
 import Table from "../../../../../../../../shared/components/Table/table.jsx";
 import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions.js";
@@ -12,7 +13,7 @@ import {
 import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
-const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "", dateFromFilter = "", dateToFilter = "", searchTerm = "" }) => {
+const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged, refreshKey, typeFilter = "", dateFromFilter = "", dateToFilter = "", searchTerm = "" }) => {
   const { hasPermission } = usePermissions();
   const {
     payments: pendingPayments,
@@ -45,6 +46,9 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
 
     await approvePendingPayment(payment.id);
     refetchPending();
+    if (onPendingChanged) {
+      onPendingChanged();
+    }
   };
 
   // ── Descargar comprobante ──
@@ -143,6 +147,12 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
       moraInfo,
     };
   });
+
+  // Refrescar lista cuando el padre lo solicite (rechazos, etc.)
+  useEffect(() => {
+    if (refreshKey === undefined) return;
+    refetchPending();
+  }, [refreshKey]);
 
   if (pendingLoading) {
     return (

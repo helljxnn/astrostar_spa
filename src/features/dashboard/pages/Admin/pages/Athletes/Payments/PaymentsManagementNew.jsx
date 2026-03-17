@@ -19,6 +19,7 @@ const PaymentsManagementNew = () => {
   // Hook para pagos pendientes - Solo obtener el conteo total
   const {
     totalRows: totalPendingPayments,
+    refetch: refetchPendingCount,
   } = usePayments('pending');
   
   // Hook para rechazar pagos
@@ -50,6 +51,7 @@ const PaymentsManagementNew = () => {
   const [paymentToReject, setPaymentToReject] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewModal, setViewModal] = useState({ isOpen: false, payment: null });
+  const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 
   // Aplicar filtros segun el tab activo
   const handleFilterChange = (key, value) => {
@@ -100,6 +102,8 @@ const PaymentsManagementNew = () => {
     if (result.success) {
       setIsRejectModalOpen(false);
       setPaymentToReject(null);
+      refetchPendingCount();
+      setPendingRefreshKey((prev) => prev + 1);
     }
   };
 
@@ -190,7 +194,7 @@ const PaymentsManagementNew = () => {
             <SearchInput
               value={activeTab === "pending" ? pendingSearch : historySearch}
               onChange={handleSearchChange}
-              placeholder="Buscar atleta o identificacion..."
+              placeholder="Buscar deportista o identificación..."
             />
           </div>
 
@@ -389,6 +393,11 @@ const PaymentsManagementNew = () => {
         <PendingPaymentsTable 
           onViewPayment={handleViewPayment}
           onRejectPayment={handleReject}
+          onPendingChanged={() => {
+            refetchPendingCount();
+            setPendingRefreshKey((prev) => prev + 1);
+          }}
+          refreshKey={pendingRefreshKey}
           typeFilter={pendingFilters.type}
           dateFromFilter={pendingFilters.dateFrom}
           dateToFilter={pendingFilters.dateTo}

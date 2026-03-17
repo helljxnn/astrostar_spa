@@ -30,31 +30,53 @@ class PaymentsService {
   }
 
   /**
-   * Obtener historial de pagos del atleta (solo aprobados)
+   * Obtener historial de pagos del atleta (aprobados y rechazados)
    * GET /api/payments/athletes/:athleteId/history
    */
   async getAthletePaymentHistory(athleteId) {
     try {
       // Intentar endpoint específico primero
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/history`);
-      return response.data;
+      const payments = response.data?.data || response.data?.payments || response.data || [];
+      const filtered = Array.isArray(payments)
+        ? payments.filter((payment) =>
+            payment?.status === 'APPROVED' || payment?.status === 'REJECTED' ||
+            payment?.status === 'approved' || payment?.status === 'rejected'
+          )
+        : [];
+      return { data: filtered };
     } catch (error) {
       
-      // Fallback: obtener todos los pagos y filtrar los aprobados
+      // Fallback: obtener todos los pagos y filtrar aprobados/rechazados
       try {
         const allPaymentsResponse = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/payments`);
         const allPayments = allPaymentsResponse.data?.payments || allPaymentsResponse.data || [];
         
-        // Filtrar solo pagos aprobados (incluir TODOS los tipos: MONTHLY, ENROLLMENT_INITIAL, ENROLLMENT_RENEWAL)
-        const approvedPayments = allPayments.filter(payment => 
-          payment.status === 'APPROVED' || payment.status === 'approved'
+        // Filtrar pagos aprobados y rechazados (incluir TODOS los tipos)
+        const visiblePayments = allPayments.filter((payment) =>
+          payment.status === 'APPROVED' || payment.status === 'REJECTED' ||
+          payment.status === 'approved' || payment.status === 'rejected'
         );
         
-        return { data: approvedPayments };
+        return { data: visiblePayments };
       } catch (fallbackError) {
         console.error('❌ Error en fallback de historial:', fallbackError);
         throw new Error('No se pudo obtener el historial de pagos del atleta');
       }
+    }
+  }
+
+  /**
+   * Obtener historial completo de mensualidades (admin o atleta propietario)
+   * GET /api/payments/athletes/:athleteId/monthly-history
+   */
+  async getAthleteMonthlyHistory(athleteId) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/monthly-history`);
+      return response.data?.data || response.data || { history: [] };
+    } catch (error) {
+      console.error('❌ Error fetching athlete monthly history:', error);
+      throw new Error('No se pudo obtener el historial de mensualidades');
     }
   }
 

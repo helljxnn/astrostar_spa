@@ -73,8 +73,9 @@ export const useEnrollments = () => {
   }, []);
 
   // Cargar datos (búsqueda por nombre completo y documento en backend) - OPTIMIZADO
-  const loadData = useCallback(async (page = 1, silent = false, filtersOverride = null) => {
+  const loadData = useCallback(async (page = 1, silent = false, filtersOverride = null, options = {}) => {
     const f = filtersOverride ?? searchFilters;
+    const { includeInscriptions = false } = options;
     try {
       if (!silent) setLoading(true);
 
@@ -98,9 +99,9 @@ export const useEnrollments = () => {
         vencimiento: f.vencimiento || undefined,
       });
 
-      // Cargar inscripciones solo si no es silent
-      let inscriptionsResult = { success: true, data: [] };
-      if (!silent) {
+      // Cargar inscripciones solo cuando se solicita (evita limpiar estado en silent)
+      let inscriptionsResult = null;
+      if (!silent || includeInscriptions) {
         inscriptionsResult = await InscriptionsService.getAll({
           // Sin filtro de estado - muestra todas las inscripciones
         });
@@ -122,7 +123,7 @@ export const useEnrollments = () => {
         setAthletes([]);
       }
 
-      if (inscriptionsResult.success) {
+      if (inscriptionsResult && inscriptionsResult.success) {
         // Crear un Set con los documentos de deportistas ya matriculados
         const enrolledDocuments = new Set(
           (athletesResult.data || []).map(athlete => {
@@ -144,7 +145,7 @@ export const useEnrollments = () => {
           }
         );
         setInscriptions(pendingInscriptions);
-      } else {
+      } else if (inscriptionsResult && !inscriptionsResult.success) {
         setInscriptions([]);
       }
     } catch (error) {
@@ -415,8 +416,8 @@ showSuccessAlert(
     loadData(newPage, false, searchFilters);
   };
 
-  const refresh = (silent = false) => {
-    loadData(pagination.page, silent);
+  const refresh = (silent = false, options = {}) => {
+    loadData(pagination.page, silent, null, options);
   };
 
   /** Aplica búsqueda y filtros (llamar con debounce). */

@@ -55,7 +55,23 @@ export const useAthletes = () => {
       const response = await AthletesService.getAthletes(enhancedParams);
 
       if (response.success) {
-        setAthletes(response.data);
+        const list = response.data || [];
+        const ids = list.map((a) => a.id).filter(Boolean);
+        let summaryMap = {};
+
+        if (ids.length > 0) {
+          const summaryResp = await AthletesService.getMonthlySummaryByAthletes(ids);
+          if (summaryResp?.success) {
+            summaryMap = summaryResp.data || {};
+          }
+        }
+
+        const merged = list.map((a) => ({
+          ...a,
+          monthlySummary: summaryMap?.[a.id] || null
+        }));
+
+        setAthletes(merged);
         setPagination(response.pagination);
       } else {
         console.error('❌ [useAthletes] Error en respuesta:', response.error);
