@@ -416,8 +416,3 @@ function DynamicSideBar({
 }
 
 export default DynamicSideBar;
-
-<<<<<<< HEAD
-
-=======
->>>>>>> c8f3b22b8250b4ae4e4c350be7c9fe7f8ce526f5
