@@ -62,6 +62,28 @@ const CustomCalendarGrid = ({
   const handleShowMoreLeave = () => {
     setHoveredCell(null);
   };
+
+  const getEventKey = (event, index, dayKey = "") => {
+    const keyParts = [
+      event?.id,
+      event?.scheduleId,
+      event?.extendedProps?.id,
+      event?.extendedProps?.scheduleId,
+      event?.start,
+      event?.date,
+      event?.horaInicio,
+      event?.horaFin,
+      event?.time,
+      event?.empleado,
+      event?.title,
+      dayKey,
+      index,
+    ];
+
+    return keyParts
+      .filter((part) => part !== undefined && part !== null && part !== "")
+      .join("-");
+  };
   // Generate calendar days based on view
   const calendarDays = useMemo(() => {
     if (view === "month") {
@@ -251,7 +273,7 @@ const CustomCalendarGrid = ({
               <div className="space-y-3">
                 {dayEvents.map((event, eventIndex) => (
                   <motion.div
-                    key={event.id || eventIndex}
+                    key={getEventKey(event, eventIndex, format(date, "yyyy-MM-dd"))}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: eventIndex * 0.05 }}
@@ -420,7 +442,7 @@ const CustomCalendarGrid = ({
               <div className="space-y-1 flex-1 overflow-hidden">
                 {eventsToShow.map((event, eventIndex) => (
                   <div
-                    key={event.id || eventIndex}
+                    key={getEventKey(event, eventIndex, dayKey)}
                     onClick={(e) => {
                       // Solo manejar clicks que NO sean en botones
                       if (
@@ -523,7 +545,7 @@ const CustomCalendarGrid = ({
             <div className="space-y-1 max-h-48 overflow-y-auto custom-scrollbar">
               {hoveredCell.events.map((event, index) => (
                 <div
-                  key={event.id || index}
+                  key={getEventKey(event, index, hoveredCell.dayKey)}
                   className="flex items-center justify-between p-2 rounded hover:bg-gray-50 transition-colors duration-200 group"
                 >
                   {/* Nombre del evento */}
@@ -557,4 +579,5 @@ const CustomCalendarGrid = ({
 };
 
 export default CustomCalendarGrid;
+
 

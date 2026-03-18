@@ -55,6 +55,7 @@ const Event = () => {
     eventType: "",
     mode: "register",
     eventId: null,
+    eventSportsCategories: [],
   });
 
   // Permisos
@@ -138,6 +139,7 @@ const Event = () => {
       eventType: "",
       mode: "register",
       eventId: null,
+      eventSportsCategories: [],
     });
   };
 
@@ -341,6 +343,7 @@ const Event = () => {
           eventType={registrationFormModal.eventType}
           mode={registrationFormModal.mode}
           eventId={registrationFormModal.eventId}
+          eventSportsCategories={registrationFormModal.eventSportsCategories}
           onSuccess={loadEvents}
         />
       )}

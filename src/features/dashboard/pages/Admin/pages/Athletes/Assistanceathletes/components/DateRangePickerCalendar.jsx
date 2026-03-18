@@ -8,6 +8,14 @@ const DateRangePickerCalendar = ({ startDate, endDate, onStartDateChange, onEndD
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
+  const todayISO = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   // Convertir formato YYYY-MM-DD a Date
   const parseISODate = (isoString) => {
     if (!isoString) return null;
@@ -140,7 +148,7 @@ const DateRangePickerCalendar = ({ startDate, endDate, onStartDateChange, onEndD
             <button
               type="button"
               onClick={() => {
-                const today = new Date().toISOString().split('T')[0];
+                const today = todayISO();
                 onStartDateChange(today);
                 onEndDateChange(today);
               }}

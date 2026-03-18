@@ -12,7 +12,13 @@ import { showWarningAlert } from "../../../../../../../shared/utils/alerts.js";
 
 const DEFAULT_ROWS_PER_PAGE = 10;
 const ALL_CATEGORIES = "Todas";
-const todayISO = () => new Date().toISOString().split("T")[0];
+const todayISO = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 const formatDate = (value) => {
   if (!value) return "";
@@ -198,8 +204,7 @@ export default function AssistanceHistory() {
         setError(response?.message || "No se pudo cargar el historial.");
       }
     } catch (errorCaught) {
-      console.error("Error loading history summary:", errorCaught);
-      setHistoryRows([]);
+setHistoryRows([]);
       setPagination((prev) => ({ ...prev, page, total: 0, pages: 0 }));
       setRange({
         startDate: override.startDate !== undefined ? override.startDate : startDate,
@@ -232,8 +237,7 @@ export default function AssistanceHistory() {
           setCategories([ALL_CATEGORIES, ...unique]);
         }
       } catch (errorCaught) {
-        console.error("Error loading categories:", errorCaught);
-      }
+}
     };
 
     loadCategories();
@@ -304,8 +308,7 @@ export default function AssistanceHistory() {
         setDetailHistory([]);
       }
     } catch (errorCaught) {
-      console.error("Error loading athlete history:", errorCaught);
-      setDetailHistory([]);
+setDetailHistory([]);
     } finally {
       setDetailLoading(false);
     }

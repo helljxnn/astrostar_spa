@@ -46,7 +46,6 @@ const SportsCategoryDetailModal = ({ isOpen, onClose, category }) => {
     category.description,
     "No hay descripcion disponible"
   );
-  const publicar = category.Publicar ?? category.publicar ?? category.publish ?? false;
 
   const createdAtRaw =
     category.createdAt ??
@@ -92,8 +91,6 @@ const SportsCategoryDetailModal = ({ isOpen, onClose, category }) => {
       ? "bg-red-500"
       : "bg-gray-400";
 
-  const publishClass = publicar ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800";
-  const publishDot = publicar ? "bg-green-500" : "bg-yellow-500";
 
   const edadMinimaLabel = edadMinima === "No especificado" ? edadMinima : `${edadMinima} años`;
   const edadMaximaLabel = edadMaxima === "No especificado" ? edadMaxima : `${edadMaxima} años`;
@@ -131,7 +128,10 @@ const SportsCategoryDetailModal = ({ isOpen, onClose, category }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <ReadOnlyField label="Nombre" value={nombre} />
 
-            <div className="space-y-1">
+            <ReadOnlyField label="Edad minima" value={edadMinimaLabel} />
+            <ReadOnlyField label="Edad maxima" value={edadMaximaLabel} />
+
+            <div className="space-y-1 md:col-span-2">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Estado
               </p>
@@ -141,23 +141,6 @@ const SportsCategoryDetailModal = ({ isOpen, onClose, category }) => {
                 >
                   <span className={`w-2 h-2 rounded-full ${estadoDot}`}></span>
                   {estado}
-                </span>
-              </div>
-            </div>
-
-            <ReadOnlyField label="Edad minima" value={edadMinimaLabel} />
-            <ReadOnlyField label="Edad maxima" value={edadMaximaLabel} />
-
-            <div className="space-y-1 md:col-span-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Publicacion
-              </p>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${publishClass}`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${publishDot}`}></span>
-                  {publicar ? "Publicado" : "No publicado"}
                 </span>
               </div>
             </div>

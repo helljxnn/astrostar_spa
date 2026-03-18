@@ -1,4 +1,4 @@
-﻿import {
+import {
   useState,
   useCallback,
   useMemo,
@@ -83,6 +83,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     participantType: "",
     eventType: "",
     eventId: null,
+    eventSportsCategories: [],
     mode: "register",
   });
 
@@ -483,6 +484,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             participantType: participantType,
             eventType: dashboardEvent.tipo,
             eventId: dashboardEvent.id,
+            eventSportsCategories: dashboardEvent.sportsCategoriesData || [],
             mode: action === "editRegistrations" ? "edit" : "register",
           });
         }, 100);
@@ -549,6 +551,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       participantType: "",
       eventType: "",
       eventId: null,
+      eventSportsCategories: [],
       mode: "register",
     });
     setDayEventsModal({ isOpen: false, date: null, events: [] });
@@ -1055,6 +1058,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             participantType: participantType,
             eventType: dashboardEvent.tipo,
             eventId: dashboardEvent.id,
+            eventSportsCategories: dashboardEvent.sportsCategoriesData || [],
             mode: "register",
           });
         },
@@ -1260,6 +1264,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             participantType={registrationFormModal.participantType}
             eventType={registrationFormModal.eventType}
             eventId={registrationFormModal.eventId}
+            eventSportsCategories={registrationFormModal.eventSportsCategories}
             mode={registrationFormModal.mode}
             onSuccess={() => {
               if (onRefresh) onRefresh();
@@ -1301,6 +1306,4 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 });
 
 export default EventsCalendar;
-
-
 

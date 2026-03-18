@@ -9,43 +9,43 @@ const firstGalleryBlock = [
   {
     title:
       "CICLO PASEO DEL CUARTO FESTIVAL MANUELA VANEGAS, EN COPACABANA, ANTIOQUIA.",
-    image: galleryImage("37.JPG"),
+    image: galleryImage("37.webp"),
   },
   {
     title:
       "CAMPAMENTO PARA LAS NIÑAS, CON EL EQUIPO DE BALONCESTO LOS KNICKS DE NUEVA YORK.",
-    image: galleryImage("38.jpg"),
+    image: galleryImage("38.webp"),
   },
   {
     title:
       "PANTALLA GIGANTE EN LA MISERICORDIA, PARA LA FINAL ENTRE COLOMBIA Y BRASIL DE LA COPA AMÉRICA FEMENINA DEL 2025.",
-    image: galleryImage("39.JPG"),
+    image: galleryImage("39.webp"),
   },
   {
     title:
       "CANCHA INFINITA, ACTIVIDAD EN EL CENTRO PENITENCIARIO FEMENINO EL PEDREGAL, MEDELLÍN.",
-    image: galleryImage("40.jpg"),
+    image: galleryImage("40.webp"),
   },
 ];
 
 const secondGalleryBlock = [
   {
     title: "CAMPAMENTOS BANCOLOMBIA, JUNTO EL EX FUTBOLISTA ABEL AGUILAR.",
-    image: galleryImage("41.jpg"),
+    image: galleryImage("41.webp"),
   },
   {
     title: "OLIMPIADAS CON LA PRIMERA INFANCIA, IV FESTIVAL MANUELA VANEGAS.",
-    image: galleryImage("42.jpg"),
+    image: galleryImage("42.webp"),
   },
   {
     title:
       "CHARLA CON LOS ESTUDIANTES DE LA INSTITUCIÓN SAN LUIS GONZAGA, EN COPACABANA.",
-    image: galleryImage("43.JPG"),
+    image: galleryImage("43.webp"),
   },
   {
     title:
       "PRIMERA PARTICIPACIÓN DE LA FUNDACIÓN EN LA BABY FÚTBOL REGIONAL DE ANTIOQUIA.",
-    image: galleryImage("44.jpg"),
+    image: galleryImage("44.webp"),
   },
 ];
 
@@ -70,7 +70,7 @@ const reels = [
 function Gallery() {
   return (
     <>
-      <Hero variant="image-only" imageUrl={galleryImage("QUINTO_FESTIVAL.jpg")} />
+      <Hero variant="image-only" imageUrl={galleryImage("QUINTO_FESTIVAL.webp")} />
 
       <section className="bg-white py-14 px-6 sm:px-10 lg:px-20">
         <div className="max-w-7xl mx-auto text-center">

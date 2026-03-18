@@ -2,9 +2,14 @@
 import KPICard from "../components/KPICard";
 import DonationsSummaryGraphic from "../components/DonationsSummaryGraphic";
 import TopDonorsGraphic from "../components/TopDonorsGraphic";
-import { FaDollarSign, FaBox, FaHandHoldingHeart, FaUsers } from "react-icons/fa";
+import { FaDollarSign, FaBox, FaHandHoldingHeart } from "react-icons/fa";
 import donationsService from "../../Donations/Donations/services/donationsService";
 import donorsSponsorsService from "../../Donations/DonorsSponsors/services/donorsSponsorsService";
+import {
+  getDonationInKindUnits,
+  getDonationMonetaryAmount,
+  isCancelledDonation,
+} from "../utils/donationMetrics";
 
 const DonationsSection = () => {
   const [allDonations, setAllDonations] = useState([]);
@@ -32,7 +37,8 @@ const DonationsSection = () => {
         const enriched = donations.map((d) => ({
           ...d,
           donorSponsor: d.donorSponsor || {
-            nombre: donorsMap[d.donorSponsorId] || `Donante #${d.donorSponsorId}`,
+            nombre:
+              donorsMap[d.donorSponsorId] || `Donante #${d.donorSponsorId}`,
           },
         }));
 
@@ -48,33 +54,32 @@ const DonationsSection = () => {
 
   // KPIs calculados
   const stats = useMemo(() => {
-    const validas = allDonations.filter((d) => d.status !== "Anulada");
+    const validas = allDonations.filter((d) => !isCancelledDonation(d));
 
-    const totalMonetario = validas
-      .filter((d) => d.type === "ECONOMICA" || d.type === "ALIMENTOS")
-      .reduce((sum, d) => {
-        const payment = (d.details || []).find((det) => det.recordType === "payment");
-        return sum + (payment?.amount || 0);
-      }, 0);
+    const totalMonetario = validas.reduce(
+      (sum, donation) => sum + getDonationMonetaryAmount(donation),
+      0,
+    );
 
-    const totalEspecie = validas
-      .filter((d) => d.type === "ESPECIE")
-      .reduce((sum, d) => {
-        return sum + (d.details || []).reduce((s, det) => {
-          return det.recordType === "item" ? s + Math.round(Number(det.quantity) || 0) : s;
-        }, 0);
-      }, 0);
+    const totalEspecie = validas.reduce(
+      (sum, donation) => sum + getDonationInKindUnits(donation),
+      0,
+    );
 
     const totalDonaciones = validas.length;
 
     const donantesUnicos = new Set(
-      validas.filter((d) => d.donorSponsorId).map((d) => d.donorSponsorId)
+      validas.filter((d) => d.donorSponsorId).map((d) => d.donorSponsorId),
     ).size;
 
     return { totalMonetario, totalEspecie, totalDonaciones, donantesUnicos };
   }, [allDonations]);
 
-  const fmt = (n) => Number(n || 0).toLocaleString("es-CO", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmt = (n) =>
+    Number(n || 0).toLocaleString("es-CO", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
 
   if (loading) {
     return (
@@ -87,7 +92,7 @@ const DonationsSection = () => {
   return (
     <div className="space-y-6">
       {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <KPICard
           title="Total Donaciones"
           value={stats.totalDonaciones}
@@ -106,12 +111,6 @@ const DonationsSection = () => {
           icon={FaBox}
           color="purple"
         />
-        <KPICard
-          title="Donantes Únicos"
-          value={stats.donantesUnicos}
-          icon={FaUsers}
-          color="blue"
-        />
       </div>
 
       {/* Gráfica resumen + Top donantes */}
@@ -124,4 +123,3 @@ const DonationsSection = () => {
 };
 
 export default DonationsSection;
-

@@ -21,6 +21,7 @@ import {
   showErrorAlert,
   showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
+import { fixMojibake } from "../../../../../../../shared/utils/textEncoding.js";
 import materialsService from "./services/MaterialsService";
 import { formatNumber } from "../../../../../../../shared/utils/numberFormat";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
@@ -257,14 +258,16 @@ const MaterialsCatalog = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo registrar la baja",
+          fixMojibake(response.message || "No se pudo registrar la baja"),
         );
         return false;
       }
     } catch (error) {
       showErrorAlert(
         "Error",
-        error.message || "Error al registrar la baja en el servidor",
+        fixMojibake(
+          error.message || "Error al registrar la baja en el servidor",
+        ),
       );
       return false;
     }
@@ -309,12 +312,17 @@ const MaterialsCatalog = () => {
       } else {
         showErrorAlert(
           "Error",
-          response.message || "No se pudo realizar la transferencia",
+          fixMojibake(
+            response.message || "No se pudo realizar la transferencia",
+          ),
         );
         return false;
       }
     } catch (error) {
-      showErrorAlert("Error", error.message || "Error al transferir stock");
+      showErrorAlert(
+        "Error",
+        fixMojibake(error.message || "Error al transferir stock"),
+      );
       return false;
     }
   };

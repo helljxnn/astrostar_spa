@@ -14,7 +14,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import AthletesService from '../../features/dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService';
 import InscriptionsService from '../../features/dashboard/pages/Admin/pages/Athletes/Enrollments/services/InscriptionsService';
 
-export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck = false) => {
+export const useDocumentValidation = (
+  excludeUserId = null,
+  skipInscriptionCheck = false,
+  skipAthleteCheck = false
+) => {
   const [isChecking, setIsChecking] = useState(false);
   const [documentExists, setDocumentExists] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -39,7 +43,7 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
     }
 
     // Verificar cache
-    const cacheKey = `${cleanDocument}_${excludeUserId || 'new'}_${skipInscriptionCheck ? 'noInscription' : 'withInscription'}`;
+    const cacheKey = `${cleanDocument}_${excludeUserId || 'new'}_${skipInscriptionCheck ? 'noInscription' : 'withInscription'}_${skipAthleteCheck ? 'noAthlete' : 'withAthlete'}`;
     if (cacheRef.current.has(cacheKey)) {
       const cached = cacheRef.current.get(cacheKey);
       console.log('✅ [useDocumentValidation] Usando resultado en cache:', cached);
@@ -60,9 +64,13 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
       );
 
       // Verificar en paralelo: deportistas registrados + inscripciones pendientes (si no se debe saltar)
-      const checks = [
-        AthletesService.checkIdentificationAvailability(cleanDocument, excludeUserId)
-      ];
+      const checks = [];
+
+      if (!skipAthleteCheck) {
+        checks.push(
+          AthletesService.checkIdentificationAvailability(cleanDocument, excludeUserId)
+        );
+      }
       
       // Solo verificar inscripciones si NO se debe saltar la verificación
       if (!skipInscriptionCheck) {
@@ -74,8 +82,11 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
         timeoutPromise
       ]);
 
-      const athleteCheck = results[0];
-      const inscriptionCheck = skipInscriptionCheck ? null : results[1];
+      const athleteCheck = skipAthleteCheck ? null : results[0];
+      const inscriptionCheck =
+        skipInscriptionCheck
+          ? null
+          : results[skipAthleteCheck ? 0 : 1];
 
       console.log('🔍 [useDocumentValidation] Resultado atleta:', athleteCheck);
       console.log('🔍 [useDocumentValidation] Resultado inscripción:', inscriptionCheck);
@@ -84,7 +95,7 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
       let message = '';
 
       // Prioridad 1: Ya está registrado como deportista (matriculado)
-      if (athleteCheck && !athleteCheck.available) {
+      if (!skipAthleteCheck && athleteCheck && !athleteCheck.available) {
         exists = true;
         // Forzar mensaje simple y consistente
         message = 'Este documento ya está matriculado';
@@ -94,8 +105,8 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
       // IMPORTANTE: Solo si NO está matriculado, NO se saltó la verificación, y el backend de inscripciones respondió correctamente
       else if (!skipInscriptionCheck && inscriptionCheck && inscriptionCheck.exists && inscriptionCheck.success !== false) {
         exists = true;
-        // Forzar mensaje simple y consistente
-        message = 'Este documento ya está inscrito';
+        // Usar mensaje del backend para distinguir inscrito vs registrado en sistema
+        message = inscriptionCheck.message || 'Este documento ya está inscrito';
         console.log('✅ [useDocumentValidation] Documento INSCRITO detectado');
       } else {
         console.log('✅ [useDocumentValidation] Documento DISPONIBLE');
@@ -119,7 +130,7 @@ export const useDocumentValidation = (excludeUserId = null, skipInscriptionCheck
     } finally {
       setIsChecking(false);
     }
-  }, [excludeUserId, skipInscriptionCheck]);
+  }, [excludeUserId, skipInscriptionCheck, skipAthleteCheck]);
 
   /**
    * Validar documento con debounce

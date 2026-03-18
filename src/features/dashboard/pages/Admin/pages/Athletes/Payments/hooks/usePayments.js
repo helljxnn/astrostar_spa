@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
@@ -63,8 +63,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
       }
       
     } catch (error) {
-      console.error('Error fetching payments:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los pagos');
+showErrorAlert('Error', 'No se pudieron cargar los pagos');
       setPayments([]);
       setTotalRows(0);
     } finally {
@@ -151,8 +150,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         throw new Error(response.error || 'Error al aprobar el pago');
       }
     } catch (error) {
-      console.error('Error approving payment:', error);
-      showErrorAlert('Error', error.message || 'No se pudo aprobar el pago');
+showErrorAlert('Error', error.message || 'No se pudo aprobar el pago');
       return { success: false, error: error.message };
     } finally {
       setActionLoading(false);
@@ -173,8 +171,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         throw new Error(response.error || 'Error al rechazar el pago');
       }
     } catch (error) {
-      console.error('Error rejecting payment:', error);
-      showErrorAlert('Error', error.message || 'No se pudo rechazar el pago');
+showErrorAlert('Error', error.message || 'No se pudo rechazar el pago');
       return { success: false, error: error.message };
     } finally {
       setActionLoading(false);

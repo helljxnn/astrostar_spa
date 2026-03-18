@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { 
   FaSync, 
   FaCalendarAlt, 
@@ -60,8 +60,7 @@ const EnrollmentRenewalManager = () => {
       const data = await getExpiringEnrollments(daysFilter);
       setExpiringEnrollments(data || []);
     } catch (error) {
-      console.error('Error fetching expiring enrollments:', error);
-    } finally {
+} finally {
       setLoading(false);
     }
   };

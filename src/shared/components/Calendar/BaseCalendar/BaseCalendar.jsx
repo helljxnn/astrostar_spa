@@ -185,6 +185,27 @@ const BaseCalendar = ({
     [onGenerateReport],
   );
 
+  const getEventKey = useCallback((event, index) => {
+    const keyParts = [
+      event?.id,
+      event?.scheduleId,
+      event?.extendedProps?.id,
+      event?.extendedProps?.scheduleId,
+      event?.start,
+      event?.date,
+      event?.horaInicio,
+      event?.horaFin,
+      event?.time,
+      event?.empleado,
+      event?.title,
+      index,
+    ];
+
+    return keyParts
+      .filter((part) => part !== undefined && part !== null && part !== "")
+      .join("-");
+  }, []);
+
   // Color scheme configuration
   const colorSchemes = {
     default: {
@@ -485,7 +506,7 @@ const BaseCalendar = ({
                     : sidebarEvents
                   ).map((event, index) => (
                     <motion.div
-                      key={event.id || index}
+                      key={getEventKey(event, index)}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
@@ -531,7 +552,7 @@ const BaseCalendar = ({
 
                                 return (
                                   <PermissionGuard
-                                    key={actionIndex}
+                                    key={`${action.id || action.label || "action"}-${actionIndex}`}
                                     module={action.permission?.module}
                                     action={action.permission?.action}
                                     fallback={!action.permission}
@@ -586,4 +607,5 @@ const BaseCalendar = ({
 };
 
 export default BaseCalendar;
+
 

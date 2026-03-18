@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Servicio de Personas Temporales - Integración con Backend API
  * Maneja todas las operaciones CRUD de personas temporales
  */
@@ -175,7 +175,6 @@ class TemporaryPersonsService {
           
           // Seguridad: evitar bucle infinito
           if (currentPage > 100) {
-            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
             break;
           }
         } else {
@@ -196,7 +195,6 @@ class TemporaryPersonsService {
         }
       };
     } catch (error) {
-      console.error("❌ Error en getAllForReport:", error);
       throw error;
     }
   }

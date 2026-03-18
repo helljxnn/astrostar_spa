@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utilidades para manejo de vencimientos de matrículas
  * Implementa lógica para identificar matrículas próximas a vencer
  */
@@ -24,8 +24,7 @@ export const calculateDaysToExpiration = (expirationDate) => {
     
     return diffDays;
   } catch (error) {
-    console.error('[expirationUtils] Error calculando días:', error);
-    return null;
+return null;
   }
 };
 

@@ -3,6 +3,7 @@
 
 // Importar funciones del loader para interceptor automático
 import { showGlobalLoader, hideGlobalLoader } from "../components/Loader";
+import { fixMojibake } from "../utils/textEncoding";
 
 class ApiClient {
   constructor() {
@@ -201,12 +202,14 @@ class ApiClient {
         }
 
         // Mejorar el mensaje de error para mostrar detalles de validación
-        let errorMessage = errorData.message || `Error HTTP ${response.status}`;
+        let errorMessage = fixMojibake(
+          errorData.message || `Error HTTP ${response.status}`,
+        );
 
         // Si hay errores de validación específicos, agregarlos al mensaje
         const normalizeError = (err) => ({
-          field: err.field ?? err.path ?? err.param ?? "Campo",
-          message: err.message ?? err.msg ?? "Valor inválido",
+          field: fixMojibake(err.field ?? err.path ?? err.param ?? "Campo"),
+          message: fixMojibake(err.message ?? err.msg ?? "Valor inválido"),
         });
 
         if (errorData.errors && Array.isArray(errorData.errors)) {
@@ -219,7 +222,7 @@ class ApiClient {
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
         } else if (errorData.errors && typeof errorData.errors === "object") {
           const errorDetails = Object.entries(errorData.errors)
-            .map(([field, msg]) => `- ${field}: ${msg}`)
+            .map(([field, msg]) => `- ${fixMojibake(field)}: ${fixMojibake(msg)}`)
             .join("\n");
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
         }
@@ -231,7 +234,7 @@ class ApiClient {
           fullError: errorData,
         });
 
-        throw new Error(errorMessage);
+        throw new Error(fixMojibake(errorMessage));
       }
 
             // Permitir respuestas binarias para descargas (PDF, Excel, etc.)

@@ -1,4 +1,4 @@
-﻿// src/features/dashboard/pages/Admin/pages/Guardians/Guardians.jsx
+// src/features/dashboard/pages/Admin/pages/Guardians/Guardians.jsx
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
@@ -65,8 +65,7 @@ const Guardians = () => {
           showErrorAlert("Error", "No se pudieron cargar los acudientes");
         }
       } catch (error) {
-        console.error("Error cargando acudientes:", error);
-        showErrorAlert("Error", "Error al cargar los acudientes");
+showErrorAlert("Error", "Error al cargar los acudientes");
       } finally {
         setLoading(false);
       }
@@ -131,8 +130,7 @@ const Guardians = () => {
       setEditingGuardian(null);
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error guardando acudiente:", error);
-      showErrorAlert("Error", "Error al guardar el acudiente");
+showErrorAlert("Error", "Error al guardar el acudiente");
     }
   };
 
@@ -175,8 +173,7 @@ const Guardians = () => {
         }
       }
     } catch (error) {
-      console.error("Error al eliminar acudiente:", error);
-      showErrorAlert(
+showErrorAlert(
         "Error al eliminar",
         "No se pudo eliminar el acudiente. Intenta de nuevo.",
       );

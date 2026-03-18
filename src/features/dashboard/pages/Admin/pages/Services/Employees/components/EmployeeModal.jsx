@@ -17,6 +17,24 @@ import {
 import { useLoader } from "../../../../../../../../shared/components/Loader";
 import employeeService from "../services/employeeService";
 
+const INITIAL_EMPLOYEE_FORM_DATA = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  secondLastName: "",
+  email: "",
+  phoneNumber: "",
+  address: "",
+  birthDate: "",
+  age: "",
+  identification: "",
+  documentTypeId: "",
+  roleId: "",
+  specialty: "",
+  roleNameNormalized: "",
+  status: "Activo",
+};
+
 const EmployeeModal = ({
   isOpen,
   onClose,
@@ -36,24 +54,9 @@ const EmployeeModal = ({
     resetValidation,
     resetForm,
     setErrors,
+    setTouched,
   } = useFormEmployeeValidation(
-    {
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      secondLastName: "",
-      email: "",
-      phoneNumber: "",
-      address: "",
-      birthDate: "",
-      age: "",
-      identification: "",
-      documentTypeId: "",
-      roleId: "",
-      specialty: "",
-      roleNameNormalized: "",
-      status: "Activo",
-    },
+    INITIAL_EMPLOYEE_FORM_DATA,
     employeeValidationRules,
   );
 
@@ -105,13 +108,14 @@ const EmployeeModal = ({
   // Función personalizada para manejar cambios
   const handleCustomChange = (name, value) => {
     if (name === "roleId") {
+      const roleId = value ? String(value) : "";
       const selectedRole = referenceData.roles.find(
-        (role) => role.id === parseInt(value),
+        (role) => role.id === parseInt(roleId),
       );
       const roleNameNormalized = normalizeText(selectedRole?.name || "");
       setFormData((prev) => ({
         ...prev,
-        roleId: value,
+        roleId,
         roleNameNormalized,
         specialty:
           roleNameNormalized === "profesionaldesalud" ||
@@ -124,11 +128,21 @@ const EmployeeModal = ({
 
     if (name === "birthDate") {
       const age = calculateAge(value);
+
+      let birthDateError = "";
+      const birthDateRules = employeeValidationRules.birthDate || [];
+      for (const rule of birthDateRules) {
+        birthDateError = rule(value, { ...formData, birthDate: value, age });
+        if (birthDateError) break;
+      }
+
       setFormData((prev) => ({
         ...prev,
         [name]: value,
         age: age,
       }));
+      setTouched((prev) => ({ ...prev, birthDate: true }));
+      setErrors((prev) => ({ ...prev, birthDate: birthDateError }));
     } else {
       handleChange(name, value);
     }
@@ -212,8 +226,10 @@ const EmployeeModal = ({
           birthDate: birthDate,
           age: calculateAge(birthDate),
           identification: employee.user?.identification || "",
-          documentTypeId: employee.user?.documentTypeId || "",
-          roleId: employee.user?.roleId || "",
+          documentTypeId: employee.user?.documentTypeId
+            ? String(employee.user.documentTypeId)
+            : "",
+          roleId: employee.user?.roleId ? String(employee.user.roleId) : "",
           specialty: employee.specialty || "",
           roleNameNormalized: normalizeText(employee.user?.role?.name || ""),
           status: employee.status || "Activo",
@@ -356,6 +372,10 @@ const EmployeeModal = ({
       // Pass signature file if in create mode
       const payload = { ...formData };
       delete payload.roleNameNormalized;
+      payload.documentTypeId = payload.documentTypeId
+        ? Number(payload.documentTypeId)
+        : payload.documentTypeId;
+      payload.roleId = payload.roleId ? Number(payload.roleId) : payload.roleId;
       const success = await onSave(payload, signatureFile);
 
       // Solo cerrar el modal si la operación fue exitosa
@@ -426,7 +446,7 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={referenceData.documentTypes.map((type) => ({
-                value: type.id,
+                value: String(type.id),
                 label: type.name,
               }))}
               value={formData.documentTypeId}
@@ -581,7 +601,7 @@ const EmployeeModal = ({
               touched={touched.birthDate}
               onChange={handleCustomChange}
               onBlur={handleBlur}
-              minAge={16}
+              minAge={18}
               maxAge={100}
               delay={0.65}
             />
@@ -607,7 +627,7 @@ const EmployeeModal = ({
               required={mode !== "view"}
               disabled={mode === "view"}
               options={referenceData.roles.map((role) => ({
-                value: role.id,
+                value: String(role.id),
                 label: role.name,
               }))}
               value={formData.roleId}

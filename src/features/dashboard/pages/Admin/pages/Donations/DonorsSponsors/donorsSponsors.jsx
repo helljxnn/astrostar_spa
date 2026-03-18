@@ -15,7 +15,7 @@ import donorsSponsorsService from "./services/donorsSponsorsService";
 function DonorsSponsors() {
   const { hasPermission } = usePermissions();
   const { getReportData } = useReportDataWithService(
-    donorsSponsorsService.getAllForReport.bind(donorsSponsorsService)
+    donorsSponsorsService.getAllForReport.bind(donorsSponsorsService),
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -51,8 +51,7 @@ function DonorsSponsors() {
         if (response.success && response.pagination) {
           setPendingCount(response.pagination.total || 0);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     };
 
     loadPendingCount();
@@ -108,7 +107,7 @@ function DonorsSponsors() {
     const result = await showConfirmAlert(
       "Estas seguro de eliminar?",
       `"${itemToDelete.nombre}" se eliminara permanentemente.`,
-      { confirmButtonText: "Si, eliminar", cancelButtonText: "Cancelar" }
+      { confirmButtonText: "Si, eliminar", cancelButtonText: "Cancelar" },
     );
 
     if (result.isConfirmed) {
@@ -133,7 +132,8 @@ function DonorsSponsors() {
 
   const reportData = useMemo(() => {
     return (donorsSponsors || []).map((donor) => ({
-      identificacion: donor.identificacion || "",
+      identificacion:
+        donor.identificacion || donor.numeroDocumento || donor.nit || "",
       nombre: donor.nombre || "",
       tipo: donor.tipo || "",
       tipoPersona: donor.tipoPersona || "",
@@ -149,22 +149,25 @@ function DonorsSponsors() {
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
-      { 
+      {
         search: searchTerm,
-        status: statusFilter || undefined 
+        status: statusFilter || undefined,
       }, // Filtros actuales
-      (donors) => donors.map((donor) => ({ // Mapper de datos
-        identificacion: donor.identificacion || "",
-        nombre: donor.nombre || "",
-        tipo: donor.tipo || "",
-        tipoPersona: donor.tipoPersona || "",
-        telefono: donor.telefono || "",
-        correo: donor.correo || "",
-        direccion: donor.direccion || "",
-        ciudad: donor.ciudad || "",
-        pais: donor.pais || "",
-        estado: donor.estado || "",
-      }))
+      (donors) =>
+        donors.map((donor) => ({
+          // Mapper de datos
+          identificacion:
+            donor.identificacion || donor.numeroDocumento || donor.nit || "",
+          nombre: donor.nombre || "",
+          tipo: donor.tipo || "",
+          tipoPersona: donor.tipoPersona || "",
+          telefono: donor.telefono || "",
+          correo: donor.correo || "",
+          direccion: donor.direccion || "",
+          ciudad: donor.ciudad || "",
+          pais: donor.pais || "",
+          estado: donor.estado || "",
+        })),
     );
   };
 
@@ -326,16 +329,16 @@ function DonorsSponsors() {
             state: true,
             actions: true,
           }}
-            tbody={{
-              data: tableData,
-              dataPropertys: [
-                "nombre",
-                "tipoIdentificacion",
-                "numeroIdentificacion",
-                "telefono",
-                "correo",
-                "tipo",
-              ],
+          tbody={{
+            data: tableData,
+            dataPropertys: [
+              "nombre",
+              "tipoIdentificacion",
+              "numeroIdentificacion",
+              "telefono",
+              "correo",
+              "tipo",
+            ],
             state: true,
             cellClassNames: {
               nombre: "whitespace-normal break-words",
@@ -347,7 +350,9 @@ function DonorsSponsors() {
             },
           }}
           onEdit={hasPermission("donorsSponsors", "Editar") ? handleEdit : null}
-          onDelete={hasPermission("donorsSponsors", "Eliminar") ? handleDelete : null}
+          onDelete={
+            hasPermission("donorsSponsors", "Eliminar") ? handleDelete : null
+          }
           onView={hasPermission("donorsSponsors", "Ver") ? handleView : null}
           buttonConfig={{
             view: () => ({
@@ -390,4 +395,3 @@ function DonorsSponsors() {
 }
 
 export default DonorsSponsors;
-

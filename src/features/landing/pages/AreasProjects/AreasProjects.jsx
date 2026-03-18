@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FaArrowRight,
@@ -195,7 +195,7 @@ function AreasProjects() {
         imageUrl={areaProjectImage("18.webp")}
       />
 
-      <section className="bg-white py-14 px-6 sm:px-10 lg:px-20">
+      <section id="areas-y-proyectos" className="bg-white py-14 px-6 sm:px-10 lg:px-20 scroll-mt-28">
         <div className="max-w-7xl mx-auto text-center">
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
@@ -222,7 +222,7 @@ function AreasProjects() {
         </div>
       </section>
 
-      <section className="py-16 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-slate-50 via-white to-indigo-50/20">
+      <section id="nuestras-areas" className="py-16 px-6 sm:px-10 lg:px-20 bg-gradient-to-b from-slate-50 via-white to-indigo-50/20 scroll-mt-28">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: -30 }}
@@ -533,6 +533,8 @@ function AreasProjects() {
 }
 
 export default AreasProjects;
+
+
 
 
 
