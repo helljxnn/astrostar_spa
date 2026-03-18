@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Servicio para gestionar acudientes
  * Maneja todas las peticiones HTTP al backend de acudientes
  */
@@ -51,8 +51,7 @@ if (response && response.success) {
         };
       }
     } catch (error) {
-      console.error("Error al obtener acudientes:", error);
-      return {
+return {
         success: false,
         data: [],
         pagination: {
@@ -87,8 +86,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo acudiente",
       };
     } catch (error) {
-      console.error(`Error obteniendo acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -115,8 +113,7 @@ if (response && response.success) {
         error: response?.message || "Error creando acudiente",
       };
     } catch (error) {
-      console.error("Error al crear acudiente:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -146,8 +143,7 @@ if (response && response.success) {
         error: response?.message || "Error actualizando acudiente",
       };
     } catch (error) {
-      console.error(`Error actualizando acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -173,8 +169,7 @@ if (response && response.success) {
         error: response?.message || "Error eliminando acudiente",
       };
     } catch (error) {
-      console.error(`Error eliminando acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -200,8 +195,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -279,9 +273,7 @@ if (response && response.success) {
         };
       }
     } catch (error) {
-      console.error("Error al obtener acudientes con información de deportistas:", error);
-      
-      // Intentar fallback en caso de error
+// Intentar fallback en caso de error
       try {
         const response = await apiClient.get(this.endpoint, {
           page: params.page || 1,
@@ -306,8 +298,7 @@ if (response && response.success) {
           };
         }
       } catch (fallbackError) {
-        console.error("Error en fallback:", fallbackError);
-      }
+}
       
       return {
         success: false,
@@ -379,8 +370,7 @@ if (response && response.success) {
         data: allGuardians,
       };
     } catch (error) {
-      console.error("Error al obtener todos los acudientes:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -404,8 +394,7 @@ if (response && response.success) {
         guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error("Error verificando documento:", error);
-      return {
+return {
         success: false,
         exists: false,
         error: error.message,
@@ -429,8 +418,7 @@ if (response && response.success) {
         guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error("Error verificando email:", error);
-      return {
+return {
         success: false,
         exists: false,
         error: error.message,
@@ -482,8 +470,7 @@ if (response && response.success) {
         data: allData,
       };
     } catch (error) {
-      console.error("Error al obtener acudientes para reporte:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -513,11 +500,7 @@ if (response && response.success) {
         error: response?.message || "Error removiendo acudiente",
       };
     } catch (error) {
-      console.error(
-        `Error removiendo acudiente del deportista ${athleteId}:`,
-        error
-      );
-      return {
+return {
         success: false,
         error: error.message,
       };

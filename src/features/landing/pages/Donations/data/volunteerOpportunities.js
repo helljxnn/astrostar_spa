@@ -1,9 +1,9 @@
 ﻿// Importar imágenes
-import deporteImage from "../images/deporte y recreacion.jpeg";
-import formacionImage from "../images/formacion integral.JPG";
-import arteImage from "../images/Arte.jpeg";
-import logisticaImage from "../images/Logistica eventos.jpeg";
-import comunicacionesImage from "../images/Comunicacioens.jpg";
+import deporteImage from "../images/deporte y recreacion.webp";
+import formacionImage from "../images/formacion integral.webp";
+import arteImage from "../images/Arte.webp";
+import logisticaImage from "../images/Logistica eventos.webp";
+import comunicacionesImage from "../images/Comunicacioens.webp";
 
 export const volunteerOpportunities = [
   {

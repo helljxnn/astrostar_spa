@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Servicio para gestionar deportistas
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
@@ -86,8 +86,7 @@ class AthletesService {
         },
       };
     } catch (error) {
-      console.error("Error al obtener deportistas:", error);
-      return {
+return {
         success: false,
         data: [],
         pagination: {
@@ -121,8 +120,7 @@ class AthletesService {
         data: response.data || response
       };
     } catch (error) {
-      console.error("Error al obtener resumen de mensualidades:", error);
-      return { success: false, data: {}, error: error.message };
+return { success: false, data: {}, error: error.message };
     }
   }
 
@@ -139,8 +137,7 @@ class AthletesService {
         data: response.data || response
       };
     } catch (error) {
-      console.error("Error al obtener historial mensual:", error);
-      return { success: false, data: [], error: error.message };
+return { success: false, data: [], error: error.message };
     }
   }
 
@@ -157,8 +154,7 @@ class AthletesService {
         data: response.data || response
       };
     } catch (error) {
-      console.error("Error al obtener historial de intentos:", error);
-      return { success: false, data: [], error: error.message };
+return { success: false, data: [], error: error.message };
     }
   }
 
@@ -184,8 +180,7 @@ class AthletesService {
         error: response?.message || "Error obteniendo deportista",
       };
     } catch (error) {
-      console.error(`Error obteniendo deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -213,8 +208,7 @@ class AthletesService {
         error: response?.message || "Error creando deportista",
       };
     } catch (error) {
-      console.error("❌ [AthletesService] Error al crear deportista:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -244,8 +238,7 @@ class AthletesService {
         error: response?.message || "Error actualizando deportista",
       };
     } catch (error) {
-      console.error(`Error actualizando deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -271,8 +264,7 @@ class AthletesService {
         error: response?.message || "Error eliminando deportista",
       };
     } catch (error) {
-      console.error(`Error eliminando deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -315,8 +307,7 @@ class AthletesService {
           error: response?.message || "Error cambiando estado",
         };
       } catch (error) {
-        console.error(`❌ Error cambiando estado del deportista ${id}:`, error);
-        return {
+return {
           success: false,
           error: error.message,
         };
@@ -343,8 +334,7 @@ class AthletesService {
         error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -403,8 +393,7 @@ class AthletesService {
         error: response?.message || "Error obteniendo tipos de documento",
       };
     } catch (error) {
-      console.error("Error obteniendo tipos de documento:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -433,8 +422,7 @@ class AthletesService {
         message: response.message || "",
       };
     } catch (error) {
-      console.error("Error verificando email:", error);
-      return {
+return {
         available: true, // En caso de error, permitir continuar
         message: "",
       };
@@ -462,8 +450,7 @@ class AthletesService {
         message: response.message || "",
       };
     } catch (error) {
-      console.error("Error verificando identificación:", error);
-      return {
+return {
         available: true, // En caso de error, permitir continuar
         message: "",
       };
@@ -499,8 +486,7 @@ class AthletesService {
         };
       }
     } catch (error) {
-      console.error("Error obteniendo deportistas para reporte:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,

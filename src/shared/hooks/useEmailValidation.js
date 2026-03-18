@@ -6,9 +6,14 @@ import InscriptionsService from '../../features/dashboard/pages/Admin/pages/Athl
  * Hook para validar email duplicado en tiempo real
  * @param {number|null} excludeUserId - ID del usuario a excluir de la validación (para modo edición)
  * @param {boolean} checkInscriptions - Si debe verificar también en inscripciones pendientes
+ * @param {boolean} skipAthleteCheck - Si debe omitir verificación de atletas (modo público)
  * @returns {Object} Estado y funciones de validación
  */
-export const useEmailValidation = (excludeUserId = null, checkInscriptions = false) => {
+export const useEmailValidation = (
+  excludeUserId = null,
+  checkInscriptions = false,
+  skipAthleteCheck = false
+) => {
   const [isChecking, setIsChecking] = useState(false);
   const [emailExists, setEmailExists] = useState(false);
   const [validationMessage, setValidationMessage] = useState('');
@@ -32,14 +37,16 @@ export const useEmailValidation = (excludeUserId = null, checkInscriptions = fal
 
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        // Verificar en deportistas matriculados
-        const athleteResult = await AthletesService.checkEmailAvailability(email, excludeUserId);
+        // Verificar en deportistas matriculados (solo si aplica)
+        if (!skipAthleteCheck) {
+          const athleteResult = await AthletesService.checkEmailAvailability(email, excludeUserId);
 
-        if (!athleteResult.available) {
-          setEmailExists(true);
-          setValidationMessage('Este email ya está matriculado en la fundación');
-          setIsChecking(false);
-          return;
+          if (!athleteResult.available) {
+            setEmailExists(true);
+            setValidationMessage('Este email ya está matriculado en la fundación');
+            setIsChecking(false);
+            return;
+          }
         }
 
         // Si checkInscriptions es true, también verificar en inscripciones pendientes
@@ -57,7 +64,7 @@ export const useEmailValidation = (excludeUserId = null, checkInscriptions = fal
         // Si llegamos aquí, el email está disponible
         setEmailExists(false);
         setValidationMessage('');
-      } catch (error) {
+      } catch {
         // Error silencioso - no mostrar en consola para evitar ruido
         setEmailExists(false);
         setValidationMessage('');
@@ -65,7 +72,7 @@ export const useEmailValidation = (excludeUserId = null, checkInscriptions = fal
         setIsChecking(false);
       }
     }, delay);
-  }, [excludeUserId, checkInscriptions]);
+  }, [excludeUserId, checkInscriptions, skipAthleteCheck]);
 
   const clearValidation = useCallback(() => {
     if (debounceTimerRef.current) {

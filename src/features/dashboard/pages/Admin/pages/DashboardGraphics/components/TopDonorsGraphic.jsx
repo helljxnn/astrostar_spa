@@ -1,19 +1,24 @@
+import { useMemo } from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import {
+  getDonationInKindValue,
+  getDonationMonetaryAmount,
+  isCancelledDonation,
+} from "../utils/donationMetrics";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const TopDonorsGraphic = ({ donations = [] }) => {
-  // Procesar donaciones reales para obtener top donantes
-  const processTopDonors = () => {
+  const donorsData = useMemo(() => {
     const donorTotals = {};
 
     donations.forEach((donation) => {
-      if (donation.status === "Anulada" || !donation.donorSponsorId) return;
+      if (isCancelledDonation(donation) || !donation.donorSponsorId) return;
 
       const donorId = donation.donorSponsorId;
-      const donorName = 
+      const donorName =
         donation.donorSponsor?.nombre ||
         donation.donorSponsor?.name ||
         donation.donor?.nombre ||
@@ -24,49 +29,35 @@ const TopDonorsGraphic = ({ donations = [] }) => {
         donorTotals[donorId] = { nombre: donorName, monto: 0 };
       }
 
-      const details = donation.details || [];
-      
       if (donation.type === "ECONOMICA" || donation.type === "ALIMENTOS") {
-        const payment = details.find((d) => d.recordType === "payment");
-        donorTotals[donorId].monto += payment?.amount || 0;
+        donorTotals[donorId].monto += getDonationMonetaryAmount(donation);
       } else if (donation.type === "ESPECIE") {
-        const itemsValue = details.reduce((sum, d) => {
-          if (d.recordType === "item") {
-            // Usar el amount si existe, sino usar quantity sin multiplicar
-            return sum + (d.amount || d.quantity || 0);
-          }
-          return sum;
-        }, 0);
-        donorTotals[donorId].monto += itemsValue;
+        donorTotals[donorId].monto += getDonationInKindValue(donation);
       }
     });
 
-    // Ordenar por monto y tomar top 4
-    const sortedDonors = Object.values(donorTotals)
-      .sort((a, b) => b.monto - a.monto)
-      .slice(0, 4);
+    const allDonorsSorted = Object.values(donorTotals)
+      .filter((donor) => donor.monto > 0)
+      .filter((donor) => Number.isFinite(donor.monto))
+      .sort((a, b) => b.monto - a.monto);
 
-    // Calcular "Otros"
-    const topTotal = sortedDonors.reduce((sum, d) => sum + d.monto, 0);
-    const grandTotal = Object.values(donorTotals).reduce((sum, d) => sum + d.monto, 0);
+    const topDonors = allDonorsSorted.slice(0, 4);
+    const topTotal = topDonors.reduce((sum, donor) => sum + donor.monto, 0);
+    const grandTotal = allDonorsSorted.reduce((sum, donor) => sum + donor.monto, 0);
     const othersTotal = grandTotal - topTotal;
 
     if (othersTotal > 0) {
-      sortedDonors.push({ nombre: "Otros", monto: othersTotal });
+      topDonors.push({ nombre: "Otros", monto: othersTotal });
     }
 
-    return sortedDonors.length > 0 ? sortedDonors : [
-      { nombre: "Sin donaciones", monto: 1 }
-    ];
-  };
-
-  const donorsData = processTopDonors();
+    return topDonors;
+  }, [donations]);
 
   const total = donorsData.reduce((sum, item) => sum + item.monto, 0);
 
   const reportData = donorsData.map((donor) => ({
     ...donor,
-    porcentaje: `${((donor.monto / total) * 100).toFixed(1)}%`,
+    porcentaje: total > 0 ? `${((donor.monto / total) * 100).toFixed(1)}%` : "0.0%",
   }));
 
   const reportColumns = [
@@ -76,10 +67,10 @@ const TopDonorsGraphic = ({ donations = [] }) => {
   ];
 
   const data = {
-    labels: donorsData.map((item) => item.nombre),
+    labels: donorsData.length > 0 ? donorsData.map((item) => item.nombre) : ["Sin donaciones"],
     datasets: [
       {
-        data: donorsData.map((item) => item.monto),
+        data: donorsData.length > 0 ? donorsData.map((item) => item.monto) : [1],
         backgroundColor: [
           "rgba(16, 185, 129, 0.85)",
           "rgba(59, 130, 246, 0.85)",
@@ -121,6 +112,8 @@ const TopDonorsGraphic = ({ donations = [] }) => {
         padding: 12,
         callbacks: {
           label: function (context) {
+            if (total <= 0) return "Sin donaciones";
+
             const label = context.label || "";
             const value = context.parsed || 0;
             const percentage = ((value / total) * 100).toFixed(1);
@@ -150,6 +143,20 @@ const TopDonorsGraphic = ({ donations = [] }) => {
     "bg-pink-500",
   ];
 
+  const formatAmount = (amount) => {
+    if (!Number.isFinite(amount)) return "$0";
+
+    if (amount >= 1000000) {
+      return `$${(amount / 1000000).toFixed(1)}M`;
+    }
+
+    if (amount >= 1000) {
+      return `$${(amount / 1000).toFixed(1)}K`;
+    }
+
+    return `$${amount.toFixed(0)}`;
+  };
+
   return (
     <div className="bg-white shadow-md rounded-xl p-3 sm:p-4 w-full h-[300px] sm:h-[350px] lg:h-[450px]">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
@@ -170,30 +177,30 @@ const TopDonorsGraphic = ({ donations = [] }) => {
       </div>
 
       <div className="space-y-2 mt-3 max-h-[120px] overflow-y-auto">
-        {donorsData.map((donor, index) => {
-          const percentage = ((donor.monto / total) * 100).toFixed(1);
-          return (
-            <div
-              key={index}
-              className="flex items-center justify-between text-xs sm:text-sm"
-            >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <div
-                  className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${colors[index]}`}
-                ></div>
-                <span className="text-gray-700 truncate">{donor.nombre}</span>
+        {donorsData.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Sin donaciones para mostrar</p>
+        ) : (
+          donorsData.map((donor, index) => {
+            const percentage = total > 0 ? ((donor.monto / total) * 100).toFixed(1) : "0.0";
+            return (
+              <div
+                key={index}
+                className="flex items-center justify-between text-xs sm:text-sm"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div
+                    className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${colors[index]}`}
+                  ></div>
+                  <span className="text-gray-700 truncate">{donor.nombre}</span>
+                </div>
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-gray-600 text-xs">{formatAmount(donor.monto)}</span>
+                  <span className="text-gray-800 font-semibold">({percentage}%)</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 ml-2">
-                <span className="text-gray-600 text-xs">
-                  ${(donor.monto / 1000).toFixed(0)}K
-                </span>
-                <span className="text-gray-800 font-semibold">
-                  ({percentage}%)
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
     </div>
   );

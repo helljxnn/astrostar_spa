@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -168,8 +168,7 @@ const EnrollmentManagementModal = ({
       const dateB = new Date(b.fechaInscripcion || 0);
       return dateB - dateA;
     } catch (error) {
-      console.error("Error ordenando inscripciones:", error);
-      return 0;
+return 0;
     }
   });
 
@@ -369,8 +368,7 @@ const EnrollmentManagementModal = ({
 
       setActiveTab("current");
     } catch (error) {
-      console.error("Error creating inscription:", error);
-      showErrorAlert(
+showErrorAlert(
         "Error al crear matrícula",
         error.message || "Ocurrió un error al crear la matrícula."
       );
@@ -464,8 +462,7 @@ const EnrollmentManagementModal = ({
       });
       setShowConceptoFields(false);
     } catch (error) {
-      console.error("Error updating inscription:", error);
-      showErrorAlert(
+showErrorAlert(
         "Error al actualizar",
         error.message || "Ocurrió un error al actualizar la matrícula."
       );

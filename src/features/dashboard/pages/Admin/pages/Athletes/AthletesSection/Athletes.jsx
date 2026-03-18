@@ -29,6 +29,11 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
+  const canEditAthletes = hasPermission("athletesSection", "Editar");
+  const canDeleteAthletes = hasPermission("athletesSection", "Eliminar");
+  const canViewAthletes = hasPermission("athletesSection", "Ver");
+  const canManageGuardian = hasPermission("athletesSection", "Acudiente");
+  const canViewMonthlyHistory = canEditAthletes;
 
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
@@ -590,9 +595,7 @@ const Athletes = () => {
         throw new Error(response.error || "Error removiendo acudiente");
       }
     } catch (err) {
-      console.error("Error removiendo acudiente:", err);
-      
-      // Mostrar el error del backend al usuario
+// Mostrar el error del backend al usuario
       let errorMessage = err.message || "No se pudo remover el acudiente";
       
       // Si es un error 500, dar más contexto
@@ -795,24 +798,22 @@ const Athletes = () => {
                 },
               }}
               onEdit={
-                hasPermission("athletesSection", "Editar") ? handleEdit : null
+                canEditAthletes ? handleEdit : null
               }
               onDelete={
-                hasPermission("athletesSection", "Eliminar")
-                  ? handleDelete
-                  : null
+                canDeleteAthletes ? handleDelete : null
               }
               onView={
-                hasPermission("athletesSection", "Ver") ? handleView : null
+                canViewAthletes ? handleView : null
               }
               buttonConfig={{
                 edit: (item) => ({
-                  show: hasPermission("athletesSection", "Editar"),
+                  show: canEditAthletes,
                 }),
                 delete: (item) => {
                   const validation = canDeleteAthlete(item);
                   return {
-                    show: hasPermission("athletesSection", "Eliminar"),
+                    show: canDeleteAthletes,
                     disabled: !validation.canDelete,
                     title: validation.canDelete
                       ? "Eliminar deportista"
@@ -820,25 +821,25 @@ const Athletes = () => {
                   };
                 },
                 view: (item) => ({
-                  show: hasPermission("athletesSection", "Ver"),
+                  show: canViewAthletes,
                 }),
               }}
               customActions={[
-                {
+                canViewMonthlyHistory && {
                   onClick: (athlete) => handleOpenMonthlyHistory(athlete),
                   label: <FaRegCalendarAlt className="w-4 h-4" />,
                   className:
                     "p-2 text-pink-400 hover:text-pink-600 hover:bg-pink-50 rounded transition-colors",
                   title: "Ver mensualidades",
                 },
-                {
+                canManageGuardian && {
                   onClick: (athlete) => handleManageGuardian(athlete),
                   label: <FaUserShield className="w-4 h-4" />,
                   className:
                     "p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded transition-colors",
                   title: "Gestionar Acudiente",
                 },
-              ]}
+              ].filter(Boolean)}
             />
           </div>
         </>

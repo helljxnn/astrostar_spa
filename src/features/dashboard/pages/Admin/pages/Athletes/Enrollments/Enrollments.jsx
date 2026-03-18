@@ -913,18 +913,6 @@ const Enrollments = () => {
           const matchByName = String(a.acudiente) === String(guardianToView?.nombreCompleto);
           const matchByGuardianId = a.guardianId === guardianToView?.id;
           
-          // console.log('🔍 [Enrollments] Filtrando atleta:', {
-          //   athleteId: a.id,
-          //   athleteName: a.nombreCompleto,
-          //   athleteAcudiente: a.acudiente,
-          //   athleteGuardianId: a.guardianId,
-          //   guardianId: guardianToView?.id,
-          //   guardianName: guardianToView?.nombreCompleto,
-          //   matchById,
-          //   matchByName,
-          //   matchByGuardianId
-          // });
-          
           return matchById || matchByName || matchByGuardianId;
         })}
         referenceData={{

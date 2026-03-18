@@ -1,4 +1,4 @@
-﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 // ============================================================================
@@ -54,8 +54,7 @@ class EnrollmentsService {
         data: response.data || response,
       };
     } catch (error) {
-      console.error('Error fetching enrollments report:', error);
-      return { success: false, error: error.message, data: [] };
+return { success: false, error: error.message, data: [] };
     }
   }
 
@@ -179,8 +178,7 @@ class EnrollmentsService {
       const ids = data.map(item => item.id);
       const duplicateIds = ids.filter((id, index) => ids.indexOf(id) !== index);
       if (duplicateIds.length > 0) {
-        console.warn('⚠️ [EnrollmentsService.getAll] Duplicados detectados:', duplicateIds);
-      }
+}
 
       const pagination = response.pagination || response.data?.pagination;
 
@@ -191,8 +189,7 @@ class EnrollmentsService {
         hasMore: response.hasMore || response.data?.hasMore || false,
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.getAll] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -212,8 +209,7 @@ class EnrollmentsService {
         message: response.message || 'Historial obtenido exitosamente'
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.getAthleteEnrollmentHistory] Error:", error);
-      return { success: false, error: error.message, data: [] };
+return { success: false, error: error.message, data: [] };
     }
   }
 
@@ -231,8 +227,7 @@ class EnrollmentsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.getById] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -277,14 +272,11 @@ class EnrollmentsService {
               
               const updateResponse = await apiClient.put(`${this.endpoint}/${athleteId}`, updateData);
             } else {
-              console.warn("⚠️ [EnrollmentsService.createEnrollment] No se pudieron obtener los datos del atleta");
-            }
+}
           } else {
-            console.warn("⚠️ [EnrollmentsService.createEnrollment] No se encontró ID del atleta en la respuesta");
-          }
+}
         } catch (categoryError) {
-          console.warn("⚠️ [EnrollmentsService.createEnrollment] Error actualizando categoría:", categoryError);
-          // No fallar la operación completa por este error
+// No fallar la operación completa por este error
         }
       }
 
@@ -296,9 +288,7 @@ class EnrollmentsService {
         message: response.message || "Matrícula creada exitosamente con estado pendiente de pago",
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.createEnrollment] Error:", error);
-      
-      let errorMessage = error.message;
+let errorMessage = error.message;
       
       // Manejar error específico de timeout de transacción
       if (error.message && error.message.includes('Transaction already closed')) {
@@ -329,8 +319,7 @@ class EnrollmentsService {
         message: response.message || "Matrícula activada exitosamente",
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.activateEnrollment] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -353,8 +342,7 @@ class EnrollmentsService {
         message: "Matrícula renovada exitosamente",
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.renewEnrollment] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -371,8 +359,7 @@ class EnrollmentsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.processExpiredEnrollments] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -388,8 +375,7 @@ class EnrollmentsService {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.updateEnrollment] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -403,8 +389,7 @@ class EnrollmentsService {
       await apiClient.delete(`${this.endpoint}/${id}`);
       return { success: true };
     } catch (error) {
-      console.error("❌ [EnrollmentsService.delete] Error:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 }

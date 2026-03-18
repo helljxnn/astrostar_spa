@@ -13,13 +13,13 @@ import "swiper/css/autoplay";
 import "../styles/home.css";
 
 // ✅ Importa imágenes
-import img1 from "../images/Carrusel/DSC03153.jpg";
-import img2 from "../images/Carrusel/DSC03002.jpg";
-import img3 from "../images/Carrusel/DSC03324.jpg";
-import img4 from "../images/Carrusel/DSC03362.jpg";
-import img5 from "../images/Carrusel/DSC03435.jpg";
-import img6 from "../images/Carrusel/DSC03296.jpg";
-import img7 from "../images/Carrusel/DSC03464.jpg";
+import img1 from "../images/2.webp";
+import img2 from "../images/3.webp";
+import img3 from "../images/4.webp";
+import img4 from "../images/6.webp";
+import img5 from "../images/7.webp";
+import img6 from "../images/8.webp";
+import img7 from "../images/9.webp";
 
 export default function HeroCarousel() {
   const slides = [

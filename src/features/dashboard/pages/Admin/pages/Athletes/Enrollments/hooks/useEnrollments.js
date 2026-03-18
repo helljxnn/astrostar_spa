@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import EnrollmentsService from "../services/EnrollmentsService";
 import InscriptionsService from "../services/InscriptionsService";
 import GuardiansService from "../../AthletesSection/services/GuardiansService";
@@ -68,8 +68,7 @@ export const useEnrollments = () => {
         sportsCategories: uniqueCategories
       });
     } catch (error) {
-      console.error("Error cargando datos de referencia:", error);
-    }
+}
   }, []);
 
   // Cargar datos (búsqueda por nombre completo y documento en backend) - OPTIMIZADO
@@ -85,8 +84,7 @@ export const useEnrollments = () => {
           await EnrollmentsService.processExpiredEnrollments();
           sessionStorage.setItem('expiredEnrollmentsProcessed', 'true');
         } catch (error) {
-          console.error("Error procesando matrículas vencidas:", error);
-        }
+}
       }
 
       const athletesResult = await EnrollmentsService.getAll({
@@ -149,8 +147,7 @@ export const useEnrollments = () => {
         setInscriptions([]);
       }
     } catch (error) {
-      console.error("Error loading enrollments data:", error);
-      if (!silent) {
+if (!silent) {
         showErrorAlert("Error", "No se pudieron cargar los datos");
       }
     } finally {
@@ -192,8 +189,7 @@ export const useEnrollments = () => {
         setGuardians([]);
       }
     } catch (error) {
-      console.error("Error buscando acudientes:", error);
-      setGuardians([]);
+setGuardians([]);
     }
   };
 
@@ -205,8 +201,7 @@ export const useEnrollments = () => {
       const athletesResult = await AthletesService.getAll();
       
       if (!athletesResult.success) {
-        console.warn("No se pudieron obtener los deportistas para enriquecer");
-        return guardians;
+return guardians;
       }
       
       const allAthletes = athletesResult.data || [];
@@ -250,8 +245,7 @@ export const useEnrollments = () => {
         };
       });
     } catch (error) {
-      console.error("Error enriqueciendo datos de acudientes:", error);
-      return guardians;
+return guardians;
     }
   };
 
@@ -311,9 +305,7 @@ export const useEnrollments = () => {
         return null;
       }
     } catch (error) {
-      console.error("❌ [createEnrollment] Excepción:", error);
-      
-      // ❌ NO ELIMINAR - La inscripción permanece en el estado
+// ❌ NO ELIMINAR - La inscripción permanece en el estado
       
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
@@ -343,8 +335,7 @@ export const useEnrollments = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error updating enrollment:", error);
-      showErrorAlert("Error", "Ocurrió un error al actualizar la matrícula");
+showErrorAlert("Error", "Ocurrió un error al actualizar la matrícula");
       return false;
     }
   };
@@ -369,8 +360,7 @@ export const useEnrollments = () => {
         return false;
       }
     } catch (error) {
-      console.error("Error deleting athlete:", error);
-      showErrorAlert("Error", "Ocurrió un error al eliminar la deportista");
+showErrorAlert("Error", "Ocurrió un error al eliminar la deportista");
       return false;
     }
   };
@@ -402,8 +392,7 @@ showSuccessAlert(
         return false;
       }
     } catch (error) {
-      console.error("Error rejecting inscription:", error);
-      showErrorAlert(
+showErrorAlert(
         "Error",
         "Ocurrió un error al rechazar la inscripción"
       );

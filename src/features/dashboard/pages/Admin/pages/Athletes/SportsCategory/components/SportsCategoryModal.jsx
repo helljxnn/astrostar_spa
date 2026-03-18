@@ -13,6 +13,7 @@ import {
   showErrorAlert,
   showSuccessAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
+import { fixMojibake } from "../../../../../../../../shared/utils/textEncoding.js";
 
 const AGE_MIN = 5;
 const AGE_MAX = 30;
@@ -172,8 +173,8 @@ const SportsCategoryModal = ({
           showErrorAlert("Nombre duplicado", sync.message || "Nombre en uso");
           return;
         }
-      } catch (validationError) {
-        console.warn("Name validation skipped due to error:", validationError);
+      } catch {
+        // Si falla la validacion remota, se continua y el backend valida.
       }
     }
 
@@ -199,13 +200,12 @@ const SportsCategoryModal = ({
       showSuccessAlert(isNew ? "Categoria creada" : "Categoria actualizada");
       onClose();
     } catch (err) {
-      console.error("handleSubmit error:", err);
       const message =
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         "No se pudo guardar la categoria. Revisa los campos.";
-      showErrorAlert("Error al guardar", message);
+      showErrorAlert("Error al guardar", fixMojibake(message));
     } finally {
       setIsSubmitting(false);
     }

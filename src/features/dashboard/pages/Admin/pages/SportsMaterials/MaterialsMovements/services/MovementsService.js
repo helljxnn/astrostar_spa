@@ -188,6 +188,12 @@ class MovementsService {
       cantidad: backendData.cantidad || backendData.quantity || 0,
       origen:
         backendData.origen || backendData.origin || backendData.source || "",
+      donacionId:
+        backendData.donacionId || backendData.donacion_id || null,
+      referenceId:
+        backendData.referenceId || backendData.reference_id || null,
+      referenceType:
+        backendData.referenceType || backendData.reference_type || null,
 
       // Inventarios
       inventario_origen:

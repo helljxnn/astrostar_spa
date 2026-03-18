@@ -12,7 +12,6 @@ import {
   isSameDay,
   sortEventsByDateTime,
 } from "../../../../shared/utils/helpers/dateHelpers.js";
-
 import { EventModal } from "./components/EventModal.jsx";
 
 export const Events = () => {
@@ -31,6 +30,8 @@ export const Events = () => {
     pastEvents,
     nextEvent,
     allEvents,
+    loading,
+    error,
   } = useEvents();
 
   const selectedEvent = selectedEventId
@@ -38,51 +39,40 @@ export const Events = () => {
     : null;
 
   const handleEventSelect = (eventId) => {
-
     setSelectedEventId(eventId);
     setHighlightedEventId(eventId);
-    
-    // Auto-reset del highlight después de 5 segundos
-    setTimeout(() => {
 
+    setTimeout(() => {
       setHighlightedEventId(null);
     }, 5000);
   };
 
   const handleDateSelect = (date) => {
-
     setSelectedDate(date);
 
-    // Buscar eventos en esa fecha (incluyendo eventos multi-día)
     const eventsOnDate = allEvents.filter((event) => {
-      // Usar isSameDay con soporte para endDate
-      return isSameDay(new Date(event.date), date, event.endDate ? new Date(event.endDate) : null);
+      return isSameDay(
+        new Date(event.date),
+        date,
+        event.endDate ? new Date(event.endDate) : null,
+      );
     });
-
-
 
     if (eventsOnDate.length > 0) {
       const sortedEvents = sortEventsByDateTime(eventsOnDate);
       const targetEvent = sortedEvents[0];
       const targetEventId = targetEvent.id;
 
-
-
-      // Resetear highlight antes de establecer uno nuevo
       setHighlightedEventId(null);
-      
-      // Usar requestAnimationFrame para asegurar que el DOM se actualice
+
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setHighlightedEventId(targetEventId);
           setSelectedEventId(targetEventId);
           setSelectedEventType(targetEvent.type);
-          
-
         });
       });
     } else {
-
       setSelectedEventId(null);
       setHighlightedEventId(null);
     }
@@ -102,18 +92,12 @@ export const Events = () => {
   };
 
   const handleHighlightComplete = () => {
-
     setHighlightedEventId(null);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <Hero
-        variant="background"
-        title="Eventos"
-        subtitle="Nuestros eventos son el corazón de la Fundación, donde celebramos la pasión por el fútbol femenino. Organizamos torneos emocionantes y encuentros inspiradores para nuestras jugadoras y la comunidad. ¡Consulta nuestro calendario y únete a la celebración del fútbol femenino!"
-        imageUrl="/public/assets/images/EventsHero.png"
-      />
+      <Hero variant="image-only" imageUrl="/assets/images/EventsHero.webp" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-12">
         <motion.div
@@ -126,6 +110,14 @@ export const Events = () => {
           <h2 className="text-xl sm:text-2xl md:text-3xl font-montserrat font-bold bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] bg-clip-text text-transparent mb-3 sm:mb-4">
             Calendario de Eventos
           </h2>
+
+          {loading && (
+            <p className="text-sm text-gray-500">Cargando eventos...</p>
+          )}
+
+          {!loading && error && (
+            <p className="text-sm text-red-500">No se pudieron cargar los eventos.</p>
+          )}
         </motion.div>
 
         <motion.div
@@ -165,6 +157,7 @@ export const Events = () => {
             eventTypes={eventTypes}
             selectedType={selectedEventType}
             onTypeSelect={setSelectedEventType}
+            nextEvent={nextEvent}
           />
         </motion.div>
 
@@ -190,4 +183,3 @@ export const Events = () => {
     </div>
   );
 };
-

@@ -17,6 +17,28 @@ const AthleteAttendanceHistoryModal = ({
   loading,
   rangeLabel,
 }) => {
+  const toComparableDate = (value) => {
+    if (!value) return 0;
+
+    if (typeof value === "string") {
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return new Date(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3]),
+          12,
+          0,
+          0,
+          0,
+        ).getTime();
+      }
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+  };
+
   const summary = useMemo(() => {
     const total = history.length;
     const present = history.filter((item) => item.asistencia).length;
@@ -28,14 +50,24 @@ const AthleteAttendanceHistoryModal = ({
   const sortedHistory = useMemo(
     () =>
       [...history].sort(
-        (a, b) => new Date(b.date || b.fecha) - new Date(a.date || a.fecha)
+        (a, b) => toComparableDate(b.date || b.fecha) - toComparableDate(a.date || a.fecha)
       ),
     [history]
   );
 
   const formatDate = (value) => {
     if (!value) return "-";
-    return new Date(value).toLocaleDateString("es-CO", {
+    if (typeof value === "string") {
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return `${match[3]}/${match[2]}/${match[1]}`;
+      }
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "-";
+
+    return parsed.toLocaleDateString("es-CO", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",

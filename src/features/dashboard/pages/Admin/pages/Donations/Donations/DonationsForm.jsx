@@ -22,6 +22,7 @@ import {
   showSuccessAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 import MaterialSearchSelector from "../../../../../../../shared/components/MaterialSearchSelector";
+import SearchableSelect from "../../../../../../../shared/components/SearchableSelect";
 
 const STATUS_OPTIONS = [
   { value: "Recibida", label: "Recibida" },
@@ -904,6 +905,14 @@ const DonationsForm = () => {
   const selectedType = getTypeMeta(form.type);
   const isEconomicType = selectedType?.apiType === "ECONOMICA";
   const isEspecieType = selectedType?.apiType === "ESPECIE";
+  const donorOptions = useMemo(
+    () =>
+      donors.map((d) => ({
+        value: String(d.id),
+        label: d.nombre || d.name || `Donante #${d.id}`,
+      })),
+    [donors],
+  );
 
   return (
     <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-questrial">
@@ -955,28 +964,21 @@ const DonationsForm = () => {
                   <FaUser className="text-primary-purple" />
                   Donante / Patrocinador *
                 </label>
-                <select
+                <SearchableSelect
+                  options={donorOptions}
                   value={form.donorSponsorId}
-                  onChange={(e) =>
-                    handleChange("donorSponsorId", e.target.value)
+                  onChange={(value) => handleChange("donorSponsorId", value)}
+                  loading={loadingDonors}
+                  placeholder={
+                    loadingDonors
+                      ? "Cargando..."
+                      : donorOptions.length === 0
+                        ? "No hay donantes disponibles"
+                        : "Seleccionar donante..."
                   }
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary-purple focus:ring-2 focus:ring-primary-purple/20 transition-all"
                   disabled={statusOnlyMode}
-                >
-                  <option value="">
-                    {loadingDonors ? "Cargando..." : "Seleccionar donante..."}
-                  </option>
-                  {donors.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.nombre}
-                    </option>
-                  ))}
-                </select>
-                {errors.donorSponsorId && (
-                  <span className="text-red-500 text-xs mt-1.5 flex items-center gap-1">
-                    <FaInfoCircle /> {errors.donorSponsorId}
-                  </span>
-                )}
+                  error={errors.donorSponsorId || ""}
+                />
               </div>
 
               <div className="flex flex-col order-2">

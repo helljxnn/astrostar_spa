@@ -37,8 +37,7 @@ const parseCustomRecurrence = (raw) => {
   if (typeof raw === "object") return raw;
   try {
     return JSON.parse(raw);
-  } catch (err) {
-    console.warn("No se pudo parsear customRecurrence", err);
+  } catch {
     return null;
   }
 };
@@ -628,7 +627,6 @@ export const useEmployeeSchedules = () => {
 
       setEmployees(filtered);
     } catch (error) {
-      console.error(error);
       showErrorAlert("Error", "No se pudieron cargar los empleados activos");
     } finally {
       setLoadingEmployees(false);
@@ -680,7 +678,6 @@ export const useEmployeeSchedules = () => {
           return next;
         });
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudieron cargar horarios");
       } finally {
         setLoading(false);
@@ -730,7 +727,6 @@ export const useEmployeeSchedules = () => {
         await loadSchedules({ page: 1 });
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message);
         throw error;
       } finally {
@@ -755,7 +751,6 @@ export const useEmployeeSchedules = () => {
         await loadSchedules();
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message);
         throw error;
       } finally {
@@ -783,7 +778,6 @@ export const useEmployeeSchedules = () => {
         await loadSchedules();
         return true;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message);
         throw error;
       } finally {
@@ -807,7 +801,6 @@ export const useEmployeeSchedules = () => {
         await loadSchedules();
         return true;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message);
         throw error;
       } finally {
@@ -840,4 +833,5 @@ export const useEmployeeSchedules = () => {
 };
 
 export default useEmployeeSchedules;
+
 
