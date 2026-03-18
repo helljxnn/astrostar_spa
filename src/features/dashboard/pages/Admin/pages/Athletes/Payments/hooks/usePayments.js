@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
@@ -63,8 +63,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
       }
       
     } catch (error) {
-      console.error('Error fetching payments:', error);
-      showErrorAlert('Error', 'No se pudieron cargar los pagos');
+showErrorAlert('Error', 'No se pudieron cargar los pagos');
       setPayments([]);
       setTotalRows(0);
     } finally {
@@ -84,12 +83,39 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     }
   }, [initialParams.search]);
 
+  useEffect(() => {
+    const nextFilters = {
+      status: initialParams.status || '',
+      type: initialParams.type || '',
+      dateFrom: initialParams.dateFrom || '',
+      dateTo: initialParams.dateTo || ''
+    };
+
+    setFilters((prev) => {
+      if (
+        prev.status === nextFilters.status &&
+        prev.type === nextFilters.type &&
+        prev.dateFrom === nextFilters.dateFrom &&
+        prev.dateTo === nextFilters.dateTo
+      ) {
+        return prev;
+      }
+      return nextFilters;
+    });
+  }, [initialParams.status, initialParams.type, initialParams.dateFrom, initialParams.dateTo]);
+
   // Resetear a página 1 cuando cambia la búsqueda - PATRÓN ESTÁNDAR
   useEffect(() => {
     if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE && searchTerm) {
       setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
     }
   }, [searchTerm]);
+
+  useEffect(() => {
+    if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE) {
+      setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
+    }
+  }, [filters.status, filters.type, filters.dateFrom, filters.dateTo]);
 
   // Función para cambiar página - SIMPLE Y DIRECTA
   const handlePageChange = (newPage) => {
@@ -124,8 +150,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         throw new Error(response.error || 'Error al aprobar el pago');
       }
     } catch (error) {
-      console.error('Error approving payment:', error);
-      showErrorAlert('Error', error.message || 'No se pudo aprobar el pago');
+showErrorAlert('Error', error.message || 'No se pudo aprobar el pago');
       return { success: false, error: error.message };
     } finally {
       setActionLoading(false);
@@ -146,8 +171,7 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
         throw new Error(response.error || 'Error al rechazar el pago');
       }
     } catch (error) {
-      console.error('Error rejecting payment:', error);
-      showErrorAlert('Error', error.message || 'No se pudo rechazar el pago');
+showErrorAlert('Error', error.message || 'No se pudo rechazar el pago');
       return { success: false, error: error.message };
     } finally {
       setActionLoading(false);
@@ -170,4 +194,3 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     rejectPayment,
   };
 };
-

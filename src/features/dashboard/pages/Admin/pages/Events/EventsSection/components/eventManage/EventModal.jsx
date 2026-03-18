@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../../shared/components/FormField";
@@ -40,24 +40,10 @@ export const EventModal = ({
     clearRegistrations: false, // Indicador para limpiar inscripciones
   });
 
-  // Mapeo de tipos de evento a tipo de participante
-  const eventTypeParticipantMap = {
-    Festival: "Equipos",
-    Torneo: "Equipos",
-    Clausura: "Deportistas",
-    Taller: "Deportistas",
-  };
-
   // Obtener el nombre del tipo de evento seleccionado
   const getSelectedTypeName = () => {
     const selectedType = referenceData.types.find((t) => t.id === tipoEvento);
     return selectedType?.name || "";
-  };
-
-  // Obtener el tipo de participante según el tipo de evento
-  const getParticipantType = () => {
-    const typeName = getSelectedTypeName();
-    return eventTypeParticipantMap[typeName] || "Deportistas";
   };
 
   const {
@@ -65,6 +51,7 @@ export const EventModal = ({
     touched,
     validate,
     handleBlur,
+    handleChangeValidation,
     touchAllFields,
     isCheckingName,
   } = useFormEventValidation();
@@ -191,12 +178,24 @@ export const EventModal = ({
     }
   }, [event, isNew, referenceData.types]);
 
-  const handleChange = (name, value) => {
-    setForm((prev) => ({ ...prev, [name]: value }));
+  const handleFormChange = (name, value) => {
+    setForm((prev) => {
+      const nextForm = { ...prev, [name]: value };
+      handleChangeValidation(name, value, nextForm);
+      return nextForm;
+    });
   };
 
   const handleSubmit = async () => {
     try {
+      if (isCheckingName) {
+        showErrorAlert(
+          "Validando nombre",
+          "Espera un momento mientras se valida la disponibilidad del nombre.",
+        );
+        return;
+      }
+
       touchAllFields({ ...form, tipoEvento });
       const isValid = validate({ ...form, tipoEvento });
 
@@ -304,10 +303,6 @@ export const EventModal = ({
                   onChange={async (name, value) => {
                     // Validar cambio de tipo si hay inscripciones
                     // Verificar si el evento tiene inscripciones (fallback si hasRegistrations no está definido)
-                    const eventHasRegistrations =
-                      event?.hasRegistrations ||
-                      (event?.participants && event.participants.length > 0);
-
                     // TEMPORAL: Siempre validar en modo edición para probar
                     if (!isNew && tipoEvento) {
                       const currentTypeName = referenceData.types.find(
@@ -334,9 +329,6 @@ export const EventModal = ({
                         (currentIsTeamType && newIsAthleteType) ||
                         (currentIsAthleteType && newIsTeamType)
                       ) {
-                        const participantType = currentIsTeamType
-                          ? "equipos"
-                          : "deportistas";
                         const result = await showConfirmAlert(
                           "¿Cambiar tipo de evento?",
                           `Al cambiar de ${currentTypeName} a ${newTypeName} podrían eliminarse las inscripciones existentes si las hay. ¿Deseas continuar?`,
@@ -354,6 +346,10 @@ export const EventModal = ({
                       }
                     }
                     setTipoEvento(value);
+                    handleChangeValidation("tipoEvento", value, {
+                      ...form,
+                      tipoEvento: value,
+                    });
                   }}
                   onBlur={() => handleBlur("tipoEvento", tipoEvento, form)}
                   error={errors.tipoEvento}
@@ -373,7 +369,7 @@ export const EventModal = ({
                   label="Nombre"
                   name="nombre"
                   value={form.nombre}
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   onBlur={() => handleBlur("nombre", form.nombre, form)}
                   placeholder={`Nombre del ${
                     tipoEvento ? getSelectedTypeName().toLowerCase() : "evento"
@@ -413,7 +409,7 @@ export const EventModal = ({
                 label="Ubicación"
                 name="ubicacion"
                 value={form.ubicacion}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("ubicacion", form.ubicacion, form)}
                 placeholder="Ubicación del evento"
                 error={errors.ubicacion}
@@ -434,7 +430,7 @@ export const EventModal = ({
                   description: cat.ageRange,
                 }))}
                 value={form.categoryIds}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 error={errors.categoryIds}
                 touched={touched.categoryIds}
                 disabled={mode === "view"}
@@ -453,7 +449,7 @@ export const EventModal = ({
                     : sponsor.ciudad || "",
                 }))}
                 value={form.patrocinador}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 error={errors.patrocinador}
                 touched={touched.patrocinador}
                 disabled={mode === "view"}
@@ -468,7 +464,7 @@ export const EventModal = ({
                 label="Teléfono"
                 name="telefono"
                 value={form.telefono}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("telefono", form.telefono, form)}
                 placeholder="Teléfono de contacto"
                 error={errors.telefono}
@@ -483,7 +479,7 @@ export const EventModal = ({
                   name="descripcion"
                   type="textarea"
                   value={form.descripcion}
-                  onChange={handleChange}
+                  onChange={handleFormChange}
                   onBlur={() =>
                     handleBlur("descripcion", form.descripcion, form)
                   }
@@ -503,7 +499,7 @@ export const EventModal = ({
                 name="fechaInicio"
                 type="date"
                 value={form.fechaInicio}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("fechaInicio", form.fechaInicio, form)}
                 error={errors.fechaInicio}
                 touched={touched.fechaInicio}
@@ -527,7 +523,7 @@ export const EventModal = ({
                 name="fechaFin"
                 type="date"
                 value={form.fechaFin}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("fechaFin", form.fechaFin, form)}
                 error={errors.fechaFin}
                 touched={touched.fechaFin}
@@ -540,7 +536,7 @@ export const EventModal = ({
                 name="horaInicio"
                 type="time"
                 value={form.horaInicio}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("horaInicio", form.horaInicio, form)}
                 error={errors.horaInicio}
                 touched={touched.horaInicio}
@@ -553,7 +549,7 @@ export const EventModal = ({
                 name="horaFin"
                 type="time"
                 value={form.horaFin}
-                onChange={handleChange}
+                onChange={handleFormChange}
                 onBlur={() => handleBlur("horaFin", form.horaFin, form)}
                 error={errors.horaFin}
                 touched={touched.horaFin}
@@ -570,7 +566,7 @@ export const EventModal = ({
                 </label>
                 <CloudinaryUpload
                   archivo={form.imagen}
-                  onChange={(url) => handleChange("imagen", url)}
+                  onChange={(url) => handleFormChange("imagen", url)}
                   disabled={mode === "view"}
                   type="image"
                 />
@@ -582,7 +578,7 @@ export const EventModal = ({
                 </label>
                 <CloudinaryUpload
                   archivo={form.cronograma}
-                  onChange={(url) => handleChange("cronograma", url)}
+                  onChange={(url) => handleFormChange("cronograma", url)}
                   disabled={mode === "view"}
                   type="schedule"
                 />
@@ -598,7 +594,7 @@ export const EventModal = ({
                     type="button"
                     onClick={() =>
                       mode !== "view" &&
-                      handleChange("publicar", !form.publicar)
+                      handleFormChange("publicar", !form.publicar)
                     }
                     disabled={mode === "view"}
                     className={`
@@ -685,7 +681,7 @@ export const EventModal = ({
                     name="estado"
                     type="select"
                     value={form.estado}
-                    onChange={handleChange}
+                    onChange={handleFormChange}
                     onBlur={() => handleBlur("estado", form.estado, form)}
                     placeholder="Seleccione estado"
                     options={[
@@ -751,4 +747,3 @@ export const EventModal = ({
   // Renderizar el modal usando un portal para evitar problemas de z-index
   return createPortal(modalContent, document.body);
 };
-

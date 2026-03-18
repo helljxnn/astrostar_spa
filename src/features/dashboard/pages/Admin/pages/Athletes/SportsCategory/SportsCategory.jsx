@@ -1,4 +1,4 @@
-﻿// SportsCategory.jsx
+// SportsCategory.jsx
 import React, { useState, useEffect } from "react";
 import { FaPlus } from "react-icons/fa";
 
@@ -131,12 +131,11 @@ const SportsCategory = () => {
     edadMaxima: cat.edadMaxima ?? "",
     estado: cat.estado || "",
     publicar: cat.publicar ? "Si" : "No",
-    archivo: cat.archivo || "",
     fechaCreacion: cat.createdAt || "",
     fechaActualizacion: cat.updatedAt || "",
   }));
 
-  // Función para obtener todos los datos para reporte
+  // Funciï¿½n para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
       { search: searchTerm }, // Filtros actuales
@@ -147,7 +146,6 @@ const SportsCategory = () => {
         edadMaxima: cat.edadMaxima ?? cat.maxAge ?? "",
         estado: cat.estado || cat.status || "",
         publicar: (cat.publicar ?? cat.publish) ? "Si" : "No",
-        archivo: cat.archivo || cat.imageUrl || cat.file || "",
         fechaCreacion: cat.createdAt || "",
         fechaActualizacion: cat.updatedAt || "",
       }))
@@ -161,7 +159,6 @@ const SportsCategory = () => {
     { header: "Edad máxima", accessor: "edadMaxima" },
     { header: "Estado", accessor: "estado" },
     { header: "Publicar", accessor: "publicar" },
-    { header: "Imagen/Archivo", accessor: "archivo" },
     { header: "Fecha creación", accessor: "fechaCreacion" },
     { header: "Fecha actualización", accessor: "fechaActualizacion" },
   ];
@@ -173,8 +170,7 @@ const SportsCategory = () => {
       limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
       search: searchTerm, // Enviar búsqueda al backend
     }).catch((err) => {
-      console.error("Error al cargar categorías:", err);
-      // El error ya se maneja en el hook, no necesitamos hacer nada aquí
+// El error ya se maneja en el hook, no necesitamos hacer nada aquí
     });
   }, [currentPage, searchTerm, fetchSportsCategories]);
 
@@ -258,8 +254,7 @@ const SportsCategory = () => {
         ...getFetchParams(),
       });
     } catch (err) {
-      console.error("delete error:", err);
-    }
+}
   };
 
   const handleView = async (item) => {
@@ -343,14 +338,14 @@ const SportsCategory = () => {
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          <p className="font-medium">⚠ Error al cargar categorías</p>
+          <p className="font-medium">Error al cargar categorías</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
 
       {!loading && totalRows === 0 && searchTerm && (
         <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200 mb-6">
-          <div className="text-6xl mb-4">🔍</div>
+          <div className="text-6xl mb-4">...</div>
           <p className="text-gray-700 font-medium mb-2">
             No se encontraron categorías
           </p>
@@ -374,13 +369,12 @@ const SportsCategory = () => {
 
       {!loading && totalRows > 0 && (
         <>
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              <Table
-              thead={{
+          <Table
+            thead={{
                 titles: ["Nombre", "Descripción", "Edad mínima", "Edad máxima"],
                 state: true,
               }}
-              tbody={{
+            tbody={{
                 data: paginatedData,
                 dataPropertys: [
                   "nombre",
@@ -391,12 +385,12 @@ const SportsCategory = () => {
                 state: true,
                 stateProperty: "estado",
               }}
-              rowsPerPage={rowsPerPage}
-              onEdit={canEdit ? handleEdit : null}
-              onDelete={canDelete ? handleDelete : null}
-              onView={canView ? handleView : null}
-              onList={canListAthletes ? handleList : null}
-              buttonConfig={{
+            rowsPerPage={rowsPerPage}
+            onEdit={canEdit ? handleEdit : null}
+            onDelete={canDelete ? handleDelete : null}
+            onView={canView ? handleView : null}
+            onList={canListAthletes ? handleList : null}
+            buttonConfig={{
                 view: () => ({
                   show: canView,
                   disabled: false,
@@ -424,7 +418,6 @@ const SportsCategory = () => {
                 },
               }}
             />
-          </div>
         </>
       )}
 

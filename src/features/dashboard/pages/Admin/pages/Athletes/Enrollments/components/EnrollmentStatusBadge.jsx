@@ -2,7 +2,7 @@
 import { ENROLLMENT_STATUS } from '../constants/enrollmentConstants.js';
 
 /**
- * Badge para mostrar el estado de matrícula con colores apropiados
+ * Badge para mostrar el estado de matrícula con el mismo estilo que PaymentStatusBadge
  * @param {Object} props - Propiedades del componente
  * @param {string} props.status - Estado de la matrícula
  * @param {string} props.label - Etiqueta a mostrar (opcional, usa status si no se proporciona)
@@ -14,32 +14,36 @@ const EnrollmentStatusBadge = ({
   label, 
   className = "" 
 }) => {
-  // Determinar el color basado en el estado (solo 3 estados)
-  const getStatusColor = (status) => {
-    if (status === ENROLLMENT_STATUS.PENDING_PAYMENT) {
-      return 'bg-yellow-50 text-yellow-800 border border-yellow-200';
-    }
-    if (status === ENROLLMENT_STATUS.VIGENTE) {
-      return 'bg-green-50 text-green-700 border border-green-200';
-    }
-    if (status === ENROLLMENT_STATUS.VENCIDA) {
-      return 'bg-gray-50 text-gray-700 border border-gray-200';
-    }
+  const getStatusConfig = (status) => {
+    const configs = {
+      [ENROLLMENT_STATUS.VIGENTE]: {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        text: 'Vigente'
+      },
+      [ENROLLMENT_STATUS.VENCIDA]: {
+        color: 'bg-red-100 text-red-800 border-red-200',
+        text: 'Vencida'
+      },
+      [ENROLLMENT_STATUS.PENDING_PAYMENT]: {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        text: 'Pendiente de pago'
+      },
+      // Fallback para estados no reconocidos
+      null: {
+        color: 'bg-gray-100 text-gray-800 border-gray-200',
+        text: 'Sin estado'
+      }
+    };
     
-    // Color por defecto para estados no reconocidos
-    return 'bg-gray-50 text-gray-600 border border-gray-200';
+    return configs[status] || configs[null];
   };
 
-  const colorClasses = getStatusColor(status);
-  const displayLabel = label || status || 'Sin estado';
+  const config = getStatusConfig(status);
+  const displayLabel = label || config.text;
 
   return (
     <span 
-      className={`
-        font-medium text-sm px-2 py-1 rounded
-        ${colorClasses} 
-        ${className}
-      `.trim()}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${config.color} ${className}`}
       title={`Estado: ${displayLabel}`}
     >
       {displayLabel}

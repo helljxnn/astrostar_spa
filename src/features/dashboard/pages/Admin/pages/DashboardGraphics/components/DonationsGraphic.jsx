@@ -10,6 +10,11 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import {
+  getDonationInKindValue,
+  getDonationMonetaryAmount,
+  isCancelledDonation,
+} from "../utils/donationMetrics";
 
 ChartJS.register(
   CategoryScale,
@@ -43,26 +48,17 @@ const DonationsGraphic = ({ donations = [] }) => {
 
     // Procesar donaciones
     donations.forEach((donation) => {
-      if (donation.status === "Anulada") return;
+      if (isCancelledDonation(donation)) return;
       
       const date = new Date(donation.donationAt || donation.createdAt);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       
       if (!monthlyData[key]) return;
-
-      const details = donation.details || [];
       
       if (donation.type === "ECONOMICA" || donation.type === "ALIMENTOS") {
-        const payment = details.find((d) => d.recordType === "payment");
-        monthlyData[key].monetarias += payment?.amount || 0;
+        monthlyData[key].monetarias += getDonationMonetaryAmount(donation);
       } else if (donation.type === "ESPECIE") {
-        const itemsValue = details.reduce((sum, d) => {
-          if (d.recordType === "item") {
-            return sum + (d.amount || d.quantity || 0);
-          }
-          return sum;
-        }, 0);
-        monthlyData[key].materiales += itemsValue;
+        monthlyData[key].materiales += getDonationInKindValue(donation);
       }
     });
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+﻿import React, { useState, useMemo } from "react";
 import { IoMdDownload } from "react-icons/io";
 import { FiFileText } from "react-icons/fi";
 import { FaFilePdf, FaFileExcel } from "react-icons/fa";
@@ -116,12 +116,10 @@ const EmployeeScheduleReportGenerator = ({
           doc.save(`${fileName}_${monthName}_${selectedYear}.pdf`);
         })
         .catch((error) => {
-          console.error("Error al capturar calendario:", error);
           showErrorAlert("Error", `No se pudo generar el PDF: ${error.message}`);
           restoreStyles();
         });
     } catch (error) {
-      console.error("Error general al generar PDF:", error);
       showErrorAlert("Error", `Error al generar PDF: ${error.message}`);
     }
   };
@@ -206,7 +204,6 @@ const EmployeeScheduleReportGenerator = ({
       saveAs(blob, `${fileName}_${monthName}_${selectedYear}.xlsx`);
       showSuccessAlert("Exito", "Reporte de horarios generado correctamente.");
     } catch (error) {
-      console.error("Error al generar Excel:", error);
       showErrorAlert("Error", `No se pudo generar Excel: ${error.message}`);
     }
   };
@@ -277,3 +274,4 @@ const EmployeeScheduleReportGenerator = ({
 };
 
 export default EmployeeScheduleReportGenerator;
+

@@ -7,6 +7,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { showErrorAlert } from "../../shared/utils/alerts.js";
 import { exportToExcel } from "../../shared/utils/Excel";
+import { normalizeExportText } from "../../shared/utils/textEncoding.js";
 
 const ReportButton = ({
   data,
@@ -123,14 +124,18 @@ const ReportButton = ({
         const endIndex = Math.min(startIndex + rowsPerPage, reportData.length);
         const pageData = reportData.slice(startIndex, endIndex);
 
-        const tableColumn = normalizedColumns.map(col => col.header);
+        const tableColumn = normalizedColumns.map((col) =>
+          normalizeExportText(col.header)
+        );
         const tableRows = pageData.map(item => 
           normalizedColumns.map(col => {
             const value = col.accessor.includes('.') 
               ? getNestedValue(item, col.accessor)
               : item[col.accessor];
             // Limitar texto pero no tan agresivamente
-            return value ? value.toString().substring(0, 50) : '';
+            return value
+              ? normalizeExportText(value).substring(0, 50)
+              : '';
           })
         );
 

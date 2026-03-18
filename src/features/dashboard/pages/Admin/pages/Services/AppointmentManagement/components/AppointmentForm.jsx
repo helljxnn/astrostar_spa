@@ -60,6 +60,13 @@ const parseDateOnlyLocal = (value) => {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
 };
 
+const normalizeText = (value = "") =>
+  String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
 const AppointmentForm = ({
   isOpen,
   onClose,
@@ -188,42 +195,58 @@ const AppointmentForm = ({
     }
   }, [formData.athleteId, formData.start, existingAppointments, initialData]);
 
-  // Cargar deportistas por categoría
+  // Cargar deportistas por categoría desde la lista ya disponible en citas
   useEffect(() => {
+    const normalizedAthletes = Array.isArray(athleteList)
+      ? athleteList.map((athlete) => {
+          const categoryName =
+            athlete.categoryName ||
+            athlete.categoria ||
+            athlete.sportsCategory?.name ||
+            athlete.sportsCategory?.nombre ||
+            "";
+          const categoryId =
+            athlete.categoryId ||
+            athlete.sportsCategoryId ||
+            athlete.sportsCategory?.id ||
+            null;
+          const categoryKey =
+            athlete.categoryKey ||
+            normalizeText(categoryId || categoryName);
+
+          return {
+            id: athlete.id || athlete.athleteId,
+            name: athlete.label || athlete.nombre || athlete.fullName || athlete.name || "",
+            firstName: athlete.nombres || athlete.firstName || "",
+            lastName: athlete.apellidos || athlete.lastName || "",
+            categoryId,
+            categoryName,
+            categoryKey,
+          };
+        })
+      : [];
+
     if (!selectedCategory) {
       setAthletesByCategory([]);
+      setLoadingAthletes2(false);
       return;
     }
 
-    const loadAthletes = async () => {
-      setLoadingAthletes2(true);
-      try {
-        const response = await apiClient.get(
-          `/sports-categories/${selectedCategory}/athletes`,
-          { page: 1, limit: 100 }
-        );
+    const selectedKey = normalizeText(selectedCategory);
+    const filtered = normalizedAthletes.filter((athlete) => {
+      const athleteIdKey = normalizeText(athlete.categoryId);
+      const athleteNameKey = normalizeText(athlete.categoryName);
+      const athleteCategoryKey = normalizeText(athlete.categoryKey);
+      return (
+        athleteIdKey === selectedKey ||
+        athleteCategoryKey === selectedKey ||
+        athleteNameKey === selectedKey
+      );
+    });
 
-        const list = response?.data?.data || response?.data || [];
-        const normalized = Array.isArray(list)
-          ? list.map((athlete) => ({
-              id: athlete.id || athlete.athleteId,
-              name: athlete.nombre || athlete.fullName || athlete.name || "",
-              firstName: athlete.nombres || athlete.firstName || "",
-              lastName: athlete.apellidos || athlete.lastName || "",
-            }))
-          : [];
-
-        setAthletesByCategory(normalized);
-      } catch (error) {
-        console.error("Error:", error);
-        setAthletesByCategory([]);
-      } finally {
-        setLoadingAthletes2(false);
-      }
-    };
-
-    loadAthletes();
-  }, [selectedCategory]);
+    setAthletesByCategory(filtered);
+    setLoadingAthletes2(false);
+  }, [selectedCategory, athleteList]);
 
   // Función para parsear customRecurrence
   const parseCustomRecurrence = useCallback((value) => {
@@ -231,8 +254,7 @@ const AppointmentForm = ({
     if (typeof value === "object") return value;
     try {
       return JSON.parse(value);
-    } catch (error) {
-      console.warn("Error parseando customRecurrence:", error);
+    } catch {
       return null;
     }
   }, []);
@@ -272,7 +294,6 @@ const AppointmentForm = ({
           [specialistKey]: parsedSchedules,
         }));
       } catch (error) {
-        console.error("Error cargando horarios:", error);
         setSpecialistSchedules([]);
       } finally {
         setLoadingSchedules(false);
@@ -299,7 +320,6 @@ const AppointmentForm = ({
         [specialistKey]: parsedSchedules,
       }));
     } catch (error) {
-      console.error("Error cargando horarios:", error);
       showErrorAlert("Error", "No se pudieron cargar los horarios");
     } finally {
       setLoadingSchedules(false);
@@ -308,15 +328,63 @@ const AppointmentForm = ({
 
   // Opciones de categorías
   const categoryOptions = useMemo(() => {
-    if (!sportsCategoryOptions || sportsCategoryOptions.length === 0) {
-      return [];
+    if (sportsCategoryOptions && sportsCategoryOptions.length > 0) {
+      const uniqueMap = new Map();
+
+      sportsCategoryOptions.forEach((cat) => {
+        const rawValue =
+          cat.id ??
+          cat.value ??
+          cat.categoryId ??
+          cat.sportsCategoryId ??
+          cat.name ??
+          cat.label ??
+          cat.nombre ??
+          "";
+        const rawLabel =
+          cat.label ??
+          cat.name ??
+          cat.nombre ??
+          cat.categoryName ??
+          cat.descripcion ??
+          "";
+
+        const value = String(rawValue).trim();
+        const label = String(rawLabel).trim();
+        if (!value || !label) return;
+        if (!uniqueMap.has(value)) {
+          uniqueMap.set(value, { value, label });
+        }
+      });
+
+      return Array.from(uniqueMap.values());
     }
 
-    return sportsCategoryOptions.map((cat) => ({
-      value: String(cat.id || cat.value || cat.categoryId || ""),
-      label: String(cat.name || cat.label || cat.nombre || ""),
-    }));
-  }, [sportsCategoryOptions]);
+    const uniqueMap = new Map();
+    (athleteList || []).forEach((athlete) => {
+      const id =
+        athlete.categoryId ||
+        athlete.sportsCategoryId ||
+        athlete.sportsCategory?.id ||
+        athlete.categoryKey ||
+        athlete.categoryName ||
+        "";
+      const label =
+        athlete.categoryName ||
+        athlete.categoria ||
+        athlete.sportsCategory?.name ||
+        athlete.sportsCategory?.nombre ||
+        "";
+
+      if (!id || !label) return;
+      const key = String(id);
+      if (!uniqueMap.has(key)) {
+        uniqueMap.set(key, { value: key, label: String(label) });
+      }
+    });
+
+    return Array.from(uniqueMap.values());
+  }, [sportsCategoryOptions, athleteList]);
 
   // Opciones de deportistas
   const athleteOptions = useMemo(() => {
@@ -356,8 +424,7 @@ const AppointmentForm = ({
               const response = await apiClient.get(`/schedules/employee/${id}`);
               const schedules = response?.data?.data || response?.data || [];
               return [id, parseSchedules(schedules)];
-            } catch (error) {
-              console.error(`Error cargando horarios del especialista ${id}:`, error);
+            } catch {
               return [id, []];
             }
           }),
@@ -388,7 +455,6 @@ const AppointmentForm = ({
 
   const handleChange = (e) => {
     if (!e || !e.target) {
-      console.warn('handleChange called without valid event');
       return;
     }
     const { name, value } = e.target;
@@ -1138,6 +1204,8 @@ const AppointmentForm = ({
 };
 
 export default AppointmentForm;
+
+
 
 
 

@@ -124,7 +124,6 @@ const PendingPayments = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin w-8 h-8 border-2 border-primary-blue border-t-transparent rounded-full"></div>
         <span className="ml-3 text-gray-600">Cargando pagos pendientes...</span>
       </div>
     );
@@ -146,7 +145,7 @@ const PendingPayments = () => {
           disabled={loading}
           className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <FaSync className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <FaSync className="w-4 h-4" />
           Actualizar
         </button>
       </div>
@@ -350,3 +349,4 @@ const PendingPayments = () => {
 };
 
 export default PendingPayments;
+

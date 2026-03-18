@@ -1,4 +1,4 @@
-﻿// ================================
+// ================================
 // PrivateRoutes.jsx
 // ================================
 import { Routes, Route } from "react-router-dom";
@@ -27,7 +27,6 @@ import Enrollments from "../features/dashboard/pages/Admin/pages/Athletes/Enroll
 import PaymentsManagement from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsManagementNew";
 import PaymentSettings from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentSettings";
 import AthletePayments from "../features/dashboard/pages/Admin/pages/Athletes/Payments/AthletePayments";
-import PaymentsTest from "../features/dashboard/pages/Admin/pages/Athletes/Payments/PaymentsTest";
 
 /* --- Usuarios y Roles --- */
 import Users from "../features/dashboard/pages/Admin/pages/Users/Users.jsx";
@@ -52,12 +51,13 @@ import Providers from "../features/dashboard/pages/Admin/pages/Providers/Provide
 
 /* --- Componentes generales --- */
 import DashboardHome from "../shared/components/DashboardHome.jsx";
+import { NotFound } from "../shared/components/NotFound.jsx";
 
 const PrivateRoutes = () => {
   return (
     <Routes>
       {/* Todas las rutas bajo el layout /dashboard */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
+      <Route path="/" element={<DashboardLayout />}>
         {/* --- Principal --- */}
         <Route index element={<DashboardHome />} />
 
@@ -135,7 +135,7 @@ const PrivateRoutes = () => {
           }
         />
 
-        {/* --- Mdulo: Gestin de Pagos --- */}
+        {/* --- Módulo: Gestión de Pagos --- */}
         <Route
           path="payments-management"
           element={
@@ -160,16 +160,8 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
-        <Route
-          path="payments-test"
-          element={
-            <PrivateRoute module="paymentsManagement" action="Ver">
-              <PaymentsTest />
-            </PrivateRoute>
-          }
-        />
 
-        {/* --- Mdulo: Empleados --- */}
+        {/* --- Módulo: Empleados --- */}
         <Route
           path="employees"
           element={
@@ -288,11 +280,27 @@ const PrivateRoutes = () => {
             </PrivateRoute>
           }
         />
+
       </Route>
+
+      <Route
+        path="*"
+        element={
+          <NotFound
+            title="Esta vista no existe dentro del panel"
+            description="La seccion que intentas abrir no esta disponible o ya no existe."
+            primaryHref="/dashboard"
+            primaryLabel="Volver al inicio del panel"
+            secondaryHref="/"
+            secondaryLabel="Ir al inicio publico"
+          />
+        }
+      />
     </Routes>
   );
 };
 
 export default PrivateRoutes;
+
 
 

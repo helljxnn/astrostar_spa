@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { FaSync, FaExclamationTriangle, FaTimes, FaCalendarAlt } from "react-icons/fa";
 import { paymentsService } from "../services/PaymentsService.js";
 
@@ -24,8 +24,7 @@ const RenewalNotificationBanner = ({ onNavigateToRenewals }) => {
         setExpiringCount(expiring30?.length || 0);
         setUrgentCount(expiring7?.length || 0);
       } catch (error) {
-        console.error('Error fetching expiring enrollments:', error);
-        setExpiringCount(0);
+setExpiringCount(0);
         setUrgentCount(0);
       } finally {
         setLoading(false);
@@ -117,3 +116,4 @@ const RenewalNotificationBanner = ({ onNavigateToRenewals }) => {
 };
 
 export default RenewalNotificationBanner;
+

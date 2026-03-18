@@ -397,7 +397,7 @@ const UsableMaterialsTab = ({
               )}
               {selectedMaterialData?.conflictingEvents?.length > 0 && (
                 <div className="mt-1 text-xs text-amber-600">
-                  ⚠ {selectedMaterialData.usedInConflicts} unidades reservadas en{" "}
+                  [!] {selectedMaterialData.usedInConflicts} unidades reservadas en{" "}
                   {selectedMaterialData.conflictingEvents.length} evento(s) con fechas solapadas
                 </div>
               )}
@@ -477,7 +477,7 @@ const UsableMaterialsTab = ({
               )}
               {editingMaterialAvailability?.conflictingEvents?.length > 0 && (
                 <div className="mt-1 text-xs text-amber-600">
-                  ⚠ {editingMaterialAvailability.usedInConflicts} unidades reservadas en{" "}
+                  [!] {editingMaterialAvailability.usedInConflicts} unidades reservadas en{" "}
                   {editingMaterialAvailability.conflictingEvents.length} evento(s) con fechas solapadas
                 </div>
               )}
@@ -531,7 +531,7 @@ const UsableMaterialsTab = ({
                     <div className="text-sm text-gray-600">
                       Cantidad: {pending.cantidad} {material?.unidadMedida || "unidades"}
                       {pending.observaciones && (
-                        <span className="ml-2 text-gray-500">• {pending.observaciones}</span>
+                        <span className="ml-2 text-gray-500">- {pending.observaciones}</span>
                       )}
                     </div>
                   </div>
@@ -619,4 +619,5 @@ const UsableMaterialsTab = ({
 };
 
 export default UsableMaterialsTab;
+
 

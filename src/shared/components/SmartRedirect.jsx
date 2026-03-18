@@ -1,6 +1,7 @@
 ﻿import { useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { usePermissions } from "../hooks/usePermissions";
+import { useDynamicPermissions } from "../hooks/useDynamicPermissions";
 import { useAuth } from "../contexts/authContext";
 import Loader from "./Loader/Loader";
 
@@ -9,17 +10,35 @@ import Loader from "./Loader/Loader";
  * a la que tiene acceso, en lugar de mostrar "Acceso Denegado"
  */
 const SmartRedirect = () => {
-  const { hasModuleAccess, isAdmin, loading } = usePermissions();
+  const {
+    hasModuleAccess: hasStaticAccess,
+    isAdmin,
+    loading: staticLoading,
+  } = usePermissions();
+  const { hasModuleAccess: hasDynamicAccess, loading: dynamicLoading } =
+    useDynamicPermissions();
   const { user, userRole } = useAuth();
+
+  // Normalizar el rol del usuario
+  const normalizedRole = (user?.role?.name || user?.rol || userRole || "")
+    .toString()
+    .toLowerCase();
+  const isAthleteOrGuardian =
+    normalizedRole === "deportista" ||
+    normalizedRole === "athlete" ||
+    normalizedRole === "acudiente" ||
+    normalizedRole === "guardian";
+
+  // Determinar qué función de acceso usar
+  const hasModuleAccess = isAthleteOrGuardian
+    ? hasDynamicAccess
+    : hasStaticAccess;
+  const loading = isAthleteOrGuardian ? dynamicLoading : staticLoading;
 
   // Mostrar loading mientras se cargan los permisos
   if (loading) {
     return <Loader isVisible={true} message="Cargando..." />;
   }
-
-  // Normalizar el rol del usuario
-  const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
-  const isAthleteOrGuardian = normalizedRole === "deportista" || normalizedRole === "athlete" || normalizedRole === "acudiente" || normalizedRole === "guardian";
 
   /**
    * Orden de prioridad para la redirección
@@ -29,7 +48,14 @@ const SmartRedirect = () => {
     // 1. Dashboard (si tiene acceso)
     { path: "/dashboard/analytics", module: "dashboard", label: "Dashboard" },
 
-    // 2. Gestión de citas (común para deportistas y acudientes)
+    // 2. Mis Pagos (para deportistas y acudientes)
+    {
+      path: "/dashboard/athlete-payments",
+      module: "myPayments",
+      label: "Mis Pagos",
+    },
+
+    // 3. Gestión de citas (común para deportistas y acudientes)
     // NOTA: Los deportistas siempre tienen acceso a citas, incluso sin permisos explícitos
     {
       path: "/dashboard/appointment-management",
@@ -37,7 +63,7 @@ const SmartRedirect = () => {
       label: "Gestión de Citas",
     },
 
-    // 3. Módulos de deportistas
+    // 4. Módulos de deportistas
     {
       path: "/dashboard/athletes-section",
       module: "athletesSection",
@@ -59,7 +85,7 @@ const SmartRedirect = () => {
       label: "Matrículas",
     },
 
-    // 4. Módulos de servicios
+    // 5. Módulos de servicios
     { path: "/dashboard/employees", module: "employees", label: "Empleados" },
     {
       path: "/dashboard/employees-schedule",
@@ -67,7 +93,7 @@ const SmartRedirect = () => {
       label: "Horarios",
     },
 
-    // 5. Módulos de eventos
+    // 6. Módulos de eventos
     { path: "/dashboard/events", module: "eventsManagement", label: "Eventos" },
     {
       path: "/dashboard/temporary-workers",
@@ -80,7 +106,7 @@ const SmartRedirect = () => {
       label: "Equipos Temporales",
     },
 
-    // 6. Módulos de donaciones
+    // 7. Módulos de donaciones
     {
       path: "/dashboard/donations",
       module: "donationsManagement",
@@ -92,10 +118,10 @@ const SmartRedirect = () => {
       label: "Donantes/Patrocinadores",
     },
 
-    // 7. Proveedores
+    // 8. Proveedores
     { path: "/dashboard/providers", module: "providers", label: "Proveedores" },
 
-    // 8. Módulos administrativos
+    // 9. Módulos administrativos
     { path: "/dashboard/users", module: "users", label: "Usuarios" },
     { path: "/dashboard/roles", module: "roles", label: "Roles" },
     {
@@ -115,12 +141,7 @@ const SmartRedirect = () => {
     return <Navigate to="/dashboard/analytics" replace />;
   }
 
-  // Si es deportista o acudiente, redirigir a Mis Pagos
-  if (isAthleteOrGuardian) {
-    return <Navigate to="/dashboard/athlete-payments" replace />;
-  }
-
-  // Buscar la primera página a la que tiene acceso
+  // Buscar la primera página a la que tiene acceso (para todos los usuarios, incluidos deportistas)
   for (const route of redirectPriority) {
     if (hasModuleAccess(route.module)) {
       return <Navigate to={route.path} replace />;
@@ -132,4 +153,3 @@ const SmartRedirect = () => {
 };
 
 export default SmartRedirect;
-

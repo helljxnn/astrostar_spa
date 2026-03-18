@@ -154,8 +154,41 @@ export const Team = () => {
           </motion.p>
         </motion.div>
 
+        {/* Mobile Cards */}
+        <div className="md:hidden">
+          <div className="-mx-2 px-2 overflow-x-auto pb-2">
+            <div className="flex gap-4 snap-x snap-mandatory">
+              {teamMembers.map((member) => (
+                <button
+                  key={member.id}
+                  type="button"
+                  onClick={() => setSelectedMember(member)}
+                  className="snap-start shrink-0 w-[78vw] max-w-[320px] rounded-2xl border border-gray-200 bg-white shadow-md overflow-hidden text-left"
+                >
+                  <div className="h-52 bg-gradient-to-b from-[#f4f7ff] to-white p-2">
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="w-full h-full object-contain object-center"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-lg font-bold text-gray-800 font-montserrat leading-tight">
+                      {member.name}
+                    </h3>
+                    <p className="mt-1 text-sm font-semibold text-[#B595FF]">
+                      {member.role}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Circular Gallery */}
         <motion.div
+          className="hidden md:block"
           initial={{ opacity: 0, scale: 0.9 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
@@ -189,7 +222,7 @@ export const Team = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative"
+                className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 shadow-2xl relative"
               >
                 {/* Botón cerrar */}
                 <button
@@ -213,7 +246,7 @@ export const Team = () => {
 
                 {/* Contenido del modal */}
                 <div className="flex flex-col items-center">
-                  <div className="w-32 h-32 rounded-full overflow-hidden shadow-lg border-4 border-[#B595FF]/30 mb-6">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-lg border-4 border-[#B595FF]/30 mb-5 sm:mb-6">
                     <img
                       src={selectedMember.image}
                       alt={selectedMember.name}
@@ -221,13 +254,13 @@ export const Team = () => {
                     />
                   </div>
 
-                  <h3 className="text-3xl font-bold text-gray-800 font-montserrat mb-2">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 font-montserrat mb-2 text-center">
                     {selectedMember.name}
                   </h3>
-                  <p className="text-lg text-[#B595FF] font-semibold mb-6">
+                  <p className="text-base sm:text-lg text-[#B595FF] font-semibold mb-4 sm:mb-6 text-center">
                     {selectedMember.role}
                   </p>
-                  <p className="text-gray-600 leading-relaxed text-center">
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed text-center">
                     {selectedMember.description}
                   </p>
                 </div>

@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import assistanceathletesService from "../services/AssistanceathletesService";
 import {
   showErrorAlert,
@@ -9,7 +9,35 @@ import {
 const ALL_CATEGORIES = "Todas";
 const DEFAULT_ROWS_PER_PAGE = 10;
 
-const todayISO = () => new Date().toISOString().split("T")[0];
+const todayISO = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatISODateLong = (isoDate) => {
+  if (!isoDate || typeof isoDate !== "string") return "";
+  const [year, month, day] = isoDate.split("-");
+  if (!year || !month || !day) return isoDate;
+
+  const localDate = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    12,
+    0,
+    0,
+    0,
+  );
+
+  return localDate.toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+};
 
 export const useAssistanceAthletes = () => {
   const [selectedDate, setSelectedDate] = useState(() => todayISO());
@@ -40,8 +68,7 @@ export const useAssistanceAthletes = () => {
           setCategories([ALL_CATEGORIES, ...unique]);
         }
       } catch (error) {
-        console.error("Error loading categories:", error);
-      }
+}
     };
 
     loadCategories();
@@ -83,8 +110,7 @@ export const useAssistanceAthletes = () => {
           setTotalCount(0);
         }
       } catch (error) {
-        console.error("Error loading attendance:", error);
-        setAttendance([]);
+setAttendance([]);
         setTotalCount(0);
       } finally {
         setLoading(false);
@@ -175,11 +201,7 @@ export const useAssistanceAthletes = () => {
       observacion: item.observacion || "",
     }));
 
-    const formattedDate = new Date(selectedDate).toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
+    const formattedDate = formatISODateLong(selectedDate);
 
     try {
       await assistanceathletesService.saveAttendanceBulk(selectedDate, items);
@@ -188,8 +210,7 @@ export const useAssistanceAthletes = () => {
         `El pase del ${formattedDate} quedó almacenado.`
       );
     } catch (error) {
-      console.error("Error saving attendance:", error);
-      const backendMessage =
+const backendMessage =
         error?.response?.data?.message ||
         error?.message ||
         "No se pudo guardar la asistencia.";

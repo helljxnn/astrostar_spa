@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Servicio para gestionar acudientes
  * Maneja todas las peticiones HTTP al backend de acudientes
  */
@@ -51,8 +51,7 @@ if (response && response.success) {
         };
       }
     } catch (error) {
-      console.error("Error al obtener acudientes:", error);
-      return {
+return {
         success: false,
         data: [],
         pagination: {
@@ -87,8 +86,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo acudiente",
       };
     } catch (error) {
-      console.error(`Error obteniendo acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -115,8 +113,7 @@ if (response && response.success) {
         error: response?.message || "Error creando acudiente",
       };
     } catch (error) {
-      console.error("Error al crear acudiente:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -146,8 +143,7 @@ if (response && response.success) {
         error: response?.message || "Error actualizando acudiente",
       };
     } catch (error) {
-      console.error(`Error actualizando acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -173,8 +169,7 @@ if (response && response.success) {
         error: response?.message || "Error eliminando acudiente",
       };
     } catch (error) {
-      console.error(`Error eliminando acudiente ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -200,8 +195,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -213,6 +207,120 @@ if (response && response.success) {
    */
   async searchGuardians(searchTerm, limit = 20) {
     return this.getGuardians({
+      search: searchTerm,
+      limit,
+      page: 1,
+    });
+  }
+
+  /**
+   * Obtener acudientes con información de deportistas asignados
+   * Para uso en modales de matrícula donde se necesita saber cuántos deportistas tiene cada acudiente
+   */
+  async getGuardiansWithAthleteInfo(params = {}) {
+    try {
+      const { page = 1, limit = 10, search = "", status = "" } = params;
+
+      // Intentar primero el endpoint específico
+      let response = await apiClient.get(`${this.endpoint}/with-athletes`, {
+        page,
+        limit,
+        search,
+        status,
+      });
+
+      // Si falla, usar el endpoint normal como fallback
+      if (!response || !response.success) {
+        response = await apiClient.get(this.endpoint, {
+          page,
+          limit,
+          search,
+          status,
+        });
+        
+        // Marcar que necesitamos enriquecer los datos
+        if (response && response.success) {
+          response.needsEnrichment = true;
+        }
+      }
+
+      if (response && response.success) {
+        return {
+          success: true,
+          data: response.data || [],
+          needsEnrichment: response.needsEnrichment || false,
+          pagination: response.pagination || {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      } else {
+        return {
+          success: false,
+          data: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        };
+      }
+    } catch (error) {
+// Intentar fallback en caso de error
+      try {
+        const response = await apiClient.get(this.endpoint, {
+          page: params.page || 1,
+          limit: params.limit || 10,
+          search: params.search || "",
+          status: params.status || "",
+        });
+        
+        if (response && response.success) {
+          return {
+            success: true,
+            data: response.data || [],
+            needsEnrichment: true,
+            pagination: response.pagination || {
+              page: parseInt(params.page || 1),
+              limit: parseInt(params.limit || 10),
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          };
+        }
+      } catch (fallbackError) {
+}
+      
+      return {
+        success: false,
+        data: [],
+        pagination: {
+          page: params.page || 1,
+          limit: params.limit || 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Buscar acudientes con información de deportistas asignados
+   */
+  async searchGuardiansWithAthleteInfo(searchTerm, limit = 20) {
+    return this.getGuardiansWithAthleteInfo({
       search: searchTerm,
       limit,
       page: 1,
@@ -262,8 +370,7 @@ if (response && response.success) {
         data: allGuardians,
       };
     } catch (error) {
-      console.error("Error al obtener todos los acudientes:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -287,8 +394,7 @@ if (response && response.success) {
         guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error("Error verificando documento:", error);
-      return {
+return {
         success: false,
         exists: false,
         error: error.message,
@@ -312,8 +418,7 @@ if (response && response.success) {
         guardian: response.guardian || null,
       };
     } catch (error) {
-      console.error("Error verificando email:", error);
-      return {
+return {
         success: false,
         exists: false,
         error: error.message,
@@ -353,7 +458,6 @@ if (response && response.success) {
           
           // Seguridad: evitar bucle infinito
           if (currentPage > 100) {
-            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
             break;
           }
         } else {
@@ -366,8 +470,7 @@ if (response && response.success) {
         data: allData,
       };
     } catch (error) {
-      console.error("Error al obtener acudientes para reporte:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -397,11 +500,7 @@ if (response && response.success) {
         error: response?.message || "Error removiendo acudiente",
       };
     } catch (error) {
-      console.error(
-        `Error removiendo acudiente del deportista ${athleteId}:`,
-        error
-      );
-      return {
+return {
         success: false,
         error: error.message,
       };

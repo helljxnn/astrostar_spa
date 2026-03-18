@@ -1,9 +1,30 @@
-﻿/**
+/**
  * Servicio para gestionar deportistas
  * Maneja todas las peticiones HTTP al backend de deportistas
  */
 
 import apiClient from "../../../../../../../../shared/services/apiClient.js";
+
+const normalizeAthleteState = (athlete) => {
+  let estadoFinal = "Activo";
+
+  if (athlete.estado === "Activo" || athlete.estado === "Inactivo") {
+    estadoFinal = athlete.estado;
+  } else if (athlete.status === "Active") {
+    estadoFinal = "Activo";
+  } else if (athlete.status === "Inactive") {
+    estadoFinal = "Inactivo";
+  } else if (athlete.isActive !== undefined && athlete.isActive !== null) {
+    estadoFinal = athlete.isActive ? "Activo" : "Inactivo";
+  } else if (athlete.active !== undefined && athlete.active !== null) {
+    estadoFinal = athlete.active ? "Activo" : "Inactivo";
+  }
+
+  return {
+    ...athlete,
+    estado: estadoFinal,
+  };
+};
 
 class AthletesService {
   constructor() {
@@ -31,11 +52,16 @@ class AthletesService {
         status,
         categoria,
         estadoInscripcion,
+        _t: Date.now(),
+        _refresh: Math.random()
       });
-if (response && response.success) {
+
+      if (response && response.success) {
+        const mappedData = (response.data || []).map(normalizeAthleteState);
+
         return {
           success: true,
-          data: response.data || [],
+          data: mappedData,
           pagination: response.pagination || {
             page: parseInt(page),
             limit: parseInt(limit),
@@ -45,27 +71,22 @@ if (response && response.success) {
             hasPrev: false,
           },
         };
-      } else {
-        console.error("❌ [AthletesService] Respuesta sin success:", response);
-        return {
-          success: false,
-          data: [],
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total: 0,
-            totalPages: 0,
-            hasNext: false,
-            hasPrev: false,
-          },
-        };
       }
-    } catch (error) {
-      console.error(
-        "❌ [AthletesService] Error al obtener deportistas:",
-        error
-      );
+
       return {
+        success: false,
+        data: [],
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
+    } catch (error) {
+return {
         success: false,
         data: [],
         pagination: {
@@ -82,16 +103,75 @@ if (response && response.success) {
   }
 
   /**
+   * Resumen de mensualidades para varios atletas (admin)
+   */
+  async getMonthlySummaryByAthletes(athleteIds = []) {
+    try {
+      const ids = (athleteIds || []).map((id) => id?.toString()).filter(Boolean);
+      if (ids.length === 0) {
+        return { success: true, data: {} };
+      }
+      const response = await apiClient.get("/payments/monthly-summary", {
+        athleteIds: ids.join(","),
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+return { success: false, data: {}, error: error.message };
+    }
+  }
+
+  /**
+   * Historial mensual de un atleta (admin)
+   */
+  async getMonthlyHistory(athleteId) {
+    try {
+      const response = await apiClient.get(`/payments/athletes/${athleteId}/monthly-history`, {
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+return { success: false, data: [], error: error.message };
+    }
+  }
+
+  /**
+   * Historial de intentos de pago mensual (aprobados/rechazados)
+   */
+  async getMonthlyAttempts(athleteId) {
+    try {
+      const response = await apiClient.get(`/payments/athletes/${athleteId}/history`, {
+        _t: Date.now()
+      });
+      return {
+        success: true,
+        data: response.data || response
+      };
+    } catch (error) {
+return { success: false, data: [], error: error.message };
+    }
+  }
+
+  /**
    * Obtener un deportista por ID
    */
   async getAthleteById(id) {
     try {
-      const response = await apiClient.get(`${this.endpoint}/${id}`);
+      const response = await apiClient.get(`${this.endpoint}/${id}`, {
+        _t: Date.now(),
+        _refresh: Math.random()
+      });
 
       if (response && response.success) {
         return {
           success: true,
-          data: response.data,
+          data: normalizeAthleteState(response.data),
         };
       }
 
@@ -100,8 +180,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo deportista",
       };
     } catch (error) {
-      console.error(`Error obteniendo deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -129,8 +208,7 @@ if (response && response.success) {
         error: response?.message || "Error creando deportista",
       };
     } catch (error) {
-      console.error("❌ [AthletesService] Error al crear deportista:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -160,8 +238,7 @@ if (response && response.success) {
         error: response?.message || "Error actualizando deportista",
       };
     } catch (error) {
-      console.error(`Error actualizando deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -187,8 +264,7 @@ if (response && response.success) {
         error: response?.message || "Error eliminando deportista",
       };
     } catch (error) {
-      console.error(`Error eliminando deportista ${id}:`, error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -198,32 +274,46 @@ if (response && response.success) {
   /**
    * Cambiar estado del deportista
    */
-  async changeAthleteStatus(id, status) {
-    try {
-      const response = await apiClient.patch(`${this.endpoint}/${id}/status`, {
-        status,
-      });
+  /**
+     * Cambiar estado de un deportista (Sistema de Mora Congelada)
+     * Utiliza endpoint específico para cambio de estado que implementa
+     * el sistema de mora congelada del backend
+     */
+    async changeAthleteStatus(id, status, reason = null) {
+      try {
+        
+        // El backend espera el campo 'status' con valores en español
+        const payload = { status };
 
-      if (response && response.success) {
+        // Si se está inactivando, incluir razón si se proporciona
+        if (status === 'Inactivo' && reason) {
+          payload.inactivityReason = reason;
+        }
+
+
+        const response = await apiClient.patch(`${this.endpoint}/${id}/status`, payload);
+
+
+        if (response && response.success) {
+          return {
+            success: true,
+            data: response.data,
+            message: response.message || 'Estado actualizado correctamente',
+          };
+        }
+
         return {
-          success: true,
-          data: response.data,
-          message: response.message,
+          success: false,
+          error: response?.message || "Error cambiando estado",
+        };
+      } catch (error) {
+return {
+          success: false,
+          error: error.message,
         };
       }
-
-      return {
-        success: false,
-        error: response?.message || "Error cambiando estado",
-      };
-    } catch (error) {
-      console.error(`Error cambiando estado del deportista ${id}:`, error);
-      return {
-        success: false,
-        error: error.message,
-      };
     }
-  }
+
 
   /**
    * Obtener estadísticas de deportistas
@@ -235,7 +325,7 @@ if (response && response.success) {
       if (response && response.success) {
         return {
           success: true,
-          data: response.data,
+          data: normalizeAthleteState(response.data),
         };
       }
 
@@ -244,8 +334,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo estadísticas",
       };
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
-      return {
+return {
         success: false,
         error: error.message,
       };
@@ -304,8 +393,7 @@ if (response && response.success) {
         error: response?.message || "Error obteniendo tipos de documento",
       };
     } catch (error) {
-      console.error("Error obteniendo tipos de documento:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,
@@ -334,8 +422,7 @@ if (response && response.success) {
         message: response.message || "",
       };
     } catch (error) {
-      console.error("Error verificando email:", error);
-      return {
+return {
         available: true, // En caso de error, permitir continuar
         message: "",
       };
@@ -363,8 +450,7 @@ if (response && response.success) {
         message: response.message || "",
       };
     } catch (error) {
-      console.error("Error verificando identificación:", error);
-      return {
+return {
         available: true, // En caso de error, permitir continuar
         message: "",
       };
@@ -400,8 +486,7 @@ if (response && response.success) {
         };
       }
     } catch (error) {
-      console.error("Error obteniendo deportistas para reporte:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,

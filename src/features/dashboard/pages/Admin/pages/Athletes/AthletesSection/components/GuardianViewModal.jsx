@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
@@ -46,8 +46,85 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   // Log para debuggear los datos del guardian
   useEffect(() => {
     if (guardian && isOpen) {
+      // Guardian data loaded when modal opens
     }
   }, [guardian, isOpen]);
+  
+  // Función para obtener el parentesco específico de la deportista actual
+  const getCurrentAthleteRelationship = () => {
+    // NUEVO: Si el guardian tiene información del contexto actual, usarla
+    if (guardian?.currentAthleteRelationship) {
+      return convertirParentesco(guardian.currentAthleteRelationship);
+    }
+    
+    if (!currentAthleteId || !athletes || athletes.length === 0) {
+      return "N/A";
+    }
+    
+    // Buscar la deportista actual en la lista
+    const currentAthlete = athletes.find(athlete => {
+      const match1 = athlete.id === currentAthleteId;
+      const match2 = athlete.id === parseInt(currentAthleteId);
+      const match3 = String(athlete.id) === String(currentAthleteId);
+      return match1 || match2 || match3;
+    });
+    
+    if (currentAthlete && currentAthlete.parentesco) {
+      const converted = convertirParentesco(currentAthlete.parentesco);
+      return converted;
+    }
+    
+    // NUEVO: Si parentesco es null, buscar en otras propiedades del currentAthlete
+    if (currentAthlete) {
+      // Buscar en guardian.relationship si existe
+      if (currentAthlete.guardian && currentAthlete.guardian.relationship) {
+        return convertirParentesco(currentAthlete.guardian.relationship);
+      }
+      
+      // Buscar en guardian.parentesco si existe
+      if (currentAthlete.guardian && currentAthlete.guardian.parentesco) {
+        return convertirParentesco(currentAthlete.guardian.parentesco);
+      }
+      
+      // Buscar en cualquier propiedad que contenga "parent"
+      for (const [key, value] of Object.entries(currentAthlete)) {
+        if (key.toLowerCase().includes('parent') && value && value !== null) {
+          return convertirParentesco(value);
+        }
+      }
+      
+      // Si el parentesco es null pero hay guardian, asumir "Otro" como fallback
+      if (currentAthlete.guardian || currentAthlete.acudiente) {
+        return "Otro";
+      }
+    }
+    
+    // Si no se encuentra la relación específica, buscar en guardian.relationship
+    if (guardian && guardian.relationship) {
+      return convertirParentesco(guardian.relationship);
+    }
+    
+    // Buscar en guardian.parentesco
+    if (guardian && guardian.parentesco) {
+      return convertirParentesco(guardian.parentesco);
+    }
+    
+    // Fallback: usar el primer parentesco disponible
+    if (athletes.length > 0 && athletes[0].parentesco) {
+      return convertirParentesco(athletes[0].parentesco);
+    }
+    
+    // Último intento: buscar en todas las propiedades del guardian
+    if (guardian) {
+      for (const [key, value] of Object.entries(guardian)) {
+        if (key.toLowerCase().includes('parent') && value) {
+          return convertirParentesco(value);
+        }
+      }
+    }
+    
+    return "N/A";
+  };
   
   // Hook de validación
   const { 
@@ -75,7 +152,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   // Wrapper para asegurar que siempre se llame con 2 parámetros
   const handleChange = (nameOrEvent, value) => {
-    
     if (typeof nameOrEvent === 'string') {
       // Llamada directa: handleChange('field', 'value')
       hookHandleChange(nameOrEvent, value);
@@ -141,13 +217,15 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     const age = getCurrentAthleteAge();
     if (age === null) return false;
     
-    
     return age < 18;
   };
 
   // Determinar si mostrar "Eliminar" o "Remover"
-  const shouldShowRemove = athletes && athletes.length > 1;
-  const shouldShowDelete = athletes && athletes.length === 1;
+  // CORREGIDO: Mostrar "Remover" si estamos viendo desde el contexto de una deportista específica
+  const shouldShowRemove = currentAthleteId && onRemove;
+  
+  // CORREGIDO: Mostrar "Eliminar" solo si NO estamos en contexto de deportista específica
+  const shouldShowDelete = !currentAthleteId && onDelete;
 
   // Validación instantánea de documento
   useEffect(() => {
@@ -186,8 +264,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
           }
         }
       } catch (error) {
-        console.error('Error verificando documento:', error);
-      } finally {
+} finally {
         setCheckingDocument(false);
       }
     };
@@ -225,7 +302,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 
   useEffect(() => {
     if (guardian && isOpen && referenceData.documentTypes) {
-      
       const nombreCompleto = guardian.nombreCompleto || 
         (guardian.firstName && guardian.lastName 
           ? `${guardian.firstName} ${guardian.lastName}`.trim() 
@@ -255,8 +331,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
             birthDate = date.toISOString().split('T')[0];
           }
         } catch (error) {
-          console.error('❌ Error convirtiendo fecha:', error);
-        }
+}
       }
       
       const newValues = {
@@ -268,7 +343,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         address: guardian.direccion || guardian.address || "",
         fechaNacimiento: birthDate,
       };
-      
       
       setValues(newValues);
       setAsyncErrors({});
@@ -298,17 +372,6 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
     
     if (!isValid || hasAsyncErrors) {
-      
-      // Mostrar cada error específicamente
-      Object.keys(errors).forEach(key => {
-        if (errors[key]) {
-        }
-      });
-      Object.keys(asyncErrors).forEach(key => {
-        if (asyncErrors[key]) {
-        }
-      });
-      
       return;
     }
 
@@ -330,13 +393,11 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         birthDate: values.fechaNacimiento ? new Date(values.fechaNacimiento).toISOString() : null,
       };
       
-      
       await onEdit(updatedData)
       showSuccessAlert("Acudiente actualizado", "Los cambios se guardaron correctamente")
       setActiveTab("view")
     } catch (error) {
-      console.error('❌ [GuardianViewModal] Error al guardar:', error);
-      showErrorAlert("Error", error.message || "No se pudo actualizar el acudiente")
+showErrorAlert("Error", error.message || "No se pudo actualizar el acudiente")
     } finally {
       setIsProcessing(false)
     }
@@ -388,8 +449,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         try {
           await onRemove(guardian, currentAthleteId, true);
         } catch (error) {
-          console.error('❌ Error cambiando acudiente:', error);
-        } finally {
+} finally {
           setIsProcessing(false);
         }
       }
@@ -542,9 +602,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
                 >
                   <label className="text-sm font-medium text-gray-600">Parentesco</label>
                   <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
-                    {athletes && athletes.length > 0 
-                      ? convertirParentesco(athletes[0].parentesco)
-                      : "N/A"}
+                    {getCurrentAthleteRelationship()}
                   </p>
                 </motion.div>
 
@@ -858,4 +916,3 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
 }
 
 export default GuardianViewModal
-

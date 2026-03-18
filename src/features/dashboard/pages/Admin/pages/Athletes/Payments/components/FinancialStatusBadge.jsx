@@ -67,3 +67,4 @@ const FinancialStatusBadge = ({ financialStatus }) => {
 };
 
 export default FinancialStatusBadge;
+

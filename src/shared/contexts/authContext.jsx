@@ -1,5 +1,6 @@
 ﻿import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import apiClient from "../services/apiClient";
+import { showWarningAlert } from "../utils/alerts.js";
 
 const AuthContext = createContext();
 
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }) => {
           // ✅ VALIDACIÓN: Verificar que el usuario siga activo
           if (userData && userData.status !== "Active") {
             console.warn("Usuario inactivado durante la sesión");
-            alert("Tu cuenta ha sido inactivada. Contacta al administrador.");
+            showWarningAlert("Cuenta inactivada", "Tu cuenta ha sido inactivada. Contacta al administrador.");
             logout();
             return;
           }
@@ -77,10 +78,12 @@ export const AuthProvider = ({ children }) => {
     if (isAuthenticated) {
       inactivityTimerRef.current = setTimeout(() => {
         // Mostrar alerta antes de cerrar sesión
-        alert(
-          "Tu sesión ha sido cerrada por inactividad (1 hora sin actividad).",
-        );
-        logout();
+        showWarningAlert(
+          "Sesión cerrada por inactividad",
+          "Tu sesión ha sido cerrada por inactividad (1 hora sin actividad)."
+        ).then(() => {
+          logout();
+        });
       }, INACTIVITY_TIMEOUT);
     }
   };
@@ -135,12 +138,14 @@ export const AuthProvider = ({ children }) => {
           if (response.ok) {
             const result = await response.json();
             const accessToken = result.data.accessToken;
+            const refreshedUser = result.data.user || JSON.parse(storedUser);
 
             // Almacenar access token en memoria del apiClient
             apiClient.setAccessToken(accessToken);
 
             setIsAuthenticated(true);
-            setUser(JSON.parse(storedUser));
+            setUser(refreshedUser);
+            localStorage.setItem("user", JSON.stringify(refreshedUser));
 
             // Programar el próximo refresh automático
             scheduleTokenRefresh();
@@ -321,4 +326,5 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   return useContext(AuthContext);
 };
+
 

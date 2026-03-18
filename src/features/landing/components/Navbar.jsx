@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { FiLogIn, FiMenu, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,8 +63,6 @@ export const Navbar = () => {
               <li><NavLink to="/areas-proyectos" className={linkClasses}>Áreas</NavLink></li>
               <li><NavLink to="/galeria" className={linkClasses}>Galería</NavLink></li>
               <li><NavLink to="/events" className={linkClasses}>Eventos</NavLink></li>
-              <li><NavLink to="/categories" className={linkClasses}>Categorías</NavLink></li>
-              <li><NavLink to="/services" className={linkClasses}>Servicios</NavLink></li>
               <li><NavLink to="/donacion" className={linkClasses}>Donación</NavLink></li>
             </ul>
           </div>
@@ -102,8 +100,6 @@ export const Navbar = () => {
                 <li><NavLink to="/areas-proyectos" className={linkClasses} onClick={() => setIsOpen(false)}>Áreas y Proyectos</NavLink></li>
                 <li><NavLink to="/galeria" className={linkClasses} onClick={() => setIsOpen(false)}>Galería</NavLink></li>
                 <li><NavLink to="/events" className={linkClasses} onClick={() => setIsOpen(false)}>Eventos</NavLink></li>
-                <li><NavLink to="/categories" className={linkClasses} onClick={() => setIsOpen(false)}>Categorías</NavLink></li>
-                <li><NavLink to="/services" className={linkClasses} onClick={() => setIsOpen(false)}>Servicios</NavLink></li>
                 <li><NavLink to="/donacion" className={linkClasses} onClick={() => setIsOpen(false)}>Donación</NavLink></li>
                 <li className="border-t pt-4">
                   <NavLink to="/login" className={loginClasses} onClick={() => setIsOpen(false)}>

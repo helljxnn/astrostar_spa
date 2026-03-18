@@ -65,8 +65,8 @@ export const useEmployees = () => {
       if (response.success) {
         setReferenceData(response.data);
       }
-    } catch (err) {
-      console.error("Error cargando datos de referencia:", err);
+    } catch {
+      setError("No se pudieron cargar los datos de referencia.");
     }
   }, []);
 
@@ -115,12 +115,13 @@ export const useEmployees = () => {
         if (response.success) {
           showSuccessAlert(
             "Empleado Actualizado",
-            `${response.data.user.firstName} ${response.data.user.lastName} ha sido actualizado exitosamente`,
+            response.message ||
+              `${response.data.user.firstName} ${response.data.user.lastName} ha sido actualizado exitosamente`,
           );
 
           // Recargar la lista
           await loadEmployees();
-          return response.data;
+          return response;
         } else {
           throw new Error(response.message || "Error actualizando empleado");
         }
@@ -139,7 +140,7 @@ export const useEmployees = () => {
    * Eliminar empleado
    */
   const deleteEmployee = useCallback(
-    async (id, employeeName) => {
+    async (id) => {
       try {
         const response = await employeeService.delete(id);
 
@@ -174,8 +175,7 @@ export const useEmployees = () => {
           excludeUserId,
         );
         return response;
-      } catch (err) {
-        console.error("Error verificando email:", err);
+      } catch {
         return { available: false, message: "Error verificando email" };
       }
     },
@@ -193,8 +193,7 @@ export const useEmployees = () => {
           excludeUserId,
         );
         return response;
-      } catch (err) {
-        console.error("Error verificando identificación:", err);
+      } catch {
         return {
           available: false,
           message: "Error verificando identificación",

@@ -407,7 +407,7 @@ const DeliverableMaterialsTab = ({
                     <div className="text-sm text-gray-600">
                       Cantidad: {pending.cantidad} {material?.unidadMedida || "unidades"}
                       {pending.observaciones && (
-                        <span className="ml-2 text-gray-500">• {pending.observaciones}</span>
+                        <span className="ml-2 text-gray-500">- {pending.observaciones}</span>
                       )}
                     </div>
                   </div>
@@ -521,4 +521,5 @@ const DeliverableMaterialsTab = ({
 };
 
 export default DeliverableMaterialsTab;
+
 

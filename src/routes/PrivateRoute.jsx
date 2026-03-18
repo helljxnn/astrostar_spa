@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
+import PropTypes from "prop-types";
 import { useAuth } from "../shared/contexts/authContext.jsx";
 import { usePermissions } from "../shared/hooks/usePermissions";
-import { motion } from "framer-motion";
 import Loader from "../shared/components/Loader/Loader";
 import PaymentsService from "../features/dashboard/pages/Admin/pages/Athletes/Payments/services/PaymentsService";
 
@@ -92,7 +92,7 @@ const PrivateRoute = ({
     // EXCEPCIÓN: Los administradores NO deben ver "Mis Pagos" (es solo para deportistas/acudientes)
     if (module === "myPayments") {
       if (showFallback) {
-        return <AccessDenied />;
+        return <Navigate to="/unauthorized" replace />;
       }
       return <Navigate to={fallbackPath} replace />;
     }
@@ -131,7 +131,7 @@ const PrivateRoute = ({
     // Verificar permisos específicos
     if (action && !hasPermission(module, action)) {
       if (showFallback) {
-        return <AccessDenied />;
+        return <Navigate to="/unauthorized" replace />;
       }
       return <Navigate to={fallbackPath} replace />;
     }
@@ -139,7 +139,7 @@ const PrivateRoute = ({
     // Verificar acceso al módulo (cualquier acción)
     if (!action && !hasModuleAccess(module)) {
       if (showFallback) {
-        return <AccessDenied />;
+        return <Navigate to="/unauthorized" replace />;
       }
       return <Navigate to={fallbackPath} replace />;
     }
@@ -156,52 +156,16 @@ const PrivateRoute = ({
   return children ? children : <Outlet />;
 };
 
-/**
- * Componente para mostrar cuando no se tienen permisos
- */
-const AccessDenied = () => {
-  const handleGoBack = () => {
-    // Si hay historial, ir atrás, sino ir al dashboard principal
-    if (window.history.length > 1) {
-      window.history.back();
-    } else {
-      window.location.href = "/dashboard";
-    }
-  };
+export default PrivateRoute;
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center p-8 bg-white rounded-xl shadow-lg max-w-md mx-4"
-      >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-6xl mb-4"
-        >
-          🔒
-        </motion.div>
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          Acceso Denegado
-        </h2>
-        <p className="text-gray-600 mb-6">
-          No tienes permisos para acceder a esta sección.
-        </p>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleGoBack}
-          className="px-6 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors"
-        >
-          Volver
-        </motion.button>
-      </motion.div>
-    </div>
-  );
+
+PrivateRoute.propTypes = {
+  allowedRoles: PropTypes.arrayOf(PropTypes.string),
+  module: PropTypes.string,
+  action: PropTypes.string,
+  fallbackPath: PropTypes.string,
+  showFallback: PropTypes.bool,
+  children: PropTypes.node,
 };
 
-export default PrivateRoute;
 

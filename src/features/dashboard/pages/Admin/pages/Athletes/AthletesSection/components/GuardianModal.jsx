@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -108,8 +108,7 @@ const GuardianModal = ({
           }
         }
       } catch (error) {
-        console.error("Error verificando documento:", error);
-      } finally {
+} finally {
         setCheckingDocument(false);
       }
     };
@@ -283,8 +282,7 @@ const GuardianModal = ({
         }
       }
     } catch (err) {
-      console.error(err);
-      showErrorAlert("Error", "Ocurrió un error al guardar el acudiente.");
+showErrorAlert("Error", "Ocurrió un error al guardar el acudiente.");
     }
   };
 

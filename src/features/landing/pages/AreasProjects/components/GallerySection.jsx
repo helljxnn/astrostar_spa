@@ -1,4 +1,4 @@
-﻿import { motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { FaInstagram, FaPlayCircle, FaYoutube } from "react-icons/fa";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectCoverflow, Pagination } from "swiper/modules";
@@ -12,9 +12,9 @@ const placeholderImages = [
   "/assets/images/Foundation/career.jpg",
   "/assets/images/Foundation/fmv_clip.png",
   "/assets/images/CategoriasHero.jpg",
-  "/assets/images/EventsHero.png",
+  "/assets/images/EventsHero.webp",
   "/assets/images/AboutHero.png",
-  "/assets/images/EventsHero.png",
+  "/assets/images/EventsHero.webp",
 ];
 
 const firstMoments = [
@@ -58,7 +58,7 @@ export const GallerySection = () => {
         >
           <div className="relative overflow-hidden rounded-[2rem] shadow-2xl min-h-[320px] sm:min-h-[380px]">
             <img
-              src="/assets/images/EventsHero.png"
+              src="/assets/images/EventsHero.webp"
               alt="Banner galería"
               className="absolute inset-0 w-full h-full object-cover"
             />

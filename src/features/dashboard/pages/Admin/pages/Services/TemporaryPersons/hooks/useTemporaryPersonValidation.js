@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hook personalizado para validaciones de personas temporales
  * Centraliza todas las validaciones del frontend
  */
@@ -385,4 +385,3 @@ function calculateAge(birthDate) {
 }
 
 export default useTemporaryPersonValidation;
-

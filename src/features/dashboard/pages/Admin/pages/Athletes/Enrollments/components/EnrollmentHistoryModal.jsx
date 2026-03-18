@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -151,12 +151,10 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
       if (result.success) {
         setEnrollmentHistory(result.data || []);
       } else {
-        console.error("Error cargando historial:", result.error);
-        setEnrollmentHistory([]);
+setEnrollmentHistory([]);
       }
     } catch (error) {
-      console.error("Error cargando historial:", error);
-      setEnrollmentHistory([]);
+setEnrollmentHistory([]);
     } finally {
       setLoading(false);
     }
@@ -164,8 +162,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 
   if (!isOpen) return null;
   if (!athlete) {
-    console.error("Athlete is undefined in InscriptionHistoryModal");
-    return null;
+return null;
   }
 
   // Validar datos críticos
@@ -203,8 +200,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
         return dateB - dateA; // Más reciente primero
       });
     } catch (error) {
-      console.error("Error sorting enrollments:", error);
-      return safeInscriptions;
+return safeInscriptions;
     }
   }, [safeInscriptions]);
 
@@ -389,19 +385,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
             </div>
 
             {/* Timeline de Matrículas */}
-            {loading ? (
-              <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="mx-auto text-primary-purple mb-3">
-                  <svg className="animate-spin h-12 w-12 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                </div>
-                <p className="text-gray-600 font-medium">
-                  Cargando historial de matrículas...
-                </p>
-              </div>
-            ) : filteredInscriptions.length > 0 ? (
+            {!loading && filteredInscriptions.length > 0 ? (
               <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
                   <FaHistory className="text-primary-purple" />
@@ -578,7 +562,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : !loading ? (
               <div className="text-center py-16 bg-gray-50 rounded-lg border border-gray-200">
                 <FaSearch className="mx-auto text-gray-300 mb-3" size={48} />
                 {searchTerm ? (
@@ -599,7 +583,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                   </p>
                 )}
               </div>
-            )}           
+            ) : null}           
           </div>
         </div>
 
@@ -634,3 +618,4 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 };
 
 export default EnrollmentHistoryModal;
+

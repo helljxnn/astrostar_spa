@@ -16,9 +16,10 @@ import PaymentsService from "./services/PaymentsService";
 const PaymentsManagementNew = () => {
   const { hasPermission } = usePermissions();
   
-  // Hook para pagos pendientes
+  // Hook para pagos pendientes - Solo obtener el conteo total
   const {
     totalRows: totalPendingPayments,
+    refetch: refetchPendingCount,
   } = usePayments('pending');
   
   // Hook para rechazar pagos
@@ -33,26 +34,60 @@ const PaymentsManagementNew = () => {
   );
 
   const [activeTab, setActiveTab] = useState("pending");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [localFilters, setLocalFilters] = useState({ status: "", type: "", dateFrom: "", dateTo: "" });
+  const [pendingSearch, setPendingSearch] = useState("");
+  const [historySearch, setHistorySearch] = useState("");
+  const [pendingFilters, setPendingFilters] = useState({ 
+    type: "", 
+    dateFrom: "", 
+    dateTo: ""
+  });
+  const [historyFilters, setHistoryFilters] = useState({ 
+    status: "", 
+    type: "", 
+    dateFrom: "", 
+    dateTo: ""
+  });
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [paymentToReject, setPaymentToReject] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewModal, setViewModal] = useState({ isOpen: false, payment: null });
+  const [pendingRefreshKey, setPendingRefreshKey] = useState(0);
 
-  // Aplicar filtros según el tab activo
+  // Aplicar filtros segun el tab activo
   const handleFilterChange = (key, value) => {
-    const updated = { ...localFilters, [key]: value };
-    setLocalFilters(updated);
+    if (activeTab === "pending") {
+      setPendingFilters((prev) => ({ ...prev, [key]: value }));
+      return;
+    }
+    setHistoryFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSearchChange = (e) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    if (activeTab === "pending") {
+      setPendingSearch(value);
+      return;
+    }
+    setHistorySearch(value);
   };
 
   const handleClearFilters = () => {
-    setLocalFilters({ status: "", type: "", dateFrom: "", dateTo: "" });
-    setSearchTerm("");
+    if (activeTab === "pending") {
+      setPendingFilters({ 
+        type: "", 
+        dateFrom: "", 
+        dateTo: ""
+      });
+      setPendingSearch("");
+      return;
+    }
+    setHistoryFilters({ 
+      status: "", 
+      type: "", 
+      dateFrom: "", 
+      dateTo: ""
+    });
+    setHistorySearch("");
   };
   // ── Rechazar ──
   const handleReject = (payment) => {
@@ -67,6 +102,8 @@ const PaymentsManagementNew = () => {
     if (result.success) {
       setIsRejectModalOpen(false);
       setPaymentToReject(null);
+      refetchPendingCount();
+      setPendingRefreshKey((prev) => prev + 1);
     }
   };
 
@@ -83,11 +120,11 @@ const PaymentsManagementNew = () => {
   const getCompleteReportData = async () => {
     return await getReportData(
       {
-        search: searchTerm,
-        status: localFilters.status,
-        type: localFilters.type,
-        dateFrom: localFilters.dateFrom,
-        dateTo: localFilters.dateTo,
+        search: historySearch,
+        status: historyFilters.status,
+        type: historyFilters.type,
+        dateFrom: historyFilters.dateFrom,
+        dateTo: historyFilters.dateTo,
       },
       (data) => data.map((payment) => {
         let periodoTexto = "—";
@@ -115,6 +152,10 @@ const PaymentsManagementNew = () => {
           }
         }
 
+        const mora = payment.obligation?.lateFeeAmount ?? payment.lateFee ?? 0;
+        const base = payment.obligation?.baseAmount || 0;
+        const total = payment.obligation?.totalAmount ?? payment.calculatedAmount ?? (base + mora);
+
         return {
           atleta: `${payment.athlete?.user?.firstName || ""} ${payment.athlete?.user?.lastName || ""}`.trim(),
           identificacion: payment.athlete?.user?.identification || "",
@@ -124,9 +165,9 @@ const PaymentsManagementNew = () => {
             ENROLLMENT_RENEWAL: "Renovación Matrícula",
           }[payment.obligation?.type] || "Otro",
           periodo: periodoTexto,
-          montoBase: formatCurrency(payment.obligation?.baseAmount || 0),
-          mora: formatCurrency(payment.obligation?.lateFeeAmount || 0),
-          total: formatCurrency(payment.obligation?.totalAmount || 0),
+          montoBase: formatCurrency(base),
+          mora: formatCurrency(mora),
+          total: formatCurrency(total),
           fechaSubida: payment.uploadedAt
             ? new Date(payment.uploadedAt).toLocaleDateString("es-ES")
             : "",
@@ -151,9 +192,9 @@ const PaymentsManagementNew = () => {
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
-              value={searchTerm}
+              value={activeTab === "pending" ? pendingSearch : historySearch}
               onChange={handleSearchChange}
-              placeholder="Buscar atleta o identificación..."
+              placeholder="Buscar deportista o identificación..."
             />
           </div>
 
@@ -198,7 +239,7 @@ const PaymentsManagementNew = () => {
         <div className="inline-flex gap-2">
           <button
             onClick={() => setActiveTab("pending")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
               activeTab === "pending"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -218,15 +259,21 @@ const PaymentsManagementNew = () => {
               />
             </svg>
             <span>Pagos Pendientes</span>
-            <span
-              className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
-                activeTab === "pending"
-                  ? "bg-primary-purple text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {totalPendingPayments}
-            </span>
+            {totalPendingPayments > 0 && activeTab !== "pending" ? (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                {totalPendingPayments}
+              </span>
+            ) : (
+              <span
+                className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
+                  activeTab === "pending"
+                    ? "bg-primary-purple text-white"
+                    : "bg-gray-200 text-gray-600"
+                }`}
+              >
+                {totalPendingPayments}
+              </span>
+            )}
           </button>
           
           <button
@@ -271,22 +318,25 @@ const PaymentsManagementNew = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Filtro de Tipo de Pago - Disponible en ambos tabs */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de pago
-              </label>
-              <select
-                value={localFilters.type}
-                onChange={(e) => handleFilterChange("type", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-              >
-                <option value="">Todos los tipos</option>
-                <option value="MONTHLY">Mensualidad</option>
-                <option value="ENROLLMENT_INITIAL">Matrícula Inicial</option>
-                <option value="ENROLLMENT_RENEWAL">Renovación Matrícula</option>
-              </select>
-            </div>
+
+            {/* Filtro de Tipo de Pago - Disponible en pagos pendientes e historial */}
+            {(activeTab === "pending" || activeTab === "payments") && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de pago
+                </label>
+                <select
+                  value={activeTab === "pending" ? pendingFilters.type : historyFilters.type}
+                  onChange={(e) => handleFilterChange("type", e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="MONTHLY">Mensualidad</option>
+                  <option value="ENROLLMENT_INITIAL">Matrícula Inicial</option>
+                  <option value="ENROLLMENT_RENEWAL">Renovación Matrícula</option>
+                </select>
+              </div>
+            )}
 
             {/* Filtro de Estado Final - Solo en Historial */}
             {activeTab === "payments" && (
@@ -295,7 +345,7 @@ const PaymentsManagementNew = () => {
                   Estado Final
                 </label>
                 <select
-                  value={localFilters.status}
+                  value={historyFilters.status}
                   onChange={(e) => handleFilterChange("status", e.target.value)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
                 >
@@ -306,48 +356,61 @@ const PaymentsManagementNew = () => {
               </div>
             )}
 
-            {/* Filtro de Fecha Desde - Disponible en ambos tabs */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha desde
-              </label>
-              <input
-                type="date"
-                value={localFilters.dateFrom || ""}
-                onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-              />
-            </div>
+            {/* Filtros de fecha - Solo para pagos pendientes e historial */}
+            {(activeTab === "pending" || activeTab === "payments") && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha desde
+                  </label>
+                  <input
+                    type="date"
+                    value={(activeTab === "pending" ? pendingFilters.dateFrom : historyFilters.dateFrom) || ""}
+                    onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                  />
+                </div>
 
-            {/* Filtro de Fecha Hasta - Disponible en ambos tabs */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha hasta
-              </label>
-              <input
-                type="date"
-                value={localFilters.dateTo || ""}
-                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Fecha hasta
+                  </label>
+                  <input
+                    type="date"
+                    value={(activeTab === "pending" ? pendingFilters.dateTo : historyFilters.dateTo) || ""}
+                    onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
+
       {/* Contenido según tab activo */}
       {activeTab === "pending" ? (
         <PendingPaymentsTable 
           onViewPayment={handleViewPayment}
           onRejectPayment={handleReject}
-          typeFilter={localFilters.type}
-          dateFromFilter={localFilters.dateFrom}
-          dateToFilter={localFilters.dateTo}
-          searchTerm={searchTerm}
+          onPendingChanged={() => {
+            refetchPendingCount();
+            setPendingRefreshKey((prev) => prev + 1);
+          }}
+          refreshKey={pendingRefreshKey}
+          typeFilter={pendingFilters.type}
+          dateFromFilter={pendingFilters.dateFrom}
+          dateToFilter={pendingFilters.dateTo}
+          searchTerm={pendingSearch}
         />
       ) : (
         <PaymentsHistoryTable 
           onViewPayment={handleViewPayment}
-          searchTerm={searchTerm}
+          searchTerm={historySearch}
+          statusFilter={historyFilters.status}
+          typeFilter={historyFilters.type}
+          dateFromFilter={historyFilters.dateFrom}
+          dateToFilter={historyFilters.dateTo}
         />
       )}
 
@@ -374,4 +437,3 @@ const PaymentsManagementNew = () => {
 };
 
 export default PaymentsManagementNew;
-

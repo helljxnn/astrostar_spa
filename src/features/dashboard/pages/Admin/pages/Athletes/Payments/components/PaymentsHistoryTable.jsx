@@ -4,9 +4,21 @@ import { usePermissions } from "../../../../../../../../shared/hooks/usePermissi
 import { usePayments } from "../hooks/usePayments.js";
 import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
+import { 
+  calculateLateFee, 
+  calculateLateDays,
+  BUSINESS_CONSTANTS 
+} from "../constants/paymentConstants.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
-const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
+const PaymentsHistoryTable = ({ 
+  onViewPayment, 
+  searchTerm = "",
+  statusFilter = "",
+  typeFilter = "",
+  dateFromFilter = "",
+  dateToFilter = ""
+}) => {
   const { hasPermission } = usePermissions();
   const {
     payments: allPayments,
@@ -14,7 +26,13 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
     currentPage,
     totalRows,
     handlePageChange,
-  } = usePayments('all', { search: searchTerm });
+  } = usePayments('all', { 
+    search: searchTerm,
+    status: statusFilter,
+    type: typeFilter,
+    dateFrom: dateFromFilter,
+    dateTo: dateToFilter
+  });
   
   const { downloadReceipt, downloading } = useDownloadReceipt();
 
@@ -77,16 +95,11 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
     );
   }
 
-      if (allPayments.length === 0) {
+  if (allPayments.length === 0) {
+    const hasFilters = searchTerm || statusFilter || typeFilter || dateFromFilter || dateToFilter;
     return (
       <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
-        <p>No hay pagos procesados{searchTerm ? " con la búsqueda actual" : ""}.</p>
-        <div className="text-sm mt-4 p-4 bg-blue-50 rounded-lg">
-          <p><strong>💡 Información:</strong></p>
-          <p>• Este historial muestra solo pagos <strong>aprobados</strong> o <strong>rechazados</strong></p>
-          <p>• Los pagos <strong>pendientes</strong> aparecen en el tab "Pagos Pendientes"</p>
-          <p>• Usa el buscador para encontrar pagos específicos</p>
-        </div>
+        <p>No hay pagos procesados{hasFilters ? " con los filtros actuales" : ""}.</p>
       </div>
     );
   }
@@ -95,12 +108,6 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
     return (
       <div className="text-center text-gray-500 mt-10 py-8 bg-white rounded-2xl shadow border border-gray-200">
         <p>Todos los pagos están pendientes de aprobación.</p>
-        <div className="text-sm mt-4 p-4 bg-yellow-50 rounded-lg">
-          <p><strong>Estado actual:</strong></p>
-          <p>• Se encontraron {allPayments.length} pagos, pero todos están <strong>PENDING</strong></p>
-          <p>• Ve al tab "Pagos Pendientes" para aprobar o rechazar pagos</p>
-          <p>• Una vez procesados, aparecerán en este historial</p>
-        </div>
       </div>
     );
   }
@@ -153,22 +160,57 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
                 return <span className="font-semibold">{value}</span>;
               }
 
-              // ✅ Usar datos directos del backend (ya corregidos)
+              // ✅ SISTEMA EMPRESARIAL: Calcular mora usando funciones estándar
               const baseAmount = obligation.baseAmount || 0;
-              const lateFeeAmount = obligation.lateFeeAmount || 0;
-              const totalAmount = obligation.totalAmount || baseAmount;
+              let lateFeeAmount = 0;
+              let totalAmount = baseAmount;
+              let daysLate = 0;
 
+              // Si es mensualidad, calcular mora hasta la fecha de procesamiento
+              if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
+                // ✅ CRÍTICO: Para historial, usar fecha de procesamiento, no fecha actual
+                const processedDate = new Date(payment.reviewedAt || payment.updatedAt);
+                const dueDate = new Date(obligation.dueEnd);
+                
+                if (processedDate > dueDate) {
+                  // Calcular mora hasta la fecha de procesamiento (Sistema Empresarial)
+                  const daysLateAtProcessing = Math.ceil((processedDate - dueDate) / (1000 * 60 * 60 * 24));
+                  daysLate = daysLateAtProcessing;
+                  lateFeeAmount = calculateLateFee(daysLateAtProcessing);
+                }
+              }
+
+              // Si el backend ya envía los montos calculados, usarlos
+              if (obligation.lateFeeAmount !== undefined) {
+                lateFeeAmount = obligation.lateFeeAmount;
+              }
+              if (obligation.totalAmount !== undefined) {
+                totalAmount = obligation.totalAmount;
+              } else {
+                totalAmount = baseAmount + lateFeeAmount;
+              }
+
+              // Mostrar desglose si hay mora
               if (lateFeeAmount > 0) {
                 return (
-                  <div>
-                    <div className="font-semibold">{formatCurrency(totalAmount)}</div>
-                    <div className="text-xs text-gray-500">
-                      Base: {formatCurrency(baseAmount)} + Mora: {formatCurrency(lateFeeAmount)}
+                  <div className="max-w-[140px] whitespace-normal break-words">
+                    <div className="font-semibold text-gray-900">{formatCurrency(totalAmount)}</div>
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <div>Base: {formatCurrency(baseAmount)}</div>
+                      <div className="text-red-600">
+                        Mora: {formatCurrency(lateFeeAmount)}
+                        {daysLate > 0 && ` (${daysLate} días)`}
+                      </div>
                     </div>
                   </div>
                 );
               }
-              return <span className="font-semibold">{formatCurrency(totalAmount)}</span>;
+              
+              return (
+                <span className="font-semibold text-gray-900 max-w-[140px] whitespace-normal break-words block">
+                  {formatCurrency(totalAmount)}
+                </span>
+              );
             },
             status: (value, payment) => {
               const statusLabels = {
@@ -206,11 +248,7 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
         customActions={[
           {
             onClick: (payment) => handleDownloadPayment(payment),
-            label: downloading ? (
-              <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full" />
-            ) : (
-              <FaDownload className="w-4 h-4" />
-            ),
+            label: <FaDownload className="w-4 h-4" />,
             className:
               "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
             tooltip: "Descargar comprobante",
@@ -225,4 +263,3 @@ const PaymentsHistoryTable = ({ onViewPayment, searchTerm = "" }) => {
 };
 
 export default PaymentsHistoryTable;
-

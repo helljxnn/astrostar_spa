@@ -66,8 +66,7 @@ export default function AssistanceAthletes() {
         setHistoryData([]);
       }
     } catch (error) {
-      console.error("Error loading athlete history:", error);
-      setHistoryData([]);
+setHistoryData([]);
     } finally {
       setHistoryLoading(false);
     }

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { paymentsService } from '../services/PaymentsService.js';
 import { showSuccessAlert, showErrorAlert } from '../../../../../../../../shared/utils/alerts.js';
 
@@ -36,9 +36,7 @@ export const useDownloadReceipt = () => {
         );
       }
     } catch (error) {
-      console.error('Error al descargar comprobante:', error);
-      
-      // Fallback: intentar descarga directa
+// Fallback: intentar descarga directa
       try {
         const link = document.createElement('a');
         link.href = payment.receiptUrl;
@@ -49,13 +47,9 @@ export const useDownloadReceipt = () => {
         link.click();
         document.body.removeChild(link);
         
-        showErrorAlert(
-          "Descarga alternativa", 
-          "El archivo se abrirá en una nueva pestaña. Usa 'Guardar como' para elegir el nombre."
-        );
+        // Sin alerta: abrir en nueva pestaña sin interrumpir
       } catch (fallbackError) {
-        console.error('Error en fallback de descarga:', fallbackError);
-        showErrorAlert(
+showErrorAlert(
           'Error de descarga',
           'No se pudo descargar el comprobante. Verifica tu conexión e intenta nuevamente.'
         );
@@ -72,3 +66,4 @@ export const useDownloadReceipt = () => {
 };
 
 export default useDownloadReceipt;
+

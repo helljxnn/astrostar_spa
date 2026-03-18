@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hook personalizado para manejar deportistas
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -40,25 +40,44 @@ export const useAthletes = () => {
     setError(null);
     
     try {
-      const response = await AthletesService.getAthletes({
+      // Agregar parámetros de cache busting más agresivos
+      const enhancedParams = {
         page: params.page || PAGINATION_CONFIG.DEFAULT_PAGE,
         limit: params.limit || PAGINATION_CONFIG.ROWS_PER_PAGE,
         search: params.search,
         status: params.status,
         categoria: params.categoria,
-        estadoInscripcion: params.estadoInscripcion
-      });
+        estadoInscripcion: params.estadoInscripcion,
+        _t: Date.now(),
+        _refresh: Math.random() // Forzar refresh
+      };
+
+      const response = await AthletesService.getAthletes(enhancedParams);
 
       if (response.success) {
-        setAthletes(response.data);
+        const list = response.data || [];
+        const ids = list.map((a) => a.id).filter(Boolean);
+        let summaryMap = {};
+
+        if (ids.length > 0) {
+          const summaryResp = await AthletesService.getMonthlySummaryByAthletes(ids);
+          if (summaryResp?.success) {
+            summaryMap = summaryResp.data || {};
+          }
+        }
+
+        const merged = list.map((a) => ({
+          ...a,
+          monthlySummary: summaryMap?.[a.id] || null
+        }));
+
+        setAthletes(merged);
         setPagination(response.pagination);
       } else {
-        console.error('❌ [useAthletes] Error en respuesta:', response.error);
-        throw new Error(response.error || 'Error cargando deportistas');
+throw new Error(response.error || 'Error cargando deportistas');
       }
     } catch (err) {
-      console.error('❌ [useAthletes] Excepción al cargar deportistas:', err);
-      setError(err.message);
+setError(err.message);
       if (!silent) {
         showErrorAlert('Error', 'No se pudieron cargar los deportistas');
       }
@@ -93,8 +112,7 @@ export const useAthletes = () => {
         setGuardians([]);
       }
     } catch (err) {
-      console.error('❌ Error cargando acudientes:', err);
-      setGuardians([]);
+setGuardians([]);
     }
   }, []);
 
@@ -154,7 +172,6 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
         // Para ACUDIENTES: Usar todos EXCEPTO RC, TI y NIT
         const guardianDocTypes = allDocTypes.filter(dt => {
           if (!dt || !dt.label) {
-            console.warn('⚠️ Tipo de documento sin label:', dt);
             return false;
           }
           
@@ -180,8 +197,7 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
           guardianDocumentTypes: guardianDocTypesWithName // Para acudientes (todos excepto RC y NIT)
         }));
       } else {
-        console.error('❌ No se pudieron cargar los tipos de documento');
-      }
+}
       
       // Cargar categorías deportivas
       const categoriesResponse = await apiClient.get('/sports-categories');
@@ -193,8 +209,7 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
         }));
 }
     } catch (err) {
-      console.error('❌ Error cargando datos de referencia:', err);
-    }
+}
   }, []);
 
   /**
@@ -215,12 +230,10 @@ if (response.success) {
         await loadAthletes();
         return true;
       } else {
-        console.error('❌ [useAthletes] Error en respuesta:', response.error);
-        throw new Error(response.error || 'Error creando deportista');
+throw new Error(response.error || 'Error creando deportista');
       }
     } catch (err) {
-      console.error('❌ [useAthletes] Excepción capturada:', err);
-      showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
+showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
       return false;
     } finally {
       setLoading(false);
@@ -391,6 +404,13 @@ if (response.success) {
     setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }));
   }, []);
 
+  const updateAthleteInState = useCallback((updatedAthlete) => {
+    if (!updatedAthlete || !updatedAthlete.id) return;
+    setAthletes(prev =>
+      prev.map(athlete => (athlete.id === updatedAthlete.id ? { ...athlete, ...updatedAthlete } : athlete))
+    );
+  }, []);
+
   // Cargar datos iniciales solo si está autenticado - OPTIMIZADO
   useEffect(() => {
     if (isAuthenticated) {
@@ -436,6 +456,7 @@ if (response.success) {
     deleteGuardian,
     changePage,
     changeLimit,
+    updateAthleteInState,
     
     // Utilidades
     refresh

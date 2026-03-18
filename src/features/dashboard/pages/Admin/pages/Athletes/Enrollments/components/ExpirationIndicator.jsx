@@ -43,9 +43,9 @@ const ExpirationIndicator = ({
     
     switch (type) {
       case 'expired':
-        return <span className="text-red-600 mr-1">⚠️</span>;
+        return <span className="text-red-600 mr-1"></span>;
       case 'today':
-        return <span className="text-red-600 mr-1">🚨</span>;
+        return <span className="text-red-600 mr-1"></span>;
       case 'critical':
         return <span className="text-red-600 mr-1">⏰</span>;
       case 'warning':

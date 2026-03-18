@@ -1,34 +1,22 @@
 ﻿import { motion, useScroll, useTransform } from "framer-motion";
-import { FaArrowRight, FaHeart } from "react-icons/fa";
-import { useRef, useState } from "react";
-import heroImage from "../images/1.jpg";
-import misionVisionImage from "../images/2.jpg";
-import historiaImage from "../images/3.jpg";
-import equipoImage from "../images/4.jpg";
-import donationVideo from "../images/5.mov";
+import { FaArrowRight } from "react-icons/fa";
+import { useState } from "react";
 import PreRegistrationModal from "../../../components/PreRegistrationModal";
 
 export default function HeroMain() {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
+  const { scrollY } = useScroll();
 
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
+  const y = useTransform(scrollY, [0, 900], ["0%", "20%"]);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <section ref={ref} className="relative overflow-hidden bg-white">
+    <section className="relative bg-white">
       {/* Hero Section - Text over Image */}
-      <div className="relative min-h-screen flex items-center justify-start group cursor-pointer">
+      <div className="relative min-h-screen flex items-center justify-start group cursor-pointer overflow-hidden">
         {/* Background Image */}
-        <motion.div
-          style={{ y }}
-          className="absolute inset-0"
-        >
+        <motion.div style={{ y }} className="absolute inset-0">
           <img
-            src={heroImage}
+            src="/assets/images/Home/1.webp"
             alt="Fundación Manuela Vanegas"
             className="w-full h-full object-cover"
           />
@@ -40,12 +28,13 @@ export default function HeroMain() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
             Formamos personas, inspiramos sueños y transformamos realidades.
           </h1>
-          
+
           <p className="text-lg md:text-xl leading-relaxed">
             La Fundación Manuela Vanegas nace del compromiso social de la
-            futbolista Manuela Vanegas con el desarrollo integral de niñas y jóvenes mujeres. 
-            A través del deporte, la educación en valores y el acompañamiento humano, 
-            generamos espacios seguros donde pueden descubrir su potencial.
+            futbolista Manuela Vanegas con el desarrollo integral de niñas y
+            jóvenes mujeres. A través del deporte, la educación en valores y el
+            acompañamiento humano, generamos espacios seguros donde pueden
+            descubrir su potencial.
           </p>
 
           <a
@@ -59,7 +48,7 @@ export default function HeroMain() {
       </div>
 
       {/* Quienes Somos Section */}
-      <div className="bg-white py-24 md:py-32">
+      <div className="relative z-10 bg-white py-24 md:py-32">
         <div className="max-w-[1400px] mx-auto px-6 lg:px-8">
           {/* Header Section - Title and Description Side by Side */}
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-16 md:mb-20">
@@ -106,13 +95,13 @@ export default function HeroMain() {
             >
               <div className="relative overflow-hidden rounded-3xl shadow-xl h-[350px] md:h-[400px]">
                 <img
-                  src={misionVisionImage}
+                  src="/assets/images/Home/2.webp"
                   alt="Nuestra Misión/Visión"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
+
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 group-hover:translate-y-[-8px] transition-transform duration-300">
@@ -142,13 +131,13 @@ export default function HeroMain() {
             >
               <div className="relative overflow-hidden rounded-3xl shadow-xl h-[350px] md:h-[400px]">
                 <img
-                  src={historiaImage}
+                  src="/assets/images/Home/3.webp"
                   alt="Nuestra Historia"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
+
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 group-hover:translate-y-[-8px] transition-transform duration-300">
@@ -178,13 +167,13 @@ export default function HeroMain() {
             >
               <div className="relative overflow-hidden rounded-3xl shadow-xl h-[350px] md:h-[400px]">
                 <img
-                  src={equipoImage}
+                  src="/assets/images/Home/4.webp"
                   alt="Nuestro Equipo"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 {/* Gradient overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
+
                 {/* Content */}
                 <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
                   <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 group-hover:translate-y-[-8px] transition-transform duration-300">
@@ -214,4 +203,3 @@ export default function HeroMain() {
     </section>
   );
 }
-

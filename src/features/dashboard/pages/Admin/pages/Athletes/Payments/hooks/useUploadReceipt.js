@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
@@ -35,8 +35,7 @@ export const useUploadReceipt = () => {
       
       return { success: true, data: response };
     } catch (error) {
-      console.error("Error uploading receipt:", error);
-      const errorMessage = error.response?.data?.message || "Error al subir el comprobante";
+const errorMessage = error.response?.data?.message || "Error al subir el comprobante";
       showErrorAlert(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -53,3 +52,4 @@ export const useUploadReceipt = () => {
     progress
   };
 };
+

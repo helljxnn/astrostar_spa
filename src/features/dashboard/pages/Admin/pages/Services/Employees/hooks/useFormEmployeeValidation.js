@@ -1,9 +1,14 @@
-﻿import { useState, useCallback } from "react";
+﻿import { useState, useCallback, useEffect, useRef } from "react";
 
 export const useFormEmployeeValidation = (initialValues, validationRules) => {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const initialValuesRef = useRef(initialValues);
+
+  useEffect(() => {
+    initialValuesRef.current = initialValues;
+  }, [initialValues]);
 
   const validateField = (name, value) => {
     const rules = validationRules[name];
@@ -62,10 +67,10 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
 
   // Resetea completamente el formulario
   const resetForm = useCallback(() => {
-    setValues(initialValues);
+    setValues({ ...initialValuesRef.current });
     setErrors({});
     setTouched({});
-  }, [initialValues]);
+  }, []);
 
   return {
     values,
@@ -76,6 +81,7 @@ export const useFormEmployeeValidation = (initialValues, validationRules) => {
     validateAllFields,
     setValues,
     setErrors,
+    setTouched,
     touchAllFields,
     resetValidation,
     resetForm,
@@ -187,7 +193,7 @@ export const employeeValidationRules = {
         today.getDate(),
       );
       const maxDate = new Date(
-        today.getFullYear() - 16,
+        today.getFullYear() - 18,
         today.getMonth(),
         today.getDate(),
       );
@@ -196,7 +202,7 @@ export const employeeValidationRules = {
         return "La fecha de nacimiento no puede ser anterior a 100 años atrás";
       }
       if (birthDate > maxDate) {
-        return "El empleado debe tener al menos 16 años de edad";
+        return "El empleado debe ser mayor de edad (18 años o más)";
       }
       if (birthDate > today) {
         return "La fecha de nacimiento no puede ser futura";
@@ -214,5 +220,3 @@ export const employeeValidationRules = {
       value?.length > 200 ? "La dirección no puede exceder 200 caracteres" : "",
   ],
 };
-
-

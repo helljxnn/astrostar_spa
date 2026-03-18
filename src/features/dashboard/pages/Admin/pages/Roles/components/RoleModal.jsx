@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -73,6 +73,9 @@ const actions = [
   { name: "Ver", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Editar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Eliminar", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Materiales", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Inscribir", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
+  { name: "Ver inscritos", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Ver Asignaciones del Material", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Transferir Stock", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
   { name: "Registrar Baja de Material", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },

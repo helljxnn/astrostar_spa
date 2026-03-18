@@ -1,13 +1,19 @@
-﻿import { FaTimes, FaDownload, FaCheck } from "react-icons/fa";
+import { useEffect } from "react";
+import { FaTimes, FaDownload, FaCheck } from "react-icons/fa";
 import Table from "../../../../../../../../shared/components/Table/table.jsx";
 import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions.js";
 import { usePayments } from "../hooks/usePayments.js";
 import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
+import { 
+  calculateLateFee, 
+  calculateLateDays,
+  BUSINESS_CONSTANTS 
+} from "../constants/paymentConstants.js";
 import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
-const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "", dateFromFilter = "", dateToFilter = "", searchTerm = "" }) => {
+const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged, refreshKey, typeFilter = "", dateFromFilter = "", dateToFilter = "", searchTerm = "" }) => {
   const { hasPermission } = usePermissions();
   const {
     payments: pendingPayments,
@@ -18,7 +24,12 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
     handlePageChange,
     refetch: refetchPending,
     approvePayment: approvePendingPayment,
-  } = usePayments('pending', { search: searchTerm });
+  } = usePayments('pending', { 
+    search: searchTerm,
+    type: typeFilter,
+    dateFrom: dateFromFilter,
+    dateTo: dateToFilter
+  });
   
   const { downloadReceipt, downloading } = useDownloadReceipt();
 
@@ -35,6 +46,9 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
 
     await approvePendingPayment(payment.id);
     refetchPending();
+    if (onPendingChanged) {
+      onPendingChanged();
+    }
   };
 
   // ── Descargar comprobante ──
@@ -44,7 +58,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
     await downloadReceipt(payment);
   };
 
-  // ── Usar información de mora del backend directamente ──
+  // ✅ SISTEMA EMPRESARIAL ESTÁNDAR: Calcular mora usando funciones corregidas
   const getMoraInfoFromBackend = (payment) => {
     const obligation = payment.obligation;
     if (!obligation) {
@@ -62,61 +76,36 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
       };
     }
 
-    // ✅ Usar datos calculados por el backend (ya corregidos)
-    const diasMora = obligation.daysLate || 0;
-    const montoConMora = obligation.totalAmount || obligation.baseAmount || 0;
+    // ✅ SISTEMA EMPRESARIAL: Calcular mora desde vencimiento hasta HOY
+    let diasMora = 0;
+    let lateFeeAmount = 0;
+    const baseAmount = obligation.baseAmount || 0;
+
+    if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
+      // ✅ CRÍTICO: Usar fecha actual, NO fecha de subida
+      diasMora = calculateLateDays(obligation.dueEnd);
+      lateFeeAmount = calculateLateFee(diasMora);
+    }
+
+    // Si el backend ya envía los datos calculados, usarlos (tienen prioridad)
+    if (obligation.daysLate !== undefined) {
+      diasMora = obligation.daysLate;
+    }
+    if (obligation.lateFeeAmount !== undefined) {
+      lateFeeAmount = obligation.lateFeeAmount;
+    }
+
+    const montoConMora = baseAmount + lateFeeAmount;
     
     let diasMoraTexto = "Al día";
     if (diasMora > 0) {
       diasMoraTexto = `${diasMora} días`;
-    } else if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
-      // Verificar si está en período de gracia
-      const fechaVencimiento = new Date(obligation.dueEnd);
-      const hoy = new Date();
-      const diferenciaDias = Math.floor((hoy - fechaVencimiento) / (1000 * 60 * 60 * 24));
-      
-      if (diferenciaDias > 0 && diferenciaDias <= 5) {
-        diasMoraTexto = `${5 - diferenciaDias} días restantes`;
-      }
     }
     
     return { diasMora, diasMoraTexto, montoConMora, isSuspended: false };
   };
 
-  // ✅ Filtrar pagos por tipo y rango de fechas si hay filtros activos (el searchTerm ya se maneja en el backend)
-  const filteredPayments = pendingPayments.filter(payment => {
-    // Filtro por tipo
-    if (typeFilter && payment.obligation?.type !== typeFilter) {
-      return false;
-    }
-    
-    // Filtro por rango de fechas (fecha de subida del comprobante)
-    if (payment.uploadedAt) {
-      const uploadDate = new Date(payment.uploadedAt);
-      
-      // Fecha desde
-      if (dateFromFilter) {
-        const filterDateFrom = new Date(dateFromFilter);
-        if (uploadDate < filterDateFrom) {
-          return false;
-        }
-      }
-      
-      // Fecha hasta
-      if (dateToFilter) {
-        const filterDateTo = new Date(dateToFilter);
-        // Agregar 23:59:59 al día "hasta" para incluir todo el día
-        filterDateTo.setHours(23, 59, 59, 999);
-        if (uploadDate > filterDateTo) {
-          return false;
-        }
-      }
-    }
-    
-    return true;
-  });
-
-  const tableData = filteredPayments.map((payment) => {
+  const tableData = pendingPayments.map((payment) => {
     // Generar texto del período
     let periodoTexto = "—";
     
@@ -159,6 +148,12 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
       moraInfo,
     };
   });
+
+  // Refrescar lista cuando el padre lo solicite (rechazos, etc.)
+  useEffect(() => {
+    if (refreshKey === undefined) return;
+    refetchPending();
+  }, [refreshKey]);
 
   if (pendingLoading) {
     return (
@@ -275,13 +270,6 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
                     {diasMoraTexto}
                   </span>
                 );
-              } else if (diasMoraTexto.includes('restantes')) {
-                return (
-                  <span className="inline-flex items-center gap-1.5 text-yellow-600 font-medium">
-                    <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                    {diasMoraTexto}
-                  </span>
-                );
               } else {
                 return (
                   <span className="inline-flex items-center gap-1.5 text-green-600 font-medium">
@@ -297,22 +285,41 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
                 return <span className="font-semibold">{value}</span>;
               }
 
-              // ✅ Usar datos directos del backend (ya corregidos)
+              // ✅ SISTEMA EMPRESARIAL: Calcular mora usando funciones estándar
               const baseAmount = obligation.baseAmount || 0;
-              const lateFeeAmount = obligation.lateFeeAmount || 0;
-              const totalAmount = obligation.totalAmount || baseAmount;
+              let lateFeeAmount = 0;
+              let totalAmount = baseAmount;
 
+              // Si es mensualidad, calcular mora actual desde vencimiento hasta HOY
+              if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
+                const daysLate = calculateLateDays(obligation.dueEnd);
+                lateFeeAmount = calculateLateFee(daysLate);
+              }
+
+              // Si el backend ya envía los montos calculados, usarlos (tienen prioridad)
+              if (obligation.lateFeeAmount !== undefined) {
+                lateFeeAmount = obligation.lateFeeAmount;
+              }
+              if (obligation.totalAmount !== undefined) {
+                totalAmount = obligation.totalAmount;
+              } else {
+                totalAmount = baseAmount + lateFeeAmount;
+              }
+
+              // Mostrar desglose si hay mora
               if (lateFeeAmount > 0) {
                 return (
                   <div>
                     <div className="font-semibold text-red-600">{formatCurrency(totalAmount)}</div>
-                    <div className="text-xs text-gray-500">
-                      (+{formatCurrency(lateFeeAmount)} mora)
+                    <div className="text-xs text-gray-500 space-y-0.5">
+                      <div>Base: {formatCurrency(baseAmount)}</div>
+                      <div className="text-red-600">Mora: {formatCurrency(lateFeeAmount)}</div>
                     </div>
                   </div>
                 );
               }
-              return <span className="font-semibold">{formatCurrency(totalAmount)}</span>;
+              
+              return <span className="font-semibold text-gray-900">{formatCurrency(totalAmount)}</span>;
             },
           },
         }}
@@ -329,11 +336,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
         customActions={[
           {
             onClick: (payment) => handleDownloadPayment(payment),
-            label: downloading ? (
-              <div className="animate-spin w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full" />
-            ) : (
-              <FaDownload className="w-4 h-4" />
-            ),
+            label: <FaDownload className="w-4 h-4" />,
             className:
               "p-2 text-purple-600 hover:text-purple-900 hover:bg-purple-50 rounded transition-colors disabled:opacity-40",
             tooltip: "Descargar comprobante",
@@ -343,11 +346,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
           },
           {
             onClick: (payment) => handleApprove(payment),
-            label: actionLoading ? (
-              <div className="animate-spin w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full" />
-            ) : (
-              <FaCheck className="w-4 h-4" />
-            ),
+            label: <FaCheck className="w-4 h-4" />,
             className:
               "p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded transition-colors disabled:opacity-40",
             tooltip: "Aprobar pago",
@@ -372,4 +371,3 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, typeFilter = "",
 };
 
 export default PendingPaymentsTable;
-

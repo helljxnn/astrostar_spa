@@ -1,12 +1,4 @@
-﻿import apiClient from "../../../../../../../../shared/services/apiClient";
-import { formatCurrency } from "../utils/currencyUtils";
-import { 
-  BUSINESS_CONSTANTS, 
-  calculateLateFee, 
-  calculateLateDays,
-  getObligationLateFee,
-  isObligationSuspended 
-} from "../constants/paymentConstants";
+import apiClient from "../../../../../../../../shared/services/apiClient";
 
 /**
  * Servicio para gestión de pagos - Implementación completa
@@ -17,6 +9,14 @@ class PaymentsService {
     this.endpoint = "/payments";
     this.settingsEndpoint = "/payment-settings";
     this.enrollmentsEndpoint = "/enrollments";
+  }
+
+  isRouteNotFoundError(error) {
+    const message = String(error?.message || "").toLowerCase();
+    return (
+      message.includes("route not found") ||
+      message.includes("404")
+    );
   }
 
   // ============================================================================
@@ -32,11 +32,56 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/financial-status`);
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404 || error.message?.includes('Route not found')) {
-        console.warn('🔧 Endpoint no implementado, usando datos mock funcionales');
-        return this.getMockAthleteFinancialStatus(athleteId);
+throw new Error('No se pudo obtener el estado financiero del atleta');
+    }
+  }
+
+  /**
+   * Obtener historial de pagos del atleta (aprobados y rechazados)
+   * GET /api/payments/athletes/:athleteId/history
+   */
+  async getAthletePaymentHistory(athleteId) {
+    try {
+      // Intentar endpoint específico primero
+      const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/history`);
+      const payments = response.data?.data || response.data?.payments || response.data || [];
+      const filtered = Array.isArray(payments)
+        ? payments.filter((payment) =>
+            payment?.status === 'APPROVED' || payment?.status === 'REJECTED' ||
+            payment?.status === 'approved' || payment?.status === 'rejected'
+          )
+        : [];
+      return { data: filtered };
+    } catch (error) {
+      
+      // Fallback: obtener todos los pagos y filtrar aprobados/rechazados
+      try {
+        const allPaymentsResponse = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/payments`);
+        const allPayments = allPaymentsResponse.data?.payments || allPaymentsResponse.data || [];
+        
+        // Filtrar pagos aprobados y rechazados (incluir TODOS los tipos)
+        const visiblePayments = allPayments.filter((payment) =>
+          payment.status === 'APPROVED' || payment.status === 'REJECTED' ||
+          payment.status === 'approved' || payment.status === 'rejected'
+        );
+        
+        return { data: visiblePayments };
+      } catch (fallbackError) {
+throw new Error('No se pudo obtener el historial de pagos del atleta');
       }
-      throw error;
+    }
+  }
+
+  /**
+   * Obtener historial completo de mensualidades (admin o atleta propietario)
+   * GET /api/payments/athletes/:athleteId/monthly-history
+   */
+  async getAthleteMonthlyHistory(athleteId) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/monthly-history`);
+      return response.data?.data || response.data || { history: [] };
+    } catch (error) {
+throw new Error('No se pudo obtener el historial de mensualidades');
     }
   }
 
@@ -49,11 +94,7 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/access-check`);
       return response.data;
     } catch (error) {
-      if (error.response?.status === 404 || error.message?.includes('Route not found')) {
-        console.warn('🔧 Endpoint no implementado, usando datos mock funcionales');
-        return this.getMockAthleteAccess(athleteId);
-      }
-      throw error;
+throw new Error('No se pudo verificar el acceso del atleta');
     }
   }
 
@@ -84,8 +125,7 @@ class PaymentsService {
       });
       return response;
     } catch (error) {
-      console.error('Error downloading receipt:', error);
-      throw new Error('Error al descargar el comprobante');
+throw new Error('Error al descargar el comprobante');
     }
   }
 
@@ -143,8 +183,7 @@ class PaymentsService {
 
       return { success: true, fileName };
     } catch (error) {
-      console.error('Error al descargar comprobante:', error);
-      throw error;
+throw error;
     }
   }
 
@@ -200,17 +239,32 @@ class PaymentsService {
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       if (params.search) queryParams.append('search', params.search);
+      if (params.type) queryParams.append('type', params.type);
+      if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+      if (params.dateTo) queryParams.append('dateTo', params.dateTo);
 
-      const queryString = queryParams.toString();
-      const url = queryString ? `${this.endpoint}/pending?${queryString}` : `${this.endpoint}/pending`;
-      
-      const response = await apiClient.get(url);
-      
-      // Normalizar respuesta
+      const response = await apiClient.get(`${this.endpoint}/pending`, {
+        params: queryParams,
+      });
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching pending payments:', error);
-      return this.handleError(error);
+      if (this.isRouteNotFoundError(error)) {
+        try {
+          // Fallback para backends que solo exponen /payments con filtros.
+          const fallbackResponse = await apiClient.get(`${this.endpoint}`, {
+            params: {
+              page: params.page,
+              limit: params.limit,
+              search: params.search,
+              status: "PENDING",
+            },
+          });
+          return this.normalizeResponse(fallbackResponse);
+        } catch (fallbackError) {
+return this.handleError(fallbackError);
+        }
+      }
+return this.handleError(error);
     }
   }
 
@@ -239,8 +293,7 @@ class PaymentsService {
       // Normalizar respuesta
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching monthly management:', error);
-      return this.handleError(error);
+return this.handleError(error);
     }
   }
 
@@ -250,30 +303,42 @@ class PaymentsService {
    */
   async getAllPayments(params = {}) {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params.page) queryParams.append('page', params.page);
-      if (params.limit) queryParams.append('limit', params.limit);
-      if (params.search) queryParams.append('search', params.search);
-      if (params.status) queryParams.append('status', params.status);
-      if (params.type) queryParams.append('type', params.type);
-      if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-      if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-      
-      // IMPORTANTE: Excluir pagos PENDING del historial
-      // El historial solo debe mostrar pagos procesados (APPROVED/REJECTED)
-      queryParams.append('excludeStatus', 'PENDING');
-
-      const queryString = queryParams.toString();
-      const url = queryString ? `${this.endpoint}/all?${queryString}` : `${this.endpoint}/all`;
-      
-      const response = await apiClient.get(url);
-      
-      // Normalizar respuesta
+      const response = await apiClient.get(`${this.endpoint}/all`, {
+        params: {
+          page: params.page,
+          limit: params.limit,
+          search: params.search,
+          status: params.status,
+          type: params.type,
+          dateFrom: params.dateFrom,
+          dateTo: params.dateTo,
+          // El historial solo debe mostrar pagos procesados (APPROVED/REJECTED)
+          excludeStatus: "PENDING",
+        },
+      });
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching all payments:', error);
-      return this.handleError(error);
+      if (this.isRouteNotFoundError(error)) {
+        try {
+          // Fallback para backends con listado general en /payments.
+          const fallbackResponse = await apiClient.get(`${this.endpoint}`, {
+            params: {
+              page: params.page,
+              limit: params.limit,
+              search: params.search,
+              status: params.status,
+              type: params.type,
+              dateFrom: params.dateFrom,
+              dateTo: params.dateTo,
+              excludeStatus: "PENDING",
+            },
+          });
+          return this.normalizeResponse(fallbackResponse);
+        } catch (fallbackError) {
+return this.handleError(fallbackError);
+        }
+      }
+return this.handleError(error);
     }
   }
 
@@ -306,8 +371,7 @@ class PaymentsService {
         data: response.data || response || [],
       };
     } catch (error) {
-      console.error('Error fetching payments report:', error);
-      return { success: false, error: error.message, data: [] };
+return { success: false, error: error.message, data: [] };
     }
   }
 
@@ -323,8 +387,7 @@ class PaymentsService {
         data: response.data || response
       };
     } catch (error) {
-      console.error('Error approving payment:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -338,15 +401,14 @@ class PaymentsService {
   async rejectPayment(paymentId, reason) {
     try {
       const response = await apiClient.patch(`${this.endpoint}/${paymentId}/reject`, {
-        reason: reason || 'Comprobante no válido'
+        rejectionReason: reason || 'Comprobante no válido'
       });
       return {
         success: true,
         data: response.data || response
       };
     } catch (error) {
-      console.error('Error rejecting payment:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -498,10 +560,10 @@ class PaymentsService {
    */
   getPaymentStatusIcon(status) {
     const iconMap = {
-      'PENDING': '⏳',
-      'APPROVED': '✅',
-      'REJECTED': '❌',
-      null: '📤'
+      'PENDING': '',
+      'APPROVED': '',
+      'REJECTED': '',
+      null: ''
     };
     return iconMap[status] || '❓';
   }
@@ -524,12 +586,12 @@ class PaymentsService {
    */
   getPaymentTypeIcon(type) {
     const iconMap = {
-      'MONTHLY': '📅',
-      'ENROLLMENT_RENEWAL': '🎓',
-      'UNIFORM': '👕',
-      'EVENT': '🏆'
+      'MONTHLY': '',
+      'ENROLLMENT_RENEWAL': '',
+      'UNIFORM': '',
+      'EVENT': ''
     };
-    return iconMap[type] || '💰';
+    return iconMap[type] || '';
   }
 
   /**
@@ -567,132 +629,6 @@ class PaymentsService {
 
     // Al día
     return { status: 'current', text: 'Al Día', color: 'green' };
-  }
-
-  // ============================================================================
-  // MÉTODOS MOCK FUNCIONALES - HASTA QUE EL BACKEND IMPLEMENTE LOS ENDPOINTS
-  // ============================================================================
-
-  /**
-   * Mock funcional para estado financiero del atleta
-   * Simula datos reales basados en el athleteId
-   */
-  getMockAthleteFinancialStatus(athleteId) {
-    // Generar datos mock basados en el ID para consistencia
-    const seed = parseInt(athleteId) || 111;
-    const hasDebt = seed % 3 === 0; // 33% tienen deuda
-    const needsRenewal = seed % 4 === 0; // 25% necesitan renovación
-    const hasInitialEnrollment = seed % 5 === 0; // 20% tienen matrícula inicial pendiente
-
-    const currentDate = new Date();
-    const lastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
-    const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
-
-    // Generar obligaciones mensuales mock
-    const monthlyDebts = [];
-    if (hasDebt) {
-      // Crear 1-3 mensualidades pendientes
-      const debtCount = (seed % 3) + 1;
-      for (let i = 0; i < debtCount; i++) {
-        const dueDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 15);
-        const daysLate = Math.floor((currentDate - dueDate) / (1000 * 60 * 60 * 24));
-        
-        monthlyDebts.push({
-          id: `mock-debt-${athleteId}-${i}`,
-          type: 'MONTHLY',
-          baseAmount: 30000,
-          lateFeeAmount: daysLate > 5 ? (daysLate - 5) * 2000 : 0,
-          totalAmount: 30000 + (daysLate > 5 ? (daysLate - 5) * 2000 : 0),
-          dueStart: new Date(dueDate.getFullYear(), dueDate.getMonth(), 1).toISOString(),
-          dueEnd: dueDate.toISOString(),
-          period: dueDate.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }),
-          daysLate: Math.max(0, daysLate),
-          paymentStatus: null,
-          receiptUrl: null,
-          uploadedAt: null
-        });
-      }
-    }
-
-    // Estado de matrícula mock
-    let enrollmentStatus = null;
-    if (hasInitialEnrollment) {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_INITIAL',
-        estado: 'Pending_Payment',
-        fechaInicio: null,
-        fechaVencimiento: nextMonth.toISOString(),
-        needsRenewal: false,
-        isInitial: true,
-        baseAmount: 50000,
-        paymentStatus: null,
-        receiptUrl: null
-      };
-    } else if (needsRenewal) {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_RENEWAL',
-        estado: 'Vencida',
-        fechaInicio: new Date(currentDate.getFullYear() - 1, currentDate.getMonth(), 1).toISOString(),
-        fechaVencimiento: new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString(),
-        needsRenewal: true,
-        isInitial: false,
-        baseAmount: 45000,
-        paymentStatus: null,
-        receiptUrl: null
-      };
-    } else {
-      enrollmentStatus = {
-        id: `mock-enrollment-${athleteId}`,
-        type: 'ENROLLMENT_ACTIVE',
-        estado: 'Vigente',
-        fechaInicio: new Date(currentDate.getFullYear(), 0, 15).toISOString(),
-        fechaVencimiento: new Date(currentDate.getFullYear() + 1, 0, 15).toISOString(),
-        needsRenewal: false,
-        isInitial: false,
-        baseAmount: 0,
-        paymentStatus: 'APPROVED',
-        receiptUrl: null
-      };
-    }
-
-    // Calcular totales
-    const totalMonthlyAmount = monthlyDebts.reduce((sum, debt) => sum + debt.baseAmount, 0);
-    const totalLateFeeAmount = monthlyDebts.reduce((sum, debt) => sum + debt.lateFeeAmount, 0);
-    const totalAmount = totalMonthlyAmount + totalLateFeeAmount + (enrollmentStatus?.baseAmount || 0);
-    const maxDaysLate = Math.max(0, ...monthlyDebts.map(debt => debt.daysLate));
-
-    return {
-      enrollment: enrollmentStatus,
-      allMonthlyDebts: monthlyDebts,
-      totalDebt: {
-        monthlyAmount: totalMonthlyAmount,
-        lateFeeAmount: totalLateFeeAmount,
-        totalAmount: totalAmount,
-        maxDaysLate: maxDaysLate,
-        obligationsCount: monthlyDebts.length + (enrollmentStatus?.baseAmount > 0 ? 1 : 0)
-      },
-      lastUpdated: currentDate.toISOString(),
-      athleteId: athleteId
-    };
-  }
-
-  /**
-   * Mock funcional para verificación de acceso del atleta
-   */
-  getMockAthleteAccess(athleteId) {
-    const seed = parseInt(athleteId) || 111;
-    const isRestricted = seed % 7 === 0; // 14% tienen restricciones
-
-    return {
-      athleteId: athleteId,
-      canAccess: !isRestricted,
-      restricted: isRestricted,
-      reason: isRestricted ? 'Mora excesiva en pagos mensuales' : null,
-      restrictionType: isRestricted ? 'PAYMENT_OVERDUE' : null,
-      lastChecked: new Date().toISOString()
-    };
   }
 
   // ============================================================================
@@ -736,14 +672,7 @@ class PaymentsService {
    * Manejar errores de manera consistente
    */
   handleError(error) {
-    console.error('❌ Service error details:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data
-    });
-    
-    return {
+return {
       success: false,
       data: [],
       pagination: {
@@ -765,5 +694,3 @@ export default PaymentsService;
 
 // También exportar una instancia singleton para compatibilidad
 export const paymentsService = new PaymentsService();
-
-
