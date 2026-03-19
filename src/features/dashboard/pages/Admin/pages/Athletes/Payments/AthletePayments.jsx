@@ -734,6 +734,9 @@ const AthletePayments = () => {
               <p className="text-sm text-blue-700">
                 Completa el pago de tu matrícula inicial para acceder completamente al sistema.
               </p>
+              <p className="text-xs text-blue-700 mt-2">
+                La mensualidad del mes en que envías este comprobante no se cobra.
+              </p>
             </div>
           </div>
         </div>
@@ -810,6 +813,9 @@ const AthletePayments = () => {
               <h2 className="text-lg font-semibold text-purple-800 mb-1">Renovación de Matrícula</h2>
               <p className="text-sm text-purple-700">
                 Tu matrícula ha vencido. Renuévala para continuar accediendo al sistema.
+              </p>
+              <p className="text-xs text-purple-700 mt-2">
+                La mensualidad del mes en que envías este comprobante no se cobra.
               </p>
             </div>
           </div>
