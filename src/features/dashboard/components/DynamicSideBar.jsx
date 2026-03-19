@@ -306,7 +306,7 @@ function DynamicSideBar({
             : sidebarVariants.collapsed),
           x: isMobile ? (isOpen ? 0 : -288) : 0,
         }}
-        className="fixed top-0 left-0 h-screen bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar lg:translate-x-0 z-[1000]"
+        className="fixed top-0 left-0 h-screen overflow-y-auto bg-white shadow-xl flex flex-col transition-transform duration-300 ease-in-out dynamic-sidebar lg:overflow-y-visible lg:translate-x-0 z-[1000]"
         initial={{ x: isMobile ? -288 : 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
@@ -355,7 +355,7 @@ function DynamicSideBar({
           )}
         </div>
 
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-5 space-y-2">
+        <nav className="overflow-visible overflow-x-hidden px-4 py-5 space-y-2 lg:flex-1 lg:overflow-y-auto">
           <div className={`${!isExpanded ? "flex flex-col items-center" : ""}`}>
             {/* Dashboard */}
             {renderModule("dashboard")}
@@ -378,7 +378,7 @@ function DynamicSideBar({
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-4 py-4 mt-auto">
+        <div className="border-t border-gray-200 px-4 py-4 lg:mt-auto">
           <div className="overflow-hidden">
             <motion.button
               onClick={logout}
