@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+﻿import { useRef, useState, useEffect } from "react";
 import styled from "styled-components";
 import { showErrorAlert, showSuccessAlert } from "../../../../../../../../../shared/utils/alerts.js";
 import apiClient from "../../../../../../../../../shared/services/apiClient";
@@ -87,17 +87,17 @@ const CloudinaryUpload = ({
       // Validar tipo de archivo
       if (type === "image") {
         if (!seleccionado.type.startsWith('image/')) {
-          showErrorAlert("Archivo inválido", "Solo se permiten imágenes");
+          showErrorAlert("Archivo invalido", "Solo se permiten imagenes");
           return;
         }
       } else if (type === "schedule") {
         if (seleccionado.type !== 'application/pdf') {
-          showErrorAlert("Archivo inválido", "Solo se permiten archivos PDF");
+          showErrorAlert("Archivo invalido", "Solo se permiten archivos PDF");
           return;
         }
       }
       
-      // Validar tamaño (5MB máximo)
+      // Validar tamano (5MB maximo)
       if (seleccionado.size > 5 * 1024 * 1024) {
         showErrorAlert("Archivo muy grande", "El archivo no debe superar 5MB");
         return;
@@ -113,17 +113,17 @@ const CloudinaryUpload = ({
       // Validar tipo de archivo
       if (type === "image") {
         if (!file.type.startsWith('image/')) {
-          showErrorAlert("Archivo inválido", "Solo se permiten imágenes");
+          showErrorAlert("Archivo invalido", "Solo se permiten imagenes");
           return;
         }
       } else if (type === "schedule") {
         if (file.type !== 'application/pdf') {
-          showErrorAlert("Archivo inválido", "Solo se permiten archivos PDF");
+          showErrorAlert("Archivo invalido", "Solo se permiten archivos PDF");
           return;
         }
       }
       
-      // Validar tamaño (5MB máximo)
+      // Validar tamano (5MB maximo)
       if (file.size > 5 * 1024 * 1024) {
         showErrorAlert("Archivo muy grande", "El archivo no debe superar 5MB");
         return;
@@ -186,7 +186,7 @@ const CloudinaryUpload = ({
     if (!archivo || typeof archivo !== 'string') return;
     
     try {
-      // Determinar la extensión y nombre del archivo
+      // Determinar la extension y nombre del archivo
       let fileName = '';
       
       if (type === "image") {
@@ -224,7 +224,7 @@ const CloudinaryUpload = ({
       document.body.appendChild(link);
       link.click();
       
-      // Limpiar después de un pequeño delay
+      // Limpiar despues de un pequeno delay
       setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(blobUrl);
@@ -247,10 +247,10 @@ const CloudinaryUpload = ({
         
         showErrorAlert(
           "Descarga alternativa", 
-          "El archivo se abrirá en una nueva pestaña. Usa 'Guardar como' para elegir el nombre."
+          "El archivo se abrira en una nueva pestana. Usa 'Guardar como' para elegir el nombre."
         );
       } catch (fallbackError) {
-        showErrorAlert("Error al descargar", "No se pudo descargar el archivo. Usa el botón 'Ver' para abrirlo.");
+        showErrorAlert("Error al descargar", "No se pudo descargar el archivo. Usa el boton 'Ver' para abrirlo.");
       }
     }
   };
@@ -302,10 +302,10 @@ const CloudinaryUpload = ({
               {disabled
                 ? "Solo lectura"
                 : isDragOver
-                ? "Suelta el archivo aquí"
+                ? "Suelta el archivo aqui"
                 : type === "image" 
-                  ? "Arrastra una imagen aquí"
-                  : "Arrastra un PDF aquí"}
+                  ? "Arrastra una imagen aqui"
+                  : "Arrastra un PDF aqui"}
               <br />
               {!isDragOver && !disabled && (
                 <span className="link">o selecciona archivo</span>
@@ -385,7 +385,7 @@ const CloudinaryUpload = ({
             </button>
             {!disabled && !uploading && (
               <button className="btn-eliminar" onClick={eliminarArchivo} title="Eliminar archivo">
-                ✕
+                x
               </button>
             )}
           </div>
@@ -576,3 +576,4 @@ const ContenedorSubida = styled.div`
 `;
 
 export default CloudinaryUpload;
+

@@ -1,57 +1,113 @@
-﻿// useFormEventValidation.js
-import { useState } from "react";
+import { useRef, useState } from "react";
 import apiClient from "../../../../../../../../shared/services/apiClient";
-
-let nameCheckTimeout = null;
 
 export const useFormEventValidation = () => {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [isCheckingName, setIsCheckingName] = useState(false);
 
-  // Función para verificar disponibilidad del nombre en tiempo real
-  const checkNameAvailability = async (name, eventId = null) => {
-    // Limpiar timeout anterior
-    if (nameCheckTimeout) {
-      clearTimeout(nameCheckTimeout);
+  const nameCheckTimeoutRef = useRef(null);
+  const latestNameCheckRef = useRef(0);
+  const lastResolvedNameRef = useRef({
+    eventId: null,
+    name: "",
+    available: true,
+    message: "",
+  });
+
+  const clearDuplicateNameError = () => {
+    setErrors((prev) => {
+      if (!prev.nombre || !prev.nombre.includes("Ya existe")) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors.nombre;
+      return nextErrors;
+    });
+  };
+
+  const applyCachedNameResult = (cachedResult) => {
+    setErrors((prev) => {
+      const nextErrors = { ...prev };
+
+      if (!cachedResult.available) {
+        nextErrors.nombre = cachedResult.message;
+      } else if (
+        nextErrors.nombre &&
+        nextErrors.nombre.includes("Ya existe")
+      ) {
+        delete nextErrors.nombre;
+      }
+
+      return nextErrors;
+    });
+  };
+
+  const checkNameAvailability = (name, eventId = null) => {
+    const normalizedName = name?.trim() || "";
+
+    if (nameCheckTimeoutRef.current) {
+      clearTimeout(nameCheckTimeoutRef.current);
     }
 
-    if (!name || name.length < 3) {
+    if (normalizedName.length < 3) {
       setIsCheckingName(false);
       return;
     }
 
-    setIsCheckingName(true);
+    if (
+      lastResolvedNameRef.current.name === normalizedName &&
+      lastResolvedNameRef.current.eventId === eventId
+    ) {
+      applyCachedNameResult(lastResolvedNameRef.current);
+      return;
+    }
 
-    // Esperar 500ms después de que el usuario deje de escribir
-    nameCheckTimeout = setTimeout(async () => {
+    setIsCheckingName(true);
+    const currentRequestId = latestNameCheckRef.current + 1;
+    latestNameCheckRef.current = currentRequestId;
+
+    nameCheckTimeoutRef.current = setTimeout(async () => {
       try {
-        let url = `/events/check-name?name=${encodeURIComponent(name)}`;
+        let url = `/events/check-name?name=${encodeURIComponent(normalizedName)}`;
         if (eventId) {
           url += `&excludeId=${eventId}`;
         }
 
-        const response = await apiClient.get(url);
+        const response = await apiClient.get(url, { skipLoader: true });
 
-        if (response.success && !response.available) {
+        if (latestNameCheckRef.current !== currentRequestId) {
+          return;
+        }
+
+        const resolvedResult = {
+          eventId,
+          name: normalizedName,
+          available: Boolean(response.success && response.available),
+          message: response.message || "",
+        };
+
+        lastResolvedNameRef.current = resolvedResult;
+        applyCachedNameResult(resolvedResult);
+      } catch (error) {
+        if (latestNameCheckRef.current !== currentRequestId) {
+          return;
+        }
+
+        if (error?.message?.includes("Demasiadas peticiones")) {
           setErrors((prev) => ({
             ...prev,
-            nombre: response.message,
+            nombre:
+              "La validacion del nombre esta temporalmente ocupada. Intenta de nuevo en unos segundos.",
           }));
-        } else {
-          // Limpiar error de nombre si está disponible
-          setErrors((prev) => {
-            const newErrors = { ...prev };
-            if (newErrors.nombre && newErrors.nombre.includes("Ya existe")) {
-              delete newErrors.nombre;
-            }
-            return newErrors;
-          });
         }
       } finally {
-        setIsCheckingName(false);
+        if (latestNameCheckRef.current === currentRequestId) {
+          setIsCheckingName(false);
+        }
       }
-    }, 500);
+    }, 1200);
   };
 
   const validateField = (name, value, formData) => {
@@ -64,47 +120,46 @@ export const useFormEventValidation = () => {
         } else if (value.length < 3) {
           error = "El nombre debe tener al menos 3 caracteres.";
         } else {
-          // Validación asíncrona del nombre (se ejecutará después)
-          checkNameAvailability(value, formData.id);
+          clearDuplicateNameError();
         }
         break;
 
       case "descripcion":
-        if (!value?.trim()) error = "La descripción es obligatoria.";
-        else if (value.length < 10)
-          error = "La descripción debe tener al menos 10 caracteres.";
+        if (!value?.trim()) error = "La descripcion es obligatoria.";
+        else if (value.length < 10) {
+          error = "La descripcion debe tener al menos 10 caracteres.";
+        }
         break;
 
       case "fechaInicio":
         if (!value) {
           error = "La fecha de inicio es obligatoria.";
         } else if (!formData.id) {
-          // Solo validar al crear eventos nuevos - la fecha de inicio no puede ser hoy
           const now = new Date();
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-          // Parsear la fecha seleccionada correctamente (formato YYYY-MM-DD)
           const [year, month, day] = value.split("-").map(Number);
           const selectedDateOnly = new Date(year, month - 1, day);
 
           if (selectedDateOnly <= today) {
-            error = "Los eventos deben crearse con al menos un día de anticipación. Por favor, selecciona una fecha válida.";
+            error =
+              "Los eventos deben crearse con al menos un dia de anticipacion. Selecciona una fecha valida.";
           }
         }
         break;
 
       case "fechaFin":
         if (!value) {
-          error = "La fecha de finalización es obligatoria.";
+          error = "La fecha de finalizacion es obligatoria.";
         } else if (formData.fechaInicio && value < formData.fechaInicio) {
-          error = "La fecha de finalización no puede ser menor a la de inicio.";
+          error = "La fecha de finalizacion no puede ser menor a la de inicio.";
         } else if (!formData.id) {
-          // Solo validar al crear eventos nuevos - la fecha y hora de fin deben ser futuras
           const now = new Date();
-          const selectedDateTime = new Date(value + "T" + (formData.horaFin || "23:59"));
+          const selectedDateTime = new Date(
+            value + "T" + (formData.horaFin || "23:59"),
+          );
 
           if (selectedDateTime <= now) {
-            error = "La fecha y hora de finalización deben ser futuras.";
+            error = "La fecha y hora de finalizacion deben ser futuras.";
           }
         }
         break;
@@ -113,7 +168,6 @@ export const useFormEventValidation = () => {
         if (!value) {
           error = "La hora de inicio es obligatoria.";
         } else if (!formData.id && formData.fechaInicio) {
-          // Validar que la fecha y hora de inicio sean futuras
           const now = new Date();
           const selectedDateTime = new Date(formData.fechaInicio + "T" + value);
 
@@ -125,27 +179,30 @@ export const useFormEventValidation = () => {
 
       case "horaFin":
         if (!value) {
-          error = "La hora de finalización es obligatoria.";
-        } else if (formData.horaInicio && formData.fechaInicio === formData.fechaFin && value <= formData.horaInicio) {
-          error = "La hora de finalización debe ser posterior a la de inicio.";
+          error = "La hora de finalizacion es obligatoria.";
+        } else if (
+          formData.horaInicio &&
+          formData.fechaInicio === formData.fechaFin &&
+          value <= formData.horaInicio
+        ) {
+          error = "La hora de finalizacion debe ser posterior a la de inicio.";
         } else if (!formData.id && formData.fechaFin) {
-          // Validar que la fecha y hora de fin sean futuras
           const now = new Date();
           const selectedDateTime = new Date(formData.fechaFin + "T" + value);
 
           if (selectedDateTime <= now) {
-            error = "La fecha y hora de finalización deben ser próximas.";
+            error = "La fecha y hora de finalizacion deben ser futuras.";
           }
         }
         break;
 
       case "ubicacion":
-        if (!value?.trim()) error = "La ubicación es obligatoria.";
+        if (!value?.trim()) error = "La ubicacion es obligatoria.";
         break;
 
       case "telefono":
         if (!value?.trim()) {
-          error = "El teléfono es obligatorio.";
+          error = "El telefono es obligatorio.";
         } else {
           const rawPhone = value.trim();
           const cleanPhone = rawPhone.replace(/[\s\-()]/g, "");
@@ -160,35 +217,30 @@ export const useFormEventValidation = () => {
                 : cleanPhone;
 
             if (!/^\d+$/.test(localPhone)) {
-              error = "El teléfono solo puede contener números.";
+              error = "El telefono solo puede contener numeros.";
             } else {
               const isMobile = localPhone.length === 10 && /^3/.test(localPhone);
               const isLandline = localPhone.length === 7 && /^[2-8]/.test(localPhone);
 
               if (!isMobile && !isLandline) {
-                error = "Número inválido. Celular: 3XXXXXXXXX, fijo: 2XXXXXXX-8XXXXXXX.";
+                error =
+                  "Numero invalido. Celular: 3XXXXXXXXX, fijo: 2XXXXXXX-8XXXXXXX.";
               }
             }
           }
         }
         break;
 
-      case "imagen":
-        // Haciendo la imagen opcional
-        break;
-
       case "detalles":
         if (!value?.trim()) error = "Los detalles son obligatorios.";
-        else if (value.length < 15) error = "Los detalles deben tener al menos 15 caracteres.";
-        break;
-
-      case "patrocinador":
-        // Haciendo los patrocinadores opcionales
+        else if (value.length < 15) {
+          error = "Los detalles deben tener al menos 15 caracteres.";
+        }
         break;
 
       case "categoryIds":
         if (!value || !Array.isArray(value) || value.length === 0) {
-          error = "Debe seleccionar al menos una categoría.";
+          error = "Debe seleccionar al menos una categoria.";
         }
         break;
 
@@ -197,8 +249,9 @@ export const useFormEventValidation = () => {
         break;
 
       case "tipoEvento":
-        // tipoEvento ahora es un número (ID), no un string
-        if (!value && value !== 0) error = "Debe seleccionar un tipo de evento.";
+        if (!value && value !== 0) {
+          error = "Debe seleccionar un tipo de evento.";
+        }
         break;
 
       default:
@@ -222,6 +275,10 @@ export const useFormEventValidation = () => {
     setTouched((prev) => ({ ...prev, [name]: true }));
     const error = validateField(name, value, formData);
     setErrors((prev) => ({ ...prev, [name]: error }));
+
+    if (!error && name === "nombre") {
+      checkNameAvailability(value, formData.id);
+    }
   };
 
   const handleChangeValidation = (name, value, formData) => {
@@ -249,4 +306,3 @@ export const useFormEventValidation = () => {
     isCheckingName,
   };
 };
-
