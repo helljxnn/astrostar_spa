@@ -1,4 +1,5 @@
 ﻿import { motion, useScroll } from "framer-motion";
+import PropTypes from "prop-types";
 import { useRef, useState, useEffect } from "react";
 
 export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEvent }) => {
@@ -17,7 +18,6 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
   }, [scrollY]);
 
   const handleTypeSelect = (typeId) => {
-
     onTypeSelect(typeId);
   };
 
@@ -34,7 +34,7 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
           Tipos de Eventos
         </h2>
 
-        {process.env.NODE_ENV === "development" && nextEvent && (
+        {import.meta.env.DEV && nextEvent && (
           <p className="text-xs sm:text-sm text-gray-500">
             Próximo evento: {nextEvent.title} - {nextEvent.date}
           </p>
@@ -57,7 +57,7 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
                 className={`absolute inset-0 rounded sm:rounded-lg md:rounded-xl transition-opacity duration-500 ${
                   selectedType === type.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                 } bg-gradient-to-r from-[#b595ff]/20 to-[#9be9ff]/20`}
-              ></div>
+              />
 
               <div className="relative z-10 flex items-center gap-1 sm:gap-2">
                 <span className="text-base sm:text-lg md:text-xl transform transition-transform duration-300 group-hover:scale-110">
@@ -68,7 +68,7 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
 
               {selectedType === type.id && (
                 <div className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 bg-white rounded-full flex items-center justify-center shadow-lg">
-                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 bg-[#9be9ff] rounded-full animate-pulse"></div>
+                  <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2 bg-[#9be9ff] rounded-full animate-pulse" />
                 </div>
               )}
             </button>
@@ -77,4 +77,25 @@ export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEven
       </div>
     </motion.div>
   );
+};
+
+EventSelector.propTypes = {
+  eventTypes: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      icon: PropTypes.node,
+      label: PropTypes.string.isRequired,
+    }),
+  ).isRequired,
+  selectedType: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  onTypeSelect: PropTypes.func.isRequired,
+  nextEvent: PropTypes.shape({
+    title: PropTypes.string,
+    date: PropTypes.string,
+  }),
+};
+
+EventSelector.defaultProps = {
+  selectedType: null,
+  nextEvent: null,
 };

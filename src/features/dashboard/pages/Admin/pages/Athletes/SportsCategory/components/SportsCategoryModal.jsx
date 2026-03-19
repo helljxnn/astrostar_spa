@@ -14,7 +14,6 @@ import {
   showSuccessAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
 
-const MAX_FILE_SIZE_MB = 5;
 const AGE_MIN = 5;
 const AGE_MAX = 30;
 
@@ -29,27 +28,11 @@ const SportsCategoryModal = ({
     edadMinima: "",
     edadMaxima: "",
     descripcion: "",
-    archivo: null,
     estado: "Activo",
-    publicar: false,
   };
 
-  const [fileName, setFileName] = useState(
-    "No se ha seleccionado ningun archivo",
-  );
-  const [previewUrl, setPreviewUrl] = useState("");
   const [initialName, setInitialName] = useState("");
-  const [persistedImageUrl, setPersistedImageUrl] = useState("");
   const debounceRef = useRef(null);
-
-  const shouldRequireFile = isNew || !persistedImageUrl;
-  const validationRules = {
-    ...sportsCategoryValidationRules,
-    archivo: {
-      ...sportsCategoryValidationRules.archivo,
-      required: shouldRequireFile,
-    },
-  };
 
   const {
     values,
@@ -62,7 +45,7 @@ const SportsCategoryModal = ({
     clearValidation,
     isSubmitting,
     setIsSubmitting,
-  } = useFormSportsCategoryValidation(initialForm, validationRules);
+  } = useFormSportsCategoryValidation(initialForm, sportsCategoryValidationRules);
 
   const {
     nameValidation,
@@ -82,8 +65,6 @@ const SportsCategoryModal = ({
     setIsSubmitting(false);
 
     if (category && !isNew) {
-      const existingImage =
-        category.fileUrl ?? category.imageUrl ?? category.archivo ?? "";
       const incomingName = category.name ?? category.nombre ?? "";
 
       setValues({
@@ -91,26 +72,13 @@ const SportsCategoryModal = ({
         edadMinima: String(category.minAge ?? category.edadMinima ?? ""),
         edadMaxima: String(category.maxAge ?? category.edadMaxima ?? ""),
         descripcion: category.description ?? category.descripcion ?? "",
-        archivo: null,
         estado: category.status ?? "Activo",
-        publicar: Boolean(category.publish ?? category.publicar),
       });
 
       setInitialName(incomingName);
-      setPersistedImageUrl(existingImage);
-      setFileName(
-        category.fileName ??
-          (existingImage
-            ? "Imagen actual"
-            : "No se ha seleccionado ningun archivo"),
-      );
-      setPreviewUrl(existingImage);
     } else {
       setValues(initialForm);
       setInitialName("");
-      setPersistedImageUrl("");
-      setFileName("No se ha seleccionado ningun archivo");
-      setPreviewUrl("");
     }
 
     return () => {
@@ -134,28 +102,6 @@ const SportsCategoryModal = ({
       if (trimmed.length > 2) validateCategoryName(trimmed);
       else resetNameValidation();
     }, 450);
-  };
-
-  const handleFileChange = (e) => {
-    const f = e.target.files?.[0] ?? null;
-    if (f) {
-      if (f.size / (1024 * 1024) > MAX_FILE_SIZE_MB) {
-        showErrorAlert(
-          "Archivo muy pesado",
-          `La imagen supera ${MAX_FILE_SIZE_MB}MB.`,
-        );
-        e.target.value = "";
-        setFileName("No se ha seleccionado ningun archivo");
-        handleChange("archivo", null);
-        setPreviewUrl("");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = () => setPreviewUrl(reader.result);
-      reader.readAsDataURL(f);
-    }
-    handleChange("archivo", f);
-    setFileName(f ? f.name : "No se ha seleccionado ningun archivo");
   };
 
   const handleSubmit = async (e) => {
@@ -240,11 +186,6 @@ const SportsCategoryModal = ({
       formData.append("minAge", minA);
       formData.append("maxAge", maxA);
       formData.append("status", values.estado || "Activo");
-      formData.append("publicar", values.publicar ? "true" : "false");
-
-      if (values.archivo instanceof File) {
-        formData.append("file", values.archivo);
-      }
 
       if (isNew) {
         await createSportsCategory(formData, { page: 1, limit: 10 });
@@ -322,7 +263,7 @@ const SportsCategoryModal = ({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -60 }}
         transition={{ duration: 0.25 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-6xl overflow-hidden border border-gray-100"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl overflow-hidden border border-gray-100"
         style={{ zIndex: 10001 }}
       >
         <div className="relative px-6 py-4 border-b border-gray-200">
@@ -340,7 +281,7 @@ const SportsCategoryModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5">
-          <div className="grid grid-cols-1 lg:grid-cols-[1.7fr_1fr] gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-5">
               <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
@@ -549,116 +490,6 @@ const SportsCategoryModal = ({
                     </p>
                   )}
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
-                <label className="block font-medium text-gray-700">
-                  Subir imagen
-                  {shouldRequireFile ? "*" : "(opcional en edicion)"}
-                </label>
-                <label className="group border-2 border-dashed border-purple-300 bg-purple-50 rounded-xl px-4 py-5 text-center cursor-pointer transition hover:bg-purple-100 w-full flex flex-col items-center justify-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    height="32"
-                    viewBox="0 0 640 512"
-                    fill="#a78bfa"
-                  >
-                    <path
-                      d="M144 480C64.5 480 0 415.5 0 336c0-62.8 
-                    40.2-116.2 96.2-135.9c-.1-2.7-.2-5.4-.2-8.1
-                    c0-88.4 71.6-160 160-160c59.3 0 111 
-                    32.2 138.7 80.2C409.9 102 428.3 96 
-                    448 96c53 0 96 43 96 96c0 12.2-2.3 
-                    23.8-6.4 34.6C596 238.4 640 290.1 
-                    640 352c0 70.7-57.3 128-128 
-                    128H144zm79-217c-9.4 9.4-9.4 24.6 
-                    0 33.9s24.6 9.4 33.9 0l39-39V392c0 
-                    13.3 10.7 24 24 24s24-10.7 
-                    24-24V257.9l39 39c9.4 9.4 24.6 
-                    9.4 33.9 0s9.4-24.6 0-33.9l-80-80
-                    c-9.4-9.4-24.6-9.4-33.9 
-                    0l-80 80z"
-                    />
-                  </svg>
-                  <p className="text-xs text-indigo-900 leading-relaxed">
-                    Arrastra una imagen aqui
-                    <br />
-                    <span className="text-purple-500 underline">
-                      o selecciona archivo
-                    </span>
-                  </p>
-                  <input
-                    type="file"
-                    name="archivo"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </label>
-                <span className="text-xs text-gray-500">
-                  Tamaño máximo: {MAX_FILE_SIZE_MB}MB. Si no cambias la imagen se
-                  mantiene la actual.
-                </span>
-                {(previewUrl || values.archivo) && (
-                  <div className="flex items-center gap-3 bg-purple-100 text-purple-900 px-3 py-2 rounded-lg text-xs w-full">
-                    {previewUrl && (
-                      <img
-                        src={previewUrl}
-                        alt="Vista previa"
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                      />
-                    )}
-                    <span className="truncate font-medium">{fileName}</span>
-                  </div>
-                )}
-                {values.archivo &&
-                  values.archivo.size / (1024 * 1024) > MAX_FILE_SIZE_MB && (
-                    <p className="text-red-500 text-xs">
-                      Aviso: La imagen supera {MAX_FILE_SIZE_MB}MB
-                    </p>
-                  )}
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Publicar categoria
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleChange("publicar", !values.publicar)}
-                    className={`
-                      relative inline-flex h-6 w-11 items-center rounded-full
-                      transition-colors duration-200 ease-in-out
-                      focus:outline-none focus:ring-2 focus:ring-primary-purple focus:ring-offset-2
-                      ${values.publicar ? "bg-primary-purple" : "bg-gray-300"}
-                    `}
-                  >
-                    <span
-                      className={`
-                        inline-block h-4 w-4 transform rounded-full bg-white
-                        transition-transform duration-200 ease-in-out
-                        ${values.publicar ? "translate-x-6" : "translate-x-1"}
-                      `}
-                    />
-                  </button>
-                  <span
-                    className={`text-sm font-medium ${
-                      values.publicar ? "text-primary-purple" : "text-gray-500"
-                    }`}
-                  >
-                    {values.publicar
-                      ? "Visible para todos"
-                      : "Solo visible para administradores"}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500">
-                  {values.publicar
-                    ? "La categoria sera visible en la pagina publica"
-                    : "La categoria solo sera visible en el panel de administracion"}
-                </p>
-              </div>
 
               {!isNew && (
                 <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
@@ -689,7 +520,7 @@ const SportsCategoryModal = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-6 py-2.5 rounded-xl bg-[#74D5F4] text-white font-semibold hover:bg-[#5fc4e3] disabled:opacity-70 shadow-sm"
+              className="px-6 py-2.5 rounded-xl bg-primary-blue text-white font-semibold hover:bg-primary-purple disabled:opacity-70 shadow-sm transition-colors"
             >
               {isSubmitting
                 ? "Guardando..."

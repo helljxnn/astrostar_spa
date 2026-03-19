@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/authContext';
 import apiClient from '../services/apiClient';
 import { 
@@ -11,7 +11,7 @@ import {
 /**
  * Hook para obtener permisos dinámicos basados en el estado de la matrícula
  * Integrado con el nuevo endpoint del backend /api/auth/permissions
- * ✅ ACTUALIZADO: Usa lógica centralizada de restricciones con prioridades
+ * Usa lógica centralizada de restricciones con prioridades
  */
 export const useDynamicPermissions = () => {
   const { user, isAuthenticated } = useAuth();
@@ -21,6 +21,11 @@ export const useDynamicPermissions = () => {
   const [error, setError] = useState(null);
   const [accessRestrictions, setAccessRestrictions] = useState(null);
   const [financialStatus, setFinancialStatus] = useState(null);
+
+  const isRouteNotFoundError = (err) => {
+    const message = String(err?.message || "").toLowerCase();
+    return message.includes("route not found") || message.includes("404");
+  };
 
   const fetchPermissions = useCallback(async () => {
     if (!isAuthenticated || !user) {
@@ -32,8 +37,26 @@ export const useDynamicPermissions = () => {
       setLoading(true);
       setError(null);
       
-      // Llamar al endpoint de permisos del backend
-      const response = await apiClient.get('/auth/permissions');
+      // Endpoint principal para permisos dinámicos.
+      let response;
+      try {
+        response = await apiClient.get('/auth/permissions');
+      } catch (permissionsError) {
+        // Fallback para entornos donde aún no exista ese endpoint.
+        if (isRouteNotFoundError(permissionsError)) {
+          response = {
+            success: true,
+            data: {
+              permissions: user?.role?.permissions || {},
+              hasActiveEnrollment: Boolean(user?.athleteId || user?.athlete_id)
+                ? false
+                : true,
+            },
+          };
+        } else {
+          throw permissionsError;
+        }
+      }
       
       if (response.success) {
         setPermissions(response.data.permissions);
@@ -56,7 +79,7 @@ export const useDynamicPermissions = () => {
             setFinancialStatus(financial);
             setAccessRestrictions(access);
             
-            // ✅ NUEVO: Usar lógica centralizada para determinar matrícula activa
+            // Usar lógica centralizada para determinar matrícula activa
             const enrollment = financial?.enrollment;
             const reallyHasActiveEnrollment = enrollment?.estado === 'Vigente' && enrollment?.fechaInicio;
             
@@ -90,7 +113,7 @@ export const useDynamicPermissions = () => {
     fetchPermissions();
   }, [fetchPermissions]);
 
-  // ✅ NUEVO: Usar lógica centralizada de restricciones
+  // Usar lógica centralizada de restricciones
   const restrictions = financialStatus ? getActiveRestrictions(financialStatus, accessRestrictions) : [];
   const highestRestriction = getHighestPriorityRestriction(financialStatus, accessRestrictions);
   const allowedModules = getAllowedModules(financialStatus, accessRestrictions);
@@ -132,7 +155,7 @@ export const useDynamicPermissions = () => {
     fetchPermissions();
   }, [fetchPermissions]);
 
-  // ✅ NUEVO: Estados usando lógica centralizada
+  // Estados usando lógica centralizada
   const isRestricted = restrictions.length > 0;
   const restrictionMessage = highestRestriction?.message || null;
   const needsRenewal = highestRestriction?.reason === 'ENROLLMENT_RENEWAL_PENDING' || false;
@@ -143,7 +166,7 @@ export const useDynamicPermissions = () => {
     loading,
     error,
     
-    // ✅ NUEVO: Restricciones centralizadas
+    // Restricciones centralizadas
     restrictions,
     highestRestriction,
     allowedModules,
