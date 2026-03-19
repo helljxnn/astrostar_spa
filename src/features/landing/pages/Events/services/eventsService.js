@@ -1,11 +1,12 @@
 import { convertTo12Hour } from "../../../../../shared/utils/helpers/eventsHelper";
+import { fixMojibake } from "../../../../../shared/utils/textEncoding";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 const DEFAULT_EVENT_IMAGE = "/assets/images/EventsHero.webp";
 const PUBLIC_EVENTS_ENDPOINT = "/events/public?limit=1000";
 
 const normalizeText = (value) => {
-  return String(value || "")
+  return String(fixMojibake(value) || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -54,11 +55,15 @@ const normalizeStatus = (status) => {
 
 const extractSponsors = (event) => {
   if (Array.isArray(event?.ServiceSponsor)) {
-    return event.ServiceSponsor.map((item) => item?.Sponsor?.name).filter(Boolean);
+    return event.ServiceSponsor
+      .map((item) => fixMojibake(item?.Sponsor?.name))
+      .filter(Boolean);
   }
 
   if (Array.isArray(event?.sponsors)) {
-    return event.sponsors.map((item) => item?.name || item?.nombre).filter(Boolean);
+    return event.sponsors
+      .map((item) => fixMojibake(item?.name || item?.nombre))
+      .filter(Boolean);
   }
 
   return [];
@@ -74,27 +79,31 @@ const mapBackendEvent = (event) => {
 
   return {
     id: event.id,
-    title: event.name || event.nombre || "Evento",
+    title: fixMojibake(event.name || event.nombre || "Evento"),
     type: mappedType,
     date: startDate,
     endDate: endDate || startDate,
     time: convertTo12Hour(rawTime),
     endTime: event.endTime || event.horaFin || null,
-    location: event.location || event.ubicacion || "Por confirmar",
-    description:
+    location: fixMojibake(event.location || event.ubicacion || "Por confirmar"),
+    description: fixMojibake(
       event.description ||
-      event.descripcion ||
-      "Próximamente más información del evento.",
+        event.descripcion ||
+        "Proximamente mas informacion del evento.",
+    ),
     image: event.imageUrl || event.imagen || DEFAULT_EVENT_IMAGE,
     status: normalizeStatus(event.status || event.estado),
     participants: event?._count?.participants || event.participants || 0,
-    category:
+    category: fixMojibake(
       event?.event_categories?.name ||
-      event?.category?.name ||
-      event?.type?.name ||
-      event?.ServiceType?.name ||
-      "Eventos",
-    details: event.details || event.description || event.descripcion || "",
+        event?.category?.name ||
+        event?.type?.name ||
+        event?.ServiceType?.name ||
+        "Eventos",
+    ),
+    details: fixMojibake(
+      event.details || event.description || event.descripcion || "",
+    ),
     telefono: event.phone || event.telefono || "",
     patrocinadores: extractSponsors(event),
   };
