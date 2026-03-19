@@ -20,7 +20,6 @@ Incluye un set de **pruebas automatizadas** con **Jest** y **Testing Library** p
 - **Jest** + **@testing-library** para pruebas.
 - npm / Node.js para gestión de dependencias.
 
-> Nota: Ajusta este README si tu stack exacto difiere (por ejemplo, Vite, CRA, Next, etc.).
 
 ## 📌 Requisitos previos
 
