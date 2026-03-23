@@ -188,6 +188,7 @@ const Athletes = () => {
           direccion: address,
           fechaNacimiento: birthDate,
           categoria: athlete.categoria || "",
+          beca: athlete.isScholarship === true ? "Si" : "N/A",
           estado: athlete.estado || athlete.status || "",
           estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
           acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
@@ -684,6 +685,7 @@ const Athletes = () => {
                   { header: "Dirección", accessor: "direccion" },
                   { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
                   { header: "Categoría", accessor: "categoria" },
+                  { header: "Beca", accessor: "beca" },
                   { header: "Estado", accessor: "estado" },
                   {
                     header: "Estado Inscripción",
@@ -726,6 +728,7 @@ const Athletes = () => {
                   "Nombre Completo",
                   "Identificación",
                   "Categoría",
+                  "Beca",
                   "Mensualidad",
                 ],
                 state: true,
@@ -753,6 +756,7 @@ const Athletes = () => {
                     identificacion: a.identification || a.numeroDocumento || "Sin identificación",
                     acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
                     categoria: a.categoria || "Sin categoría",
+                    beca: a.isScholarship === true ? "Si" : "N/A",
                     mensualidadResumen: getMonthlySummaryLabel(a.monthlySummary),
                   };
                 }),
@@ -760,11 +764,23 @@ const Athletes = () => {
                   "nombreCompleto",
                   "identificacion",
                   "categoria",
+                  "beca",
                   "mensualidadResumen",
                 ],
                 state: true,
                 customRenderers: {
+                  beca: (_value, row) => {
+                    return (
+                      <span className="text-gray-900">
+                        {row.isScholarship === true ? "Si" : "N/A"}
+                      </span>
+                    );
+                  },
                   mensualidadResumen: (_value, row) => {
+                    if (row.isScholarship === true) {
+                      return <span className="text-gray-900">Exenta por beca</span>;
+                    }
+
                     const summary = row.monthlySummary;
                     if (!summary || summary.obligationsCount === 0) {
                       return <span className="text-gray-600">Al día</span>;

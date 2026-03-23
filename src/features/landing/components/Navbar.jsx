@@ -61,6 +61,7 @@ export const Navbar = () => {
               <li><NavLink to="/" className={linkClasses}>Inicio</NavLink></li>
               <li><NavLink to="/fundacion" className={linkClasses}>Fundación</NavLink></li>
               <li><NavLink to="/areas-proyectos" className={linkClasses}>Áreas</NavLink></li>
+              <li><NavLink to="/historias" className={linkClasses}>Historias</NavLink></li>
               <li><NavLink to="/galeria" className={linkClasses}>Galería</NavLink></li>
               <li><NavLink to="/events" className={linkClasses}>Eventos</NavLink></li>
               <li><NavLink to="/donacion" className={linkClasses}>Donación</NavLink></li>
@@ -98,6 +99,7 @@ export const Navbar = () => {
                 <li><NavLink to="/" className={linkClasses} onClick={() => setIsOpen(false)}>Inicio</NavLink></li>
                 <li><NavLink to="/fundacion" className={linkClasses} onClick={() => setIsOpen(false)}>Fundación</NavLink></li>
                 <li><NavLink to="/areas-proyectos" className={linkClasses} onClick={() => setIsOpen(false)}>Áreas y Proyectos</NavLink></li>
+                <li><NavLink to="/historias" className={linkClasses} onClick={() => setIsOpen(false)}>Historias</NavLink></li>
                 <li><NavLink to="/galeria" className={linkClasses} onClick={() => setIsOpen(false)}>Galería</NavLink></li>
                 <li><NavLink to="/events" className={linkClasses} onClick={() => setIsOpen(false)}>Eventos</NavLink></li>
                 <li><NavLink to="/donacion" className={linkClasses} onClick={() => setIsOpen(false)}>Donación</NavLink></li>

@@ -8,7 +8,7 @@ function Stories() {
       {/* Banner principal */}
       <Hero
         variant="image-only"
-        imageUrl="https://drive.google.com/thumbnail?id=1XBxLG_XGO1aBVHiHSa-PG3NFV1ZHtFwY&sz=w1400"
+        imageUrl="/assets/images/Stories/Imagen_baner_Testimonies.jpg"
       />
 
       {/* Sección de historias */}

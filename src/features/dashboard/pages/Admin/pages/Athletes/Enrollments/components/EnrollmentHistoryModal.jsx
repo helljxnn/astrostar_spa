@@ -520,6 +520,17 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
                               </div>
                             </div>
 
+                            {enrollment.enrollmentPaymentStatusLabel && (
+                              <div className="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2">
+                                <p className="text-xs font-semibold text-purple-700 mb-1">
+                                  Cobro de matrícula
+                                </p>
+                                <p className="text-sm font-medium text-purple-800">
+                                  {enrollment.enrollmentPaymentStatusLabel}
+                                </p>
+                              </div>
+                            )}
+
                             {/* Información del deportista */}
                             <div className="bg-gray-50 rounded-lg p-3">
                               <p className="text-xs font-semibold text-gray-600 mb-1">
@@ -622,4 +633,3 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 };
 
 export default EnrollmentHistoryModal;
-

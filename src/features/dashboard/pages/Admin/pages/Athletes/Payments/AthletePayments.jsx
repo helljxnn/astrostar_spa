@@ -735,7 +735,6 @@ const AthletePayments = () => {
                 Completa el pago de tu matrícula inicial para acceder completamente al sistema.
               </p>
               <p className="text-xs text-blue-700 mt-2">
-                La mensualidad del mes en que envías este comprobante no se cobra.
               </p>
             </div>
           </div>
@@ -815,7 +814,6 @@ const AthletePayments = () => {
                 Tu matrícula ha vencido. Renuévala para continuar accediendo al sistema.
               </p>
               <p className="text-xs text-purple-700 mt-2">
-                La mensualidad del mes en que envías este comprobante no se cobra.
               </p>
             </div>
           </div>

@@ -32,7 +32,7 @@ import AthletesService from "../services/AthletesService";
 import { useDocumentValidation } from "../../../../../../../../shared/hooks/useDocumentValidation";
 import { toDateInputFormat, toISOString, calculateAge } from "../../../../../../../../shared/utils/dateUtils";
 
-// Los tipos de documento y categor?as ahora se reciben desde props (cargados desde la API)
+// Los tipos de documento y categorías ahora se reciben desde props (cargados desde la API)
 
 const states = [
   { value: "Activo", label: "Activo" },
@@ -43,7 +43,7 @@ const parentescoOptions = [
   { value: "Madre", label: "Madre" },
   { value: "Padre", label: "Padre" },
   { value: "Abuelo/a", label: "Abuelo/a" },
-  { value: "T?o/a", label: "T?o/a" },
+  { value: "Tío/a", label: "Tío/a" },
   { value: "Hermano/a", label: "Hermano/a" },
   { value: "Primo/a", label: "Primo/a" },
   { value: "Tutor/a Legal", label: "Tutor/a Legal" },
@@ -52,7 +52,7 @@ const parentescoOptions = [
   { value: "Otro", label: "Otro (especificar)" },
 ];
 
-// Mapeo de parentesco del backend (ingl?s) al frontend (espa?ol)
+// Mapeo de parentesco del backend (inglés) al frontend (español)
 const parentescoBackendToFrontend = {
   Mother: "Madre",
   Father: "Padre",
@@ -71,7 +71,7 @@ const parentescoFrontendToBackend = {
   Madre: "Mother",
   Padre: "Father",
   "Abuelo/a": "Grandparent",
-  "T?o/a": "Uncle_Aunt",
+  "Tío/a": "Uncle_Aunt",
   "Hermano/a": "Sibling",
   "Primo/a": "Cousin",
   "Tutor/a Legal": "Legal_Guardian",
@@ -80,7 +80,7 @@ const parentescoFrontendToBackend = {
   Otro: "Other",
 };
 
-// ELIMINADA: Funci?n calculateAge local - ahora se usa desde dateUtils
+// ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
 const AthleteModal = ({
   isOpen,
@@ -108,13 +108,13 @@ const AthleteModal = ({
   const [asyncErrors, setAsyncErrors] = useState({});
   const [checkingEmail, setCheckingEmail] = useState(false);
 
-  // Hook para validaci?n de documento en tiempo real
+  // Hook para validación de documento en tiempo real
   const excludeUserId =
     isEditing && !isEnrollmentMode && athleteToEdit?.userId
       ? athleteToEdit.userId
       : null;
-  // En modo matr?cula (isEnrollmentMode), saltar la verificaci?n de inscripciones pendientes
-  // Solo verificar si ya est? matriculado como deportista
+  // En modo matrícula (isEnrollmentMode), saltar la verificación de inscripciones pendientes
+  // Solo verificar si ya está matriculado como deportista
   const skipInscriptionCheck = isEnrollmentMode;
   const {
     isChecking: isCheckingDocumentValidation,
@@ -158,14 +158,14 @@ const AthleteModal = ({
     athleteValidationRules,
   );
 
-  // Debug: Ver qu? tipos de documento se est?n recibiendo
+  // Debug: Ver qué tipos de documento se están recibiendo
   useEffect(() => {
     if (isOpen && referenceData.documentTypes) {
       // Document types loaded
     }
   }, [isOpen, referenceData.documentTypes]);
 
-  // Funci?n personalizada para manejar cambios (igual que empleados)
+  // Función personalizada para manejar cambios (igual que empleados)
   const handleCustomChange = (name, value) => {
     if (name === "birthDate") {
       const age = calculateAge(value);
@@ -179,7 +179,7 @@ const AthleteModal = ({
     }
   };
 
-  // Funci?n para manejar cambio de email y marcar como touched inmediatamente
+  // Función para manejar cambio de email y marcar como touched inmediatamente
   const handleEmailChange = (e) => {
     // Marcar como touched PRIMERO para activar validaci?n instant?nea
     setTouched((prev) => ({ ...prev, email: true }));
@@ -743,10 +743,9 @@ const AthleteModal = ({
       } else {
         // No se envía parentesco cuando no hay acudiente
       }
-      // Incluir isScholarship siempre (solo en edición)
-      if (isEditing) {
-        athleteData.isScholarship = values.isScholarship === true;
-      }
+
+      athleteData.isScholarship = values.isScholarship === true;
+
       if (isEditing) {
         // Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
@@ -913,13 +912,13 @@ const AthleteModal = ({
             // Mostrar alerta de confirmación
             const Swal = (await import('sweetalert2')).default;
             const result = await Swal.fire({
-              title: '?? Acudiente Requerido',
+              title: 'Acudiente requerido',
               html: `
                 <div style="text-align: left;">
-                  <p><strong>La deportista es menor de edad (${ageNumber} a?os)</strong></p>
+                  <p><strong>La deportista es menor de edad (${ageNumber} años)</strong></p>
                   <br>
                   <p>Debe asignar un acudiente antes de cerrar este formulario.</p>
-                  <p style="color: #666; font-size: 0.9em;">Si cierra sin asignar un acudiente, la deportista quedar? sin representante legal.</p>
+                  <p style="color: #666; font-size: 0.9em;">Si cierra sin asignar un acudiente, la deportista quedará sin representante legal.</p>
                 </div>
               `,
               icon: 'warning',
@@ -985,12 +984,12 @@ const AthleteModal = ({
             {isEditing
               ? "Editar Deportista"
               : isEnrollmentMode
-                ? "Crear Matr?cula"
+                ? "Crear Matrícula"
                 : "Crear Deportista"}
           </h2>
           {isEditing && (
             <p className="text-center text-gray-600 mt-2">
-              Modificando informaci?n de:{" "}
+              Modificando información de:{" "}
               <span className="font-semibold text-primary-purple">
                 {athleteToEdit.nombres} {athleteToEdit.apellidos}
               </span>
@@ -1001,7 +1000,7 @@ const AthleteModal = ({
         <div className="flex-1 overflow-y-auto p-3">
           <div className="mb-3">
             <h3 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
-              Informaci?n Personal
+              Información Personal
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Tipo Documento */}
@@ -1023,7 +1022,7 @@ const AthleteModal = ({
                 delay={0.1}
               />
 
-              {/* Identificaci?n con validaci?n por tipo de documento */}
+              {/* Identificación con validación por tipo de documento */}
               <div className="relative">
                 <DocumentField
                   documentType={
@@ -1038,7 +1037,7 @@ const AthleteModal = ({
                   touched={touched.identification}
                   required
                   disabled={false}
-                  label="N?mero de Documento"
+                  label="Número de Documento"
                   name="identification"
                 />
                 {isCheckingDocumentValidation && (
@@ -1114,7 +1113,7 @@ const AthleteModal = ({
 
               <div className="relative">
                 <FormField
-                  label="Correo Electr?nico"
+                  label="Correo Electrónico"
                   name="email"
                   type="email"
                   placeholder="correo@ejemplo.com"
@@ -1135,10 +1134,10 @@ const AthleteModal = ({
 
               <div>
                 <FormField
-                  label="N?mero Telef?nico"
+                  label="Número Telefónico"
                   name="phoneNumber"
                   type="text"
-                  placeholder="N?mero de Tel?fono"
+                  placeholder="Número de Teléfono"
                   value={values.phoneNumber}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -1151,10 +1150,10 @@ const AthleteModal = ({
 
               <div>
                 <FormField
-                  label="Direcci?n"
+                  label="Dirección"
                   name="address"
                   type="text"
-                  placeholder="Direcci?n de residencia"
+                  placeholder="Dirección de residencia"
                   value={values.address}
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -1182,14 +1181,14 @@ const AthleteModal = ({
                 />
               </div>
 
-              {/* Edad (calculada autom?ticamente) */}
+              {/* Edad (calculada automáticamente) */}
               <div>
                 <FormField
                   label="Edad"
                   name="age"
                   type="text"
-                  placeholder="Calculada autom?ticamente"
-                  value={currentAge !== null ? `${currentAge} a?os` : ""}
+                  placeholder="Calculada automáticamente"
+                  value={currentAge !== null ? `${currentAge} años` : ""}
                   disabled
                   helperText={
                     currentAge !== null
@@ -1202,10 +1201,10 @@ const AthleteModal = ({
 
               <div>
                 <FormField
-                  label="Categor?a"
+                  label="Categoría"
                   name="categoria"
                   type="select"
-                  placeholder="Selecciona la categor?a"
+                  placeholder="Selecciona la categoría"
                   options={referenceData.sportsCategories.map((cat) => ({
                     value: cat.name,
                     label: cat.name,
@@ -1224,16 +1223,16 @@ const AthleteModal = ({
                           const selectedCat = referenceData.sportsCategories.find(c => c.name === values.categoria);
                           if (selectedCat && ageNum !== null) {
                             if (ageNum < selectedCat.minAge) {
-                              return `?? Edad ${ageNum} es menor al m?nimo (${selectedCat.minAge}). Selecciona una categor?a apropiada.`;
+                              return `Edad ${ageNum} es menor al mínimo (${selectedCat.minAge}). Selecciona una categoría apropiada.`;
                             } else if (ageNum > selectedCat.maxAge) {
-                              return `?? Edad ${ageNum} supera el m?ximo (${selectedCat.maxAge}), pero puede inscribirse en esta categor?a superior.`;
+                              return `Edad ${ageNum} supera el máximo (${selectedCat.maxAge}), pero puede inscribirse en esta categoría superior.`;
                             } else {
-                              return `? Edad ${ageNum} est? en el rango de esta categor?a (${selectedCat.minAge}-${selectedCat.maxAge})`;
+                              return `Edad ${ageNum} está en el rango de esta categoría (${selectedCat.minAge}-${selectedCat.maxAge})`;
                             }
                           }
                           return "";
                         })()
-                      : "Selecciona una categor?a seg?n la edad de la deportista"
+                      : "Selecciona una categoría según la edad de la deportista"
                   }
                   delay={0.8}
                 />
@@ -1259,6 +1258,31 @@ const AthleteModal = ({
                 </div>
               )}
 
+              <div className={isEditing ? "" : "md:col-span-2"}>
+                <div className="rounded-xl border border-[#ddd1ff] bg-[#f7f3ff] px-3 py-2.5">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="isScholarship"
+                      checked={values.isScholarship === true}
+                      onChange={(e) =>
+                        handleChange("isScholarship", e.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-[#bca7ff] text-[#8f74e8] focus:ring-[#bca7ff]"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold leading-5 text-[#6f57c7]">
+                        Deportista becada
+                      </p>
+                      <p className="text-[11px] leading-4 text-[#7f6abf]">
+                        Exenta de mensualidades y pagos de matrícula mientras la
+                        beca esté activa.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -1279,7 +1303,7 @@ const AthleteModal = ({
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                 <FaUserShield className="text-primary-purple" />
-                Informaci?n del Acudiente
+                Información del Acudiente
                 {!hasDateOfBirth && (
                   <span className="text-xs bg-gray-500 text-white px-2 py-0.5 rounded-full">
                     PENDIENTE
@@ -1472,7 +1496,7 @@ const AthleteModal = ({
                                    `${athleteToEdit.guardian.firstName} ${athleteToEdit.guardian.lastName}`.trim();
                           }
                           
-                          return "Acudiente seleccionado";
+                            return "Acudiente seleccionado";
                         })()
                       : !hasDateOfBirth 
                         ? "Primero ingresa la fecha de nacimiento"
@@ -1545,7 +1569,7 @@ const AthleteModal = ({
                         {selectedGuardian.identificacion}
                       </div>
                       <div>
-                          <strong>Tel?fono:</strong> {selectedGuardian.telefono}
+                          <strong>Teléfono:</strong> {selectedGuardian.telefono}
                       </div>
                       <div>
                         <strong>Correo:</strong> {selectedGuardian.correo}
@@ -1613,11 +1637,11 @@ const AthleteModal = ({
                 </div>
                 <div>
                     <h4 className="font-medium text-blue-800 mb-1 text-sm">
-                    Creaci?n autom?tica
+                    Creación automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la deportista, se generar? autom?ticamente con
-                    estado <strong>"Activo"</strong> y una matr?cula inicial con
+                    Al crear la deportista, se generará automáticamente con
+                    estado <strong>"Activo"</strong> y una matrícula inicial con
                     estado <strong>"Vigente"</strong>.
                   </p>
                 </div>
@@ -1648,12 +1672,12 @@ const AthleteModal = ({
                 </div>
                 <div>
                     <h4 className="font-medium text-blue-800 mb-1 text-sm">
-                    Matr?cula autom?tica
+                    Matrícula automática
                   </h4>
                   <p className="text-sm text-blue-700">
-                    Al crear la matr?cula, se generar? autom?ticamente la
+                    Al crear la matrícula, se generará automáticamente la
                     deportista con estado <strong>"Activo"</strong> y una
-                    matr?cula con estado <strong>"Vigente"</strong>.
+                    matrícula con estado <strong>"Vigente"</strong>.
                   </p>
                 </div>
               </div>
@@ -1684,7 +1708,7 @@ const AthleteModal = ({
               {isEditing
                 ? "Actualizar Deportista"
                 : isEnrollmentMode
-                  ? "Crear Matr?cula"
+                  ? "Crear Matrícula"
                   : "Crear Deportista"}
             </button>
           </div>
@@ -1697,8 +1721,3 @@ const AthleteModal = ({
 };
 
 export default AthleteModal;
-
-
-
-
-
