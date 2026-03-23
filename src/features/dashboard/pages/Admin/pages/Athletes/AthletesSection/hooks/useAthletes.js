@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hook personalizado para manejar deportistas
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -74,12 +74,10 @@ export const useAthletes = () => {
         setAthletes(merged);
         setPagination(response.pagination);
       } else {
-        console.error('❌ [useAthletes] Error en respuesta:', response.error);
-        throw new Error(response.error || 'Error cargando deportistas');
+throw new Error(response.error || 'Error cargando deportistas');
       }
     } catch (err) {
-      console.error('❌ [useAthletes] Excepción al cargar deportistas:', err);
-      setError(err.message);
+setError(err.message);
       if (!silent) {
         showErrorAlert('Error', 'No se pudieron cargar los deportistas');
       }
@@ -114,8 +112,7 @@ export const useAthletes = () => {
         setGuardians([]);
       }
     } catch (err) {
-      console.error('❌ Error cargando acudientes:', err);
-      setGuardians([]);
+setGuardians([]);
     }
   }, []);
 
@@ -200,8 +197,7 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
           guardianDocumentTypes: guardianDocTypesWithName // Para acudientes (todos excepto RC y NIT)
         }));
       } else {
-        console.error('❌ No se pudieron cargar los tipos de documento');
-      }
+}
       
       // Cargar categorías deportivas
       const categoriesResponse = await apiClient.get('/sports-categories');
@@ -213,8 +209,7 @@ allDocTypesResponse = await apiClient.get('/employees/reference-data');
         }));
 }
     } catch (err) {
-      console.error('❌ Error cargando datos de referencia:', err);
-    }
+}
   }, []);
 
   /**
@@ -235,12 +230,10 @@ if (response.success) {
         await loadAthletes();
         return true;
       } else {
-        console.error('❌ [useAthletes] Error en respuesta:', response.error);
-        throw new Error(response.error || 'Error creando deportista');
+throw new Error(response.error || 'Error creando deportista');
       }
     } catch (err) {
-      console.error('❌ [useAthletes] Excepción capturada:', err);
-      showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
+showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
       return false;
     } finally {
       setLoading(false);

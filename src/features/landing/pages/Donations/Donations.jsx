@@ -7,8 +7,8 @@ import VolunteerModal from "./components/VolunteerModal";
 import { volunteerOpportunities } from "./data/volunteerOpportunities";
 
 // Importar imágenes
-import heroImage from "./images/hero, donacion.jpeg";
-import voluntariadoImage from "./images/vountariado.jpeg";
+import heroImage from "./images/hero, donacion.webp";
+import voluntariadoImage from "./images/vountariado.webp";
 
 export default function Donations() {
   const [selectedOpportunity, setSelectedOpportunity] = useState(null);

@@ -138,12 +138,14 @@ export const AuthProvider = ({ children }) => {
           if (response.ok) {
             const result = await response.json();
             const accessToken = result.data.accessToken;
+            const refreshedUser = result.data.user || JSON.parse(storedUser);
 
             // Almacenar access token en memoria del apiClient
             apiClient.setAccessToken(accessToken);
 
             setIsAuthenticated(true);
-            setUser(JSON.parse(storedUser));
+            setUser(refreshedUser);
+            localStorage.setItem("user", JSON.stringify(refreshedUser));
 
             // Programar el próximo refresh automático
             scheduleTokenRefresh();
@@ -324,4 +326,5 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   return useContext(AuthContext);
 };
+
 

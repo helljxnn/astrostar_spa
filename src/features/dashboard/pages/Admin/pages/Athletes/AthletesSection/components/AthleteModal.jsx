@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -79,6 +79,47 @@ const parentescoFrontendToBackend = {
   "Amigo/a de la familia": "Family_Friend",
   Otro: "Other",
 };
+
+const isTarjetaIdentidadDocument = (documentTypeName) => {
+  const normalized = normalizeDocumentTypeName(documentTypeName);
+  return (
+    normalized === "ti" ||
+    (normalized.includes("tarjeta") && normalized.includes("identidad"))
+  );
+};
+
+const isCedulaDocument = (documentTypeName) => {
+  const normalized = normalizeDocumentTypeName(documentTypeName);
+  return normalized.includes("cedula");
+};
+
+const findDocumentTypeById = (documentTypes, selectedId) =>
+  (documentTypes || []).find(
+    (type) => String(type.id) === String(selectedId),
+  ) || null;
+
+const getDocumentTypeAgeErrorMessage = (isMinor) =>
+  isMinor
+    ? "Si es menor de edad no puede usar cédula. Selecciona TI u otro documento válido."
+    : "Si es mayor de edad no puede usar Tarjeta de Identidad (TI). Selecciona cédula u otro documento válido.";
+const isDocumentTypeAllowedByAge = (documentTypeName, age) => {
+  if (age === null || age === undefined || Number.isNaN(Number(age))) {
+    return true;
+  }
+
+  const isMinor = Number(age) < 18;
+
+  if (isMinor) {
+    return !isCedulaDocument(documentTypeName);
+  }
+
+  return !isTarjetaIdentidadDocument(documentTypeName);
+};
+
+const isDocumentTypeAgeValidationError = (errorMessage) =>
+  typeof errorMessage === "string" &&
+  (errorMessage.includes("no puede usar cédula") ||
+    errorMessage.includes("no puede usar Tarjeta de Identidad"));
 
 // ELIMINADA: Función calculateAge local - ahora se usa desde dateUtils
 
@@ -181,7 +222,7 @@ const AthleteModal = ({
 
   // Función para manejar cambio de email y marcar como touched inmediatamente
   const handleEmailChange = (e) => {
-    // Marcar como touched PRIMERO para activar validaci?n instant?nea
+    // Marcar como touched PRIMERO para activar validación instantánea
     setTouched((prev) => ({ ...prev, email: true }));
     // Luego actualizar el valor
     handleChange(e);
@@ -225,8 +266,7 @@ const AthleteModal = ({
         setAsyncErrors((prev) => ({ ...prev, identification: null }));
       }
     } catch (error) {
-      console.warn("Error en validación de documento:", error);
-    }
+}
   };
 
   useEffect(() => {
@@ -261,7 +301,7 @@ const AthleteModal = ({
     }
   }, [showGuardianSearch]); // ✅ SOLO depender de showGuardianSearch para evitar re-renders infinitos
 
-  // Re-validar el campo de identificaci?n INSTANT?NEAMENTE cuando cambia el tipo de documento
+  // Re-validar el campo de identificación INSTANTÁNEAMENTE cuando cambia el tipo de documento
   useEffect(() => {
     if (values.documentTypeId && values.identification) {
       // Marcar el campo como touched para que se muestre el error
@@ -269,7 +309,7 @@ const AthleteModal = ({
     }
   }, [values.documentTypeId, setTouched]);
 
-  // Validaci?n en tiempo real de documento (verifica deportistas + inscripciones)
+  // Validación en tiempo real de documento (verifica deportistas + inscripciones)
   useEffect(() => {
     if (!values.identification || values.identification.length < 6) {
       clearDocumentValidation();
@@ -277,21 +317,21 @@ const AthleteModal = ({
       return;
     }
 
-    // NO VALIDAR en modo edici?n normal (desde tabla de deportistas)
-    // S? VALIDAR en modo matr?cula (isEnrollmentMode) y en modo creaci?n
+    // NO VALIDAR en modo edición normal (desde tabla de deportistas)
+    // SÍ VALIDAR en modo matrícula (isEnrollmentMode) y en modo creación
     if (isEditing && !isEnrollmentMode) {
       clearDocumentValidation();
       setAsyncErrors((prev) => ({ ...prev, identification: null }));
       if (
         errors.identification &&
-        errors.identification.includes("ya est? registrado")
+        errors.identification.includes("ya está registrado")
       ) {
         setErrors((prev) => ({ ...prev, identification: "" }));
       }
       return;
     }
 
-    // Usar el hook de validaci?n con debounce
+    // Usar el hook de validación con debounce
     validateDocumentDebounced(values.identification, 6);
   }, [values.identification, isEditing, isEnrollmentMode]); // ✅ Removidas dependencias problemáticas
 
@@ -313,15 +353,15 @@ const AthleteModal = ({
       !isCheckingDocumentValidation &&
       values.identification.length >= 6
     ) {
-      // Validaci?n completada y documento NO existe - limpiar error solo si es de validaci?n async
+      // Validación completada y documento NO existe - limpiar error solo si es de validación async
       setAsyncErrors((prev) => ({ ...prev, identification: null }));
       // Solo limpiar el error si es un error de documento duplicado
       setErrors(prev => {
         if (prev.identification && (
-          prev.identification.includes('ya est? matriculado') || 
-          prev.identification.includes('ya tiene una inscripci?n') ||
-          prev.identification.includes('ya est? registrado') ||
-          prev.identification.includes('ya est? inscrito')
+          prev.identification.includes('ya está matriculado') || 
+          prev.identification.includes('ya tiene una inscripción') ||
+          prev.identification.includes('ya está registrado') ||
+          prev.identification.includes('ya está inscrito')
         )) {
           const { identification, ...rest } = prev;
           return rest;
@@ -331,21 +371,21 @@ const AthleteModal = ({
     }
   }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // ✅ Removidas dependencias problemáticas
 
-  // Validaci?n instant?nea de email
+  // Validación instantánea de email
   useEffect(() => {
     const checkEmail = async () => {
-      // No validar si el email est? vac?o o no tiene formato b?sico de email
+      // No validar si el email está vacío o no tiene formato básico de email
       if (!values.email || !values.email.includes("@")) {
         setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
 
       // Validar formato de email primero (antes de consultar al backend)
-      // Regex m?s estricta: solo letras, n?meros, puntos, guiones y guiones bajos
+      // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
       const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(values.email)) {
-        // Si el formato es inv?lido, no hacer la consulta al backend
-        // El error de formato ya lo maneja la validaci?n s?ncrona
+        // Si el formato es inválido, no hacer la consulta al backend
+        // El error de formato ya lo maneja la validación síncrona
         setAsyncErrors((prev) => ({ ...prev, email: null }));
         return;
       }
@@ -371,7 +411,7 @@ const AthleteModal = ({
         );
 
         if (!result.available) {
-          const errorMsg = `Este email ya est? registrado`;
+          const errorMsg = `Este email ya está registrado`;
           setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
           setErrors((prev) => ({ ...prev, email: errorMsg }));
           setTouched((prev) => ({ ...prev, email: true }));
@@ -379,7 +419,7 @@ const AthleteModal = ({
           setAsyncErrors(prev => ({ ...prev, email: null }));
           setErrors(prev => {
             // Solo limpiar si es un error de email duplicado
-            if (prev.email && prev.email.includes('ya est? registrado')) {
+            if (prev.email && prev.email.includes('ya está registrado')) {
               const { email, ...rest } = prev;
               return rest;
             }
@@ -387,12 +427,6 @@ const AthleteModal = ({
           });
         }
       } catch (error) {
-        console.error("? [AthleteModal] Error verificando email:", error);
-        console.error(
-          "? [AthleteModal] Error completo:",
-          error.message,
-          error.stack,
-        );
       } finally {
         setCheckingEmail(false);
       }
@@ -410,8 +444,8 @@ const AthleteModal = ({
     return () => clearTimeout(timeoutId);
   }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // ✅ Removidas dependencias problemáticas
 
-  // ? VALIDACI?N DE EDAD VS CATEGOR?A ELIMINADA
-  // Ahora se permite seleccionar cualquier categor?a sin importar la edad del deportista
+  // VALIDACIÓN DE EDAD VS CATEGORÍA ELIMINADA
+  // Ahora se permite seleccionar cualquier categoría sin importar la edad del deportista
 
   useEffect(() => {
     if (isOpen && athleteToEdit && (isEditing || isEnrollmentMode)) {
@@ -420,7 +454,7 @@ const AthleteModal = ({
       
       const birthDate = toDateInputFormat(birthDateRaw);
       
-      // Convertir parentesco del backend (ingl?s) al frontend (espa?ol)
+      // Convertir parentesco del backend (inglés) al frontend (español)
       let parentescoFrontend = athleteToEdit.parentesco || "";
       if (
         parentescoFrontend &&
@@ -506,7 +540,7 @@ const AthleteModal = ({
 
         setTouched(allTouched);
 
-        // Ejecutar validaciones as?ncronas INMEDIATAMENTE (sin setTimeout)
+        // Ejecutar validaciones asíncronas INMEDIATAMENTE (sin setTimeout)
         (async () => {
           // Validar documento - Verificar en TODOS los usuarios
           if (
@@ -514,14 +548,14 @@ const AthleteModal = ({
             newValues.identification.length >= 6
           ) {
             try {
-              // En modo matr?cula desde landing, no hay usuario previo, as? que no excluir nada
+              // En modo matrícula desde landing, no hay usuario previo, así que no excluir nada
               const result =
                 await AthletesService.checkIdentificationAvailability(
                   newValues.identification,
                   null,
                 );
               if (!result.available) {
-                const errorMsg = `Este documento ya est? registrado`;
+                const errorMsg = `Este documento ya está registrado`;
                 setAsyncErrors((prev) => ({
                   ...prev,
                   identification: errorMsg,
@@ -531,45 +565,37 @@ const AthleteModal = ({
                 setAsyncErrors((prev) => ({ ...prev, identification: null }));
               }
             } catch (error) {
-              console.error(
-                "? [AthleteModal] Error verificando documento:",
-                error,
-              );
-            }
+}
           }
 
           // Validar email - Verificar en TODOS los usuarios
           // Primero validar formato antes de consultar al backend
-          // Regex m?s estricta: solo letras, n?meros, puntos, guiones y guiones bajos
+          // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
           const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
           if (newValues.email && newValues.email.includes("@")) {
             if (emailRegex.test(newValues.email)) {
               try {
-                // En modo matr?cula desde landing, no hay usuario previo, as? que no excluir nada
+                // En modo matrícula desde landing, no hay usuario previo, así que no excluir nada
                 const result = await AthletesService.checkEmailAvailability(
                   newValues.email,
                   null,
                 );
                 if (!result.available) {
-                  const errorMsg = `Este email ya est? registrado`;
+                  const errorMsg = `Este email ya está registrado`;
                   setAsyncErrors((prev) => ({ ...prev, email: errorMsg }));
                   setErrors((prev) => ({ ...prev, email: errorMsg }));
                 } else {
                   setAsyncErrors((prev) => ({ ...prev, email: null }));
                 }
               } catch (error) {
-                console.error(
-                  "❌ [AthleteModal] Error verificando email:",
-                  error,
-                );
-              }
+}
             } else {
-                  // El error de formato ya lo maneja la validaci?n s?ncrona
+                  // El error de formato ya lo maneja la validación síncrona
             }
           }
 
-          // ? VALIDAR TEL?FONO INMEDIATAMENTE con los nuevos valores
+          // ? VALIDAR TELÉFONO INMEDIATAMENTE con los nuevos valores
           validateFields(["phoneNumber"], newValues);
         })();
       }
@@ -617,6 +643,43 @@ const AthleteModal = ({
 
   const isMinor = currentAge !== null && currentAge < 18;
   const isAcudienteRequired = hasDateOfBirth && isMinor;
+  const isCreateEnrollmentMode = isEnrollmentMode && !isEditing;
+
+  const allowedDocumentTypes = useMemo(() => {
+    const documentTypes = referenceData.documentTypes || [];
+
+    if (!isCreateEnrollmentMode || currentAge === null) {
+      return documentTypes;
+    }
+
+    return documentTypes.filter((documentType) =>
+      isDocumentTypeAllowedByAge(documentType.name, currentAge),
+    );
+  }, [referenceData.documentTypes, isCreateEnrollmentMode, currentAge]);
+
+  const documentTypeOptions = useMemo(
+    () =>
+      allowedDocumentTypes.map((type) => ({
+        value: type.id,
+        label: type.name,
+      })),
+    [allowedDocumentTypes],
+  );
+
+  const documentTypeHelperText = useMemo(() => {
+    if (!isCreateEnrollmentMode || currentAge === null) {
+      return "";
+    }
+
+    return "";
+  }, [isCreateEnrollmentMode, currentAge]);
+
+  const selectedDocumentType = useMemo(
+    () =>
+      findDocumentTypeById(referenceData.documentTypes, values.documentTypeId),
+    [referenceData.documentTypes, values.documentTypeId],
+  );
+
 
   // Limpiar error de acudiente cuando se seleccione uno
   useEffect(() => {
@@ -631,9 +694,56 @@ const AthleteModal = ({
     }
   }, [values.acudiente]); // ✅ Removida dependencia errors.acudiente
 
+
+  useEffect(() => {
+    if (!isCreateEnrollmentMode) return;
+
+    const currentError = errors.documentTypeId;
+    const hasCustomAgeError = isDocumentTypeAgeValidationError(currentError);
+
+    if (!values.documentTypeId || !selectedDocumentType || currentAge === null) {
+      if (hasCustomAgeError) {
+        setErrors((prev) => {
+          const { documentTypeId, ...rest } = prev;
+          return rest;
+        });
+      }
+      return;
+    }
+
+    const isAllowed = isDocumentTypeAllowedByAge(
+      selectedDocumentType.name,
+      currentAge,
+    );
+
+    if (isAllowed) {
+      if (hasCustomAgeError) {
+        setErrors((prev) => {
+          const { documentTypeId, ...rest } = prev;
+          return rest;
+        });
+      }
+      return;
+    }
+
+    const ageRuleError = getDocumentTypeAgeErrorMessage(isMinor);
+    setValues((prev) => ({ ...prev, documentTypeId: "" }));
+    setTouched((prev) => ({ ...prev, documentTypeId: true }));
+    setErrors((prev) => ({ ...prev, documentTypeId: ageRuleError }));
+  }, [
+    isCreateEnrollmentMode,
+    currentAge,
+    values.documentTypeId,
+    selectedDocumentType,
+    isMinor,
+    errors.documentTypeId,
+    setErrors,
+    setTouched,
+    setValues,
+  ]);
   const getFinalParentesco = () => {
     // Si es "Otro", siempre devolver "Otro" para el mapeo al backend
-    // El texto libre se manejar? por separado en otherRelationship
+    // El texto libre se manejará por separado en otherRelationship
     return values.parentesco;
   };
 
@@ -670,6 +780,19 @@ const AthleteModal = ({
         ? Number(ageValue)
         : null;
 
+
+    if (
+      isCreateEnrollmentMode &&
+      ageNumber !== null &&
+      selectedDocumentType &&
+      !isDocumentTypeAllowedByAge(selectedDocumentType.name, ageNumber)
+    ) {
+      const ageRuleError = getDocumentTypeAgeErrorMessage(ageNumber < 18);
+      setTouched((prev) => ({ ...prev, documentTypeId: true }));
+      setErrors((prev) => ({ ...prev, documentTypeId: ageRuleError }));
+      showErrorAlert("Tipo de documento inválido", ageRuleError);
+      return;
+    }
     const selectedCategory = findCategoryByName(
       referenceData.sportsCategories || [],
       values.categoria,
@@ -684,7 +807,7 @@ const AthleteModal = ({
     
     // NO HAY VALIDACIÓN DE EDAD VS CATEGORÍA - Se permite cualquier combinación
 
-    // ?? VALIDACI?N CR?TICA: Menores de edad DEBEN tener acudiente
+    // VALIDACIÓN CRÍTICA: Menores de edad DEBEN tener acudiente
     if (ageNumber !== null && ageNumber < 18) {
       const acudienteId = values.acudiente && values.acudiente.toString().trim() 
         ? parseInt(values.acudiente) 
@@ -769,8 +892,7 @@ const AthleteModal = ({
       setHasDateOfBirth(false);
       onClose();
     } catch (error) {
-      console.error("❌ [AthleteModal] Error en submit:", error);
-      showErrorAlert("Error", error.message);
+showErrorAlert("Error", error.message);
     }
   };
 
@@ -891,7 +1013,7 @@ const AthleteModal = ({
   };
 
   const handleClose = async () => {
-    // ?? VALIDACI?N CR?TICA: Si estamos editando y la deportista es menor de edad
+    // VALIDACIÓN CRÍTICA: Si estamos editando y la deportista es menor de edad
     // NO permitir cerrar si no tiene acudiente asignado
     if (isEditing && athleteToEdit) {
       const birthDateStr = values.birthDate || athleteToEdit.birthDate || athleteToEdit.fechaNacimiento;
@@ -912,7 +1034,7 @@ const AthleteModal = ({
             // Mostrar alerta de confirmación
             const Swal = (await import('sweetalert2')).default;
             const result = await Swal.fire({
-              title: 'Acudiente requerido',
+              title: "Acudiente requerido",
               html: `
                 <div style="text-align: left;">
                   <p><strong>La deportista es menor de edad (${ageNumber} años)</strong></p>
@@ -1010,15 +1132,13 @@ const AthleteModal = ({
                 type="select"
                 placeholder="Seleccionar tipo de documento"
                 required
-                options={referenceData.documentTypes.map((type) => ({
-                  value: type.id,
-                  label: type.name,
-                }))}
+                options={documentTypeOptions}
                 value={values.documentTypeId}
                 error={errors.documentTypeId}
                 touched={touched.documentTypeId}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                helperText={documentTypeHelperText}
                 delay={0.1}
               />
 
@@ -1420,7 +1540,7 @@ const AthleteModal = ({
                                 </div>
                                 <div className="text-xs text-gray-600">
                                   {guardian.tipoDocumento}:{" "}
-                                  {guardian.identificacion} ? {athleteCount}{" "}
+                                  {guardian.identificacion} | {athleteCount}{" "}
                                   deportista(s)
                                 </div>
                               </button>

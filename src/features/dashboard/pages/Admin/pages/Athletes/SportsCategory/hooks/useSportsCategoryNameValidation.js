@@ -16,7 +16,7 @@ export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
 
   useEffect(() => {
     if (!categories || categories.length === 0) {
-      fetchSportsCategories({ limit: 1000 }).catch(() => {});
+      fetchSportsCategories({ limit: 100 }).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -51,7 +51,7 @@ export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
           return { available: res.data.available, message: res.data.message || "" };
         }
         return { available: true, message: "Nombre disponible." };
-      } catch (err) {
+      } catch {
         const exists = existsLocal(trimmed);
         return {
           available: !exists,
@@ -111,7 +111,7 @@ export const useSportsCategoryNameValidation = (currentCategoryId = null) => {
         isAvailable: result.available,
       });
       return result;
-    } catch (err) {
+    } catch {
       setNameValidation({ isChecking: false, isDuplicate: false, message: "", isAvailable: true });
       return { available: true };
     }

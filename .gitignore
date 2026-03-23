@@ -25,7 +25,7 @@ dist-ssr
 
 # Private
 .env
-
+.env.backup
 # Pruebas automatizadas - No subir al repositorio
 pruebas_automatizadas/
 pruebas_automatizadas/**

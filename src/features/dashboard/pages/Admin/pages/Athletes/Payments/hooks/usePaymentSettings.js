@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
@@ -16,8 +16,7 @@ export const usePaymentSettings = () => {
       const response = await paymentsService.getPaymentSettings();
       setSettings(response);
     } catch (error) {
-      console.error("Error fetching payment settings:", error);
-      showErrorAlert("Error al cargar la configuración");
+showErrorAlert("Error al cargar la configuración");
     } finally {
       setLoading(false);
     }
@@ -31,8 +30,7 @@ export const usePaymentSettings = () => {
       showSuccessAlert("Configuración actualizada exitosamente");
       return { success: true };
     } catch (error) {
-      console.error("Error updating payment settings:", error);
-      showErrorAlert("Error al actualizar la configuración");
+showErrorAlert("Error al actualizar la configuración");
       return { success: false, error: error.response?.data?.message };
     } finally {
       setUpdating(false);

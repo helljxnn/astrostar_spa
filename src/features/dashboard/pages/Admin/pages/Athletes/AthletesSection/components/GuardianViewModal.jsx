@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion } from "framer-motion"
@@ -264,8 +264,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
           }
         }
       } catch (error) {
-        console.error('Error verificando documento:', error);
-      } finally {
+} finally {
         setCheckingDocument(false);
       }
     };
@@ -332,8 +331,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
             birthDate = date.toISOString().split('T')[0];
           }
         } catch (error) {
-          console.error('❌ Error convirtiendo fecha:', error);
-        }
+}
       }
       
       const newValues = {
@@ -399,8 +397,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
       showSuccessAlert("Acudiente actualizado", "Los cambios se guardaron correctamente")
       setActiveTab("view")
     } catch (error) {
-      console.error('❌ [GuardianViewModal] Error al guardar:', error);
-      showErrorAlert("Error", error.message || "No se pudo actualizar el acudiente")
+showErrorAlert("Error", error.message || "No se pudo actualizar el acudiente")
     } finally {
       setIsProcessing(false)
     }
@@ -452,8 +449,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
         try {
           await onRemove(guardian, currentAthleteId, true);
         } catch (error) {
-          console.error('❌ Error cambiando acudiente:', error);
-        } finally {
+} finally {
           setIsProcessing(false);
         }
       }

@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -151,12 +151,10 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
       if (result.success) {
         setEnrollmentHistory(result.data || []);
       } else {
-        console.error("Error cargando historial:", result.error);
-        setEnrollmentHistory([]);
+setEnrollmentHistory([]);
       }
     } catch (error) {
-      console.error("Error cargando historial:", error);
-      setEnrollmentHistory([]);
+setEnrollmentHistory([]);
     } finally {
       setLoading(false);
     }
@@ -164,8 +162,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
 
   if (!isOpen) return null;
   if (!athlete) {
-    console.error("Athlete is undefined in InscriptionHistoryModal");
-    return null;
+return null;
   }
 
   // Validar datos críticos
@@ -203,8 +200,7 @@ const EnrollmentHistoryModal = ({ isOpen, onClose, athlete, guardians }) => {
         return dateB - dateA; // Más reciente primero
       });
     } catch (error) {
-      console.error("Error sorting enrollments:", error);
-      return safeInscriptions;
+return safeInscriptions;
     }
   }, [safeInscriptions]);
 

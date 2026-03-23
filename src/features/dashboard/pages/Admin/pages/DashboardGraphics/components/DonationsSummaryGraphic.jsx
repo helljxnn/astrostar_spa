@@ -4,6 +4,11 @@ import { Doughnut } from "react-chartjs-2";
 import { motion } from "framer-motion";
 import { FaDollarSign, FaBox, FaHandHoldingHeart } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
+import {
+  getDonationInKindUnits,
+  getDonationMonetaryAmount,
+  isCancelledDonation,
+} from "../utils/donationMetrics";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -12,20 +17,17 @@ const fmt = (n) =>
 
 const DonationsSummaryGraphic = ({ donations = [] }) => {
   const stats = useMemo(() => {
-    const validas = donations.filter((d) => d.status !== "Anulada");
+    const validas = donations.filter((d) => !isCancelledDonation(d));
 
-    const monetario = validas
-      .filter((d) => d.type === "ECONOMICA" || d.type === "ALIMENTOS")
-      .reduce((sum, d) => {
-        const pay = (d.details || []).find((det) => det.recordType === "payment");
-        return sum + (pay?.amount || 0);
-      }, 0);
+    const monetario = validas.reduce(
+      (sum, donation) => sum + getDonationMonetaryAmount(donation),
+      0,
+    );
 
-    const especie = validas
-      .filter((d) => d.type === "ESPECIE")
-      .reduce((sum, d) =>
-        sum + (d.details || []).reduce((s, det) =>
-          det.recordType === "item" ? s + Math.round(Number(det.quantity) || 0) : s, 0), 0);
+    const especie = validas.reduce(
+      (sum, donation) => sum + getDonationInKindUnits(donation),
+      0,
+    );
 
     const total = validas.length;
     const monetariasCount = validas.filter((d) => d.type === "ECONOMICA" || d.type === "ALIMENTOS").length;

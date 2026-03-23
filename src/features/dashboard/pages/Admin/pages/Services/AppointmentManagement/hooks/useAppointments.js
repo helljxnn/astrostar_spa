@@ -236,14 +236,19 @@ export const useAppointments = () => {
   // ¿El usuario logueado es empleado de salud?
   const isHealthEmployee = useMemo(() => {
     if (isAdminUser || isAthleteUser) return false;
-    const roleName = (user?.role?.name || user?.rol || "").toString().toLowerCase();
-    // Cualquier rol que no sea admin ni deportista se considera empleado de salud
-    return roleName !== "" && roleName !== "admin" && roleName !== "administrador" && roleName !== "athlete" && roleName !== "deportista";
+    const roleKey = normalizeKey(user?.role?.name || user?.rol || "");
+    return (
+      roleKey === "profesionaldelasalud" ||
+      roleKey === "profesionaldesalud"
+    );
   }, [user, isAdminUser, isAthleteUser]);
 
   // ID del especialista correspondiente al usuario logueado
   const currentSpecialistId = useMemo(() => {
     if (!isHealthEmployee) return null;
+    const employeeIdFromUser =
+      user?.employee?.id || user?.employeeId || user?.empleadoId || null;
+    if (employeeIdFromUser) return employeeIdFromUser;
     const userId = user?.id || user?.userId;
     if (!userId) return null;
     const match = specialists.find(
@@ -267,6 +272,9 @@ export const useAppointments = () => {
         page,
         limit,
         ...(isAthleteScope ? { athleteId: athleteIdFromUser } : {}),
+        ...(isHealthEmployee && currentSpecialistId
+          ? { specialistId: currentSpecialistId }
+          : {}),
         ...params,
       });
 
@@ -290,12 +298,16 @@ export const useAppointments = () => {
       paginationRef.current = nextPagination;
       setPagination(nextPagination);
     } catch (error) {
-      console.error(error);
       showErrorAlert("Error", error.message || "No se pudieron cargar las citas");
     } finally {
       setLoading(false);
     }
-  }, [athleteIdFromUser, isAthleteScope]);
+  }, [
+    athleteIdFromUser,
+    isAthleteScope,
+    isHealthEmployee,
+    currentSpecialistId,
+  ]);
 
   const loadAthletes = useCallback(async () => {
     setLoadingAthletes(true);
@@ -303,19 +315,35 @@ export const useAppointments = () => {
       const response = await appointmentService.getAthletes();
       const rawList = response?.data || response?.athletes || [];
       const formatted = rawList.map((athlete) => {
+        const currentInscription =
+          athlete.currentInscription ||
+          athlete.inscripcionActual ||
+          athlete.inscriptions?.[0] ||
+          null;
+        const inscriptionCategory =
+          currentInscription?.sportsCategory ||
+          currentInscription?.categoriaDeportiva ||
+          null;
+
         const categoryName =
+          athlete.categoryName ||
+          athlete.category?.name ||
+          athlete.category?.nombre ||
           athlete.sportsCategory?.nombre ||
           athlete.sportsCategory?.name ||
-          athlete.category?.name ||
+          inscriptionCategory?.name ||
+          inscriptionCategory?.nombre ||
           athlete.categoria ||
           athlete.category ||
           athlete.categoriaNombre ||
           "Sin categoría";
         const categoryId =
+          athlete.categoryId ||
+          athlete.category?.id ||
           athlete.sportsCategoryId ||
           athlete.sportsCategory?.id ||
           athlete.sportsCategory?.sportsCategoryId ||
-          athlete.categoryId ||
+          inscriptionCategory?.id ||
           athlete.categoriaId ||
           null;
         const categoryKey = normalizeKey(categoryId || categoryName);
@@ -336,7 +364,6 @@ export const useAppointments = () => {
         : formatted;
       setAthletes(filtered);
     } catch (error) {
-      console.error(error);
       showErrorAlert("Error", "No se pudieron cargar los deportistas activos");
     } finally {
       setLoadingAthletes(false);
@@ -368,7 +395,6 @@ export const useAppointments = () => {
       }).filter(Boolean);
       setSpecialists(formatted);
     } catch (error) {
-      console.error(error);
       showErrorAlert("Error", "No se pudieron cargar los especialistas activos");
     } finally {
       setLoadingSpecialists(false);
@@ -441,7 +467,6 @@ export const useAppointments = () => {
 
       setSportsCategories(normalized);
     } catch (error) {
-      console.error("Error cargando categorías deportivas:", error);
       setSportsCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -466,7 +491,6 @@ export const useAppointments = () => {
         await loadAppointments({ page: 1 });
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudo crear la cita");
         throw error;
       } finally {
@@ -491,7 +515,6 @@ export const useAppointments = () => {
         await loadAppointments();
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudo actualizar la cita");
         throw error;
       } finally {
@@ -515,7 +538,6 @@ export const useAppointments = () => {
         await loadAppointments();
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudo cancelar la cita");
         throw error;
       } finally {
@@ -547,7 +569,6 @@ export const useAppointments = () => {
         await loadAppointments();
         return response.data;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudo completar la cita");
         throw error;
       } finally {
@@ -571,7 +592,6 @@ export const useAppointments = () => {
         await loadAppointments();
         return true;
       } catch (error) {
-        console.error(error);
         showErrorAlert("Error", error.message || "No se pudo eliminar la cita");
         throw error;
       } finally {
@@ -611,4 +631,6 @@ export const useAppointments = () => {
 };
 
 export default useAppointments;
+
+
 

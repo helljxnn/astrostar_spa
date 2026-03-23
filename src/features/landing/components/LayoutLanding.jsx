@@ -11,7 +11,33 @@ function LayoutLanding() {
   useEffect(() => {
     if (!hash) {
       window.scrollTo({ top: 0, behavior: "auto" });
+      return;
     }
+
+    const scrollToHashTarget = () => {
+      const targetId = decodeURIComponent(hash.slice(1));
+      const targetElement =
+        document.getElementById(targetId) || document.querySelector(hash);
+
+      if (!targetElement) {
+        return false;
+      }
+
+      targetElement.scrollIntoView({ behavior: "auto", block: "start" });
+      return true;
+    };
+
+    if (scrollToHashTarget()) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(scrollToHashTarget);
+    const timeoutId = window.setTimeout(scrollToHashTarget, 180);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+    };
   }, [pathname, hash]);
 
   return (

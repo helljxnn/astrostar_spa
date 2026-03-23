@@ -1,132 +1,108 @@
-# 🌟 AstroStar SPA (Frontend)
+# AstroStar SPA
 
-Frontend web de AstroStar, desarrollado como **Single Page Application (SPA)**.  
-Se conecta al backend de AstroStar para la gestión de atletas, servicios, roles, inscripciones y más.
+Aplicación web de AstroStar desarrollada con React y Vite. Este proyecto consume la API del backend para autenticación, gestión administrativa y consultas operativas de la plataforma.
 
-Incluye un set de **pruebas automatizadas** con **Jest** y **Testing Library** para el taller de pruebas.
+## Qué incluye
 
-## 📋 Tabla de contenidos
+- Interfaz web tipo SPA para los módulos principales de AstroStar.
+- Integración con la API REST del backend.
+- Configuración con Vite para desarrollo local y build de producción.
+- Organización por `features`, `routes`, `shared` y estilos globales.
 
-- [Tecnologías](#-tecnologías)
-- [Requisitos previos](#-requisitos-previos)
-- [Instalación](#-instalación)
-- [Scripts disponibles](#-scripts-disponibles)
-- [Pruebas automatizadas](#-pruebas-automatizadas)
-- [Estructura del proyecto](#-estructura-del-proyecto)
+## Tecnologías principales
 
-## 🧰 Tecnologías
+- React 18
+- Vite
+- React Router
+- Axios
+- Styled Components
+- Tailwind CSS
+- Jest y Testing Library
 
-- Framework SPA (React / similar).
-- **Jest** + **@testing-library** para pruebas.
-- npm / Node.js para gestión de dependencias.
+## Requisitos previos
 
-> Nota: Ajusta este README si tu stack exacto difiere (por ejemplo, Vite, CRA, Next, etc.).
+- Node.js `22.15.0`
+- npm `8` o superior
+- Backend de AstroStar disponible en `http://localhost:4000/api` o en una URL equivalente
 
-## 📌 Requisitos previos
-
-- **Node.js** 22.15.0 (misma versión definida en `.nvmrc`)  
-- **npm** ≥ 8.0.0  
-- Backend AstroStar corriendo (por defecto en `http://localhost:4000`).
-
-## 🚀 Instalación
-
-1. Clona el proyecto (si no lo has hecho) y entra a la carpeta del SPA:
-
-```bash
-cd astrostar_spa
-```
-
-2. Instala dependencias:
+## Instalación
 
 ```bash
 npm install
 ```
 
-3. Configura variables de entorno (si aplica), por ejemplo:
+## Variables de entorno
 
-```bash
-# .env.local (ejemplo)
+El proyecto usa `VITE_API_URL` para definir la URL base del backend.
+
+Ejemplo de archivo `.env`:
+
+```env
 VITE_API_URL=http://localhost:4000/api
 ```
 
-## 🧾 Scripts disponibles
+Si no se define esta variable, varias partes de la aplicación usan `http://localhost:4000/api` como valor por defecto.
+
+## Ejecución en desarrollo
 
 ```bash
-npm start          # Iniciar la app en modo desarrollo
-npm run build      # Generar build de producción
-npm run preview    # Previsualizar build de producción (si usas Vite)
-npm test           # Ejecutar pruebas
-npm run test:watch # Ejecutar pruebas en modo watch
-npm run test:coverage # Reporte de cobertura
+npm run dev
 ```
 
-> Algunos scripts pueden variar según la configuración real del proyecto.  
-> Revisa `package.json` para ver la lista final de scripts disponibles.
+Por defecto, Vite levanta la aplicación en:
 
-## 🧪 Pruebas automatizadas
+- `http://localhost:5173`
 
-Este frontend usa **Jest** + **Testing Library** para las pruebas del taller.
+La configuración actual también permite acceso desde la red local porque el servidor corre con `host: 0.0.0.0`.
 
-Pruebas incluidas (ejemplo):
-
-- `src/__tests__/Login.render.test.jsx`
-- `src/__tests__/Login.validation.test.jsx`
-- `src/__tests__/PermissionsUI.test.jsx`
-- `src/__tests__/List.test.jsx`
-
-### Ejecutar pruebas
+## Build de producción
 
 ```bash
+npm run build
+```
+
+Los archivos generados quedan en la carpeta `dist/`.
+
+Para previsualizar el build:
+
+```bash
+npm run preview
+```
+
+## Scripts disponibles
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
 npm test
 npm run test:watch
 npm run test:coverage
 ```
 
-### Evidencia de ejecución
-
-- Los resultados de consola se guardan en:  
-  `astrostar_spa/test-results/`
-
-## 🗂️ Estructura del proyecto
-
-Estructura de ejemplo (puede variar según tu implementación real):
+## Estructura general
 
 ```text
 astrostar_spa/
-├─ src/
-│  ├─ components/      # Componentes reutilizables
-│  ├─ pages/           # Páginas / vistas
-│  ├─ hooks/           # Hooks personalizados
-│  ├─ services/        # Llamadas a la API AstroStar
-│  ├─ context/         # Context providers (auth, permisos, etc.)
-│  └─ __tests__/       # Pruebas Jest + Testing Library
-├─ public/
-├─ package.json
-└─ README.md
+|- public/
+|- scripts/
+|- src/
+|  |- features/
+|  |- routes/
+|  |- shared/
+|  |- styles/
+|  |- test/
+|  `- __tests__/
+|- .env
+|- package.json
+`- vite.config.js
 ```
 
----
+## Relación con el backend
 
-**AstroStar SPA – Frontend**
-# AstroStar SPA - Pruebas Automatizadas (Jest)
+Para que la aplicación funcione correctamente en local:
 
-Este frontend usa Jest + Testing Library para las pruebas del taller.
-
-## Pruebas incluidas
-
-- `src/__tests__/Login.render.test.jsx`
-- `src/__tests__/Login.validation.test.jsx`
-- `src/__tests__/PermissionsUI.test.jsx`
-- `src/__tests__/List.test.jsx`
-
-## Ejecutar pruebas
-
-```bash
-npm test
-npm run test:watch
-npm run test:coverage
-```
-
-## Evidencia
-
-- Los resultados de consola se guardan en `astrostar_spa/test-results/`.
+1. El backend debe estar corriendo.
+2. La variable `VITE_API_URL` debe apuntar a la API correcta.
+3. Si vas a probar desde otra máquina en la red, usa una URL accesible desde ese entorno.

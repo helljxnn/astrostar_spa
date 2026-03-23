@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { paymentsService } from "../services/PaymentsService.js";
 import { showSuccessAlert, showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 
@@ -28,8 +28,7 @@ export const useEnrollmentRenewal = () => {
         throw new Error(response.message || 'Error al crear renovación');
       }
     } catch (error) {
-      console.error('Error creating renewal obligation:', error);
-      const message = error.response?.data?.message || error.message || 'Error al crear renovación';
+const message = error.response?.data?.message || error.message || 'Error al crear renovación';
       showErrorAlert('Error', message);
       throw error;
     } finally {
@@ -56,8 +55,7 @@ export const useEnrollmentRenewal = () => {
         throw new Error(response.message || 'Error al procesar matrículas');
       }
     } catch (error) {
-      console.error('Error processing expired enrollments:', error);
-      const message = error.response?.data?.message || error.message || 'Error al procesar matrículas vencidas';
+const message = error.response?.data?.message || error.message || 'Error al procesar matrículas vencidas';
       showErrorAlert('Error', message);
       throw error;
     } finally {
@@ -73,8 +71,7 @@ export const useEnrollmentRenewal = () => {
       const response = await paymentsService.getExpiringEnrollments(daysToExpire);
       return response.success ? response.data : response;
     } catch (error) {
-      console.error('Error fetching expiring enrollments:', error);
-      showErrorAlert('Error', 'No se pudieron cargar las matrículas próximas a vencer');
+showErrorAlert('Error', 'No se pudieron cargar las matrículas próximas a vencer');
       throw error;
     }
   }, []);

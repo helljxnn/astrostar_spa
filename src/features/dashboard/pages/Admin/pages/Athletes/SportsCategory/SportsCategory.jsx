@@ -170,8 +170,7 @@ const SportsCategory = () => {
       limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
       search: searchTerm, // Enviar búsqueda al backend
     }).catch((err) => {
-      console.error("Error al cargar categorías:", err);
-      // El error ya se maneja en el hook, no necesitamos hacer nada aquí
+// El error ya se maneja en el hook, no necesitamos hacer nada aquí
     });
   }, [currentPage, searchTerm, fetchSportsCategories]);
 
@@ -255,8 +254,7 @@ const SportsCategory = () => {
         ...getFetchParams(),
       });
     } catch (err) {
-      console.error("delete error:", err);
-    }
+}
   };
 
   const handleView = async (item) => {

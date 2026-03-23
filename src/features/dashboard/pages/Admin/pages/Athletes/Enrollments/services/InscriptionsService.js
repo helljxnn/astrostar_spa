@@ -1,4 +1,4 @@
-﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class InscriptionsService {
   constructor() {
@@ -27,8 +27,7 @@ class InscriptionsService {
         hasMore: response.data?.hasMore || false,
       };
     } catch (error) {
-      console.error("Error getting inscriptions:", error);
-      return { 
+return { 
         success: false, 
         error: error.message,
         data: [],
@@ -46,8 +45,7 @@ class InscriptionsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Error getting inscription:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -60,8 +58,7 @@ class InscriptionsService {
 
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("Error searching inscription:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -84,9 +81,7 @@ class InscriptionsService {
         details: details,
       };
     } catch (error) {
-      console.error("Error checking document:", error);
-      
-      // Si el endpoint no existe (404), retornar false
+// Si el endpoint no existe (404), retornar false
       if (error.message.includes("404") || error.message.includes("Not Found")) {
         return { success: true, error: "Endpoint no implementado", exists: false };
       }
@@ -118,9 +113,7 @@ class InscriptionsService {
         details: details,
       };
     } catch (error) {
-      console.error("Error checking email:", error);
-      
-      if (error.message.includes("404") || error.message.includes("Not Found")) {
+if (error.message.includes("404") || error.message.includes("Not Found")) {
         return { success: true, error: "Endpoint no implementado", exists: false };
       }
       
@@ -142,8 +135,7 @@ class InscriptionsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Error creating inscription:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -156,8 +148,7 @@ class InscriptionsService {
 
       return { success: true, data: response.data };
     } catch (error) {
-      console.error("Error updating inscription status:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -167,8 +158,7 @@ class InscriptionsService {
       await apiClient.delete(`${this.endpoint}/${id}`);
       return { success: true };
     } catch (error) {
-      console.error("Error deleting inscription:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -186,8 +176,7 @@ class InscriptionsService {
         data: response.data,
       };
     } catch (error) {
-      console.error("Error resending email:", error);
-      return { success: false, error: error.message };
+return { success: false, error: error.message };
     }
   }
 
@@ -217,8 +206,7 @@ class InscriptionsService {
         data: Array.isArray(data) ? data : [],
       };
     } catch (error) {
-      console.error("Error getting inscriptions for report:", error);
-      return { 
+return { 
         success: false, 
         error: error.message,
         data: [],

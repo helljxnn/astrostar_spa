@@ -1,4 +1,4 @@
-﻿import apiClient from "../../../../../../../../shared/services/apiClient";
+import apiClient from "../../../../../../../../shared/services/apiClient";
 
 class RegistrationsService {
   constructor() {
@@ -273,4 +273,3 @@ class RegistrationsService {
 }
 
 export default new RegistrationsService();
-

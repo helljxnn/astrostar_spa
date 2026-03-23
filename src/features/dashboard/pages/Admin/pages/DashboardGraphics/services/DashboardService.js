@@ -1,7 +1,12 @@
-import apiClient from "../../../../../../../shared/services/apiClient.js";
+﻿import apiClient from "../../../../../../../shared/services/apiClient.js";
 import EnrollmentsService from "../../Athletes/Enrollments/services/EnrollmentsService.js";
 import AthletesService from "../../Athletes/AthletesSection/services/AthletesService.js";
+import donationsService from "../../Donations/Donations/services/donationsService";
 import { ENROLLMENT_STATUS } from "../../Athletes/Enrollments/constants/enrollmentConstants.js";
+import {
+  getDonationMonetaryAmount,
+  isCancelledDonation,
+} from "../utils/donationMetrics";
 
 /**
  * Servicio para obtener datos REALES del dashboard
@@ -43,7 +48,7 @@ class DashboardService {
           }
         });
         
-        // console.log('📊 Estadísticas reales de matrículas:', stats);
+        // console.log('Estadísticas reales de matrículas:', stats);
         
         return {
           success: true,
@@ -59,7 +64,7 @@ class DashboardService {
           data: response.data || response
         };
       } catch (fallbackError) {
-        console.warn('⚠️ Endpoint de dashboard no disponible, usando datos por defecto');
+        // Endpoint opcional: mantener fallback silencioso
       }
       
       return {
@@ -72,8 +77,6 @@ class DashboardService {
         }
       };
     } catch (error) {
-      console.error('❌ Error fetching athletes tracking:', error);
-      
       return {
         success: false,
         error: error.message,
@@ -92,13 +95,11 @@ class DashboardService {
    */
   async getAthletesByCategory() {
     try {
-      console.log('🔍 Obteniendo deportistas por categoría...');
       
       // Primero intentar obtener estadísticas directas del servicio
       const statsResponse = await AthletesService.getAthleteStats();
       
       if (statsResponse.success && statsResponse.data) {
-        console.log('📊 Estadísticas de deportistas obtenidas:', statsResponse.data);
         
         // Si las estadísticas incluyen datos por categoría, usarlas
         if (statsResponse.data.byCategory) {
@@ -114,12 +115,10 @@ class DashboardService {
       }
       
       // Si no hay estadísticas, obtener todos los deportistas activos y contar por categoría
-      console.log('📊 Obteniendo deportistas activos para contar por categoría...');
       const activeAthletesResponse = await AthletesService.getActiveAthletes();
       
       if (activeAthletesResponse.success && activeAthletesResponse.data) {
         const athletes = activeAthletesResponse.data;
-        console.log('👥 Deportistas activos encontrados:', athletes.length);
         
         const categoryStats = {
           infantil: 0,
@@ -129,7 +128,6 @@ class DashboardService {
         
         athletes.forEach(athlete => {
           const categoria = (athlete.categoria || '').toLowerCase().trim();
-          console.log('🏷️ Procesando categoría:', categoria, 'para deportista:', athlete.nombreCompleto || athlete.nombre);
           
           if (categoria.includes('infantil')) {
             categoryStats.infantil++;
@@ -140,7 +138,6 @@ class DashboardService {
           }
         });
         
-        console.log('📊 Estadísticas calculadas por categoría:', categoryStats);
         
         return {
           success: true,
@@ -149,7 +146,6 @@ class DashboardService {
       }
       
       // Fallback: intentar obtener por categorías específicas
-      console.log('🔄 Intentando obtener por categorías específicas...');
       const [infantilResponse, preJuvenilResponse, juvenilResponse] = await Promise.all([
         AthletesService.getAthletesByCategory('Infantil'),
         AthletesService.getAthletesByCategory('Pre-Juvenil'),
@@ -162,7 +158,6 @@ class DashboardService {
         juvenil: (juvenilResponse.success && juvenilResponse.data) ? juvenilResponse.data.length : 0
       };
       
-      console.log('📊 Estadísticas por categorías específicas:', categoryStats);
       
       return {
         success: true,
@@ -170,7 +165,6 @@ class DashboardService {
       };
       
     } catch (error) {
-      console.error('❌ Error fetching athletes by category:', error);
       
       return {
         success: false,
@@ -187,13 +181,17 @@ class DashboardService {
   /**
    * Obtener KPIs REALES del dashboard
    */
-  async getKPIs() {
+  async getKPIs(options = {}) {
     try {
-      // Obtener datos reales de diferentes servicios
-      const [enrollmentsResponse, athletesStatsResponse] = await Promise.all([
-        EnrollmentsService.getAllForReport(),
-        AthletesService.getAthleteStats()
-      ]);
+      const {
+        includeEnrollments = true,
+        includeEvents = true,
+      } = options;
+
+      // Obtener datos reales segun permisos del usuario
+      const enrollmentsResponse = includeEnrollments
+        ? await EnrollmentsService.getAllForReport()
+        : { success: true, data: [] };
       
       let totalAthletes = 0;
       let activeEnrollments = 0;
@@ -217,15 +215,43 @@ class DashboardService {
         });
       }
       
-      // Intentar obtener eventos reales
+      // Eventos solo cuando el usuario tiene permiso de consulta
       let totalEvents = 0;
-      try {
-        const eventsResponse = await apiClient.get('/events');
-        if (eventsResponse.success && eventsResponse.data) {
-          totalEvents = eventsResponse.data.length;
+      if (includeEvents) {
+        try {
+          const eventsResponse = await apiClient.get('/events');
+          if (eventsResponse.success && eventsResponse.data) {
+            totalEvents = eventsResponse.data.length;
+          }
+        } catch (eventsError) {
+          // Fallback silencioso
         }
-      } catch (eventsError) {
-        console.warn('⚠️ No se pudieron obtener datos de eventos');
+      }
+
+      // Donaciones: usar endpoint del dashboard para obtener monto real
+      let donationsAmount = 0;
+      try {
+        const donationsResponse = await apiClient.get('/dashboard/donations');
+        const donationsData = donationsResponse?.data?.data || donationsResponse?.data || {};
+        donationsAmount = Number(donationsData.totalAmount || 0);
+      } catch (donationsError) {
+        // Fallback silencioso
+      }
+
+      if (!Number.isFinite(donationsAmount) || donationsAmount <= 0) {
+        try {
+          const listResponse = await donationsService.getStatistics();
+          const donationsList = listResponse?.data || [];
+
+          donationsAmount = donationsList
+            .filter((donation) => !isCancelledDonation(donation))
+            .reduce(
+              (sum, donation) => sum + getDonationMonetaryAmount(donation),
+              0,
+            );
+        } catch (donationsListError) {
+          // Mantener en 0 si no se puede resolver el fallback
+        }
       }
       
       const kpis = {
@@ -235,18 +261,14 @@ class DashboardService {
         pendingEnrollments,
         totalEvents,
         healthAppointments: 0, // Implementar cuando tengas módulo de salud
-        donations: 0 // Implementar cuando tengas módulo de donaciones
+        donations: donationsAmount,
       };
-      
-      // console.log('📊 KPIs reales calculados:', kpis);
       
       return {
         success: true,
         data: kpis
       };
     } catch (error) {
-      console.error('❌ Error fetching KPIs:', error);
-      
       return {
         success: false,
         error: error.message,
@@ -289,7 +311,6 @@ class DashboardService {
         data: []
       };
     } catch (error) {
-      console.error('❌ Error fetching active players:', error);
       
       return {
         success: false,
@@ -350,7 +371,6 @@ class DashboardService {
         }
       };
     } catch (error) {
-      console.error('❌ Error fetching health services data:', error);
       
       return {
         success: false,
@@ -528,26 +548,14 @@ class DashboardService {
    */
   async getPaymentsDashboardData() {
     try {
-      console.log('🔍 Obteniendo datos de pagos...');
       
       // MÉTODO 1: Intentar endpoint específico del backend
       try {
-        console.log('📊 Intentando endpoint /api/payments/dashboard/stats...');
         const response = await apiClient.get('/payments/dashboard/stats');
-        console.log('📊 Respuesta del endpoint dashboard/stats:', response);
         
         if (response && response.success && response.data) {
           const { stats, monthlyData, payments } = response.data;
-          
-          console.log('✅ Datos del dashboard obtenidos del endpoint específico:', {
-            totalPagos: stats.total,
-            aprobados: stats.approved,
-            pendientes: stats.pending,
-            rechazados: stats.rejected,
-            esteMes: stats.thisMonth,
-            datosMensuales: monthlyData.length
-          });
-          
+
           return {
             success: true,
             data: {
@@ -558,29 +566,23 @@ class DashboardService {
           };
         }
       } catch (endpointError) {
-        console.warn('⚠️ Endpoint específico no disponible:', endpointError.message);
       }
       
       // MÉTODO 2: Usar PaymentsService como fallback
-      console.log('🔄 Usando PaymentsService como fallback...');
       
       // Importar PaymentsService dinámicamente
       const { paymentsService } = await import("../../Athletes/Payments/services/PaymentsService.js");
       
       // Obtener todos los pagos
       const paymentsResponse = await paymentsService.getAllForReport();
-      console.log('📊 Respuesta de PaymentsService.getAllForReport():', paymentsResponse);
       
       if (paymentsResponse.success && paymentsResponse.data) {
         const payments = paymentsResponse.data;
-        console.log('✅ Procesando', payments.length, 'pagos desde PaymentsService...');
         
         // Calcular estadísticas manualmente
         const stats = this.calculatePaymentStats(payments);
         const monthlyData = this.calculateMonthlyData(payments);
         
-        console.log('📊 Estadísticas calculadas:', stats);
-        console.log('📊 Datos mensuales calculados:', monthlyData);
         
         return {
           success: true,
@@ -592,7 +594,6 @@ class DashboardService {
         };
       }
       
-      console.warn('⚠️ PaymentsService también falló:', paymentsResponse);
       
       return {
         success: false,
@@ -610,7 +611,6 @@ class DashboardService {
         }
       };
     } catch (error) {
-      console.error('❌ Error obteniendo datos del dashboard de pagos:', error);
       
       return {
         success: false,
@@ -714,7 +714,6 @@ class DashboardService {
    */
   async getAttendanceData() {
     try {
-      console.log('🔍 Obteniendo datos de asistencia...');
       
       // Importar el servicio de asistencia dinámicamente
       const assistanceService = (await import("../../Athletes/Assistanceathletes/services/AssistanceathletesService.js")).default;
@@ -731,12 +730,10 @@ class DashboardService {
       
       if (attendanceResponse.success && attendanceResponse.data) {
         const attendanceData = attendanceResponse.data;
-        console.log('✅ Procesando', attendanceData.length, 'registros de asistencia...');
         
         // Calcular estadísticas de asistencia
         const stats = this.calculateAttendanceStats(attendanceData);
         
-        console.log('📊 Estadísticas de asistencia calculadas:', stats);
         
         return {
           success: true,
@@ -747,7 +744,6 @@ class DashboardService {
         };
       }
       
-      console.warn('⚠️ No se pudieron obtener datos de asistencia:', attendanceResponse);
       
       return {
         success: false,
@@ -764,7 +760,6 @@ class DashboardService {
         }
       };
     } catch (error) {
-      console.error('❌ Error obteniendo datos de asistencia:', error);
       
       return {
         success: false,
@@ -813,3 +808,5 @@ class DashboardService {
 }
 
 export default new DashboardService();
+
+

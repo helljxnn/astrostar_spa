@@ -349,6 +349,14 @@ const MaterialsMovements = () => {
   const ingresosTableData = displayData.map((m) => {
     const tipoMovimiento = m.tipoMovimiento || m.tipo_movimiento || "";
     const observaciones = m.observaciones || "";
+    const origin = (m.origen || "").toLowerCase();
+    const isDonationEntry =
+      m.donacionId ||
+      m.referenceType === "DONACION" ||
+      origin === "donacion" ||
+      origin === "donación" ||
+      observaciones.toLowerCase().includes("donación") ||
+      observaciones.toLowerCase().includes("donacion");
 
     // Identificar si es un movimiento automático del sistema
     // Incluye: movimientos con tipos específicos O movimientos de reversión detectados por observaciones
@@ -377,7 +385,7 @@ const MaterialsMovements = () => {
           ? m.categoria.substring(0, 25) + "..."
           : m.categoria || "",
       cantidadFormatted: formatStock(m.cantidad),
-      proveedorDisplay: m.proveedor || "Sin proveedor",
+      proveedorDisplay: m.proveedor || (isDonationEntry ? "Donación" : "Sin proveedor"),
       isSystemMovement, // Agregar flag para identificar movimientos del sistema
     };
   });
@@ -428,11 +436,19 @@ const MaterialsMovements = () => {
       stockAnterior: m.stockAnterior,
       stockNuevo: m.stockNuevo,
     };
+    const origin = (m.origen || "").toLowerCase();
+    const isDonationEntry =
+      m.donacionId ||
+      m.referenceType === "DONACION" ||
+      origin === "donacion" ||
+      origin === "donación" ||
+      (m.observaciones || "").toLowerCase().includes("donación") ||
+      (m.observaciones || "").toLowerCase().includes("donacion");
 
     if (activeTab === "ingresos") {
       return {
         ...baseData,
-        proveedor: m.proveedor || "Sin proveedor",
+        proveedor: m.proveedor || (isDonationEntry ? "Donación" : "Sin proveedor"),
         destino: m.inventario_destino || m.inventarioDestino || "N/A",
         observaciones: m.observaciones || "N/A",
       };
@@ -495,11 +511,19 @@ const MaterialsMovements = () => {
           stockAnterior: m.stockAnterior,
           stockNuevo: m.stockNuevo,
         };
+        const origin = (m.origen || "").toLowerCase();
+        const isDonationEntry =
+          m.donacionId ||
+          m.referenceType === "DONACION" ||
+          origin === "donacion" ||
+          origin === "donación" ||
+          (m.observaciones || "").toLowerCase().includes("donación") ||
+          (m.observaciones || "").toLowerCase().includes("donacion");
 
         if (activeTab === "ingresos") {
           return {
             ...baseData,
-            proveedor: m.proveedor || "Sin proveedor",
+            proveedor: m.proveedor || (isDonationEntry ? "Donación" : "Sin proveedor"),
             destino: m.inventario_destino || m.inventarioDestino || "N/A",
             observaciones: m.observaciones || "N/A",
           };
@@ -804,6 +828,11 @@ const MaterialsMovements = () => {
               show: false,
             }),
           }}
+          serverPagination={true}
+          currentPage={currentPage}
+          totalRows={totalRows}
+          rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+          onPageChange={setCurrentPage}
         />
       )}
 
@@ -840,6 +869,11 @@ const MaterialsMovements = () => {
               show: false,
             }),
           }}
+          serverPagination={true}
+          currentPage={currentPage}
+          totalRows={totalRows}
+          rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
+          onPageChange={setCurrentPage}
         />
       )}
 

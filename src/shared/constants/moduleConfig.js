@@ -237,7 +237,7 @@ export const MODULE_GROUPS = {
     id: "equipment",
     name: "Materiales",
     icon: "GiWeightLiftingUp",
-    children: ["materialCategories", "materials", "materialsRegistry", "providers"],
+    children: ["materialCategories", "materials", "providers", "materialsRegistry"],
   },
 
   services: {
@@ -389,6 +389,9 @@ export const moduleExists = (moduleId) => {
 export const getModuleConfig = (moduleId) => {
   return MODULE_CONFIG[moduleId];
 };
+
+
+
 
 
 

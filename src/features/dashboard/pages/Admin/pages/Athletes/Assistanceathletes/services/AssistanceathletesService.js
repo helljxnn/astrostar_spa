@@ -1,4 +1,4 @@
-﻿import apiClient from "../../../../../../../../shared/services/apiClient.js";
+import apiClient from "../../../../../../../../shared/services/apiClient.js";
 
 class AssistanceathletesService {
   async getAttendanceByDate(params = {}) {
@@ -61,8 +61,7 @@ class AssistanceathletesService {
           
           // Seguridad: evitar bucle infinito
           if (currentPage > 100) {
-            console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
-            break;
+break;
           }
         } else {
           hasMorePages = false;
@@ -74,8 +73,7 @@ class AssistanceathletesService {
         data: allData,
       };
     } catch (error) {
-      console.error("Error al obtener datos de asistencia para reporte:", error);
-      return {
+return {
         success: false,
         data: [],
         error: error.message,

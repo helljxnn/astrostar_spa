@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Hook personalizado para manejar eventos
  * Proporciona estado y funciones para operaciones CRUD
  */
@@ -389,4 +389,3 @@ export const useEvents = () => {
     refresh: loadEvents,
   };
 };
-

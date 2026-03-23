@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -45,8 +45,7 @@ const PaymentRejectModal = ({ isOpen, onClose, payment, onReject, loading = fals
       await onReject(payment.id, formData.rejectionReason.trim());
       onClose();
     } catch (error) {
-      console.error('Error al rechazar pago:', error);
-    }
+}
   };
 
   const handleChange = (field, value) => {

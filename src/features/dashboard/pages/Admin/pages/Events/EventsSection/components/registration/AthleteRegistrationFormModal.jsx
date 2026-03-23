@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
@@ -1160,4 +1160,3 @@ const AthleteRegistrationFormModal = ({
 };
 
 export default AthleteRegistrationFormModal;
-

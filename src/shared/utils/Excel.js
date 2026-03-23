@@ -1,6 +1,7 @@
 // En shared/utils/Excel.js
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import { normalizeExportText } from "./textEncoding.js";
 
 export const getNestedValue = (obj, path) => {
   return path.split(".").reduce((acc, part) => {
@@ -43,7 +44,9 @@ export const exportToExcel = async (data, columns, fileName = "Reporte") => {
     const worksheet = workbook.addWorksheet("Datos");
 
     // Encabezados
-    const headers = normalizedColumns.map((col) => col.header);
+    const headers = normalizedColumns.map((col) =>
+      normalizeExportText(col.header)
+    );
     worksheet.addRow(headers);
 
     // Estilo de encabezados
@@ -72,13 +75,7 @@ export const exportToExcel = async (data, columns, fileName = "Reporte") => {
           : item[col.accessor];
 
         if (rawValue === undefined || rawValue === null) return "";
-        if (typeof rawValue === "object") {
-          if (rawValue instanceof Date) {
-            return rawValue.toLocaleDateString("es-ES");
-          }
-          return JSON.stringify(rawValue);
-        }
-        return rawValue;
+        return normalizeExportText(rawValue);
       });
       worksheet.addRow(rowValues);
     });

@@ -9,6 +9,9 @@ class SportsCategoryService {
     this.endpoint = "/sports-categories";
   }
 
+  REPORT_LIMIT = 100;
+  REPORT_MAX_PAGES = 100;
+
   /**
    * Obtener todas las categorías deportivas con filtros opcionales
    * @param {Object} params - Parámetros de filtrado y paginación
@@ -30,11 +33,52 @@ class SportsCategoryService {
    */
   async getAllForReport(params = {}) {
     try {
-      const response = await apiClient.get(this.endpoint, {
-        ...params,
-        limit: 10000, // Límite alto para obtener todos los datos
-      });
-      return response;
+      const filters = { ...params };
+      delete filters.page;
+      delete filters.limit;
+
+      let allData = [];
+      let currentPage = 1;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
+        const response = await apiClient.get(this.endpoint, {
+          ...filters,
+          page: currentPage,
+          limit: this.REPORT_LIMIT,
+        });
+
+        if (!response?.success) {
+          return response;
+        }
+
+        const pageData = Array.isArray(response.data) ? response.data : [];
+        allData = allData.concat(pageData);
+
+        const hasNextPage = response.pagination?.hasNext;
+        hasMorePages =
+          typeof hasNextPage === "boolean"
+            ? hasNextPage
+            : pageData.length === this.REPORT_LIMIT;
+
+        currentPage += 1;
+        if (currentPage > this.REPORT_MAX_PAGES) {
+          hasMorePages = false;
+        }
+      }
+
+      return {
+        success: true,
+        data: allData,
+        pagination: {
+          total: allData.length,
+          page: 1,
+          limit: allData.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+      };
     } catch (error) {
       throw error;
     }

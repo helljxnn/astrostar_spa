@@ -28,7 +28,7 @@ function Foundation() {
       {/* Banner solo con imagen, sin texto ni cuadro blanco */}
       <Hero
         variant="image-only"
-        imageUrl="/assets/images/Foundation/banner_foundation.jpg"
+        imageUrl="/assets/images/Foundation/banner_foundation.webp"
       />
 
       {/* Sección Fundadora */}

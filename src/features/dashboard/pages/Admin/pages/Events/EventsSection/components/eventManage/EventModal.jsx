@@ -10,6 +10,7 @@ import {
 } from "../../../../../../../../../shared/utils/alerts.js";
 import CloudinaryUpload from "./CloudinaryUpload";
 import { MultiSelect } from "./MultiSelect";
+import { fixMojibake } from "../../../../../../../../../shared/utils/textEncoding";
 
 export const EventModal = ({
   onClose,
@@ -19,9 +20,29 @@ export const EventModal = ({
   mode = "create",
   referenceData = { categories: [], types: [] },
 }) => {
+  const normalizeText = (value) => {
+    if (value === undefined || value === null) return "";
+    return fixMojibake(String(value));
+  };
+
+  const getCategoryAgeRange = (category) => {
+    const minAge = Number(
+      category?.minAge ?? category?.edadMinima ?? category?.EdadMinima,
+    );
+    const maxAge = Number(
+      category?.maxAge ?? category?.edadMaxima ?? category?.EdadMaxima,
+    );
+
+    if (Number.isFinite(minAge) && Number.isFinite(maxAge)) {
+      return `${minAge}-${maxAge} anos`;
+    }
+
+    return normalizeText(category?.ageRange);
+  };
+
   const [tipoEvento, setTipoEvento] = useState(""); // Ahora almacena el ID del tipo
   const [form, setForm] = useState({
-    id: null, // ID del evento (para edición)
+    id: null, // ID del evento (para edicion)
     nombre: "",
     descripcion: "",
     fechaInicio: "",
@@ -56,11 +77,11 @@ export const EventModal = ({
     isCheckingName,
   } = useFormEventValidation();
 
-  // Función para formatear fecha a YYYY-MM-DD sin problemas de zona horaria
+  // Funcion para formatear fecha a YYYY-MM-DD sin problemas de zona horaria
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
 
-    // Si ya está en formato correcto YYYY-MM-DD, devolverlo directamente
+    // Si ya esta en formato correcto YYYY-MM-DD, devolverlo directamente
     if (
       typeof dateString === "string" &&
       dateString.match(/^\d{4}-\d{2}-\d{2}$/)
@@ -102,7 +123,7 @@ export const EventModal = ({
     if (event) {
       if (isNew) {
         // Cuando es nuevo, solo cargar las fechas seleccionadas del calendario
-        // Asegurar que las fechas y horas tengan valores válidos
+        // Asegurar que las fechas y horas tengan valores validos
         const getDefaultDate = () => {
           const oneWeekFromToday = new Date();
           oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
@@ -129,7 +150,7 @@ export const EventModal = ({
           horaFin,
         }));
       } else {
-        // Cuando es edición, cargar todos los datos del evento
+        // Cuando es edicion, cargar todos los datos del evento
         // Buscar el ID del tipo basado en el nombre (para compatibilidad con datos existentes)
         const typeId =
           event.tipoId ||
@@ -157,7 +178,7 @@ export const EventModal = ({
         });
       }
     } else if (isNew) {
-      // Si no hay evento pero es nuevo, establecer valores por defecto válidos
+      // Si no hay evento pero es nuevo, establecer valores por defecto validos
       const getDefaultDate = () => {
         const oneWeekFromToday = new Date();
         oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
@@ -209,8 +230,8 @@ export const EventModal = ({
 
       if (!isNew) {
         const result = await showConfirmAlert(
-          "¿Estás seguro de actualizar este evento?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
+          "Estas seguro de actualizar este evento?",
+          "Los cambios se guardaran y no se podran deshacer facilmente.",
         );
         if (!result.isConfirmed) return;
       }
@@ -226,7 +247,7 @@ export const EventModal = ({
         clearRegistrations: form.clearRegistrations || false, // Indicar si se deben limpiar las inscripciones
       };
 
-      // Si el evento está finalizado, no enviar el campo estado para evitar errores de validación
+      // Si el evento esta finalizado, no enviar el campo estado para evitar errores de validacion
       if (form.estado === "Finalizado" || form.estado === "finalizado") {
         delete eventData.estado;
       }
@@ -284,7 +305,7 @@ export const EventModal = ({
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl font-bold transition-colors"
           >
-            ✖
+            x
           </button>
         </div>
 
@@ -292,7 +313,7 @@ export const EventModal = ({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* El resto de campos aparece cuando hay tipoEvento */}
           <>
-            {/* Fila 1 - Tipo, Nombre, Ubicación */}
+            {/* Fila 1 - Tipo, Nombre, Ubicacion */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <FormField
@@ -302,8 +323,8 @@ export const EventModal = ({
                   value={tipoEvento}
                   onChange={async (name, value) => {
                     // Validar cambio de tipo si hay inscripciones
-                    // Verificar si el evento tiene inscripciones (fallback si hasRegistrations no está definido)
-                    // TEMPORAL: Siempre validar en modo edición para probar
+                    // Verificar si el evento tiene inscripciones (fallback si hasRegistrations no esta definido)
+                    // TEMPORAL: Siempre validar en modo edicion para probar
                     if (!isNew && tipoEvento) {
                       const currentTypeName = referenceData.types.find(
                         (t) => t.id === tipoEvento,
@@ -330,8 +351,8 @@ export const EventModal = ({
                         (currentIsAthleteType && newIsTeamType)
                       ) {
                         const result = await showConfirmAlert(
-                          "¿Cambiar tipo de evento?",
-                          `Al cambiar de ${currentTypeName} a ${newTypeName} podrían eliminarse las inscripciones existentes si las hay. ¿Deseas continuar?`,
+                          "Cambiar tipo de evento?",
+                          `Al cambiar de ${currentTypeName} a ${newTypeName} podrian eliminarse las inscripciones existentes si las hay. Deseas continuar?`,
                         );
 
                         if (!result.isConfirmed) {
@@ -406,12 +427,12 @@ export const EventModal = ({
               </div>
 
               <FormField
-                label="Ubicación"
+                label="Ubicacion"
                 name="ubicacion"
                 value={form.ubicacion}
                 onChange={handleFormChange}
                 onBlur={() => handleBlur("ubicacion", form.ubicacion, form)}
-                placeholder="Ubicación del evento"
+                placeholder="Ubicacion del evento"
                 error={errors.ubicacion}
                 touched={touched.ubicacion}
                 required={mode !== "view"}
@@ -419,22 +440,22 @@ export const EventModal = ({
               />
             </div>
 
-            {/* Fila 1.5 - Categorías y Patrocinadores (Multi-select) */}
+            {/* Fila 1.5 - Categorias y Patrocinadores (Multi-select) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MultiSelect
-                label="Categorías"
+                label="Categorias"
                 name="categoryIds"
                 options={referenceData.categories.map((cat) => ({
                   value: cat.id,
-                  label: cat.name,
-                  description: cat.ageRange,
+                  label: normalizeText(cat.name ?? cat.nombre),
+                  description: getCategoryAgeRange(cat),
                 }))}
                 value={form.categoryIds}
                 onChange={handleFormChange}
                 error={errors.categoryIds}
                 touched={touched.categoryIds}
                 disabled={mode === "view"}
-                placeholder="Busca y selecciona categorías"
+                placeholder="Busca y selecciona categorias"
                 required={true}
               />
 
@@ -458,15 +479,15 @@ export const EventModal = ({
               />
             </div>
 
-            {/* Fila 2 - Teléfono y Descripción */}
+            {/* Fila 2 - Telefono y Descripcion */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField
-                label="Teléfono"
+                label="Telefono"
                 name="telefono"
                 value={form.telefono}
                 onChange={handleFormChange}
                 onBlur={() => handleBlur("telefono", form.telefono, form)}
-                placeholder="Teléfono de contacto"
+                placeholder="Telefono de contacto"
                 error={errors.telefono}
                 touched={touched.telefono}
                 required={mode !== "view"}
@@ -475,7 +496,7 @@ export const EventModal = ({
 
               <div className="md:col-span-2">
                 <FormField
-                  label="Descripción"
+                  label="Descripcion"
                   name="descripcion"
                   type="textarea"
                   value={form.descripcion}
@@ -483,7 +504,7 @@ export const EventModal = ({
                   onBlur={() =>
                     handleBlur("descripcion", form.descripcion, form)
                   }
-                  placeholder="Breve descripción"
+                  placeholder="Breve descripcion"
                   error={errors.descripcion}
                   touched={touched.descripcion}
                   required={mode !== "view"}
@@ -630,11 +651,11 @@ export const EventModal = ({
                   </span>
                 </div>
 
-                {/* Descripción */}
+                {/* Descripcion */}
                 <p className="text-xs text-gray-500">
                   {form.publicar
-                    ? "El evento será visible en la página pública"
-                    : "El evento solo será visible en el panel de administración"}
+                    ? "El evento sera visible en la pagina publica"
+                    : "El evento solo sera visible en el panel de administracion"}
                 </p>
               </div>
 
@@ -662,7 +683,7 @@ export const EventModal = ({
                 </div>
               ) : mode === "edit" ? (
                 form.estado === "Finalizado" || form.estado === "finalizado" ? (
-                  // Si el evento está finalizado, mostrar como solo lectura
+                  // Si el evento esta finalizado, mostrar como solo lectura
                   <div>
                     <label className="block mb-2 text-sm font-medium text-gray-700">
                       Estado
@@ -671,11 +692,11 @@ export const EventModal = ({
                       Finalizado
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      Este evento ya finalizó y no se puede modificar su estado
+                      Este evento ya finalizo y no se puede modificar su estado
                     </p>
                   </div>
                 ) : (
-                  // Si no está finalizado, permitir cambiar el estado
+                  // Si no esta finalizado, permitir cambiar el estado
                   <FormField
                     label="Estado"
                     name="estado"
@@ -691,7 +712,7 @@ export const EventModal = ({
                     error={errors.estado}
                     touched={touched.estado}
                     required
-                    helperText="El estado 'Finalizado' se asigna automáticamente cuando termina el evento"
+                    helperText="El estado 'Finalizado' se asigna automaticamente cuando termina el evento"
                   />
                 )
               ) : (

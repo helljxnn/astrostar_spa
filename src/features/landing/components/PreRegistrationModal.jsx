@@ -10,7 +10,7 @@ import { toISOString } from "../../../shared/utils/dateUtils";
 
 const PreRegistrationModal = ({ isOpen, onClose }) => {
   const { notifyNewInscription, notifyEmailUpdate } = useEnrollmentsContext();
-  
+
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
@@ -33,7 +33,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
   const [newEmailError, setNewEmailError] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [isValidatingNewEmail, setIsValidatingNewEmail] = useState(false);
-  const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "",
+    message: "",
+  });
   const [cooldownTime, setCooldownTime] = useState(0);
   const [documentExists, setDocumentExists] = useState(false);
 
@@ -45,7 +49,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     validateDocumentDebounced,
     clearValidation: clearDocumentValidation,
     clearCache: clearDocumentCache,
-  } = useDocumentValidation(null); // null = no excluir a nadie (es una nueva inscripción)
+  } = useDocumentValidation(null, false, true); // modo publico: sin endpoints privados
 
   // Hook para validación de email en tiempo real
   const {
@@ -54,7 +58,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     validationMessage: emailValidationMessage,
     validateEmailDebounced,
     clearValidation: clearEmailValidation,
-  } = useEmailValidation(null, true); // null = no excluir a nadie, true = verificar inscripciones
+  } = useEmailValidation(null, true, true); // modo publico: sin endpoints privados
 
   // Validaciones
   const validateField = (name, value) => {
@@ -277,7 +281,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
   const handleBlur = (field) => {
     setTouched((prev) => ({ ...prev, [field]: true }));
-    
+
     // NO validar los campos identification y email en blur porque ya tienen validación en tiempo real
     // Si los validamos aquí, sobrescribe el mensaje correcto del hook
     if (field === "identification" || field === "email") {
@@ -343,18 +347,16 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         ...formData,
         birthDate: toISOString(formData.birthDate),
       };
-      
+
       const result = await InscriptionsService.create(dataToSend);
 
       if (result.success) {
         setSentEmail(formData.email);
         setSentDocument(formData.identification); // Guardar el documento también
         setShowSuccess(true);
-        
+
         // 🚀 NOTIFICAR INMEDIATAMENTE: Agregar la inscripción al estado local
-        // console.log("📢 [PreRegistrationModal] Nueva inscripción creada:", result.data);
-        // console.log("📢 [PreRegistrationModal] Notificando al contexto...");
-        
+
         // Asegurar que la inscripción tenga todos los campos necesarios
         const newInscription = {
           id: result.data?.id || crypto.randomUUID(),
@@ -371,11 +373,9 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           createdAt: new Date().toISOString(),
           ...result.data, // Sobrescribir con datos del backend si existen
         };
-        
-        // console.log("📢 [PreRegistrationModal] Datos de inscripción a notificar:", newInscription);
+
         notifyNewInscription(newInscription);
-        // console.log("✅ [PreRegistrationModal] Notificación enviada");
-        
+
         // Iniciar cooldown de 60 segundos
         setCooldownTime(60);
         const cooldownInterval = setInterval(() => {
@@ -421,73 +421,63 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
 
   const handleNewEmailChange = (value) => {
     setNewEmail(value);
-    
+
     // Validar formato en tiempo real
     if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setNewEmailError("Formato de correo inválido");
       return;
     }
-    
+
     // Limpiar error de formato si es válido
-    if (!value || value.includes('@')) {
+    if (!value || value.includes("@")) {
       setNewEmailError("");
     }
   };
-  
+
   // Validación con debounce para el nuevo email
   useEffect(() => {
-    if (!newEmail || !newEmail.includes('@')) {
+    if (!newEmail || !newEmail.includes("@")) {
       setIsValidatingNewEmail(false);
       return;
     }
-    
+
     // Validar formato primero
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       setIsValidatingNewEmail(false);
       return;
     }
-    
-    // console.log('🔍 [PreRegistrationModal] Validando nuevo email:', newEmail);
+
     setIsValidatingNewEmail(true);
-    
+
     const timeoutId = setTimeout(async () => {
       try {
-        // console.log('🔍 [PreRegistrationModal] Verificando email en inscripciones y deportistas...');
-        
         // Verificar en inscripciones pendientes
-        const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);
-        // console.log('🔍 [PreRegistrationModal] Resultado inscripciones:', inscriptionResult);
-        
+        const inscriptionResult =
+          await InscriptionsService.checkEmailExists(newEmail);
+
         if (inscriptionResult.exists) {
-          console.log('❌ [PreRegistrationModal] Email ya existe en inscripciones');
+          console.log(
+            "❌ [PreRegistrationModal] Email ya existe en inscripciones",
+          );
           setNewEmailError("Este correo ya está en otra inscripción pendiente");
           setIsValidatingNewEmail(false);
           return;
         }
-        
-        // Verificar en deportistas matriculados
-        const AthletesService = (await import("../../dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService.js")).default;
-        const athleteResult = await AthletesService.checkEmailAvailability(newEmail, null);
-        // console.log('🔍 [PreRegistrationModal] Resultado deportistas:', athleteResult);
-        
-        if (!athleteResult.available) {
-          console.log('❌ [PreRegistrationModal] Email ya existe en deportistas');
-          setNewEmailError("Este correo ya está registrado como deportista");
-          setIsValidatingNewEmail(false);
-          return;
-        }
-        
-        console.log('✅ [PreRegistrationModal] Email disponible');
+
+        console.log("✅ [PreRegistrationModal] Email disponible");
         setNewEmailError("");
       } catch (error) {
-        console.error("❌ [PreRegistrationModal] Error validando email:", error);
+        console.error(
+          "❌ [PreRegistrationModal] Error validando email:",
+          error,
+        );
         console.error("❌ [PreRegistrationModal] Stack:", error.stack);
         setNewEmailError("");
       } finally {
         setIsValidatingNewEmail(false);
       }
     }, 500); // 500ms de debounce
-    
+
     return () => {
       clearTimeout(timeoutId);
       setIsValidatingNewEmail(false);
@@ -505,25 +495,18 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       setNewEmailError("Formato de correo inválido");
       return;
     }
-    
+
     // Validar que el email no esté duplicado antes de enviar
     try {
-      // console.log('🔍 [handleResendEmail] Validando email antes de reenviar...');
-      
       // Verificar en inscripciones pendientes
-      const inscriptionResult = await InscriptionsService.checkEmailExists(newEmail);
+      const inscriptionResult =
+        await InscriptionsService.checkEmailExists(newEmail);
       if (inscriptionResult.exists) {
         setNewEmailError("Este correo ya está en otra inscripción pendiente");
         return;
       }
-      
-      // Verificar en deportistas matriculados
-      const AthletesService = (await import("../../dashboard/pages/Admin/pages/Athletes/AthletesSection/services/AthletesService.js")).default;
-      const athleteResult = await AthletesService.checkEmailAvailability(newEmail, null);
-      if (!athleteResult.available) {
-        setNewEmailError("Este correo ya está registrado como deportista");
-        return;
-      }
+
+      // El endpoint de pre-registros ya valida en preinscripciones y usuarios del sistema
     } catch (error) {
       console.error("Error validando email:", error);
       // Continuar con el envío si hay error en la validación
@@ -542,11 +525,10 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       if (result.success) {
         setSentEmail(newEmail);
         setNewEmail("");
-        
+
         // 🚀 NOTIFICAR INMEDIATAMENTE: Actualizar el email en el estado local
-        console.log("📢 [PreRegistrationModal] Notificando actualización de email:", { sentDocument, newEmail });
         notifyEmailUpdate(sentDocument, newEmail);
-        
+
         showNotification("success", "¡Correo reenviado exitosamente!");
       } else {
         showNotification(
@@ -652,20 +634,20 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden relative flex"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] max-h-[90vh] overflow-hidden relative flex flex-col"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
         >
           {!showSuccess ? (
-            <div className="w-full">
+            <div className="w-full h-full min-h-0">
               {/* Form */}
-              <div className="w-full flex flex-col">
+              <div className="w-full h-full min-h-0 flex flex-col">
                 {/* Header Minimalista */}
-                <div className="bg-white border-b border-gray-200 p-3 z-10">
+                <div className="bg-white border-b border-gray-200 p-6 z-10">
                   <button
-                    className="absolute top-3 right-3 text-gray-300 hover:text-gray-400 transition-colors"
+                    className="absolute top-6 right-6 text-gray-300 hover:text-gray-400 transition-colors"
                     onClick={handleClose}
                   >
                     <FaTimes size={20} />
@@ -675,22 +657,25 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                   </h2>
                 </div>
 
-                <div className="flex-1">
-                  <form onSubmit={handleSubmit} className="p-4 md:p-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <FormField
-                        label="Primer Nombre"
-                        name="firstName"
-                        type="text"
-                        value={formData.firstName}
-                        onChange={(e) =>
-                          handleChange("firstName", e.target.value)
-                        }
-                        onBlur={() => handleBlur("firstName")}
-                        error={errors.firstName}
-                        touched={touched.firstName}
-                        required
-                      />
+                {/* Body con scroll */}
+                <div className="flex-1 min-h-0 overflow-y-scroll overscroll-contain">
+                  <form onSubmit={handleSubmit} className="p-8 pb-8">
+                    <div className="space-y-6">
+                      {/* Nombres y Apellidos en Grid 2x2 */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          label="Primer Nombre"
+                          name="firstName"
+                          type="text"
+                          value={formData.firstName}
+                          onChange={(e) =>
+                            handleChange("firstName", e.target.value)
+                          }
+                          onBlur={() => handleBlur("firstName")}
+                          error={errors.firstName}
+                          touched={touched.firstName}
+                          required
+                        />
 
                       <FormField
                         label="Segundo Nombre"
@@ -733,66 +718,76 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                         touched={touched.secondLastName}
                         placeholder="Opcional"
                       />
+                      </div>
 
-                      <FormField
-                        label="Número de Documento"
-                        name="identification"
-                        type="text"
-                        value={formData.identification}
-                        onChange={(e) =>
-                          handleChange("identification", e.target.value)
-                        }
-                        onBlur={() => handleBlur("identification")}
-                        error={errors.identification}
-                        touched={touched.identification}
-                        required
-                        isLoading={isCheckingDocumentValidation}
-                      />
+                      {/* Documento y Fecha de Nacimiento */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          label="Número de Documento"
+                          name="identification"
+                          type="text"
+                          value={formData.identification}
+                          onChange={(e) =>
+                            handleChange("identification", e.target.value)
+                          }
+                          onBlur={() => handleBlur("identification")}
+                          error={errors.identification}
+                          touched={touched.identification}
+                          required
+                          isLoading={isCheckingDocumentValidation}
+                        />
 
-                      <FormField
-                        label="Fecha de Nacimiento"
-                        name="birthDate"
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={(e) =>
-                          handleChange("birthDate", e.target.value)
-                        }
-                        onBlur={() => handleBlur("birthDate")}
-                        error={errors.birthDate}
-                        touched={touched.birthDate}
-                        required
-                        minAge={5}
-                        maxAge={100}
-                      />
+                        <FormField
+                          label="Fecha de Nacimiento"
+                          name="birthDate"
+                          type="date"
+                          value={formData.birthDate}
+                          onChange={(e) =>
+                            handleChange("birthDate", e.target.value)
+                          }
+                          onBlur={() => handleBlur("birthDate")}
+                          error={errors.birthDate}
+                          touched={touched.birthDate}
+                          required
+                          minAge={5}
+                          maxAge={100}
+                        />
+                      </div>
 
-                      <FormField
-                        label="Teléfono"
-                        name="phoneNumber"
-                        type="tel"
-                        value={formData.phoneNumber}
-                        onChange={(e) =>
-                          handleChange("phoneNumber", e.target.value)
-                        }
-                        onBlur={() => handleBlur("phoneNumber")}
-                        error={errors.phoneNumber}
-                        touched={touched.phoneNumber}
-                        required
-                      />
+                      {/* Teléfono y Email */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField
+                          label="Teléfono"
+                          name="phoneNumber"
+                          type="tel"
+                          value={formData.phoneNumber}
+                          onChange={(e) =>
+                            handleChange("phoneNumber", e.target.value)
+                          }
+                          onBlur={() => handleBlur("phoneNumber")}
+                          error={errors.phoneNumber}
+                          touched={touched.phoneNumber}
+                          required
+                        />
 
-                      <FormField
-                        label="Correo Electrónico"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        onBlur={() => handleBlur("email")}
-                        error={errors.email}
-                        touched={touched.email}
-                        required
-                        isLoading={isCheckingEmailValidation}
-                      />
+                        <FormField
+                          label="Correo Electrónico"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) =>
+                            handleChange("email", e.target.value)
+                          }
+                          onBlur={() => handleBlur("email")}
+                          error={errors.email}
+                          touched={touched.email}
+                          required
+                          isLoading={isCheckingEmailValidation}
+                        />
+                      </div>
 
-                      <div className="md:col-span-2">
+                      {/* Checkbox de política de datos */}
+                      <div>
                         <label className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
                           <input
                             type="checkbox"
@@ -824,7 +819,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Footer Minimalista */}
-                <div className="bg-white border-t border-gray-200 p-3">
+                <div className="bg-white border-t border-gray-200 p-6">
                   <button
                     type="submit"
                     onClick={handleSubmit}
@@ -910,7 +905,12 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                     </div>
                     <button
                       onClick={handleResendEmail}
-                      disabled={isResending || !!newEmailError || !newEmail.trim() || isValidatingNewEmail}
+                      disabled={
+                        isResending ||
+                        !!newEmailError ||
+                        !newEmail.trim() ||
+                        isValidatingNewEmail
+                      }
                       className="px-4 py-2 bg-[#B595FF] text-white rounded-lg hover:bg-[#9b70ff] transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                     >
                       {isResending ? "Enviando..." : "Reenviar"}

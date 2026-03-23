@@ -2,7 +2,12 @@
 import PropTypes from "prop-types";
 import { useRef, useState, useEffect } from "react";
 
-export const EventSelector = ({ eventTypes, selectedType, onTypeSelect, nextEvent }) => {
+export const EventSelector = ({
+  eventTypes,
+  selectedType = null,
+  onTypeSelect,
+  nextEvent = null,
+}) => {
   const [hasScrolledDown, setHasScrolledDown] = useState(false);
   const containerRef = useRef(null);
   const { scrollY } = useScroll();
@@ -93,9 +98,4 @@ EventSelector.propTypes = {
     title: PropTypes.string,
     date: PropTypes.string,
   }),
-};
-
-EventSelector.defaultProps = {
-  selectedType: null,
-  nextEvent: null,
 };

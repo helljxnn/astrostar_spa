@@ -32,8 +32,7 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/financial-status`);
       return response.data;
     } catch (error) {
-      console.error('❌ Error fetching athlete financial status:', error);
-      throw new Error('No se pudo obtener el estado financiero del atleta');
+throw new Error('No se pudo obtener el estado financiero del atleta');
     }
   }
 
@@ -68,8 +67,7 @@ class PaymentsService {
         
         return { data: visiblePayments };
       } catch (fallbackError) {
-        console.error('❌ Error en fallback de historial:', fallbackError);
-        throw new Error('No se pudo obtener el historial de pagos del atleta');
+throw new Error('No se pudo obtener el historial de pagos del atleta');
       }
     }
   }
@@ -83,8 +81,7 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/monthly-history`);
       return response.data?.data || response.data || { history: [] };
     } catch (error) {
-      console.error('❌ Error fetching athlete monthly history:', error);
-      throw new Error('No se pudo obtener el historial de mensualidades');
+throw new Error('No se pudo obtener el historial de mensualidades');
     }
   }
 
@@ -97,8 +94,7 @@ class PaymentsService {
       const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/access-check`);
       return response.data;
     } catch (error) {
-      console.error('❌ Error checking athlete access:', error);
-      throw new Error('No se pudo verificar el acceso del atleta');
+throw new Error('No se pudo verificar el acceso del atleta');
     }
   }
 
@@ -129,8 +125,7 @@ class PaymentsService {
       });
       return response;
     } catch (error) {
-      console.error('Error downloading receipt:', error);
-      throw new Error('Error al descargar el comprobante');
+throw new Error('Error al descargar el comprobante');
     }
   }
 
@@ -188,8 +183,7 @@ class PaymentsService {
 
       return { success: true, fileName };
     } catch (error) {
-      console.error('Error al descargar comprobante:', error);
-      throw error;
+throw error;
     }
   }
 
@@ -267,12 +261,10 @@ class PaymentsService {
           });
           return this.normalizeResponse(fallbackResponse);
         } catch (fallbackError) {
-          console.error("❌ Error fetching pending payments (fallback):", fallbackError);
-          return this.handleError(fallbackError);
+return this.handleError(fallbackError);
         }
       }
-      console.error("❌ Error fetching pending payments:", error);
-      return this.handleError(error);
+return this.handleError(error);
     }
   }
 
@@ -301,8 +293,7 @@ class PaymentsService {
       // Normalizar respuesta
       return this.normalizeResponse(response);
     } catch (error) {
-      console.error('❌ Error fetching monthly management:', error);
-      return this.handleError(error);
+return this.handleError(error);
     }
   }
 
@@ -344,12 +335,10 @@ class PaymentsService {
           });
           return this.normalizeResponse(fallbackResponse);
         } catch (fallbackError) {
-          console.error("❌ Error fetching all payments (fallback):", fallbackError);
-          return this.handleError(fallbackError);
+return this.handleError(fallbackError);
         }
       }
-      console.error("❌ Error fetching all payments:", error);
-      return this.handleError(error);
+return this.handleError(error);
     }
   }
 
@@ -382,8 +371,7 @@ class PaymentsService {
         data: response.data || response || [],
       };
     } catch (error) {
-      console.error('Error fetching payments report:', error);
-      return { success: false, error: error.message, data: [] };
+return { success: false, error: error.message, data: [] };
     }
   }
 
@@ -399,8 +387,7 @@ class PaymentsService {
         data: response.data || response
       };
     } catch (error) {
-      console.error('Error approving payment:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -421,8 +408,7 @@ class PaymentsService {
         data: response.data || response
       };
     } catch (error) {
-      console.error('Error rejecting payment:', error);
-      return {
+return {
         success: false,
         error: error.message
       };
@@ -686,14 +672,7 @@ class PaymentsService {
    * Manejar errores de manera consistente
    */
   handleError(error) {
-    console.error('❌ Service error details:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data
-    });
-    
-    return {
+return {
       success: false,
       data: [],
       pagination: {

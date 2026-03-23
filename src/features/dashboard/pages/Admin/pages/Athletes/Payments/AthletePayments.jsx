@@ -321,8 +321,7 @@ const HistorialPagosSection = ({ athleteId }) => {
         const raw = response?.data || response || [];
         setHistorialPagos(Array.isArray(raw) ? raw : []);
       } catch (err) {
-        console.error('Error fetching payment history:', err);
-        setError('No se pudo cargar el historial de pagos');
+setError('No se pudo cargar el historial de pagos');
         setHistorialPagos([]);
       } finally {
         setLoading(false);
@@ -342,8 +341,7 @@ const HistorialPagosSection = ({ athleteId }) => {
       await paymentsService.downloadReceiptLegacy(payment);
       showSuccessAlert('Éxito', 'Comprobante descargado correctamente');
     } catch (error) {
-      console.error('Error downloading receipt:', error);
-      showErrorAlert('Error', 'No se pudo descargar el comprobante');
+showErrorAlert('Error', 'No se pudo descargar el comprobante');
     }
   };
 
@@ -627,8 +625,7 @@ const AthletePayments = () => {
         const history = response?.history || response?.data?.history || response?.data || [];
         setMonthlyHistory(Array.isArray(history) ? history : []);
       } catch (err) {
-        console.error("Error fetching monthly history:", err);
-        setMonthlyHistory([]);
+setMonthlyHistory([]);
       } finally {
         setMonthlyHistoryLoading(false);
       }

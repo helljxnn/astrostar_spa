@@ -39,6 +39,15 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
     try {
       setLoading(true);
       setError(null);
+
+      // Best-effort sync: pull donation materials linked to this event before rendering summary.
+      // This ensures recently created in-kind donations appear in event materials.
+      try {
+        await EventMaterialsService.loadDonations(event.id);
+      } catch (syncError) {
+        console.warn("Donation materials sync skipped:", syncError);
+      }
+
       const response = await EventMaterialsService.getSummary(event.id);
 
       if (response.success) {
@@ -157,7 +166,7 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
             onClick={handleClose}
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
           >
-            ✕
+            <X className="w-4 h-4" />
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             Materiales del Evento

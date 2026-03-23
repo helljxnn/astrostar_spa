@@ -349,7 +349,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
 
             <FormField
               label={
-                formData.tipo_baja === "OTRO"
+                formData.tipo_baja === "OTRO" || formData.tipo_baja === "Otro"
                   ? "Descripción (especifica el motivo)"
                   : "Descripción detallada"
               }
@@ -362,7 +362,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
               touched={touched.descripcion}
               required
               placeholder={
-                formData.tipo_baja === "OTRO"
+                formData.tipo_baja === "OTRO" || formData.tipo_baja === "Otro"
                   ? "Ej: Ajuste de inventario, material vencido"
                   : "Ej: Se rompió durante el torneo infantil"
               }
@@ -413,5 +413,4 @@ MaterialDischargeModal.propTypes = {
 };
 
 export default MaterialDischargeModal;
-
 

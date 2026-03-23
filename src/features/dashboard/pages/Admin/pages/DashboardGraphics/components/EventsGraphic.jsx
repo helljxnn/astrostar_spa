@@ -11,6 +11,7 @@ import {
 import { Bar } from "react-chartjs-2";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import eventsService from "../../Events/services/eventsService";
+import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 // Registrar componentes de Chart.js
 ChartJS.register(
@@ -26,6 +27,8 @@ const EventsGraphic = () => {
   const [dashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [years, setYears] = useState([]);
+  const { hasPermission, loading: permissionsLoading } = usePermissions();
+  const canViewEvents = hasPermission("eventsManagement", "Ver");
 
   // Colores para los años
   const yearColors = [
@@ -35,8 +38,17 @@ const EventsGraphic = () => {
   ];
 
   useEffect(() => {
+    if (permissionsLoading) return;
+
+    if (!canViewEvents) {
+      setDashboardData([]);
+      setYears([]);
+      setLoading(false);
+      return;
+    }
+
     fetchEventsData();
-  }, []);
+  }, [permissionsLoading, canViewEvents]);
 
   const fetchEventsData = async () => {
     try {
@@ -55,7 +67,6 @@ const EventsGraphic = () => {
         }
       }
     } catch (error) {
-      console.error("Error al cargar datos de eventos:", error);
       // Mantener datos vacíos en caso de error
       setDashboardData([
         { trimestre: "Trim 1" },
@@ -146,17 +157,23 @@ const EventsGraphic = () => {
           Eventos Realizados
         </h3>
         <div className="order-1 sm:order-2">
-          <ReportButton
-            dataProvider={async () => dashboardData}
-            fileName="Reporte_Eventos"
-            columns={reportColumns}
-          />
+          {canViewEvents && (
+            <ReportButton
+              dataProvider={async () => dashboardData}
+              fileName="Reporte_Eventos"
+              columns={reportColumns}
+            />
+          )}
         </div>
       </div>
 
       {/* Gráfico responsive */}
       <div className="h-[220px] sm:h-[260px] lg:h-[320px]">
-        {loading ? (
+        {!canViewEvents ? (
+          <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+            Sin permisos para visualizar eventos
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           </div>

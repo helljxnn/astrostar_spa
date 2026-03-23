@@ -2,9 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
-import TeamsService from "../../../TemporaryTeams/services/TeamsService";
 import RegistrationsService from "../../services/RegistrationsService";
-import SportsCategoriesService from "../../../../Athletes/SportsCategory/services/sportsCategoriesService";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -19,6 +17,7 @@ const TeamRegistrationFormModal = ({
   mode = "register", // 'register' o 'edit'
   initialSelectedTeams = [], // Equipos ya inscritos (para modo editar)
   eventId = null, // ID del evento
+  eventSportsCategories = [],
   onSuccess = null, // Callback para ejecutar después de inscribir exitosamente
 }) => {
   const isTeamType = participantType === "Equipos";
@@ -108,29 +107,24 @@ const TeamRegistrationFormModal = ({
   };
 
   // Cargar categorías deportivas desde el módulo de categorías
-  const loadSportsCategories = async () => {
-    try {
-      const response = await SportsCategoriesService.getAll({
-        status: "Activo", // Backend espera "Activo" o "Inactivo" en español
-        limit: 100, // Traer todas las categorías activas
-      });
-
-      // Manejar diferentes formatos de respuesta
-      let categories = [];
-      if (response && response.success && response.data) {
-        categories = response.data.map((cat) => cat.name);
-      } else if (response && Array.isArray(response)) {
-        // Si la respuesta es directamente un array
-        categories = response.map((cat) => cat.name);
-      } else if (response && response.data && Array.isArray(response.data)) {
-        categories = response.data.map((cat) => cat.name);
-      }
-
-      setAvailableCategories(categories);
-    } catch (error) {
-      console.error("Error cargando categorías deportivas:", error);
+  const loadEventSportsCategories = () => {
+    if (
+      !Array.isArray(eventSportsCategories) ||
+      eventSportsCategories.length === 0
+    ) {
       setAvailableCategories([]);
+      return;
     }
+
+    const categories = [
+      ...new Set(
+        eventSportsCategories
+          .map((cat) => (cat?.nombre || "").trim())
+          .filter(Boolean),
+      ),
+    ];
+
+    setAvailableCategories(categories);
   };
 
   const searchTeams = async (term) => {
@@ -200,9 +194,9 @@ const TeamRegistrationFormModal = ({
       setDisplayLimit(6); // Reset al abrir
       setSelectedCategories([]); // Reset filtros
       setSelectedTeamTypes([]); // Reset filtros de tipo
-      // Cargar equipos disponibles y categorías deportivas
+      // Cargar equipos disponibles y categorias deportivas del evento
       loadAvailableTeams();
-      loadSportsCategories();
+      loadEventSportsCategories();
       // Bloquear scroll del body
       document.body.classList.add("events-modal-open");
     } else {
@@ -214,7 +208,7 @@ const TeamRegistrationFormModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, isTeamType, eventId]);
+  }, [isOpen, isTeamType, eventId, eventSportsCategories]);
 
   const handleLoadMore = () => {
     setDisplayLimit((prev) => prev + 6);
@@ -322,7 +316,11 @@ const TeamRegistrationFormModal = ({
       <AthleteRegistrationFormModal
         isOpen={isOpen}
         onClose={onClose}
-        event={{ id: eventId, name: eventName }}
+        event={{
+          id: eventId,
+          name: eventName,
+          sportsCategoriesData: eventSportsCategories,
+        }}
         onSuccess={onSuccess}
         mode={mode}
       />
@@ -606,7 +604,7 @@ const TeamRegistrationFormModal = ({
                 onClick={selectAllFiltered}
                 className="w-full mb-3 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold"
               >
-                ✓ Seleccionar todos ({getFilteredTeams().length})
+                ✅ Seleccionar todos ({getFilteredTeams().length})
               </button>
             )}
 
@@ -1073,4 +1071,5 @@ const TeamRegistrationFormModal = ({
 };
 
 export default TeamRegistrationFormModal;
+
 
