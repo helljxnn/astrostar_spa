@@ -92,63 +92,6 @@ const getRoleColors = (cargo = "") => {
   return ROLE_COLORS[key] || ROLE_COLORS.default;
 };
 
-// x" Si es personalizado
-  if (event.repeticion === "personalizado" && event.customRecurrence) {
-    const { interval, frequency, dias, endType, endDate: endCustom } =
-      event.customRecurrence;
-    const freqMap = {
-      dia: addDays,
-      semana: addWeeks,
-      mes: addMonths,
-      anio: (d, i) => addMonths(d, 12 * i),
-    };
-    const addStep = freqMap[frequency] || addWeeks;
-
-    // Siempre incluir la fecha base (el da que se cre el horario)
-    const baseEvent = { ...event };
-    baseEvent.fecha = startDate.toISOString().split("T")[0];
-    baseEvent.start = startDate;
-    baseEvent.end = startDate;
-    events.push(baseEvent);
-
-    let current = addStep(startDate, interval);
-    const limit =
-      endType === "el" && endCustom
-        ? parseISO(endCustom)
-        : addMonths(startDate, 6);
-
-    while (isBefore(current, limit)) {
-      if (dias && dias.length > 0) {
-        // Si hay das especficos, generar eventos para esos das de la semana
-        const weekStart = current;
-        dias.forEach((dayOfWeek) => {
-          // Calcular la fecha del da de la semana especificado
-          const daysToAdd = (dayOfWeek - weekStart.getDay() + 7) % 7;
-          const next = addDays(weekStart, daysToAdd);
-
-          // Solo agregar si est dentro del lmite y no es la fecha base
-          if (isBefore(next, limit) && !isSameDay(next, startDate)) {
-            const eventCopy = { ...event };
-            eventCopy.fecha = next.toISOString().split("T")[0];
-            eventCopy.start = next;
-            eventCopy.end = next;
-            events.push(eventCopy);
-          }
-        });
-      } else {
-        // Sin das especficos, repetir el mismo da de la semana
-        const eventCopy = { ...event };
-        eventCopy.fecha = current.toISOString().split("T")[0];
-        eventCopy.start = current;
-        eventCopy.end = current;
-        events.push(eventCopy);
-      }
-      current = addStep(current, interval);
-    }
-    return events;
-  }
-
-
 /* ============================================================
    x COMPONENTE PRINCIPAL
 =========================================================== */
@@ -494,4 +437,3 @@ export default function EmployeesScheduleCalendar({
     </div>
   );
 }
-
