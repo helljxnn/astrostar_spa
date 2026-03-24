@@ -73,7 +73,7 @@ setHistoryData([]);
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen font-questrial">
+    <div className="p-6 bg-gray-50 min-h-screen font-montserrat">
       <AttendanceHeader
         selectedDate={selectedDate}
         onDateChange={updateSelectedDate}

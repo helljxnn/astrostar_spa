@@ -4,13 +4,13 @@ import Swal from "sweetalert2";
 // Aquí está la configuración de los alertas
 const alerts = {
   customClass: {
-    popup: "rounded-2xl border-0 shadow-2xl font-[Questrial]",
-    title: "text-2xl font-bold mb-2 font-[Questrial]",
-    content: "text-gray-600 text-base font-[Questrial]",
+    popup: "rounded-2xl border-0 shadow-2xl font-montserrat",
+    title: "text-2xl font-bold mb-2 font-montserrat",
+    content: "text-gray-600 text-base font-montserrat",
     confirmButton:
-      "px-6 py-3 rounded-lg font-semibold text-white font-[Questrial] transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5",
+      "px-6 py-3 rounded-lg font-semibold text-white font-montserrat transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5",
     cancelButton:
-      "px-6 py-3 rounded-lg font-semibold border-2 font-[Questrial] transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5 mr-3",
+      "px-6 py-3 rounded-lg font-semibold border-2 font-montserrat transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5 mr-3",
     actions: "gap-3 mt-6",
   },
   buttonsStyling: false,

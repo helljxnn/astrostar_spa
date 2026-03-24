@@ -538,7 +538,7 @@ const Donations = () => {
   };
 
   return (
-    <div className="p-6 font-questrial">
+    <div className="p-6 font-montserrat">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Donaciones</h1>
 
