@@ -14,7 +14,7 @@ const CancelDonationModal = ({ donation, onClose, onConfirm }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-questrial">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-montserrat">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 relative animate-fadeIn">
         {/* ---------- Cerrar ---------- */}
         <button
