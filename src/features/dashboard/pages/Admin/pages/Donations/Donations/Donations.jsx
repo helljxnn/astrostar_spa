@@ -120,6 +120,7 @@ const Donations = () => {
       <span className="whitespace-nowrap">{value || "Filtrar por mes"}</span>
     </button>
   ));
+  MonthPickerInput.displayName = "MonthPickerInput";
 
   /* ------------------- Cargar datos desde API ------------------- */
   useEffect(() => {
