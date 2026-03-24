@@ -28,6 +28,7 @@ dist-ssr
 .env.backup
 .env.development
 .env.production
+
 # Pruebas automatizadas - No subir al repositorio
 pruebas_automatizadas/
 pruebas_automatizadas/**
