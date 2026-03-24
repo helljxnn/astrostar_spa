@@ -1,5 +1,6 @@
 import { useRef, useEffect } from "react";
 import { testimonialsData } from "../data/testimonialsData";
+import "./InfiniteTestimonials.css";
 
 const TestimonialCard = ({ testimonial }) => {
   const initials = testimonial.author
@@ -23,18 +24,14 @@ const TestimonialCard = ({ testimonial }) => {
       "
     >
       <p
-        className="text-gray-700 text-base leading-relaxed mb-6"
-        style={{ fontFamily: "'Georgia', serif" }}
+        className="testimonial-quote text-gray-700 text-base leading-relaxed mb-6"
       >
         "{testimonial.text}"
       </p>
 
       <div className="flex items-center gap-4 mt-auto">
         <div
-          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base"
-          style={{
-            background: "linear-gradient(135deg,#B595FF,#9BE9FF)",
-          }}
+          className="testimonial-avatar w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base"
         >
           {initials}
         </div>
@@ -91,27 +88,17 @@ export const InfiniteTestimonials = () => {
       <div
         ref={carouselRef}
         className="
+        infinite-testimonials-track
         flex gap-6
         overflow-x-auto
         px-12
         py-6
         "
-        style={{
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
       >
         {infiniteTestimonials.map((t, index) => (
           <TestimonialCard key={`${t.id}-${index}`} testimonial={t} />
         ))}
       </div>
-
-      {/* Ocultar scrollbar en webkit */}
-      <style jsx>{`
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </div>
   );
 };

@@ -1,0 +1,16 @@
+.testimonial-quote {
+  font-family: Georgia, serif;
+}
+
+.testimonial-avatar {
+  background: linear-gradient(135deg, #b595ff, #9be9ff);
+}
+
+.infinite-testimonials-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.infinite-testimonials-track::-webkit-scrollbar {
+  display: none;
+}

@@ -81,7 +81,7 @@ export const FormField = ({
               disabled={disabled}
               className={`
                 w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-                relative z-10 bg-white appearance-none cursor-pointer
+                relative z-10 bg-white appearance-none cursor-pointer pr-10
                 ${
                   hasError
                     ? "border-red-300 focus:ring-red-500"
@@ -89,13 +89,6 @@ export const FormField = ({
                 }
                 ${disabled ? "bg-gray-100 cursor-not-allowed" : ""}
               `}
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: "right 0.75rem center",
-                backgroundRepeat: "no-repeat",
-                backgroundSize: "1.5em 1.5em",
-                paddingRight: "2.5rem",
-              }}
               {...props}
             >
               <option value="">{placeholder}</option>
@@ -105,6 +98,23 @@ export const FormField = ({
                 </option>
               ))}
             </select>
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="m6 8 4 4 4-4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </div>
         )
       ) : type === "textarea" ? (
