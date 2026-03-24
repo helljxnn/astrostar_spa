@@ -688,7 +688,7 @@ setMonthlyHistory([]);
   // ── Loading ──
   if (loading) {
     return (
-      <div className="p-4 sm:p-6 font-questrial">
+      <div className="p-4 sm:p-6 font-montserrat">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Mis Pagos</h1>
         <div className="flex justify-center items-center py-20 bg-white rounded-xl shadow border border-gray-200">
           <span className="text-sm text-gray-500">Cargando información...</span>
@@ -700,7 +700,7 @@ setMonthlyHistory([]);
   // ── Error ──
   if (error) {
     return (
-      <div className="p-4 sm:p-6 font-questrial">
+      <div className="p-4 sm:p-6 font-montserrat">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Mis Pagos</h1>
         <div className="text-center py-16 bg-white rounded-xl shadow border border-gray-200">
           <p className="text-gray-600 mb-4">{error}</p>
@@ -720,7 +720,7 @@ setMonthlyHistory([]);
     const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
 
     return (
-      <div className="p-4 sm:p-6 font-questrial">
+      <div className="p-4 sm:p-6 font-montserrat">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Mis Pagos</h1>
 
         {/* Banner informativo */}
@@ -797,7 +797,7 @@ setMonthlyHistory([]);
     const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
 
     return (
-      <div className="p-4 sm:p-6 font-questrial">
+      <div className="p-4 sm:p-6 font-montserrat">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-6">Mis Pagos</h1>
 
         {/* Banner informativo */}
@@ -867,7 +867,7 @@ setMonthlyHistory([]);
   }
   // ─── Vista principal: Mensualidades ───
   return (
-    <div className="p-4 sm:p-6 font-questrial">
+    <div className="p-4 sm:p-6 font-montserrat">
       {/* Header responsive */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-xl sm:text-2xl font-semibold text-gray-800">Mis Pagos</h1>

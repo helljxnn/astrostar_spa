@@ -915,7 +915,7 @@ const DonationsForm = () => {
   );
 
   return (
-    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-questrial">
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen font-montserrat">
       {/* Header mejorado */}
       <div className="flex items-center justify-between mb-6">
         <Link

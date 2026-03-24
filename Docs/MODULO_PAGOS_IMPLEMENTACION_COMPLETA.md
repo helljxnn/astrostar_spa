@@ -245,7 +245,7 @@ paymentsManagement: {
 ## 🎨 DISEÑO Y UX IMPLEMENTADO
 
 ### Consistencia con el Proyecto
-- ✅ **Tipografía**: font-questrial (igual que otros módulos)
+- ✅ **Tipografía**: font-montserrat (igual que otros módulos)
 - ✅ **Colores**: primary-blue, primary-purple, gray-800 (paleta del proyecto)
 - ✅ **Componentes**: Table, SearchInput, ReportButton, PermissionGuard (reutilizados)
 - ✅ **Estilos**: rounded-lg, shadow, border-gray-200 (clases consistentes)

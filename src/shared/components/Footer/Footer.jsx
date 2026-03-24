@@ -42,7 +42,7 @@ export const Footer = () => {
               <div className="lg:col-span-4">
                 <h2
                   className="text-2xl lg:text-3xl font-bold mb-4 text-black border-b-2 border-black pb-1 inline-block"
-                  style={{ fontFamily: "Questrial, sans-serif" }}
+                  style={{ fontFamily: "Montserrat, sans-serif" }}
                 >
                   Contáctanos
                 </h2>
@@ -156,7 +156,7 @@ export const Footer = () => {
         {/* Línea de desarrolladores con línea negra */}
         <div
           className="absolute bottom-0 left-0 right-0 px-6"
-          style={{ fontFamily: "Questrial, sans-serif" }}
+          style={{ fontFamily: "Montserrat, sans-serif" }}
         >
           {/* Línea negra delgada */}
           <div className="w-full h-px bg-black mb-2"></div>
