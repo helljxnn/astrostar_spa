@@ -1,7 +1,7 @@
 ﻿import { useRef, useState, useEffect } from "react";
-import styled from "styled-components";
 import { showErrorAlert, showSuccessAlert } from "../../../../../../../../../shared/utils/alerts.js";
 import apiClient from "../../../../../../../../../shared/services/apiClient";
+import "./CloudinaryUpload.css";
 
 const CloudinaryUpload = ({ 
   archivo: propArchivo, 
@@ -256,7 +256,7 @@ const CloudinaryUpload = ({
   };
 
   return (
-    <ContenedorSubida>
+    <div className="cloudinary-upload-container">
       <div
         className={`zona-arrastre ${isDragOver ? "drag-over" : ""} ${
           disabled || uploading ? "disabled" : ""
@@ -317,7 +317,7 @@ const CloudinaryUpload = ({
         <input
           type="file"
           ref={fileInputRef}
-          style={{ display: "none" }}
+          className="cloudinary-upload-input"
           onChange={manejarCambioArchivo}
           accept={type === "image" ? "image/*" : "application/pdf"}
         />
@@ -330,13 +330,7 @@ const CloudinaryUpload = ({
               <img 
                 src={preview} 
                 alt="Preview" 
-                style={{ 
-                  width: "50px", 
-                  height: "50px", 
-                  objectFit: "cover", 
-                  borderRadius: "4px",
-                  marginRight: "8px"
-                }} 
+                className="preview-image"
               />
             )}
             {type === "schedule" && (
@@ -350,7 +344,7 @@ const CloudinaryUpload = ({
                 strokeWidth="2" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
-                style={{ marginRight: "8px", flexShrink: 0 }}
+                className="schedule-icon"
               >
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -391,189 +385,9 @@ const CloudinaryUpload = ({
           </div>
         </div>
       )}
-    </ContenedorSubida>
+    </div>
   );
 };
-
-const ContenedorSubida = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  font-family: "Poppins", sans-serif;
-  width: 100%;
-
-  .zona-arrastre {
-    border: 2px dashed #c4b5fd;
-    background: #faf5ff;
-    border-radius: 12px;
-    padding: 20px 16px;
-    text-align: center;
-    width: 100%;
-    max-width: 280px;
-    min-height: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.3s ease;
-    cursor: pointer;
-  }
-
-  .zona-arrastre:hover:not(.disabled) {
-    background: #f3e8ff;
-  }
-
-  .zona-arrastre.disabled {
-    border-color: #d1d5db;
-    background: #f9fafb;
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-
-  .zona-arrastre.disabled p {
-    color: #6b7280;
-  }
-
-  .zona-arrastre.disabled svg {
-    fill: #9ca3af;
-  }
-
-  .zona-arrastre.drag-over {
-    background: #e879f9;
-    border-color: #a855f7;
-    transform: scale(1.02);
-  }
-
-  .zona-arrastre.drag-over p {
-    color: white;
-  }
-
-  .zona-arrastre.drag-over svg {
-    fill: white;
-  }
-
-  .zona-arrastre svg {
-    width: 32px;
-    height: 32px;
-  }
-
-  .zona-arrastre p {
-    font-size: 12px;
-    color: #4b0082;
-    margin-top: 8px;
-    line-height: 1.4;
-  }
-
-  .zona-arrastre .link {
-    color: #8b5cf6;
-    cursor: pointer;
-    text-decoration: underline;
-  }
-
-  .spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #8b5cf6;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  .archivo-cargado {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #ede9fe;
-    padding: 8px 12px;
-    border-radius: 8px;
-    width: 100%;
-    max-width: 280px;
-    color: #4b0082;
-    font-size: 12px;
-    gap: 8px;
-  }
-
-  .archivo-cargado.disabled {
-    background: #f3f4f6;
-    color: #6b7280;
-  }
-
-  .file-info {
-    display: flex;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .file-name {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-weight: 500;
-  }
-
-  .file-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .btn-descargar {
-    background: #a855f7;
-    border: none;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 6px;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .btn-descargar:hover {
-    background: #7c3aed;
-    transform: translateY(-1px);
-  }
-
-  .btn-descargar:active {
-    transform: translateY(0);
-  }
-
-  .btn-eliminar {
-    background: none;
-    border: none;
-    color: #a855f7;
-    font-size: 16px;
-    cursor: pointer;
-    transition: color 0.2s ease;
-    padding: 0;
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .btn-eliminar:hover:not(:disabled) {
-    color: #7c3aed;
-  }
-
-  .btn-eliminar:disabled {
-    color: #9ca3af;
-    cursor: not-allowed;
-  }
-`;
 
 export default CloudinaryUpload;
 
