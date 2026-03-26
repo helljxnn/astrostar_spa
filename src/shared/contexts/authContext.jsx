@@ -15,6 +15,45 @@ export const AuthProvider = ({ children }) => {
   const REFRESH_INTERVAL = 25 * 60 * 1000; // 25 minutos (antes de que expire el token de 30 min)
   const INACTIVITY_TIMEOUT = 1 * 60 * 60 * 1000; // 1 hora de inactividad
 
+  const asPlainObject = (value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+  const countKeys = (value) => Object.keys(asPlainObject(value)).length;
+
+  const mergeUserWithStoredPermissions = (incomingUser, storedUser) => {
+    if (!incomingUser) return storedUser || null;
+    if (!storedUser) return incomingUser;
+
+    const incomingPermissions =
+      incomingUser?.role?.permissions || incomingUser?.permissions || null;
+    const storedPermissions =
+      storedUser?.role?.permissions || storedUser?.permissions || null;
+    const hasIncomingPermissions = countKeys(incomingPermissions) > 0;
+    const hasStoredPermissions = countKeys(storedPermissions) > 0;
+
+    if (!hasIncomingPermissions && hasStoredPermissions) {
+      return {
+        ...storedUser,
+        ...incomingUser,
+        permissions: storedPermissions,
+        role: {
+          ...asPlainObject(storedUser.role),
+          ...asPlainObject(incomingUser.role),
+          permissions: storedPermissions,
+        },
+      };
+    }
+
+    return {
+      ...storedUser,
+      ...incomingUser,
+      role: {
+        ...asPlainObject(storedUser.role),
+        ...asPlainObject(incomingUser.role),
+      },
+    };
+  };
+
   // Función para refrescar el token automáticamente
   const scheduleTokenRefresh = () => {
     // Limpiar timer anterior si existe
@@ -39,9 +78,12 @@ export const AuthProvider = ({ children }) => {
           const result = await response.json();
           const accessToken = result.data.accessToken;
           const userData = result.data.user;
+          const storedUserRaw = localStorage.getItem("user");
+          const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+          const mergedUser = mergeUserWithStoredPermissions(userData, storedUser);
 
           // ✅ VALIDACIÓN: Verificar que el usuario siga activo
-          if (userData && userData.status !== "Active") {
+          if (mergedUser && mergedUser.status !== "Active") {
             console.warn("Usuario inactivado durante la sesión");
             showWarningAlert("Cuenta inactivada", "Tu cuenta ha sido inactivada. Contacta al administrador.");
             logout();
@@ -51,9 +93,9 @@ export const AuthProvider = ({ children }) => {
           apiClient.setAccessToken(accessToken);
 
           // Actualizar datos del usuario si vienen en el refresh
-          if (userData) {
-            setUser(userData);
-            localStorage.setItem("user", JSON.stringify(userData));
+          if (mergedUser) {
+            setUser(mergedUser);
+            localStorage.setItem("user", JSON.stringify(mergedUser));
           }
 
           // Programar el siguiente refresh
@@ -138,7 +180,11 @@ export const AuthProvider = ({ children }) => {
           if (response.ok) {
             const result = await response.json();
             const accessToken = result.data.accessToken;
-            const refreshedUser = result.data.user || JSON.parse(storedUser);
+            const storedUserParsed = JSON.parse(storedUser);
+            const refreshedUser = mergeUserWithStoredPermissions(
+              result.data.user,
+              storedUserParsed,
+            );
 
             // Almacenar access token en memoria del apiClient
             apiClient.setAccessToken(accessToken);
@@ -254,7 +300,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedData) => {
     setUser((prevUser) => {
-      const newUser = { ...prevUser, ...updatedData };
+      const newUser = mergeUserWithStoredPermissions(updatedData, prevUser);
       localStorage.setItem("user", JSON.stringify(newUser));
       return newUser;
     });
@@ -299,6 +345,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
       localStorage.removeItem("user");
+      localStorage.removeItem("lastKnownPermissionsByUser");
 
       // Redirigir al login después del logout
       window.location.href = "/login";

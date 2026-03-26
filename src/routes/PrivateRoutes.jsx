@@ -57,7 +57,7 @@ const PrivateRoutes = () => {
   return (
     <Routes>
       {/* Todas las rutas bajo el layout /dashboard */}
-      <Route path="/" element={<DashboardLayout />}>
+      <Route element={<DashboardLayout />}>
         {/* --- Principal --- */}
         <Route index element={<DashboardHome />} />
 

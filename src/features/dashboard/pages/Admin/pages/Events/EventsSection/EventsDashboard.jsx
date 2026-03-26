@@ -230,10 +230,10 @@ const Event = () => {
                   { key: "tipo", label: "Tipo de Evento" },
                   {
                     key: "categoriasDeportivas",
-                    label: "Categor?as Deportivas",
+                    label: "Categorías Deportivas",
                   },
-                  { key: "ubicacion", label: "Ubicaci?n" },
-                  { key: "telefono", label: "Tel?fono" },
+                  { key: "ubicacion", label: "Ubicación" },
+                  { key: "telefono", label: "Teléfono" },
                   { key: "estado", label: "Estado" },
                   { key: "publicar", label: "Publicado" },
                 ]}
@@ -258,7 +258,7 @@ const Event = () => {
               onClick={() => setShowFilters(false)}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
-              ?o.
+              &times;
             </button>
           </div>
 

@@ -116,6 +116,73 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     getCurrentDate: () => new Date(), // El BaseCalendar maneja esto internamente
   }));
 
+  /**
+   * Abrir modal en modo vista para un evento
+   */
+  const openEventInViewMode = useCallback(
+    (eventItem) => {
+      if (!hasPermission("eventsManagement", "Ver")) {
+        showErrorAlert(
+          "Sin permisos",
+          "No tienes permisos para ver eventos",
+        );
+        return;
+      }
+
+      const dashboardEvent = eventItem?.extendedProps?.dashboardEvent || eventItem;
+      if (!dashboardEvent) return;
+
+      const formatTime = (dateValue) => {
+        const safeDate = new Date(dateValue);
+        if (isNaN(safeDate.getTime())) return "";
+        return safeDate.toTimeString().slice(0, 5); // HH:MM
+      };
+
+      const formatDateLocal = (dateValue) => {
+        const safeDate = new Date(dateValue);
+        if (isNaN(safeDate.getTime())) return "";
+        const year = safeDate.getFullYear();
+        const month = String(safeDate.getMonth() + 1).padStart(2, "0");
+        const day = String(safeDate.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
+
+      const startValue =
+        dashboardEvent.start ||
+        dashboardEvent.fechaInicio ||
+        dashboardEvent.date;
+      const endValue =
+        dashboardEvent.end ||
+        dashboardEvent.fechaFin ||
+        dashboardEvent.start ||
+        dashboardEvent.date;
+
+      setSelectedEvent({
+        nombre: dashboardEvent.title || dashboardEvent.nombre || "",
+        tipo: dashboardEvent.tipo,
+        descripcion: dashboardEvent.descripcion || "",
+        fechaInicio: formatDateLocal(startValue),
+        fechaFin: formatDateLocal(endValue),
+        horaInicio: formatTime(startValue),
+        horaFin: formatTime(endValue),
+        ubicacion: dashboardEvent.ubicacion || "",
+        telefono: dashboardEvent.telefono || "",
+        categoria: dashboardEvent.categoria || "",
+        categoryIds: dashboardEvent.categoryIds || [],
+        estado: dashboardEvent.estado || "",
+        publicar: dashboardEvent.publicar || false,
+        patrocinador: dashboardEvent.patrocinador || [],
+        imagen: dashboardEvent.imagen || null,
+        cronograma: dashboardEvent.cronograma || null,
+        id: dashboardEvent.id,
+      });
+      setIsNew(false);
+      setModalMode("view");
+      setIsModalOpen(true);
+    },
+    [hasPermission],
+  );
+
   // Manejar click en evento (delegado al BaseCalendar)
   const handleEventClick = useCallback((event, jsEvent) => {
     // Si el click fue en un bot?n, no hacer nada
@@ -125,9 +192,9 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     ) {
       return;
     }
-    // No hacer nada aqu?, las acciones se manejan a trav?s de los botones del evento
-    return;
-  }, []);
+    // Abrir el modal de ver al dar clic en un evento del calendario
+    openEventInViewMode(event);
+  }, [openEventInViewMode]);
 
   // Manejar selecci?n de fecha/slot para crear evento
   const handleDateSelect = useCallback(
@@ -177,8 +244,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
       if (selectedDateOnly.getTime() < oneWeekFromToday.getTime()) {
         showErrorAlert(
-          "Fecha no v?lida",
-          "Los eventos deben crearse con al menos 1 semana de anticipaci?n. Por favor, selecciona una fecha a partir del " +
+          "Fecha no válida",
+          "Los eventos deben crearse con al menos 1 semana de anticipación. Por favor, selecciona una fecha a partir del " +
             oneWeekFromToday.toLocaleDateString("es-ES", {
               weekday: "long",
               year: "numeric",
@@ -255,7 +322,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   // Renderizar evento personalizado
   const renderEvent = useCallback((event, variant) => {
     if (!event) {
-      return <div>Error: Evento inv?lido</div>;
+      return <div>Error: Evento inválido</div>;
     }
 
     // Para la variante custom, necesitamos manejar diferentes tipos de vista
@@ -272,6 +339,92 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
     // Fallback para compatibilidad
     return <DashboardEventComponent event={event} view="month" />;
+  }, []);
+
+  /**
+   * Verificar si un evento se puede eliminar
+   */
+  const canDeleteEvent = useCallback((event) => {
+    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+    const estadoRaw =
+      dashboardEvent.estadoOriginal ||
+      dashboardEvent.estado ||
+      dashboardEvent.status ||
+      "";
+    const estadoNormalizado = String(estadoRaw)
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    const participantCount =
+      dashboardEvent.participants?.length ||
+      dashboardEvent._count?.participants ||
+      0;
+    const hasRegistrations = Boolean(dashboardEvent.hasRegistrations);
+    const donationMaterialsCount =
+      dashboardEvent.donationMaterialsCount ??
+      dashboardEvent._count?.eventMaterials ??
+      dashboardEvent.eventMaterials?.length ??
+      0;
+
+    // No se puede eliminar si está en curso o finalizado
+    if (estadoNormalizado === "en_curso" || estadoNormalizado === "finalizado") {
+      return false;
+    }
+
+    // No se puede eliminar si tiene inscritos
+    if (participantCount > 0 || hasRegistrations) {
+      return false;
+    }
+
+    // No se puede eliminar si tiene materiales a entregar asignados por donación
+    if (donationMaterialsCount > 0) {
+      return false;
+    }
+
+    return true;
+  }, []);
+
+  /**
+   * Obtener mensaje de por qué no se puede eliminar un evento
+   */
+  const getDeleteDisabledReason = useCallback((event) => {
+    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
+    const estadoRaw =
+      dashboardEvent.estadoOriginal ||
+      dashboardEvent.estado ||
+      dashboardEvent.status ||
+      "";
+    const estadoNormalizado = String(estadoRaw)
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
+    const participantCount =
+      dashboardEvent.participants?.length ||
+      dashboardEvent._count?.participants ||
+      0;
+    const hasRegistrations = Boolean(dashboardEvent.hasRegistrations);
+    const donationMaterialsCount =
+      dashboardEvent.donationMaterialsCount ??
+      dashboardEvent._count?.eventMaterials ??
+      dashboardEvent.eventMaterials?.length ??
+      0;
+
+    if (estadoNormalizado === "en_curso") {
+      return "No se puede eliminar un evento en curso";
+    }
+
+    if (estadoNormalizado === "finalizado") {
+      return "No se puede eliminar un evento finalizado";
+    }
+
+    if (participantCount > 0 || hasRegistrations) {
+      const inscritos = participantCount > 0 ? participantCount : 1;
+      return `No se puede eliminar: tiene ${inscritos} inscrito(s)`;
+    }
+
+    if (donationMaterialsCount > 0) {
+      return `No se puede eliminar: tiene ${donationMaterialsCount} material(es) comprometido(s) con donante(s)`;
+    }
+
+    return "";
   }, []);
 
   // Manejar acciones CRUD
@@ -324,7 +477,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
             showErrorAlert(
               "Evento Finalizado",
-              "No se puede editar un evento que ya finaliz?. Solo puedes verlo o eliminarlo.",
+              "No se puede editar un evento que ya finalizó. Solo puedes verlo o eliminarlo.",
             );
             return;
           }
@@ -335,7 +488,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           ) {
             showErrorAlert(
               "Evento Cancelado y Finalizado",
-              "No se puede editar un evento cancelado cuya fecha ya pas?. Solo puedes verlo o eliminarlo.",
+              "No se puede editar un evento cancelado cuya fecha ya pasó. Solo puedes verlo o eliminarlo.",
             );
             return;
           }
@@ -386,15 +539,36 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             return;
           }
 
+          if (!canDeleteEvent(dashboardEvent)) {
+            showErrorAlert(
+              "No se puede eliminar",
+              getDeleteDisabledReason(dashboardEvent) ||
+                "Este evento no se puede eliminar en su estado actual.",
+            );
+            return;
+          }
+
+          const eventId = dashboardEvent?.id;
+          const eventTitle =
+            dashboardEvent?.title || dashboardEvent?.nombre || "este evento";
+
+          if (!eventId) {
+            showErrorAlert(
+              "No se pudo eliminar",
+              "No se encontró el identificador del evento.",
+            );
+            return;
+          }
+
           try {
             const result = await showDeleteAlert(
-              "?Eliminar evento?",
-              `Se eliminar? permanentemente el evento: ${dashboardEvent.title}`,
+              "¿Eliminar evento?",
+              `Se eliminará permanentemente el evento: ${eventTitle}`,
             );
 
             if (result.isConfirmed) {
               if (onDeleteEvent) {
-                await onDeleteEvent(dashboardEvent.id, dashboardEvent.title);
+                await onDeleteEvent(eventId, eventTitle);
               }
             }
           } catch (error) {
@@ -448,7 +622,13 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           break;
       }
     },
-    [actionModal.event, hasPermission, onDeleteEvent],
+    [
+      actionModal.event,
+      hasPermission,
+      onDeleteEvent,
+      canDeleteEvent,
+      getDeleteDisabledReason,
+    ],
   );
 
   // Manejar acciones de inscripci?n
@@ -571,8 +751,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
 
     showErrorAlert(
-      "Restricci?n de fecha",
-      "Los eventos deben crearse con al menos 1 semana de anticipaci?n. Por favor, selecciona una fecha espec?fica en el calendario a partir del " +
+      "Restricción de fecha",
+      "Los eventos deben crearse con al menos 1 semana de anticipación. Por favor, selecciona una fecha específica en el calendario a partir del " +
         oneWeekFromToday.toLocaleDateString("es-ES", {
           weekday: "long",
           year: "numeric",
@@ -588,46 +768,8 @@ const EventsCalendar = forwardRef(function EventsCalendar(
    * Manejar clic en un evento desde la sidebar
    */
   const handleSidebarEventClick = useCallback((eventItem) => {
-    // Abrir modal de detalle del evento
-    const dashboardEvent = eventItem.extendedProps?.dashboardEvent || eventItem;
-
-    const formatTime = (date) => {
-      return date.toTimeString().slice(0, 5); // HH:MM
-    };
-
-    const formatDateLocal = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    };
-
-    const startDate = new Date(dashboardEvent.start);
-    const endDate = new Date(dashboardEvent.end);
-
-    setSelectedEvent({
-      nombre: dashboardEvent.title,
-      tipo: dashboardEvent.tipo,
-      descripcion: dashboardEvent.descripcion || "",
-      fechaInicio: formatDateLocal(startDate),
-      fechaFin: formatDateLocal(endDate),
-      horaInicio: formatTime(startDate),
-      horaFin: formatTime(endDate),
-      ubicacion: dashboardEvent.ubicacion || "",
-      telefono: dashboardEvent.telefono || "",
-      categoria: dashboardEvent.categoria || "",
-      categoryIds: dashboardEvent.categoryIds || [],
-      estado: dashboardEvent.estado || "",
-      publicar: dashboardEvent.publicar || false,
-      patrocinador: dashboardEvent.patrocinador || [],
-      imagen: dashboardEvent.imagen || null,
-      cronograma: dashboardEvent.cronograma || null,
-      id: dashboardEvent.id,
-    });
-    setIsNew(false);
-    setModalMode("view");
-    setIsModalOpen(true);
-  }, []);
+    openEventInViewMode(eventItem);
+  }, [openEventInViewMode]);
 
   /**
    * Manejar edici?n de evento desde la sidebar
@@ -652,7 +794,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
         showErrorAlert(
           "Evento Finalizado",
-          "No se puede editar un evento que ya finaliz?.",
+          "No se puede editar un evento que ya finalizó.",
         );
         return;
       }
@@ -706,72 +848,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   );
 
   /**
-   * Verificar si un evento se puede eliminar
-   */
-  const canDeleteEvent = useCallback((event) => {
-    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
-    const estado = dashboardEvent.estado || dashboardEvent.status;
-    const participantCount =
-      dashboardEvent.participants?.length ||
-      dashboardEvent._count?.participants ||
-      0;
-    const donationMaterialsCount = dashboardEvent.donationMaterialsCount ?? 0;
-
-    // No se puede eliminar si est? en curso o finalizado
-    if (
-      estado === "En Curso" ||
-      estado === "en_curso" ||
-      estado === "Finalizado" ||
-      estado === "finalizado"
-    ) {
-      return false;
-    }
-
-    // No se puede eliminar si tiene inscritos
-    if (participantCount > 0) {
-      return false;
-    }
-
-    // No se puede eliminar si tiene materiales a entregar asignados por donaci?n
-    if (donationMaterialsCount > 0) {
-      return false;
-    }
-
-    return true;
-  }, []);
-
-  /**
-   * Obtener mensaje de por qu? no se puede eliminar un evento
-   */
-  const getDeleteDisabledReason = useCallback((event) => {
-    const dashboardEvent = event.extendedProps?.dashboardEvent || event;
-    const estado = dashboardEvent.estado || dashboardEvent.status;
-    const participantCount =
-      dashboardEvent.participants?.length ||
-      dashboardEvent._count?.participants ||
-      0;
-    const donationMaterialsCount = dashboardEvent.donationMaterialsCount ?? 0;
-
-    if (estado === "En Curso" || estado === "en_curso") {
-      return "No se puede eliminar un evento en curso";
-    }
-
-    if (estado === "Finalizado" || estado === "finalizado") {
-      return "No se puede eliminar un evento finalizado";
-    }
-
-    if (participantCount > 0) {
-      return `No se puede eliminar: tiene ${participantCount} inscrito(s)`;
-    }
-
-    if (donationMaterialsCount > 0) {
-      return `No se puede eliminar: tiene ${donationMaterialsCount} material(es) comprometido(s) con donante(s)`;
-    }
-
-    return "";
-  }, []);
-
-  /**
    * Manejar eliminaci?n de evento desde la sidebar
    */
   const handleDeleteEvent = useCallback(
@@ -788,22 +864,43 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         return;
       }
 
+      if (!canDeleteEvent(dashboardEvent)) {
+        showErrorAlert(
+          "No se puede eliminar",
+          getDeleteDisabledReason(dashboardEvent) ||
+            "Este evento no se puede eliminar en su estado actual.",
+        );
+        return;
+      }
+
+      const eventId = dashboardEvent?.id;
+      const eventTitle =
+        dashboardEvent?.title || dashboardEvent?.nombre || "este evento";
+
+      if (!eventId) {
+        showErrorAlert(
+          "No se pudo eliminar",
+          "No se encontró el identificador del evento.",
+        );
+        return;
+      }
+
       try {
         const result = await showDeleteAlert(
-          "?Eliminar evento?",
-          `Se eliminar? permanentemente el evento: ${dashboardEvent.title}`,
+          "¿Eliminar evento?",
+          `Se eliminará permanentemente el evento: ${eventTitle}`,
         );
 
         if (result.isConfirmed) {
           if (onDeleteEvent) {
-            await onDeleteEvent(dashboardEvent.id, dashboardEvent.title);
+            await onDeleteEvent(eventId, eventTitle);
           }
         }
       } catch (error) {
         // El error ya se maneja en el hook
       }
     },
-    [hasPermission, onDeleteEvent],
+    [hasPermission, onDeleteEvent, canDeleteEvent, getDeleteDisabledReason],
   );
 
   /**
@@ -853,7 +950,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
               )}
               {event.extendedProps?.categoria && (
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-medium">Categor?a:</span>
+                  <span className="text-xs font-medium">Categoría:</span>
                   {event.extendedProps.categoria}
                 </div>
               )}
@@ -1146,12 +1243,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           messages: {
             month: "Mes",
             week: "Semana",
-            day: "D?a",
+            day: "Día",
             today: "Hoy",
-            previous: "Atr?s",
+            previous: "Atrás",
             next: "Siguiente",
             noEventsInRange: "No hay eventos en este rango.",
-            showMore: (total) => `${total} eventos m?s`,
+            showMore: (total) => `${total} eventos más`,
           },
         }}
         // UI Configuration
@@ -1306,4 +1403,3 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 });
 
 export default EventsCalendar;
-
