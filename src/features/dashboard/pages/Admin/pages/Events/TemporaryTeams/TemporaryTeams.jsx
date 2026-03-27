@@ -268,12 +268,16 @@ const TemporaryTeams = () => {
         teamType: "Temporal",
       },
       (data) => data.map(team => ({
-        nombre: team.name || '',
-        descripcion: team.description || '',
-        entrenador: team.coach || '',
-        categoria: team.category || '',
-        tipo: team.teamType === 'Temporal' ? 'Temporal' : 'Permanente',
-        estado: team.status === 'Active' ? 'Activo' : 'Inactivo',
+        nombre: team.nombre || team.name || "",
+        entrenador: team.entrenador || team.coach || "",
+        deportistas: team.cantidadDeportistas ?? team._count?.members ?? 0,
+        listaDeportistas: Array.isArray(team.deportistas)
+          ? team.deportistas.map((member) => member.name).filter(Boolean).join(", ")
+          : "",
+        categoria: team.categoria || team.category || "",
+        tipo: team.teamType === "Temporal" ? "Temporal" : "Fundación",
+        estado: team.estado || (team.status === "Active" ? "Activo" : "Inactivo"),
+        descripcion: team.descripcion || team.description || "",
         fechaCreacion: team.createdAt ? new Date(team.createdAt).toLocaleDateString('es-ES') : '',
       }))
     );
@@ -353,10 +357,7 @@ const TemporaryTeams = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  setCurrentPage(1);
-                }
+                setCurrentPage(1);
               }}
               placeholder="Buscar equipo..."
             />
@@ -368,11 +369,13 @@ const TemporaryTeams = () => {
               fileName="equipos_temporales"
               columns={[
                 { header: 'Nombre', accessor: 'nombre' },
-                { header: 'Descripción', accessor: 'descripcion' },
                 { header: 'Entrenador', accessor: 'entrenador' },
+                { header: 'Cantidad Deportistas', accessor: 'deportistas' },
+                { header: 'Deportistas', accessor: 'listaDeportistas' },
                 { header: 'Categoría', accessor: 'categoria' },
                 { header: 'Tipo', accessor: 'tipo' },
                 { header: 'Estado', accessor: 'estado' },
+                { header: 'Descripción', accessor: 'descripcion' },
                 { header: 'Fecha Creación', accessor: 'fechaCreacion' },
               ]}
             />

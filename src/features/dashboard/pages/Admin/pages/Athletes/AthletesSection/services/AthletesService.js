@@ -470,6 +470,7 @@ return {
           search: params.search || '',
           status: params.status || '',
           categoria: params.categoria || '',
+          estadoInscripcion: params.estadoInscripcion || '',
         }
       });
 

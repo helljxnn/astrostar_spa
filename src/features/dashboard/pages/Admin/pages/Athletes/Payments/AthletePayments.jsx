@@ -950,10 +950,10 @@ setMonthlyHistory([]);
 
       {/* Tabs minimalistas */}
       <div className="mb-6">
-        <div className="inline-flex gap-2">
+        <div className="flex w-full gap-2 overflow-x-auto pb-1 sm:inline-flex sm:w-auto">
           <button
             onClick={() => setActiveTab("pendientes")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`min-w-[170px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 relative ${
               activeTab === "pendientes"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -972,7 +972,7 @@ setMonthlyHistory([]);
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>Pendientes</span>
+            <span className="whitespace-nowrap">Pagos pendientes</span>
             {pendingObligationsFiltered.length > 0 && activeTab !== "pendientes" ? (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                 {pendingObligationsFiltered.length}
@@ -992,7 +992,7 @@ setMonthlyHistory([]);
           
           <button
             onClick={() => setActiveTab("revision")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`min-w-[170px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 relative ${
               activeTab === "revision"
                 ? "bg-yellow-500/10 text-yellow-600"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -1011,7 +1011,7 @@ setMonthlyHistory([]);
                 d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
               />
             </svg>
-            <span>En RevisiÃ³n</span>
+            <span className="whitespace-nowrap">En Revisión</span>
             {inReviewObligations.length > 0 && activeTab !== "revision" ? (
               <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                 {inReviewObligations.length}
@@ -1031,7 +1031,7 @@ setMonthlyHistory([]);
           
           <button
             onClick={() => setActiveTab("historial")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`min-w-fit shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
               activeTab === "historial"
                 ? "bg-primary-blue/10 text-primary-blue"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -1050,7 +1050,7 @@ setMonthlyHistory([]);
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>Historial</span>
+            <span className="whitespace-nowrap">Historial</span>
           </button>
         </div>
       </div>
@@ -1251,3 +1251,5 @@ setMonthlyHistory([]);
 };
 
 export default AthletePayments;
+
+

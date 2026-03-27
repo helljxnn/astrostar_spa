@@ -1,3 +1,5 @@
+import { parseDateValue } from "./dateHelpers";
+
 export const eventTypes = [
   { id: "todos", label: "Todos", icon: "\u2728" },
   { id: "torneo", label: "Torneos", icon: "\u{1F3C6}" },
@@ -58,9 +60,9 @@ export const processEventsStatus = (events = []) => {
     }
 
     const eventEndDate = event.endDate || event.date;
-    const endDate = new Date(eventEndDate);
+    const endDate = parseDateValue(eventEndDate);
 
-    if (Number.isNaN(endDate.getTime())) {
+    if (!endDate) {
       return event;
     }
 
@@ -95,28 +97,30 @@ export const filterEventsByType = (events = [], selectedType) => {
 
 export const getUpcomingEvents = (events = []) => {
   const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return events
     .filter((event) => {
-      const startDate = new Date(event.date);
-      return startDate >= today;
+      const startDate = parseDateValue(event.date);
+      return Boolean(startDate) && startDate >= todayStart;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      const dateA = parseDateValue(a.date);
+      const dateB = parseDateValue(b.date);
       return dateA - dateB;
     });
 };
 
 export const getPastEvents = (events = []) => {
   const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   return events
     .filter((event) => {
-      const endDate = new Date(event.endDate || event.date);
-      return endDate < today;
+      const endDate = parseDateValue(event.endDate || event.date);
+      return Boolean(endDate) && endDate < todayStart;
     })
     .sort((a, b) => {
-      const dateA = new Date(a.endDate || a.date);
-      const dateB = new Date(b.endDate || b.date);
+      const dateA = parseDateValue(a.endDate || a.date);
+      const dateB = parseDateValue(b.endDate || b.date);
       return dateB - dateA;
     });
 };
@@ -125,8 +129,8 @@ export const getNextEvent = (upcomingEvents = []) => {
   return upcomingEvents
     .filter((event) => event.status === "programado")
     .sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      const dateA = parseDateValue(a.date);
+      const dateB = parseDateValue(b.date);
       return dateA - dateB;
     })[0];
 };
@@ -146,7 +150,16 @@ export const calculateTimeRemaining = (date, time) => {
   const time24 = convertTo24Hour(time);
   const [hours, minutes] = time24.split(":");
 
-  const targetDate = new Date(date);
+  const targetDate = parseDateValue(date);
+  if (!targetDate) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isExpired: true,
+    };
+  }
   targetDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
   const difference = targetDate.getTime() - now.getTime();
@@ -192,7 +205,8 @@ export const getCountdownEvent = (events = []) => {
 
       const time24 = convertTo24Hour(event.time);
       const [hours, minutes] = time24.split(":");
-      const eventDate = new Date(event.date);
+      const eventDate = parseDateValue(event.date);
+      if (!eventDate) return false;
       eventDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0);
 
       return eventDate > now;

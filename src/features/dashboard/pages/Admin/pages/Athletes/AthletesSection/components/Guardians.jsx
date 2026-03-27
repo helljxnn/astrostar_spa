@@ -12,6 +12,7 @@ import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
+  showConfirmAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 import GuardianModal from "./GuardianModal";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
@@ -93,6 +94,19 @@ showErrorAlert("Error", "Error al cargar los acudientes");
   const handleSave = async (guardian) => {
     try {
       if (editingGuardian) {
+        const confirmResult = await showConfirmAlert(
+          "¿Guardar cambios?",
+          `¿Deseas actualizar la información de ${editingGuardian.nombreCompleto}?`,
+          {
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar",
+          },
+        );
+
+        if (!confirmResult.isConfirmed) {
+          return;
+        }
+
         // Editar
         const response = await GuardiansService.updateGuardian(
           editingGuardian.id,

@@ -21,6 +21,16 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
     dateTo: initialParams.dateTo || ''
   });
 
+  const effectiveSearchTerm =
+    initialParams.search !== undefined ? initialParams.search || '' : searchTerm;
+
+  const effectiveFilters = {
+    status: initialParams.status !== undefined ? initialParams.status || '' : filters.status,
+    type: initialParams.type !== undefined ? initialParams.type || '' : filters.type,
+    dateFrom: initialParams.dateFrom !== undefined ? initialParams.dateFrom || '' : filters.dateFrom,
+    dateTo: initialParams.dateTo !== undefined ? initialParams.dateTo || '' : filters.dateTo,
+  };
+
   const fetchPayments = async () => {
     setLoading(true);
     try {
@@ -30,11 +40,11 @@ export const usePayments = (mode = 'all', initialParams = {}) => {
       const paginationParams = {
         page: currentPage,
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm,
-        status: filters.status,
-        type: filters.type,
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo
+        search: effectiveSearchTerm,
+        status: effectiveFilters.status,
+        type: effectiveFilters.type,
+        dateFrom: effectiveFilters.dateFrom,
+        dateTo: effectiveFilters.dateTo
       };
       
       if (mode === 'pending') {
@@ -74,48 +84,33 @@ showErrorAlert('Error', 'No se pudieron cargar los pagos');
   // Cargar pagos cuando cambian la página o los filtros - PATRÓN SIMPLE COMO MÓDULOS EXITOSOS
   useEffect(() => {
     fetchPayments();
-  }, [currentPage, searchTerm, filters.status, filters.type, filters.dateFrom, filters.dateTo, mode]);
-
-  // Actualizar searchTerm cuando cambian los parámetros iniciales
-  useEffect(() => {
-    if (initialParams.search !== undefined && initialParams.search !== searchTerm) {
-      setSearchTerm(initialParams.search);
-    }
-  }, [initialParams.search]);
-
-  useEffect(() => {
-    const nextFilters = {
-      status: initialParams.status || '',
-      type: initialParams.type || '',
-      dateFrom: initialParams.dateFrom || '',
-      dateTo: initialParams.dateTo || ''
-    };
-
-    setFilters((prev) => {
-      if (
-        prev.status === nextFilters.status &&
-        prev.type === nextFilters.type &&
-        prev.dateFrom === nextFilters.dateFrom &&
-        prev.dateTo === nextFilters.dateTo
-      ) {
-        return prev;
-      }
-      return nextFilters;
-    });
-  }, [initialParams.status, initialParams.type, initialParams.dateFrom, initialParams.dateTo]);
+  }, [
+    currentPage,
+    effectiveSearchTerm,
+    effectiveFilters.status,
+    effectiveFilters.type,
+    effectiveFilters.dateFrom,
+    effectiveFilters.dateTo,
+    mode
+  ]);
 
   // Resetear a página 1 cuando cambia la búsqueda - PATRÓN ESTÁNDAR
   useEffect(() => {
-    if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE && searchTerm) {
+    if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE && effectiveSearchTerm) {
       setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
     }
-  }, [searchTerm]);
+  }, [effectiveSearchTerm]);
 
   useEffect(() => {
     if (currentPage !== PAGINATION_CONFIG.DEFAULT_PAGE) {
       setCurrentPage(PAGINATION_CONFIG.DEFAULT_PAGE);
     }
-  }, [filters.status, filters.type, filters.dateFrom, filters.dateTo]);
+  }, [
+    effectiveFilters.status,
+    effectiveFilters.type,
+    effectiveFilters.dateFrom,
+    effectiveFilters.dateTo
+  ]);
 
   // Función para cambiar página - SIMPLE Y DIRECTA
   const handlePageChange = (newPage) => {
@@ -184,8 +179,8 @@ showErrorAlert('Error', error.message || 'No se pudo rechazar el pago');
     actionLoading,
     currentPage,
     totalRows,
-    searchTerm,
-    filters,
+    searchTerm: effectiveSearchTerm,
+    filters: effectiveFilters,
     setFilters: updateFilters,
     setSearchTerm: updateSearch,
     handlePageChange,

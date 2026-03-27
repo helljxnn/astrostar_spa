@@ -77,11 +77,10 @@ const Users = () => {
   const displayData = data;
   const displayTotalRows = totalRows;
 
-  useEffect(() => {
-    if (currentPage !== 1 && searchTerm) setCurrentPage(1);
-  }, [searchTerm]);
-
-  const handleSearchChange = (e) => setSearchTerm(e.target.value);
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1);
+  };
   
   const handleView = (user) => {
     setUserToView(user);

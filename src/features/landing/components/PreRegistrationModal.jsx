@@ -658,8 +658,8 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Body con scroll */}
-                <div className="flex-1 min-h-0 overflow-y-scroll overscroll-contain">
-                  <form onSubmit={handleSubmit} className="p-8 pb-8">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                  <form onSubmit={handleSubmit} className="p-8 pb-4">
                     <div className="space-y-6">
                       {/* Nombres y Apellidos en Grid 2x2 */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -787,7 +787,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                       </div>
 
                       {/* Checkbox de política de datos */}
-                      <div>
+                      <div className="pb-4">
                         <label className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
                           <input
                             type="checkbox"

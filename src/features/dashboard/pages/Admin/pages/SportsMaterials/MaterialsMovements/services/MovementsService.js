@@ -14,6 +14,8 @@ class MovementsService {
       tipo = "",
       dateFrom = "",
       dateTo = "",
+      inventarioDestino = "",
+      tipoSalida = "",
     } = params;
 
     const queryParams = {
@@ -24,8 +26,10 @@ class MovementsService {
 
     if (materialId) queryParams.material_id = materialId;
     if (tipo) queryParams.tipo = tipo;
-    if (dateFrom) queryParams.date_from = dateFrom;
-    if (dateTo) queryParams.date_to = dateTo;
+    if (dateFrom) queryParams.dateFrom = dateFrom;
+    if (dateTo) queryParams.dateTo = dateTo;
+    if (inventarioDestino) queryParams.inventarioDestino = inventarioDestino;
+    if (tipoSalida) queryParams.tipoSalida = tipoSalida;
 
     const response = await apiClient.get(this.endpoint, queryParams);
 
@@ -331,14 +335,20 @@ class MovementsService {
    */
   async getAllForReport(params = {}) {
     const queryParams = {
-      ...params,
-      limit: 10000, // Límite alto para obtener todos los datos
+      search: params.search || "",
+      tipo: params.tipo || "",
+      dateFrom: params.dateFrom || "",
+      dateTo: params.dateTo || "",
+      materialId: params.materialId || "",
+      inventarioDestino: params.inventarioDestino || "",
+      tipoSalida: params.tipoSalida || "",
     };
 
-    // Limpiar parámetros de paginación
-    delete queryParams.page;
+    Object.keys(queryParams).forEach((key) => {
+      if (!queryParams[key]) delete queryParams[key];
+    });
 
-    const response = await apiClient.get(this.endpoint, queryParams);
+    const response = await apiClient.get(`${this.endpoint}/report`, queryParams);
 
     if (response.success && response.data) {
       response.data = response.data.map((movement) =>

@@ -154,7 +154,7 @@ const PaymentsManagementNew = () => {
 
         const mora = payment.obligation?.lateFeeAmount ?? payment.lateFee ?? 0;
         const base = payment.obligation?.baseAmount || 0;
-        const total = payment.obligation?.totalAmount ?? payment.calculatedAmount ?? (base + mora);
+        const total = payment.obligation?.totalAmount ?? payment.calculatedAmount ?? payment.displayAmount ?? (base + mora);
 
         return {
           atleta: `${payment.athlete?.user?.firstName || ""} ${payment.athlete?.user?.lastName || ""}`.trim(),
@@ -168,8 +168,8 @@ const PaymentsManagementNew = () => {
           montoBase: formatCurrency(base),
           mora: formatCurrency(mora),
           total: formatCurrency(total),
-          fechaSubida: payment.uploadedAt
-            ? new Date(payment.uploadedAt).toLocaleDateString("es-ES")
+          fechaProcesado: payment.reviewedAt || payment.updatedAt || payment.uploadedAt
+            ? new Date(payment.reviewedAt || payment.updatedAt || payment.uploadedAt).toLocaleDateString("es-ES")
             : "",
           estado:
             payment.status === "PENDING"
@@ -216,7 +216,7 @@ const PaymentsManagementNew = () => {
               <PermissionGuard module="paymentsManagement" action="Ver">
                 <ReportButton
                   dataProvider={getCompleteReportData}
-                  fileName="pagos_comprobantes"
+                  fileName="historial_pagos"
                   columns={[
                     { header: "Atleta", accessor: "atleta" },
                     { header: "Identificación", accessor: "identificacion" },
@@ -225,7 +225,7 @@ const PaymentsManagementNew = () => {
                     { header: "Monto Base", accessor: "montoBase" },
                     { header: "Mora", accessor: "mora" },
                     { header: "Total", accessor: "total" },
-                    { header: "Fecha Subida", accessor: "fechaSubida" },
+                    { header: "Fecha Procesado", accessor: "fechaProcesado" },
                     { header: "Estado", accessor: "estado" },
                   ]}
                 />

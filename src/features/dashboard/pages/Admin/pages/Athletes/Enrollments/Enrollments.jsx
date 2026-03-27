@@ -24,7 +24,6 @@ import {
 
 import { useEnrollments } from "./hooks/useEnrollments.js";
 import EnrollmentsService from "./services/EnrollmentsService.js";
-import InscriptionsService from "./services/InscriptionsService.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
 import {
   extractFullName,
@@ -50,11 +49,6 @@ const Enrollments = () => {
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
     (params) => EnrollmentsService.getAllForReport(params)
-  );
-
-  // Hook para obtener datos completos para reportes de inscripciones
-  const { getReportData: getInscriptionsReportData } = useReportDataWithService(
-    (params) => InscriptionsService.getAllForReport(params)
   );
 
   const {
@@ -248,6 +242,9 @@ const Enrollments = () => {
       {
         search: searchTerm,
         estado: filters.estado,
+        dateFrom: filters.fechaDesde,
+        dateTo: filters.fechaHasta,
+        vencimiento: filters.vencimiento,
       },
       (data) => data.map(item => ({
         deportista: `${item.athlete?.user?.firstName || ''} ${item.athlete?.user?.lastName || ''}`.trim(),
@@ -256,23 +253,6 @@ const Enrollments = () => {
         fechaInicio: item.fechaInicio ? new Date(item.fechaInicio).toLocaleDateString('es-ES') : '',
         fechaVencimiento: item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString('es-ES') : '',
         fechaCreacion: item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-ES') : '',
-      }))
-    );
-  };
-
-  // Función para obtener datos completos del reporte de inscripciones
-  const getCompleteInscriptionsReportData = async () => {
-    return await getInscriptionsReportData(
-      {},
-      (data) => data.map(inscription => ({
-        nombre: inscription.firstName || '',
-        apellido: inscription.lastName || '',
-        documento: inscription.identification || '',
-        email: inscription.email || '',
-        telefono: inscription.phoneNumber || '',
-        fechaNacimiento: inscription.birthDate ? new Date(inscription.birthDate).toLocaleDateString('es-ES') : '',
-        estado: inscription.status || 'Pendiente',
-        fechaInscripcion: inscription.createdAt ? new Date(inscription.createdAt).toLocaleDateString('es-ES') : '',
       }))
     );
   };
@@ -370,26 +350,6 @@ const Enrollments = () => {
                     { header: 'Fecha Inicio', accessor: 'fechaInicio' },
                     { header: 'Fecha Vencimiento', accessor: 'fechaVencimiento' },
                     { header: 'Fecha Creación', accessor: 'fechaCreacion' },
-                  ]}
-                />
-              </PermissionGuard>
-            )}
-
-            {/* Botón de Reporte para Inscripciones */}
-            {activeTab === "inscripciones" && (
-              <PermissionGuard module="enrollments" action="Ver">
-                <ReportButton
-                  dataProvider={getCompleteInscriptionsReportData}
-                  fileName="inscripciones"
-                  columns={[
-                    { header: 'Nombre', accessor: 'nombre' },
-                    { header: 'Apellido', accessor: 'apellido' },
-                    { header: 'Documento', accessor: 'documento' },
-                    { header: 'Email', accessor: 'email' },
-                    { header: 'Teléfono', accessor: 'telefono' },
-                    { header: 'Fecha Nacimiento', accessor: 'fechaNacimiento' },
-                    { header: 'Estado', accessor: 'estado' },
-                    { header: 'Fecha Inscripción', accessor: 'fechaInscripcion' },
                   ]}
                 />
               </PermissionGuard>
@@ -763,6 +723,20 @@ const Enrollments = () => {
                     "fechaInscripcionDisplay",
                   ],
                   state: false,
+                  cellClassNames: {
+                    nombreCompleto:
+                      "whitespace-normal break-words align-top max-w-[14rem]",
+                    documento:
+                      "whitespace-normal break-all align-top max-w-[8rem]",
+                    fechaNacimientoDisplay:
+                      "whitespace-normal align-top text-center",
+                    telefono:
+                      "whitespace-normal break-all align-top max-w-[8rem]",
+                    correo:
+                      "whitespace-normal break-all align-top max-w-[14rem]",
+                    fechaInscripcionDisplay:
+                      "whitespace-normal align-top text-center",
+                  },
                 }}
                 customActions={[
                   {
@@ -805,6 +779,9 @@ const Enrollments = () => {
                     show: () => canRejectEnrollments,
                   },
                 ]}
+                enableHorizontalScroll={false}
+                desktopBreakpoint="lg"
+                tableClassName="table-fixed"
               />
             )}
           </div>

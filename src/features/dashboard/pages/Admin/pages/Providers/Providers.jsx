@@ -18,14 +18,22 @@ import PermissionGuard from "../../../../../../shared/components/PermissionGuard
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions.js";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig.js";
 
+const DOCUMENT_TYPE_CODE_MAP = {
+  CC: "Cédula de Ciudadanía",
+  TI: "Tarjeta de Identidad",
+  CE: "Cédula de Extranjería",
+  PAS: "Pasaporte",
+  NIT: "NIT",
+};
+
+const normalizeDocumentTypeLabel = (value) => {
+  if (!value) return "";
+  return DOCUMENT_TYPE_CODE_MAP[value] || value;
+};
+
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
-  // Hook para obtener datos completos para reportes
-  const { getReportData } = useReportDataWithService(
-    providersService.getAllForReport.bind(providersService)
-  );
   
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +50,9 @@ const Providers = () => {
   const [totalRows, setTotalRows] = useState(0);
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const { hasPermission } = usePermissions();
+  const { getReportData } = useReportDataWithService(
+    providersService.getAllForReport.bind(providersService),
+  );
   
   // Estado para datos filtrados localmente
   const [allData, setAllData] = useState([]);
@@ -75,43 +86,65 @@ const Providers = () => {
       setLoading(false);
     }
   };
+  const resolveProviderDocumentType = (provider, documentTypes = []) => {
+    if (provider.tipoEntidad === "juridica") {
+      return {
+        tipoDocumentoNombre: "NIT",
+        documentType: { name: "NIT", label: "NIT" },
+      };
+    }
+
+    const providerDocumentTypeId =
+      provider.documentTypeId ??
+      provider.documentType?.id ??
+      provider.documentType?.value ??
+      null;
+
+    const providerDocumentCode =
+      provider.tipoDocumento ||
+      provider.documentType?.name ||
+      null;
+
+    const docType = documentTypes.find((dt) => {
+      const dtId = dt.id?.toString();
+      const dtValue = dt.value?.toString();
+      const providerId = providerDocumentTypeId?.toString();
+      return (
+        (providerId && (dtId === providerId || dtValue === providerId)) ||
+        (providerDocumentCode &&
+          (dt.value === providerDocumentCode ||
+            dt.name === providerDocumentCode ||
+            dt.name === DOCUMENT_TYPE_CODE_MAP[providerDocumentCode]))
+      );
+    });
+
+    return {
+      tipoDocumentoNombre:
+        normalizeDocumentTypeLabel(docType?.name) ||
+        normalizeDocumentTypeLabel(docType?.label) ||
+        normalizeDocumentTypeLabel(provider.tipoDocumentoNombre) ||
+        normalizeDocumentTypeLabel(DOCUMENT_TYPE_CODE_MAP[providerDocumentCode]) ||
+        normalizeDocumentTypeLabel(providerDocumentCode) ||
+        "No especificado",
+      documentType: docType || provider.documentType || null,
+    };
+  };
+
   const enrichProvidersWithDocumentTypes = async (providers) => {
     try {
       const response = await providersService.getDocumentTypes();
       if (response.success && response.data) {
         const documentTypes = response.data;
-        return providers.map((provider) => {
-          if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
-            const docType = documentTypes.find(
-              (dt) =>
-                dt.id.toString() === provider.tipoDocumento.toString() ||
-                dt.value === provider.tipoDocumento.toString(),
-            );
-            return {
-              ...provider,
-              tipoDocumentoNombre: docType
-                ? docType.name || docType.label
-                : "No especificado",
-              documentType: docType || null,
-            };
-          }
-          return {
-            ...provider,
-            tipoDocumentoNombre: "NIT",
-            documentType: { name: "NIT", label: "NIT" },
-          };
-        });
+        return providers.map((provider) => ({
+          ...provider,
+          ...resolveProviderDocumentType(provider, documentTypes),
+        }));
       }
     } catch (error) {
     }
     return providers.map((provider) => ({
       ...provider,
-      tipoDocumentoNombre:
-        provider.tipoEntidad === "juridica" ? "NIT" : "No especificado",
-      documentType:
-        provider.tipoEntidad === "juridica"
-          ? { name: "NIT", label: "NIT" }
-          : null,
+      ...resolveProviderDocumentType(provider),
     }));
   };
   const checkActivePurchasesForProviders = async (providers) => {
@@ -400,13 +433,21 @@ setProviderToEdit(response.data);
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
-    return await getReportData(
-      { search: searchTerm }, // Filtros actuales
-      (providers) => providers.map((provider) => ({ // Mapper de datos
+    return await getReportData({ search: searchTerm }, (providers) =>
+      providers.map((provider) => ({
         razonSocial: provider.razonSocial,
         nit: provider.nit,
-        tipoEntidad: provider.tipoEntidad,
-        tipoDocumento: provider.tipoDocumento,
+        tipoEntidad:
+          provider.tipoEntidad === "juridica"
+            ? "Persona Jurídica"
+            : "Persona Natural",
+        tipoDocumento:
+          provider.tipoEntidad === "juridica"
+            ? "NIT"
+            : normalizeDocumentTypeLabel(provider.tipoDocumentoNombre) ||
+              normalizeDocumentTypeLabel(provider.documentType?.name) ||
+              normalizeDocumentTypeLabel(DOCUMENT_TYPE_CODE_MAP[provider.tipoDocumento]) ||
+              "No especificado",
         contactoPrincipal: provider.contactoPrincipal,
         correo: provider.correo,
         telefono: provider.telefono,
@@ -416,7 +457,7 @@ setProviderToEdit(response.data);
         estado: provider.estado,
         fechaRegistro: provider.fechaRegistro,
         updatedAt: provider.updatedAt,
-      }))
+      })),
     );
   };
 
@@ -477,17 +518,7 @@ setProviderToEdit(response.data);
                 ]}
                 customDataTransform={(provider) => ({
                   ...provider,
-                  tipoEntidad:
-                    provider.tipoEntidad === "juridica"
-                      ? "Persona Jurídica"
-                      : "Persona Natural",
                   estado: provider.estado === "Activo" ? "Activo" : "Inactivo",
-                  tipoDocumento:
-                    provider.documentType?.name ||
-                    provider.tipoDocumentoNombre ||
-                    (provider.tipoEntidad === "juridica"
-                      ? "NIT"
-                      : "No especificado"),
                   descripcion: provider.descripcion || "Sin descripción",
                   correo: provider.correo || "No especificado",
                 })}

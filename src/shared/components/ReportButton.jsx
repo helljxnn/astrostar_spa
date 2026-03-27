@@ -286,19 +286,21 @@ const ReportButton = ({
           >
             <motion.button
               onClick={generateExcel}
+              translate="no"
               className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              Excel
+              <span className="notranslate">Excel</span>
             </motion.button>
             <motion.button
               onClick={generatePDF}
+              translate="no"
               className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              PDF
+              <span className="notranslate">PDF</span>
             </motion.button>
           </motion.div>
         )}

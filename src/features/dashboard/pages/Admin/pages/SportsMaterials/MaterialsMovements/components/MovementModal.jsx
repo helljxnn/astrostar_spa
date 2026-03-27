@@ -57,7 +57,7 @@ const MovementModal = ({
     if (isOpen) {
       if (isEditing && movement) {
         setFormData({
-          materialId: movement.materialId || "",
+          materialId: movement.materialId ? String(movement.materialId) : "",
           materialNombre: movement.materialNombre || "",
           categoria: movement.categoria || "",
           cantidad: movement.cantidad || "",
@@ -65,7 +65,7 @@ const MovementModal = ({
             ? movement.fechaIngreso.split("T")[0]
             : getTodayLocalDate(),
           inventarioDestino: movement.inventarioDestino || "FUNDACION",
-          proveedor: movement.proveedorId || "",
+          proveedor: movement.proveedorId ? String(movement.proveedorId) : "",
           observaciones: movement.observaciones || "",
         });
         setSelectedMaterial({
@@ -87,6 +87,8 @@ const MovementModal = ({
           observaciones: "",
         });
         setSelectedMaterial(null);
+        setErrors({});
+        setTouched({});
       }
       fetchMaterials();
       fetchProviders();
@@ -117,8 +119,11 @@ const MovementModal = ({
       const response = await providersService.getActiveProviders();
       if (response.success && response.data) {
         setProviders(response.data);
+      } else {
+        setProviders([]);
       }
     } catch (error) {
+      console.error("Error al cargar proveedores:", error);
       setProviders([]);
     } finally {
       setLoadingProviders(false);
@@ -129,7 +134,7 @@ const MovementModal = ({
     setSelectedMaterial(material);
     setFormData((prev) => ({
       ...prev,
-      materialId: material.id,
+      materialId: String(material.id),
       materialNombre: material.nombre,
       categoria: material.categoria,
     }));
@@ -360,7 +365,7 @@ const MovementModal = ({
         await fetchProviders();
         // Seleccionar el nuevo proveedor
         if (response.data && response.data.id) {
-          setFormData((prev) => ({ ...prev, proveedor: response.data.id }));
+          setFormData((prev) => ({ ...prev, proveedor: String(response.data.id) }));
         }
         return response;
       }
@@ -402,12 +407,14 @@ const MovementModal = ({
                 <SearchableSelect
                   name="materialId"
                   options={materials.map((m) => ({
-                    value: m.id,
+                    value: String(m.id),
                     label: m.nombre,
                   }))}
                   value={formData.materialId}
-                  onChange={(name, value) => {
-                    const material = materials.find((m) => m.id === value);
+                  onChange={(value) => {
+                    const material = materials.find(
+                      (m) => String(m.id) === String(value),
+                    );
                     if (material) {
                       handleMaterialSelect(material);
                     }
@@ -585,11 +592,11 @@ const MovementModal = ({
                   <SearchableSelect
                     name="proveedor"
                     options={providers.map((p) => ({
-                      value: p.id,
+                      value: String(p.id),
                       label: `${p.razonSocial} - ${p.tipoDocumentoNombre || "NIT"}: ${p.nit}`,
                     }))}
                     value={formData.proveedor}
-                    onChange={handleChange}
+                    onChange={(value) => handleChange("proveedor", value)}
                     placeholder="Selecciona un proveedor"
                     loading={loadingProviders}
                   />

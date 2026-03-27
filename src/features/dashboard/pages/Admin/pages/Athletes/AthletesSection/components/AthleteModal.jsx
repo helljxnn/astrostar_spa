@@ -17,6 +17,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
+  showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
 import {
   findCategoryByName,
@@ -79,6 +80,13 @@ const parentescoFrontendToBackend = {
   "Amigo/a de la familia": "Family_Friend",
   Otro: "Other",
 };
+
+const normalizeDocumentTypeName = (documentTypeName) =>
+  String(documentTypeName || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 
 const isTarjetaIdentidadDocument = (documentTypeName) => {
   const normalized = normalizeDocumentTypeName(documentTypeName);
@@ -870,6 +878,23 @@ const AthleteModal = ({
       athleteData.isScholarship = values.isScholarship === true;
 
       if (isEditing) {
+        const fullName =
+          `${values.firstName || ""} ${values.middleName || ""} ${values.lastName || ""} ${values.secondLastName || ""}`
+            .replace(/\s+/g, " ")
+            .trim();
+        const confirmResult = await showConfirmAlert(
+          "¿Guardar cambios?",
+          `¿Deseas actualizar la información de ${fullName || "la deportista"}?`,
+          {
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar",
+          },
+        );
+
+        if (!confirmResult.isConfirmed) {
+          return;
+        }
+
         // Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
         const updateData = {

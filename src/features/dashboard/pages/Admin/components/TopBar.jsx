@@ -6,6 +6,15 @@ import { motion } from "framer-motion";
 
 export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
   const { user } = useAuth();
+  const isAthleteUser = Boolean(
+    user?.athleteId ||
+      user?.athlete_id ||
+      user?.athlete ||
+      user?.userType === "athletes" ||
+      user?.userType === "athlete" ||
+      user?.role?.name === "Deportista" ||
+      user?.rol === "Deportista",
+  );
 
   // Función para obtener el nombre completo del usuario
   const getUserDisplayName = () => {
@@ -19,14 +28,24 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
       return `${user.nombre} ${user.apellido || ""}`.trim();
     }
 
+    if (user?.fullName || user?.name) {
+      return (user.fullName || user.name || "").trim();
+    }
+
     // Prioridad 3: Rol sin traducir (para ver qué llega del backend)
     const role = user?.role?.name || user?.rol;
     if (role) {
-      return role; // Mostrar directamente sin traducir
+      return isAthleteUser ? "Deportista" : role;
     }
 
     // Fallback: Usuario
-    return "Usuario";
+    return isAthleteUser ? "Deportista" : "Usuario";
+  };
+
+  const getUserRoleLabel = () => {
+    const role = user?.role?.name || user?.rol;
+    if (role) return role;
+    return isAthleteUser ? "Deportista" : "Usuario";
   };
 
   return (
@@ -73,7 +92,7 @@ export const TopBar = ({ onOpenProfileModals, toggleSidebar, isMobile }) => {
               {getUserDisplayName()}
             </h4>
             <span className="text-gray-500 text-sm font-medium">
-              {user?.role?.name || user?.rol || "Usuario"}
+              {getUserRoleLabel()}
             </span>
           </motion.div>
         </motion.div>

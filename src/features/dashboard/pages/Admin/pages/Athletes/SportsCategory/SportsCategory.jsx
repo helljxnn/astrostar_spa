@@ -319,11 +319,13 @@ const SportsCategory = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <ReportButton
-              dataProvider={getCompleteReportData}
-              fileName="CategoriasDeportivas"
-              columns={reportColumns}
-            />
+            <PermissionGuard module={MODULE_NAME} action="Ver">
+              <ReportButton
+                dataProvider={getCompleteReportData}
+                fileName="CategoriasDeportivas"
+                columns={reportColumns}
+              />
+            </PermissionGuard>
 
             <button
               onClick={handleCreate}

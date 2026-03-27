@@ -89,7 +89,6 @@ const [selectedAthlete, setSelectedAthlete] = useState(null)
 - `loadAthletes()` - Cargar lista de deportistas
 - `handleCreate()` - Abrir modal para crear
 - `handleEdit(athlete)` - Abrir modal para editar
-- `handleDelete(id)` - Eliminar deportista
 - `handleSearch(term)` - Filtrar por búsqueda
 
 
