@@ -1,5 +1,5 @@
 ﻿// src/features/dashboard/pages/Admin/pages/Users/Users.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import UserViewModal from "./components/UserViewModal.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../shared/components/ReportButton";
@@ -21,22 +21,40 @@ const Users = () => {
 
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [userToView, setUserToView] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
   const [totalRows, setTotalRows] = useState(0);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  // Debounce para la búsqueda (evita múltiples llamadas al API)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms de delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   // Cargar usuarios desde la API
   const loadUsers = async () => {
     try {
-      setLoading(true);
+      // Solo mostrar el loader principal en la carga inicial
+      if (isInitialLoad) {
+        setLoading(true);
+      } else {
+        setSearchLoading(true);
+      }
+      
       const response = await usersService.getUsers({
         page: currentPage,
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm, // Enviar búsqueda al backend
+        search: debouncedSearchTerm, // Busca en nombre, apellido, email, teléfono, identificación y rol
       });
 
       if (response.success) {
@@ -65,13 +83,18 @@ const Users = () => {
       setData([]);
       setTotalRows(0);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+        setIsInitialLoad(false);
+      } else {
+        setSearchLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadUsers();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
+  }, [currentPage, debouncedSearchTerm]); // Recargar cuando cambia la página o la búsqueda (con debounce)
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = data;
@@ -79,7 +102,7 @@ const Users = () => {
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);
-    setCurrentPage(1);
+    setCurrentPage(1); // Resetear a la primera página al buscar
   };
   
   const handleView = (user) => {
@@ -96,7 +119,7 @@ const Users = () => {
   const getCompleteReportData = async () => {
     return await getReportData(
       {
-        search: searchTerm,
+        search: debouncedSearchTerm, // Usar el término con debounce para consistencia
       },
       (data) => data.map(user => ({
         nombre: user.firstName || '',
@@ -118,6 +141,14 @@ const Users = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">Usuarios</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+          <div className="w-full sm:w-64">
+            <SearchInput
+              value={searchTerm}
+              onChange={handleSearchChange}
+              placeholder="Buscar usuario..."
+            />
+          </div>
+          
           <PermissionGuard module="users" action="Ver">
             <ReportButton
               dataProvider={getCompleteReportData}
@@ -135,19 +166,11 @@ const Users = () => {
               ]}
             />
           </PermissionGuard>
-          
-          <div className="w-full sm:w-64">
-            <SearchInput
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Buscar usuario..."
-            />
-          </div>
         </div>
       </div>
 
-      {/* Mensaje de carga */}
-      {loading && (
+      {/* Mensaje de carga SOLO en carga inicial */}
+      {loading && isInitialLoad && (
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue"></div>
           <span className="ml-2 text-gray-600">Cargando usuarios...</span>
@@ -155,10 +178,10 @@ const Users = () => {
       )}
 
       {/* Sin resultados con búsqueda */}
-      {!loading && displayTotalRows === 0 && searchTerm && (
+      {!loading && displayTotalRows === 0 && debouncedSearchTerm && (
         <div className="flex justify-center items-center py-8">
           <span className="text-gray-600">
-            No se encontraron usuarios que coincidan con "{searchTerm}"
+            No se encontraron usuarios que coincidan con "{debouncedSearchTerm}"
           </span>
           <button
             onClick={() => setSearchTerm("")}
@@ -170,13 +193,13 @@ const Users = () => {
       )}
 
       {/* Sin usuarios en la BD */}
-      {!loading && displayTotalRows === 0 && !searchTerm && (
+      {!loading && displayTotalRows === 0 && !debouncedSearchTerm && (
         <div className="flex justify-center items-center py-8">
           <span className="text-gray-600">No hay datos disponibles</span>
         </div>
       )}
 
-      {/* Tabla con datos */}
+      {/* Tabla con datos - Mostrar siempre después de la carga inicial */}
       {!loading && displayTotalRows > 0 && (
         <>
           <Table

@@ -286,13 +286,13 @@ const MaterialCategories = () => {
         rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
         onPageChange={(page) => setCurrentPage(page)}
         thead={{
-          titles: ["Nombre", "Descripción"],
+          titles: ["Nombre", "Descripción", "Materiales"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "descripcionTruncated"],
+          dataPropertys: ["nombreTruncated", "descripcionTruncated", "materialsCount"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",

@@ -207,7 +207,7 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                   label="Nombre de la Categoría"
                   name="nombre"
                   type="text"
-                  placeholder="Ej: Balones"
+                  placeholder="Implementos de Entrenamiento"
                   value={formData.nombre}
                   onChange={handleChange}
                   onBlur={() => handleBlur("nombre")}

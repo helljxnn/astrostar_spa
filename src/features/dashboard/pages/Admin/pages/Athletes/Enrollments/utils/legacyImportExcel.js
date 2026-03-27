@@ -174,18 +174,30 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
     ["Mora histórica", "Si condonar_mora_historica es SI, la mora empezará en fecha_inicio_mora o en la fecha de corte del importador."],
     ["Correos", "La recomendación es importar primero con envío de credenciales desactivado y enviarlas solo después de validar."],
   ]);
+  instructionsSheet.spliceRows(1, instructionsSheet.rowCount);
+  instructionsSheet.addRows([
+    ["Objetivo", "Usa este archivo para cargar deportistas que ya existen en la fundacion antes de salir a produccion."],
+    ["Hoja obligatoria", `Completa la hoja "${LEGACY_IMPORT_SHEET}" sin cambiar los encabezados.`],
+    ["Hoja Catalogos", `La hoja "${CATALOGS_SHEET}" es solo de consulta. Te muestra los valores permitidos para diligenciar la hoja "${LEGACY_IMPORT_SHEET}".`],
+    ["Categorias", "La categoria deportiva debe existir ya en el sistema. Si no existe, creala antes de importar."],
+    ["Acudiente", "Si la deportista es menor de edad, debes completar todos los campos del acudiente y el parentesco."],
+    ["Deuda mensual", "Usa periodos separados por coma, por ejemplo: 2026-01,2026-02."],
+    ["Renovacion pendiente", "Usa SI solo si la matricula ya esta Vencida y quieres dejar creada la obligacion de renovacion. No aplica para deportistas becadas."],
+    ["Fecha de corte", "Es la fecha desde la cual el sistema empezara a administrar esta informacion. Se usa para validar el estado real de la matricula y para calcular la mora historica cuando aplique."],
+    ["Mora historica", "Si condonar_mora_historica es SI, la mora empezara en fecha_inicio_mora o en la fecha de corte seleccionada en la migracion."],
+    ["Acceso al sistema", "La migracion masiva crea el acceso en el sistema, pero no envia correos automaticos."],
+  ]);
   instructionsSheet.getRow(1).font = { bold: true };
 
   const catalogsSheet = workbook.addWorksheet(CATALOGS_SHEET);
-  catalogsSheet.columns = [{ width: 35 }, { width: 40 }, { width: 20 }];
-  catalogsSheet.addRow(["Tipo", "Valor", "Observacion"]);
+  catalogsSheet.columns = [{ width: 35 }, { width: 50 }];
+  catalogsSheet.addRow(["Campo", "Valor permitido"]);
   catalogsSheet.getRow(1).font = { bold: true };
 
   (referenceData.documentTypes || []).forEach((documentType) => {
     catalogsSheet.addRow([
       "Tipo documento deportista",
       documentType.label || documentType.name,
-      documentType.id,
     ]);
   });
 
@@ -193,7 +205,6 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
     catalogsSheet.addRow([
       "Tipo documento acudiente",
       documentType.label || documentType.name,
-      documentType.id,
     ]);
   });
 
@@ -201,12 +212,11 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
     catalogsSheet.addRow([
       "Categoria deportiva",
       category.name || category.nombre,
-      category.id || "",
     ]);
   });
 
   ["Active", "Inactive", "Vigente", "Vencida", "SI", "NO"].forEach((value) => {
-    catalogsSheet.addRow(["Valores frecuentes", value, ""]);
+    catalogsSheet.addRow(["Valores frecuentes", value]);
   });
 
   const importSheet = workbook.addWorksheet(LEGACY_IMPORT_SHEET);

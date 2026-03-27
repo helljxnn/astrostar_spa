@@ -208,6 +208,11 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
                     onChange={(event) => setCutoverDate(event.target.value)}
                     className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none transition focus:border-primary-blue"
                   />
+                  <span className="mt-2 block text-xs leading-5 text-slate-500">
+                    Usa la fecha desde la cual el sistema empezara a administrar esta informacion.
+                    Sirve para validar si cada matricula debe quedar Vigente o Vencida y para
+                    definir desde cuando corre la mora historica si existe deuda importada.
+                  </span>
                 </label>
               </div>
 
@@ -217,6 +222,11 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
                   Registra una fila por cada deportista. Incluye sus datos personales, la categoria
                   deportiva, el estado actual de la matricula, las fechas correspondientes, las
                   mensualidades pendientes si existen y los datos del acudiente cuando sea menor de edad.
+                </p>
+                <p className="mt-2">
+                  Si una matricula ya esta vencida y deseas dejar lista la renovacion para gestionarla
+                  en el sistema, marca la columna <span className="font-semibold">crear_renovacion_pendiente</span> con
+                  <span className="font-semibold"> SI</span>. No uses esa opcion para deportistas becadas.
                 </p>
               </div>
 
