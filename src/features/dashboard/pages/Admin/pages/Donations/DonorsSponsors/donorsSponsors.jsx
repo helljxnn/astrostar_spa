@@ -196,7 +196,7 @@ function DonorsSponsors() {
   }, [donorsSponsors]);
 
   return (
-    <div className="p-6 font-questrial space-y-6">
+    <div className="p-6 font-montserrat space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h1 className="text-2xl font-semibold text-gray-800">
           Donantes y Patrocinadores

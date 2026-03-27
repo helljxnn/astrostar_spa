@@ -303,7 +303,7 @@ const SportsCategory = () => {
   };
 
   return (
-    <div className="p-6 font-questrial">
+    <div className="p-6 font-montserrat">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800">
           Categorías Deportivas

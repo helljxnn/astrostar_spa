@@ -219,11 +219,6 @@ throw error;
    * Verificar acceso del atleta (middleware check)
    * GET /api/payments/athletes/:athleteId/access-check
    */
-  async checkAthleteAccess(athleteId) {
-    const response = await apiClient.get(`${this.endpoint}/athletes/${athleteId}/access-check`);
-    return response.data;
-  }
-
   // ============================================================================
   // ADMIN - Gestión de pagos
   // ============================================================================

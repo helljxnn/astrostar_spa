@@ -14,6 +14,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@fontsource/montserrat": "^5.2.8",
     "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.13.2",
     "chart.js": "^4.5.0",
@@ -25,7 +26,7 @@
     "framer-motion": "^12.34.3",
     "gsap": "^3.14.2",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.540.0",
     "moment": "^2.30.1",

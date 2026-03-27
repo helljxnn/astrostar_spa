@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { FaEdit, FaTrash, FaEye, FaTimes, FaStickyNote } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaTimes, FaStickyNote, FaBan } from "react-icons/fa";
 import { useState } from "react";
 import ScheduleDetailsModal from "./ScheduleDetailsModal";
 import CancelScheduleModal from "./CancelScheduleModal";
@@ -224,5 +224,4 @@ const EmployeeActionModal = ({
 };
 
 export default EmployeeActionModal;
-
 

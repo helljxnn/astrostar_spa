@@ -36,7 +36,7 @@ export const Navbar = () => {
   return (
     <>
       <nav
-        className={`fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-md font-questrial transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 w-full z-50 bg-white/90 backdrop-blur-md shadow-md font-montserrat transition-transform duration-300 ease-in-out ${
           isVisible ? "translate-y-0" : "-translate-y-full"
         }`}
       >
