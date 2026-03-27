@@ -182,14 +182,14 @@ const PaymentsManagementNew = () => {
     );
   };
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-800">Gestión de Pagos</h1>
+          <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">Gestión de Pagos</h1>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
               value={activeTab === "pending" ? pendingSearch : historySearch}
@@ -198,7 +198,7 @@ const PaymentsManagementNew = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {/* Botón de Filtros - Disponible en ambos tabs */}
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -236,10 +236,10 @@ const PaymentsManagementNew = () => {
       </div>
       {/* Tabs */}
       <div className="mb-6">
-        <div className="inline-flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab("pending")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative whitespace-nowrap ${
               activeTab === "pending"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -278,7 +278,7 @@ const PaymentsManagementNew = () => {
           
           <button
             onClick={() => setActiveTab("payments")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "payments"
                 ? "bg-primary-blue/10 text-primary-blue"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -304,7 +304,7 @@ const PaymentsManagementNew = () => {
       {/* Panel de Filtros - Adaptado según el tab activo */}
       {showFilters && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
             <button
               onClick={() => {

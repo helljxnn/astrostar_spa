@@ -114,9 +114,9 @@ const EnrollmentRenewalManager = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Renovación de Matrículas</h1>
           <p className="text-sm text-gray-600 mt-1">
@@ -124,11 +124,11 @@ const EnrollmentRenewalManager = () => {
           </p>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={handleProcessExpired}
             disabled={processingExpired}
-            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors disabled:opacity-50 whitespace-nowrap"
           >
             {processingExpired ? (
               <>
@@ -146,7 +146,7 @@ const EnrollmentRenewalManager = () => {
           <button
             onClick={fetchExpiringEnrollments}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
           >
             <FaRedo className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
@@ -156,7 +156,7 @@ const EnrollmentRenewalManager = () => {
 
       {/* Filtros */}
       <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <label className="text-sm font-medium text-gray-700">
             Mostrar matrículas que vencen en:
           </label>

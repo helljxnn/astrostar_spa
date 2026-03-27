@@ -1,11 +1,12 @@
 ﻿import { useState, useMemo, useEffect, useRef } from "react";
-import { FaPlus, FaHistory, FaUserPlus, FaFilter } from "react-icons/fa";
+import { FaPlus, FaHistory, FaUserPlus, FaFilter, FaUpload } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
 import EnrollmentHistoryModal from "./components/EnrollmentHistoryModal.jsx";
 import EnrollmentStatusBadge from "./components/EnrollmentStatusBadge.jsx";
 import ExpirationIndicator from "./components/ExpirationIndicator.jsx";
+import LegacyImportModal from "./components/LegacyImportModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
@@ -77,6 +78,7 @@ const Enrollments = () => {
 
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
+  const [isLegacyImportModalOpen, setIsLegacyImportModalOpen] = useState(false);
 
   // Estados para modales de acudiente
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -301,14 +303,14 @@ const Enrollments = () => {
 
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">
           Gestión de Matrículas
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
@@ -321,7 +323,7 @@ const Enrollments = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {/* Botón de Filtros */}
             {activeTab === "matriculas" && (
               <button
@@ -357,13 +359,22 @@ const Enrollments = () => {
 
             {activeTab === "matriculas" && (
               <PermissionGuard module="enrollments" action="Aceptar">
-                <button
-                  onClick={handleCreateFromScratch}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors"
-                  title="Crear matrícula desde cero"
-                >
-                  <FaPlus /> Nueva Matrícula
-                </button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setIsLegacyImportModalOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-200 text-emerald-950 rounded-lg shadow hover:bg-emerald-300 transition-colors whitespace-nowrap"
+                    title="Cargar archivo para registrar deportistas de forma masiva"
+                  >
+                    <FaUpload /> Migración masiva
+                  </button>
+                  <button
+                    onClick={handleCreateFromScratch}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
+                    title="Crear matrícula desde cero"
+                  >
+                    <FaPlus /> Nueva Matrícula
+                  </button>
+                </div>
               </PermissionGuard>
             )}
           </div>
@@ -372,14 +383,14 @@ const Enrollments = () => {
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="inline-flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               setActiveTab("matriculas");
               setSearchTerm("");
               setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "matriculas"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -406,7 +417,7 @@ const Enrollments = () => {
               setSearchTerm("");
               setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative whitespace-nowrap ${
               activeTab === "inscripciones"
                 ? "bg-primary-blue/10 text-primary-blue"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -449,7 +460,7 @@ const Enrollments = () => {
       {/* Panel de Filtros - Estados actualizados */}
       {showFilters && activeTab === "matriculas" && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
             <button
               onClick={() => {
@@ -910,6 +921,15 @@ const Enrollments = () => {
           guardians={guardians}
         />
       )}
+
+      <LegacyImportModal
+        isOpen={isLegacyImportModalOpen}
+        onClose={() => setIsLegacyImportModalOpen(false)}
+        referenceData={referenceData}
+        onImported={async () => {
+          await refresh();
+        }}
+      />
     </div>
   );
 };
