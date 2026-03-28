@@ -407,8 +407,15 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                   type="textarea"
                   placeholder="Información adicional del material (opcional)"
                   value={formData.descripcion}
-                  onChange={handleChange}
+                  onChange={(name, value) => {
+                    // Limitar a 500 caracteres
+                    if (value.length <= 500) {
+                      setFormData((prev) => ({ ...prev, [name]: value }));
+                    }
+                  }}
                   rows={3}
+                  maxLength={500}
+                  helperText={`${formData.descripcion.length}/500 caracteres`}
                 />
               </div>
 

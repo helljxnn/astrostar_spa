@@ -982,11 +982,18 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                 type="textarea"
                 placeholder="Descripción detallada del proveedor... "
                 value={values.descripcion}
-                onChange={handleChange}
+                onChange={(name, value) => {
+                  // Limitar a 500 caracteres
+                  if (value.length <= 500) {
+                    handleChange({ target: { name, value } });
+                  }
+                }}
                 onBlur={handleBlur}
                 error={getCombinedError("descripcion")}
                 touched={isFieldTouched("descripcion")}
                 rows={3}
+                maxLength={500}
+                helperText={`${values.descripcion.length}/500 caracteres`}
               />
             </motion.div>
           </div>

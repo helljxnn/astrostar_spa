@@ -244,8 +244,15 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
                   type="textarea"
                   placeholder="Describe qué tipo de materiales incluye esta categoría"
                   value={formData.descripcion}
-                  onChange={handleChange}
+                  onChange={(name, value) => {
+                    // Limitar a 500 caracteres
+                    if (value.length <= 500) {
+                      setFormData((prev) => ({ ...prev, [name]: value }));
+                    }
+                  }}
                   rows={3}
+                  maxLength={500}
+                  helperText={`${formData.descripcion.length}/500 caracteres`}
                 />
               </div>
 

@@ -16,6 +16,7 @@ class MovementsService {
       dateTo = "",
       inventarioDestino = "",
       tipoSalida = "",
+      skipLoader = false,
     } = params;
 
     const queryParams = {
@@ -31,7 +32,10 @@ class MovementsService {
     if (inventarioDestino) queryParams.inventarioDestino = inventarioDestino;
     if (tipoSalida) queryParams.tipoSalida = tipoSalida;
 
-    const response = await apiClient.get(this.endpoint, queryParams);
+    const response = await apiClient.get(this.endpoint, {
+      params: queryParams,
+      skipLoader,
+    });
 
     if (response.success && response.data) {
       response.data = response.data.map((movement) =>

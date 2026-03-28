@@ -305,13 +305,13 @@ const Enrollments = () => {
   return (
     <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-6">
         <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">
           Gestión de Matrículas
         </h1>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          <div className="w-full sm:w-64">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-stretch sm:items-center gap-3 w-full xl:w-auto xl:max-w-[70%] xl:justify-end">
+          <div className="w-full sm:w-72 xl:flex-shrink-0">
             <SearchInput
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -323,7 +323,7 @@ const Enrollments = () => {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto xl:justify-end">
             {/* Botón de Filtros */}
             {activeTab === "matriculas" && (
               <button
@@ -362,10 +362,11 @@ const Enrollments = () => {
                 <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                   <button
                     onClick={() => setIsLegacyImportModalOpen(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-200 text-emerald-950 rounded-lg shadow hover:bg-emerald-300 transition-colors whitespace-nowrap"
+                    className="flex items-center justify-center w-11 h-11 bg-emerald-200 text-emerald-950 rounded-lg shadow hover:bg-emerald-300 transition-colors"
                     title="Cargar archivo para registrar deportistas de forma masiva"
+                    aria-label="Migración masiva"
                   >
-                    <FaUpload /> Migración masiva
+                    <FaUpload className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleCreateFromScratch}

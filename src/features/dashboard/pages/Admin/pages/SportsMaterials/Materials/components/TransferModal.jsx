@@ -92,15 +92,29 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
   };
 
   const handleChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === "from") {
+      const oppositeInventory =
+        value === "FUNDACION"
+          ? "EVENTOS"
+          : value === "EVENTOS"
+            ? "FUNDACION"
+            : "";
 
-    // Si cambia el origen, limpiar destino si son iguales
-    if (field === "from" && value === formData.to) {
-      setFormData((prev) => ({ ...prev, to: "" }));
+      setFormData((prev) => ({
+        ...prev,
+        from: value,
+        to: oppositeInventory,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
 
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+
+    if (field === "from" && errors.to) {
+      setErrors((prev) => ({ ...prev, to: "" }));
     }
   };
 
@@ -294,4 +308,3 @@ TransferModal.propTypes = {
 };
 
 export default TransferModal;
-
