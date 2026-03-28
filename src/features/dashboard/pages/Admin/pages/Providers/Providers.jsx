@@ -423,7 +423,7 @@ setProviderToEdit(response.data);
       show: hasPermission("providers", "Eliminar"),
       disabled: activePurchasesCheck[provider.id],
       title: activePurchasesCheck[provider.id]
-        ? "Proveedor está asociado a ingresos"
+        ? "Proveedor asociado a ingresos"
         : "Eliminar proveedor",
     }),
   };

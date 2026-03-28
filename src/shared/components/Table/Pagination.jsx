@@ -93,9 +93,14 @@ const Pagination = ({
       <div className="text-xs sm:text-sm text-gray-500">
         Mostrando{" "}
         <span className="font-semibold text-gray-700">
-          {startItem}–{endItem}
-        </span>{" "}
-        de <span className="font-semibold text-gray-700">{safeTotalRows}</span>
+          {startItem}
+        </span>
+        {" "}–{" "}
+        <span className="font-semibold text-gray-700">
+          {endItem}
+        </span>
+        {" "}de{" "}
+        <span className="font-semibold text-gray-700">{safeTotalRows}</span>
       </div>
 
       {/* Controles */}
