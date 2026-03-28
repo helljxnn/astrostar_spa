@@ -89,6 +89,7 @@ const Providers = () => {
   const resolveProviderDocumentType = (provider, documentTypes = []) => {
     if (provider.tipoEntidad === "juridica") {
       return {
+        tipoDocumento: "NIT",
         tipoDocumentoNombre: "NIT",
         documentType: { name: "NIT", label: "NIT" },
       };
@@ -455,16 +456,20 @@ setProviderToEdit(response.data);
         ciudad: provider.ciudad,
         descripcion: provider.descripcion,
         estado: provider.estado,
-        fechaRegistro: provider.fechaRegistro,
-        updatedAt: provider.updatedAt,
+        fechaRegistro: provider.fechaRegistro || provider.createdAt || "",
+        updatedAt:
+          provider.updatedAt ||
+          provider.ultimaActualizacion ||
+          provider.fechaActualizacion ||
+          "",
       })),
     );
   };
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-6 font-montserrat w-full max-w-full overflow-x-hidden notranslate" translate="no">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 notranslate" translate="no">Proveedores</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
@@ -545,8 +550,7 @@ setProviderToEdit(response.data);
         </div>
       ) : displayTotalRows > 0 ? (
         <>
-          <div className="w-full overflow-x-auto bg-white rounded-lg">
-            <div className="min-w-full">
+          <div className="w-full bg-white rounded-lg">
               <Table
                 serverPagination={true}
                 currentPage={currentPage}
@@ -574,6 +578,21 @@ setProviderToEdit(response.data);
                     "contactoPrincipal",
                   ],
                   state: true,
+                  customRenderers: {
+                    nit: (value) => (
+                      <span className="notranslate" translate="no">
+                        {value ?? "-"}
+                      </span>
+                    ),
+                  },
+                  cellClassNames: {
+                    razonSocial:
+                      "whitespace-normal break-words max-w-[220px]",
+                    correo: "whitespace-normal break-all max-w-[220px]",
+                    contactoPrincipal:
+                      "whitespace-normal break-words max-w-[180px]",
+                    nit: "whitespace-nowrap notranslate",
+                  },
                   stateMap: {
                     Activo: "bg-green-100 text-green-800",
                     Inactivo: "bg-red-100 text-red-800",
@@ -588,7 +607,6 @@ setProviderToEdit(response.data);
                 }
                 buttonConfig={buttonConfig}
               />
-            </div>
           </div>
         </>
       ) : (

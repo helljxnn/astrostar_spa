@@ -182,7 +182,7 @@ const TransferModal = ({ isOpen, onClose, material, onSave }) => {
                   { value: "FUNDACION", label: "Fundación" },
                   { value: "EVENTOS", label: "Eventos" },
                 ]}
-                placeholder="Origen"
+                placeholder="Seleccionar origen"
               />
 
               <FormField

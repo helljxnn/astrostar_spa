@@ -88,7 +88,9 @@ class ProvidersService {
   }
 
   async getDocumentTypes() {
-    return apiClient.get(`${this.endpoint}/document-types`);
+    return apiClient.get(`${this.endpoint}/document-types`, {
+      skipLoader: true,
+    });
   }
 
   async checkNitAvailability(nit, excludeId = null, tipoEntidad = "juridica") {
@@ -97,7 +99,10 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    return apiClient.get(`${this.endpoint}/check-nit`, params);
+    return apiClient.get(`${this.endpoint}/check-nit`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkBusinessNameAvailability(
@@ -110,7 +115,10 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    return apiClient.get(`${this.endpoint}/check-business-name`, params);
+    return apiClient.get(`${this.endpoint}/check-business-name`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkEmailAvailability(email, excludeId = null) {
@@ -119,7 +127,10 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    return apiClient.get(`${this.endpoint}/check-email`, params);
+    return apiClient.get(`${this.endpoint}/check-email`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkContactAvailability(contact, excludeId = null) {
@@ -128,7 +139,10 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    return apiClient.get(`${this.endpoint}/check-contact`, params);
+    return apiClient.get(`${this.endpoint}/check-contact`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkActivePurchases(providerId) {
@@ -161,6 +175,7 @@ class ProvidersService {
   resolveProviderDocumentType(provider, documentTypes = []) {
     if (provider.tipoEntidad === "juridica") {
       return {
+        tipoDocumento: "NIT",
         tipoDocumentoNombre: "NIT",
         documentType: { name: "NIT", label: "NIT" },
       };
@@ -264,16 +279,24 @@ class ProvidersService {
       businessName: providerData.razonSocial,
       razonSocial: providerData.razonSocial,
       nit: cleanedNit,
+      contactoPrincipal: providerData.contactoPrincipal,
       mainContact: providerData.contactoPrincipal,
+      correo: providerData.correo,
       email: providerData.correo,
+      telefono: providerData.telefono,
       phone: providerData.telefono,
+      direccion: providerData.direccion,
       address: providerData.direccion,
+      ciudad: providerData.ciudad,
       city: providerData.ciudad,
+      descripcion: providerData.descripcion || "",
       description: providerData.descripcion || "",
+      estado: providerData.estado || "Activo",
       status: providerData.estado === "Activo" ? "Active" : "Inactive",
     };
 
     if (providerData.tipoEntidad === "natural" && providerData.tipoDocumento) {
+      transformed.tipoDocumento = providerData.tipoDocumento;
       transformed.documentTypeId = providerData.tipoDocumento;
     }
 
@@ -292,7 +315,9 @@ class ProvidersService {
       razonSocial: backendData.razonSocial || backendData.businessName || "",
       nit: backendData.nit || "",
       tipoDocumento:
-        backendData.tipoDocumento || backendData.documentTypeId || "",
+        backendData.entityType === "legal" || backendData.tipoEntidad === "juridica"
+          ? "NIT"
+          : backendData.tipoDocumento || backendData.documentTypeId || "",
       tipoDocumentoNombre:
         normalizeDocumentTypeLabel(backendData.tipoDocumentoNombre) ||
         normalizeDocumentTypeLabel(backendData.documentType?.name) ||

@@ -14,6 +14,7 @@ const ReportButton = ({
   dataProvider, // Nueva prop para función que retorna datos (puede ser async)
   fileName = "Reporte",
   columns,
+  customDataTransform,
   buttonClassName = "",
   iconClassName = "",
 }) => {
@@ -62,12 +63,42 @@ const ReportButton = ({
     }, obj);
   };
 
+  const resolveColumnValue = (item, col) => {
+    const rawValue = col.accessor.includes(".")
+      ? getNestedValue(item, col.accessor)
+      : item[col.accessor];
+
+    return typeof col.format === "function"
+      ? col.format(rawValue, item)
+      : rawValue;
+  };
+
+  const formatExportValue = (value, maxLength = null) => {
+    if (value === undefined || value === null) {
+      return "";
+    }
+
+    const normalizedValue = normalizeExportText(String(value));
+
+    if (maxLength && normalizedValue.length > maxLength) {
+      return `${normalizedValue.substring(0, maxLength - 3)}...`;
+    }
+
+    return normalizedValue;
+  };
+
   // Función para obtener los datos (síncrona o asíncrona)
   const getData = async () => {
-    if (dataProvider && typeof dataProvider === 'function') {
-      return await dataProvider();
+    const sourceData =
+      dataProvider && typeof dataProvider === "function"
+        ? await dataProvider()
+        : data || [];
+
+    if (typeof customDataTransform === "function") {
+      return sourceData.map((item) => customDataTransform(item));
     }
-    return data || [];
+
+    return sourceData;
   };
 
   const validateData = async () => {
@@ -127,16 +158,13 @@ const ReportButton = ({
         const tableColumn = normalizedColumns.map((col) =>
           normalizeExportText(col.header)
         );
-        const tableRows = pageData.map(item => 
-          normalizedColumns.map(col => {
-            const value = col.accessor.includes('.') 
-              ? getNestedValue(item, col.accessor)
-              : item[col.accessor];
-            // Limitar texto pero no tan agresivamente
-            return value
-              ? normalizeExportText(value).substring(0, 50)
-              : '';
-          })
+        const tableRows = pageData.map((item) =>
+          normalizedColumns.map((col) => {
+            const header = normalizeExportText(col.header).toLowerCase();
+            const value = resolveColumnValue(item, col);
+            const maxLength = header.includes("descrip") ? 120 : 80;
+            return formatExportValue(value, maxLength);
+          }),
         );
 
         autoTable(doc, {

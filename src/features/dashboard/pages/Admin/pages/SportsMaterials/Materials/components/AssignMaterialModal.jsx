@@ -57,7 +57,7 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
   };
 
   const handleMaterialChange = (name, value) => {
-    const material = materials.find(m => m.id === value);
+    const material = materials.find(m => String(m.id) === String(value));
     setSelectedMaterial(material);
     setFormData(prev => ({ ...prev, materialId: value, cantidad: '' }));
     if (errors.materialId) {
@@ -155,14 +155,12 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
                 Material <span className="text-red-500">*</span>
               </label>
               <SearchableSelect
-                name="materialId"
                 options={materials.map(m => ({
-                  value: m.id,
+                  value: String(m.id),
                   label: `${m.nombre} (Disponible: ${getStockDisponible(m)})`
                 }))}
-                value={formData.materialId}
-                onChange={handleMaterialChange}
-                onBlur={() => handleBlur('materialId')}
+                value={String(formData.materialId || "")}
+                onChange={(value) => handleMaterialChange("materialId", value)}
                 placeholder="Selecciona un material"
                 loading={loadingMaterials}
                 error={touched.materialId && errors.materialId}

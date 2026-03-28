@@ -62,7 +62,8 @@ const MaterialCategories = () => {
 
       if (response.success) {
         setCategories(response.data || []);
-        setTotalRows(response.pagination?.total || response.data?.length || 0);
+        const total = parseInt(response.pagination?.total) || response.data?.length || 0;
+        setTotalRows(total);
       }
     } catch (error) {
       setCategories([]);
@@ -281,8 +282,8 @@ const MaterialCategories = () => {
       {/* Tabla */}
       <Table
         serverPagination={true}
-        currentPage={currentPage}
-        totalRows={totalRows}
+        currentPage={parseInt(currentPage)}
+        totalRows={parseInt(totalRows)}
         rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
         onPageChange={(page) => setCurrentPage(page)}
         thead={{

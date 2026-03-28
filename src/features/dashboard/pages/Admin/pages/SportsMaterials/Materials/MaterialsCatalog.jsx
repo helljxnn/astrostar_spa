@@ -64,7 +64,7 @@ const MaterialsCatalog = () => {
 
       if (response.success) {
         setMaterials(response.data || []);
-        const total = response.pagination?.total || response.data?.length || 0;
+        const total = parseInt(response.pagination?.total) || response.data?.length || 0;
         setTotalRows(total);
       }
     } catch (error) {
@@ -567,8 +567,8 @@ const MaterialsCatalog = () => {
           },
         }}
         serverPagination={true}
-        currentPage={currentPage}
-        totalRows={totalRows}
+        currentPage={parseInt(currentPage)}
+        totalRows={parseInt(totalRows)}
         rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
         onPageChange={setCurrentPage}
         loading={loading}

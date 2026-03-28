@@ -405,7 +405,6 @@ const MovementModal = ({
                   Material <span className="text-red-500">*</span>
                 </label>
                 <SearchableSelect
-                  name="materialId"
                   options={materials.map((m) => ({
                     value: String(m.id),
                     label: m.nombre,
@@ -419,7 +418,6 @@ const MovementModal = ({
                       handleMaterialSelect(material);
                     }
                   }}
-                  onBlur={() => handleBlur("materialId")}
                   placeholder="Selecciona un material"
                   loading={loadingMaterials}
                   error={touched.materialId && errors.materialId}
@@ -590,7 +588,6 @@ const MovementModal = ({
               <div className="flex gap-2">
                 <div className="flex-1">
                   <SearchableSelect
-                    name="proveedor"
                     options={providers.map((p) => ({
                       value: String(p.id),
                       label: `${p.razonSocial} - ${p.tipoDocumentoNombre || "NIT"}: ${p.nit}`,
