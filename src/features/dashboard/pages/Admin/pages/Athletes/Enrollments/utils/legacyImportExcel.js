@@ -31,7 +31,6 @@ export const LEGACY_IMPORT_COLUMNS = [
   "telefono_acudiente",
   "fecha_nacimiento_acudiente",
   "direccion_acudiente",
-  "ocupacion_acudiente",
   "parentesco_acudiente",
   "periodos_deuda_mensual",
   "crear_renovacion_pendiente",
@@ -41,7 +40,7 @@ export const LEGACY_IMPORT_COLUMNS = [
 ];
 
 const EXAMPLE_ROW = {
-  estado_deportista: "Active",
+  estado_deportista: "Activo",
   fecha_estado_deportista: "",
   primer_nombre: "Sara",
   segundo_nombre: "",
@@ -59,20 +58,19 @@ const EXAMPLE_ROW = {
   fecha_inicio_matricula: "2025-08-01",
   fecha_vencimiento_matricula: "2026-07-31",
   documento_acudiente: "99880011",
-  tipo_documento_acudiente: "Cedula de Ciudadania",
+  tipo_documento_acudiente: "Cédula de Ciudadanía",
   nombre_acudiente: "Patricia",
   apellido_acudiente: "Lopez",
   correo_acudiente: "patricia@example.com",
   telefono_acudiente: "3000000002",
   fecha_nacimiento_acudiente: "1980-05-05",
   direccion_acudiente: "Calle 5 # 6-20",
-  ocupacion_acudiente: "Madre",
   parentesco_acudiente: "Madre",
   periodos_deuda_mensual: "2026-01,2026-02",
   crear_renovacion_pendiente: "NO",
   fecha_inicio_mora: "2026-04-01",
   condonar_mora_historica: "SI",
-  observaciones: "Saldo inicial migrado desde control manual",
+  observaciones: "EJEMPLO - esta fila no se importa",
 };
 
 const normalizeKey = (value) =>
@@ -93,14 +91,46 @@ const normalizeBooleanString = (value, defaultValue = false) => {
   return defaultValue;
 };
 
+const excelSerialToDate = (serialValue) => {
+  const serial = Number(serialValue);
+  if (!Number.isFinite(serial) || serial <= 0) return null;
+
+  const excelEpoch = Date.UTC(1899, 11, 30);
+  const parsed = new Date(excelEpoch + serial * 24 * 60 * 60 * 1000);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
 const formatDateForTemplate = (value) => {
   if (!value) return "";
   if (value instanceof Date) {
     return value.toISOString().slice(0, 10);
   }
 
+  if (typeof value === "number") {
+    const parsedFromSerial = excelSerialToDate(value);
+    if (parsedFromSerial) {
+      return parsedFromSerial.toISOString().slice(0, 10);
+    }
+  }
+
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
     return value.slice(0, 10);
+  }
+
+  if (typeof value === "string") {
+    const numericSerial = value.trim().match(/^\d{5,6}(?:\.\d+)?$/);
+    if (numericSerial) {
+      const parsedFromSerial = excelSerialToDate(Number(value.trim()));
+      if (parsedFromSerial) {
+        return parsedFromSerial.toISOString().slice(0, 10);
+      }
+    }
+
+    const dayFirstMatch = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dayFirstMatch) {
+      const [, day, month, year] = dayFirstMatch;
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
   }
 
   const parsed = new Date(value);
@@ -157,6 +187,44 @@ const parseMonthlyDebtPeriods = (value) =>
     .map((period) => period.trim())
     .filter(Boolean);
 
+const looksLikeDateValue = (value) => /^\d{4}-\d{2}-\d{2}$/.test(normalizeString(value));
+const looksLikePeriodList = (value) =>
+  /^(\d{4}-\d{2})(\s*,\s*\d{4}-\d{2})*$/.test(normalizeString(value));
+
+const normalizeFinancialTailColumns = (rowData) => {
+  const monthlyDebtRaw = normalizeString(rowData.periodos_deuda_mensual);
+  const renewalRaw = normalizeString(rowData.crear_renovacion_pendiente);
+  const lateFeeRaw = normalizeString(rowData.fecha_inicio_mora);
+  const waiveLateFeeRaw = normalizeString(rowData.condonar_mora_historica);
+  const observationsRaw = normalizeString(rowData.observaciones);
+
+  const looksShiftedRight =
+    !monthlyDebtRaw &&
+    looksLikePeriodList(renewalRaw) &&
+    ["SI", "NO"].includes(lateFeeRaw.toUpperCase()) &&
+    (looksLikeDateValue(waiveLateFeeRaw) || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(waiveLateFeeRaw)) &&
+    ["SI", "NO", ""].includes(observationsRaw.toUpperCase());
+
+  if (!looksShiftedRight) {
+    return rowData;
+  }
+
+  return {
+    ...rowData,
+    periodos_deuda_mensual: renewalRaw,
+    crear_renovacion_pendiente: lateFeeRaw,
+    fecha_inicio_mora: waiveLateFeeRaw,
+    condonar_mora_historica: observationsRaw,
+    observaciones: "",
+  };
+};
+
+const isTemplateExampleRow = (rowData = {}) =>
+  LEGACY_IMPORT_COLUMNS.every(
+    (column) =>
+      normalizeString(rowData[column]) === normalizeString(EXAMPLE_ROW[column])
+  );
+
 export const downloadLegacyImportTemplate = async (referenceData = {}) => {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "AstroStar";
@@ -165,25 +233,15 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
   const instructionsSheet = workbook.addWorksheet(INSTRUCTIONS_SHEET);
   instructionsSheet.columns = [{ width: 35 }, { width: 120 }];
   instructionsSheet.addRows([
-    ["Objetivo", "Usa este archivo para cargar deportistas que ya existen en la fundación antes de salir a producción."],
-    ["Hoja obligatoria", `Completa la hoja "${LEGACY_IMPORT_SHEET}" sin cambiar los encabezados.`],
-    ["Categorías", "La categoría deportiva debe existir ya en el sistema. Si no existe, créala antes de importar."],
-    ["Acudiente", "Si la deportista es menor de edad, debes completar todos los campos del acudiente y el parentesco."],
-    ["Deuda mensual", "Usa periodos separados por coma, por ejemplo: 2026-01,2026-02."],
-    ["Renovación pendiente", "Usa SI solo si la matrícula está Vencida y quieres dejar la renovación creada."],
-    ["Mora histórica", "Si condonar_mora_historica es SI, la mora empezará en fecha_inicio_mora o en la fecha de corte del importador."],
-    ["Correos", "La recomendación es importar primero con envío de credenciales desactivado y enviarlas solo después de validar."],
-  ]);
-  instructionsSheet.spliceRows(1, instructionsSheet.rowCount);
-  instructionsSheet.addRows([
     ["Objetivo", "Usa este archivo para cargar deportistas que ya existen en la fundacion antes de salir a produccion."],
     ["Hoja obligatoria", `Completa la hoja "${LEGACY_IMPORT_SHEET}" sin cambiar los encabezados.`],
     ["Hoja Catalogos", `La hoja "${CATALOGS_SHEET}" es solo de consulta. Te muestra los valores permitidos para diligenciar la hoja "${LEGACY_IMPORT_SHEET}".`],
     ["Categorias", "La categoria deportiva debe existir ya en el sistema. Si no existe, creala antes de importar."],
+    ["Estado de la deportista", "En estado_deportista usa Activo o Inactivo. Si la deportista esta Activa, fecha_estado_deportista puede quedar vacia. Si esta Inactiva, registra la fecha real desde la cual quedo inactiva."],
     ["Acudiente", "Si la deportista es menor de edad, debes completar todos los campos del acudiente y el parentesco."],
     ["Deuda mensual", "Usa periodos separados por coma, por ejemplo: 2026-01,2026-02."],
     ["Renovacion pendiente", "Usa SI solo si la matricula ya esta Vencida y quieres dejar creada la obligacion de renovacion. No aplica para deportistas becadas."],
-    ["Fecha de corte", "Es la fecha desde la cual el sistema empezara a administrar esta informacion. Se usa para validar el estado real de la matricula y para calcular la mora historica cuando aplique."],
+    ["Fecha de corte", "Usa una sola fecha para todo el archivo. Debe ser la fecha oficial desde la cual el sistema empezara a administrar estas deportistas, idealmente la fecha de salida a produccion o el primer dia del mes. Esa fecha define si una matricula queda Vigente o Vencida, impide cargar periodos de deuda futuros y sirve como base para la mora historica cuando aplique."],
     ["Mora historica", "Si condonar_mora_historica es SI, la mora empezara en fecha_inicio_mora o en la fecha de corte seleccionada en la migracion."],
     ["Acceso al sistema", "La migracion masiva crea el acceso en el sistema, pero no envia correos automaticos."],
   ]);
@@ -215,7 +273,7 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
     ]);
   });
 
-  ["Active", "Inactive", "Vigente", "Vencida", "SI", "NO"].forEach((value) => {
+  ["Activo", "Inactivo", "Vigente", "Vencida", "SI", "NO"].forEach((value) => {
     catalogsSheet.addRow(["Valores frecuentes", value]);
   });
 
@@ -236,6 +294,15 @@ export const downloadLegacyImportTemplate = async (referenceData = {}) => {
   headerRow.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
 
   importSheet.addRow(EXAMPLE_ROW);
+  const exampleRow = importSheet.getRow(2);
+  exampleRow.font = { italic: true, color: { argb: "FF475569" } };
+  exampleRow.eachCell((cell) => {
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFFEF3C7" },
+    };
+  });
   importSheet.views = [{ state: "frozen", ySplit: 1 }];
 
   const buffer = await workbook.xlsx.writeBuffer();
@@ -298,25 +365,29 @@ export const parseLegacyImportWorkbook = async (file, referenceData = {}) => {
       rowData[header] = formatCellValue(row.getCell(index + 1).value);
     });
 
-    const isEmptyRow = Object.values(rowData).every((value) => !normalizeString(value));
+    const normalizedRowData = normalizeFinancialTailColumns(rowData);
+
+    const isEmptyRow = Object.values(normalizedRowData).every((value) => !normalizeString(value));
     if (isEmptyRow) return;
+
+    if (isTemplateExampleRow(normalizedRowData)) return;
 
     const localErrors = [];
 
     const athleteDocumentType =
-      documentTypeMap.get(normalizeKey(rowData.tipo_documento_deportista)) || null;
-    const guardianDocumentType = rowData.tipo_documento_acudiente
-      ? documentTypeMap.get(normalizeKey(rowData.tipo_documento_acudiente)) || null
+      documentTypeMap.get(normalizeKey(normalizedRowData.tipo_documento_deportista)) || null;
+    const guardianDocumentType = normalizedRowData.tipo_documento_acudiente
+      ? documentTypeMap.get(normalizeKey(normalizedRowData.tipo_documento_acudiente)) || null
       : null;
     const categoryName =
-      sportsCategoryMap.get(normalizeKey(rowData.categoria_deportiva)) ||
-      normalizeString(rowData.categoria_deportiva);
+      sportsCategoryMap.get(normalizeKey(normalizedRowData.categoria_deportiva)) ||
+      normalizeString(normalizedRowData.categoria_deportiva);
 
     if (!athleteDocumentType) {
       localErrors.push("Tipo de documento de deportista no reconocido.");
     }
 
-    if (rowData.tipo_documento_acudiente && !guardianDocumentType) {
+    if (normalizedRowData.tipo_documento_acudiente && !guardianDocumentType) {
       localErrors.push("Tipo de documento de acudiente no reconocido.");
     }
 
@@ -324,46 +395,66 @@ export const parseLegacyImportWorkbook = async (file, referenceData = {}) => {
       localErrors.push("La categoría deportiva es obligatoria.");
     }
 
+    const monthlyDebtRaw = normalizeString(normalizedRowData.periodos_deuda_mensual);
+    const renewalRaw = normalizeString(normalizedRowData.crear_renovacion_pendiente);
+    const lateFeeRaw = normalizeString(normalizedRowData.fecha_inicio_mora);
+    const waiveLateFeeRaw = normalizeString(normalizedRowData.condonar_mora_historica);
+    const observationsRaw = normalizeString(normalizedRowData.observaciones);
+
+    const rowSeemsShifted =
+      ["SI", "NO"].includes(monthlyDebtRaw.toUpperCase()) ||
+      looksLikeDateValue(renewalRaw) ||
+      ((waiveLateFeeRaw.toUpperCase() === "SI" || waiveLateFeeRaw.toUpperCase() === "NO") &&
+        observationsRaw &&
+        !looksLikeDateValue(lateFeeRaw) &&
+        !["SI", "NO", ""].includes(lateFeeRaw.toUpperCase()));
+
+    if (rowSeemsShifted) {
+      localErrors.push(
+        "La fila parece tener columnas corridas. Descarga de nuevo la plantilla actual y pega los datos desde la columna A sin cambiar el orden de los encabezados."
+      );
+    }
+
     const guardianDataPresent = [
-      rowData.documento_acudiente,
-      rowData.nombre_acudiente,
-      rowData.apellido_acudiente,
-      rowData.correo_acudiente,
+      normalizedRowData.documento_acudiente,
+      normalizedRowData.nombre_acudiente,
+      normalizedRowData.apellido_acudiente,
+      normalizedRowData.correo_acudiente,
     ].some((value) => normalizeString(value));
 
     const record = {
       athlete: {
-        firstName: normalizeString(rowData.primer_nombre),
-        middleName: normalizeString(rowData.segundo_nombre) || null,
-        lastName: normalizeString(rowData.primer_apellido),
-        secondLastName: normalizeString(rowData.segundo_apellido) || null,
+        firstName: normalizeString(normalizedRowData.primer_nombre),
+        middleName: normalizeString(normalizedRowData.segundo_nombre) || null,
+        lastName: normalizeString(normalizedRowData.primer_apellido),
+        secondLastName: normalizeString(normalizedRowData.segundo_apellido) || null,
         documentTypeId: athleteDocumentType?.id || null,
-        identification: normalizeString(rowData.documento_deportista),
-        email: normalizeString(rowData.correo_deportista).toLowerCase(),
-        phoneNumber: normalizeString(rowData.telefono_deportista),
-        birthDate: formatDateForTemplate(rowData.fecha_nacimiento_deportista),
-        address: normalizeString(rowData.direccion_deportista),
+        identification: normalizeString(normalizedRowData.documento_deportista),
+        email: normalizeString(normalizedRowData.correo_deportista).toLowerCase(),
+        phoneNumber: normalizeString(normalizedRowData.telefono_deportista),
+        birthDate: formatDateForTemplate(normalizedRowData.fecha_nacimiento_deportista),
+        address: normalizeString(normalizedRowData.direccion_deportista),
         categoria: categoryName,
-        status: normalizeString(rowData.estado_deportista) || "Active",
-        statusAssignedAt: formatDateForTemplate(rowData.fecha_estado_deportista) || null,
-        isScholarship: normalizeBooleanString(rowData.becada, false),
-        relationship: normalizeString(rowData.parentesco_acudiente) || null,
+        status: normalizeString(normalizedRowData.estado_deportista) || "Activo",
+        statusAssignedAt: formatDateForTemplate(normalizedRowData.fecha_estado_deportista) || null,
+        isScholarship: normalizeBooleanString(normalizedRowData.becada, false),
+        relationship: normalizeString(normalizedRowData.parentesco_acudiente) || null,
       },
       enrollment: {
-        estado: normalizeString(rowData.estado_matricula),
-        fechaInicio: formatDateForTemplate(rowData.fecha_inicio_matricula),
-        fechaVencimiento: formatDateForTemplate(rowData.fecha_vencimiento_matricula),
-        observaciones: normalizeString(rowData.observaciones) || null,
+        estado: normalizeString(normalizedRowData.estado_matricula),
+        fechaInicio: formatDateForTemplate(normalizedRowData.fecha_inicio_matricula),
+        fechaVencimiento: formatDateForTemplate(normalizedRowData.fecha_vencimiento_matricula),
+        observaciones: normalizeString(normalizedRowData.observaciones) || null,
       },
       financial: {
-        monthlyDebtPeriods: parseMonthlyDebtPeriods(rowData.periodos_deuda_mensual),
+        monthlyDebtPeriods: parseMonthlyDebtPeriods(normalizedRowData.periodos_deuda_mensual),
         createRenewalObligation: normalizeBooleanString(
-          rowData.crear_renovacion_pendiente,
+          normalizedRowData.crear_renovacion_pendiente,
           false
         ),
-        lateFeeStartsAt: formatDateForTemplate(rowData.fecha_inicio_mora) || null,
+        lateFeeStartsAt: formatDateForTemplate(normalizedRowData.fecha_inicio_mora) || null,
         waiveHistoricalLateFee: normalizeBooleanString(
-          rowData.condonar_mora_historica,
+          normalizedRowData.condonar_mora_historica,
           true
         ),
       },
@@ -372,14 +463,13 @@ export const parseLegacyImportWorkbook = async (file, referenceData = {}) => {
     if (guardianDataPresent) {
       record.guardian = {
         documentTypeId: guardianDocumentType?.id || null,
-        identification: normalizeString(rowData.documento_acudiente),
-        firstName: normalizeString(rowData.nombre_acudiente),
-        lastName: normalizeString(rowData.apellido_acudiente),
-        email: normalizeString(rowData.correo_acudiente).toLowerCase(),
-        phone: normalizeString(rowData.telefono_acudiente),
-        birthDate: formatDateForTemplate(rowData.fecha_nacimiento_acudiente),
-        address: normalizeString(rowData.direccion_acudiente) || null,
-        occupation: normalizeString(rowData.ocupacion_acudiente) || null,
+        identification: normalizeString(normalizedRowData.documento_acudiente),
+        firstName: normalizeString(normalizedRowData.nombre_acudiente),
+        lastName: normalizeString(normalizedRowData.apellido_acudiente),
+        email: normalizeString(normalizedRowData.correo_acudiente).toLowerCase(),
+        phone: normalizeString(normalizedRowData.telefono_acudiente),
+        birthDate: formatDateForTemplate(normalizedRowData.fecha_nacimiento_acudiente),
+        address: normalizeString(normalizedRowData.direccion_acudiente) || null,
       };
     }
 

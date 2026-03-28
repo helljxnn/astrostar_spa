@@ -30,6 +30,7 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
   const [localErrors, setLocalErrors] = useState([]);
   const [preview, setPreview] = useState(null);
   const [preparedPayload, setPreparedPayload] = useState(null);
+  const [fileLoadedMessage, setFileLoadedMessage] = useState("");
 
   useEffect(() => {
     if (!isOpen) {
@@ -41,6 +42,7 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
       setLocalErrors([]);
       setPreview(null);
       setPreparedPayload(null);
+      setFileLoadedMessage("");
     }
   }, [isOpen]);
 
@@ -52,6 +54,14 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
   }, [cutoverDate]);
 
   const summary = preview?.summary || null;
+  const hasPreviewErrors = Boolean(summary && summary.invalidRows > 0);
+  const canImport =
+    Boolean(summary) &&
+    !hasPreviewErrors &&
+    !importing &&
+    !previewing &&
+    !parsing &&
+    localErrors.length === 0;
   if (!isOpen) return null;
 
   const handleDownloadTemplate = async () => {
@@ -111,7 +121,7 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
   };
 
   const handleImport = async () => {
-    if (!preparedPayload || !summary || summary.invalidRows > 0) {
+    if (!preparedPayload || !canImport) {
       return;
     }
 
@@ -192,10 +202,21 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
                       setPreview(null);
                       setPreparedPayload(null);
                       setLocalErrors([]);
+                      setFileLoadedMessage(
+                        event.target.files?.[0]
+                          ? `Archivo cargado correctamente: ${event.target.files[0].name}`
+                          : ""
+                      );
                     }}
                   />
                 </label>
               </div>
+
+              {fileLoadedMessage && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+                  {fileLoadedMessage}
+                </div>
+              )}
 
               <div className="grid gap-4 md:grid-cols-1">
                 <label className="block max-w-sm">
@@ -247,7 +268,7 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
                 <button
                   type="button"
                   onClick={handleImport}
-                  disabled={!summary || summary.invalidRows > 0 || importing}
+                  disabled={!canImport}
                   className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <FaCheckCircle />
@@ -310,7 +331,9 @@ const LegacyImportModal = ({ isOpen, onClose, referenceData, onImported }) => {
                       Fecha de corte: <span className="font-semibold">{cutoverDate}</span>
                     </p>
                     <p className="mt-1 text-sm text-slate-700">
-                      Revisa las filas con error antes de registrar las deportistas.
+                      {hasPreviewErrors
+                        ? "Revisa las filas con error antes de registrar las deportistas."
+                        : "El archivo no tiene errores. Ya puedes registrar las deportistas."}
                     </p>
                   </div>
                 </>

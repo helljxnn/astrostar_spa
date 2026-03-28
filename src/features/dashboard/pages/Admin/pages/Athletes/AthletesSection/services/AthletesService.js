@@ -199,6 +199,7 @@ return {
         return {
           success: true,
           data: response.data,
+          emailSent: response.emailSent === true,
           message: response.message,
         };
       }
