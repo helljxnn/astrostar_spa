@@ -270,7 +270,7 @@ export const useEvents = () => {
         if (response.success) {
           // Primero eliminar del estado local inmediatamente
           setEvents((prevEvents) =>
-            prevEvents.filter((event) => event.id !== parseInt(id)),
+            prevEvents.filter((event) => String(event.id) !== String(id)),
           );
 
           showSuccessAlert("Evento Eliminado", response.message);
@@ -285,7 +285,12 @@ export const useEvents = () => {
           throw new Error(response.message || "Error eliminando evento");
         }
       } catch (err) {
-        showErrorAlert("Error", err.message || "No se pudo eliminar el evento");
+        const rawMessage = err?.message || "";
+        const friendlyMessage = /internal server error/i.test(rawMessage)
+          ? "No fue posible eliminar el evento. Puede tener registros asociados o restricciones activas."
+          : rawMessage || "No se pudo eliminar el evento";
+
+        showErrorAlert("Error", friendlyMessage);
         throw err;
       } finally {
         setLoading(false);

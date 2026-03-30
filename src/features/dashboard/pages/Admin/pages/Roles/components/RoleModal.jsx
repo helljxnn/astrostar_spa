@@ -11,10 +11,9 @@ import {
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 import {
-  MODULE_CONFIG,
-  MODULE_GROUPS,
   getModuleAllowedActions,
 } from "../../../../../../../shared/constants/moduleConfig";
+import { buildRoleModuleCategories } from "../../../../../../../shared/constants/permissionStructure";
 
 const PROTECTED_SYSTEM_ROLES = new Set([
   "administrador",
@@ -34,39 +33,7 @@ const normalizeRoleName = (value = "") =>
 const isProtectedRole = (roleName = "") =>
   PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
 
-// Generar categorias de modulos dinamicamente desde moduleConfig
-const generateModuleCategories = () => {
-  const categories = {};
-
-  const standaloneOrder = ["dashboard", "roles", "users"];
-  const groupOrder = ["services", "athletes", "equipment", "donations", "events"];
-
-  standaloneOrder.forEach((moduleId) => {
-    const module = MODULE_CONFIG[moduleId];
-    if (!module) return;
-    categories[module.name] = [
-      {
-        name: module.name,
-        key: module.id,
-      },
-    ];
-  });
-
-  groupOrder.forEach((groupId) => {
-    const group = MODULE_GROUPS[groupId];
-    if (!group) return;
-    categories[group.name] = group.children
-      .filter((moduleId) => Boolean(MODULE_CONFIG[moduleId]))
-      .map((moduleId) => ({
-        name: MODULE_CONFIG[moduleId].name,
-        key: moduleId,
-      }));
-  });
-
-  return categories;
-};
-
-const moduleCategories = generateModuleCategories();
+const moduleCategories = buildRoleModuleCategories();
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
@@ -329,8 +296,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       // Alerta de confirmacion si se esta editando
       if (roleData) {
         const result = await showConfirmAlert(
-          "¿Estas seguro de actualizar este rol?",
-          "Los cambios se guardaran y no se podran deshacer facilmente.",
+          "¿Estás seguro de actualizar este rol?",
+          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
         );
 
         if (!result.isConfirmed) return;

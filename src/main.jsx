@@ -1,6 +1,7 @@
-﻿import React from "react";
+import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import "./shared/utils/asciiConsolePatch.js";
 import App from "./App.jsx";
 import "@fontsource/montserrat/latin-400.css";
 import "@fontsource/montserrat/latin-500.css";
@@ -8,9 +9,9 @@ import "@fontsource/montserrat/latin-600.css";
 import "@fontsource/montserrat/latin-700.css";
 import "./index.css";
 
-// Configurar moment en español globalmente
 import moment from "moment";
 import "moment/locale/es";
+
 moment.locale("es");
 
 if (window.location.hostname.endsWith(".firebaseapp.com")) {
@@ -24,10 +25,8 @@ if (window.location.hostname.endsWith(".firebaseapp.com")) {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
-

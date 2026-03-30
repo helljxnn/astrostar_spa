@@ -48,26 +48,31 @@ const EventActionModal = ({
   // Verificar si el evento se puede eliminar
   const canDeleteEvent = () => {
     const dashboardEvent = event?.extendedProps?.dashboardEvent || event;
-    const estado =
-      dashboardEvent?.estado || dashboardEvent?.status || eventStatus;
+    const estadoRaw =
+      dashboardEvent?.estadoOriginal ||
+      dashboardEvent?.estado ||
+      dashboardEvent?.status ||
+      eventStatus ||
+      "";
+    const estado = String(estadoRaw).toLowerCase().replace(/[\s-]+/g, "_");
     const participantCount =
       dashboardEvent?.participants?.length ||
       dashboardEvent?._count?.participants ||
       0;
-    const materialCount = dashboardEvent?._count?.eventMaterials || 0;
+    const hasRegistrations = Boolean(dashboardEvent?.hasRegistrations);
+    const materialCount =
+      dashboardEvent?.donationMaterialsCount ??
+      dashboardEvent?._count?.eventMaterials ??
+      dashboardEvent?.eventMaterials?.length ??
+      0;
 
     // No se puede eliminar si está en curso o finalizado
-    if (
-      estado === "En Curso" ||
-      estado === "en_curso" ||
-      estado === "Finalizado" ||
-      estado === "finalizado"
-    ) {
+    if (estado === "en_curso" || estado === "finalizado") {
       return false;
     }
 
     // No se puede eliminar si tiene inscritos
-    if (participantCount > 0) {
+    if (participantCount > 0 || hasRegistrations) {
       return false;
     }
 
@@ -82,28 +87,39 @@ const EventActionModal = ({
   // Obtener mensaje de por qué no se puede eliminar
   const getDeleteDisabledReason = () => {
     const dashboardEvent = event?.extendedProps?.dashboardEvent || event;
-    const estado =
-      dashboardEvent?.estado || dashboardEvent?.status || eventStatus;
+    const estadoRaw =
+      dashboardEvent?.estadoOriginal ||
+      dashboardEvent?.estado ||
+      dashboardEvent?.status ||
+      eventStatus ||
+      "";
+    const estado = String(estadoRaw).toLowerCase().replace(/[\s-]+/g, "_");
     const participantCount =
       dashboardEvent?.participants?.length ||
       dashboardEvent?._count?.participants ||
       0;
-    const materialCount = dashboardEvent?._count?.eventMaterials || 0;
+    const hasRegistrations = Boolean(dashboardEvent?.hasRegistrations);
+    const materialCount =
+      dashboardEvent?.donationMaterialsCount ??
+      dashboardEvent?._count?.eventMaterials ??
+      dashboardEvent?.eventMaterials?.length ??
+      0;
 
-    if (estado === "En Curso" || estado === "en_curso") {
+    if (estado === "en_curso") {
       return "No se puede eliminar un evento en curso";
     }
 
-    if (estado === "Finalizado" || estado === "finalizado") {
+    if (estado === "finalizado") {
       return "No se puede eliminar un evento finalizado";
     }
 
-    if (participantCount > 0) {
-      return `No se puede eliminar: tiene ${participantCount} inscrito(s)`;
+    if (participantCount > 0 || hasRegistrations) {
+      const inscritos = participantCount > 0 ? participantCount : 1;
+      return `No se puede eliminar: tiene ${inscritos} inscrito(s)`;
     }
 
     if (materialCount > 0) {
-      return `No se puede eliminar: tiene ${materialCount} material(es) asignado(s)`;
+      return `No se puede eliminar: tiene ${materialCount} material(es) comprometido(s) con donante(s)`;
     }
 
     return "";

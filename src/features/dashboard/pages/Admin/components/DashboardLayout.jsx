@@ -7,6 +7,7 @@ import ViewProfileModal from "../../../../auth/pages/ViewProfileModal";
 import EditProfileModal from "../../../../auth/pages/EditProfileModal";
 import { useAuth } from "../../../../../shared/contexts/authContext";
 import { useSidebarState } from "../../../../../shared/hooks/useSidebarState";
+import ContextualHelpDrawer from "../pages/OnlineHelp/ContextualHelpDrawer";
 
 function DashboardLayout() {
   const [isViewModalOpen, setViewModalOpen] = useState(false);
@@ -41,14 +42,6 @@ function DashboardLayout() {
       if (updateUser) {
         updateUser(updatedData);
       }
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        const userObj = JSON.parse(storedUser);
-        localStorage.setItem(
-          "user",
-          JSON.stringify({ ...userObj, ...updatedData }),
-        );
-      }
     } catch (error) {
       console.error("Error updating profile:", error);
       throw error;
@@ -74,7 +67,7 @@ function DashboardLayout() {
 
       {/* Contenido Principal */}
       <div
-        className="min-h-screen dashboard-main-content transition-all duration-300"
+        className="min-h-screen dashboard-main-content transition-all duration-300 flex flex-col"
         data-sidebar={getSidebarState()}
       >
         <TopBar
@@ -85,10 +78,12 @@ function DashboardLayout() {
             setEdit: setEditModalOpen,
           }}
         />
-        <main className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-16 sm:pb-8">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8 pb-8">
           <Outlet />
         </main>
       </div>
+
+      <ContextualHelpDrawer />
 
       {/* Portal para los modales */}
       <Portal>
