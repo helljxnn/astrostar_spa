@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaPlus, FaUserShield, FaRegCalendarAlt } from "react-icons/fa";
 import AthleteModal from "./components/AthleteModal.jsx";
 import AthleteViewModal from "./components/AthleteViewModal.jsx";
@@ -8,10 +8,10 @@ import MonthlyHistoryModal from "../AthletesSection/components/MonthlyHistoryMod
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
-import ReportButton from "../../../../../../../shared/components/ReportButton.jsx";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard.jsx";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
+import AthletesReportButton from "./components/AthletesReportButton.jsx";
 
 import AthletesService from "./services/AthletesService.js";
 import GuardiansService from "./services/GuardiansService.js";
@@ -19,7 +19,6 @@ import GuardiansService from "./services/GuardiansService.js";
 import {
   showSuccessAlert,
   showErrorAlert,
-  showDeleteAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 
 // Hook personalizado para deportistas
@@ -30,7 +29,6 @@ const Athletes = () => {
   // Hook de permisos
   const { hasPermission } = usePermissions();
   const canEditAthletes = hasPermission("athletesSection", "Editar");
-  const canDeleteAthletes = hasPermission("athletesSection", "Eliminar");
   const canViewAthletes = hasPermission("athletesSection", "Ver");
   const canManageGuardian = hasPermission("athletesSection", "Acudiente");
   const canViewMonthlyHistory = canEditAthletes;
@@ -50,7 +48,6 @@ const Athletes = () => {
     loadGuardians,
     createAthlete,
     updateAthlete,
-    deleteAthlete,
     createGuardian,
     updateGuardian,
     deleteGuardian,
@@ -95,8 +92,8 @@ const Athletes = () => {
     const loadData = () => {
       refresh({
         page: 1, // Resetear a página 1 en búsquedas
-        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm,
+        limit: searchTerm.trim() ? 100 : PAGINATION_CONFIG.ROWS_PER_PAGE,
+        search: searchTerm.trim() ? "" : searchTerm,
       });
     };
     
@@ -113,17 +110,91 @@ const Athletes = () => {
     };
   }, [searchTerm, refresh]); // Incluir refresh como dependencia
 
-  // Usar datos del servidor directamente (ya vienen filtrados y paginados)
-  const totalRows = pagination.total;
-  const paginatedData = athletes;
+  const normalizeSearchText = (value) =>
+    String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\bbecas\b/g, "beca")
+      .replace(/\bdias\b/g, "dia")
+      .trim();
+
+  const getDisplayAthleteRow = (athlete) => {
+    const guardian = athlete.guardian || getGuardianById(athlete.acudiente);
+    const firstName = athlete.firstName || "";
+    const middleName = athlete.middleName || "";
+    const lastName = athlete.lastName || "";
+    const secondLastName = athlete.secondLastName || "";
+
+    const nombreCompleto = [firstName, middleName, lastName, secondLastName]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "Sin nombre";
+
+    let mensualidadResumen = getMonthlySummaryLabel(athlete.monthlySummary);
+    if (athlete.isScholarship === true) {
+      mensualidadResumen = "Exenta por beca";
+    } else if (!athlete.monthlySummary || athlete.monthlySummary.obligationsCount === 0) {
+      mensualidadResumen = "Al día";
+    } else if ((athlete.monthlySummary.lateFeeAmount || 0) > 0) {
+      mensualidadResumen = `${mensualidadResumen} con mora`;
+    }
+
+    return {
+      ...athlete,
+      nombreCompleto,
+      identificacion: athlete.identification || athlete.numeroDocumento || "Sin identificación",
+      acudienteNombre: guardian
+        ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim()
+        : "Sin acudiente",
+      categoria: athlete.categoria || "Sin categoría",
+      beca: athlete.isScholarship === true ? "Si" : "N/A",
+      mensualidadResumen,
+    };
+  };
+
+  const athleteTableData = useMemo(
+    () => athletes.map((athlete) => getDisplayAthleteRow(athlete)),
+    [athletes, guardians],
+  );
+
+  const filteredTableData = useMemo(() => {
+    const normalizedSearch = normalizeSearchText(searchTerm);
+    if (!normalizedSearch) return athleteTableData;
+
+    return athleteTableData.filter((row) => {
+      const searchableValues = [
+        row.nombreCompleto,
+        row.identificacion,
+        row.categoria,
+        row.beca,
+        row.mensualidadResumen,
+        row.estado,
+        row.estadoInscripcion,
+        row.acudienteNombre,
+      ];
+
+      return searchableValues.some((value) =>
+        normalizeSearchText(value).includes(normalizedSearch),
+      );
+    });
+  }, [athleteTableData, searchTerm]);
+
+  const isSearchMode = !!searchTerm.trim();
+  const totalRows = isSearchMode ? filteredTableData.length : pagination.total;
+  const paginatedData = isSearchMode ? filteredTableData : athleteTableData;
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
       { search: searchTerm }, // Filtros actuales
       (athletes) => athletes.map((athlete) => {
-        // Priorizar el acudiente que viene del backend (puede venir como 'acudiente' o 'guardian')
-        const guardian = athlete.acudiente || athlete.guardian || getGuardianById(athlete.guardianId);
+        // Priorizar el objeto del acudiente que viene del backend.
+        // "acudiente" también puede venir como un ID numérico en algunos flujos.
+        const guardian =
+          (athlete.guardian && typeof athlete.guardian === "object" ? athlete.guardian : null) ||
+          (athlete.acudiente && typeof athlete.acudiente === "object" ? athlete.acudiente : null) ||
+          getGuardianById(athlete.guardianId || athlete.acudiente);
         const firstName = athlete.firstName || athlete.nombres || "";
         const lastName = athlete.lastName || athlete.apellidos || "";
         const email = athlete.email || athlete.correo || "";
@@ -148,7 +219,10 @@ const Athletes = () => {
         let tipoDocumentoAcudiente = "";
         if (guardian) {
           // Primero intentar obtener el nombre directamente si viene del backend
-          tipoDocumentoAcudiente = guardian.documentTypeName || "";
+          tipoDocumentoAcudiente =
+            guardian.documentTypeName ||
+            guardian.tipoDocumento ||
+            "";
           
           // Si no viene, buscar en referenceData
           if (!tipoDocumentoAcudiente) {
@@ -193,6 +267,7 @@ const Athletes = () => {
           direccion: address,
           fechaNacimiento: birthDate,
           categoria: athlete.categoria || "",
+          beca: athlete.isScholarship === true ? "Si" : "N/A",
           estado: athlete.estado || athlete.status || "",
           estadoInscripcion: athlete.currentInscriptionStatus || athlete.estadoInscripcion || "",
           acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
@@ -289,110 +364,6 @@ const Athletes = () => {
     setAthleteToView(currentAthlete);
     setIsViewModalOpen(true);
   };
-
-  // Validar si se puede eliminar una deportista
-  const canDeleteAthlete = (athlete) => {
-    if (!athlete) return { canDelete: false, reason: "Deportista no válida" };
-
-    const today = new Date();
-
-    // Verificar matrícula vigente
-    if (athlete.enrollment?.estado === 'Vigente' || athlete.estadoInscripcion === 'Vigente') {
-      return { 
-        canDelete: false, 
-        reason: "Tiene matrícula vigente" 
-      };
-    }
-    
-    // Verificar fecha de creación de la matrícula (no se puede eliminar hasta 1 año después)
-    const enrollmentDate = athlete.enrollment?.enrollmentDate || 
-                          athlete.enrollment?.fechaInscripcion || 
-                          athlete.fechaInscripcion ||
-                          athlete.createdAt;
-    
-    if (enrollmentDate) {
-      const enrollDate = new Date(enrollmentDate);
-      const oneYearAfterEnrollment = new Date(enrollDate);
-      oneYearAfterEnrollment.setFullYear(oneYearAfterEnrollment.getFullYear() + 1);
-      
-      if (today < oneYearAfterEnrollment) {
-        const monthsRemaining = Math.ceil(
-          (oneYearAfterEnrollment - today) / (1000 * 60 * 60 * 24 * 30)
-        );
-        return { 
-          canDelete: false, 
-          reason: `Debe esperar ${monthsRemaining} mes(es) más desde la fecha de matrícula (${enrollDate.toLocaleDateString('es-ES')})` 
-        };
-      }
-    }
-    
-    // Verificar si la matrícula venció hace más de 1 año
-    const expirationDate =
-      athlete.enrollment?.fechaVencimiento || athlete.fechaVencimiento;
-    if (expirationDate) {
-      const expDate = new Date(expirationDate);
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-      if (expDate > oneYearAgo) {
-        const monthsRemaining = Math.ceil(
-          (oneYearAgo - expDate) / (1000 * 60 * 60 * 24 * 30),
-        );
-        return {
-          canDelete: false,
-          reason: `Debe esperar ${Math.abs(monthsRemaining)} mes(es) más desde el vencimiento`,
-        };
-      }
-    }
-
-    // Verificar equipos temporales
-    if (athlete.temporaryTeams && athlete.temporaryTeams.length > 0) {
-      return {
-        canDelete: false,
-        reason: `Está asignada a ${athlete.temporaryTeams.length} equipo(s) temporal(es)`,
-      };
-    }
-
-    // Verificar eventos activos
-    if (athlete.activeEvents && athlete.activeEvents.length > 0) {
-      return {
-        canDelete: false,
-        reason: `Está asignada a ${athlete.activeEvents.length} evento(s) activo(s)`,
-      };
-    }
-
-    return { canDelete: true };
-  };
-
-  const handleDelete = async (athlete) => {
-    if (!hasPermission("athletesSection", "Eliminar")) {
-      showErrorAlert(
-        "Sin permisos",
-        "No tienes permisos para eliminar deportistas",
-      );
-      return;
-    }
-    if (!athlete || !athlete.id)
-      return showErrorAlert("Error", "Deportista no válido");
-
-    // Validar si se puede eliminar
-    const validation = canDeleteAthlete(athlete);
-    if (!validation.canDelete) {
-      showErrorAlert("No se puede eliminar", validation.reason);
-      return;
-    }
-
-    const confirmResult = await showDeleteAlert(
-      "¿Estás seguro?",
-      `Se eliminará permanentemente a ${athlete.firstName || athlete.nombres} ${athlete.lastName || athlete.apellidos}.`,
-      { confirmButtonText: "Sí, eliminar", cancelButtonText: "Cancelar" },
-    );
-
-    if (!confirmResult.isConfirmed) return;
-
-    await deleteAthlete(athlete.id);
-  };
-
   const handleSaveGuardian = async (newGuardian) => {
     const guardianData = await createGuardian(newGuardian);
 
@@ -610,7 +581,7 @@ const Athletes = () => {
     }
   };
 
-  const formatCurrency = (value) => {
+  function formatCurrency(value) {
     const amount = Number(value || 0);
     return new Intl.NumberFormat("es-CO", {
       style: "currency",
@@ -619,7 +590,7 @@ const Athletes = () => {
     }).format(amount);
   };
 
-  const getMonthlySummaryLabel = (summary) => {
+  function getMonthlySummaryLabel(summary) {
     if (!summary || summary.obligationsCount === 0) {
       return "Al día";
     }
@@ -658,12 +629,12 @@ const Athletes = () => {
   };
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Deportistas</h1>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">Deportistas</h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
@@ -672,9 +643,9 @@ const Athletes = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <PermissionGuard module="athletesSection" action="Ver">
-              <ReportButton
+              <AthletesReportButton
                 dataProvider={getCompleteReportData}
                 fileName="Deportistas"
                 columns={[
@@ -687,6 +658,7 @@ const Athletes = () => {
                   { header: "Dirección", accessor: "direccion" },
                   { header: "Fecha Nacimiento", accessor: "fechaNacimiento" },
                   { header: "Categoría", accessor: "categoria" },
+                  { header: "Beca", accessor: "beca" },
                   { header: "Estado", accessor: "estado" },
                   {
                     header: "Estado Inscripción",
@@ -719,8 +691,9 @@ const Athletes = () => {
         <>
           <div className="w-full bg-white rounded-lg">
             <Table
-              serverPagination={true}
-              totalRows={pagination.total}
+              key={`athletes-table-${isSearchMode ? "search" : "server"}-${searchTerm}`}
+              serverPagination={!isSearchMode}
+              totalRows={totalRows}
               currentPage={pagination.page}
               onPageChange={changePage}
               rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
@@ -729,45 +702,35 @@ const Athletes = () => {
                   "Nombre Completo",
                   "Identificación",
                   "Categoría",
+                  "Beca",
                   "Mensualidad",
                 ],
                 state: true,
                 actions: true,
               }}
               tbody={{
-                data: paginatedData.map((a) => {
-                  // Priorizar el guardian que viene del backend
-                  const guardian = a.guardian || getGuardianById(a.acudiente);
-
-                  // Mapear campos del backend al frontend
-                  const firstName = a.firstName || "";
-                  const middleName = a.middleName || "";
-                  const lastName = a.lastName || "";
-                  const secondLastName = a.secondLastName || "";
-                  
-                  const nombreCompleto = [firstName, middleName, lastName, secondLastName]
-                    .filter(Boolean)
-                    .join(' ')
-                    .trim() || "Sin nombre";
-
-                  return {
-                    ...a,
-                    nombreCompleto,
-                    identificacion: a.identification || a.numeroDocumento || "Sin identificación",
-                    acudienteNombre: guardian ? `${guardian.firstName || ""} ${guardian.lastName || ""}`.trim() : "Sin acudiente",
-                    categoria: a.categoria || "Sin categoría",
-                    mensualidadResumen: getMonthlySummaryLabel(a.monthlySummary),
-                  };
-                }),
+                data: paginatedData,
                 dataPropertys: [
                   "nombreCompleto",
                   "identificacion",
                   "categoria",
+                  "beca",
                   "mensualidadResumen",
                 ],
                 state: true,
                 customRenderers: {
+                  beca: (_value, row) => {
+                    return (
+                      <span className="text-gray-900">
+                        {row.isScholarship === true ? "Si" : "N/A"}
+                      </span>
+                    );
+                  },
                   mensualidadResumen: (_value, row) => {
+                    if (row.isScholarship === true) {
+                      return <span className="text-gray-900">Exenta por beca</span>;
+                    }
+
                     const summary = row.monthlySummary;
                     if (!summary || summary.obligationsCount === 0) {
                       return <span className="text-gray-600">Al día</span>;
@@ -800,9 +763,6 @@ const Athletes = () => {
               onEdit={
                 canEditAthletes ? handleEdit : null
               }
-              onDelete={
-                canDeleteAthletes ? handleDelete : null
-              }
               onView={
                 canViewAthletes ? handleView : null
               }
@@ -810,16 +770,6 @@ const Athletes = () => {
                 edit: (item) => ({
                   show: canEditAthletes,
                 }),
-                delete: (item) => {
-                  const validation = canDeleteAthlete(item);
-                  return {
-                    show: canDeleteAthletes,
-                    disabled: !validation.canDelete,
-                    title: validation.canDelete
-                      ? "Eliminar deportista"
-                      : `No se puede eliminar: ${validation.reason}`,
-                  };
-                },
                 view: (item) => ({
                   show: canViewAthletes,
                 }),
@@ -940,3 +890,6 @@ const Athletes = () => {
 };
 
 export default Athletes;
+
+
+

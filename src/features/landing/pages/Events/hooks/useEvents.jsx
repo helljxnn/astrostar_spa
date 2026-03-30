@@ -11,12 +11,6 @@ import {
 } from "../../../../../shared/utils/helpers/eventsHelper";
 import eventsService from "../services/eventsService.js";
 
-const parseDate = (value) => {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-};
-
 export const useEvents = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -87,10 +81,6 @@ export const useEvents = () => {
     if (previousNextEventId.current !== nextEventId) {
       setSelectedEventId(nextEventId);
       previousNextEventId.current = nextEventId;
-
-      if (nextEvent) {
-        setSelectedDate(parseDate(nextEvent.date));
-      }
     }
   }, [nextEvent]);
 
@@ -101,7 +91,6 @@ export const useEvents = () => {
       const timeoutId = setTimeout(() => {
         if (nextEvent) {
           setSelectedEventId(nextEvent.id);
-          setSelectedDate(parseDate(nextEvent.date));
         } else {
           setSelectedEventId(null);
           setSelectedDate(null);

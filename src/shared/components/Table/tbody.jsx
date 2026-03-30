@@ -118,7 +118,8 @@ const Tbody = ({ options }) => {
 
             {/*  Acciones dinámicas */}
             {hasActions && (
-              <td className="px-6 py-4 flex items-center justify-center gap-3">
+              <td className="px-4 py-4">
+                <div className="flex flex-wrap items-center justify-center gap-2">
                 {/* 1. Ver detalles */}
                 {onView &&
                   (() => {
@@ -256,6 +257,7 @@ const Tbody = ({ options }) => {
                           </button>
                         );
                       }))}
+                </div>
               </td>
             )}
           </motion.tr>

@@ -48,6 +48,16 @@ const normalizeStatus = (status) => {
   const normalized = normalizeText(status);
 
   if (normalized.includes("cancel")) return "cancelado";
+  if (
+    normalized.includes("en curso") ||
+    normalized.includes("encurso") ||
+    normalized.includes("en_curso") ||
+    normalized.includes("en-curso") ||
+    normalized.includes("in progress") ||
+    normalized.includes("in_progress")
+  ) {
+    return "en_curso";
+  }
   if (normalized.includes("final")) return "finalizado";
 
   return "programado";
@@ -69,6 +79,22 @@ const extractSponsors = (event) => {
   return [];
 };
 
+const extractSportsCategories = (event) => {
+  if (Array.isArray(event?.serviceSportsCategories)) {
+    return event.serviceSportsCategories
+      .map((item) => fixMojibake(item?.sportsCategory?.nombre))
+      .filter(Boolean);
+  }
+
+  if (Array.isArray(event?.categories)) {
+    return event.categories
+      .map((item) => fixMojibake(item?.name || item?.nombre))
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 const mapBackendEvent = (event) => {
   const startDate = extractDate(event.startDate || event.fechaInicio || event.date);
   const endDate = extractDate(event.endDate || event.fechaFin || event.endDate);
@@ -76,6 +102,8 @@ const mapBackendEvent = (event) => {
   const mappedType = normalizeType(
     event?.type?.name || event?.ServiceType?.name || event?.type,
   );
+  const sportsCategories = extractSportsCategories(event);
+  const sponsors = extractSponsors(event);
 
   return {
     id: event.id,
@@ -91,21 +119,25 @@ const mapBackendEvent = (event) => {
         event.descripcion ||
         "Proximamente mas informacion del evento.",
     ),
+    publish: Boolean(event.publish),
     image: event.imageUrl || event.imagen || DEFAULT_EVENT_IMAGE,
     status: normalizeStatus(event.status || event.estado),
     participants: event?._count?.participants || event.participants || 0,
     category: fixMojibake(
-      event?.event_categories?.name ||
+      sportsCategories.join(", ") ||
+        event?.eventCategory?.name ||
+        event?.event_categories?.name ||
         event?.category?.name ||
         event?.type?.name ||
         event?.ServiceType?.name ||
         "Eventos",
     ),
+    categories: sportsCategories,
     details: fixMojibake(
       event.details || event.description || event.descripcion || "",
     ),
     telefono: event.phone || event.telefono || "",
-    patrocinadores: extractSponsors(event),
+    patrocinadores: sponsors,
   };
 };
 

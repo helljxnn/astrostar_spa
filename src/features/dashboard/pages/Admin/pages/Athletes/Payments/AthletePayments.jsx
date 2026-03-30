@@ -24,9 +24,9 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 import PaymentReceiptViewModal from "./components/PaymentReceiptViewModal.jsx";
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Modal de subida de comprobante - Mejorado y consistente
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -151,7 +151,7 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
             onClick={handleClose}
             disabled={uploading}
           >
-            ✕
+            ?
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center pr-8">
             Subir Comprobante
@@ -297,9 +297,9 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
   return createPortal(modalContent, document.body);
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Componente de Historial de Pagos para Deportistas
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const HistorialPagosSection = ({ athleteId }) => {
   const [historialPagos, setHistorialPagos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -339,7 +339,7 @@ setError('No se pudo cargar el historial de pagos');
       }
       
       await paymentsService.downloadReceiptLegacy(payment);
-      showSuccessAlert('Éxito', 'Comprobante descargado correctamente');
+      showSuccessAlert('?xito', 'Comprobante descargado correctamente');
     } catch (error) {
 showErrorAlert('Error', 'No se pudo descargar el comprobante');
     }
@@ -398,7 +398,7 @@ showErrorAlert('Error', 'No se pudo descargar el comprobante');
         ? "Aprobado"
       : status === "REJECTED"
         ? "Rechazado"
-        : status || "—";
+        : status || "?";
 
     const reviewedAt = payment.reviewedAt || payment.processedAt || payment.approvedAt || payment.updatedAt;
 
@@ -415,7 +415,7 @@ showErrorAlert('Error', 'No se pudo descargar el comprobante');
       montoTexto: formatCurrency(totalAmount),
       fechaTexto: reviewedAt
         ? new Date(reviewedAt).toLocaleDateString("es-ES")
-        : "—",
+        : "?",
       daysLate,
       lateFeeAmount,
       baseAmount,
@@ -587,9 +587,9 @@ showErrorAlert('Error', 'No se pudo descargar el comprobante');
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // Componente principal - Mis Pagos (Rediseñado minimalista y responsive)
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 const AthletePayments = () => {
   const { user } = useAuth();
   const athleteId = user?.athleteId || user?.athlete_id || user?.id;
@@ -634,7 +634,7 @@ setMonthlyHistory([]);
     fetchMonthlyHistory();
   }, [athleteId]);
 
-  // ── Lógica de matrícula ──
+  // -- L?gica de matr?cula --
   const isReallyInitialEnrollment = enrollmentObligation && (
     enrollmentObligation.isInitial === true ||
     enrollmentObligation.type === 'ENROLLMENT_INITIAL' ||
@@ -659,7 +659,7 @@ setMonthlyHistory([]);
     !financialStatus?.enrollment?.fechaInicio
   );
 
-  // ── Handlers ──
+  // -- Handlers --
   const handleUploadReceipt = (obligationId) => {
     setSelectedObligationId(obligationId);
     setUploadModalOpen(true);
@@ -685,7 +685,7 @@ setMonthlyHistory([]);
     (d) => d.paymentStatus === "PENDING"
   );
 
-  // ── Loading ──
+  // -- Loading --
   if (loading) {
     return (
       <div className="p-4 sm:p-6 font-montserrat">
@@ -697,7 +697,7 @@ setMonthlyHistory([]);
     );
   }
 
-  // ── Error ──
+  // -- Error --
   if (error) {
     return (
       <div className="p-4 sm:p-6 font-montserrat">
@@ -714,7 +714,7 @@ setMonthlyHistory([]);
       </div>
     );
   }
-  // ─── Caso: Matrícula inicial pendiente ───
+  // --- Caso: Matr?cula inicial pendiente ---
   if (shouldShowEnrollmentPayment && isReallyInitialEnrollment) {
     const enroll = enrollmentObligation;
     const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
@@ -730,6 +730,8 @@ setMonthlyHistory([]);
               <h2 className="text-lg font-semibold text-blue-800 mb-1">Matrícula Inicial Requerida</h2>
               <p className="text-sm text-blue-700">
                 Completa el pago de tu matrícula inicial para acceder completamente al sistema.
+              </p>
+              <p className="text-xs text-blue-700 mt-2">
               </p>
             </div>
           </div>
@@ -791,7 +793,7 @@ setMonthlyHistory([]);
     );
   }
 
-  // ─── Caso: Renovación de matrícula ───
+  // --- Caso: Renovaci?n de matr?cula ---
   if (shouldShowEnrollmentPayment && isReallyRenewal) {
     const enroll = enrollmentObligation;
     const canUpload = enroll.paymentStatus === null || enroll.paymentStatus === "REJECTED";
@@ -807,6 +809,8 @@ setMonthlyHistory([]);
               <h2 className="text-lg font-semibold text-purple-800 mb-1">Renovación de Matrícula</h2>
               <p className="text-sm text-purple-700">
                 Tu matrícula ha vencido. Renuévala para continuar accediendo al sistema.
+              </p>
+              <p className="text-xs text-purple-700 mt-2">
               </p>
             </div>
           </div>
@@ -865,7 +869,7 @@ setMonthlyHistory([]);
       </div>
     );
   }
-  // ─── Vista principal: Mensualidades ───
+  // --- Vista principal: Mensualidades ---
   return (
     <div className="p-4 sm:p-6 font-montserrat">
       {/* Header responsive */}
@@ -946,10 +950,10 @@ setMonthlyHistory([]);
 
       {/* Tabs minimalistas */}
       <div className="mb-6">
-        <div className="inline-flex gap-2">
+        <div className="flex w-full gap-2 overflow-x-auto pb-1 sm:inline-flex sm:w-auto">
           <button
             onClick={() => setActiveTab("pendientes")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`min-w-[170px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 relative ${
               activeTab === "pendientes"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -968,7 +972,7 @@ setMonthlyHistory([]);
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>Pendientes</span>
+            <span className="whitespace-nowrap">Pagos pendientes</span>
             {pendingObligationsFiltered.length > 0 && activeTab !== "pendientes" ? (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                 {pendingObligationsFiltered.length}
@@ -988,7 +992,7 @@ setMonthlyHistory([]);
           
           <button
             onClick={() => setActiveTab("revision")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`min-w-[170px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 relative ${
               activeTab === "revision"
                 ? "bg-yellow-500/10 text-yellow-600"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -1007,7 +1011,7 @@ setMonthlyHistory([]);
                 d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
               />
             </svg>
-            <span>En Revisión</span>
+            <span className="whitespace-nowrap">En revisión</span>
             {inReviewObligations.length > 0 && activeTab !== "revision" ? (
               <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
                 {inReviewObligations.length}
@@ -1027,7 +1031,7 @@ setMonthlyHistory([]);
           
           <button
             onClick={() => setActiveTab("historial")}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`min-w-fit shrink-0 whitespace-nowrap px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
               activeTab === "historial"
                 ? "bg-primary-blue/10 text-primary-blue"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -1046,7 +1050,7 @@ setMonthlyHistory([]);
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>Historial</span>
+            <span className="whitespace-nowrap">Historial</span>
           </button>
         </div>
       </div>
@@ -1102,7 +1106,7 @@ setMonthlyHistory([]);
                           </div>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">—</span>
+                        <span className="text-sm text-gray-400">?</span>
                       ),
                     statusText: (_value, row) => (
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -1179,7 +1183,7 @@ setMonthlyHistory([]);
                           hour: "2-digit",
                           minute: "2-digit",
                         })
-                      : "—",
+                      : "?",
                   })),
                   dataPropertys: ["periodText", "amountText", "uploadedText", "statusText"],
                   state: false,
@@ -1247,3 +1251,5 @@ setMonthlyHistory([]);
 };
 
 export default AthletePayments;
+
+

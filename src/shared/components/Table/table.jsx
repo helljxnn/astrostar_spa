@@ -20,8 +20,19 @@ const Table = ({
   buttonConfig = {}, // configuración de botones
   enableHorizontalScroll = true,
   tableClassName = "",
+  desktopBreakpoint = "sm",
 }) => {
   const [internalPage, setInternalPage] = useState(1);
+  const responsiveVisibility =
+    desktopBreakpoint === "lg"
+      ? {
+          desktop: "hidden lg:block",
+          mobile: "block lg:hidden",
+        }
+      : {
+          desktop: "hidden sm:block",
+          mobile: "block sm:hidden",
+        };
 
   // Safety check for tbody
   if (!tbody) {
@@ -88,8 +99,8 @@ const Table = ({
       <div
         className={
           enableHorizontalScroll
-            ? "overflow-x-auto hidden sm:block w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-            : "overflow-hidden hidden sm:block w-full"
+            ? `overflow-x-auto ${responsiveVisibility.desktop} w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`
+            : `overflow-hidden ${responsiveVisibility.desktop} w-full`
         }
       >
         <table
@@ -102,7 +113,7 @@ const Table = ({
       </div>
 
       {/* Tarjetas móvil */}
-      <div className="block sm:hidden p-3 space-y-4">
+      <div className={`${responsiveVisibility.mobile} p-3 space-y-4`}>
         {tbodyProps.data.map((item, index) => {
           const viewConfig = resolveButtonConfig("view", item);
           const editConfig = resolveButtonConfig("edit", item);
@@ -124,9 +135,11 @@ const Table = ({
             >
               {/* Mapeo dinámico de las propiedades */}
               {tbody.dataPropertys.map((property, i) => (
-                <p key={i} className="text-sm mb-1">
+                <p key={i} className="text-sm mb-2 break-words">
                   <span className="font-semibold">{thead.titles[i]}:</span>{" "}
-                  {item[property]}
+                  <span className="break-all text-gray-700">
+                    {item[property]}
+                  </span>
                 </p>
               ))}
 

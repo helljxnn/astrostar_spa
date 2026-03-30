@@ -123,9 +123,9 @@ const SearchableSelect = ({
     <div ref={containerRef} className="relative w-full">
       <div
         onClick={() => {
-          if (!disabled) {
+          if (!disabled && !loading) {
             setIsOpen(true);
-            inputRef.current?.focus();
+            setTimeout(() => inputRef.current?.focus(), 0);
           }
         }}
         className={`flex items-center gap-2 w-full border-2 rounded-xl px-3 py-2.5 transition-all cursor-pointer
@@ -149,7 +149,7 @@ const SearchableSelect = ({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setIsOpen(true);
+              if (!isOpen) setIsOpen(true);
               setHighlightedIndex(-1);
             }}
             onKeyDown={handleKeyDown}

@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { FaTimes, FaEdit, FaEye, FaTrash } from "react-icons/fa"
 import { FormField } from "../../../../../../../../shared/components/FormField"
 import { DocumentField } from "../../../../../../../../shared/components/DocumentField"
-import { showSuccessAlert, showErrorAlert, showDeleteAlert } from "../../../../../../../../shared/utils/alerts.js"
+import { showSuccessAlert, showErrorAlert, showDeleteAlert, showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js"
 import { useFormGuardianValidation, guardianValidationRules } from "../hooks/useFormGuardianValidation"
 import { calculateAge } from "../../../../../../../../shared/utils/dateUtils"
 import GuardiansService from "../services/GuardiansService"
@@ -35,6 +35,24 @@ const convertirParentesco = (parentesco) => {
   
   // Si viene en inglés (comportamiento anterior), convertir
   return parentescoBackendToFrontend[parentesco] || parentesco;
+};
+
+const normalizeGuardianDocumentTypeName = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isForbiddenGuardianDocumentType = (documentTypeName) => {
+  const normalized = normalizeGuardianDocumentTypeName(documentTypeName);
+  return (
+    normalized === "ti" ||
+    normalized === "nit" ||
+    (normalized.includes("tarjeta") && normalized.includes("identidad")) ||
+    (normalized.includes("registro") && normalized.includes("civil")) ||
+    normalized.includes("tributaria")
+  );
 };
 
 const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDelete, onRemove, currentAthleteId, referenceData = { documentTypes: [] } }) => {
@@ -194,7 +212,9 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   // Calcular edad del deportista actual
   const getCurrentAthleteAge = () => {
     if (!currentAthleteId || !athletes) return null;
-    const currentAthlete = athletes.find(a => a.id === currentAthleteId);
+    const currentAthlete = athletes.find(
+      (a) => String(a.id) === String(currentAthleteId)
+    );
     if (!currentAthlete) return null;
     
     // Buscar la fecha de nacimiento en diferentes campos posibles
@@ -221,11 +241,12 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
   };
 
   // Determinar si mostrar "Eliminar" o "Remover"
-  // CORREGIDO: Mostrar "Remover" si estamos viendo desde el contexto de una deportista específica
-  const shouldShowRemove = currentAthleteId && onRemove;
+  // Mostrar "Remover" solo cuando se está viendo el acudiente desde una deportista menor de edad
+  const shouldShowRemove = currentAthleteId && isCurrentAthleteMinor() && onRemove;
   
-  // CORREGIDO: Mostrar "Eliminar" solo si NO estamos en contexto de deportista específica
-  const shouldShowDelete = !currentAthleteId && onDelete;
+  // Mostrar "Eliminar" cuando no hay contexto de deportista
+  // o cuando la deportista actual es mayor de edad
+  const shouldShowDelete = (!currentAthleteId || !isCurrentAthleteMinor()) && onDelete;
 
   // Validación instantánea de documento
   useEffect(() => {
@@ -372,6 +393,32 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
     const hasAsyncErrors = Object.values(asyncErrors).some(error => error !== null && error !== '');
     
     if (!isValid || hasAsyncErrors) {
+      return;
+    }
+
+    const selectedDocumentType = (referenceData?.documentTypes || []).find(
+      (dt) => dt.id === parseInt(values.documentTypeId, 10)
+    );
+
+    if (selectedDocumentType && isForbiddenGuardianDocumentType(selectedDocumentType.name || selectedDocumentType.label)) {
+      const errorMsg =
+        "El acudiente no puede usar Registro Civil, Tarjeta de Identidad ni NIT.";
+      setErrors((prev) => ({ ...prev, documentTypeId: errorMsg }));
+      setTouched((prev) => ({ ...prev, documentTypeId: true }));
+      showErrorAlert("Documento inválido", errorMsg);
+      return;
+    }
+
+    const confirmResult = await showConfirmAlert(
+      "¿Guardar cambios?",
+      `¿Deseas actualizar la información de ${guardian.nombreCompleto}?`,
+      {
+        confirmButtonText: "Sí, actualizar",
+        cancelButtonText: "Cancelar",
+      }
+    );
+
+    if (!confirmResult.isConfirmed) {
       return;
     }
 

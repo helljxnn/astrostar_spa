@@ -2,6 +2,7 @@
 import {
   isSameDay,
   combineDateAndTime,
+  parseDateValue,
   sortEventsByDateTime,
 } from "../../../../../shared/utils/helpers/dateHelpers";
 
@@ -15,25 +16,35 @@ export const Calendar = ({
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showTooltip, setShowTooltip] = useState(null);
 
+  const normalizeEventType = useCallback((value) => {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }, []);
+
   const getEventTypeInitial = useCallback((eventType) => {
+    const normalized = normalizeEventType(eventType);
     const initials = {
       torneo: "T",
       festival: "F",
       clausura: "C",
-      taller: "TLL",
+      taller: "TL",
     };
-    return initials[eventType] || "E";
-  }, []);
+    return initials[normalized] || "";
+  }, [normalizeEventType]);
 
   const getEventTypeFullName = useCallback((eventType) => {
+    const normalized = normalizeEventType(eventType);
     const names = {
       torneo: "Torneo",
       festival: "Festival",
       clausura: "Clausura",
       taller: "Taller",
     };
-    return names[eventType] || "Evento";
-  }, []);
+    return names[normalized] || "Evento";
+  }, [normalizeEventType]);
 
   const today = new Date();
 
@@ -119,9 +130,9 @@ export const Calendar = ({
           try {
             // Ahora verifica si el día está dentro del rango del evento
             return isSameDay(
-              new Date(ev.date),
+              parseDateValue(ev.date),
               date,
-              ev.endDate ? new Date(ev.endDate) : null
+              ev.endDate ? parseDateValue(ev.endDate) : null
             );
           } catch {
             return false;
@@ -156,96 +167,76 @@ export const Calendar = ({
       return `${hour.toString().padStart(2, "0")}:${minutes}`;
     };
 
-    // Verificar si TODOS los eventos del día han pasado su hora
-    const isPastEventDay =
-      hasEvent &&
-      dayEvents.every((ev) => {
-        try {
-          const time24 = convertTo24Hour(ev.time);
-          const eventDateTime = combineDateAndTime(ev.date, time24);
-          // Agregar 1 minuto para asegurar que el evento se marque como pasado después de su hora
-          const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
-          return eventDateTime && eventEndTime <= today;
-        } catch {
-          return false;
-        }
-      });
+    const normalizedDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const normalizedToday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
 
-    // Mejorar la lógica para categorizar eventos
     const eventsByStatus = {
       cancelado: dayEvents.filter((ev) => ev.status === "cancelado"),
       finalizado: dayEvents.filter((ev) => {
-        // Solo incluir eventos que han pasado su hora Y no están cancelados
-        if (ev.status === "cancelado") {
-          return false;
-        }
-        try {
-          const time24 = convertTo24Hour(ev.time);
-          const eventDateTime = combineDateAndTime(ev.date, time24);
-          // Agregar 1 minuto para asegurar que el evento se marque como finalizado después de su hora
-          const eventEndTime = new Date(eventDateTime.getTime() + 60000); // +1 minuto
-          return eventDateTime && eventEndTime <= today;
-        } catch {
-          return false;
-        }
+        if (ev.status === "cancelado") return false;
+        const endDate = ev.endDate ? parseDateValue(ev.endDate) : parseDateValue(ev.date);
+        if (!endDate) return false;
+        const normalizedEndDate = new Date(
+          endDate.getFullYear(),
+          endDate.getMonth(),
+          endDate.getDate()
+        );
+        return normalizedEndDate < normalizedToday || ev.status === "finalizado";
       }),
       programado: dayEvents.filter((ev) => {
-        // Solo incluir eventos que no han pasado su hora Y no están cancelados
-        if (ev.status === "cancelado") {
-          return false;
-        }
-        try {
-          const time24 = convertTo24Hour(ev.time);
-          const eventDateTime = combineDateAndTime(ev.date, time24);
-          return eventDateTime && eventDateTime > today;
-        } catch {
-          return false;
-        }
+        if (ev.status === "cancelado") return false;
+        const endDate = ev.endDate ? parseDateValue(ev.endDate) : parseDateValue(ev.date);
+        if (!endDate) return false;
+        const normalizedEndDate = new Date(
+          endDate.getFullYear(),
+          endDate.getMonth(),
+          endDate.getDate()
+        );
+        return normalizedEndDate >= normalizedToday && ev.status !== "finalizado";
       }),
     };
 
     const sortedDayEvents = sortEventsByDateTime(dayEvents);
 
-    // Mejorar la lógica de estilos de botones
     let dayButtonClass = "";
     if (isSelected) {
       dayButtonClass =
-        "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white shadow-xl scale-105";
+        "border-[#b595ff] bg-[linear-gradient(135deg,#b595ff_0%,#9be9ff_100%)] text-white shadow-[0_12px_24px_rgba(181,149,255,0.28)]";
+    } else if (isToday && hasEvent) {
+      dayButtonClass =
+        "border-[#b595ff] bg-[#faf7ff] text-[#7c5fd4] shadow-sm ring-2 ring-[#d9cbff]";
     } else if (isNextEventDay) {
       dayButtonClass =
-        "bg-[#B595FF] text-white shadow-lg ring-2 sm:ring-4 ring-[#9BE9FF]";
-    } else if (isPastEventDay) {
-      // Estilo gris para eventos pasados
-      dayButtonClass = "bg-gray-300 text-gray-600 hover:bg-gray-400";
+        "border-[#d9cbff] bg-[#faf7ff] text-[#7c5fd4] shadow-sm";
     } else if (hasEvent) {
-      // Solo aplicar el gradiente si hay eventos activos/programados
-      const hasActiveEvents = eventsByStatus.programado.length > 0;
-      if (hasActiveEvents) {
-        dayButtonClass =
-          "bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] text-white hover:shadow-lg";
-      } else {
-        // Si solo hay eventos cancelados, usar estilo neutral
-        dayButtonClass = "bg-gray-200 text-gray-600 hover:bg-gray-300";
-      }
+      dayButtonClass =
+        "border-slate-200 bg-white text-slate-700 hover:border-[#d9cbff] hover:bg-[#faf7ff]";
     } else if (isToday) {
       dayButtonClass =
-        "bg-white text-[#B595FF] border-2 border-[#B595FF] shadow-md hover:shadow-lg";
+        "border-[#b595ff] bg-white text-[#b595ff] shadow-sm";
     } else {
       dayButtonClass =
-        "hover:bg-gradient-to-br hover:from-gray-50 hover:to-gray-100 text-gray-700 hover:shadow-sm";
+        "border-transparent bg-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50";
     }
 
-    //Mejorar el tooltip para mostrar solo estados relevantes (sin contadores)
     const tooltipContent = hasEvent ? (
-      <div className="text-xs sm:text-sm space-y-1">
+      <div className="space-y-1 text-xs text-slate-700">
+        <p className="font-semibold text-slate-900">
+          {date.toLocaleDateString("es-CO", {
+            day: "2-digit",
+            month: "long",
+          })}
+        </p>
         {Object.entries(eventsByStatus).map(
-          ([status, events]) =>
-            events.length > 0 && (
+          ([status, statusEvents]) =>
+            statusEvents.length > 0 && (
               <div key={status}>
-                <span>
-                  {status === "enPausa"
-                    ? "En Pausa"
-                    : status === "programado"
+                <span className="capitalize">
+                  {status === "programado"
                     ? "Programado"
                     : status === "finalizado"
                     ? "Finalizado"
@@ -265,32 +256,28 @@ export const Calendar = ({
             hasEvent && setShowTooltip(`${day}-${currentMonth.getMonth()}`)
           }
           onMouseLeave={() => setShowTooltip(null)}
-          className={`relative h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg sm:rounded-xl font-montserrat font-bold text-xs sm:text-sm md:text-base transition-all duration-300 transform hover:scale-105 ${dayButtonClass}`}
+          className={`relative h-8 w-8 rounded-xl border font-montserrat text-xs font-semibold transition-all duration-200 sm:h-10 sm:w-10 sm:text-sm md:h-11 md:w-11 ${dayButtonClass}`}
         >
           <span className="relative z-10">{day}</span>
 
-          {hasEvent && sortedDayEvents.length > 0 && (
-            <div className="absolute top-0 right-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 bg-white rounded-full flex items-center justify-center shadow">
-              <span className="text-[10px] sm:text-xs font-bold text-[#B595FF]">
-                {getEventTypeInitial(sortedDayEvents[0].type)}
-              </span>
-            </div>
+          {hasEvent && (
+            <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#b595ff] shadow-sm sm:h-3.5 sm:w-3.5" />
           )}
 
           {isNextEventDay && (
-            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-2.5 md:h-2.5 bg-[#9BE9FF] rounded-full animate-pulse"></div>
+            <div className="absolute -bottom-0.5 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#9be9ff]"></div>
           )}
 
           {hasEvent && dayEvents.length > 1 && (
-            <div className="absolute bottom-0 left-0 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-white rounded-full border border-[#B595FF]"></div>
+            <div className="absolute bottom-0 left-0 h-1.5 w-1.5 rounded-full border border-white bg-[#7c5fd4]"></div>
           )}
         </button>
 
         {showTooltip === `${day}-${currentMonth.getMonth()}` &&
           tooltipContent && (
-            <div className="absolute z-50 bottom-full mb-1 sm:mb-2 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-2 sm:px-3 py-1 sm:py-2 rounded-lg shadow-lg max-w-40 sm:max-w-48 pointer-events-none">
+            <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 max-w-44 -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-[0_16px_32px_rgba(15,23,42,0.12)]">
               {tooltipContent}
-              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              <div className="absolute left-1/2 top-full h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-slate-200 bg-white"></div>
             </div>
           )}
       </div>
@@ -310,8 +297,8 @@ export const Calendar = ({
   };
 
   return (
-    <div className="bg-white rounded-lg sm:rounded-xl md:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg h-fit w-full max-w-[20rem] sm:max-w-md mx-auto">
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+    <div translate="no" className="mx-auto h-fit w-full max-w-[22rem] rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_60px_rgba(15,23,42,0.10)] sm:max-w-md sm:rounded-[28px] sm:p-5 md:p-6">
+      <div className="mb-4 flex items-center justify-between sm:mb-6">
         <button
           onClick={prevMonth}
           className="p-1 sm:p-2 md:p-3 hover:bg-gradient-to-r hover:from-[#B595FF] hover:to-[#9BE9FF] hover:text-white transition-all duration-300 rounded-lg sm:rounded-xl group"
@@ -331,7 +318,7 @@ export const Calendar = ({
           </svg>
         </button>
 
-        <h3 className="text-base sm:text-lg md:text-xl font-montserrat font-bold bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] bg-clip-text text-transparent text-center">
+        <h3 translate="no" className="text-base sm:text-lg md:text-xl font-montserrat font-bold bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] bg-clip-text text-transparent text-center">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h3>
 
@@ -355,67 +342,21 @@ export const Calendar = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3 mb-3 sm:mb-4 md:mb-6">
-        {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
+      <div className="mb-3 grid grid-cols-7 gap-0.5 sm:mb-4 sm:gap-1.5 md:mb-6 md:gap-2">
+        {["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"].map((day) => (
           <div
             key={day}
-            className="h-6 sm:h-8 md:h-10 flex items-center justify-center"
+            className="flex h-6 items-center justify-center sm:h-8 md:h-10"
           >
-            <span className="text-xs sm:text-sm md:text-base font-montserrat font-bold text-gray-600">
+            <span translate="no" className="whitespace-nowrap text-[10px] font-montserrat font-bold text-gray-600 sm:text-sm md:text-[15px]">
               {day}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-3">{days}</div>
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 md:gap-2">{days}</div>
 
-      <div className="mt-3 sm:mt-4 md:mt-6">
-        <div className="text-xs sm:text-sm text-gray-600 border-t pt-2 sm:pt-3">
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4">
-            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">
-                  T
-                </span>
-              </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">
-                Torneo
-              </span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">
-                  F
-                </span>
-              </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">
-                Festival
-              </span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[8px] sm:text-xs font-bold text-white">
-                  C
-                </span>
-              </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">
-                Clausura
-              </span>
-            </div>
-            <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-gray-50 rounded-full">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 bg-gradient-to-br from-[#B595FF] to-[#9BE9FF] rounded-full flex items-center justify-center">
-                <span className="text-[7px] sm:text-[8px] font-bold text-white">
-                  TLL
-                </span>
-              </div>
-              <span className="text-gray-700 font-medium text-xs sm:text-sm">
-                Taller
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

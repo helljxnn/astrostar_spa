@@ -1,5 +1,47 @@
-﻿import { useEffect } from "react";
+import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { CalendarDays, Clock3, MapPin, Phone, Tags, Users, X } from "lucide-react";
+import { parseDateValue } from "../../../../../shared/utils/helpers/dateHelpers";
+
+const dateFormatter = new Intl.DateTimeFormat("es-CO", {
+  day: "2-digit",
+  month: "long",
+  year: "numeric",
+});
+
+const isRealValue = (value) => {
+  if (!value) return false;
+  const normalized = String(value).trim().toLowerCase();
+  return normalized !== "por confirmar" && normalized !== "evento";
+};
+
+const formatDate = (value) => {
+  if (!value) return "";
+  const parsed = parseDateValue(value);
+  return !parsed || Number.isNaN(parsed.getTime()) ? value : dateFormatter.format(parsed);
+};
+
+const formatDateRange = (startDate, endDate) => {
+  if (!startDate) return "";
+  if (!endDate || startDate === endDate) return formatDate(startDate);
+  return `${formatDate(startDate)} - ${formatDate(endDate)}`;
+};
+
+const EventInfoItem = ({ icon: Icon, label, value, children }) => {
+  if (!children && !isRealValue(value)) return null;
+
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <Icon className="mt-0.5 text-slate-700" size={18} />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          {label}
+        </p>
+        {children || <p className="text-sm font-medium text-slate-900">{value}</p>}
+      </div>
+    </div>
+  );
+};
 
 export const EventModal = ({ event, onClose }) => {
   if (!event) return null;
@@ -8,6 +50,7 @@ export const EventModal = ({ event, onClose }) => {
     const handleEsc = (e) => {
       if (e.key === "Escape") onClose();
     };
+
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [onClose]);
@@ -15,88 +58,86 @@ export const EventModal = ({ event, onClose }) => {
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
     >
       <motion.div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full h-[450px] relative overflow-hidden flex flex-col md:flex-row"
-        initial={{ scale: 0.9, opacity: 0 }}
+        className="relative grid max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[2rem] bg-white shadow-2xl lg:grid-cols-[1.05fr_0.95fr]"
+        initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        exit={{ scale: 0.96, opacity: 0 }}
+        transition={{ duration: 0.25 }}
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-900 transition-colors text-2xl font-light"
+          className="absolute right-4 top-4 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-lg transition hover:bg-white"
+          aria-label="Cerrar"
         >
-          &times;
+          <X size={20} />
         </button>
 
-        {/* Columna de Imagen */}
-        <div className="w-full h-1/2 md:w-1/2 md:h-full overflow-hidden">
+        <div className="relative min-h-[260px] overflow-hidden bg-slate-200 lg:min-h-[640px]">
           <img
-            src={event.image || "/placeholder.svg"}
+            src={event.image}
             alt={event.title}
-            className="w-full h-full object-cover rounded-t-2xl md:rounded-l-2xl md:rounded-tr-none"
+            className="h-full w-full object-cover"
           />
-        </div>
-
-        {/* Columna de Contenido */}
-        <div className="w-full h-1/2 md:w-1/2 md:h-full p-6 md:p-8 overflow-y-auto">
-          <div className="flex flex-col h-full">
-            <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] mb-3">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+            <h2 className="max-w-2xl font-montserrat text-2xl font-bold uppercase tracking-[0.04em] text-white sm:text-3xl">
               {event.title}
             </h2>
-            <p className="text-gray-600 text-base mb-4">{event.description}</p>
+          </div>
+        </div>
 
-            <div className="space-y-3 mb-6 text-sm">
-              <div className="flex items-center gap-3 text-gray-700">
-                <span className="text-lg">📅</span>
-                <span className="font-semibold">{event.date}</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <span className="text-lg">🕐</span>
-                <span className="font-medium">{event.time}</span>
-              </div>
-              <div className="flex items-center gap-3 text-gray-700">
-                <span className="text-lg">📍</span>
-                <span className="font-medium">{event.location}</span>
-              </div>
-            </div>
-
-            {/* Secciones dinámicas */}
-            {event.type === "festival" && (
-              <div className="mt-auto pt-4 border-t border-gray-200 text-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Detalles del Festival
-                </h3>
-                <p className="text-gray-700 mb-2">{event.details}</p>
-                {event.patrocinadores && event.patrocinadores.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-gray-800">
-                      Patrocinadores
-                    </h4>
-                    <ul className="list-disc list-inside text-gray-600">
-                      {event.patrocinadores.map((p, i) => (
-                        <li key={i}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
+        <div className="overflow-y-auto p-6 sm:p-8 lg:p-10">
+          <div className="space-y-5">
+            {isRealValue(event.description) && (
+              <p className="text-base leading-7 text-slate-700">
+                {event.description}
+              </p>
             )}
 
-            {event.type === "torneo" && (
-              <div className="mt-auto pt-4 border-t border-gray-200 text-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Detalles del Torneo
-                </h3>
-                <p className="text-gray-700 mb-2">{event.details}</p>
-                <div className="flex items-center gap-3 text-gray-700">
-                  <span className="text-lg">🏅</span>
-                  <span className="font-medium">{event.premios}</span>
-                </div>
-              </div>
+            <div className="grid gap-3">
+              <EventInfoItem
+                icon={CalendarDays}
+                label="Fecha"
+                value={formatDateRange(event.date, event.endDate)}
+              />
+
+              <EventInfoItem
+                icon={Clock3}
+                label="Hora"
+                value={
+                  isRealValue(event.endTime) && event.endTime !== event.time
+                    ? `${event.time} - ${event.endTime}`
+                    : event.time
+                }
+              />
+
+              <EventInfoItem icon={MapPin} label="Lugar" value={event.location} />
+              <EventInfoItem icon={Phone} label="Telefono" value={event.telefono} />
+              <EventInfoItem icon={Tags} label="Categoria" value={event.category} />
+
+              {Array.isArray(event.patrocinadores) && event.patrocinadores.length > 0 && (
+                <EventInfoItem icon={Users} label="Patrocinadores">
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {event.patrocinadores.map((sponsor) => (
+                      <span
+                        key={sponsor}
+                        className="rounded-full border border-[#d9cbff] bg-[#faf7ff] px-3 py-1 text-xs font-semibold text-[#8e73d8]"
+                      >
+                        {sponsor}
+                      </span>
+                    ))}
+                  </div>
+                </EventInfoItem>
+              )}
+
+            </div>
+
+            {isRealValue(event.details) && event.details !== event.description && (
+              <p className="text-sm leading-7 text-slate-600">{event.details}</p>
             )}
           </div>
         </div>
@@ -104,4 +145,3 @@ export const EventModal = ({ event, onClose }) => {
     </div>
   );
 };
-

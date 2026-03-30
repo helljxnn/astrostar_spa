@@ -12,6 +12,16 @@ export const getNestedValue = (obj, path) => {
   }, obj);
 };
 
+const resolveColumnValue = (item, col) => {
+  const rawValue = col.accessor?.includes(".")
+    ? getNestedValue(item, col.accessor)
+    : item[col.accessor];
+
+  return typeof col.format === "function"
+    ? col.format(rawValue, item)
+    : rawValue;
+};
+
 export const exportToExcel = async (data, columns, fileName = "Reporte") => {
   if (!Array.isArray(data) || data.length === 0) {
     throw new Error("No hay datos para exportar a Excel.");
@@ -70,9 +80,7 @@ export const exportToExcel = async (data, columns, fileName = "Reporte") => {
     // Datos
     data.forEach((item) => {
       const rowValues = normalizedColumns.map((col) => {
-        const rawValue = col.accessor?.includes(".")
-          ? getNestedValue(item, col.accessor)
-          : item[col.accessor];
+        const rawValue = resolveColumnValue(item, col);
 
         if (rawValue === undefined || rawValue === null) return "";
         return normalizeExportText(rawValue);
@@ -82,7 +90,14 @@ export const exportToExcel = async (data, columns, fileName = "Reporte") => {
 
     // Ajustar ancho de columnas
     worksheet.columns.forEach((column, index) => {
-      let maxLength = headers[index].length;
+      const header = headers[index];
+      let maxLength = header.length;
+      
+      // Detectar columnas de descripción
+      const isDescriptionColumn = header.toLowerCase().includes('descripción') || 
+                                 header.toLowerCase().includes('descripcion') ||
+                                 header.toLowerCase().includes('description');
+      
       worksheet
         .getColumn(index + 1)
         .eachCell({ includeEmpty: true }, (cell) => {
@@ -91,7 +106,31 @@ export const exportToExcel = async (data, columns, fileName = "Reporte") => {
             maxLength = Math.min(cellLength, 50);
           }
         });
-      column.width = Math.max(maxLength + 2, 10);
+      
+      // Configuración especial para columnas de descripción
+      if (isDescriptionColumn) {
+        column.width = 35; // Ancho fijo apropiado para descripciones
+        
+        // Configurar ajuste de texto para descripciones
+        worksheet.getColumn(index + 1).eachCell({ includeEmpty: false }, (cell, rowNumber) => {
+          if (rowNumber > 1) { // No aplicar a headers
+            cell.alignment = { 
+              vertical: 'top', 
+              horizontal: 'left',
+              wrapText: true 
+            };
+          }
+        });
+      } else {
+        column.width = Math.max(maxLength + 2, 10);
+      }
+    });
+
+    // Permitir altura automática para filas con contenido largo
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber > 1) { // No aplicar a headers
+        row.height = undefined; // Permite altura automática
+      }
     });
 
     // Aplicar bordes a todas las celdas

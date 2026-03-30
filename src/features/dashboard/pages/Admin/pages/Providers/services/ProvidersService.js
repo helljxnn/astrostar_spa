@@ -1,4 +1,17 @@
-﻿import apiClient from "../../../../../../../shared/services/apiClient";
+import apiClient from "../../../../../../../shared/services/apiClient";
+
+const DOCUMENT_TYPE_CODE_MAP = {
+  CC: "Cédula de Ciudadanía",
+  TI: "Tarjeta de Identidad",
+  CE: "Cédula de Extranjería",
+  PAS: "Pasaporte",
+  NIT: "NIT",
+};
+
+const normalizeDocumentTypeLabel = (value) => {
+  if (!value) return "";
+  return DOCUMENT_TYPE_CODE_MAP[value] || value;
+};
 
 class ProvidersService {
   constructor() {
@@ -14,7 +27,6 @@ class ProvidersService {
       entityType = "",
     } = params;
 
-    // Validar parámetros de entrada
     const validatedPage = Math.max(1, parseInt(page) || 1);
     const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 10));
 
@@ -26,10 +38,9 @@ class ProvidersService {
       entityType,
     });
 
-    // Transformar la respuesta del backend al formato del frontend
-    if (response.success && response.data && Array.isArray(response.data)) {
+    if (response.success && Array.isArray(response.data)) {
       response.data = response.data.map((provider) =>
-        this.transformFromBackend(provider)
+        this.transformFromBackend(provider),
       );
     }
 
@@ -40,9 +51,9 @@ class ProvidersService {
     if (!id) {
       throw new Error("ID del proveedor es requerido");
     }
+
     const response = await apiClient.get(`${this.endpoint}/${id}`);
 
-    // Transformar la respuesta del backend al formato del frontend
     if (response.success && response.data) {
       response.data = this.transformFromBackend(response.data);
     }
@@ -59,6 +70,7 @@ class ProvidersService {
     if (!id) {
       throw new Error("ID del proveedor es requerido");
     }
+
     const transformedData = this.transformToBackend(providerData);
     return apiClient.put(`${this.endpoint}/${id}`, transformedData);
   }
@@ -67,6 +79,7 @@ class ProvidersService {
     if (!id) {
       throw new Error("ID del proveedor es requerido");
     }
+
     return apiClient.delete(`${this.endpoint}/${id}`);
   }
 
@@ -75,7 +88,9 @@ class ProvidersService {
   }
 
   async getDocumentTypes() {
-    return apiClient.get(`${this.endpoint}/document-types`);
+    return apiClient.get(`${this.endpoint}/document-types`, {
+      skipLoader: true,
+    });
   }
 
   async checkNitAvailability(nit, excludeId = null, tipoEntidad = "juridica") {
@@ -84,25 +99,26 @@ class ProvidersService {
       params.excludeId = excludeId;
     }
 
-    const response = await apiClient.get(`${this.endpoint}/check-nit`, params);
-    return response;
+    return apiClient.get(`${this.endpoint}/check-nit`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkBusinessNameAvailability(
     businessName,
     excludeId = null,
-    tipoEntidad = "juridica"
+    tipoEntidad = "juridica",
   ) {
     const params = { businessName, tipoEntidad };
     if (excludeId) {
       params.excludeId = excludeId;
     }
 
-    const response = await apiClient.get(
-      `${this.endpoint}/check-business-name`,
-      params
-    );
-    return response;
+    return apiClient.get(`${this.endpoint}/check-business-name`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkEmailAvailability(email, excludeId = null) {
@@ -110,11 +126,11 @@ class ProvidersService {
     if (excludeId) {
       params.excludeId = excludeId;
     }
-    const response = await apiClient.get(
-      `${this.endpoint}/check-email`,
-      params
-    );
-    return response;
+
+    return apiClient.get(`${this.endpoint}/check-email`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkContactAvailability(contact, excludeId = null) {
@@ -122,25 +138,25 @@ class ProvidersService {
     if (excludeId) {
       params.excludeId = excludeId;
     }
-    const response = await apiClient.get(
-      `${this.endpoint}/check-contact`,
-      params
-    );
-    return response;
+
+    return apiClient.get(`${this.endpoint}/check-contact`, {
+      params,
+      skipLoader: true,
+    });
   }
 
   async checkActivePurchases(providerId) {
-    // Usar el endpoint correcto del backend: check-ingresos
-    const response = await apiClient.get(`${this.endpoint}/${providerId}/check-ingresos`);
-    
-    // Transformar la respuesta para mantener compatibilidad con el código existente
+    const response = await apiClient.get(
+      `${this.endpoint}/${providerId}/check-ingresos`,
+    );
+
     if (response.success && response.hasIngresos !== undefined) {
       return {
         ...response,
-        hasActivePurchases: response.hasIngresos
+        hasActivePurchases: response.hasIngresos,
       };
     }
-    
+
     return response;
   }
 
@@ -156,38 +172,89 @@ class ProvidersService {
     });
   }
 
+  resolveProviderDocumentType(provider, documentTypes = []) {
+    if (provider.tipoEntidad === "juridica") {
+      return {
+        tipoDocumento: "NIT",
+        tipoDocumentoNombre: "NIT",
+        documentType: { name: "NIT", label: "NIT" },
+      };
+    }
+
+    const providerDocumentTypeId =
+      provider.documentTypeId ??
+      provider.documentType?.id ??
+      provider.documentType?.value ??
+      null;
+
+    const providerDocumentCode =
+      provider.tipoDocumento ?? provider.documentType?.name ?? null;
+
+    const resolvedDocumentType = documentTypes.find((dt) => {
+      const dtId = dt.id?.toString();
+      const dtValue = dt.value?.toString();
+      const providerId = providerDocumentTypeId?.toString();
+
+      return (
+        (providerId && (dtId === providerId || dtValue === providerId)) ||
+        (providerDocumentCode &&
+          (dt.value === providerDocumentCode ||
+            dt.name === providerDocumentCode ||
+            dt.label === providerDocumentCode ||
+            dt.name === DOCUMENT_TYPE_CODE_MAP[providerDocumentCode]))
+      );
+    });
+
+    const fallbackDocumentType = providerDocumentTypeId
+      ? documentTypes.find(
+          (dt) =>
+            dt.id?.toString() === providerDocumentTypeId?.toString() ||
+            dt.value?.toString() === providerDocumentTypeId?.toString(),
+        )
+      : null;
+
+    return {
+      tipoDocumentoNombre:
+        normalizeDocumentTypeLabel(resolvedDocumentType?.name) ||
+        normalizeDocumentTypeLabel(resolvedDocumentType?.label) ||
+        normalizeDocumentTypeLabel(fallbackDocumentType?.name) ||
+        normalizeDocumentTypeLabel(fallbackDocumentType?.label) ||
+        normalizeDocumentTypeLabel(provider.tipoDocumentoNombre) ||
+        normalizeDocumentTypeLabel(provider.documentType?.name) ||
+        normalizeDocumentTypeLabel(DOCUMENT_TYPE_CODE_MAP[provider.tipoDocumento]) ||
+        "No especificado",
+      documentType:
+        resolvedDocumentType || fallbackDocumentType || provider.documentType || null,
+    };
+  }
+
+  async enrichProvidersWithDocumentTypes(providers = []) {
+    try {
+      const docTypesResponse = await this.getDocumentTypes();
+      const documentTypes =
+        docTypesResponse.success && Array.isArray(docTypesResponse.data)
+          ? docTypesResponse.data
+          : [];
+
+      return providers.map((provider) => ({
+        ...provider,
+        ...this.resolveProviderDocumentType(provider, documentTypes),
+      }));
+    } catch (error) {
+      return providers.map((provider) => ({
+        ...provider,
+        ...this.resolveProviderDocumentType(provider),
+      }));
+    }
+  }
+
   async getActiveProviders() {
     const response = await this.getProviders({ status: "Activo" });
-    
-    // Enriquecer con nombres de tipos de documento
-    if (response.success && response.data) {
-      try {
-        const docTypesResponse = await this.getDocumentTypes();
-        if (docTypesResponse.success && docTypesResponse.data) {
-          const documentTypes = docTypesResponse.data;
-          
-          response.data = response.data.map((provider) => {
-            if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
-              const docType = documentTypes.find(
-                (dt) =>
-                  dt.id.toString() === provider.tipoDocumento.toString() ||
-                  dt.value === provider.tipoDocumento.toString()
-              );
-              return {
-                ...provider,
-                tipoDocumentoNombre: docType ? (docType.name || docType.label) : "Cédula",
-              };
-            }
-            return {
-              ...provider,
-              tipoDocumentoNombre: "NIT",
-            };
-          });
-        }
-      } catch (error) {
-      }
+
+    if (response.success && Array.isArray(response.data)) {
+      response.data = await this.enrichProvidersWithDocumentTypes(response.data);
     }
-    
+
     return response;
   }
 
@@ -202,7 +269,6 @@ class ProvidersService {
   transformToBackend(providerData) {
     let cleanedNit = providerData.nit;
 
-    // Para ambos tipos de entidad, simplemente limpiar el NIT/documento
     if (cleanedNit && typeof cleanedNit === "string") {
       cleanedNit = cleanedNit.replace(/[.\-\s]/g, "");
     }
@@ -213,16 +279,24 @@ class ProvidersService {
       businessName: providerData.razonSocial,
       razonSocial: providerData.razonSocial,
       nit: cleanedNit,
+      contactoPrincipal: providerData.contactoPrincipal,
       mainContact: providerData.contactoPrincipal,
+      correo: providerData.correo,
       email: providerData.correo,
+      telefono: providerData.telefono,
       phone: providerData.telefono,
+      direccion: providerData.direccion,
       address: providerData.direccion,
+      ciudad: providerData.ciudad,
       city: providerData.ciudad,
+      descripcion: providerData.descripcion || "",
       description: providerData.descripcion || "",
+      estado: providerData.estado || "Activo",
       status: providerData.estado === "Activo" ? "Active" : "Inactive",
     };
 
     if (providerData.tipoEntidad === "natural" && providerData.tipoDocumento) {
+      transformed.tipoDocumento = providerData.tipoDocumento;
       transformed.documentTypeId = providerData.tipoDocumento;
     }
 
@@ -233,6 +307,7 @@ class ProvidersService {
     if (!backendData) return null;
 
     return {
+      ...backendData,
       id: backendData.id,
       tipoEntidad:
         backendData.tipoEntidad ||
@@ -240,7 +315,17 @@ class ProvidersService {
       razonSocial: backendData.razonSocial || backendData.businessName || "",
       nit: backendData.nit || "",
       tipoDocumento:
-        backendData.tipoDocumento || backendData.documentTypeId || "",
+        backendData.entityType === "legal" || backendData.tipoEntidad === "juridica"
+          ? "NIT"
+          : backendData.tipoDocumento || backendData.documentTypeId || "",
+      tipoDocumentoNombre:
+        normalizeDocumentTypeLabel(backendData.tipoDocumentoNombre) ||
+        normalizeDocumentTypeLabel(backendData.documentType?.name) ||
+        normalizeDocumentTypeLabel(backendData.document_type?.name) ||
+        (backendData.entityType === "legal" ||
+        backendData.tipoEntidad === "juridica"
+          ? "NIT"
+          : ""),
       contactoPrincipal:
         backendData.contactoPrincipal || backendData.mainContact || "",
       correo: backendData.correo || backendData.email || "",
@@ -251,29 +336,31 @@ class ProvidersService {
       estado:
         backendData.estado ||
         (backendData.status === "Active" ? "Activo" : "Inactivo"),
-      // Mantener campos adicionales que puedan venir del backend
-      ...backendData,
     };
   }
 
-  /**
-   * Obtener todos los registros para reporte (sin paginación)
-   * @param {Object} params - Filtros (search, status, entityType, etc.)
-   * @returns {Promise<Object>} Todos los registros
-   */
   async getAllForReport(params = {}) {
     try {
-      const response = await apiClient.get(`${this.endpoint}/report`, { params });
-      
-      // Transformar datos si es necesario
-      let data = response.data || response;
-      if (Array.isArray(data)) {
-        data = data.map((provider) => this.transformFromBackend(provider));
+      const response = await apiClient.get(`${this.endpoint}/report`, params);
+
+      if (!response?.success) {
+        return {
+          success: false,
+          error: response?.message || "No se pudieron obtener los proveedores",
+          data: [],
+        };
       }
-      
+
+      const providers = Array.isArray(response.data)
+        ? response.data.map((provider) => this.transformFromBackend(provider))
+        : [];
+
+      const enrichedProviders =
+        await this.enrichProvidersWithDocumentTypes(providers);
+
       return {
-        success: true,
-        data: data,
+        ...response,
+        data: enrichedProviders,
       };
     } catch (error) {
       return { success: false, error: error.message, data: [] };
@@ -282,4 +369,3 @@ class ProvidersService {
 }
 
 export default new ProvidersService();
-

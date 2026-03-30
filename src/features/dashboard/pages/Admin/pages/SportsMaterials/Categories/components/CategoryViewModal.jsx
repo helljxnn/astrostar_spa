@@ -71,16 +71,16 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
 
             {/* Información del sistema */}
             {category.createdAt && (
-              <div className="mt-auto p-4 bg-gray-50 rounded-xl border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              <div className="mt-auto p-3 bg-gray-50 rounded-xl border border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">
                   Información del Sistema
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">
+                    <span className="text-xs font-medium text-gray-600">
                       Fecha de Creación:
                     </span>
-                    <p className="text-gray-800">
+                    <p className="text-sm text-gray-800">
                       {new Date(category.createdAt).toLocaleDateString(
                         "es-ES",
                         {
@@ -93,10 +93,10 @@ const CategoryViewModal = ({ isOpen, onClose, category, onEdit, canEdit }) => {
                   </div>
                   {category.updatedAt && (
                     <div>
-                      <span className="text-sm font-medium text-gray-600">
+                      <span className="text-xs font-medium text-gray-600">
                         Última Actualización:
                       </span>
-                      <p className="text-gray-800">
+                      <p className="text-sm text-gray-800">
                         {new Date(category.updatedAt).toLocaleDateString(
                           "es-ES",
                           {

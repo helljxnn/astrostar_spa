@@ -20,6 +20,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     birthDate: "",
     phoneNumber: "",
     email: "",
+    acceptDataPolicy: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -148,6 +149,11 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           return "Formato de correo inválido";
         return "";
 
+      case "acceptDataPolicy":
+        if (value !== true)
+          return "Debes aceptar la política de tratamiento de datos";
+        return "";
+
       default:
         return "";
     }
@@ -172,7 +178,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     setErrors((prev) => ({ ...prev, [field]: error }));
 
     // Marcar como tocado automáticamente cuando el usuario empieza a escribir
-    if (value && value.length > 0) {
+    if (typeof value === "boolean" || (value && value.length > 0)) {
       setTouched((prev) => ({ ...prev, [field]: true }));
     }
   };
@@ -315,6 +321,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       birthDate: true,
       phoneNumber: true,
       email: true,
+      acceptDataPolicy: true,
     };
     setTouched(allTouched);
 
@@ -391,6 +398,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           birthDate: "",
           phoneNumber: "",
           email: "",
+          acceptDataPolicy: false,
         });
         setErrors({});
         setTouched({});
@@ -561,6 +569,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       birthDate: "",
       phoneNumber: "",
       email: "",
+      acceptDataPolicy: false,
     });
     setErrors({});
     setTouched({});
@@ -585,6 +594,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       formData.birthDate ||
       formData.phoneNumber ||
       formData.email ||
+      formData.acceptDataPolicy ||
       Object.keys(errors).length > 0
     ) {
       setTimeout(resetFormData, 300);
@@ -624,7 +634,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[90vh] max-h-[90vh] overflow-hidden relative flex flex-col"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] max-h-[90vh] overflow-hidden relative flex flex-col"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -635,24 +645,24 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
               {/* Form */}
               <div className="w-full h-full min-h-0 flex flex-col">
                 {/* Header Minimalista */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
+                <div className="bg-white border-b border-gray-200 p-6 z-10">
                   <button
-                    className="absolute top-4 right-4 text-gray-300 hover:text-gray-400 transition-colors"
+                    className="absolute top-6 right-6 text-gray-300 hover:text-gray-400 transition-colors"
                     onClick={handleClose}
                   >
                     <FaTimes size={20} />
                   </button>
-                  <h2 className="text-2xl font-bold text-gray-900 text-center">
+                  <h2 className="text-xl font-bold text-gray-900 text-center">
                     Inscripción
                   </h2>
                 </div>
 
                 {/* Body con scroll */}
-                <div className="flex-1 min-h-0 overflow-y-scroll overscroll-contain">
-                  <form onSubmit={handleSubmit} className="p-6 pb-8">
-                    <div className="space-y-4">
+                <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+                  <form onSubmit={handleSubmit} className="p-8 pb-4">
+                    <div className="space-y-6">
                       {/* Nombres y Apellidos en Grid 2x2 */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                           label="Primer Nombre"
                           name="firstName"
@@ -667,82 +677,85 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                           required
                         />
 
-                        <FormField
-                          label="Segundo Nombre"
-                          name="middleName"
-                          type="text"
-                          value={formData.middleName}
-                          onChange={(e) =>
-                            handleChange("middleName", e.target.value)
-                          }
-                          onBlur={() => handleBlur("middleName")}
-                          error={errors.middleName}
-                          touched={touched.middleName}
-                          placeholder="Opcional"
-                        />
+                      <FormField
+                        label="Segundo Nombre"
+                        name="middleName"
+                        type="text"
+                        value={formData.middleName}
+                        onChange={(e) =>
+                          handleChange("middleName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("middleName")}
+                        error={errors.middleName}
+                        touched={touched.middleName}
+                        placeholder="Opcional"
+                      />
 
+                      <FormField
+                        label="Primer Apellido"
+                        name="lastName"
+                        type="text"
+                        value={formData.lastName}
+                        onChange={(e) =>
+                          handleChange("lastName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("lastName")}
+                        error={errors.lastName}
+                        touched={touched.lastName}
+                        required
+                      />
+
+                      <FormField
+                        label="Segundo Apellido"
+                        name="secondLastName"
+                        type="text"
+                        value={formData.secondLastName}
+                        onChange={(e) =>
+                          handleChange("secondLastName", e.target.value)
+                        }
+                        onBlur={() => handleBlur("secondLastName")}
+                        error={errors.secondLastName}
+                        touched={touched.secondLastName}
+                        placeholder="Opcional"
+                      />
+                      </div>
+
+                      {/* Documento y Fecha de Nacimiento */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
-                          label="Primer Apellido"
-                          name="lastName"
+                          label="Número de Documento"
+                          name="identification"
                           type="text"
-                          value={formData.lastName}
+                          value={formData.identification}
                           onChange={(e) =>
-                            handleChange("lastName", e.target.value)
+                            handleChange("identification", e.target.value)
                           }
-                          onBlur={() => handleBlur("lastName")}
-                          error={errors.lastName}
-                          touched={touched.lastName}
+                          onBlur={() => handleBlur("identification")}
+                          error={errors.identification}
+                          touched={touched.identification}
                           required
+                          isLoading={isCheckingDocumentValidation}
                         />
 
                         <FormField
-                          label="Segundo Apellido"
-                          name="secondLastName"
-                          type="text"
-                          value={formData.secondLastName}
+                          label="Fecha de Nacimiento"
+                          name="birthDate"
+                          type="date"
+                          value={formData.birthDate}
                           onChange={(e) =>
-                            handleChange("secondLastName", e.target.value)
+                            handleChange("birthDate", e.target.value)
                           }
-                          onBlur={() => handleBlur("secondLastName")}
-                          error={errors.secondLastName}
-                          touched={touched.secondLastName}
-                          placeholder="Opcional"
+                          onBlur={() => handleBlur("birthDate")}
+                          error={errors.birthDate}
+                          touched={touched.birthDate}
+                          required
+                          minAge={5}
+                          maxAge={100}
                         />
                       </div>
 
-                      {/* Resto de campos en columna única */}
-                      <FormField
-                        label="Número de Documento"
-                        name="identification"
-                        type="text"
-                        value={formData.identification}
-                        onChange={(e) =>
-                          handleChange("identification", e.target.value)
-                        }
-                        onBlur={() => handleBlur("identification")}
-                        error={errors.identification}
-                        touched={touched.identification}
-                        required
-                        isLoading={isCheckingDocumentValidation}
-                      />
-
-                      <FormField
-                        label="Fecha de Nacimiento"
-                        name="birthDate"
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={(e) =>
-                          handleChange("birthDate", e.target.value)
-                        }
-                        onBlur={() => handleBlur("birthDate")}
-                        error={errors.birthDate}
-                        touched={touched.birthDate}
-                        required
-                        minAge={5}
-                        maxAge={100}
-                      />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Teléfono y Email */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                           label="Teléfono"
                           name="phoneNumber"
@@ -772,12 +785,41 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
                           isLoading={isCheckingEmailValidation}
                         />
                       </div>
+
+                      {/* Checkbox de política de datos */}
+                      <div className="pb-4">
+                        <label className="flex items-start gap-3 rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            name="acceptDataPolicy"
+                            checked={formData.acceptDataPolicy}
+                            onChange={(e) =>
+                              handleChange("acceptDataPolicy", e.target.checked)
+                            }
+                            onBlur={() => handleBlur("acceptDataPolicy")}
+                            className="mt-1 h-4 w-4 rounded border-gray-300 text-[#B595FF] focus:ring-[#B595FF]"
+                            required
+                          />
+                          <span>
+                            Aceptar política de tratamiento de datos
+                            <span className="text-red-500 ml-1">*</span>
+                          </span>
+                        </label>
+                        {touched.acceptDataPolicy && errors.acceptDataPolicy && (
+                          <p className="mt-2 text-xs text-red-500 flex items-center gap-1">
+                            <span className="flex items-center justify-center w-4 h-4 rounded-full border border-red-400 text-[10px] leading-none">
+                              !
+                            </span>
+                            <span>{errors.acceptDataPolicy}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </form>
                 </div>
 
                 {/* Footer Minimalista */}
-                <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+                <div className="bg-white border-t border-gray-200 p-6">
                   <button
                     type="submit"
                     onClick={handleSubmit}

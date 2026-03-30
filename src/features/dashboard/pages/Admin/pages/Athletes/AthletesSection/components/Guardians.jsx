@@ -12,6 +12,7 @@ import {
   showDeleteAlert,
   showSuccessAlert,
   showErrorAlert,
+  showConfirmAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 import GuardianModal from "./GuardianModal";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
@@ -93,6 +94,19 @@ showErrorAlert("Error", "Error al cargar los acudientes");
   const handleSave = async (guardian) => {
     try {
       if (editingGuardian) {
+        const confirmResult = await showConfirmAlert(
+          "¿Guardar cambios?",
+          `¿Deseas actualizar la información de ${editingGuardian.nombreCompleto}?`,
+          {
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar",
+          },
+        );
+
+        if (!confirmResult.isConfirmed) {
+          return;
+        }
+
         // Editar
         const response = await GuardiansService.updateGuardian(
           editingGuardian.id,
@@ -181,14 +195,14 @@ showErrorAlert(
   };
 
   return (
-    <div className="p-6 font-montserrat">
+    <div className="p-4 sm:p-6 font-montserrat">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 flex items-center gap-2 whitespace-nowrap">
           <FaUsers /> Acudientes
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
           {/* Buscador */}
           <SearchInput
             value={searchTerm}
@@ -203,7 +217,7 @@ showErrorAlert(
           />
 
           {/* Botones */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <ReportButton
               dataProvider={getCompleteReportData}
               fileName="Reporte_Acudientes"

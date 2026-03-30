@@ -1,7 +1,7 @@
 ﻿import { useState, useCallback, useEffect } from "react";
 
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
-const isOnlyLetters = (value) => /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(value);
+const isOnlyLetters = (value) => /^[\p{L}\p{M}\s]+$/u.test(value);
 const isValidEmail = (email) => /^[a-zA-Z0-9]([a-zA-Z0-9._-])*@[a-zA-Z0-9]([a-zA-Z0-9.-])*\.[a-zA-Z]{2,}$/.test(email);
 
 // Validaciones específicas por tipo de documento (del módulo de empleados)
@@ -59,8 +59,8 @@ const getDocumentValidation = (documentTypeName, value) => {
     if (!/^\d+$/.test(value)) {
       return "El NIT solo puede contener números, sin guiones ni puntos.";
     }
-    if (value.length !== 10) {
-      return "El NIT debe tener exactamente 10 dígitos.";
+    if (value.length < 9 || value.length > 10) {
+      return "El NIT debe tener entre 9 y 10 dígitos.";
     }
     return '';
   }
@@ -118,12 +118,12 @@ export const providerValidationRules = {
       if (!value?.trim()) return '';
       
       if (values?.tipoEntidad === 'juridica') {
-        // PERSONA JURÍDICA: Exactamente 10 dígitos, solo números
+        // PERSONA JURÍDICA: Entre 9 y 10 dígitos, solo números
         if (!/^\d+$/.test(value)) {
           return "El NIT solo puede contener números, sin guiones ni puntos.";
         }
-        if (value.length !== 10) {
-          return "El NIT debe tener exactamente 10 dígitos.";
+        if (value.length < 9 || value.length > 10) {
+          return "El NIT debe tener entre 9 y 10 dígitos.";
         }
       } else {
         // PERSONA NATURAL: Verificar si seleccionó NIT
@@ -136,12 +136,12 @@ export const providerValidationRules = {
         const isNIT = docName.toLowerCase().includes('tributaria') || docName.toLowerCase().includes('nit');
         
         if (isNIT) {
-          // PERSONA NATURAL CON NIT: Exactamente las mismas validaciones que jurídica
+          // PERSONA NATURAL CON NIT: Mismas validaciones que persona jurídica
           if (!/^\d+$/.test(value)) {
             return "El NIT solo puede contener números, sin guiones ni puntos.";
           }
-          if (value.length !== 10) {
-            return "El NIT debe tener exactamente 10 dígitos.";
+          if (value.length < 9 || value.length > 10) {
+            return "El NIT debe tener entre 9 y 10 dígitos.";
           }
         } else {
           // PERSONA NATURAL CON OTROS DOCUMENTOS: Usar validaciones específicas
@@ -253,62 +253,46 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
 
   const handleChange = (name, value) => {
     const previousTipoEntidad = values.tipoEntidad;
-    
-    setValues(prev => {
-      const newValues = { ...prev, [name]: value };
-      
-      if (name === 'tipoEntidad') {
-        if (!isEditing) {
-          // MODO CREAR: Limpiar todos los campos
-          newValues.tipoDocumento = '';
-          newValues.nit = '';
-          newValues.razonSocial = '';
-          newValues.contactoPrincipal = '';
-          newValues.correo = '';
-          newValues.telefono = '';
-          newValues.direccion = '';
-          newValues.ciudad = '';
-          newValues.descripcion = '';
-        }
-        // En modo edición, no limpiar automáticamente - dejar que el componente maneje la restauración
-      }
-      
-      return newValues;
-    });
 
-    setTimeout(() => {
-      const error = validateField(name, value);
-      setErrors(prev => {
-        if (error) {
-          return { ...prev, [name]: error };
-        } else {
-          // NO eliminar errores existentes - mantener persistencia
-          // Solo actualizar si hay un nuevo error
-          return prev;
-        }
-      });
-    }, 0);
+    let nextValues = { ...values, [name]: value };
 
-    if (!touched[name]) {
-      setTimeout(() => {
-        setTouched(prev => ({ ...prev, [name]: true }));
-      }, 0);
+    if (name === 'tipoEntidad' && !isEditing) {
+      nextValues = {
+        ...nextValues,
+        tipoDocumento: '',
+        nit: '',
+        razonSocial: '',
+        contactoPrincipal: '',
+        correo: '',
+        telefono: '',
+        direccion: '',
+        ciudad: '',
+        descripcion: '',
+      };
     }
 
     if (name === 'tipoDocumento') {
-      // Limpiar el campo nit cuando se cambia el tipo de documento
-      setTimeout(() => {
-        setValues(prev => ({ ...prev, nit: '' }));
-        // Mantener el error de nit si existe
-      }, 0);
+      nextValues = { ...nextValues, nit: '' };
     }
 
+    setValues(nextValues);
+
     if (name === 'tipoEntidad' && previousTipoEntidad !== value && !isEditing) {
-      setTimeout(() => {
-        // Limpiar TODOS los touched y errores al cambiar tipo de entidad (solo en modo crear)
-        setTouched({});
-        setErrors({});
-      }, 10);
+      setTouched({});
+      setErrors({});
+      return;
+    }
+
+    if (touched[name]) {
+      const error = validateField(name, value, nextValues);
+      setErrors(prev => {
+        if (error) {
+          return { ...prev, [name]: error };
+        }
+        const nextErrors = { ...prev };
+        delete nextErrors[name];
+        return nextErrors;
+      });
     }
   };
 
@@ -321,44 +305,17 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
     setErrors(prev => {
       if (error) {
         return { ...prev, [name]: error };
-      } else {
-        // NO eliminar el error si ya existe - mantener persistencia
-        // Solo actualizar si hay un nuevo error
-        return prev;
       }
+      const nextErrors = { ...prev };
+      delete nextErrors[name];
+      return nextErrors;
     });
   };
 
-  useEffect(() => {
-    const newErrors = { ...errors };
-    let hasChanges = false;
-
-    Object.keys(touched).forEach(fieldName => {
-      if (touched[fieldName]) {
-        const currentError = validateField(fieldName, values[fieldName]);
-        const hasError = errors[fieldName];
-        
-        if (hasError && !currentError) {
-          delete newErrors[fieldName];
-          hasChanges = true;
-        }
-        else if (!hasError && currentError) {
-          newErrors[fieldName] = currentError;
-          hasChanges = true;
-        }
-      }
-    });
-
-    if (hasChanges) {
-      setErrors(newErrors);
-    }
-  }, [values, touched]);
-
   const resetForm = () => {
-    setValues(initialValues);
+    setValues(originalValues);
     setErrors({});
     setTouched({});
-    setOriginalValues(initialValues);
   };
 
   const updateOriginalValues = (newValues) => {
