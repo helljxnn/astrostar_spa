@@ -12,13 +12,6 @@ const driveImage = (url, size = "w1600") => {
     : url;
 };
 
-const driveDirectImage = (url) => {
-  const fileId = extractGoogleDriveFileId(url);
-  return fileId
-    ? `https://drive.google.com/uc?export=view&id=${fileId}`
-    : url;
-};
-
 export const eventsBannerImage = "/assets/images/News/Banner_news_events.png";
 
 export const newsItems = [
@@ -29,8 +22,8 @@ export const newsItems = [
     description:
       "La Fundación Manuela Vanegas inicia el 2026 con una gran noticia: Tiendas Ara reafirma su compromiso social y continuará siendo un aliado estratégico en el fortalecimiento de nuestros procesos formativos y deportivos durante este año. Gracias a este valioso respaldo, la fundación podrá seguir impactando de manera positiva a niños, niñas y jóvenes, promoviendo espacios de formación basados en el amor, la disciplina y el respeto. El apoyo de Tiendas Ara no solo representa un impulso para nuestros proyectos, sino también una muestra clara de confianza en nuestra misión y en el trabajo que día a día realizamos con la comunidad.",
     images: [
-      driveImage("https://drive.google.com/file/d/1QS4ewxry6QmZzXVczzdBjwdh8n2rPXwu/view?usp=drivesdk"),
-      driveImage("https://drive.google.com/file/d/1R6nry7wB_GzoYFQsubjRqUoAZCmlSwJJ/view?usp=drivesdk"),
+      "/assets/images/News/31.webp",
+      "/assets/images/News/32.webp",
     ],
   },
   {
@@ -39,8 +32,8 @@ export const newsItems = [
     description:
       "¡Buenas noticias! La Fundación Manuela Vanegas y la Fundación Da Alegría unen sus misiones para potenciar el bienestar, la formación y el desarrollo integral de los jóvenes en Colombia. Una alianza que nace del compromiso de transformar realidades y abrir caminos donde la alegría, las oportunidades y los sueños puedan crecer.",
     images: [
-      driveImage("https://drive.google.com/file/d/17LWiWHUxoC6Xy0T1qWOvQ8QMd9busyg-/view?usp=drivesdk"),
-      driveImage("https://drive.google.com/file/d/1Rx_KID87JbQEuag2xTofrhBXtssff_Ij/view?usp=drivesdk"),
+      "/assets/images/News/33.webp",
+      "/assets/images/News/34.webp",
     ],
   },
   {
@@ -50,8 +43,8 @@ export const newsItems = [
     description:
       "La Fundación Manuela Vanegas anuncia una nueva alianza con la Fundación Paula Cristina, con el propósito de fortalecer la prevención del abuso sexual infantil dentro de nuestros procesos formativos. En el marco de esta iniciativa se desarrollarán tres talleres pedagógicos, liderados por una psicóloga y trabajadoras sociales, enfocados en la prevención, la identificación de señales de alerta y el fortalecimiento de entornos seguros para nuestros niños, niñas y sus familias. Con esta alianza reafirmamos nuestro compromiso con la formación integral, entendiendo que el deporte también es un espacio de protección, cuidado y construcción de valores.",
     images: [
-      driveImage("https://drive.google.com/file/d/12tm8b6yJW7FPByPk4MN7K_NyS6jERAYY/view?usp=drivesdk"),
-      driveImage("https://drive.google.com/file/d/13h-4VvgJ4bZoYeTKRx_NvJY2YiBm7QNd/view?usp=drivesdk"),
+      "/assets/images/News/35.webp",
+      "/assets/images/News/36.webp",
     ],
   },
 ];

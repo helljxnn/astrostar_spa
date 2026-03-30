@@ -188,7 +188,7 @@ export default function Home() {
               {/* Botón de donación */}
               <div className="pt-4">
                 <a
-                  href="/donacion"
+                  href="/donacion#formulario-donacion"
                   className="group inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] text-white text-lg font-semibold rounded-xl hover:shadow-lg hover:shadow-[#B595FF]/25 hover:-translate-y-0.5 transition-all duration-300"
                 >
                   <svg

@@ -498,6 +498,9 @@ const NewsModal = ({ item, isOpen, onClose }) => {
 };
 
 const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
+  const getImageSrc = (image) => (typeof image === "string" ? image : image?.src);
+  const getFallbackSrc = (image) =>
+    typeof image === "string" ? "" : image?.fallbackSrc || "";
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [loadedImages, setLoadedImages] = useState(() =>
     item.images.map((_, imageIndex) => imageIndex === 0),
@@ -515,7 +518,8 @@ const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
     setLoadedImages(item.images.map((_, imageIndex) => imageIndex === 0));
 
     const preloaders = item.images.map((image, imageIndex) => {
-      const src = typeof image === "string" ? image : image.src;
+      const src = getImageSrc(image);
+      const fallbackSrc = getFallbackSrc(image);
       const preloadImage = new window.Image();
 
       const markAsReady = () => {
@@ -528,7 +532,23 @@ const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
       };
 
       preloadImage.onload = markAsReady;
-      preloadImage.onerror = markAsReady;
+      preloadImage.onerror = () => {
+        if (
+          fallbackSrc &&
+          typeof preloadImage.src === "string" &&
+          preloadImage.src !== fallbackSrc
+        ) {
+          preloadImage.src = fallbackSrc;
+          return;
+        }
+
+        setLoadedImages((current) => {
+          if (!current[imageIndex]) return current;
+          const next = [...current];
+          next[imageIndex] = false;
+          return next;
+        });
+      };
       preloadImage.src = src;
       return preloadImage;
     });
@@ -581,9 +601,16 @@ const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[#B595FF]/20 via-white/10 to-transparent" />
 
         <div className="relative h-[260px] sm:h-[320px] lg:h-[360px]">
-          <motion.button
-            type="button"
+          <motion.div
+            role="button"
+            tabIndex={0}
             onClick={() => onImageClick(activeImage, item.title)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onImageClick(activeImage, item.title);
+              }
+            }}
             className="relative h-full w-full overflow-hidden rounded-[28px] bg-[#faf7ff] text-left shadow-[0_20px_45px_rgba(15,23,42,0.22)]"
           >
             {item.images.map((image, imageIndex) => (
@@ -600,16 +627,33 @@ const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
                 className="absolute inset-0 overflow-hidden rounded-[28px]"
               >
                 <img
-                  src={typeof image === "string" ? image : image.src}
+                  src={getImageSrc(image)}
                   alt={`${item.title} imagen ${imageIndex + 1}`}
                   className="h-full w-full object-cover"
                   loading={imageIndex === 0 ? "eager" : "auto"}
-                  fetchPriority={imageIndex === 0 ? "high" : "auto"}
                   onLoad={() => {
                     setLoadedImages((current) => {
                       if (current[imageIndex]) return current;
                       const next = [...current];
                       next[imageIndex] = true;
+                      return next;
+                    });
+                  }}
+                  onError={(event) => {
+                    const fallbackSrc = getFallbackSrc(image);
+                    if (
+                      fallbackSrc &&
+                      event.currentTarget.dataset.fallbackApplied !== "true"
+                    ) {
+                      event.currentTarget.dataset.fallbackApplied = "true";
+                      event.currentTarget.src = fallbackSrc;
+                      return;
+                    }
+
+                    setLoadedImages((current) => {
+                      if (!current[imageIndex]) return current;
+                      const next = [...current];
+                      next[imageIndex] = false;
                       return next;
                     });
                   }}
@@ -641,7 +685,7 @@ const EnhancedNewsCard = ({ item, index, onImageClick, onReadMore }) => {
                 </div>
               </div>
             )}
-          </motion.button>
+          </motion.div>
         </div>
       </div>
 
