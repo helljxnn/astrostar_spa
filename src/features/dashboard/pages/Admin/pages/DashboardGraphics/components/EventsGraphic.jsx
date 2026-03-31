@@ -23,6 +23,37 @@ ChartJS.register(
   Legend,
 );
 
+const normalizeYearKey = (value = "") =>
+  String(value)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+const getYearFromKey = (key = "") => {
+  const normalized = normalizeYearKey(key);
+  const yearMatch = normalized.match(/(\d{4})$/);
+  if (!yearMatch) return null;
+  const hasYearPrefix =
+    normalized.startsWith("anio") || normalized.startsWith("ano");
+  return hasYearPrefix ? yearMatch[1] : null;
+};
+
+const getYearValue = (item, year) => {
+  const yearSuffix = String(year);
+  const possibleKeys = [`anio${yearSuffix}`, `año${yearSuffix}`];
+
+  for (const key of possibleKeys) {
+    if (Object.prototype.hasOwnProperty.call(item, key)) {
+      return item[key] || 0;
+    }
+  }
+
+  const fallbackKey = Object.keys(item).find(
+    (key) => getYearFromKey(key) === yearSuffix,
+  );
+  return fallbackKey ? item[fallbackKey] || 0 : 0;
+};
+
 const EventsGraphic = () => {
   const [dashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +92,10 @@ const EventsGraphic = () => {
         // Extraer los años dinámicamente de los datos
         if (response.data.length > 0) {
           const yearKeys = Object.keys(response.data[0])
-            .filter((key) => key.startsWith("año"))
-            .map((key) => key.replace("año", ""));
-          setYears(yearKeys);
+            .map((key) => getYearFromKey(key))
+            .filter(Boolean);
+          const uniqueYears = [...new Set(yearKeys)].sort((a, b) => b - a);
+          setYears(uniqueYears);
         }
       }
     } catch (error) {
@@ -82,15 +114,23 @@ const EventsGraphic = () => {
   // Columnas para exportar con ReportButton (dinámicas según los años)
   const reportColumns = [
     { key: "trimestre", label: "Trimestre" },
-    ...years.map((year) => ({ key: `año${year}`, label: year })),
+    ...years.map((year) => ({ key: `anio${year}`, label: year })),
   ];
+
+  const reportData = dashboardData.map((item) => {
+    const row = { trimestre: item.trimestre };
+    years.forEach((year) => {
+      row[`anio${year}`] = getYearValue(item, year);
+    });
+    return row;
+  });
 
   // Configuración para Chart.js
   const data = {
     labels: dashboardData.map((item) => item.trimestre),
     datasets: years.map((year, index) => ({
       label: year,
-      data: dashboardData.map((item) => item[`año${year}`] || 0),
+      data: dashboardData.map((item) => getYearValue(item, year)),
       backgroundColor: yearColors[index % yearColors.length].bg,
       borderRadius: 10,
       hoverBackgroundColor: yearColors[index % yearColors.length].hover,
@@ -159,7 +199,7 @@ const EventsGraphic = () => {
         <div className="order-1 sm:order-2">
           {canViewEvents && (
             <ReportButton
-              dataProvider={async () => dashboardData}
+              dataProvider={async () => reportData}
               fileName="Reporte_Eventos"
               columns={reportColumns}
             />

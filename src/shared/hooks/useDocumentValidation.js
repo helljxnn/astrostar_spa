@@ -46,15 +46,12 @@ export const useDocumentValidation = (
     const cacheKey = `${cleanDocument}_${excludeUserId || 'new'}_${skipInscriptionCheck ? 'noInscription' : 'withInscription'}_${skipAthleteCheck ? 'noAthlete' : 'withAthlete'}`;
     if (cacheRef.current.has(cacheKey)) {
       const cached = cacheRef.current.get(cacheKey);
-      console.log('✅ [useDocumentValidation] Usando resultado en cache:', cached);
       setDocumentExists(cached.exists);
       setValidationMessage(cached.message);
       setIsChecking(false); // Importante: marcar como no checking cuando viene del cache
       return cached;
     }
 
-    console.log('🔍 [useDocumentValidation] Validando documento (no en cache):', cleanDocument);
-    console.log('🔍 [useDocumentValidation] skipInscriptionCheck:', skipInscriptionCheck);
     setIsChecking(true);
 
     try {
@@ -88,9 +85,6 @@ export const useDocumentValidation = (
           ? null
           : results[skipAthleteCheck ? 0 : 1];
 
-      console.log('🔍 [useDocumentValidation] Resultado atleta:', athleteCheck);
-      console.log('🔍 [useDocumentValidation] Resultado inscripción:', inscriptionCheck);
-
       let exists = false;
       let message = '';
 
@@ -99,7 +93,6 @@ export const useDocumentValidation = (
         exists = true;
         // Forzar mensaje simple y consistente
         message = 'Este documento ya está matriculado';
-        console.log('✅ [useDocumentValidation] Documento MATRICULADO detectado');
       }
       // Prioridad 2: Ya tiene una inscripción pendiente (del landing)
       // IMPORTANTE: Solo si NO está matriculado, NO se saltó la verificación, y el backend de inscripciones respondió correctamente
@@ -107,22 +100,17 @@ export const useDocumentValidation = (
         exists = true;
         // Usar mensaje del backend para distinguir inscrito vs registrado en sistema
         message = inscriptionCheck.message || 'Este documento ya está inscrito';
-        console.log('✅ [useDocumentValidation] Documento INSCRITO detectado');
-      } else {
-        console.log('✅ [useDocumentValidation] Documento DISPONIBLE');
       }
 
       // Guardar en cache
       const result = { exists, message };
-      console.log('💾 [useDocumentValidation] Guardando en cache:', cacheKey, result);
       cacheRef.current.set(cacheKey, result);
 
       setDocumentExists(exists);
       setValidationMessage(message);
 
       return result;
-    } catch (error) {
-      console.error('❌ [useDocumentValidation] Error:', error);
+    } catch (_error) {
       // En caso de error o timeout, permitir continuar (fail-safe)
       setDocumentExists(false);
       setValidationMessage('');

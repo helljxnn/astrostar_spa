@@ -3,6 +3,7 @@ import apiClient from "../services/apiClient";
 import { showWarningAlert } from "../utils/alerts.js";
 
 const AuthContext = createContext();
+const DEV_REFRESH_TOKEN_KEY = "astrostar_dev_refresh_token";
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -14,6 +15,35 @@ export const AuthProvider = ({ children }) => {
   // Configuración de tiempos (en milisegundos)
   const REFRESH_INTERVAL = 25 * 60 * 1000; // 25 minutos (antes de que expire el token de 30 min)
   const INACTIVITY_TIMEOUT = 1 * 60 * 60 * 1000; // 1 hora de inactividad
+  const isDevMode = import.meta.env.DEV;
+  const devClientHeaders = isDevMode ? { "X-Client-Type": "mobile" } : {};
+
+  const getDevRefreshToken = () => {
+    if (!isDevMode) return null;
+    try {
+      return sessionStorage.getItem(DEV_REFRESH_TOKEN_KEY);
+    } catch (_error) {
+      return null;
+    }
+  };
+
+  const setDevRefreshToken = (token) => {
+    if (!isDevMode || !token) return;
+    try {
+      sessionStorage.setItem(DEV_REFRESH_TOKEN_KEY, token);
+    } catch (_error) {
+      // Ignorar errores de sessionStorage en modo local.
+    }
+  };
+
+  const clearDevRefreshToken = () => {
+    if (!isDevMode) return;
+    try {
+      sessionStorage.removeItem(DEV_REFRESH_TOKEN_KEY);
+    } catch (_error) {
+      // Ignorar errores de sessionStorage en modo local.
+    }
+  };
 
   const asPlainObject = (value) =>
     value && typeof value === "object" && !Array.isArray(value) ? value : {};
@@ -66,12 +96,18 @@ export const AuthProvider = ({ children }) => {
       try {
         const API_BASE_URL =
           import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+        const devRefreshToken = getDevRefreshToken();
+        const refreshPayload = devRefreshToken
+          ? JSON.stringify({ refreshToken: devRefreshToken })
+          : undefined;
         const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
           method: "POST",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
+            ...devClientHeaders,
           },
+          body: refreshPayload,
         });
 
         if (response.ok) {
@@ -84,7 +120,6 @@ export const AuthProvider = ({ children }) => {
 
           // ✅ VALIDACIÓN: Verificar que el usuario siga activo
           if (mergedUser && mergedUser.status !== "Active") {
-            console.warn("Usuario inactivado durante la sesión");
             showWarningAlert("Cuenta inactivada", "Tu cuenta ha sido inactivada. Contacta al administrador.");
             logout();
             return;
@@ -104,8 +139,7 @@ export const AuthProvider = ({ children }) => {
           // Si falla el refresh, cerrar sesión
           logout();
         }
-      } catch (error) {
-        console.error("Error refrescando token:", error);
+      } catch (_error) {
         logout();
       }
     }, REFRESH_INTERVAL);
@@ -162,33 +196,69 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Intentar restaurar sesión desde el servidor usando refresh token (cookie)
     const restoreSession = async () => {
-      const storedUser = localStorage.getItem("user");
+      const storedUserRaw = localStorage.getItem("user");
+      let storedUserParsed = null;
 
-      if (storedUser) {
+      if (storedUserRaw) {
         try {
-          // Intentar obtener un nuevo access token usando el refresh token (cookie)
-          const API_BASE_URL =
-            import.meta.env.VITE_API_URL || "http://localhost:4000/api";
-          const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-            method: "POST",
-            credentials: "include", // Enviar cookies
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+          storedUserParsed = JSON.parse(storedUserRaw);
+        } catch (_error) {
+          storedUserParsed = null;
+          localStorage.removeItem("user");
+        }
+      }
 
-          if (response.ok) {
-            const result = await response.json();
-            const accessToken = result.data.accessToken;
-            const storedUserParsed = JSON.parse(storedUser);
-            const refreshedUser = mergeUserWithStoredPermissions(
-              result.data.user,
-              storedUserParsed,
-            );
+      try {
+        // Intentar obtener un nuevo access token usando el refresh token (cookie)
+        // incluso cuando no exista localStorage.user.
+        const API_BASE_URL =
+          import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+        const devRefreshToken = getDevRefreshToken();
+        const refreshPayload = devRefreshToken
+          ? JSON.stringify({ refreshToken: devRefreshToken })
+          : undefined;
+        const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...devClientHeaders,
+          },
+          body: refreshPayload,
+        });
 
-            // Almacenar access token en memoria del apiClient
-            apiClient.setAccessToken(accessToken);
+        if (response.ok) {
+          const result = await response.json();
+          const accessToken = result.data.accessToken;
+          let refreshedUser = mergeUserWithStoredPermissions(
+            result.data.user,
+            storedUserParsed,
+          );
 
+          apiClient.setAccessToken(accessToken);
+
+          // Si el refresh no trae usuario y no hay caché local, pedir /auth/me.
+          if (!refreshedUser) {
+            const meResponse = await fetch(`${API_BASE_URL}/auth/me`, {
+              method: "GET",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+                ...devClientHeaders,
+              },
+            });
+
+            if (meResponse.ok) {
+              const meResult = await meResponse.json();
+              refreshedUser = mergeUserWithStoredPermissions(
+                meResult?.data,
+                storedUserParsed,
+              );
+            }
+          }
+
+          if (refreshedUser) {
             setIsAuthenticated(true);
             setUser(refreshedUser);
             localStorage.setItem("user", JSON.stringify(refreshedUser));
@@ -196,16 +266,29 @@ export const AuthProvider = ({ children }) => {
             // Programar el próximo refresh automático
             scheduleTokenRefresh();
           } else {
-            // Si falla, limpiar datos
+            setIsAuthenticated(false);
+            setUser(null);
             localStorage.removeItem("user");
           }
-        } catch (error) {
-          console.error("Error restaurando sesión:", error);
+        } else {
+          // Si no hay sesión válida en cookie, limpiar datos locales.
+          setIsAuthenticated(false);
+          setUser(null);
           localStorage.removeItem("user");
+          localStorage.removeItem("authToken");
+          localStorage.removeItem("userRole");
+          clearDevRefreshToken();
         }
+      } catch (_error) {
+        setIsAuthenticated(false);
+        setUser(null);
+        localStorage.removeItem("user");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userRole");
+        clearDevRefreshToken();
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
     restoreSession();
@@ -230,6 +313,7 @@ export const AuthProvider = ({ children }) => {
         credentials: "include", // Importante: recibir cookies
         headers: {
           "Content-Type": "application/json",
+          ...devClientHeaders,
         },
         body: JSON.stringify(loginData),
       });
@@ -251,6 +335,7 @@ export const AuthProvider = ({ children }) => {
 
           // Almacenar access token SOLO en memoria del apiClient
           apiClient.setAccessToken(accessToken);
+          setDevRefreshToken(result.data.refreshToken);
 
           // Almacenar solo datos del usuario en localStorage
           setIsAuthenticated(true);
@@ -312,8 +397,8 @@ export const AuthProvider = ({ children }) => {
       // Esto disparará el hook useDynamicPermissions para refrescar
       // No necesitamos hacer nada aquí, solo cambiar el timestamp para forzar re-render
       setUser(prevUser => ({ ...prevUser, lastPermissionRefresh: Date.now() }));
-    } catch (error) {
-      console.error('Error refreshing permissions:', error);
+    } catch (_error) {
+      // Mantener flujo silencioso para no interrumpir al usuario.
     }
   };
 
@@ -330,12 +415,17 @@ export const AuthProvider = ({ children }) => {
       // Cerrar sesión en el servidor (limpia cookie HttpOnly)
       const API_BASE_URL =
         import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+      const devRefreshToken = getDevRefreshToken();
       await fetch(`${API_BASE_URL}/auth/logout`, {
         method: "POST",
         credentials: "include", // Enviar cookies
         headers: {
           "Content-Type": "application/json",
+          ...devClientHeaders,
         },
+        body: devRefreshToken
+          ? JSON.stringify({ refreshToken: devRefreshToken })
+          : undefined,
       }).catch(() => {
         // Ignorar errores de red al cerrar sesión
       });
@@ -345,7 +435,10 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       setUser(null);
       localStorage.removeItem("user");
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userRole");
       localStorage.removeItem("lastKnownPermissionsByUser");
+      clearDevRefreshToken();
 
       // Redirigir al login después del logout
       window.location.href = "/login";

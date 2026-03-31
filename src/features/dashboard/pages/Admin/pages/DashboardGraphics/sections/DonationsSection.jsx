@@ -43,8 +43,8 @@ const DonationsSection = () => {
         }));
 
         setAllDonations(enriched);
-      } catch (e) {
-        console.error("Error cargando donaciones:", e);
+      } catch (_error) {
+        setAllDonations([]);
       } finally {
         setLoading(false);
       }

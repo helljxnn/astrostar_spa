@@ -284,6 +284,7 @@ const DonorSection = () => {
         </motion.div>
 
         <motion.form
+          id="formulario-donacion"
           onSubmit={handleSubmit}
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}

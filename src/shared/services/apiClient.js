@@ -5,6 +5,27 @@
 import { showGlobalLoader, hideGlobalLoader } from "../components/Loader";
 import { fixMojibake } from "../utils/textEncoding";
 
+const DEV_REFRESH_TOKEN_KEY = "astrostar_dev_refresh_token";
+const IS_DEV_MODE = import.meta.env.DEV;
+
+const getDevRefreshToken = () => {
+  if (!IS_DEV_MODE) return null;
+  try {
+    return sessionStorage.getItem(DEV_REFRESH_TOKEN_KEY);
+  } catch (_error) {
+    return null;
+  }
+};
+
+const clearDevRefreshToken = () => {
+  if (!IS_DEV_MODE) return;
+  try {
+    sessionStorage.removeItem(DEV_REFRESH_TOKEN_KEY);
+  } catch (_error) {
+    // Ignorar errores de sessionStorage en modo local.
+  }
+};
+
 class ApiClient {
   constructor() {
     this.baseURL = API_BASE_URL;
@@ -68,13 +89,17 @@ class ApiClient {
 
   async refreshAccessToken() {
     try {
-      // El refresh token está en una cookie HttpOnly, no necesitamos enviarlo
+      const devRefreshToken = getDevRefreshToken();
       const response = await fetch(`${this.baseURL}/auth/refresh`, {
         method: "POST",
         credentials: "include", // Importante: enviar cookies
         headers: {
           "Content-Type": "application/json",
+          ...(IS_DEV_MODE ? { "X-Client-Type": "mobile" } : {}),
         },
+        body: devRefreshToken
+          ? JSON.stringify({ refreshToken: devRefreshToken })
+          : undefined,
       });
 
       if (!response.ok) {
@@ -227,13 +252,6 @@ class ApiClient {
           errorMessage = `${errorMessage}\n\nDetalles:\n${errorDetails}`;
         }
 
-        console.error("Error del servidor:", {
-          status: response.status,
-          message: errorData.message,
-          errors: errorData.errors,
-          fullError: errorData,
-        });
-
         throw new Error(fixMojibake(errorMessage));
       }
 
@@ -260,6 +278,7 @@ class ApiClient {
   handleUnauthorized() {
     this.clearAccessToken();
     localStorage.removeItem("user");
+    clearDevRefreshToken();
     // Redirigir al login
     window.location.href = "/login";
   }

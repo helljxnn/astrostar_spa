@@ -38,7 +38,7 @@ const generatePaymentsData = (paymentsData) => {
 
   // Procesar datos reales de pagos
   if (paymentsData && Array.isArray(paymentsData)) {
-    paymentsData.forEach((payment, index) => {
+    paymentsData.forEach((payment) => {
       // Intentar múltiples campos de fecha
       const paymentDate = new Date(
         payment.createdAt ||
@@ -51,7 +51,6 @@ const generatePaymentsData = (paymentsData) => {
 
       // Verificar que la fecha sea válida
       if (isNaN(paymentDate.getTime())) {
-        console.warn("⚠️ Fecha inválida en pago:", payment);
         return;
       }
 
@@ -94,17 +93,10 @@ const generatePaymentsData = (paymentsData) => {
           paymentsByMonth[monthIndex].rechazados++;
         } else {
           // Si no reconocemos el estado, contar como pendiente
-          console.warn(
-            "⚠️ Estado no reconocido:",
-            status,
-            "contando como pendiente",
-          );
           paymentsByMonth[monthIndex].pendientes++;
         }
       }
     });
-  } else {
-    console.warn("⚠️ paymentsData no es un array válido:", paymentsData);
   }
 
   // Convertir a array
@@ -135,11 +127,9 @@ const PaymentsGraphic = () => {
         const generatedData = generatePaymentsData(response.data.payments);
         setData(generatedData);
       } else {
-        console.warn("⚠️ No se pudieron obtener datos de pagos:", response);
         setData([]);
       }
-    } catch (error) {
-      console.error("❌ Error al cargar datos de pagos:", error);
+    } catch (_error) {
       setData([]);
     } finally {
       setLoading(false);

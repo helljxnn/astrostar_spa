@@ -53,7 +53,7 @@ const PrivateRoute = ({
 }) => {
   // ── Todos los hooks al inicio (reglas de React Hooks) ──
   const { isAuthenticated, userRole, isLoading, user } = useAuth();
-  const { hasPermission, hasModuleAccess, loading, isAdmin } = usePermissions();
+  const { hasPermission, hasModuleAccess, loading, isAdmin, permissions } = usePermissions();
 
   // Calcular role antes de llamar al hook (el hook usa estos valores internamente)
   const normalizedRole = (user?.role?.name || user?.rol || userRole || "").toString().toLowerCase();
@@ -83,7 +83,7 @@ const PrivateRoute = ({
   }
 
   // Mostrar loading mientras se cargan los permisos
-  if ((module || action !== "Ver") && loading) {
+  if ((module || action !== "Ver") && (loading || permissions === null)) {
     return <Loader isVisible={true} message="Cargando permisos..." />;
   }
 
