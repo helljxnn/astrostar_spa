@@ -1,7 +1,11 @@
-﻿import React, { useState, useRef, useEffect, useMemo } from "react";
+﻿import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Filter } from "lucide-react";
-import { FaCalendarAlt, FaBriefcase, FaExclamationCircle } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaBriefcase,
+  FaExclamationCircle,
+} from "react-icons/fa";
 import { format } from "date-fns";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import {
@@ -13,18 +17,46 @@ import {
 import ScheduleModal from "./components/EmployeesScheduleModal";
 import ScheduleDetailsModal from "./components/ScheduleDetailsModal";
 import CancelScheduleModal from "./components/CancelScheduleModal";
-import { BaseCalendar, CalendarReportGenerator } from "../../../../../../../shared/components/Calendar";
+import {
+  BaseCalendar,
+  CalendarReportGenerator,
+} from "../../../../../../../shared/components/Calendar";
 import { useEmployeeSchedules } from "./hooks/useEmployeeSchedules";
 
 // Importaciones para permisos
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions";
 
 const ROLE_COLORS = {
-  entrenador: { from: "#effbf2", to: "#d9f3d7", dot: "#4ade80", tagBg: "rgba(199, 249, 204, 0.25)" },
-  fisioterapia: { from: "#f5f3ff", to: "#e3deff", dot: "#8b5cf6", tagBg: "rgba(224, 215, 255, 0.3)" },
-  nutricion: { from: "#f0fbff", to: "#d6f0ff", dot: "#38bdf8", tagBg: "rgba(209, 242, 255, 0.35)" },
-  psicologia: { from: "#fff5fb", to: "#ffe1f0", dot: "#fb7185", tagBg: "rgba(252, 225, 243, 0.3)" },
-  default: { from: "#f5f6ff", to: "#e3e8ff", dot: "#6366f1", tagBg: "rgba(229, 237, 255, 0.45)" },
+  entrenador: {
+    from: "#effbf2",
+    to: "#d9f3d7",
+    dot: "#4ade80",
+    tagBg: "rgba(199, 249, 204, 0.25)",
+  },
+  fisioterapia: {
+    from: "#f5f3ff",
+    to: "#e3deff",
+    dot: "#8b5cf6",
+    tagBg: "rgba(224, 215, 255, 0.3)",
+  },
+  nutricion: {
+    from: "#f0fbff",
+    to: "#d6f0ff",
+    dot: "#38bdf8",
+    tagBg: "rgba(209, 242, 255, 0.35)",
+  },
+  psicologia: {
+    from: "#fff5fb",
+    to: "#ffe1f0",
+    dot: "#fb7185",
+    tagBg: "rgba(252, 225, 243, 0.3)",
+  },
+  default: {
+    from: "#f5f6ff",
+    to: "#e3e8ff",
+    dot: "#6366f1",
+    tagBg: "rgba(229, 237, 255, 0.45)",
+  },
 };
 
 const ROLE_LABELS = {
@@ -78,7 +110,6 @@ const BASE_SPECIALTY_FILTERS = Object.entries(SPECIALTY_LABELS).map(
 
 const HEALTH_ROLE_ID = "profesionalsalud";
 
-
 const normalizeRole = (cargo = "") =>
   cargo
     .toLowerCase()
@@ -131,7 +162,6 @@ const scheduleHasNovedad = (schedule = {}) => {
   return false;
 };
 
-
 const formatScheduleTime = (value) => {
   if (!value) return "";
   const date = value instanceof Date ? value : new Date(value);
@@ -164,10 +194,7 @@ const getScheduleDateKey = (schedule = {}) => {
     return toDateKey(startDate);
   }
   const dateRef =
-    schedule.fecha ||
-    schedule.fechaInicio ||
-    schedule.scheduleDate ||
-    null;
+    schedule.fecha || schedule.fechaInicio || schedule.scheduleDate || null;
   return toDateKey(dateRef);
 };
 
@@ -180,6 +207,20 @@ const getEmployeeKey = (schedule = {}) => {
     schedule.title ||
     "";
   return raw.toString().trim().toLowerCase();
+};
+
+const timeToMinutes = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+};
+
+const rangesOverlap = (startA, endA, startB, endB) => {
+  if (startA === null || endA === null || startB === null || endB === null) {
+    return true;
+  }
+  return startA < endB && endA > startB;
 };
 
 const isSchedulePastEditWindow = (schedule = {}) => {
@@ -200,7 +241,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const { hasPermission } = usePermissions();
   const {
     schedules,
-    rawSchedules,
     employees,
     loading,
     loadingEmployees,
@@ -228,14 +268,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [selectedScheduleForAction, setSelectedScheduleForAction] = useState(null);
+  const [selectedScheduleForAction, setSelectedScheduleForAction] =
+    useState(null);
   const canViewSchedules = useMemo(
     () => hasPermission("employeesSchedule", "Ver"),
-    [hasPermission]
-  );
-  const canEditSchedules = useMemo(
-    () => hasPermission("employeesSchedule", "Editar"),
-    [hasPermission]
+    [hasPermission],
   );
   const canCreateSchedules = hasPermission("employeesSchedule", "Crear");
   const canExportSchedules = hasPermission("employeesSchedule", "Ver");
@@ -247,39 +284,36 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         start: s.start instanceof Date ? s.start : new Date(s.start),
         end: s.end instanceof Date ? s.end : new Date(s.end),
       })),
-    [initialSchedules]
+    [initialSchedules],
   );
 
-  const filters = useMemo(
-    () => {
-      if (isEmployeeScope) return [];
+  const filters = useMemo(() => {
+    if (isEmployeeScope) return [];
 
-      const roleFilter = {
-        id: "role",
-        label: "Cargo",
-        field: "roleId",
-        options: BASE_ROLE_FILTERS.map((role) => ({
-          value: role.id,
-          label: role.label,
-        })),
-      };
+    const roleFilter = {
+      id: "role",
+      label: "Cargo",
+      field: "roleId",
+      options: BASE_ROLE_FILTERS.map((role) => ({
+        value: role.id,
+        label: role.label,
+      })),
+    };
 
-      const specialtyFilter = {
-        id: "specialty",
-        label: "Especialidad",
-        field: "specialtyId",
-        options: BASE_SPECIALTY_FILTERS.map((specialty) => ({
-          value: specialty.id,
-          label: specialty.label,
-        })),
-      };
+    const specialtyFilter = {
+      id: "specialty",
+      label: "Especialidad",
+      field: "specialtyId",
+      options: BASE_SPECIALTY_FILTERS.map((specialty) => ({
+        value: specialty.id,
+        label: specialty.label,
+      })),
+    };
 
-      return selectedFilters.role === HEALTH_ROLE_ID
-        ? [roleFilter, specialtyFilter]
-        : [roleFilter];
-    },
-    [isEmployeeScope, selectedFilters.role]
-  );
+    return selectedFilters.role === HEALTH_ROLE_ID
+      ? [roleFilter, specialtyFilter]
+      : [roleFilter];
+  }, [isEmployeeScope, selectedFilters.role]);
 
   const hasFilters = filters.length > 0;
 
@@ -293,10 +327,12 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     loadSchedules({ page: 1 });
   }, [disabled, canViewSchedules, loadSchedules]);
 
-
   const selfEmployee = useMemo(() => {
     if (!isEmployeeScope || !employeeIdFromUser) return null;
-    return employees.find((e) => String(e.value) === String(employeeIdFromUser)) || null;
+    return (
+      employees.find((e) => String(e.value) === String(employeeIdFromUser)) ||
+      null
+    );
   }, [employees, isEmployeeScope, employeeIdFromUser]);
 
   const createDefaultSchedule = ({ start, end } = {}) => {
@@ -305,7 +341,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const defaultEnd = end || new Date(now.getTime() + 60 * 60 * 1000);
 
     return {
-      empleadoId: isEmployeeScope ? (selfEmployee?.value || employeeIdFromUser || "") : "",
+      empleadoId: isEmployeeScope
+        ? selfEmployee?.value || employeeIdFromUser || ""
+        : "",
       empleado: isEmployeeScope ? selfEmployee?.label || "" : "",
       cargo: isEmployeeScope ? selfEmployee?.cargo || "" : "",
       fecha: format(defaultStart, "yyyy-MM-dd"),
@@ -331,18 +369,23 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const startDate = event.start
       ? new Date(event.start)
       : event.fecha
-      ? new Date(`${event.fecha}T${event.horaInicio || "00:00"}`)
-      : new Date();
+        ? new Date(`${event.fecha}T${event.horaInicio || "00:00"}`)
+        : new Date();
     const endDate = event.end
       ? new Date(event.end)
       : event.fecha
-      ? new Date(`${event.fecha}T${event.horaFin || event.horaInicio || "00:00"}`)
-      : startDate;
+        ? new Date(
+            `${event.fecha}T${event.horaFin || event.horaInicio || "00:00"}`,
+          )
+        : startDate;
 
     const payload = {
       id: event.scheduleId || event.id,
       empleadoId: event.empleadoId || event.employeeId || "",
-      empleado: (event.empleado || event.title || "").replace(/^Turno\s*-\s*/i, ""),
+      empleado: (event.empleado || event.title || "").replace(
+        /^Turno\s*-\s*/i,
+        "",
+      ),
       cargo: event.cargo || "",
       fecha: format(startDate, "yyyy-MM-dd"),
       horaInicio: format(startDate, "HH:mm"),
@@ -370,7 +413,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       }`,
       recurrenceLabel: buildRecurrenceLabel(schedule),
       novedades: schedule.novedades || schedule.novedad || [],
-      novedad: schedule.novedad || (Array.isArray(schedule.novedades) ? schedule.novedades[0] : ""),
+      novedad:
+        schedule.novedad ||
+        (Array.isArray(schedule.novedades) ? schedule.novedades[0] : ""),
     };
     setSelectedScheduleForAction(scheduleData);
     setShowDetailsModal(true);
@@ -400,54 +445,82 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   };
 
   const handleSaveFromModal = async (form) => {
-  const payload = {
-    ...form,
-    descripcion: form.descripcion || form.observaciones || "",
-    observaciones: form.descripcion || form.observaciones || "",
-  };
+    const payload = {
+      ...form,
+      descripcion: form.descripcion || form.observaciones || "",
+      observaciones: form.descripcion || form.observaciones || "",
+    };
 
-  const payloadEmployeeKey = (payload.empleadoId || payload.empleado || "")
-    .toString()
-    .trim()
-    .toLowerCase();
-  const payloadDateKey = payload.fecha || toDateKey(payload.start);
+    const payloadEmployeeKey = (payload.empleadoId || payload.empleado || "")
+      .toString()
+      .trim()
+      .toLowerCase();
+    const payloadDateKey = payload.fecha || toDateKey(payload.start);
 
-  if (payloadEmployeeKey && payloadDateKey) {
-    const isConflict = schedules.some((schedule) => {
-      const scheduleEmployeeKey = getEmployeeKey(schedule);
-      if (!scheduleEmployeeKey || scheduleEmployeeKey !== payloadEmployeeKey) return false;
-      const scheduleDateKey = getScheduleDateKey(schedule);
-      if (!scheduleDateKey || scheduleDateKey !== payloadDateKey) return false;
-
-      if (!isNew) {
-        const scheduleId =
-          (schedule.scheduleId || schedule.id || "").toString();
-        const payloadId = (payload.id || "").toString();
-        if (scheduleId && payloadId && scheduleId === payloadId) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-
-    if (isConflict) {
-      showErrorAlert(
-        "Horario duplicado",
-        "Ese empleado ya tiene un horario en ese día."
+    if (payloadEmployeeKey && payloadDateKey) {
+      const payloadStartMinutes = timeToMinutes(
+        payload.horaInicio || formatScheduleTime(payload.start),
       );
-      return;
-    }
-  }
+      const payloadEndMinutes = timeToMinutes(
+        payload.horaFin || formatScheduleTime(payload.end),
+      );
 
-  try {
-    if (isNew) {
-      await createSchedule(payload);
-    } else if (form.id) {
+      const isConflict = schedules.some((schedule) => {
+        const scheduleEmployeeKey = getEmployeeKey(schedule);
+        if (!scheduleEmployeeKey || scheduleEmployeeKey !== payloadEmployeeKey)
+          return false;
+        const scheduleDateKey = getScheduleDateKey(schedule);
+        if (!scheduleDateKey || scheduleDateKey !== payloadDateKey)
+          return false;
+
+        if (!isNew) {
+          const scheduleId = (
+            schedule.scheduleId ||
+            schedule.id ||
+            ""
+          ).toString();
+          const payloadId = (payload.id || "").toString();
+          if (scheduleId && payloadId && scheduleId === payloadId) {
+            return false;
+          }
+        }
+
+        const scheduleStartMinutes = timeToMinutes(
+          schedule.horaInicio || formatScheduleTime(schedule.start),
+        );
+        const scheduleEndMinutes = timeToMinutes(
+          schedule.horaFin || formatScheduleTime(schedule.end),
+        );
+
+        return rangesOverlap(
+          payloadStartMinutes,
+          payloadEndMinutes,
+          scheduleStartMinutes,
+          scheduleEndMinutes,
+        );
+      });
+
+      if (isConflict) {
+        showErrorAlert(
+          "Horario duplicado",
+          "Ese empleado ya tiene un horario que se solapa en ese día.",
+        );
+        return;
+      }
+    }
+
+    try {
+      if (isNew) {
+        await createSchedule(payload);
+      } else if (form.id) {
         await updateSchedule(form.id, payload);
       }
       closeModal();
     } catch (error) {
+      showErrorAlert(
+        "Error",
+        error?.message || "No se pudo guardar el horario.",
+      );
     }
   };
 
@@ -467,14 +540,18 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       await removeSchedule(id);
       closeModal();
     } catch (error) {
+      showErrorAlert(
+        "Error",
+        error?.message || "No se pudo eliminar el horario.",
+      );
     }
   };
 
   const handleNovedadConfirm = async (scheduleWithReason) => {
     if (!scheduleWithReason) return;
-    const payload =
-      scheduleWithReason.cancelPayload ||
-      { motivoCancelacion: scheduleWithReason.motivoCancelacion || "" };
+    const payload = scheduleWithReason.cancelPayload || {
+      motivoCancelacion: scheduleWithReason.motivoCancelacion || "",
+    };
     const payloadWithDate = {
       ...payload,
       fecha:
@@ -486,11 +563,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     try {
       await registerNovelty(
         scheduleWithReason.scheduleId || scheduleWithReason.id,
-        payloadWithDate
+        payloadWithDate,
       );
       setShowCancelModal(false);
       setSelectedScheduleForAction(null);
-    } catch (error) {
+    } catch {
       // Alertas gestionadas en el hook
     }
   };
@@ -499,21 +576,24 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const rep = item?.repeticion || "no";
     const interval = item?.intervalo || item?.customRecurrence?.interval || 1;
     const endDate =
-      item?.customRecurrence?.endDate || item?.customRecurrence?.afterDate || "";
+      item?.customRecurrence?.endDate ||
+      item?.customRecurrence?.afterDate ||
+      "";
 
-    const base = {
-      no: "No se repite",
-      dia: interval > 1 ? `Cada ${interval} dias` : "Cada dia",
-      semana: interval > 1 ? `Cada ${interval} semanas` : "Cada semana",
-      mes: interval > 1 ? `Cada ${interval} meses` : "Cada mes",
-      anio: interval > 1 ? `Cada ${interval} años` : "Cada año",
-      laboral: "Lunes a viernes",
-      personalizado:
-        item?.customRecurrence?.label ||
-        (interval > 1
-          ? `Recurrencia personalizada (cada ${interval} intervalos)`
-          : "Recurrencia personalizada"),
-    }[rep] || "No se repite";
+    const base =
+      {
+        no: "No se repite",
+        dia: interval > 1 ? `Cada ${interval} dias` : "Cada dia",
+        semana: interval > 1 ? `Cada ${interval} semanas` : "Cada semana",
+        mes: interval > 1 ? `Cada ${interval} meses` : "Cada mes",
+        anio: interval > 1 ? `Cada ${interval} años` : "Cada año",
+        laboral: "Lunes a viernes",
+        personalizado:
+          item?.customRecurrence?.label ||
+          (interval > 1
+            ? `Recurrencia personalizada (cada ${interval} intervalos)`
+            : "Recurrencia personalizada"),
+      }[rep] || "No se repite";
 
     return endDate ? `${base} · hasta ${endDate}` : base;
   };
@@ -522,7 +602,10 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     const handleClickOutside = (event) => {
       // Mientras el modal está abierto (portal en body), ignoramos este listener
       if (isModalOpen) return;
-      if (containerRef.current && !containerRef.current.contains(event.target)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
         // comportamiento previo: cerrar si hacían clic fuera del contenedor
         // closeModal(); // ya no es necesario para el modal portaled
       }
@@ -555,7 +638,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const scheduleEvents = useMemo(() => {
     return schedules.map((schedule) => {
       const startDate = schedule.start || getScheduleStartDate(schedule);
-      const date = schedule.fecha || (startDate ? format(startDate, "yyyy-MM-dd") : "");
+      const date =
+        schedule.fecha || (startDate ? format(startDate, "yyyy-MM-dd") : "");
       const timeLabel =
         schedule.horaInicio && schedule.horaFin
           ? `${schedule.horaInicio} - ${schedule.horaFin}`
@@ -568,9 +652,11 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
       const specialtyId = resolveSpecialtyId(
         schedule.specialtyLabel || schedule.specialty || schedule.cargo || "",
       );
-      const colorRoleKey = specialtyId || resolveRoleId(
-        schedule.cargo || schedule.area || schedule.role || schedule.rol,
-      );
+      const colorRoleKey =
+        specialtyId ||
+        resolveRoleId(
+          schedule.cargo || schedule.area || schedule.role || schedule.rol,
+        );
       const colors = getRoleColors(colorRoleKey);
       const title = schedule.empleado
         ? `Turno - ${schedule.empleado}`
@@ -634,7 +720,7 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
         label: "Eliminar",
         onClick: (event) =>
           handleDeleteSchedule(
-            event?.scheduleId || event?.id || event?.extendedProps?.id
+            event?.scheduleId || event?.id || event?.extendedProps?.id,
           ),
         permission: { module: "employeesSchedule", action: "Eliminar" },
         variant: "danger",
@@ -642,7 +728,13 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     }
 
     return actions;
-  }, [hasPermission, openDetailsModal, openModalForEvent, openCancelModal, handleDeleteSchedule]);
+  }, [
+    hasPermission,
+    openDetailsModal,
+    openModalForEvent,
+    openCancelModal,
+    handleDeleteSchedule,
+  ]);
 
   const renderEvent = (event, variant) => {
     if (variant === "grid") {
@@ -662,7 +754,6 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 
   const renderSidebarItem = (event, actions) => {
     const schedule = event?.extendedProps || event;
-    const colors = getRoleColors(schedule.cargo || schedule.area);
     const recurrenceLabel = buildRecurrenceLabel(schedule);
     const visibleActions = filterActionsForSchedule(schedule, actions);
 
@@ -693,13 +784,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
               </div>
             )}
             {event.time && (
-              <div className="text-xs text-gray-600">
-                {event.time}
-              </div>
+              <div className="text-xs text-gray-600">{event.time}</div>
             )}
-            <div className="text-xs text-gray-700">
-              {recurrenceLabel}
-            </div>
+            <div className="text-xs text-gray-700">{recurrenceLabel}</div>
           </div>
         </div>
 
@@ -716,8 +803,8 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
                   action.variant === "danger"
                     ? "text-red-600 hover:bg-red-50"
                     : action.variant === "warning"
-                    ? "text-yellow-600 hover:bg-yellow-50"
-                    : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
+                      ? "text-yellow-600 hover:bg-yellow-50"
+                      : "text-[#B595FF] hover:bg-[#9BE9FF] hover:text-white"
                 }`}
               >
                 {action.label}
@@ -791,7 +878,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
     <div className="space-y-6 font-monserrat p-4" ref={containerRef}>
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Horario de Empleados</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Horario de Empleados
+          </h1>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -906,7 +995,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
             : null
         }
         onCreate={
-          canCreateSchedules ? () => openModalForSlot(createDefaultSchedule()) : null
+          canCreateSchedules
+            ? () => openModalForSlot(createDefaultSchedule())
+            : null
         }
         onDateSelect={
           canCreateSchedules ? (day) => openModalForSlot({ start: day }) : null
@@ -977,8 +1068,3 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
 };
 
 export default EmployeeSchedule;
-
-
-
-
-

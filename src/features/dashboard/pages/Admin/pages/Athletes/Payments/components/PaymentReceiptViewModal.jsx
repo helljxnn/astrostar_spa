@@ -8,11 +8,9 @@ import { FaFileAlt, FaImage } from "react-icons/fa";
  * Enfocado únicamente en mostrar el archivo, sin información redundante
  */
 const PaymentReceiptViewModal = ({ isOpen, onClose, payment, initialTab = "receipt" }) => {
-  if (!isOpen || !payment) return null;
-
-  const receiptUrl = payment.receiptUrl;
+  const receiptUrl = payment?.receiptUrl;
   const hasReceipt = Boolean(receiptUrl);
-  const hasRejection = payment.status === "REJECTED" && (payment.rejectionReason || payment.reason);
+  const hasRejection = payment?.status === "REJECTED" && (payment?.rejectionReason || payment?.reason);
   const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
@@ -20,6 +18,8 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment, initialTab = "recei
       setActiveTab(hasRejection ? initialTab : "receipt");
     }
   }, [isOpen, initialTab, hasRejection]);
+
+  if (!isOpen || !payment) return null;
 
   // Determinar tipo de archivo
   const getFileType = () => {
@@ -179,4 +179,3 @@ const PaymentReceiptViewModal = ({ isOpen, onClose, payment, initialTab = "recei
 };
 
 export default PaymentReceiptViewModal;
-

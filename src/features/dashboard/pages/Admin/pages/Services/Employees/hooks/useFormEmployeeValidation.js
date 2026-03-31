@@ -95,33 +95,25 @@ export const employeeValidationRules = {
     (value) =>
       value?.length < 2 ? "El nombre debe tener al menos 2 caracteres" : "",
     (value) =>
-      !/^[\p{L}\p{M}\s]+$/u.test(value || "")
-        ? "Solo se permiten letras"
-        : "",
+      !/^[\p{L}\p{M}\s]+$/u.test(value || "") ? "Solo se permiten letras" : "",
   ],
   lastName: [
     (value) => (!value?.trim() ? "El apellido es obligatorio" : ""),
     (value) =>
       value?.length < 2 ? "El apellido debe tener al menos 2 caracteres" : "",
     (value) =>
-      !/^[\p{L}\p{M}\s]+$/u.test(value || "")
-        ? "Solo se permiten letras"
-        : "",
+      !/^[\p{L}\p{M}\s]+$/u.test(value || "") ? "Solo se permiten letras" : "",
   ],
   middleName: [
     (value) => {
       if (!value) return ""; // Campo opcional
-      return !/^[\p{L}\p{M}\s]*$/u.test(value)
-        ? "Solo se permiten letras"
-        : "";
+      return !/^[\p{L}\p{M}\s]*$/u.test(value) ? "Solo se permiten letras" : "";
     },
   ],
   secondLastName: [
     (value) => {
       if (!value) return ""; // Campo opcional
-      return !/^[\p{L}\p{M}\s]*$/u.test(value)
-        ? "Solo se permiten letras"
-        : "";
+      return !/^[\p{L}\p{M}\s]*$/u.test(value) ? "Solo se permiten letras" : "";
     },
   ],
   email: [
@@ -150,6 +142,10 @@ export const employeeValidationRules = {
     (value) =>
       value?.length < 6
         ? "La identificación debe tener al menos 6 caracteres"
+        : "",
+    (value) =>
+      value?.length > 10
+        ? "La identificación no puede exceder 10 caracteres"
         : "",
     (value) =>
       !/^[0-9A-Za-z\-]+$/.test(value || "")

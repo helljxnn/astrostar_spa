@@ -31,7 +31,7 @@ import {
 import { usePermissions } from "../../../../../../../../../shared/hooks/usePermissions";
 
 /**
- * Calendario de eventos del dashboard basado en el calendario gen?rico BaseCalendar
+ * Calendario de eventos del dashboard basado en el calendario generico BaseCalendar
  * Reemplaza completamente el calendario original con funcionalidad mejorada
  */
 const EventsCalendar = forwardRef(function EventsCalendar(
@@ -98,12 +98,12 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     event: null,
   });
 
-  // Transformar eventos para el calendario gen?rico
+  // Transformar eventos para el calendario generico
   const transformedEvents = useMemo(() => {
     return transformEventsForBaseCalendar(propEvents);
   }, [propEvents]);
 
-  // Crear filtros para el calendario gen?rico
+  // Crear filtros para el calendario generico
   const calendarFilters = useMemo(() => {
     return createCalendarFilters(referenceData);
   }, [referenceData]);
@@ -111,7 +111,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   // Exponer funciones al componente padre mediante ref
   useImperativeHandle(ref, () => ({
     changeMonth: (newDate) => {
-      // Esta funcionalidad ser? manejada por el BaseCalendar internamente
+      // Esta funcionalidad ser" manejada por el BaseCalendar internamente
     },
     getCurrentDate: () => new Date(), // El BaseCalendar maneja esto internamente
   }));
@@ -185,7 +185,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
   // Manejar click en evento (delegado al BaseCalendar)
   const handleEventClick = useCallback((event, jsEvent) => {
-    // Si el click fue en un bot?n, no hacer nada
+    // Si el click fue en un boton, no hacer nada
     if (
       jsEvent &&
       (jsEvent.target.tagName === "BUTTON" || jsEvent.target.closest("button"))
@@ -196,7 +196,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     openEventInViewMode(event);
   }, [openEventInViewMode]);
 
-  // Manejar selecci?n de fecha/slot para crear evento
+  // Manejar seleccion de fecha/slot para crear evento
   const handleDateSelect = useCallback(
     (slotInfo) => {
       // Validar permisos
@@ -205,7 +205,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         return;
       }
 
-      // Validar que la fecha seleccionada sea al menos 1 semana de anticipaci?n
+      // Validar que la fecha seleccionada sea al menos 1 semana de anticipacin
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const oneWeekFromToday = new Date(today);
@@ -227,7 +227,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
       const selectedDate = new Date(dateToUse);
 
-      // Primero verificar si la fecha seleccionada es v?lida
+      // Primero verificar si la fecha seleccionada es valida
       if (isNaN(selectedDate.getTime())) {
         showErrorAlert(
           "Error de fecha",
@@ -260,7 +260,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       // Formatear fechas y horas
       const formatDateLocal = (date) => {
         if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-          // Si la fecha no es v?lida, usar la fecha m?nima permitida (1 semana desde hoy)
+          // Si la fecha no es valida, usar la fecha minima permitida (1 semana desde hoy)
           const oneWeekFromToday = new Date();
           oneWeekFromToday.setDate(oneWeekFromToday.getDate() + 7);
           const year = oneWeekFromToday.getFullYear();
@@ -279,7 +279,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
       const formatTime = (date) => {
         if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-          // Si la fecha no es v?lida, usar hora por defecto
+          // Si la fecha no es valida, usar hora por defecto
           return "09:00";
         }
         return date.toTimeString().slice(0, 5); // HH:MM
@@ -288,7 +288,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       let startDate = dateToUse; // Ya es una fecha v?lida
       let endDate = dateToUse; // Para eventos de un d?a, usar la misma fecha por defecto
 
-      // Si slotInfo tiene end y es v?lido, usarlo
+      // Si slotInfo tiene end y es valido, usarlo
       if (slotInfo.end && slotInfo.end instanceof Date) {
         const endDateCandidate = new Date(slotInfo.end);
         if (!isNaN(endDateCandidate.getTime())) {
@@ -311,7 +311,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     [hasPermission],
   );
 
-  // Manejar selecci?n de slot (para crear evento)
+  // Manejar seleccion de slot (para crear evento)
   const handleSlotSelect = useCallback(
     (slotInfo) => {
       handleDateSelect(slotInfo);
@@ -454,7 +454,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             return;
           }
 
-          // Verificar si el evento est? finalizado
+          // Verificar si el evento esta finalizado
           const estadoEvento =
             dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
           const now = new Date();
@@ -631,7 +631,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     ],
   );
 
-  // Manejar acciones de inscripci?n
+  // Manejar acciones de inscripcion
   const handleRegistrationAction = useCallback(
     (action, participantType) => {
       const dashboardEvent = registrationModal.event;
@@ -692,7 +692,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         if (isNew) {
           await onCreateEvent(transformedData);
         } else {
-          // Pasar las categor?as originales para verificar cambios
+          // Pasar las categorias originales para verificar cambios
           const originalCategoryIds = selectedEvent?.categoryIds || [];
           await onUpdateEvent(
             transformedData.id,
@@ -737,14 +737,14 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     setDayEventsModal({ isOpen: false, date: null, events: [] });
   }, []);
 
-  // Manejar creaci?n de evento desde el bot?n del calendario
+  // Manejar creacion de evento desde el boton del calendario
   const handleCreate = useCallback(() => {
     if (!hasPermission("eventsManagement", "Crear")) {
       showErrorAlert("Sin permisos", "No tienes permisos para crear eventos");
       return;
     }
 
-    // Validar que se pueda crear eventos con al menos 1 semana de anticipaci?n
+    // Validar que se pueda crear eventos con al menos 1 semana de anticipacin
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const oneWeekFromToday = new Date(today);
@@ -772,7 +772,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   }, [openEventInViewMode]);
 
   /**
-   * Manejar edici?n de evento desde la sidebar
+   * Manejar edicion de evento desde la sidebar
    */
   const handleEditEvent = useCallback(
     (eventItem) => {
@@ -788,7 +788,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         return;
       }
 
-      // Verificar si el evento est? finalizado
+      // Verificar si el evento esta finalizado
       const estadoEvento =
         dashboardEvent.estadoOriginal || dashboardEvent.estado || "";
       if (estadoEvento === "Finalizado" || estadoEvento === "finalizado") {
@@ -848,7 +848,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
   );
 
   /**
-   * Manejar eliminaci?n de evento desde la sidebar
+   * Manejar eliminacion de evento desde la sidebar
    */
   const handleDeleteEvent = useCallback(
     async (eventItem) => {
@@ -908,7 +908,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
    */
   const renderSidebarItem = useCallback(
     (event, actions) => {
-      // Filtrar acciones bas?ndose en shouldShow
+      // Filtrar acciones basindose en shouldShow
       const filteredActions = actions.filter((action) => {
         if (action.shouldShow) {
           return action.shouldShow(event);
@@ -916,7 +916,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         return true; // Si no tiene shouldShow, mostrar por defecto
       });
 
-      // Separar acciones de gesti?n y de inscripci?n
+      // Separar acciones de gestion y de inscripcion
       const managementActions = filteredActions.filter(
         (action) => action.group === "management",
       );
@@ -975,7 +975,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             </div>
           </div>
 
-          {/* Botones de gesti?n (Ver, Editar, Eliminar) */}
+          {/* Botones de gestion (Ver, Editar, Eliminar) */}
           {managementActions.length > 0 && (
             <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
               {managementActions.map((action, actionIndex) => {
@@ -1015,7 +1015,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             </div>
           )}
 
-          {/* Botones de inscripci?n (Inscribir, Ver Inscritos) */}
+          {/* Botones de inscripcion (Inscribir, Ver Inscritos) */}
           {registrationActions.length > 0 && (
             <div className="flex gap-1 flex-wrap pt-2 border-t border-gray-100">
               {registrationActions.map((action, actionIndex) => (
@@ -1045,7 +1045,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     [canDeleteEvent, getDeleteDisabledReason],
   );
 
-  // Configuraci?n de acciones de la barra lateral
+  // Configuracin de acciones de la barra lateral
   const sidebarActions = useMemo(
     () => [
       ...(hasPermission("eventsManagement", "Ver")
@@ -1132,7 +1132,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         onClick: (event) => {
           const dashboardEvent = event.extendedProps?.dashboardEvent || event;
 
-          // Determinar el tipo de participante seg?n el tipo de evento
+          // Determinar el tipo de participante segun el tipo de evento
           const getParticipantType = () => {
             switch (dashboardEvent.tipo) {
               case "Festival":
@@ -1148,7 +1148,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
           const participantType = getParticipantType();
 
-          // Abrir directamente el modal de inscripci?n
+          // Abrir directamente el modal de inscripcion
           setRegistrationFormModal({
             isOpen: true,
             eventName: dashboardEvent.title,
@@ -1162,7 +1162,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         permission: { module: "eventsManagement", action: "Inscribir" },
         variant: "success",
         group: "registration",
-        // Ocultar el bot?n si el evento est? finalizado o cancelado
+        // Ocultar el boton si el evento esta finalizado o cancelado
         shouldShow: (event) => {
           const dashboardEvent = event.extendedProps?.dashboardEvent || event;
           const estadoEvento =
@@ -1183,7 +1183,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         onClick: (event) => {
           const dashboardEvent = event.extendedProps?.dashboardEvent || event;
 
-          // Determinar el tipo de participante seg?n el tipo de evento
+          // Determinar el tipo de participante segun el tipo de evento
           const getParticipantType = () => {
             switch (dashboardEvent.tipo) {
               case "Festival":
@@ -1316,7 +1316,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         )}
       </AnimatePresence>
 
-      {/* Modal de opciones de inscripci?n */}
+      {/* Modal de opciones de inscripcion */}
       <AnimatePresence>
         {registrationModal.isOpen && (
           <EventRegistrationOptionsModal
@@ -1337,7 +1337,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         )}
       </AnimatePresence>
 
-      {/* Modal de inscripci?n de participantes */}
+      {/* Modal de inscripcion de participantes */}
       <AnimatePresence>
         {inscriptionModal.isOpen &&
           inscriptionModal.action === "viewRegistrations" && (
@@ -1351,7 +1351,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
           )}
       </AnimatePresence>
 
-      {/* Modal de inscripci?n con formulario */}
+      {/* Modal de inscripcion con formulario */}
       <AnimatePresence>
         {registrationFormModal.isOpen && (
           <TeamRegistrationFormModal
@@ -1370,7 +1370,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         )}
       </AnimatePresence>
 
-      {/* Modal de eventos del d?a */}
+      {/* Modal de eventos del dia */}
       <AnimatePresence>
         {dayEventsModal.isOpen && (
           <DayEventsModal

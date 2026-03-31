@@ -86,7 +86,11 @@ const ProviderModal = ({
           tipoEntidad: value,
           nit: providerToEdit?.nit || "",
           tipoDocumento:
-            value === "natural" ? providerToEdit?.tipoDocumento || "" : "",
+            value === "natural"
+              ? providerToEdit?.documentTypeId
+                ? providerToEdit.documentTypeId.toString()
+                : providerToEdit?.tipoDocumento || ""
+              : "",
         }));
       } else {
         originalHandleChange(name, value);
@@ -134,7 +138,11 @@ const ProviderModal = ({
       let validationError = "";
       if (validationRule) {
         for (const rule of validationRule) {
-          validationError = rule(normalizedNit, currentValues, filteredDocumentTypes);
+          validationError = rule(
+            normalizedNit,
+            currentValues,
+            filteredDocumentTypes,
+          );
           if (validationError) break;
         }
       }
@@ -160,7 +168,10 @@ const ProviderModal = ({
           currentValues.tipoEntidad,
         );
 
-        if (isClosingRef.current || requestId !== nitValidationRequestRef.current) {
+        if (
+          isClosingRef.current ||
+          requestId !== nitValidationRequestRef.current
+        ) {
           return;
         }
 
@@ -175,8 +186,7 @@ const ProviderModal = ({
             return nextErrors;
           });
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [
       values,
@@ -264,7 +274,9 @@ const ProviderModal = ({
     return asyncErrors[fieldName] || errors[fieldName] || null;
   };
   const isFieldTouched = (fieldName) => {
-    return touched[fieldName] && Boolean(asyncErrors[fieldName] || errors[fieldName]);
+    return (
+      touched[fieldName] && Boolean(asyncErrors[fieldName] || errors[fieldName])
+    );
   };
   // Estado para mantener el tipoDocumento original durante la carga
   const [originalTipoDocumento, setOriginalTipoDocumento] = React.useState("");
@@ -276,7 +288,9 @@ const ProviderModal = ({
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
         tipoDocumento: isNaturalProvider
-          ? providerToEdit.tipoDocumento || providerToEdit.documentTypeId || ""
+          ? providerToEdit.documentTypeId
+            ? providerToEdit.documentTypeId.toString()
+            : providerToEdit.tipoDocumento || ""
           : "",
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
@@ -288,8 +302,11 @@ const ProviderModal = ({
       };
       // Guardar el tipoDocumento original con más información de debug
       // Guardar tanto tipoDocumento como documentTypeId por si acaso
+      // Priorizar documentTypeId (número) sobre tipoDocumento (código como "CC")
       const originalDocType = isNaturalProvider
-        ? providerToEdit.tipoDocumento || providerToEdit.documentTypeId || ""
+        ? providerToEdit.documentTypeId
+          ? providerToEdit.documentTypeId.toString()
+          : providerToEdit.tipoDocumento || ""
         : "";
       setOriginalTipoDocumento(originalDocType);
       // Si es persona natural y tiene tipoDocumento, asegurarse de que se mantenga
@@ -337,20 +354,20 @@ const ProviderModal = ({
   const handleSubmit = async () => {
     // Marcar todos los campos como tocados para mostrar errores
     touchAllFields();
-    
+
     // Validar todos los campos
     const hasValidationErrors = !validateAllFields();
-    
+
     // Si hay errores de validación, NO hacer nada (sin alert, sin acción)
     if (hasValidationErrors) {
       return; // Simplemente retornar sin hacer nada
     }
-    
+
     // Verificar si hay errores en el estado actual
     if (Object.keys(errors).length > 0 || Object.keys(asyncErrors).length > 0) {
       return; // No hacer nada si hay errores
     }
-    
+
     // Validar unicidad de NIT/documento antes del envío
     if (values.nit && !errors.nit) {
       try {
@@ -366,10 +383,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, nit: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     // Validar unicidad de razón social/nombre antes del envío (solo para jurídicas)
     if (
       values.razonSocial &&
@@ -393,10 +409,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, razonSocial: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     // Validar unicidad de email antes del envío
     if (values.correo && !errors.correo) {
       try {
@@ -411,10 +426,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, correo: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -428,7 +442,7 @@ const ProviderModal = ({
         return;
       }
     }
-    
+
     try {
       const providerData = {
         ...values,
@@ -531,8 +545,7 @@ const ProviderModal = ({
         if (response.success && response.data) {
           setEmployeeDocumentTypes(response.data);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     };
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
     // Cargar inmediatamente cuando se abre el modal si es necesario
@@ -576,48 +589,25 @@ const ProviderModal = ({
       employeeDocumentTypes.length > 0 &&
       values.tipoEntidad === "natural"
     ) {
-// Buscar coincidencia por múltiples criterios
+      const originalStr = originalTipoDocumento.toString();
+
+      // Buscar coincidencia por id, value, name o label
       const matchingType = employeeDocumentTypes.find((type) => {
-        const typeId = type.id?.toString();
-        const typeValue = type.value?.toString();
-        const typeName = type.name;
-        const typeLabel = type.label;
-        const originalStr = originalTipoDocumento.toString();
         return (
-          typeId === originalStr ||
-          typeValue === originalStr ||
-          typeName === originalStr ||
-          typeLabel === originalStr
+          type.id?.toString() === originalStr ||
+          type.value?.toString() === originalStr ||
+          type.name === originalStr ||
+          type.label === originalStr
         );
       });
+
       if (matchingType) {
-        // Priorizar value, luego id
         const valueToSet = matchingType.value || matchingType.id.toString();
-// Solo actualizar si el valor actual es diferente para evitar loops
         if (values.tipoDocumento !== valueToSet) {
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         }
-      } else {
-// Intentar buscar por coincidencia parcial o similar
-        const partialMatch = employeeDocumentTypes.find((type) => {
-          const originalLower = originalTipoDocumento.toString().toLowerCase();
-          return (
-            type.name?.toLowerCase().includes(originalLower) ||
-            type.label?.toLowerCase().includes(originalLower) ||
-            originalLower.includes(type.name?.toLowerCase()) ||
-            originalLower.includes(type.label?.toLowerCase())
-          );
-        });
-        if (partialMatch) {
-          const valueToSet = partialMatch.value || partialMatch.id.toString();
-setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
-        } else if (!values.tipoDocumento && employeeDocumentTypes.length > 0) {
-          const fallbackValue =
-            employeeDocumentTypes[0].value ||
-            employeeDocumentTypes[0].id.toString();
-          setValues((prev) => ({ ...prev, tipoDocumento: fallbackValue }));
-        }
       }
+      // Si ya hay un valor válido en tipoDocumento (ID numérico), no sobreescribir
     }
   }, [
     employeeDocumentTypes,
@@ -907,12 +897,13 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                 label="Correo Electrónico"
                 name="correo"
                 type="email"
-                placeholder="correo@empresa.com (opcional)"
+                placeholder="correo@empresa.com"
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleCustomBlur}
                 error={getCombinedError("correo")}
                 touched={isFieldTouched("correo")}
+                required
               />
             </motion.div>
             <motion.div>
@@ -984,9 +975,7 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                 value={values.descripcion}
                 onChange={(name, value) => {
                   // Limitar a 500 caracteres
-                  if (value.length <= 500) {
-                    handleChange({ target: { name, value } });
-                  }
+                  handleChange(name, value.slice(0, 500));
                 }}
                 onBlur={handleBlur}
                 error={getCombinedError("descripcion")}
@@ -1024,4 +1013,3 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
   return createPortal(modalContent, document.body);
 };
 export default ProviderModal;
-

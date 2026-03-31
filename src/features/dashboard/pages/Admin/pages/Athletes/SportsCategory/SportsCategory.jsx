@@ -326,14 +326,15 @@ const SportsCategory = () => {
                 columns={reportColumns}
               />
             </PermissionGuard>
-
-            <button
-              onClick={handleCreate}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaPlus /> Crear Categoría
-            </button>
+            <PermissionGuard module={MODULE_NAME} action="Crear">
+              <button
+                onClick={handleCreate}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaPlus /> Crear Categoría
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>

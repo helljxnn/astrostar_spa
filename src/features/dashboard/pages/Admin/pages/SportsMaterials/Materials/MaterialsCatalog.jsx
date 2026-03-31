@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+﻿import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   FaPlus,
   FaMinusCircle,
@@ -28,12 +28,16 @@ import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginat
 
 const MaterialsCatalog = () => {
   const { hasPermission } = usePermissions();
-  
-  // Hook para obtener datos completos para reportes
-  const { getReportData } = useReportDataWithService(
-    materialsService.getAllForReport.bind(materialsService)
+
+  // Estabilizar la referencia para que useCallback del hook no se recree en cada render
+  const getAllForReport = useCallback(
+    (params) => materialsService.getAllForReport(params),
+    [],
   );
-  
+
+  // Hook para obtener datos completos para reportes
+  const { getReportData } = useReportDataWithService(getAllForReport);
+
   const [materials, setMaterials] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -64,7 +68,8 @@ const MaterialsCatalog = () => {
 
       if (response.success) {
         setMaterials(response.data || []);
-        const total = parseInt(response.pagination?.total) || response.data?.length || 0;
+        const total =
+          parseInt(response.pagination?.total) || response.data?.length || 0;
         setTotalRows(total);
       }
     } catch (error) {
@@ -77,6 +82,8 @@ const MaterialsCatalog = () => {
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = materials;
+  const getOriginalMaterial = (materialLike) =>
+    materials.find((m) => m.id === materialLike?.id) || materialLike;
 
   const handleCreate = () => {
     if (!hasPermission("materials", "Crear")) {
@@ -98,7 +105,7 @@ const MaterialsCatalog = () => {
       );
       return;
     }
-    setSelectedMaterial(material);
+    setSelectedMaterial(getOriginalMaterial(material));
     setIsModalOpen(true);
   };
 
@@ -152,7 +159,7 @@ const MaterialsCatalog = () => {
       );
       return;
     }
-    setSelectedMaterial(material);
+    setSelectedMaterial(getOriginalMaterial(material));
     setIsViewModalOpen(true);
   };
 
@@ -227,8 +234,7 @@ const MaterialsCatalog = () => {
       return;
     }
     // Buscar el material original sin formatear
-    const originalMaterial = materials.find((m) => m.id === material.id);
-    setSelectedMaterial(originalMaterial || material);
+    setSelectedMaterial(getOriginalMaterial(material));
     setIsDischargeModalOpen(true);
   };
 
@@ -281,8 +287,7 @@ const MaterialsCatalog = () => {
       );
       return;
     }
-    const originalMaterial = materials.find((m) => m.id === material.id);
-    setSelectedMaterial(originalMaterial || material);
+    setSelectedMaterial(getOriginalMaterial(material));
     setIsTransferModalOpen(true);
   };
 
@@ -336,8 +341,7 @@ const MaterialsCatalog = () => {
       return;
     }
 
-    const originalMaterial = materials.find((m) => m.id === material.id);
-    setSelectedMaterial(originalMaterial || material);
+    setSelectedMaterial(getOriginalMaterial(material));
     setIsAssignmentsModalOpen(true);
   };
 
@@ -355,9 +359,9 @@ const MaterialsCatalog = () => {
         m.categoria.length > 30
           ? m.categoria.substring(0, 30) + "..."
           : m.categoria,
-      stockFundacion: formatNumber(stockFundacion),
-      stockEventos: formatNumber(stockEventos),
-      stockTotal: formatNumber(stockTotal),
+      stockFundacionDisplay: formatNumber(stockFundacion),
+      stockEventosDisplay: formatNumber(stockEventos),
+      stockTotalDisplay: formatNumber(stockTotal),
       // Preservar valores numéricos originales para validaciones
       stockTotalNumeric: stockTotal,
       stockEventosNumeric: stockEventos,
@@ -368,42 +372,27 @@ const MaterialsCatalog = () => {
     };
   });
 
-  // Datos para reporte
-  const reportData = displayData.map((m) => {
-    const stockFundacion = m.stockFundacion || 0;
-    const stockEventos = m.stockEventos || 0;
-    const stockTotal = m.stockTotal || stockFundacion + stockEventos;
-
-    return {
-      nombre: m.nombre,
-      categoria: m.categoria,
-      stockFundacion: stockFundacion,
-      stockEventos: stockEventos,
-      stockTotal: stockTotal,
-      estado: m.estado,
-      descripcion: m.descripcion || "N/A",
-    };
-  });
-
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
       { search: searchTerm }, // Filtros actuales
-      (materials) => materials.map((m) => { // Mapper de datos
-        const stockFundacion = m.stockFundacion || 0;
-        const stockEventos = m.stockEventos || 0;
-        const stockTotal = m.stockTotal || stockFundacion + stockEventos;
+      (materials) =>
+        materials.map((m) => {
+          // Mapper de datos
+          const stockFundacion = m.stockFundacion || 0;
+          const stockEventos = m.stockEventos || 0;
+          const stockTotal = m.stockTotal || stockFundacion + stockEventos;
 
-        return {
-          nombre: m.nombre,
-          categoria: m.categoria,
-          stockFundacion: stockFundacion,
-          stockEventos: stockEventos,
-          stockTotal: stockTotal,
-          estado: m.estado,
-          descripcion: m.descripcion || "N/A",
-        };
-      })
+          return {
+            nombre: m.nombre,
+            categoria: m.categoria,
+            stockFundacion: stockFundacion,
+            stockEventos: stockEventos,
+            stockTotal: stockTotal,
+            estado: m.estado,
+            descripcion: m.descripcion || "N/A",
+          };
+        }),
     );
   };
 
@@ -421,8 +410,8 @@ const MaterialsCatalog = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-                if (!e.target.value) {
+                // Siempre volver a la primera página al cambiar búsqueda
+                if (currentPage !== 1) {
                   setCurrentPage(1);
                 }
               }}
@@ -471,9 +460,9 @@ const MaterialsCatalog = () => {
           dataPropertys: [
             "nombreTruncated",
             "categoriaTruncated",
-            "stockFundacion",
-            "stockEventos",
-            "stockTotal",
+            "stockFundacionDisplay",
+            "stockEventosDisplay",
+            "stockTotalDisplay",
           ],
           state: true,
           stateMap: {
@@ -495,7 +484,8 @@ const MaterialsCatalog = () => {
                     "p-2 rounded-full bg-green-50 border border-green-200 text-green-600 hover:bg-green-100 hover:text-green-700 hover:border-green-300 transition-colors",
                   label: <FaCalendarAlt />,
                   title: "Ver Asignaciones a Eventos",
-                  show: () => hasPermission("materials", "Ver Asignaciones del Material"),
+                  show: () =>
+                    hasPermission("materials", "Ver Asignaciones del Material"),
                 },
                 {
                   onClick: handleTransfer,
@@ -629,5 +619,3 @@ const MaterialsCatalog = () => {
 };
 
 export default MaterialsCatalog;
-
-

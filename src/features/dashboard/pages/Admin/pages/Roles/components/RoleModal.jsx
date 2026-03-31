@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -34,6 +34,11 @@ const isProtectedRole = (roleName = "") =>
   PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
 
 const moduleCategories = buildRoleModuleCategories();
+const validModuleKeys = new Set(
+  Object.values(moduleCategories)
+    .flat()
+    .map((module) => module.key),
+);
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
@@ -58,6 +63,40 @@ const actions = [
 const getAllowedActionsForModule = (moduleKey) => {
   const allowedNames = getModuleAllowedActions(moduleKey);
   return actions.filter((action) => allowedNames.includes(action.name));
+};
+
+const sanitizeRolePermissions = (permissions = {}) => {
+  if (!permissions || typeof permissions !== "object") {
+    return {};
+  }
+
+  return Object.entries(permissions).reduce(
+    (accumulatedPermissions, [moduleKey, modulePermissions]) => {
+      if (!validModuleKeys.has(moduleKey)) {
+        return accumulatedPermissions;
+      }
+
+      if (!modulePermissions || typeof modulePermissions !== "object") {
+        accumulatedPermissions[moduleKey] = {};
+        return accumulatedPermissions;
+      }
+
+      const allowedActions = new Set(getModuleAllowedActions(moduleKey));
+      const sanitizedModulePermissions = Object.entries(modulePermissions).reduce(
+        (moduleAccumulator, [actionName, value]) => {
+          if (allowedActions.has(actionName) && typeof value === "boolean") {
+            moduleAccumulator[actionName] = value;
+          }
+          return moduleAccumulator;
+        },
+        {},
+      );
+
+      accumulatedPermissions[moduleKey] = sanitizedModulePermissions;
+      return accumulatedPermissions;
+    },
+    {},
+  );
 };
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
@@ -122,7 +161,9 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         id: roleData.id,
         nombre: roleData.name || roleData.nombre || "",
         descripcion: roleData.description || roleData.descripcion || "",
-        permisos: roleData.permissions || roleData.permisos || {},
+        permisos: sanitizeRolePermissions(
+          roleData.permissions || roleData.permisos || {},
+        ),
       });
 
       // Limpiar validacion de nombres al cargar datos
@@ -257,7 +298,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Submit
   const handleSubmit = async () => {
     const isValid = validateAllFields();
-    const hasPermissions = Object.values(formData.permisos).some(
+    const sanitizedPermissions = sanitizeRolePermissions(formData.permisos);
+    const hasPermissions = Object.values(sanitizedPermissions).some(
       (modulePerms) => Object.values(modulePerms).some(Boolean),
     );
 
@@ -289,15 +331,15 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     const roleToSave = {
       name: formData.nombre,
       description: formData.descripcion,
-      permissions: formData.permisos,
+      permissions: sanitizedPermissions,
     };
 
     try {
       // Alerta de confirmacion si se esta editando
       if (roleData) {
         const result = await showConfirmAlert(
-          "¿Estás seguro de actualizar este rol?",
-          "Los cambios se guardarán y no se podrán deshacer fácilmente.",
+          "Estas seguro de actualizar este rol?",
+          "Los cambios se guardaran y no se podran deshacer facilmente.",
         );
 
         if (!result.isConfirmed) return;
@@ -319,13 +361,17 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (!roleData) {
         setFormData({ nombre: "", descripcion: "", permisos: {} });
       }
-    } catch (error) {
-      console.error("Error en handleSubmit:", error);
-    }
 
-    setPermissionError("");
-    clearValidation();
-    onClose();
+      setPermissionError("");
+      clearValidation();
+      onClose();
+    } catch (error) {
+      showErrorAlert(
+        "Error al guardar",
+        error?.message || "No se pudo guardar el rol. Intenta nuevamente.",
+      );
+      return;
+    }
   };
 
   const totalPermissions = Object.values(formData.permisos).reduce(

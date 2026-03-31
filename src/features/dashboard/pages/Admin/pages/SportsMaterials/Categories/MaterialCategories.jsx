@@ -245,8 +245,8 @@ const MaterialCategories = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-                if (!e.target.value) {
+                // Siempre volver a la primera pagina al cambiar busqueda
+                if (currentPage !== 1) {
                   setCurrentPage(1);
                 }
               }}

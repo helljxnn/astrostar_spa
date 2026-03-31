@@ -1,4 +1,4 @@
-﻿import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 
 const hasDoubleSpaces = (value) => /\s{2,}/.test(value);
 const isOnlyLetters = (value) => /^[\p{L}\p{M}\s]+$/u.test(value);
@@ -168,6 +168,7 @@ export const providerValidationRules = {
     (value) => value?.trim() && hasDoubleSpaces(value) ? "No se permiten espacios dobles." : '',
   ],
   correo: [
+    (value) => !value?.trim() ? "El correo electrónico es obligatorio." : '',
     (value) => value?.trim() && !isValidEmail(value.trim()) ? "El correo electrónico no es válido." : '',
     (value) => value?.trim() && value.trim().length > 150 ? `El correo no puede exceder 150 caracteres (${value.trim().length}/150).` : ''
   ],
@@ -352,3 +353,4 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
     updateOriginalValues
   };
 };
+

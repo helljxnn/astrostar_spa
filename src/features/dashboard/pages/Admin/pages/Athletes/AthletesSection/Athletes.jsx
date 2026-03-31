@@ -93,7 +93,7 @@ const Athletes = () => {
       refresh({
         page: 1, // Resetear a página 1 en búsquedas
         limit: searchTerm.trim() ? 100 : PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm.trim() ? "" : searchTerm,
+        search: searchTerm.trim(),
       });
     };
     
@@ -890,6 +890,5 @@ const Athletes = () => {
 };
 
 export default Athletes;
-
 
 

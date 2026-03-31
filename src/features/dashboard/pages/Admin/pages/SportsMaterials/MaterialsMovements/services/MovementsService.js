@@ -25,7 +25,7 @@ class MovementsService {
       search: search.toString().trim(),
     };
 
-    if (materialId) queryParams.material_id = materialId;
+    if (materialId) queryParams.materialId = materialId;
     if (tipo) queryParams.tipo = tipo;
     if (dateFrom) queryParams.dateFrom = dateFrom;
     if (dateTo) queryParams.dateTo = dateTo;
@@ -119,7 +119,7 @@ class MovementsService {
     }
 
     const response = await apiClient.get(
-      `${this.endpoint}/material/${materialId}`,
+      `${this.endpoint}/history/${materialId}`,
     );
 
     if (response.success && response.data) {

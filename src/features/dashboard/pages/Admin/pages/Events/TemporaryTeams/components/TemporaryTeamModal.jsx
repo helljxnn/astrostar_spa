@@ -160,7 +160,7 @@ const TemporaryTeamModal = ({
           setDuplicateWarnings((prev) => ({ ...prev, trainer: null }));
         }
       } catch (error) {
-        console.error("? Error validando entrenador:", error);
+        console.error("Error validating trainer:", error);
       }
     };
 
@@ -191,6 +191,14 @@ const TemporaryTeamModal = ({
         return;
       }
 
+      // No llamar al API si el nombre no cumple la longitud mínima (evita error 400 del backend)
+      if (
+        formData.nombre.trim().length < 3 ||
+        formData.nombre.trim().length > 100
+      ) {
+        return;
+      }
+
       try {
         const result = await TeamsService.checkNameAvailability(
           formData.nombre,
@@ -215,7 +223,7 @@ const TemporaryTeamModal = ({
           });
         }
       } catch (error) {
-        console.error("? Error validando nombre:", error);
+        console.error("Error validating name:", error);
       }
     };
 
@@ -315,14 +323,15 @@ const TemporaryTeamModal = ({
           setDuplicateWarnings((prev) => ({ ...prev, athletes: null }));
         }
       } catch (error) {
-        console.error("❌ Error validando deportistas:", error);
+        console.error("Error validating athletes:", error);
       }
     };
 
     validateAthletes();
   }, [selectedAthletes, teamToEdit?.id, isInitialLoad, teamToEdit]);
 
-  const shouldShowCategoryField = teamType === "temporal" || teamType === "fundacion"; // CAMBIO: Mostrar campo de categoría para ambos tipos
+  const shouldShowCategoryField =
+    teamType === "temporal" || teamType === "fundacion"; // CAMBIO: Mostrar campo de categoría para ambos tipos
   const shouldShowSecondTrainer = teamType === "fundacion";
 
   // Cargar categorías deportivas cuando se necesiten
@@ -573,7 +582,6 @@ const TemporaryTeamModal = ({
         // const hasMixedCategories = athletes.some(
         //   (athlete) => athlete.categoria !== firstCategory,
         // );
-
         // if (hasMixedCategories) {
         //   showErrorAlert(
         //     "Categorías mixtas no permitidas",
@@ -679,7 +687,6 @@ const TemporaryTeamModal = ({
       // const hasMixedCategories = selectedAthletes.some(
       //   (athlete) => athlete.categoria !== firstCategory,
       // );
-
       // if (hasMixedCategories) {
       //   showErrorAlert(
       //     "Error de validación",
@@ -728,7 +735,7 @@ const TemporaryTeamModal = ({
 
       onClose();
     } catch (error) {
-      console.error("❌ Error al guardar equipo:", error);
+      console.error("Error saving team:", error);
       showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };

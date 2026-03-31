@@ -40,7 +40,7 @@ const Event = () => {
   // Ref para controlar el calendario
   const calendarRef = useRef(null);
 
-  // Estados para modales de inscripci?n
+  // Estados para modales de inscripcion
   const [inscriptionModal, setInscriptionModal] = useState({
     isOpen: false,
     eventName: "",
@@ -63,7 +63,7 @@ const Event = () => {
   const canExportEvents = hasPermission("eventsManagement", "Ver");
 
   /**
-   * Manejar creaci?n exitosa de evento
+   * Manejar creacion exitosa de evento
    */
   const handleEventCreated = () => {
     setIsModalOpen(false);
@@ -72,7 +72,7 @@ const Event = () => {
   };
 
   /**
-   * Manejar apertura del modal de creaci?n desde el calendario
+   * Manejar apertura del modal de creacion desde el calendario
    */
   const handleCreateFromCalendar = () => {
     setSelectedEvent(null);
@@ -82,7 +82,7 @@ const Event = () => {
   };
 
   /**
-   * Manejar b?squeda
+   * Manejar busqueda
    */
   const handleSearch = (event) => {
     const term = event.target ? event.target.value : event;
@@ -97,10 +97,10 @@ const Event = () => {
   };
 
   /**
-   * Manejar generaci?n de reportes
+   * Manejar generacin de reportes
    */
   const handleGenerateReport = (reportData) => {
-    // Aqu? se implementar?a la l?gica de generaci?n de reportes
+    // Aqu" se implementara la lgica de generacin de reportes
   };
 
   /**
@@ -111,7 +111,7 @@ const Event = () => {
       if (isNew) {
         await createEvent(eventData);
       } else {
-        // Pasar las categor?as originales para verificar cambios
+        // Pasar las categorias originales para verificar cambios
         const originalCategoryIds = selectedEvent?.categoryIds || [];
         await updateEvent(eventData.id, eventData, originalCategoryIds);
       }
@@ -123,7 +123,7 @@ const Event = () => {
     }
   };
 
-  // Cerrar modales de inscripci?n
+  // Cerrar modales de inscripcion
   const closeAllModals = () => {
     setInscriptionModal({
       isOpen: false,
@@ -143,7 +143,7 @@ const Event = () => {
     });
   };
 
-  // Configuraci?n de filtros
+  // Configuracin de filtros
   const filters = [
     {
       id: "status",
@@ -171,14 +171,14 @@ const Event = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header con controles gen?ricos */}
+      {/* Header con controles genericos */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-800">Eventos</h1>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-          {/* Buscador gen?rico */}
+          {/* Buscador generico */}
           <div className="w-full sm:w-auto sm:min-w-[200px]">
             <SearchInput
               placeholder="Buscar eventos..."
@@ -188,9 +188,9 @@ const Event = () => {
             />
           </div>
 
-          {/* Botones de acci?n */}
+          {/* Botones de accion */}
           <div className="flex flex-wrap gap-2">
-            {/* Bot?n crear evento */}
+            {/* Botn crear evento */}
             {canCreateEvents && (
               <motion.button
                 onClick={handleCreateFromCalendar}
@@ -203,7 +203,7 @@ const Event = () => {
               </motion.button>
             )}
 
-            {/* Bot?n de filtros */}
+            {/* Botn de filtros */}
             <motion.button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-2 border-2 border-gray-200 rounded-lg font-medium hover:border-[#B595FF] transition-all duration-300 ${
@@ -218,7 +218,7 @@ const Event = () => {
               <span>Filtros</span>
             </motion.button>
 
-            {/* Generador de reportes gen?rico */}
+            {/* Generador de reportes generico */}
             {canExportEvents && (
               <CalendarReportGenerator
                 events={events}
@@ -322,7 +322,7 @@ const Event = () => {
         />
       )}
 
-      {/* Modales de inscripci?n */}
+      {/* Modales de inscripcion */}
       {inscriptionModal.isOpen &&
         inscriptionModal.action === "viewRegistrations" && (
           <ViewRegistrationsModal

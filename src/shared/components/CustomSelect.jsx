@@ -19,7 +19,7 @@ const CustomSelect = ({
 
   // Filtrar opciones basado en búsqueda
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    option.label.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   // Encontrar la opción seleccionada
@@ -69,7 +69,7 @@ const CustomSelect = ({
   return (
     <div
       ref={selectRef}
-      className={`custom-select-container ${isOpen ? "open" : ""} ${className}`}
+      className={`relative custom-select-container ${isOpen ? "open" : ""} ${className}`}
     >
       {/* Select Button */}
       <button
@@ -77,39 +77,50 @@ const CustomSelect = ({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         onBlur={handleBlur}
         disabled={disabled}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
         className={`
-          w-full p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent
-          text-left bg-white flex items-center justify-between
-          ${
-            error
-              ? "border-red-300 focus:ring-red-500"
-              : "border-gray-300 focus:ring-purple-500"
-          }
-          ${
-            disabled
-              ? "bg-gray-100 cursor-not-allowed"
-              : "cursor-pointer hover:border-gray-400"
-          }
+          p-3 border rounded-xl transition-all duration-200 focus:ring-2 focus:border-transparent bg-white
+          ${error ? "border-red-300 focus:ring-red-500" : "border-gray-300 focus:ring-purple-500"}
+          ${disabled ? "bg-gray-100 cursor-not-allowed" : "cursor-pointer hover:border-gray-400"}
           ${isOpen ? "ring-2 ring-purple-500 border-transparent" : ""}
         `}
       >
-        <span className={selectedOption ? "text-gray-900" : "text-gray-500"}>
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            flex: 1,
+            textAlign: "left",
+          }}
+          className={selectedOption ? "text-gray-900" : "text-gray-500"}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <svg
-          className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          style={{
+            width: 20,
+            height: 20,
+            flexShrink: 0,
+            marginLeft: 8,
+            color: "#9ca3af",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
           fill="none"
           stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
@@ -175,4 +186,3 @@ const CustomSelect = ({
 };
 
 export default CustomSelect;
-

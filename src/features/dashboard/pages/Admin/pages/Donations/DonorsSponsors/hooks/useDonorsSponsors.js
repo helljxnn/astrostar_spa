@@ -13,7 +13,7 @@ export const useDonorsSponsors = () => {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({
     page: 1,
-    limit: 10,
+    limit: 7,
     total: 0,
     totalPages: 0,
   });
@@ -31,64 +31,61 @@ export const useDonorsSponsors = () => {
     paginationRef.current = pagination;
   }, [pagination]);
 
-  const loadDonorsSponsors = useCallback(
-    async (params = {}) => {
-      setLoading(true);
-      setError(null);
+  const loadDonorsSponsors = useCallback(async (params = {}) => {
+    setLoading(true);
+    setError(null);
 
-      const { page, limit, ...filters } = params;
-      filtersRef.current = { ...filtersRef.current, ...filters };
+    const { page, limit, ...filters } = params;
+    filtersRef.current = { ...filtersRef.current, ...filters };
 
-      const pageToUse = page ?? paginationRef.current.page;
-      const limitToUse = limit ?? paginationRef.current.limit;
+    const pageToUse = page ?? paginationRef.current.page;
+    const limitToUse = limit ?? paginationRef.current.limit;
 
-      try {
-        const response = await donorsSponsorsService.getAll({
-          page: pageToUse,
-          limit: limitToUse,
-          ...filtersRef.current,
-        });
+    try {
+      const response = await donorsSponsorsService.getAll({
+        page: pageToUse,
+        limit: limitToUse,
+        ...filtersRef.current,
+      });
 
-        if (response.success) {
-          const rawData = Array.isArray(response.data)
-            ? response.data
-            : Array.isArray(response.data?.data)
+      if (response.success) {
+        const rawData = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.data)
             ? response.data.data
             : [];
-          const normalized = rawData.map((record) => ({
-            ...record,
-            id: record.id || record._id || record.identificacion || "",
-          }));
-          setDonorsSponsors(normalized);
-          const nextPagination = response.pagination
-            ? { ...paginationRef.current, ...response.pagination }
-            : {
-                ...paginationRef.current,
-                page: pageToUse,
-                limit: limitToUse,
-                total: rawData.length || paginationRef.current.total,
-              };
+        const normalized = rawData.map((record) => ({
+          ...record,
+          id: record.id || record._id || record.identificacion || "",
+        }));
+        setDonorsSponsors(normalized);
+        const nextPagination = response.pagination
+          ? { ...paginationRef.current, ...response.pagination }
+          : {
+              ...paginationRef.current,
+              page: pageToUse,
+              limit: limitToUse,
+              total: rawData.length || paginationRef.current.total,
+            };
 
-          setPagination((prev) =>
-            JSON.stringify(prev) === JSON.stringify(nextPagination)
-              ? prev
-              : nextPagination
-          );
-        } else {
-          throw new Error(response.message || "Error cargando registros");
-        }
-      } catch (err) {
-        setError(err.message);
-        showErrorAlert(
-          "Error",
-          err.message || "No se pudieron cargar los registros."
+        setPagination((prev) =>
+          JSON.stringify(prev) === JSON.stringify(nextPagination)
+            ? prev
+            : nextPagination,
         );
-      } finally {
-        setLoading(false);
+      } else {
+        throw new Error(response.message || "Error cargando registros");
       }
-    },
-    []
-  );
+    } catch (err) {
+      setError(err.message);
+      showErrorAlert(
+        "Error",
+        err.message || "No se pudieron cargar los registros.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const loadReferenceData = useCallback(async () => {
     try {
@@ -96,8 +93,7 @@ export const useDonorsSponsors = () => {
       if (response.success) {
         setReferenceData(response.data || {});
       }
-    } catch (err) {
-    }
+    } catch (err) {}
   }, []);
 
   const createDonorSponsor = useCallback(
@@ -108,23 +104,20 @@ export const useDonorsSponsors = () => {
         if (response.success) {
           showSuccessAlert(
             "Registro creado",
-            response.message || "El registro se creó correctamente."
+            response.message || "El registro se creó correctamente.",
           );
           await loadDonorsSponsors({ page: 1 });
           return response.data;
         }
         throw new Error(response.message || "No se pudo crear el registro.");
       } catch (err) {
-        showErrorAlert(
-          "Error",
-          err.message || "No se pudo crear el registro."
-        );
+        showErrorAlert("Error", err.message || "No se pudo crear el registro.");
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [loadDonorsSponsors]
+    [loadDonorsSponsors],
   );
 
   const updateDonorSponsor = useCallback(
@@ -135,23 +128,25 @@ export const useDonorsSponsors = () => {
         if (response.success) {
           showSuccessAlert(
             "Registro actualizado",
-            response.message || "El registro se actualizó correctamente."
+            response.message || "El registro se actualizó correctamente.",
           );
           await loadDonorsSponsors();
           return response.data;
         }
-        throw new Error(response.message || "No se pudo actualizar el registro.");
+        throw new Error(
+          response.message || "No se pudo actualizar el registro.",
+        );
       } catch (err) {
         showErrorAlert(
           "Error",
-          err.message || "No se pudo actualizar el registro."
+          err.message || "No se pudo actualizar el registro.",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [loadDonorsSponsors]
+    [loadDonorsSponsors],
   );
 
   const deleteDonorSponsor = useCallback(
@@ -168,14 +163,14 @@ export const useDonorsSponsors = () => {
       } catch (err) {
         showErrorAlert(
           "Error",
-          err.message || "No se pudo eliminar el registro."
+          err.message || "No se pudo eliminar el registro.",
         );
         throw err;
       } finally {
         setLoading(false);
       }
     },
-    [loadDonorsSponsors]
+    [loadDonorsSponsors],
   );
 
   const changeStatus = useCallback(
@@ -185,38 +180,53 @@ export const useDonorsSponsors = () => {
         if (response.success) {
           showSuccessAlert(
             "Estado actualizado",
-            response.message || "Estado actualizado correctamente."
+            response.message || "Estado actualizado correctamente.",
           );
           await loadDonorsSponsors();
           return response.data;
         }
         throw new Error(response.message || "No se pudo actualizar el estado.");
       } catch (err) {
-        showErrorAlert("Error", err.message || "No se pudo actualizar el estado");
+        showErrorAlert(
+          "Error",
+          err.message || "No se pudo actualizar el estado",
+        );
         throw err;
       }
     },
-    [loadDonorsSponsors]
+    [loadDonorsSponsors],
   );
 
-  const checkIdentificationAvailability = useCallback(async (identification, excludeId = null) => {
-    try {
-      return await donorsSponsorsService.checkIdentificationAvailability(
-        identification,
-        excludeId
-      );
-    } catch (err) {
-      return { available: false, message: "Error verificando identificaci\u00f3n" };
-    }
-  }, []);
+  const checkIdentificationAvailability = useCallback(
+    async (identification, excludeId = null) => {
+      try {
+        return await donorsSponsorsService.checkIdentificationAvailability(
+          identification,
+          excludeId,
+        );
+      } catch (err) {
+        return {
+          available: false,
+          message: "Error verificando identificaci\u00f3n",
+        };
+      }
+    },
+    [],
+  );
 
-  const checkEmailAvailability = useCallback(async (email, excludeId = null) => {
-    try {
-      return await donorsSponsorsService.checkEmailAvailability(email, excludeId);
-    } catch (err) {
-      return { available: false, message: "Error verificando correo" };
-    }
-  }, []);
+  const checkEmailAvailability = useCallback(
+    async (email, excludeId = null) => {
+      try {
+        return await donorsSponsorsService.checkEmailAvailability(
+          email,
+          excludeId,
+        );
+      } catch (err) {
+        return { available: false, message: "Error verificando correo" };
+      }
+    },
+    [],
+  );
 
   const changePage = useCallback((newPage) => {
     setPagination((prev) => ({ ...prev, page: newPage }));
@@ -236,12 +246,7 @@ export const useDonorsSponsors = () => {
     if (isAuthenticated) {
       loadDonorsSponsors();
     }
-  }, [
-    isAuthenticated,
-    loadDonorsSponsors,
-    pagination.page,
-    pagination.limit,
-  ]);
+  }, [isAuthenticated, loadDonorsSponsors, pagination.page, pagination.limit]);
 
   return {
     donorsSponsors,
@@ -262,4 +267,3 @@ export const useDonorsSponsors = () => {
 };
 
 export default useDonorsSponsors;
-
