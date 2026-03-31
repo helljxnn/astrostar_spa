@@ -21,7 +21,8 @@ const DOCUMENT_RULES = {
     max: 10,
     pattern: /^[0-9]+$/,
     sanitize: sanitizeDigits,
-    error: "La cédula de extranjería debe tener entre 6 y 10 dígitos numéricos.",
+    error:
+      "La cédula de extranjería debe tener entre 6 y 10 dígitos numéricos.",
   },
   Pasaporte: {
     min: 6,
@@ -79,6 +80,7 @@ const initialState = {
   numeroDocumento: "",
   ciudad: "",
   pais: "",
+  direccion: "",
   mensaje: "",
   autorizacion: "Si",
 };
@@ -121,6 +123,7 @@ const DonorSection = () => {
         return "";
       case "ciudad":
       case "pais":
+      case "direccion":
         if (!val) return "Campo obligatorio.";
         return "";
       default:
@@ -162,7 +165,7 @@ const DonorSection = () => {
         numeroDocumento: validate(
           "numeroDocumento",
           nextSnapshot.numeroDocumento,
-          nextSnapshot
+          nextSnapshot,
         ),
       }));
     }
@@ -184,6 +187,7 @@ const DonorSection = () => {
       "numeroDocumento",
       "ciudad",
       "pais",
+      "direccion",
       "nombreCompleto",
       "autorizacion",
     ];
@@ -193,7 +197,10 @@ const DonorSection = () => {
       if (msg) newErrors[f] = msg;
     });
     setErrors(newErrors);
-    setTouched((prev) => ({ ...prev, ...Object.fromEntries(fields.map((f) => [f, true])) }));
+    setTouched((prev) => ({
+      ...prev,
+      ...Object.fromEntries(fields.map((f) => [f, true])),
+    }));
     return Object.keys(newErrors).length === 0;
   };
 
@@ -249,22 +256,34 @@ const DonorSection = () => {
             <FaHandHoldingHeart /> Donante / Donaciones
           </div>
           <h2 className="text-4xl font-extrabold text-gray-900 leading-tight">
-            En la Fundación Manuela Vanegas trabajamos cada día para formar niñas a través del deporte y la educación en valores.
+            En la Fundación Manuela Vanegas trabajamos cada día para formar
+            niñas a través del deporte y la educación en valores.
           </h2>
           <p className="text-gray-600 text-lg">
-            Tu donación nos ayuda a fortalecer nuestros programas, crear espacios seguros y brindar más oportunidades a quienes más lo necesitan. Haz parte de este propósito. Dona hoy y construyamos juntos un mejor futuro.
+            Tu donación nos ayuda a fortalecer nuestros programas, crear
+            espacios seguros y brindar más oportunidades a quienes más lo
+            necesitan. Haz parte de este propósito. Dona hoy y construyamos
+            juntos un mejor futuro.
           </p>
           <p className="text-gray-700 font-semibold">
-            Con tu apoyo nos ayudas a construir este sueño, pero además las donaciones a la Fundación Manuela Vanegas son deducibles de impuestos.
+            Con tu apoyo nos ayudas a construir este sueño, pero además las
+            donaciones a la Fundación Manuela Vanegas son deducibles de
+            impuestos.
           </p>
           <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-sm text-gray-700">
-            <strong>Nota:</strong> si ya has hecho tu donación y quieres solicitar tu certificado, por favor contáctanos:{" "}
-            <a href="mailto:fundacionmanuelavanegas@gmail.com" className="text-primary-purple font-semibold">
+            <strong>Nota:</strong> si ya has hecho tu donación y quieres
+            solicitar tu certificado, por favor contáctanos:{" "}
+            <a
+              href="mailto:fundacionmanuelavanegas@gmail.com"
+              className="text-primary-purple font-semibold"
+            >
               fundacionmanuelavanegas@gmail.com
             </a>
           </div>
           {errors.submit && (
-            <p className="text-red-600 text-sm font-semibold">{errors.submit}</p>
+            <p className="text-red-600 text-sm font-semibold">
+              {errors.submit}
+            </p>
           )}
           {showSuccess && (
             <div className="text-green-700 bg-green-50 border border-green-200 px-4 py-3 rounded-xl">
@@ -284,6 +303,7 @@ const DonorSection = () => {
         </motion.div>
 
         <motion.form
+          id="formulario-donacion"
           onSubmit={handleSubmit}
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -384,6 +404,18 @@ const DonorSection = () => {
           </div>
 
           <FormField
+            label="Dirección"
+            name="direccion"
+            value={formData.direccion}
+            onChange={(e) => handleChange("direccion", e.target.value)}
+            onBlur={() => handleBlur("direccion")}
+            error={errors.direccion}
+            touched={touched.direccion}
+            placeholder="Ej: Calle 10 # 5-20"
+            required
+          />
+
+          <FormField
             label="Cuéntanos (opcional)"
             name="mensaje"
             type="textarea"
@@ -393,17 +425,25 @@ const DonorSection = () => {
 
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-700">
-              ¿Autorizas a la Fundación a contactarte para avanzar en el proceso?
+              ¿Autorizas a la Fundación a contactarte para avanzar en el
+              proceso?
             </p>
             <div className="flex gap-4">
               {["Si", "No"].map((opt) => (
-                <label key={opt} className="flex items-center gap-2 text-sm text-gray-700">
+                <label
+                  key={opt}
+                  className="flex items-center gap-2 text-sm text-gray-700"
+                >
                   <input
                     type="radio"
                     name="autorizacion"
                     value={opt}
-                    checked={formData.autorizacion.toLowerCase() === opt.toLowerCase()}
-                    onChange={(e) => handleChange("autorizacion", e.target.value)}
+                    checked={
+                      formData.autorizacion.toLowerCase() === opt.toLowerCase()
+                    }
+                    onChange={(e) =>
+                      handleChange("autorizacion", e.target.value)
+                    }
                     onBlur={() => handleBlur("autorizacion")}
                   />
                   {opt === "Si" ? "Sí" : "No"}
@@ -423,8 +463,8 @@ const DonorSection = () => {
             {isSubmitting
               ? "Enviando..."
               : cooldown > 0
-              ? `Espera ${cooldown}s`
-              : "Enviar solicitud"}
+                ? `Espera ${cooldown}s`
+                : "Enviar solicitud"}
           </button>
         </motion.form>
       </div>
@@ -433,6 +473,3 @@ const DonorSection = () => {
 };
 
 export default DonorSection;
-
-
-

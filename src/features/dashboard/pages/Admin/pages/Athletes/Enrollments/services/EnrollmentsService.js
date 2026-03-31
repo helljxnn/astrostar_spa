@@ -304,6 +304,40 @@ let errorMessage = error.message;
     }
   }
 
+  async previewLegacyImportBatch(payload) {
+    try {
+      const response = await apiClient.post(
+        `${this.enrollmentsEndpoint}/legacy-import/batch/preview`,
+        payload
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        message: response.message || "Preview generado correctamente",
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createLegacyImportBatch(payload) {
+    try {
+      const response = await apiClient.post(
+        `${this.enrollmentsEndpoint}/legacy-import/batch`,
+        payload
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        message: response.message || "Importación completada correctamente",
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   /**
    * Activa una matrícula cuando se aprueba el pago inicial
    * @param {number} enrollmentId - ID de la matrícula

@@ -17,6 +17,7 @@ import {
   showSuccessAlert,
   showErrorAlert,
   showDeleteAlert,
+  showConfirmAlert,
 } from "../../../../../../../../shared/utils/alerts.js";
 import {
   findCategoryByName,
@@ -80,8 +81,8 @@ const parentescoFrontendToBackend = {
   Otro: "Other",
 };
 
-const normalizeDocumentTypeName = (value) =>
-  String(value || "")
+const normalizeDocumentTypeName = (documentTypeName) =>
+  String(documentTypeName || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
@@ -873,11 +874,27 @@ const AthleteModal = ({
       } else {
         // No se envía parentesco cuando no hay acudiente
       }
-      // Incluir isScholarship siempre (solo en edición)
+
+      athleteData.isScholarship = values.isScholarship === true;
+
       if (isEditing) {
-        athleteData.isScholarship = values.isScholarship === true;
-      }
-      if (isEditing) {
+        const fullName =
+          `${values.firstName || ""} ${values.middleName || ""} ${values.lastName || ""} ${values.secondLastName || ""}`
+            .replace(/\s+/g, " ")
+            .trim();
+        const confirmResult = await showConfirmAlert(
+          "¿Guardar cambios?",
+          `¿Deseas actualizar la información de ${fullName || "la deportista"}?`,
+          {
+            confirmButtonText: "Sí, actualizar",
+            cancelButtonText: "Cancelar",
+          },
+        );
+
+        if (!confirmResult.isConfirmed) {
+          return;
+        }
+
         // Detectar si cambió el email
         const emailChanged = athleteToEdit.email !== values.email.trim();
         const updateData = {
@@ -1386,6 +1403,31 @@ showErrorAlert("Error", error.message);
                 </div>
               )}
 
+              <div className={isEditing ? "" : "md:col-span-2"}>
+                <div className="rounded-xl border border-[#ddd1ff] bg-[#f7f3ff] px-3 py-2.5">
+                  <label className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="isScholarship"
+                      checked={values.isScholarship === true}
+                      onChange={(e) =>
+                        handleChange("isScholarship", e.target.checked)
+                      }
+                      className="mt-1 h-4 w-4 rounded border-[#bca7ff] text-[#8f74e8] focus:ring-[#bca7ff]"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold leading-5 text-[#6f57c7]">
+                        Deportista becada
+                      </p>
+                      <p className="text-[11px] leading-4 text-[#7f6abf]">
+                        Exenta de mensualidades y pagos de matrícula mientras la
+                        beca esté activa.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -1599,7 +1641,7 @@ showErrorAlert("Error", error.message);
                                    `${athleteToEdit.guardian.firstName} ${athleteToEdit.guardian.lastName}`.trim();
                           }
                           
-                          return "Acudiente seleccionado";
+                            return "Acudiente seleccionado";
                         })()
                       : !hasDateOfBirth 
                         ? "Primero ingresa la fecha de nacimiento"

@@ -122,10 +122,6 @@ const UserModal = ({
       resetForm();
       onClose();
     } catch (error) {
-      console.error(
-        `Error al ${isEditing ? "actualizar" : "crear"} usuario:`,
-        error
-      );
       showErrorAlert(
         "Error",
         error.message ||

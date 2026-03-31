@@ -58,12 +58,7 @@ const AthletesSection = () => {
       // Usar el nuevo método del DashboardService
       try {
         paymentsResponse = await DashboardService.getPaymentsDashboardData();
-      } catch (error) {
-        console.warn(
-          "⚠️ DashboardService.getPaymentsDashboardData falló:",
-          error,
-        );
-
+      } catch (_error) {
         // Fallback: intentar con paymentsService
         try {
           const fallbackResponse = await paymentsService.getAllForReport();
@@ -82,9 +77,7 @@ const AthletesSection = () => {
               },
             };
           }
-        } catch (fallbackError) {
-          console.warn("⚠️ Fallback también falló:", fallbackError);
-        }
+        } catch (_fallbackError) {}
       }
 
       let attendanceResponse = {
@@ -96,9 +89,7 @@ const AthletesSection = () => {
 
       try {
         attendanceResponse = await DashboardService.getAttendanceData();
-      } catch (error) {
-        console.warn("⚠️ Error obteniendo datos de asistencia:", error);
-      }
+      } catch (_error) {}
 
       // Procesar datos de matrículas
       if (enrollmentsResponse.success && enrollmentsResponse.data) {
@@ -129,11 +120,6 @@ const AthletesSection = () => {
           expiredEnrollments: vencidas,
           pendingEnrollments: pendientes,
         });
-      } else {
-        console.warn(
-          "⚠️ No se pudieron obtener datos de matrículas:",
-          enrollmentsResponse,
-        );
       }
 
       // Procesar datos de deportistas por categoría
@@ -160,11 +146,6 @@ const AthletesSection = () => {
         });
 
         setCategoryStats({ infantil, preJuvenil, juvenil });
-      } else {
-        console.warn(
-          "⚠️ No se pudieron obtener datos de deportistas:",
-          athletesResponse,
-        );
       }
 
       // Procesar datos de pagos
@@ -180,10 +161,6 @@ const AthletesSection = () => {
           totalPayments: stats.total || 0,
         });
       } else {
-        console.warn(
-          "⚠️ No se pudieron obtener datos de pagos:",
-          paymentsResponse,
-        );
         setPaymentsStats({
           newPayments: 0,
           totalPayments: 0,
@@ -204,18 +181,33 @@ const AthletesSection = () => {
           totalRecords: stats.totalRecords || 0,
         });
       } else {
-        console.warn(
-          "⚠️ No se pudieron obtener datos de asistencia:",
-          attendanceResponse,
-        );
         setAttendanceStats({
           averageAttendance: 0,
           attendanceRate: 0,
           totalRecords: 0,
         });
       }
-    } catch (error) {
-      console.error("❌ Error al cargar datos del dashboard:", error);
+    } catch (_error) {
+      setKpis({
+        totalAthletes: 0,
+        activeEnrollments: 0,
+        expiredEnrollments: 0,
+        pendingEnrollments: 0,
+      });
+      setCategoryStats({
+        infantil: 0,
+        preJuvenil: 0,
+        juvenil: 0,
+      });
+      setPaymentsStats({
+        newPayments: 0,
+        totalPayments: 0,
+      });
+      setAttendanceStats({
+        averageAttendance: 0,
+        attendanceRate: 0,
+        totalRecords: 0,
+      });
     } finally {
       setLoading(false);
     }

@@ -11,7 +11,12 @@ export const generateFallbackPDF = (events, options = {}) => {
       title = "Reporte",
       fileName = "reporte.pdf",
       entityName = "eventos",
+      customFields = [],
     } = options;
+
+    const hasCustomFields = customFields.length > 0;
+    const resolveCustomField = (event, key) =>
+      event[key] ?? event.extendedProps?.[key] ?? null;
 
     // Crear documento básico
     const doc = new jsPDF();
@@ -43,109 +48,120 @@ export const generateFallbackPDF = (events, options = {}) => {
       doc.text(`${index + 1}. ${titulo}`, 20, yPos);
       yPos += lineHeight;
 
-      // Detalles - soportar múltiples estructuras de datos
-      const fechaInicio =
-        formatDate(event.fechaInicio || event.date || event.start) ||
-        "Sin fecha";
-      const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
-      const horaInicio =
-        event.horaInicio ||
-        event.time ||
-        event.extendedProps?.horaInicio ||
-        extractTime(event.start) ||
-        "Sin hora";
-      const horaFin =
-        event.horaFin ||
-        event.extendedProps?.horaFin ||
-        extractTime(event.end) ||
-        horaInicio;
-      const estado =
-        event.estadoOriginal ||
-        event.estado ||
-        event.extendedProps?.estadoOriginal ||
-        event.status ||
-        "Sin estado";
-      const ubicacion =
-        event.ubicacion ||
-        event.extendedProps?.ubicacion ||
-        event.location ||
-        "Sin ubicación";
-
-      doc.text(
-        `   Fecha: ${fechaInicio}${fechaFin !== fechaInicio ? ` - ${fechaFin}` : ""}`,
-        20,
-        yPos,
-      );
-      yPos += lineHeight;
-      doc.text(`   Hora: ${horaInicio} - ${horaFin}`, 20, yPos);
-      yPos += lineHeight;
-      doc.text(`   Estado: ${estado}`, 20, yPos);
-      yPos += lineHeight;
-      doc.text(`   Ubicación: ${ubicacion}`, 20, yPos);
-      yPos += lineHeight;
-
-      // Información adicional si existe
-      const tipo = event.tipo || event.extendedProps?.tipo || event.type;
-      if (tipo) {
-        doc.text(`   Tipo: ${tipo}`, 20, yPos);
-        yPos += lineHeight;
-      }
-
-      // Categorías deportivas (múltiples)
-      const categoriasDeportivas =
-        event.categoriasDeportivas ||
-        event.extendedProps?.categoriasDeportivas ||
-        "";
-      if (categoriasDeportivas) {
-        doc.text(`   Categorías: ${categoriasDeportivas}`, 20, yPos);
-        yPos += lineHeight;
-      }
-
-      const telefono =
-        event.telefono || event.extendedProps?.telefono || event.phone;
-      if (telefono) {
-        doc.text(`   Teléfono: ${telefono}`, 20, yPos);
-        yPos += lineHeight;
-      }
-
-      // Descripción
-      const descripcion = event.descripcion || event.description || "";
-      if (descripcion) {
-        // Dividir descripción en líneas si es muy larga
-        const maxWidth = 170;
-        const lines = doc.splitTextToSize(
-          `   Descripción: ${descripcion}`,
-          maxWidth,
-        );
-        lines.forEach((line) => {
-          if (yPos > pageHeight - 30) {
-            doc.addPage();
-            yPos = 20;
+      if (hasCustomFields) {
+        // Renderizar solo los campos personalizados definidos
+        customFields.forEach(({ key, label }) => {
+          const value = resolveCustomField(event, key);
+          if (value !== null && value !== undefined && value !== "") {
+            doc.text(`   ${label}: ${value}`, 20, yPos);
+            yPos += lineHeight;
           }
-          doc.text(line, 20, yPos);
-          yPos += lineHeight;
         });
-      }
+      } else {
+        // Comportamiento genérico con todos los campos
+        const fechaInicio =
+          formatDate(event.fechaInicio || event.date || event.start) ||
+          "Sin fecha";
+        const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
+        const horaInicio =
+          event.horaInicio ||
+          event.time ||
+          event.extendedProps?.horaInicio ||
+          extractTime(event.start) ||
+          "Sin hora";
+        const horaFin =
+          event.horaFin ||
+          event.extendedProps?.horaFin ||
+          extractTime(event.end) ||
+          horaInicio;
+        const estado =
+          event.estadoOriginal ||
+          event.estado ||
+          event.extendedProps?.estadoOriginal ||
+          event.status ||
+          "Sin estado";
+        const ubicacion =
+          event.ubicacion ||
+          event.extendedProps?.ubicacion ||
+          event.location ||
+          "Sin ubicación";
 
-      // Publicado
-      const publicar =
-        event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "";
-      if (publicar) {
-        doc.text(`   Publicado: ${publicar}`, 20, yPos);
-        yPos += lineHeight;
-      }
-
-      if (event.extendedProps?.professorName) {
-        doc.text(`   Profesor: ${event.extendedProps.professorName}`, 20, yPos);
-        yPos += lineHeight;
-      }
-      if (event.extendedProps?.totalAthletes) {
         doc.text(
-          `   Deportistas: ${event.extendedProps.totalAthletes}`,
+          `   Fecha: ${fechaInicio}${fechaFin !== fechaInicio ? ` - ${fechaFin}` : ""}`,
           20,
           yPos,
         );
         yPos += lineHeight;
+        doc.text(`   Hora: ${horaInicio} - ${horaFin}`, 20, yPos);
+        yPos += lineHeight;
+        doc.text(`   Estado: ${estado}`, 20, yPos);
+        yPos += lineHeight;
+        doc.text(`   Ubicación: ${ubicacion}`, 20, yPos);
+        yPos += lineHeight;
+
+        // Información adicional si existe
+        const tipo = event.tipo || event.extendedProps?.tipo || event.type;
+        if (tipo) {
+          doc.text(`   Tipo: ${tipo}`, 20, yPos);
+          yPos += lineHeight;
+        }
+
+        const categoriasDeportivas =
+          event.categoriasDeportivas ||
+          event.extendedProps?.categoriasDeportivas ||
+          "";
+        if (categoriasDeportivas) {
+          doc.text(`   Categorías: ${categoriasDeportivas}`, 20, yPos);
+          yPos += lineHeight;
+        }
+
+        const telefono =
+          event.telefono || event.extendedProps?.telefono || event.phone;
+        if (telefono) {
+          doc.text(`   Teléfono: ${telefono}`, 20, yPos);
+          yPos += lineHeight;
+        }
+
+        const descripcion = event.descripcion || event.description || "";
+        if (descripcion) {
+          const maxWidth = 170;
+          const lines = doc.splitTextToSize(
+            `   Descripción: ${descripcion}`,
+            maxWidth,
+          );
+          lines.forEach((line) => {
+            if (yPos > pageHeight - 30) {
+              doc.addPage();
+              yPos = 20;
+            }
+            doc.text(line, 20, yPos);
+            yPos += lineHeight;
+          });
+        }
+
+        const publicar =
+          event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "";
+        if (publicar) {
+          doc.text(`   Publicado: ${publicar}`, 20, yPos);
+          yPos += lineHeight;
+        }
+
+        if (event.extendedProps?.professorName) {
+          doc.text(
+            `   Profesor: ${event.extendedProps.professorName}`,
+            20,
+            yPos,
+          );
+          yPos += lineHeight;
+        }
+        if (event.extendedProps?.totalAthletes) {
+          doc.text(
+            `   Deportistas: ${event.extendedProps.totalAthletes}`,
+            20,
+            yPos,
+          );
+          yPos += lineHeight;
+        }
       }
 
       yPos += lineHeight; // Espacio entre eventos
@@ -178,136 +194,161 @@ export const generateFallbackExcel = async (events, options = {}) => {
       title = "Reporte",
       fileName = "reporte.xlsx",
       entityName = "eventos",
+      customFields = [],
     } = options;
+
+    const hasCustomFields = customFields.length > 0;
+    const resolveCustomField = (event, key) =>
+      event[key] ?? event.extendedProps?.[key] ?? "";
 
     // Crear workbook simple
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Reporte");
 
-    // Headers
-    const headers = [
-      "#",
-      "Título",
-      "Fecha Inicio",
-      "Fecha Fin",
-      "Hora Inicio",
-      "Hora Fin",
-      "Estado",
-      "Ubicación",
-    ];
+    let headers;
 
-    // Agregar headers adicionales si hay datos
-    if (events.some((e) => e.tipo || e.extendedProps?.tipo || e.type)) {
-      headers.push("Tipo");
-    }
-    if (
-      events.some(
-        (e) => e.categoriasDeportivas || e.extendedProps?.categoriasDeportivas,
-      )
-    ) {
-      headers.push("Categorías");
-    }
-    if (
-      events.some((e) => e.telefono || e.extendedProps?.telefono || e.phone)
-    ) {
-      headers.push("Teléfono");
-    }
-    if (events.some((e) => e.descripcion || e.description)) {
-      headers.push("Descripción");
-    }
-    if (events.some((e) => e.publicar !== undefined)) {
-      headers.push("Publicado");
-    }
-    if (events.some((e) => e.extendedProps?.professorName)) {
-      headers.push("Profesor");
-    }
-    if (events.some((e) => e.extendedProps?.totalAthletes)) {
-      headers.push("Deportistas");
+    if (hasCustomFields) {
+      // Usar solo los campos personalizados como columnas
+      headers = ["#", ...customFields.map((f) => f.label)];
+    } else {
+      // Headers genéricos
+      headers = [
+        "#",
+        "Título",
+        "Fecha Inicio",
+        "Fecha Fin",
+        "Hora Inicio",
+        "Hora Fin",
+        "Estado",
+        "Ubicación",
+      ];
+
+      if (events.some((e) => e.tipo || e.extendedProps?.tipo || e.type)) {
+        headers.push("Tipo");
+      }
+      if (
+        events.some(
+          (e) =>
+            e.categoriasDeportivas || e.extendedProps?.categoriasDeportivas,
+        )
+      ) {
+        headers.push("Categorías");
+      }
+      if (
+        events.some((e) => e.telefono || e.extendedProps?.telefono || e.phone)
+      ) {
+        headers.push("Teléfono");
+      }
+      if (events.some((e) => e.descripcion || e.description)) {
+        headers.push("Descripción");
+      }
+      if (events.some((e) => e.publicar !== undefined)) {
+        headers.push("Publicado");
+      }
+      if (events.some((e) => e.extendedProps?.professorName)) {
+        headers.push("Profesor");
+      }
+      if (events.some((e) => e.extendedProps?.totalAthletes)) {
+        headers.push("Deportistas");
+      }
     }
 
     worksheet.addRow(headers);
 
     // Datos
     events.forEach((event, index) => {
-      const fechaInicio =
-        formatDate(event.fechaInicio || event.date || event.start) ||
-        "Sin fecha";
-      const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
-      const horaInicio =
-        event.horaInicio ||
-        event.time ||
-        event.extendedProps?.horaInicio ||
-        extractTime(event.start) ||
-        "Sin hora";
-      const horaFin =
-        event.horaFin ||
-        event.extendedProps?.horaFin ||
-        extractTime(event.end) ||
-        horaInicio;
+      let row;
 
-      const row = [
-        index + 1,
-        event.title || event.nombre || "Sin título",
-        fechaInicio,
-        fechaFin,
-        horaInicio,
-        horaFin,
-        event.estadoOriginal ||
-          event.estado ||
-          event.extendedProps?.estadoOriginal ||
-          event.status ||
-          "Sin estado",
-        event.ubicacion ||
-          event.extendedProps?.ubicacion ||
-          event.location ||
-          "Sin ubicación",
-      ];
+      if (hasCustomFields) {
+        row = [
+          index + 1,
+          ...customFields.map(({ key }) => resolveCustomField(event, key)),
+        ];
+      } else {
+        const fechaInicio =
+          formatDate(event.fechaInicio || event.date || event.start) ||
+          "Sin fecha";
+        const fechaFin = formatDate(event.fechaFin || event.end) || fechaInicio;
+        const horaInicio =
+          event.horaInicio ||
+          event.time ||
+          event.extendedProps?.horaInicio ||
+          extractTime(event.start) ||
+          "Sin hora";
+        const horaFin =
+          event.horaFin ||
+          event.extendedProps?.horaFin ||
+          extractTime(event.end) ||
+          horaInicio;
 
-      if (headers.includes("Tipo")) {
-        row.push(event.tipo || event.extendedProps?.tipo || event.type || "");
-      }
-      if (headers.includes("Categorías")) {
-        row.push(
-          event.categoriasDeportivas ||
-            event.extendedProps?.categoriasDeportivas ||
-            "",
-        );
-      }
-      if (headers.includes("Teléfono")) {
-        row.push(
-          event.telefono || event.extendedProps?.telefono || event.phone || "",
-        );
-      }
-      if (headers.includes("Descripción")) {
-        row.push(event.descripcion || event.description || "");
-      }
-      if (headers.includes("Publicado")) {
-        row.push(
-          event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "",
-        );
-      }
-      if (headers.includes("Profesor")) {
-        row.push(event.extendedProps?.professorName || "Sin asignar");
-      }
-      if (headers.includes("Deportistas")) {
-        row.push(event.extendedProps?.totalAthletes || 0);
+        row = [
+          index + 1,
+          event.title || event.nombre || "Sin título",
+          fechaInicio,
+          fechaFin,
+          horaInicio,
+          horaFin,
+          event.estadoOriginal ||
+            event.estado ||
+            event.extendedProps?.estadoOriginal ||
+            event.status ||
+            "Sin estado",
+          event.ubicacion ||
+            event.extendedProps?.ubicacion ||
+            event.location ||
+            "Sin ubicación",
+        ];
+
+        if (headers.includes("Tipo")) {
+          row.push(event.tipo || event.extendedProps?.tipo || event.type || "");
+        }
+        if (headers.includes("Categorías")) {
+          row.push(
+            event.categoriasDeportivas ||
+              event.extendedProps?.categoriasDeportivas ||
+              "",
+          );
+        }
+        if (headers.includes("Teléfono")) {
+          row.push(
+            event.telefono ||
+              event.extendedProps?.telefono ||
+              event.phone ||
+              "",
+          );
+        }
+        if (headers.includes("Descripción")) {
+          row.push(event.descripcion || event.description || "");
+        }
+        if (headers.includes("Publicado")) {
+          row.push(
+            event.publicar !== undefined ? (event.publicar ? "Sí" : "No") : "",
+          );
+        }
+        if (headers.includes("Profesor")) {
+          row.push(event.extendedProps?.professorName || "Sin asignar");
+        }
+        if (headers.includes("Deportistas")) {
+          row.push(event.extendedProps?.totalAthletes || 0);
+        }
       }
 
       worksheet.addRow(row);
     });
 
-    // Ajustar columnas con anchos específicos
+    // Ajustar columnas
     worksheet.columns.forEach((column, index) => {
       if (index === 0) {
-        column.width = 5; // # (número)
-      } else if (headers[index] === "Título") {
-        column.width = 30;
+        column.width = 5;
       } else if (headers[index] === "Descripción") {
         column.width = 40;
-      } else if (headers[index] === "Categorías") {
+      } else if (
+        headers[index] === "Categorías" ||
+        headers[index] === "Ubicación"
+      ) {
         column.width = 25;
-      } else if (headers[index] === "Ubicación") {
-        column.width = 25;
+      } else if (headers[index] === "Título" || headers[index] === "Empleado") {
+        column.width = 30;
       } else {
         column.width = 15;
       }
@@ -362,4 +403,3 @@ const extractTime = (dateValue) => {
     return null;
   }
 };
-

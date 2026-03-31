@@ -1,8 +1,7 @@
-﻿import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { IoMdDownload } from "react-icons/io";
 import { FiChevronDown } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { showErrorAlert } from "../../shared/utils/alerts.js";
@@ -11,9 +10,10 @@ import { normalizeExportText } from "../../shared/utils/textEncoding.js";
 
 const ReportButton = ({
   data,
-  dataProvider, // Nueva prop para función que retorna datos (puede ser async)
+  dataProvider, // New prop for function that returns data (can be async)
   fileName = "Reporte",
   columns,
+  customDataTransform,
   buttonClassName = "",
   iconClassName = "",
 }) => {
@@ -34,85 +34,110 @@ const ReportButton = ({
   }, []);
 
   // Normalizar columnas para soportar diferentes estructuras
-  const normalizedColumns = columns.map(col => {
+  const normalizedColumns = columns.map((col) => {
     // Si ya tiene la estructura correcta, dejarla igual
     if (col.header && col.accessor) return col;
-    
+
     // Si viene con label/key, convertir a header/accessor
     if (col.label && col.key) {
       return { header: col.label, accessor: col.key };
     }
-    
-    // Si viene con title/dataIndex (otra estructura común)
+
+    // If it comes as title/dataIndex (another common structure)
     if (col.title && col.dataIndex) {
       return { header: col.title, accessor: col.dataIndex };
     }
-    
-    console.warn('Columna con estructura no reconocida:', col);
+
+    console.warn("Columna con estructura no reconocida:", col);
     return col;
   });
 
-  // Función auxiliar unificada
+  // Unified helper function
   const getNestedValue = (obj, path) => {
-    return path.split('.').reduce((acc, part) => {
-      if (acc && typeof acc === 'object') {
+    return path.split(".").reduce((acc, part) => {
+      if (acc && typeof acc === "object") {
         return acc[part];
       }
       return undefined;
     }, obj);
   };
 
-  // Función para obtener los datos (síncrona o asíncrona)
-  const getData = async () => {
-    if (dataProvider && typeof dataProvider === 'function') {
-      return await dataProvider();
-    }
-    return data || [];
+  const resolveColumnValue = (item, col) => {
+    const rawValue = col.accessor.includes(".")
+      ? getNestedValue(item, col.accessor)
+      : item[col.accessor];
+
+    return typeof col.format === "function"
+      ? col.format(rawValue, item)
+      : rawValue;
   };
 
-  const validateData = async () => {
+  const formatExportValue = (value, maxLength = null) => {
+    if (value === undefined || value === null) {
+      return "";
+    }
+
+    const normalizedValue = normalizeExportText(String(value));
+
+    if (maxLength && normalizedValue.length > maxLength) {
+      return `${normalizedValue.substring(0, maxLength - 3)}...`;
+    }
+
+    return normalizedValue;
+  };
+
+  // Get data (sync or async) and call only once
+  const getData = async () => {
+    const sourceData =
+      dataProvider && typeof dataProvider === "function"
+        ? await dataProvider()
+        : data || [];
+
+    if (typeof customDataTransform === "function") {
+      return sourceData.map((item) => customDataTransform(item));
+    }
+
+    return sourceData;
+  };
+
+  // Obtiene, valida y confirma en una sola llamada al API
+  const fetchAndValidate = async () => {
     const reportData = await getData();
     if (!reportData || reportData.length === 0) {
       showErrorAlert("Error", "No hay datos para generar el reporte");
       return null;
     }
-    return reportData;
-  };
-
-  const confirmLargeExport = async () => {
-    const reportData = await getData();
     if (reportData.length > 500) {
-      return window.confirm(
-        `⚠️ Tienes ${reportData.length} registros. \n¿Deseas continuar con la exportación?`
+      const ok = window.confirm(
+        `\u26A0\uFE0F Tienes ${reportData.length} registros.\n\u00BFDeseas continuar con la exportaci\u00F3n?`,
       );
+      if (!ok) return null;
     }
-    return true;
+    return reportData;
   };
 
   const generatePDF = async () => {
     setOpen(false);
     setIsGenerating(true);
-    
+
     try {
-      const reportData = await validateData();
+      const reportData = await fetchAndValidate();
       if (!reportData) return;
 
-      if (!(await confirmLargeExport())) return;
-
-      const doc = new jsPDF({ orientation: 'landscape' });
-      const rowsPerPage = 35; // Reducir filas por página para mejor legibilidad
+      const doc = new jsPDF({ orientation: "landscape" });
+      const rowsPerPage = 35; // Reduce rows per page for readability
       const totalPages = Math.ceil(reportData.length / rowsPerPage);
       const generationDate = new Date().toLocaleDateString();
 
       const addHeader = (pageNumber) => {
         doc.setFontSize(16);
-        doc.setFont(undefined, 'bold');
+        doc.setFont(undefined, "bold");
         doc.text(fileName, 15, 15);
-        
+
         doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.setFont(undefined, "normal");
         doc.text(`Generado: ${generationDate}`, 15, 22);
-        doc.text(`Página ${pageNumber} de ${totalPages}`, 15, 29);
+        doc.text(`P\u00e1gina ${pageNumber} de ${totalPages}`, 15, 29);
         doc.text(`Total de registros: ${reportData.length}`, 15, 36);
       };
 
@@ -125,85 +150,85 @@ const ReportButton = ({
         const pageData = reportData.slice(startIndex, endIndex);
 
         const tableColumn = normalizedColumns.map((col) =>
-          normalizeExportText(col.header)
+          normalizeExportText(col.header),
         );
-        const tableRows = pageData.map(item => 
-          normalizedColumns.map(col => {
-            const value = col.accessor.includes('.') 
-              ? getNestedValue(item, col.accessor)
-              : item[col.accessor];
-            // Limitar texto pero no tan agresivamente
-            return value
-              ? normalizeExportText(value).substring(0, 50)
-              : '';
-          })
+        const tableRows = pageData.map((item) =>
+          normalizedColumns.map((col) => {
+            const header = normalizeExportText(col.header).toLowerCase();
+            const value = resolveColumnValue(item, col);
+            const maxLength = header.includes("descrip") ? 120 : 80;
+            return formatExportValue(value, maxLength);
+          }),
         );
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const availableWidth = pageWidth - 20; // left + right margin
+        const columnWeights = normalizedColumns.map((col) => {
+          const header = normalizeExportText(col.header).toLowerCase();
+          if (
+            header.includes("descrip") ||
+            header.includes("observ") ||
+            header.includes("detalle")
+          ) {
+            return 1.6;
+          }
+          return 1;
+        });
+        const totalWeight = columnWeights.reduce(
+          (sum, weight) => sum + weight,
+          0,
+        );
+        const computedColumnStyles = {};
+
+        normalizedColumns.forEach((_, index) => {
+          computedColumnStyles[index] = {
+            cellWidth: Math.max(
+              12,
+              (availableWidth * columnWeights[index]) / totalWeight,
+            ),
+          };
+        });
 
         autoTable(doc, {
           head: [tableColumn],
           body: tableRows,
           startY: 42,
           margin: { left: 10, right: 10 },
-          styles: { 
-            fontSize: 7, // Reducir un poco más el tamaño de fuente
+          styles: {
+            fontSize: 7, // Slightly reduce font size
             cellPadding: 2,
             lineColor: [200, 200, 200],
             lineWidth: 0.3,
-            overflow: 'linebreak', // Permitir salto de línea
-            cellWidth: 'wrap', // Ajustar ancho de celda
-            valign: 'top' // Alinear texto arriba
+            overflow: "linebreak", // Allow line wrapping
+            cellWidth: "wrap", // Ajustar ancho de celda
+            valign: "top", // Alinear texto arriba
           },
-          headStyles: { 
-            fillColor: [79, 70, 229], 
+          headStyles: {
+            fillColor: [79, 70, 229],
             textColor: 255,
-            fontStyle: 'bold',
+            fontStyle: "bold",
             fontSize: 8,
-            cellPadding: 3
+            cellPadding: 3,
           },
           alternateRowStyles: {
-            fillColor: [245, 245, 245]
+            fillColor: [245, 245, 245],
           },
-          columnStyles: (() => {
-            // Configuración dinámica basada en el número de columnas
-            const numColumns = normalizedColumns.length;
-            const styles = {};
-            
-            if (numColumns <= 6) {
-              // Para pocas columnas, usar anchos generosos
-              const baseWidth = 40;
-              for (let i = 0; i < numColumns; i++) {
-                styles[i] = { cellWidth: baseWidth };
-              }
-            } else if (numColumns <= 10) {
-              // Para columnas medianas, usar anchos moderados
-              const baseWidth = 25;
-              for (let i = 0; i < numColumns; i++) {
-                styles[i] = { cellWidth: baseWidth };
-              }
-            } else {
-              // Para muchas columnas, usar anchos pequeños
-              const baseWidth = 18;
-              for (let i = 0; i < numColumns; i++) {
-                styles[i] = { cellWidth: baseWidth };
-              }
-            }
-            
-            return styles;
-          })(),
-          // Configuración automática de ancho de columnas
-          tableWidth: 'auto',
+          columnStyles: computedColumnStyles,
+          // Automatic column width configuration
+          tableWidth: availableWidth,
+          horizontalPageBreak: true,
           // Permitir que las celdas se expandan verticalmente
           minCellHeight: 8,
           // Configurar el comportamiento del texto largo
           didParseCell: function (data) {
-            // Ajustar altura mínima para celdas con mucho texto
+            // Increase minimum height for cells with long text
             if (data.cell.text && data.cell.text.length > 0) {
-              const textLength = data.cell.text.join('').length;
+              const textLength = data.cell.text.join("").length;
               if (textLength > 20) {
                 data.cell.minCellHeight = 12;
               }
             }
-          }
+          },
         });
       };
 
@@ -216,8 +241,7 @@ const ReportButton = ({
         }
       }
 
-      doc.save(`${fileName}_${generationDate.replace(/\//g, '-')}.pdf`);
-      
+      doc.save(`${fileName}_${generationDate.replace(/\//g, "-")}.pdf`);
     } catch (error) {
       console.error("Error generando PDF:", error);
       showErrorAlert("Error", "No se pudo generar el PDF");
@@ -229,12 +253,10 @@ const ReportButton = ({
   const generateExcel = async () => {
     setOpen(false);
     setIsGenerating(true);
-    
-    try {
-      const reportData = await validateData();
-      if (!reportData) return;
 
-      if (!(await confirmLargeExport())) return;
+    try {
+      const reportData = await fetchAndValidate();
+      if (!reportData) return;
 
       // Usar las columnas normalizadas
       await exportToExcel(reportData, normalizedColumns, fileName);
@@ -259,8 +281,8 @@ const ReportButton = ({
         whileHover={isGenerating ? {} : { scale: 1.03 }}
         whileTap={isGenerating ? {} : { scale: 0.97 }}
       >
-        <IoMdDownload 
-          size={22} 
+        <IoMdDownload
+          size={22}
           className={
             isGenerating
               ? "text-gray-500"
@@ -269,7 +291,10 @@ const ReportButton = ({
         />
         {isGenerating ? "Generando..." : "Generar reporte"}
         {!isGenerating && (
-          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
             <FiChevronDown size={18} />
           </motion.span>
         )}
@@ -286,19 +311,21 @@ const ReportButton = ({
           >
             <motion.button
               onClick={generateExcel}
+              translate="no"
               className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              Excel
+              <span className="notranslate">Excel</span>
             </motion.button>
             <motion.button
               onClick={generatePDF}
+              translate="no"
               className="block w-full px-4 py-2 text-left hover:bg-gray-100 transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.97 }}
             >
-              PDF
+              <span className="notranslate">PDF</span>
             </motion.button>
           </motion.div>
         )}

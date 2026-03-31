@@ -253,7 +253,7 @@ showErrorAlert('Error', err.message || 'No se pudo crear el deportista');
       
       if (response.success) {
         // Si cambió el email y el backend envió credenciales, mostrar mensaje especial
-        if (emailChanged && response.data?.emailSent) {
+        if (emailChanged && response.emailSent) {
           showSuccessAlert(
             'Deportista actualizado',
             `El deportista se actualizó correctamente. Se ha enviado un correo con las nuevas credenciales a ${athleteData.email}.`

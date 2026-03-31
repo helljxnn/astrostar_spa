@@ -98,7 +98,7 @@ export const FormField = ({
                 </option>
               ))}
             </select>
-            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center z-20 text-gray-500">
               <svg
                 className="h-4 w-4"
                 viewBox="0 0 20 20"
@@ -210,7 +210,7 @@ export const FormField = ({
             animate={{ opacity: 1, y: 0, height: "auto" }}
             exit={{ opacity: 0, y: -6, height: 0 }}
             transition={{ duration: 0.2 }}
-            className={`text-xs ${helperText.includes('excedido') ? 'text-red-500 font-medium' : 'text-gray-500'}`}
+            className={`text-xs ${helperText.includes("excedido") ? "text-red-500 font-medium" : "text-gray-500"}`}
           >
             {helperText}
           </motion.div>
@@ -219,4 +219,3 @@ export const FormField = ({
     </motion.div>
   );
 };
-

@@ -22,6 +22,7 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
   const fechaNacimiento = athlete.birthDate || athlete.fechaNacimiento || "";
   const categoria = athlete.categoria || "N/A";
   const estado = athlete.estado || "N/A";
+  const scholarshipStatus = athlete.isScholarship === true ? "Sí" : "No";
   
   // Obtener el nombre del tipo de documento
   let tipoDocumento = "N/A";
@@ -284,6 +285,20 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
                   </p>
                 </motion.div>
 
+                <motion.div
+                  className="space-y-2"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.95, duration: 0.4 }}
+                >
+                  <label className="text-sm font-medium text-gray-600">
+                    Beca
+                  </label>
+                  <p className="text-gray-900 p-2 bg-gray-50 rounded-lg border border-gray-200 min-h-[42px]">
+                    {scholarshipStatus}
+                  </p>
+                </motion.div>
+
                 {/* Dirección */}
                 <motion.div
                   className="space-y-2"
@@ -426,4 +441,3 @@ const AthleteViewModal = ({ isOpen, onClose, athlete, guardian, referenceData = 
 };
 
 export default AthleteViewModal;
-

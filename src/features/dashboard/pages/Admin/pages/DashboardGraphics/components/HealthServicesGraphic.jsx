@@ -1,6 +1,6 @@
 ﻿import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 
@@ -12,8 +12,6 @@ const normalizeSpecialty = (val = "") =>
   String(val).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 
 const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
-  const [selectedMonth, setSelectedMonth] = useState("Todos");
-
   // Detectar qué especialidades hay en las citas recibidas (ya filtradas desde el padre)
   const activeSpecialties = useMemo(() => {
     const set = new Set();
@@ -43,11 +41,6 @@ const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
     return Object.values(map);
   }, [appointments, activeSpecialties]);
 
-  const filteredData = useMemo(() => {
-    if (selectedMonth === "Todos") return monthlyData;
-    return monthlyData.filter((d) => d.mes === selectedMonth);
-  }, [monthlyData, selectedMonth]);
-
   const reportColumns = [
     { key: "mes", label: "Mes" },
     ...activeSpecialties.map((sp) => ({ key: sp, label: sp.charAt(0).toUpperCase() + sp.slice(1) })),
@@ -63,12 +56,12 @@ const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
 
   const datasets = activeSpecialties.map((sp, i) => ({
     label: sp.charAt(0).toUpperCase() + sp.slice(1),
-    data: filteredData.map((d) => d[sp] || 0),
+    data: monthlyData.map((d) => d[sp] || 0),
     backgroundColor: COLORS[i % COLORS.length],
     borderRadius: 10,
   }));
 
-  const chartData = { labels: filteredData.map((i) => i.mes), datasets };
+  const chartData = { labels: monthlyData.map((i) => i.mes), datasets };
 
   const options = {
     responsive: true,
@@ -94,18 +87,7 @@ const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
         <h3 className="text-lg sm:text-xl font-semibold text-gray-800 tracking-tight">
           Servicios de Salud (Mensual)
         </h3>
-        <ReportButton dataProvider={async () => filteredData} fileName="Servicios_Salud" columns={reportColumns} />
-      </div>
-
-      <div className="flex flex-wrap gap-3 mb-4">
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="border border-gray-300 bg-white rounded-xl px-3 py-2 text-sm shadow-sm focus:ring-2 focus:ring-cyan-400"
-        >
-          <option value="Todos">Todos los meses</option>
-          {MONTH_NAMES.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <ReportButton dataProvider={async () => monthlyData} fileName="Servicios_Salud" columns={reportColumns} />
       </div>
 
       <div className="h-[380px]">
@@ -122,4 +104,3 @@ const HealthServicesGraphic = ({ appointments = [], loading = false }) => {
 };
 
 export default HealthServicesGraphic;
-

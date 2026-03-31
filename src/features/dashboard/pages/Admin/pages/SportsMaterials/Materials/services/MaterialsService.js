@@ -5,6 +5,9 @@ class MaterialsService {
     this.endpoint = "/materials";
   }
 
+  REPORT_LIMIT = 100;
+  REPORT_MAX_PAGES = 100;
+
   async getMaterials(params = {}) {
     const {
       page = 1,
@@ -406,23 +409,56 @@ class MaterialsService {
    * @returns {Promise} Lista completa de materiales
    */
   async getAllForReport(params = {}) {
-    const queryParams = {
-      ...params,
-      limit: 10000, // Límite alto para obtener todos los datos
-    };
+    const filters = { ...params };
+    delete filters.page;
+    delete filters.limit;
 
-    const response = await apiClient.get(this.endpoint, queryParams);
+    let allData = [];
+    let currentPage = 1;
+    let hasMorePages = true;
 
-    // El backend puede devolver los materiales en response.materials o response.data
-    const materialsArray = response.materials || response.data || [];
+    while (hasMorePages) {
+      const response = await apiClient.get(this.endpoint, {
+        ...filters,
+        page: currentPage,
+        limit: this.REPORT_LIMIT,
+      });
 
-    if (response.success && materialsArray.length > 0) {
-      response.data = materialsArray.map((material) =>
-        this.transformFromBackend(material),
-      );
+      if (!response?.success) {
+        return response;
+      }
+
+      const materialsArray = response.materials || response.data || [];
+      const normalizedPage = Array.isArray(materialsArray)
+        ? materialsArray.map((material) => this.transformFromBackend(material))
+        : [];
+
+      allData = allData.concat(normalizedPage);
+
+      const hasNextPage = response.pagination?.hasNext;
+      hasMorePages =
+        typeof hasNextPage === "boolean"
+          ? hasNextPage
+          : normalizedPage.length === this.REPORT_LIMIT;
+
+      currentPage += 1;
+      if (currentPage > this.REPORT_MAX_PAGES) {
+        hasMorePages = false;
+      }
     }
 
-    return response;
+    return {
+      success: true,
+      data: allData,
+      pagination: {
+        total: allData.length,
+        page: 1,
+        limit: allData.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    };
   }
 }
 

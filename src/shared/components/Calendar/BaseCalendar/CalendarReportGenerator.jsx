@@ -28,15 +28,62 @@ const CalendarReportGenerator = ({
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [isGenerating, setIsGenerating] = useState(false);
 
+  const resolveEventDate = (event = {}) => {
+    const rawDate =
+      event.date ||
+      event.start ||
+      event.classDate ||
+      event.fecha ||
+      event.scheduleDate ||
+      null;
+
+    if (!rawDate) return null;
+    const parsedDate = new Date(rawDate);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  };
+
+  const getEventsForSelectedPeriod = () => {
+    if (!Array.isArray(events) || events.length === 0) return [];
+    if (!showDateFilter) return events;
+
+    const hasCustomRange =
+      dateRange?.start &&
+      dateRange?.end &&
+      !Number.isNaN(new Date(dateRange.start).getTime()) &&
+      !Number.isNaN(new Date(dateRange.end).getTime());
+
+    const startOfMonth = hasCustomRange
+      ? new Date(dateRange.start)
+      : new Date(selectedMonth.getFullYear(), selectedMonth.getMonth(), 1);
+    const endOfMonth = hasCustomRange
+      ? new Date(dateRange.end)
+      : new Date(
+          selectedMonth.getFullYear(),
+          selectedMonth.getMonth() + 1,
+          0,
+          23,
+          59,
+          59,
+          999,
+        );
+
+    return events.filter((event) => {
+      const eventDate = resolveEventDate(event);
+      if (!eventDate) return false;
+      return eventDate >= startOfMonth && eventDate <= endOfMonth;
+    });
+  };
+
   /**
    * Manejar generación de reportes
    */
   const handleGenerateReport = async (format = "pdf") => {
     try {
       setIsGenerating(true);
+      const reportEvents = getEventsForSelectedPeriod();
 
       // Validar que hay eventos para exportar
-      if (!events || events.length === 0) {
+      if (!Array.isArray(reportEvents) || reportEvents.length === 0) {
         toast.error("No hay datos para exportar");
         setIsGenerating(false);
         return;
@@ -50,12 +97,13 @@ const CalendarReportGenerator = ({
           "_",
         )}.${format === "pdf" ? "pdf" : "xlsx"}`,
         entityName: entityName,
+        customFields: customFields,
       };
 
       if (onGenerateReport) {
         // Usar handler personalizado
         const reportConfig = {
-          events: events,
+          events: reportEvents,
           format: format,
           entityName: entityName,
           dateRange: {
@@ -77,9 +125,9 @@ const CalendarReportGenerator = ({
       } else {
         // Usar generador de emergencia
         if (format === "pdf") {
-          await generateFallbackPDF(events, options);
+          await generateFallbackPDF(reportEvents, options);
         } else {
-          await generateFallbackExcel(events, options);
+          await generateFallbackExcel(reportEvents, options);
         }
       }
 
@@ -316,4 +364,3 @@ const CalendarReportGenerator = ({
 };
 
 export default CalendarReportGenerator;
-

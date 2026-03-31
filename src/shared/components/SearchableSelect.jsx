@@ -12,9 +12,11 @@ import { FaSearch, FaTimes, FaChevronDown } from "react-icons/fa";
  * @param {string}   error
  */
 const SearchableSelect = ({
+  name,
   options = [],
   value = "",
   onChange,
+  onBlur,
   placeholder = "Buscar...",
   disabled = false,
   loading = false,
@@ -26,6 +28,8 @@ const SearchableSelect = ({
   const containerRef = useRef(null);
   const inputRef = useRef(null);
   const listRef = useRef(null);
+  const hasError = Boolean(error);
+  const errorMessage = typeof error === "string" ? error : "";
 
   const selected = options.find((o) => String(o.value) === String(value));
 
@@ -54,18 +58,38 @@ const SearchableSelect = ({
     }
   }, [highlightedIndex]);
 
+  const emitChange = (nextValue) => {
+    if (typeof onChange !== "function") return;
+    if (onChange.length >= 2) {
+      onChange(name, nextValue);
+      return;
+    }
+    onChange(nextValue);
+  };
+
+  const emitBlur = () => {
+    if (typeof onBlur !== "function") return;
+    if (onBlur.length >= 1) {
+      onBlur(name);
+      return;
+    }
+    onBlur();
+  };
+
   const handleSelect = (opt) => {
-    onChange(String(opt.value));
+    emitChange(opt.value);
     setIsOpen(false);
     setSearchTerm("");
     setHighlightedIndex(-1);
+    emitBlur();
   };
 
   const handleClear = (e) => {
     e.stopPropagation();
-    onChange("");
+    emitChange("");
     setSearchTerm("");
     setHighlightedIndex(-1);
+    emitBlur();
   };
 
   const handleKeyDown = (e) => {
@@ -88,6 +112,7 @@ const SearchableSelect = ({
         setIsOpen(false);
         setSearchTerm("");
         setHighlightedIndex(-1);
+        emitBlur();
         break;
       default:
         break;
@@ -98,14 +123,14 @@ const SearchableSelect = ({
     <div ref={containerRef} className="relative w-full">
       <div
         onClick={() => {
-          if (!disabled) {
+          if (!disabled && !loading) {
             setIsOpen(true);
-            inputRef.current?.focus();
+            setTimeout(() => inputRef.current?.focus(), 0);
           }
         }}
         className={`flex items-center gap-2 w-full border-2 rounded-xl px-3 py-2.5 transition-all cursor-pointer
           ${disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : isOpen ? "border-primary-purple ring-2 ring-primary-purple/20" : "border-gray-200 hover:border-primary-purple/50"}
-          ${error ? "border-red-500" : ""}
+          ${hasError ? "border-red-500" : ""}
         `}
       >
         <FaSearch className="text-gray-400 flex-shrink-0" />
@@ -124,7 +149,7 @@ const SearchableSelect = ({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setIsOpen(true);
+              if (!isOpen) setIsOpen(true);
               setHighlightedIndex(-1);
             }}
             onKeyDown={handleKeyDown}
@@ -186,7 +211,7 @@ const SearchableSelect = ({
         </div>
       )}
 
-      {error && <p className="text-red-500 text-xs mt-1.5">{error}</p>}
+      {errorMessage && <p className="text-red-500 text-xs mt-1.5">{errorMessage}</p>}
     </div>
   );
 };

@@ -520,20 +520,40 @@ const Donations = () => {
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
+    const monthFilter = selectedMonth
+      ? `${selectedMonth.getFullYear()}-${String(
+          selectedMonth.getMonth() + 1,
+        ).padStart(2, "0")}`
+      : undefined;
+
     return await getReportData(
-      { 
+      {
         search: searchTerm,
-        month: selectedMonth ? selectedMonth.getMonth() + 1 : undefined,
-        year: selectedMonth ? selectedMonth.getFullYear() : undefined,
+        month: monthFilter,
       }, // Filtros actuales
-      (donations) => donations.map((donation) => ({ // Mapper de datos
-        code: donation.code || donation.codigo || "",
-        donorName: getDonorDisplayName(donation, donorsMap),
-        donationType: donation.typeLabel || "Sin tipos",
-        programLabel: donation.programLabel || donation.program || "",
-        status: donation.status || donation.estado || "",
-        donationDate: donation.donationDate || donation.fechaDonacion || "",
-      }))
+      (donations) =>
+        donations.map((donation) => {
+          const typeLabel =
+            donation.typeLabel ||
+            (donation.type === "ECONOMICA"
+              ? "Economica"
+              : donation.type === "ESPECIE"
+                ? "En especie"
+                : donation.type === "ALIMENTOS"
+                  ? "Compra de alimentos"
+                  : "Sin tipo");
+
+          return {
+            code: donation.code || donation.codigo || "",
+            donorName: getDonorDisplayName(donation, donorsMap),
+            donationType: typeLabel,
+            programLabel: donation.programLabel || donation.program || "",
+            status: donation.status || donation.estado || "",
+            donationDate: donation.donationAt
+              ? new Date(donation.donationAt).toLocaleString("es-CO")
+              : donation.donationDate || donation.fechaDonacion || "",
+          };
+        }),
     );
   };
 
@@ -548,10 +568,7 @@ const Donations = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  setCurrentPage(1);
-                }
+                setCurrentPage(1);
               }}
               placeholder="Buscar donación..."
               className="w-full"

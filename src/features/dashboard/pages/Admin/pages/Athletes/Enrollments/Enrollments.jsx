@@ -1,11 +1,12 @@
 ﻿import { useState, useMemo, useEffect, useRef } from "react";
-import { FaPlus, FaHistory, FaUserPlus, FaFilter } from "react-icons/fa";
+import { FaPlus, FaHistory, FaUserPlus, FaFilter, FaUpload } from "react-icons/fa";
 import AthleteModal from "../AthletesSection/components/AthleteModal.jsx";
 import GuardianModal from "../AthletesSection/components/GuardianModal.jsx";
 import GuardianViewModal from "../AthletesSection/components/GuardianViewModal.jsx";
 import EnrollmentHistoryModal from "./components/EnrollmentHistoryModal.jsx";
 import EnrollmentStatusBadge from "./components/EnrollmentStatusBadge.jsx";
 import ExpirationIndicator from "./components/ExpirationIndicator.jsx";
+import LegacyImportModal from "./components/LegacyImportModal.jsx";
 
 import Table from "../../../../../../../shared/components/Table/table.jsx";
 import SearchInput from "../../../../../../../shared/components/SearchInput.jsx";
@@ -24,7 +25,6 @@ import {
 
 import { useEnrollments } from "./hooks/useEnrollments.js";
 import EnrollmentsService from "./services/EnrollmentsService.js";
-import InscriptionsService from "./services/InscriptionsService.js";
 import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig.js";
 import {
   extractFullName,
@@ -50,11 +50,6 @@ const Enrollments = () => {
   // Hook para obtener datos completos para reportes
   const { getReportData } = useReportDataWithService(
     (params) => EnrollmentsService.getAllForReport(params)
-  );
-
-  // Hook para obtener datos completos para reportes de inscripciones
-  const { getReportData: getInscriptionsReportData } = useReportDataWithService(
-    (params) => InscriptionsService.getAllForReport(params)
   );
 
   const {
@@ -83,6 +78,7 @@ const Enrollments = () => {
 
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedAthlete, setSelectedAthlete] = useState(null);
+  const [isLegacyImportModalOpen, setIsLegacyImportModalOpen] = useState(false);
 
   // Estados para modales de acudiente
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -248,6 +244,9 @@ const Enrollments = () => {
       {
         search: searchTerm,
         estado: filters.estado,
+        dateFrom: filters.fechaDesde,
+        dateTo: filters.fechaHasta,
+        vencimiento: filters.vencimiento,
       },
       (data) => data.map(item => ({
         deportista: `${item.athlete?.user?.firstName || ''} ${item.athlete?.user?.lastName || ''}`.trim(),
@@ -256,23 +255,6 @@ const Enrollments = () => {
         fechaInicio: item.fechaInicio ? new Date(item.fechaInicio).toLocaleDateString('es-ES') : '',
         fechaVencimiento: item.fechaVencimiento ? new Date(item.fechaVencimiento).toLocaleDateString('es-ES') : '',
         fechaCreacion: item.createdAt ? new Date(item.createdAt).toLocaleDateString('es-ES') : '',
-      }))
-    );
-  };
-
-  // Función para obtener datos completos del reporte de inscripciones
-  const getCompleteInscriptionsReportData = async () => {
-    return await getInscriptionsReportData(
-      {},
-      (data) => data.map(inscription => ({
-        nombre: inscription.firstName || '',
-        apellido: inscription.lastName || '',
-        documento: inscription.identification || '',
-        email: inscription.email || '',
-        telefono: inscription.phoneNumber || '',
-        fechaNacimiento: inscription.birthDate ? new Date(inscription.birthDate).toLocaleDateString('es-ES') : '',
-        estado: inscription.status || 'Pendiente',
-        fechaInscripcion: inscription.createdAt ? new Date(inscription.createdAt).toLocaleDateString('es-ES') : '',
       }))
     );
   };
@@ -321,15 +303,15 @@ const Enrollments = () => {
 
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">
+      <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">
           Gestión de Matrículas
         </h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
-          <div className="w-full sm:w-64">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap xl:flex-nowrap items-stretch sm:items-center gap-3 w-full xl:w-auto xl:max-w-[70%] xl:justify-end">
+          <div className="w-full sm:w-72 xl:flex-shrink-0">
             <SearchInput
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -341,7 +323,7 @@ const Enrollments = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto xl:justify-end">
             {/* Botón de Filtros */}
             {activeTab === "matriculas" && (
               <button
@@ -375,35 +357,25 @@ const Enrollments = () => {
               </PermissionGuard>
             )}
 
-            {/* Botón de Reporte para Inscripciones */}
-            {activeTab === "inscripciones" && (
-              <PermissionGuard module="enrollments" action="Ver">
-                <ReportButton
-                  dataProvider={getCompleteInscriptionsReportData}
-                  fileName="inscripciones"
-                  columns={[
-                    { header: 'Nombre', accessor: 'nombre' },
-                    { header: 'Apellido', accessor: 'apellido' },
-                    { header: 'Documento', accessor: 'documento' },
-                    { header: 'Email', accessor: 'email' },
-                    { header: 'Teléfono', accessor: 'telefono' },
-                    { header: 'Fecha Nacimiento', accessor: 'fechaNacimiento' },
-                    { header: 'Estado', accessor: 'estado' },
-                    { header: 'Fecha Inscripción', accessor: 'fechaInscripcion' },
-                  ]}
-                />
-              </PermissionGuard>
-            )}
-
             {activeTab === "matriculas" && (
               <PermissionGuard module="enrollments" action="Aceptar">
-                <button
-                  onClick={handleCreateFromScratch}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors"
-                  title="Crear matrícula desde cero"
-                >
-                  <FaPlus /> Nueva Matrícula
-                </button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => setIsLegacyImportModalOpen(true)}
+                    className="flex items-center justify-center w-11 h-11 bg-emerald-200 text-emerald-950 rounded-lg shadow hover:bg-emerald-300 transition-colors"
+                    title="Cargar archivo para registrar deportistas de forma masiva"
+                    aria-label="Migración masiva"
+                  >
+                    <FaUpload className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={handleCreateFromScratch}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-purple text-white rounded-lg shadow hover:bg-primary-blue transition-colors whitespace-nowrap"
+                    title="Crear matrícula desde cero"
+                  >
+                    <FaPlus /> Nueva Matrícula
+                  </button>
+                </div>
               </PermissionGuard>
             )}
           </div>
@@ -412,14 +384,14 @@ const Enrollments = () => {
 
       {/* Tabs */}
       <div className="mb-6">
-        <div className="inline-flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => {
               setActiveTab("matriculas");
               setSearchTerm("");
               setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
               activeTab === "matriculas"
                 ? "bg-primary-purple/10 text-primary-purple"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -446,7 +418,7 @@ const Enrollments = () => {
               setSearchTerm("");
               setFilters(prev => ({ ...prev, vencimiento: EXPIRATION_FILTERS.ALL }));
             }}
-            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative ${
+            className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 relative whitespace-nowrap ${
               activeTab === "inscripciones"
                 ? "bg-primary-blue/10 text-primary-blue"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -489,7 +461,7 @@ const Enrollments = () => {
       {/* Panel de Filtros - Estados actualizados */}
       {showFilters && activeTab === "matriculas" && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <h3 className="text-lg font-semibold text-gray-800">Filtros</h3>
             <button
               onClick={() => {
@@ -763,6 +735,20 @@ const Enrollments = () => {
                     "fechaInscripcionDisplay",
                   ],
                   state: false,
+                  cellClassNames: {
+                    nombreCompleto:
+                      "whitespace-normal break-words align-top max-w-[14rem]",
+                    documento:
+                      "whitespace-normal break-all align-top max-w-[8rem]",
+                    fechaNacimientoDisplay:
+                      "whitespace-normal align-top text-center",
+                    telefono:
+                      "whitespace-normal break-all align-top max-w-[8rem]",
+                    correo:
+                      "whitespace-normal break-all align-top max-w-[14rem]",
+                    fechaInscripcionDisplay:
+                      "whitespace-normal align-top text-center",
+                  },
                 }}
                 customActions={[
                   {
@@ -805,6 +791,9 @@ const Enrollments = () => {
                     show: () => canRejectEnrollments,
                   },
                 ]}
+                enableHorizontalScroll={false}
+                desktopBreakpoint="lg"
+                tableClassName="table-fixed"
               />
             )}
           </div>
@@ -933,6 +922,15 @@ const Enrollments = () => {
           guardians={guardians}
         />
       )}
+
+      <LegacyImportModal
+        isOpen={isLegacyImportModalOpen}
+        onClose={() => setIsLegacyImportModalOpen(false)}
+        referenceData={referenceData}
+        onImported={async () => {
+          await refresh();
+        }}
+      />
     </div>
   );
 };

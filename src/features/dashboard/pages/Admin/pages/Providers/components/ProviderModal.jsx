@@ -31,6 +31,10 @@ const ProviderModal = ({
   mode = providerToEdit ? "edit" : "create",
 }) => {
   const isEditing = mode === "edit" || providerToEdit !== null;
+  const isClosingRef = React.useRef(false);
+  const nitValidationRequestRef = React.useRef(0);
+  const wasOpenRef = React.useRef(false);
+  const [asyncErrors, setAsyncErrors] = React.useState({});
   const initialValues = {
     tipoEntidad: "juridica",
     razonSocial: "",
@@ -61,7 +65,6 @@ const ProviderModal = ({
     handleBlur,
     validateAllFields,
     resetForm,
-    resetValidation,
     setValues,
     setTouched,
     touchAllFields,
@@ -83,25 +86,123 @@ const ProviderModal = ({
           tipoEntidad: value,
           nit: providerToEdit?.nit || "",
           tipoDocumento:
-            value === "natural" ? providerToEdit?.tipoDocumento || "" : "",
+            value === "natural"
+              ? providerToEdit?.documentTypeId
+                ? providerToEdit.documentTypeId.toString()
+                : providerToEdit?.tipoDocumento || ""
+              : "",
         }));
       } else {
         originalHandleChange(name, value);
+        if (isEditing) {
+          setValues((prev) => ({
+            ...prev,
+            tipoEntidad: value,
+            tipoDocumento: "",
+            nit: "",
+          }));
+        }
       }
     } else {
       originalHandleChange(name, value);
     }
-    
-    // NO limpiar errores al cambiar de campo - mantener persistencia
+
+    setAsyncErrors((prev) => {
+      const next = { ...prev };
+      delete next[name];
+
+      if (name === "tipoEntidad" || name === "tipoDocumento") {
+        delete next.nit;
+      }
+
+      return next;
+    });
   };
   // HandleChange personalizado para NIT que solo permite números
   const handleNitChange = (name, value) => {
     // Solo permitir números para el campo NIT
     const numericValue = value.replace(/[^0-9]/g, "");
     handleChange(name, numericValue);
+    setTouched((prev) => ({ ...prev, [name]: true }));
   };
+
+  const validateNitAvailability = React.useCallback(
+    async (nitValue, currentValues = values) => {
+      const normalizedNit = nitValue?.trim();
+
+      if (isClosingRef.current || !normalizedNit) {
+        return;
+      }
+
+      const validationRule = providerValidationRules.nit;
+      let validationError = "";
+      if (validationRule) {
+        for (const rule of validationRule) {
+          validationError = rule(
+            normalizedNit,
+            currentValues,
+            filteredDocumentTypes,
+          );
+          if (validationError) break;
+        }
+      }
+
+      if (validationError) {
+        setErrors((prev) => ({ ...prev, nit: validationError }));
+        setAsyncErrors((prev) => {
+          if (!prev.nit) return prev;
+          const nextErrors = { ...prev };
+          delete nextErrors.nit;
+          return nextErrors;
+        });
+        return;
+      }
+
+      const requestId = ++nitValidationRequestRef.current;
+      const excludeId = isEditing ? providerToEdit?.id : null;
+
+      try {
+        const response = await providersService.checkNitAvailability(
+          normalizedNit,
+          excludeId,
+          currentValues.tipoEntidad,
+        );
+
+        if (
+          isClosingRef.current ||
+          requestId !== nitValidationRequestRef.current
+        ) {
+          return;
+        }
+
+        if (response && !response.available) {
+          setAsyncErrors((prev) => ({ ...prev, nit: response.message }));
+          setTouched((prev) => ({ ...prev, nit: true }));
+        } else if (response && response.available) {
+          setAsyncErrors((prev) => {
+            if (!prev.nit) return prev;
+            const nextErrors = { ...prev };
+            delete nextErrors.nit;
+            return nextErrors;
+          });
+        }
+      } catch (error) {}
+    },
+    [
+      values,
+      filteredDocumentTypes,
+      isEditing,
+      providerToEdit,
+      setErrors,
+      setTouched,
+    ],
+  );
+
   // Validación en tiempo real similar a empleados
   const handleCustomBlur = async (name) => {
+    if (isClosingRef.current) {
+      return;
+    }
     handleBlur(name);
     // Validar unicidad para campos específicos solo si pasan la validación básica
     if (
@@ -123,11 +224,8 @@ const ProviderModal = ({
         try {
           let response;
           if (name === "nit") {
-            response = await providersService.checkNitAvailability(
-              values[name],
-              excludeId,
-              values.tipoEntidad,
-            );
+            await validateNitAvailability(values[name], values);
+            return;
           } else if (
             name === "razonSocial" &&
             values.tipoEntidad === "juridica"
@@ -154,14 +252,13 @@ const ProviderModal = ({
                     ? "nombre/razón social"
                     : "correo"
               } ya está registrado`;
-            // Establecer el error de unicidad y marcarlo como tocado
-            setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+            setAsyncErrors((prev) => ({ ...prev, [name]: errorMessage }));
             setTouched((prev) => ({ ...prev, [name]: true }));
           } else if (response && response.available) {
-            // Solo limpiar el error si la validación fue exitosa
-            setErrors((prev) => {
-              const { [name]: removed, ...rest } = prev;
-              return rest;
+            setAsyncErrors((prev) => {
+              const nextErrors = { ...prev };
+              delete nextErrors[name];
+              return nextErrors;
             });
           }
         } catch (error) {
@@ -174,20 +271,27 @@ const ProviderModal = ({
     if (!touched[fieldName]) {
       return null;
     }
-    return errors[fieldName];
+    return asyncErrors[fieldName] || errors[fieldName] || null;
   };
   const isFieldTouched = (fieldName) => {
-    return touched[fieldName] && errors[fieldName];
+    return (
+      touched[fieldName] && Boolean(asyncErrors[fieldName] || errors[fieldName])
+    );
   };
   // Estado para mantener el tipoDocumento original durante la carga
   const [originalTipoDocumento, setOriginalTipoDocumento] = React.useState("");
   useEffect(() => {
     if (isOpen && isEditing && providerToEdit) {
+      const isNaturalProvider = providerToEdit.tipoEntidad === "natural";
       const editData = {
         tipoEntidad: providerToEdit.tipoEntidad || "juridica",
         razonSocial: providerToEdit.razonSocial || "",
         nit: providerToEdit.nit || "",
-        tipoDocumento: providerToEdit.tipoDocumento || "",
+        tipoDocumento: isNaturalProvider
+          ? providerToEdit.documentTypeId
+            ? providerToEdit.documentTypeId.toString()
+            : providerToEdit.tipoDocumento || ""
+          : "",
         contactoPrincipal: providerToEdit.contactoPrincipal || "",
         correo: providerToEdit.correo || "",
         telefono: providerToEdit.telefono || "",
@@ -197,38 +301,73 @@ const ProviderModal = ({
         estado: providerToEdit.estado || "Activo",
       };
       // Guardar el tipoDocumento original con más información de debug
-// Guardar tanto tipoDocumento como documentTypeId por si acaso
-      const originalDocType =
-        providerToEdit.tipoDocumento || providerToEdit.documentTypeId || "";
+      // Guardar tanto tipoDocumento como documentTypeId por si acaso
+      // Priorizar documentTypeId (número) sobre tipoDocumento (código como "CC")
+      const originalDocType = isNaturalProvider
+        ? providerToEdit.documentTypeId
+          ? providerToEdit.documentTypeId.toString()
+          : providerToEdit.tipoDocumento || ""
+        : "";
       setOriginalTipoDocumento(originalDocType);
       // Si es persona natural y tiene tipoDocumento, asegurarse de que se mantenga
-      if (providerToEdit.tipoEntidad === "natural" && originalDocType) {
+      if (isNaturalProvider && originalDocType) {
         editData.tipoDocumento = originalDocType;
       }
       setValues(editData);
       // Actualizar valores originales para restauración
       updateOriginalValues(editData);
       // Limpiar validaciones al cargar datos de edición
-      setTimeout(() => resetValidation(), 0);
+      setAsyncErrors({});
+      setErrors({});
+      setTouched({});
     }
-  }, [isOpen, isEditing, providerToEdit, setValues, setTouched]);
+  }, [isOpen, isEditing, providerToEdit, setValues, setErrors, setTouched]);
+
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = isOpen;
+
+    if (!wasOpen && isOpen && !isEditing) {
+      const emptyData = {
+        tipoEntidad: "juridica",
+        razonSocial: "",
+        nit: "",
+        tipoDocumento: "",
+        contactoPrincipal: "",
+        correo: "",
+        telefono: "",
+        direccion: "",
+        ciudad: "",
+        descripcion: "",
+        estado: "Activo",
+      };
+
+      setValues(emptyData);
+      updateOriginalValues(emptyData);
+      setOriginalTipoDocumento("");
+      setEmployeeDocumentTypes([]);
+      setAsyncErrors({});
+      setErrors({});
+      setTouched({});
+    }
+  }, [isOpen, isEditing, setValues, setErrors, setTouched]);
   const handleSubmit = async () => {
     // Marcar todos los campos como tocados para mostrar errores
     touchAllFields();
-    
+
     // Validar todos los campos
     const hasValidationErrors = !validateAllFields();
-    
+
     // Si hay errores de validación, NO hacer nada (sin alert, sin acción)
     if (hasValidationErrors) {
       return; // Simplemente retornar sin hacer nada
     }
-    
+
     // Verificar si hay errores en el estado actual
-    if (Object.keys(errors).length > 0) {
+    if (Object.keys(errors).length > 0 || Object.keys(asyncErrors).length > 0) {
       return; // No hacer nada si hay errores
     }
-    
+
     // Validar unicidad de NIT/documento antes del envío
     if (values.nit && !errors.nit) {
       try {
@@ -240,14 +379,13 @@ const ProviderModal = ({
         );
         if (!nitCheck.available) {
           // Establecer el error en lugar de mostrar alert
-          setErrors((prev) => ({ ...prev, nit: nitCheck.message }));
+          setAsyncErrors((prev) => ({ ...prev, nit: nitCheck.message }));
           setTouched((prev) => ({ ...prev, nit: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     // Validar unicidad de razón social/nombre antes del envío (solo para jurídicas)
     if (
       values.razonSocial &&
@@ -264,14 +402,16 @@ const ProviderModal = ({
           );
         if (!businessNameCheck.available) {
           // Establecer el error en lugar de mostrar alert
-          setErrors((prev) => ({ ...prev, razonSocial: businessNameCheck.message }));
+          setAsyncErrors((prev) => ({
+            ...prev,
+            razonSocial: businessNameCheck.message,
+          }));
           setTouched((prev) => ({ ...prev, razonSocial: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     // Validar unicidad de email antes del envío
     if (values.correo && !errors.correo) {
       try {
@@ -282,14 +422,13 @@ const ProviderModal = ({
         );
         if (!emailCheck.available) {
           // Establecer el error en lugar de mostrar alert
-          setErrors((prev) => ({ ...prev, correo: emailCheck.message }));
+          setAsyncErrors((prev) => ({ ...prev, correo: emailCheck.message }));
           setTouched((prev) => ({ ...prev, correo: true }));
           return;
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
-    
+
     if (isEditing) {
       const confirmResult = await showConfirmAlert(
         "¿Estás seguro?",
@@ -303,7 +442,7 @@ const ProviderModal = ({
         return;
       }
     }
-    
+
     try {
       const providerData = {
         ...values,
@@ -330,6 +469,7 @@ const ProviderModal = ({
             : "El proveedor ha sido creado exitosamente.",
         );
         resetForm();
+        setAsyncErrors({});
         setTouched({});
         onClose();
       } else {
@@ -349,13 +489,41 @@ const ProviderModal = ({
     }
   };
   const handleClose = () => {
+    isClosingRef.current = true;
+    nitValidationRequestRef.current += 1;
     resetForm();
+    setErrors({});
+    setAsyncErrors({});
     setTouched({});
     // Limpiar tipoDocumento original y tipos de documento
     setOriginalTipoDocumento("");
     setEmployeeDocumentTypes([]);
     onClose();
+    setTimeout(() => {
+      isClosingRef.current = false;
+    }, 0);
   };
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPaddingRight;
+    };
+  }, [isOpen]);
   const getDynamicLabel = (field) => {
     switch (field) {
       case "razonSocial":
@@ -377,8 +545,7 @@ const ProviderModal = ({
         if (response.success && response.data) {
           setEmployeeDocumentTypes(response.data);
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     };
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
     // Cargar inmediatamente cuando se abre el modal si es necesario
@@ -392,54 +559,55 @@ const ProviderModal = ({
   }, [isOpen, values.tipoEntidad, isEditing, providerToEdit?.tipoEntidad]);
   // Efecto para restaurar tipoDocumento cuando se cargan los tipos de documento en edición
   React.useEffect(() => {
+    if (!isOpen || isClosingRef.current) {
+      return;
+    }
+
+    const normalizedNit = values.nit?.trim();
+    if (!normalizedNit) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      validateNitAvailability(normalizedNit, values);
+    }, 350);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    isOpen,
+    values.nit,
+    values.tipoEntidad,
+    values.tipoDocumento,
+    touched.nit,
+    validateNitAvailability,
+  ]);
+
+  React.useEffect(() => {
     if (
       isEditing &&
       originalTipoDocumento &&
       employeeDocumentTypes.length > 0 &&
       values.tipoEntidad === "natural"
     ) {
-// Buscar coincidencia por múltiples criterios
+      const originalStr = originalTipoDocumento.toString();
+
+      // Buscar coincidencia por id, value, name o label
       const matchingType = employeeDocumentTypes.find((type) => {
-        const typeId = type.id?.toString();
-        const typeValue = type.value?.toString();
-        const typeName = type.name;
-        const typeLabel = type.label;
-        const originalStr = originalTipoDocumento.toString();
         return (
-          typeId === originalStr ||
-          typeValue === originalStr ||
-          typeName === originalStr ||
-          typeLabel === originalStr
+          type.id?.toString() === originalStr ||
+          type.value?.toString() === originalStr ||
+          type.name === originalStr ||
+          type.label === originalStr
         );
       });
+
       if (matchingType) {
-        // Priorizar value, luego id
         const valueToSet = matchingType.value || matchingType.id.toString();
-// Solo actualizar si el valor actual es diferente para evitar loops
         if (values.tipoDocumento !== valueToSet) {
           setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
         }
-      } else {
-// Intentar buscar por coincidencia parcial o similar
-        const partialMatch = employeeDocumentTypes.find((type) => {
-          const originalLower = originalTipoDocumento.toString().toLowerCase();
-          return (
-            type.name?.toLowerCase().includes(originalLower) ||
-            type.label?.toLowerCase().includes(originalLower) ||
-            originalLower.includes(type.name?.toLowerCase()) ||
-            originalLower.includes(type.label?.toLowerCase())
-          );
-        });
-        if (partialMatch) {
-          const valueToSet = partialMatch.value || partialMatch.id.toString();
-setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
-        } else if (!values.tipoDocumento && employeeDocumentTypes.length > 0) {
-          const fallbackValue =
-            employeeDocumentTypes[0].value ||
-            employeeDocumentTypes[0].id.toString();
-          setValues((prev) => ({ ...prev, tipoDocumento: fallbackValue }));
-        }
       }
+      // Si ya hay un valor válido en tipoDocumento (ID numérico), no sobreescribir
     }
   }, [
     employeeDocumentTypes,
@@ -451,6 +619,7 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
 
   const modalContent = (
     <motion.div
+      translate="no"
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
@@ -465,7 +634,9 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
       >
         <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
           <button
+            type="button"
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={handleClose}
           >
             ✕
@@ -696,7 +867,7 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                   label="NIT"
                   name="nit"
                   type="text"
-                  placeholder="10 dígitos (Solo números)"
+                  placeholder="9 o 10 dígitos (solo números)"
                   value={values.nit}
                   onChange={handleNitChange}
                   onBlur={handleCustomBlur}
@@ -726,12 +897,13 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                 label="Correo Electrónico"
                 name="correo"
                 type="email"
-                placeholder="correo@empresa.com (opcional)"
+                placeholder="correo@empresa.com"
                 value={values.correo}
                 onChange={handleChange}
                 onBlur={handleCustomBlur}
                 error={getCombinedError("correo")}
                 touched={isFieldTouched("correo")}
+                required
               />
             </motion.div>
             <motion.div>
@@ -801,11 +973,16 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
                 type="textarea"
                 placeholder="Descripción detallada del proveedor... "
                 value={values.descripcion}
-                onChange={handleChange}
+                onChange={(name, value) => {
+                  // Limitar a 500 caracteres
+                  handleChange(name, value.slice(0, 500));
+                }}
                 onBlur={handleBlur}
                 error={getCombinedError("descripcion")}
                 touched={isFieldTouched("descripcion")}
                 rows={3}
+                maxLength={500}
+                helperText={`${values.descripcion.length}/500 caracteres`}
               />
             </motion.div>
           </div>
@@ -814,12 +991,14 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
           <div className="flex justify-between">
             <button
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={handleClose}
               className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
             >
               Cancelar
             </button>
             <button
+              type="button"
               onClick={handleSubmit}
               className="flex items-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors"
             >
@@ -834,4 +1013,3 @@ setValues((prev) => ({ ...prev, tipoDocumento: valueToSet }));
   return createPortal(modalContent, document.body);
 };
 export default ProviderModal;
-

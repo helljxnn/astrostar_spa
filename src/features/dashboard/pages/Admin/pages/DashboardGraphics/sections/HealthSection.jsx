@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
-import { FaHeartbeat, FaAppleAlt, FaBriefcaseMedical, FaBrain, FaFilter } from "react-icons/fa";
+﻿import { useState, useEffect, useMemo } from "react";
+import { FaHeartbeat, FaAppleAlt, FaBriefcaseMedical, FaBrain } from "react-icons/fa";
 import KPICard from "../components/KPICard";
 import HealthServicesGraphic from "../components/HealthServicesGraphic";
-import HealthServicesYearGraphic from "../components/HealthServicesYearGraphic";
 import appointmentService from "../../Services/AppointmentManagement/services/appointmentService";
 
 const SPECIALTY_ICONS = {
@@ -26,17 +25,9 @@ const normalizeKey = (val = "") =>
 
 const HealthSection = () => {
   const [appointments, setAppointments] = useState([]);
-  const [specialists, setSpecialists] = useState([]);
-  const [specialties, setSpecialties] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Filtros
-  const [filterSpecialty, setFilterSpecialty] = useState("");
-  const [filterSpecialist, setFilterSpecialist] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-
   useEffect(() => {
-    // Función para traer todas las páginas de citas (máx 100 por página)
     const fetchAllAppointments = async () => {
       const firstRes = await appointmentService.getAll({ page: 1, limit: 100 });
       const firstData = firstRes?.data || [];
@@ -50,82 +41,31 @@ const HealthSection = () => {
           appointmentService.getAll({ page: i + 2, limit: 100 })
         )
       );
+
       return [...firstData, ...rest.flatMap((r) => r?.data || [])];
     };
 
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [allAppts, specialistsRes, specialtiesRes] = await Promise.all([
-          fetchAllAppointments(),
-          appointmentService.getSpecialists(),
-          appointmentService.getSpecialties(),
-        ]);
-
+        const allAppts = await fetchAllAppointments();
         setAppointments(Array.isArray(allAppts) ? allAppts : []);
-
-        // Especialistas: solo los que tienen especialidad de salud reconocida
-        const HEALTH_SPECIALTIES = ["psicologia", "fisioterapia", "nutricion", "medicina"];
-        const specItems = (specialistsRes?.data || []).filter(
-          (s) => HEALTH_SPECIALTIES.includes(s.specialty)
-        );
-        setSpecialists(Array.isArray(specItems) ? specItems : []);
-
-        // Especialidades: { success, data: [{value, label}] }
-        const spItems = specialtiesRes?.data || [];
-        setSpecialties(Array.isArray(spItems) ? spItems : []);
-      } catch (e) {
-        console.error("Error cargando datos de salud:", e);
+      } catch (_error) {
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
     };
+
     fetchAll();
   }, []);
 
-  // Mapa athleteId -> sportsCategory desde las citas mismas
-  // Las citas tienen athlete.inscriptions[0].sportsCategory si el backend lo incluye
-  // Si no, usamos el campo que venga
-  const athleteCategoryMap = useMemo(() => {
-    const map = {};
-    appointments.forEach((a) => {
-      const id = String(a.athleteId || a.athlete?.id || "");
-      if (!id) return;
-      // Intentar obtener categoría desde la cita
-      const cat =
-        a.athlete?.sportsCategory?.nombre ||
-        a.athlete?.sportsCategory?.name ||
-        a.athlete?.categoria ||
-        a.athleteCategory ||
-        "";
-      if (cat) map[id] = cat;
-    });
-    return map;
-  }, [appointments]);
-
-  // Citas filtradas
-  const filtered = useMemo(() => {
-    return appointments.filter((a) => {
-      const athleteId = String(a.athleteId || a.athlete?.id || "");
-      const athleteCat = athleteCategoryMap[athleteId] || "";
-      const specialty = normalizeKey(a.specialty || "");
-      const status = a.status || "";
-      const specialistId = String(a.specialistId || a.specialist?.id || "");
-
-      if (filterSpecialty && specialty !== normalizeKey(filterSpecialty)) return false;
-      if (filterSpecialist && specialistId !== filterSpecialist) return false;
-      if (filterStatus && status !== filterStatus) return false;
-      return true;
-    });
-  }, [appointments, athleteCategoryMap, filterSpecialty, filterSpecialist, filterStatus]);
-
-  // KPIs calculados
   const stats = useMemo(() => {
-    const total = filtered.length;
+    const total = appointments.length;
     const bySpecialty = {};
     const byStatus = { Completado: 0, Programado: 0, Cancelado: 0 };
 
-    filtered.forEach((a) => {
+    appointments.forEach((a) => {
       const sp = normalizeKey(a.specialty || "otro");
       bySpecialty[sp] = (bySpecialty[sp] || 0) + 1;
       const st = a.status || "";
@@ -136,70 +76,10 @@ const HealthSection = () => {
     const tasaAsistencia = total > 0 ? Math.round((completadas / total) * 100) : 0;
 
     return { total, bySpecialty, byStatus, tasaAsistencia };
-  }, [filtered]);
-
-  const hasFilters = filterSpecialty || filterSpecialist || filterStatus;
+  }, [appointments]);
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FaFilter className="text-gray-400 text-sm" />
-          <span className="text-sm font-semibold text-gray-700">Filtros</span>
-          {hasFilters && (
-            <button
-              onClick={() => { setFilterSpecialty(""); setFilterSpecialist(""); setFilterStatus(""); }}
-              className="ml-auto text-xs text-primary-purple hover:underline"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Especialidad */}
-          <select
-            value={filterSpecialty}
-            onChange={(e) => setFilterSpecialty(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary-green/40 focus:outline-none"
-          >
-            <option value="">Todas las especialidades</option>
-            {specialties.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-
-          {/* Especialista */}
-          <select
-            value={filterSpecialist}
-            onChange={(e) => setFilterSpecialist(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary-green/40 focus:outline-none"
-          >
-            <option value="">Todos los especialistas</option>
-            {specialists.map((s) => (
-              <option key={s.id} value={String(s.id)}>
-                {s.nombre}{s.cargo ? ` — ${s.cargo}` : ""}
-              </option>
-            ))}
-          </select>
-
-          {/* Estado */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary-green/40 focus:outline-none"
-          >
-            <option value="">Todos los estados</option>
-            <option value="Programado">Programadas</option>
-            <option value="Completado">Completadas</option>
-            <option value="Cancelado">Canceladas</option>
-          </select>
-        </div>
-      </div>
-
-      {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Citas"
@@ -218,17 +98,15 @@ const HealthSection = () => {
         ))}
       </div>
 
-      {/* Gráficas */}
       <div className="grid grid-cols-1 gap-6">
-        <HealthServicesGraphic appointments={filtered} loading={loading} />
+        <HealthServicesGraphic appointments={appointments} loading={loading} />
       </div>
 
-      {/* Estado de citas + Servicios más solicitados */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <div className="w-1 h-6 bg-gradient-to-b from-primary-green to-primary-blue rounded-full"></div>
-            Servicios Más Solicitados
+            Servicios Mas Solicitados
           </h3>
           {loading ? (
             <div className="space-y-3">
@@ -253,8 +131,6 @@ const HealthSection = () => {
           )}
         </div>
       </div>
-
-
     </div>
   );
 };
@@ -302,6 +178,7 @@ const StatusBreakdown = ({ byStatus }) => {
     { key: "Programado", label: "Programadas", color: "primary-blue" },
     { key: "Cancelado", label: "Canceladas", color: "primary-red" },
   ];
+
   return (
     <div className="space-y-3">
       {items.map(({ key, label, color }) => (
@@ -320,4 +197,3 @@ const StatusBreakdown = ({ byStatus }) => {
 };
 
 export default HealthSection;
-

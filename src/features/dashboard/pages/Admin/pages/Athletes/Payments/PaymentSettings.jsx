@@ -5,20 +5,29 @@ import PermissionGuard from "../../../../../../../shared/components/PermissionGu
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 import {
-  showSuccessAlert,
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts.js";
+import { usePaymentSettings } from "./hooks/usePaymentSettings.js";
 
 const PaymentSettings = () => {
   const { hasPermission } = usePermissions();
+  const { settings, loading, updating, updateSettings } = usePaymentSettings();
 
   const [formData, setFormData] = useState({
     monthlyAmount: 50000,
     enrollmentAmount: 100000,
-    graceDays: 5
+    lateFeeDailyAmount: 2000
   });
-  const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (!settings) return;
+    setFormData({
+      monthlyAmount: settings.monthlyAmount || 50000,
+      enrollmentAmount: settings.enrollmentAmount || 100000,
+      lateFeeDailyAmount: settings.lateFeeDailyAmount || 2000,
+    });
+  }, [settings]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -31,8 +40,8 @@ const PaymentSettings = () => {
       newErrors.enrollmentAmount = 'Debe ser mayor a $1,000';
     }
     
-    if (formData.graceDays < 1 || formData.graceDays > 15) {
-      newErrors.graceDays = 'Debe estar entre 1 y 15 días';
+    if (formData.lateFeeDailyAmount < 0 || formData.lateFeeDailyAmount > 100000) {
+      newErrors.lateFeeDailyAmount = 'Debe estar entre $0 y $100,000';
     }
     
     setErrors(newErrors);
@@ -52,23 +61,22 @@ const PaymentSettings = () => {
     
     if (!validateForm()) return;
     
-    setSaving(true);
-    
-    // Simular guardado
-    setTimeout(() => {
-      setSaving(false);
-      showSuccessAlert(
-        "Configuración guardada",
-        "Los cambios se han guardado correctamente"
-      );
-    }, 1000);
+    const result = await updateSettings({
+      monthlyAmount: formData.monthlyAmount,
+      enrollmentAmount: formData.enrollmentAmount,
+      lateFeeDailyAmount: formData.lateFeeDailyAmount,
+    });
+
+    if (!result.success) {
+      showErrorAlert("Error", result.error || "No se pudo actualizar la configuración");
+    }
   };
 
   const handleReset = () => {
     setFormData({
-      monthlyAmount: 50000,
-      enrollmentAmount: 100000,
-      graceDays: 5
+      monthlyAmount: settings?.monthlyAmount || 50000,
+      enrollmentAmount: settings?.enrollmentAmount || 100000,
+      lateFeeDailyAmount: settings?.lateFeeDailyAmount || 2000
     });
     setErrors({});
   };
@@ -82,10 +90,10 @@ const PaymentSettings = () => {
   };
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-4 sm:p-6 font-montserrat w-full max-w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Configuración de Pagos</h1>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-semibold text-gray-800 whitespace-nowrap">Configuración de Pagos</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -142,33 +150,33 @@ const PaymentSettings = () => {
                 </div>
               </div>
 
-              {/* Políticas de Tiempo */}
+              {/* Política de Cobro */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Políticas de Tiempo
+                  Política de Cobro
                 </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Días de Gracia
+                      Mora Diaria
                     </label>
                     <input
                       type="number"
-                      value={formData.graceDays}
-                      onChange={(e) => setFormData({...formData, graceDays: parseInt(e.target.value) || 0})}
+                      value={formData.lateFeeDailyAmount}
+                      onChange={(e) => setFormData({...formData, lateFeeDailyAmount: parseInt(e.target.value) || 0})}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-blue focus:border-transparent ${
-                        errors.graceDays ? 'border-red-300' : 'border-gray-300'
+                        errors.lateFeeDailyAmount ? 'border-red-300' : 'border-gray-300'
                       }`}
-                      placeholder="5"
-                      min="1"
-                      max="15"
+                      placeholder="2000"
+                      min="0"
+                      max="100000"
                     />
-                    {errors.graceDays && (
-                      <p className="text-red-500 text-sm mt-1">{errors.graceDays}</p>
+                    {errors.lateFeeDailyAmount && (
+                      <p className="text-red-500 text-sm mt-1">{errors.lateFeeDailyAmount}</p>
                     )}
                     <p className="text-sm text-gray-500 mt-1">
-                      Días del 1 al X del mes sin mora
+                      Valor cobrado por cada día de mora
                     </p>
                   </div>
                 </div>
@@ -188,11 +196,11 @@ const PaymentSettings = () => {
                 <PermissionGuard module="paymentsManagement" action="Aprobar">
                   <button
                     type="submit"
-                    disabled={saving}
+                    disabled={updating || loading}
                     className="flex items-center gap-2 px-4 py-2 text-white bg-primary-purple rounded-lg shadow hover:bg-primary-blue transition-colors disabled:opacity-50"
                   >
                     <FaSave className="w-4 h-4" />
-                    {saving ? 'Guardando...' : 'Guardar Cambios'}
+                    {updating ? "Guardando..." : "Guardar Cambios"}
                   </button>
                 </PermissionGuard>
               </div>
@@ -221,9 +229,9 @@ const PaymentSettings = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-blue-700">Días de gracia:</span>
+                <span className="text-blue-700">Mora diaria:</span>
                 <span className="font-medium text-blue-900">
-                  {formData.graceDays} días
+                  {formatCurrency(formData.lateFeeDailyAmount)}
                 </span>
               </div>
             </div>
@@ -237,7 +245,7 @@ const PaymentSettings = () => {
             <div className="space-y-2 text-sm text-gray-600">
               <div className="flex justify-between">
                 <span>Mora diaria:</span>
-                <span className="font-medium">$2,000</span>
+                <span className="font-medium">{formatCurrency(formData.lateFeeDailyAmount)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Días máximos mora:</span>

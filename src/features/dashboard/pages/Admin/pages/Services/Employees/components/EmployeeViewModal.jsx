@@ -66,8 +66,8 @@ const EmployeeViewModal = ({
       className="form-field space-y-1"
     >
       <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 min-h-[48px] flex items-center">
-        {value || "No especificado"}
+      <div className="w-full p-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-700 min-h-[48px] flex items-center overflow-hidden">
+        <span className="break-all">{value || "No especificado"}</span>
       </div>
     </motion.div>
   );
@@ -238,4 +238,3 @@ const EmployeeViewModal = ({
 };
 
 export default EmployeeViewModal;
-

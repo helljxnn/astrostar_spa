@@ -60,20 +60,20 @@ export const documentValidationRules = {
     errorMessagePattern: 'El número solo debe contener letras, números y guiones'
   },
   'Número de Identificación Tributaria': {
-    minLength: 10,
+    minLength: 9,
     maxLength: 10,
     pattern: /^[0-9]+$/,
-    errorMessageMin: 'El NIT debe tener exactamente 10 dígitos',
-    errorMessageMax: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessageMin: 'El NIT debe tener entre 9 y 10 dígitos',
+    errorMessageMax: 'El NIT debe tener entre 9 y 10 dígitos',
     errorMessagePattern: 'El NIT solo puede contener números, sin guiones ni puntos',
     hasDigitoVerificacion: false
   },
   'NIT': {
-    minLength: 10,
+    minLength: 9,
     maxLength: 10,
     pattern: /^[0-9]+$/,
-    errorMessageMin: 'El NIT debe tener exactamente 10 dígitos',
-    errorMessageMax: 'El NIT debe tener exactamente 10 dígitos',
+    errorMessageMin: 'El NIT debe tener entre 9 y 10 dígitos',
+    errorMessageMax: 'El NIT debe tener entre 9 y 10 dígitos',
     errorMessagePattern: 'El NIT solo puede contener números, sin guiones ni puntos',
     hasDigitoVerificacion: false
   }
@@ -149,8 +149,8 @@ export const getDocumentPlaceholder = (documentType) => {
     'Permiso de Permanencia': 'Ej: PP-123456',
     'Tarjeta de Extranjería': 'Ej: TE-123456',
     'Número de Identificación Extranjero': 'Ej: NIE-123456',
-    'Número de Identificación Tributaria': '10 dígitos (solo números)',
-    'NIT': '10 dígitos (solo números)'
+    'Número de Identificación Tributaria': '9 o 10 dígitos (solo números)',
+    'NIT': '9 o 10 dígitos (solo números)'
   };
 
   return placeholders[documentType] || 'Ingrese el número de documento';

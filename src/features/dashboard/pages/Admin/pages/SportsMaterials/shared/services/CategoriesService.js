@@ -165,9 +165,15 @@ class CategoriesService {
   async getAllForReport(params = {}) {
     try {
       const response = await apiClient.get(`${this.endpoint}/report`, { params });
+      const rawData = Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response)
+          ? response
+          : [];
+
       return {
         success: true,
-        data: response.data || response,
+        data: rawData.map((category) => this.transformFromBackend(category)),
       };
     } catch (error) {
       return { success: false, error: error.message, data: [] };

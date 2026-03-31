@@ -1,43 +1,40 @@
-﻿import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CalendarDays } from "lucide-react";
 import { convertTo24Hour } from "../../../../../shared/utils/helpers/eventsHelper";
 import {
   combineDateAndTime,
   getTimeRemaining,
+  parseDateValue,
 } from "../../../../../shared/utils/helpers/dateHelpers";
 
-export const CountdownTimer = ({ selectedEvent, selectedDate }) => {
+const formatDate = (value) => {
+  if (!value) return "";
+  const parsed = parseDateValue(value);
+  return !parsed || Number.isNaN(parsed.getTime())
+    ? value
+    : new Intl.DateTimeFormat("es-CO", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      }).format(parsed);
+};
+
+export const CountdownTimer = ({ selectedEvent }) => {
   const initial = { days: 0, hours: 0, minutes: 0, seconds: 0, expired: false };
   const [timeLeft, setTimeLeft] = useState(initial);
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!selectedEvent?.date || !selectedEvent?.time) {
       setTimeLeft(initial);
-      setProgress(0);
       return;
     }
 
     const tick = () => {
       const targetTime = combineDateAndTime(
         selectedEvent.date,
-        convertTo24Hour(selectedEvent.time)
+        convertTo24Hour(selectedEvent.time),
       );
-      const t = getTimeRemaining(targetTime);
-      setTimeLeft(t);
-
-      if (t.expired) {
-        setProgress(100);
-        return;
-      }
-
-      const diff = targetTime.getTime() - Date.now();
-      const oneWeek = 7 * 24 * 60 * 60 * 1000;
-
-      if (diff <= oneWeek) {
-        setProgress(((oneWeek - diff) / oneWeek) * 100);
-      } else {
-        setProgress(5);
-      }
+      setTimeLeft(getTimeRemaining(targetTime));
     };
 
     tick();
@@ -46,39 +43,51 @@ export const CountdownTimer = ({ selectedEvent, selectedDate }) => {
   }, [selectedEvent]);
 
   const TimeUnit = ({ value, label }) => (
-    <div className="flex flex-col items-center">
-      <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold font-montserrat bg-gradient-to-r from-[#b595ff] to-[#9be9ff] bg-clip-text text-transparent">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 px-2 py-2.5 text-center">
+      <p className="font-montserrat text-lg font-bold leading-none text-slate-900 sm:text-[22px]">
         {String(value ?? 0).padStart(2, "0")}
-      </span>
-      <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-semibold mt-1 sm:mt-2">{label}</span>
+      </p>
+      <p className="mt-1 whitespace-nowrap text-[10px] font-semibold leading-none tracking-[0.02em] text-slate-500">
+        {label}
+      </p>
     </div>
   );
 
-  const titleText = selectedEvent
-    ? `Tiempo para: ${selectedEvent.title} (${selectedEvent.time})`
-    : "No hay eventos";
+  if (!selectedEvent) {
+    return (
+      <div className="rounded-[24px] border border-slate-200 bg-white p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+          Proximo evento
+        </p>
+        <p className="mt-2 text-sm text-slate-500">
+          No hay un evento seleccionado.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-[16rem] sm:max-w-xs md:max-w-sm lg:max-w-md">
-      <p className="text-base sm:text-lg md:text-xl font-bold font-montserrat text-gray-700 mb-3 sm:mb-4 md:mb-6 text-center px-2 sm:px-4">
-        {titleText}
-      </p>
-
-      <div className="flex items-center gap-2 sm:gap-3 md:gap-4 mb-3 sm:mb-4 md:mb-6">
-        <TimeUnit value={timeLeft.days} label="DÍAS" />
-        <span className="text-xl sm:text-2xl md:text-3xl font-light text-gray-300">:</span>
-        <TimeUnit value={timeLeft.hours} label="HRS" />
-        <span className="text-xl sm:text-2xl md:text-3xl font-light text-gray-300">:</span>
-        <TimeUnit value={timeLeft.minutes} label="MIN" />
-        <span className="text-xl sm:text-2xl md:text-3xl font-light text-gray-300">:</span>
-        <TimeUnit value={timeLeft.seconds} label="SEG" />
+    <div className="rounded-[24px] border border-slate-200 bg-white p-4 sm:p-5">
+      <div className="flex items-start gap-3">
+        <div className="rounded-full border border-[#e6dcff] bg-[#faf7ff] p-2 text-[#a585ef]">
+          <CalendarDays size={14} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+            Proximo evento
+          </p>
+          <h3 className="mt-2 line-clamp-2 font-montserrat text-sm font-bold uppercase leading-tight text-slate-900 sm:text-[15px]">
+            {selectedEvent.title}
+          </h3>
+          <p className="mt-1.5 text-xs text-slate-500 sm:text-sm">{formatDate(selectedEvent.date)}</p>
+        </div>
       </div>
 
-      <div className="w-full bg-gray-200 rounded-full h-1 sm:h-1.5 md:h-2 overflow-hidden">
-        <div
-          className="h-1 sm:h-1.5 md:h-2 rounded-full bg-gradient-to-r from-[#b595ff] to-[#9be9ff] transition-all duration-500"
-          style={{ width: `${progress}%` }}
-        />
+      <div className="mt-4 grid grid-cols-4 gap-2">
+        <TimeUnit value={timeLeft.days} label="Dias" />
+        <TimeUnit value={timeLeft.hours} label="Horas" />
+        <TimeUnit value={timeLeft.minutes} label="Min." />
+        <TimeUnit value={timeLeft.seconds} label="Seg." />
       </div>
     </div>
   );

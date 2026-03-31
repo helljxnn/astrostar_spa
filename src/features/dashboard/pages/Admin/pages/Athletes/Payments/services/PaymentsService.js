@@ -229,17 +229,15 @@ throw error;
    */
   async getPendingPayments(params = {}) {
     try {
-      const queryParams = new URLSearchParams();
-      
-      if (params.page) queryParams.append('page', params.page);
-      if (params.limit) queryParams.append('limit', params.limit);
-      if (params.search) queryParams.append('search', params.search);
-      if (params.type) queryParams.append('type', params.type);
-      if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
-      if (params.dateTo) queryParams.append('dateTo', params.dateTo);
-
       const response = await apiClient.get(`${this.endpoint}/pending`, {
-        params: queryParams,
+        params: {
+          page: params.page,
+          limit: params.limit,
+          search: params.search,
+          type: params.type,
+          dateFrom: params.dateFrom,
+          dateTo: params.dateTo,
+        },
       });
       return this.normalizeResponse(response);
     } catch (error) {
@@ -349,8 +347,8 @@ return this.handleError(error);
         search: params.search || '',
         status: params.status || '',
         type: params.type || '',
-        startDate: params.dateFrom || '',
-        endDate: params.dateTo || '',
+        dateFrom: params.dateFrom || '',
+        dateTo: params.dateTo || '',
       };
       
       // Limpiar parámetros vacíos
@@ -363,7 +361,7 @@ return this.handleError(error);
       
       return {
         success: true,
-        data: response.data || response || [],
+        data: response.data || [],
       };
     } catch (error) {
 return { success: false, error: error.message, data: [] };

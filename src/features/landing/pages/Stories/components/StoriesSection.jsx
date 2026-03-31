@@ -1,73 +1,130 @@
-﻿import { motion } from "framer-motion";
-import { StoryCard } from "./StoryCard";
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { storiesData } from "../data/storiesData";
+import { StoryFlipCard } from "./StoryFlipCard";
 
 export const StoriesSection = () => {
+  const [selectedStory, setSelectedStory] = useState(null);
+  const featuredStory = storiesData.find((story) => story.layout === "featured");
+  const secondaryStories = storiesData.filter((story) => story.layout !== "featured");
+
   return (
-    <section className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 md:px-10 lg:px-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-7xl mx-auto">
-        {/* Título de la sección */}
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-12 sm:mb-16 md:mb-20"
-        >
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 font-montserrat mb-4 sm:mb-6 px-2">
-            Historias que <span className="text-[#B595FF]">inspiran</span>
-          </h1>
-          <div className="w-16 sm:w-20 md:w-24 h-1 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] mx-auto mb-4 sm:mb-6 rounded-full"></div>
-          <p className="text-gray-600 text-base sm:text-lg md:text-xl max-w-4xl mx-auto leading-relaxed px-4">
-            Conoce las historias de nuestras niñas futbolistas, sus sueños, logros y cómo 
-            la Fundación Manuela Vanegas ha transformado sus vidas dentro y fuera del campo.
-          </p>
-        </motion.div>
+    <>
+      <section className="bg-gradient-to-b from-white to-gray-50 px-6 py-16 font-montserrat sm:px-10 lg:px-20">
+        <div className="mx-auto max-w-7xl">
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: false }}
+            transition={{ duration: 0.8 }}
+            className="mb-12 text-center"
+          >
+            <h1 className="mb-4 text-4xl font-bold text-gray-900 sm:text-5xl">
+              Historias y testimonios
+            </h1>
+          </motion.div>
 
-        {/* Grid de historias con diseño exótico responsive */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 md:gap-12 lg:gap-16">
-          {storiesData.map((story, index) => (
-            <StoryCard key={story.id} story={story} index={index} />
-          ))}
-        </div>
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: false }}
+            transition={{ duration: 0.8 }}
+            className="mb-8"
+          >
+            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+              Historias
+            </h2>
+          </motion.div>
 
-        {/* Frase inspiracional con diseño exótico responsive */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: false }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="text-center mt-16 sm:mt-20 md:mt-24 px-4"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#B595FF]/10 to-[#9BE9FF]/10 rounded-2xl sm:rounded-3xl blur-xl"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 border border-[#B595FF]/20 shadow-2xl">
-              <motion.div
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: 1, delay: 0.8 }}
-                className="text-4xl sm:text-5xl md:text-6xl text-[#B595FF]/20 mb-2 sm:mb-4"
-                style={{ fontFamily: "'Georgia', serif" }}
-              >
-                "
-              </motion.div>
-              <p 
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-gray-700 italic font-light max-w-3xl mx-auto leading-relaxed"
-                style={{ fontFamily: "'Georgia', serif" }}
-              >
-                Cada niña es una historia que vale la pena contar, 
-                cada sueño es una meta que vale la pena alcanzar.
-              </p>
-              <motion.div
-                initial={{ width: 0 }}
-                whileInView={{ width: "80px" }}
-                transition={{ duration: 1, delay: 1.2 }}
-                className="h-1 bg-gradient-to-r from-[#B595FF] to-[#9BE9FF] mx-auto mt-6 sm:mt-8 rounded-full"
-              ></motion.div>
+          <div className="space-y-8">
+            {featuredStory && (
+              <StoryFlipCard
+                story={featuredStory}
+                index={0}
+                featured
+                onOpen={setSelectedStory}
+              />
+            )}
+
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              {secondaryStories.map((story, index) => (
+                <StoryFlipCard
+                  key={story.id}
+                  story={story}
+                  index={index + 1}
+                  onOpen={setSelectedStory}
+                />
+              ))}
             </div>
           </div>
-        </motion.div>
-      </div>
-    </section>
+        </div>
+      </section>
+
+      <AnimatePresence>
+        {selectedStory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedStory(null)}
+            className="fixed inset-0 z-[70] overflow-y-auto bg-black/55 p-4 backdrop-blur-sm sm:p-8"
+          >
+            <div className="grid min-h-full place-items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                transition={{ duration: 0.25 }}
+                onClick={(event) => event.stopPropagation()}
+                className="w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-2xl"
+              >
+                <div className="grid grid-cols-1 lg:grid-cols-[1.02fr_0.98fr]">
+                  <div className="relative min-h-[320px] lg:min-h-full">
+                    <img
+                      src={selectedStory.image}
+                      alt={selectedStory.title}
+                      className="absolute inset-0 h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStory(null)}
+                      className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md"
+                      aria-label="Cerrar historia"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-white to-slate-50 p-7 font-montserrat sm:p-8 lg:p-10">
+                    <div className="mb-6 flex items-center gap-4">
+                      <div className="h-14 w-2 rounded-full bg-gradient-to-b from-[#B595FF] to-[#9BE9FF]" />
+                      <div>
+                        <h3 className="text-2xl font-bold leading-tight text-gray-900 sm:text-3xl">
+                          {selectedStory.title}
+                        </h3>
+                        {selectedStory.meta && (
+                          <p className="mt-2 text-sm text-gray-500">
+                            {selectedStory.meta}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <p className="text-base italic leading-relaxed text-gray-700">
+                      {selectedStory.quote}
+                    </p>
+                    <p className="mt-6 text-base leading-relaxed text-gray-700">
+                      {selectedStory.story}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };

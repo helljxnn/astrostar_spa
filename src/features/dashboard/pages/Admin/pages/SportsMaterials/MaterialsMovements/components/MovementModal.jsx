@@ -7,6 +7,7 @@ import SearchableSelect from "../../../../../../../../shared/components/Searchab
 import ProviderModal from "../../../Providers/components/ProviderModal";
 import materialsService from "../../Materials/services/MaterialsService";
 import providersService from "../../../Providers/services/ProvidersService";
+import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions";
 import {
   calculateNewStock,
   validateMovementQuantity,
@@ -52,12 +53,13 @@ const MovementModal = ({
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     if (isOpen) {
       if (isEditing && movement) {
         setFormData({
-          materialId: movement.materialId || "",
+          materialId: movement.materialId ? String(movement.materialId) : "",
           materialNombre: movement.materialNombre || "",
           categoria: movement.categoria || "",
           cantidad: movement.cantidad || "",
@@ -65,7 +67,7 @@ const MovementModal = ({
             ? movement.fechaIngreso.split("T")[0]
             : getTodayLocalDate(),
           inventarioDestino: movement.inventarioDestino || "FUNDACION",
-          proveedor: movement.proveedorId || "",
+          proveedor: movement.proveedorId ? String(movement.proveedorId) : "",
           observaciones: movement.observaciones || "",
         });
         setSelectedMaterial({
@@ -87,6 +89,8 @@ const MovementModal = ({
           observaciones: "",
         });
         setSelectedMaterial(null);
+        setErrors({});
+        setTouched({});
       }
       fetchMaterials();
       fetchProviders();
@@ -117,6 +121,8 @@ const MovementModal = ({
       const response = await providersService.getActiveProviders();
       if (response.success && response.data) {
         setProviders(response.data);
+      } else {
+        setProviders([]);
       }
     } catch (error) {
       setProviders([]);
@@ -129,7 +135,7 @@ const MovementModal = ({
     setSelectedMaterial(material);
     setFormData((prev) => ({
       ...prev,
-      materialId: material.id,
+      materialId: String(material.id),
       materialNombre: material.nombre,
       categoria: material.categoria,
     }));
@@ -353,6 +359,13 @@ const MovementModal = ({
   };
 
   const handleSaveProvider = async (providerData) => {
+    if (!hasPermission("providers", "Crear")) {
+      return {
+        success: false,
+        message: "No tienes permisos para crear proveedores",
+      };
+    }
+
     try {
       const response = await providersService.createProvider(providerData);
       if (response.success) {
@@ -360,7 +373,7 @@ const MovementModal = ({
         await fetchProviders();
         // Seleccionar el nuevo proveedor
         if (response.data && response.data.id) {
-          setFormData((prev) => ({ ...prev, proveedor: response.data.id }));
+          setFormData((prev) => ({ ...prev, proveedor: String(response.data.id) }));
         }
         return response;
       }
@@ -373,17 +386,17 @@ const MovementModal = ({
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
       <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
         {/* Header */}
-        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 sm:p-4 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={handleClose}
           >
             ✕
           </button>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center pr-8">
             {isEditing
               ? "Editar Ingreso de Material"
               : "Registrar Ingreso de Material"}
@@ -391,7 +404,7 @@ const MovementModal = ({
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           <form onSubmit={handleSubmit} className="space-y-3">
             {/* Material con SearchableSelect */}
             {!isEditing && (
@@ -400,19 +413,19 @@ const MovementModal = ({
                   Material <span className="text-red-500">*</span>
                 </label>
                 <SearchableSelect
-                  name="materialId"
                   options={materials.map((m) => ({
-                    value: m.id,
+                    value: String(m.id),
                     label: m.nombre,
                   }))}
                   value={formData.materialId}
-                  onChange={(name, value) => {
-                    const material = materials.find((m) => m.id === value);
+                  onChange={(value) => {
+                    const material = materials.find(
+                      (m) => String(m.id) === String(value),
+                    );
                     if (material) {
                       handleMaterialSelect(material);
                     }
                   }}
-                  onBlur={() => handleBlur("materialId")}
                   placeholder="Selecciona un material"
                   loading={loadingMaterials}
                   error={touched.materialId && errors.materialId}
@@ -442,7 +455,7 @@ const MovementModal = ({
 
             {/* Stock Actual */}
             {selectedMaterial && !isEditing && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Stock Fundación
@@ -580,28 +593,29 @@ const MovementModal = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Proveedor (opcional)
               </label>
-              <div className="flex gap-2">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 min-w-0">
                   <SearchableSelect
-                    name="proveedor"
                     options={providers.map((p) => ({
-                      value: p.id,
+                      value: String(p.id),
                       label: `${p.razonSocial} - ${p.tipoDocumentoNombre || "NIT"}: ${p.nit}`,
                     }))}
                     value={formData.proveedor}
-                    onChange={handleChange}
+                    onChange={(value) => handleChange("proveedor", value)}
                     placeholder="Selecciona un proveedor"
                     loading={loadingProviders}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsProviderModalOpen(true)}
-                  className="px-3 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors flex items-center gap-2"
-                  title="Crear nuevo proveedor"
-                >
-                  <FaPlus />
-                </button>
+                {hasPermission("providers", "Crear") && (
+                  <button
+                    type="button"
+                    onClick={() => setIsProviderModalOpen(true)}
+                    className="px-3 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors flex items-center justify-center gap-2 sm:self-auto"
+                    title="Crear nuevo proveedor"
+                  >
+                    <FaPlus />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -613,20 +627,27 @@ const MovementModal = ({
                 type="textarea"
                 placeholder="Ej: Entrega parcial, material en buen estado, recibido sin empaque, etc."
                 value={formData.observaciones}
-                onChange={handleChange}
+                onChange={(name, value) => {
+                  // Limitar a 500 caracteres
+                  if (value.length <= 500) {
+                    handleChange(name, value);
+                  }
+                }}
                 rows={3}
+                maxLength={500}
+                helperText={`${formData.observaciones.length}/500 caracteres`}
               />
             </div>
           </form>
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-gray-200 p-3">
-          <div className="flex justify-between">
+        <div className="flex-shrink-0 border-t border-gray-200 p-3 sm:p-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
             <button
               type="button"
               onClick={handleClose}
-              className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
+              className="w-full sm:w-auto px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 font-medium"
               disabled={loading}
             >
               Cancelar
@@ -634,7 +655,7 @@ const MovementModal = ({
             <button
               type="submit"
               onClick={handleSubmit}
-              className="flex items-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors disabled:opacity-50"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue hover:bg-primary-purple text-white rounded-lg shadow transition-colors disabled:opacity-50"
               disabled={loading}
             >
               {loading
@@ -643,18 +664,20 @@ const MovementModal = ({
                   : "Registrando..."
                 : isEditing
                   ? "Guardar Cambios"
-                  : "Guardar Ingreso"}
+                  : "Crear Ingreso"}
             </button>
           </div>
         </div>
       </div>
 
       {/* Modal de Proveedor */}
-      <ProviderModal
-        isOpen={isProviderModalOpen}
-        onClose={() => setIsProviderModalOpen(false)}
-        onSave={handleSaveProvider}
-      />
+      {hasPermission("providers", "Crear") && (
+        <ProviderModal
+          isOpen={isProviderModalOpen}
+          onClose={() => setIsProviderModalOpen(false)}
+          onSave={handleSaveProvider}
+        />
+      )}
     </div>
   );
 

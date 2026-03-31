@@ -199,6 +199,7 @@ return {
         return {
           success: true,
           data: response.data,
+          emailSent: response.emailSent === true,
           message: response.message,
         };
       }
@@ -470,6 +471,7 @@ return {
           search: params.search || '',
           status: params.status || '',
           categoria: params.categoria || '',
+          estadoInscripcion: params.estadoInscripcion || '',
         }
       });
 

@@ -27,9 +27,19 @@ const DetailItem = ({ icon, label, value }) => (
 const ViewProfileModal = ({ isOpen, onClose, user }) => {
   if (!isOpen) return null;
 
+  const isAthleteUser = Boolean(
+    user?.athleteId ||
+      user?.athlete_id ||
+      user?.athlete ||
+      user?.userType === "athletes" ||
+      user?.userType === "athlete" ||
+      user?.role?.name === "Deportista" ||
+      user?.rol === "Deportista",
+  );
+
   // Función para formatear el rol
   const formatRole = (role) => {
-    if (!role) return "No especificado";
+    if (!role) return isAthleteUser ? "Deportista" : "Usuario";
 
     // Si el rol es un objeto con name
     if (typeof role === "object" && role?.name) {
@@ -47,7 +57,7 @@ const ViewProfileModal = ({ isOpen, onClose, user }) => {
         .join(" ");
     }
 
-    return "No especificado";
+    return isAthleteUser ? "Deportista" : "Usuario";
   };
 
   // Función para obtener el nombre del tipo de documento
@@ -67,10 +77,16 @@ const ViewProfileModal = ({ isOpen, onClose, user }) => {
     const middleName = user?.middleName || user?.segundoNombre || "";
     const lastName = user?.lastName || user?.apellido || "";
     const secondLastName = user?.secondLastName || user?.segundoApellido || "";
-
-    return `${firstName} ${middleName} ${lastName} ${secondLastName}`
+    const composedName = `${firstName} ${middleName} ${lastName} ${secondLastName}`
       .replace(/\s+/g, " ")
       .trim();
+
+    return (
+      composedName ||
+      user?.fullName ||
+      user?.name ||
+      (isAthleteUser ? "Deportista" : "Usuario")
+    );
   };
 
   // Función para obtener la inicial del nombre

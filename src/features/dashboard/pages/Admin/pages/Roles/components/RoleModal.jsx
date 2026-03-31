@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFormRoleValidation } from "../hooks/useFormRoleValidation";
@@ -11,10 +11,9 @@ import {
   showErrorAlert,
 } from "../../../../../../../shared/utils/alerts.js";
 import {
-  MODULE_CONFIG,
-  MODULE_GROUPS,
   getModuleAllowedActions,
 } from "../../../../../../../shared/constants/moduleConfig";
+import { buildRoleModuleCategories } from "../../../../../../../shared/constants/permissionStructure";
 
 const PROTECTED_SYSTEM_ROLES = new Set([
   "administrador",
@@ -34,39 +33,12 @@ const normalizeRoleName = (value = "") =>
 const isProtectedRole = (roleName = "") =>
   PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
 
-// Generar categorias de modulos dinamicamente desde moduleConfig
-const generateModuleCategories = () => {
-  const categories = {};
-
-  const standaloneOrder = ["dashboard", "roles", "users"];
-  const groupOrder = ["services", "athletes", "equipment", "donations", "events"];
-
-  standaloneOrder.forEach((moduleId) => {
-    const module = MODULE_CONFIG[moduleId];
-    if (!module) return;
-    categories[module.name] = [
-      {
-        name: module.name,
-        key: module.id,
-      },
-    ];
-  });
-
-  groupOrder.forEach((groupId) => {
-    const group = MODULE_GROUPS[groupId];
-    if (!group) return;
-    categories[group.name] = group.children
-      .filter((moduleId) => Boolean(MODULE_CONFIG[moduleId]))
-      .map((moduleId) => ({
-        name: MODULE_CONFIG[moduleId].name,
-        key: moduleId,
-      }));
-  });
-
-  return categories;
-};
-
-const moduleCategories = generateModuleCategories();
+const moduleCategories = buildRoleModuleCategories();
+const validModuleKeys = new Set(
+  Object.values(moduleCategories)
+    .flat()
+    .map((module) => module.key),
+);
 
 const actions = [
   { name: "Crear", color: "bg-gray-500", hoverColor: "hover:bg-gray-600" },
@@ -91,6 +63,40 @@ const actions = [
 const getAllowedActionsForModule = (moduleKey) => {
   const allowedNames = getModuleAllowedActions(moduleKey);
   return actions.filter((action) => allowedNames.includes(action.name));
+};
+
+const sanitizeRolePermissions = (permissions = {}) => {
+  if (!permissions || typeof permissions !== "object") {
+    return {};
+  }
+
+  return Object.entries(permissions).reduce(
+    (accumulatedPermissions, [moduleKey, modulePermissions]) => {
+      if (!validModuleKeys.has(moduleKey)) {
+        return accumulatedPermissions;
+      }
+
+      if (!modulePermissions || typeof modulePermissions !== "object") {
+        accumulatedPermissions[moduleKey] = {};
+        return accumulatedPermissions;
+      }
+
+      const allowedActions = new Set(getModuleAllowedActions(moduleKey));
+      const sanitizedModulePermissions = Object.entries(modulePermissions).reduce(
+        (moduleAccumulator, [actionName, value]) => {
+          if (allowedActions.has(actionName) && typeof value === "boolean") {
+            moduleAccumulator[actionName] = value;
+          }
+          return moduleAccumulator;
+        },
+        {},
+      );
+
+      accumulatedPermissions[moduleKey] = sanitizedModulePermissions;
+      return accumulatedPermissions;
+    },
+    {},
+  );
 };
 
 const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
@@ -155,7 +161,9 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
         id: roleData.id,
         nombre: roleData.name || roleData.nombre || "",
         descripcion: roleData.description || roleData.descripcion || "",
-        permisos: roleData.permissions || roleData.permisos || {},
+        permisos: sanitizeRolePermissions(
+          roleData.permissions || roleData.permisos || {},
+        ),
       });
 
       // Limpiar validacion de nombres al cargar datos
@@ -290,7 +298,8 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
   // Submit
   const handleSubmit = async () => {
     const isValid = validateAllFields();
-    const hasPermissions = Object.values(formData.permisos).some(
+    const sanitizedPermissions = sanitizeRolePermissions(formData.permisos);
+    const hasPermissions = Object.values(sanitizedPermissions).some(
       (modulePerms) => Object.values(modulePerms).some(Boolean),
     );
 
@@ -322,14 +331,14 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
     const roleToSave = {
       name: formData.nombre,
       description: formData.descripcion,
-      permissions: formData.permisos,
+      permissions: sanitizedPermissions,
     };
 
     try {
       // Alerta de confirmacion si se esta editando
       if (roleData) {
         const result = await showConfirmAlert(
-          "¿Estas seguro de actualizar este rol?",
+          "Estas seguro de actualizar este rol?",
           "Los cambios se guardaran y no se podran deshacer facilmente.",
         );
 
@@ -352,13 +361,17 @@ const RoleModal = ({ isOpen, onClose, onSave, roleData = null }) => {
       if (!roleData) {
         setFormData({ nombre: "", descripcion: "", permisos: {} });
       }
-    } catch (error) {
-      console.error("Error en handleSubmit:", error);
-    }
 
-    setPermissionError("");
-    clearValidation();
-    onClose();
+      setPermissionError("");
+      clearValidation();
+      onClose();
+    } catch (error) {
+      showErrorAlert(
+        "Error al guardar",
+        error?.message || "No se pudo guardar el rol. Intenta nuevamente.",
+      );
+      return;
+    }
   };
 
   const totalPermissions = Object.values(formData.permisos).reduce(

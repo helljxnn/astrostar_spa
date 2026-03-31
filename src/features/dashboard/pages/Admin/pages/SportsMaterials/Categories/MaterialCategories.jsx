@@ -62,7 +62,8 @@ const MaterialCategories = () => {
 
       if (response.success) {
         setCategories(response.data || []);
-        setTotalRows(response.pagination?.total || response.data?.length || 0);
+        const total = parseInt(response.pagination?.total) || response.data?.length || 0;
+        setTotalRows(total);
       }
     } catch (error) {
       setCategories([]);
@@ -244,8 +245,8 @@ const MaterialCategories = () => {
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si hay búsqueda, resetear a página 1 pero no recargar del servidor
-                if (!e.target.value) {
+                // Siempre volver a la primera pagina al cambiar busqueda
+                if (currentPage !== 1) {
                   setCurrentPage(1);
                 }
               }}
@@ -281,18 +282,18 @@ const MaterialCategories = () => {
       {/* Tabla */}
       <Table
         serverPagination={true}
-        currentPage={currentPage}
-        totalRows={totalRows}
+        currentPage={parseInt(currentPage)}
+        totalRows={parseInt(totalRows)}
         rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
         onPageChange={(page) => setCurrentPage(page)}
         thead={{
-          titles: ["Nombre", "Descripción"],
+          titles: ["Nombre", "Descripción", "Materiales"],
           state: true,
           actions: true,
         }}
         tbody={{
           data: tableData,
-          dataPropertys: ["nombreTruncated", "descripcionTruncated"],
+          dataPropertys: ["nombreTruncated", "descripcionTruncated", "materialsCount"],
           state: true,
           stateMap: {
             Activo: "bg-green-100 text-green-800",

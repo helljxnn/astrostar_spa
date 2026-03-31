@@ -20,6 +20,24 @@ const states = [
   { value: "Inactivo", label: "Inactivo" },
 ];
 
+const normalizeGuardianDocumentTypeName = (value) =>
+  String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+const isForbiddenGuardianDocumentType = (documentTypeName) => {
+  const normalized = normalizeGuardianDocumentTypeName(documentTypeName);
+  return (
+    normalized === "ti" ||
+    normalized === "nit" ||
+    (normalized.includes("tarjeta") && normalized.includes("identidad")) ||
+    (normalized.includes("registro") && normalized.includes("civil")) ||
+    normalized.includes("tributaria")
+  );
+};
+
 const GuardianModal = ({
   isOpen,
   onClose,
@@ -240,6 +258,20 @@ const GuardianModal = ({
       }
       return;
     }
+
+    const selectedDocumentType = (referenceData?.documentTypes || []).find(
+      (dt) => dt.id === parseInt(values.documentTypeId, 10),
+    );
+
+    if (selectedDocumentType && isForbiddenGuardianDocumentType(selectedDocumentType.name || selectedDocumentType.label)) {
+      const errorMsg =
+        "El acudiente no puede usar Registro Civil, Tarjeta de Identidad ni NIT.";
+      setErrors((prev) => ({ ...prev, documentTypeId: errorMsg }));
+      setTouched((prev) => ({ ...prev, documentTypeId: true }));
+      showErrorAlert("Documento inválido", errorMsg);
+      return;
+    }
+
     if (isEditing) {
       const confirm = await showConfirmAlert(
         "¿Actualizar?",

@@ -9,12 +9,16 @@ export const usePaymentSettings = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const normalizeSettings = (response) => {
+    if (!response) return null;
+    return response.data || response;
+  };
 
   const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const response = await paymentsService.getPaymentSettings();
-      setSettings(response);
+      setSettings(normalizeSettings(response));
     } catch (error) {
 showErrorAlert("Error al cargar la configuración");
     } finally {
@@ -26,9 +30,10 @@ showErrorAlert("Error al cargar la configuración");
     setUpdating(true);
     try {
       const response = await paymentsService.updatePaymentSettings(newSettings);
-      setSettings(response);
+      const normalized = normalizeSettings(response);
+      setSettings(normalized);
       showSuccessAlert("Configuración actualizada exitosamente");
-      return { success: true };
+      return { success: true, data: normalized };
     } catch (error) {
 showErrorAlert("Error al actualizar la configuración");
       return { success: false, error: error.response?.data?.message };

@@ -55,9 +55,10 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
 
     if (isEditing && material) {
       const incomingName = material.nombre || "";
+      const categoryId = material.categoriaId ? String(material.categoriaId) : "";
       setFormData({
         nombre: incomingName,
-        categoria: material.categoriaId || "",
+        categoria: categoryId,
         unidadMedida: material.unidadMedida || "unidad",
         descripcion: material.descripcion || "",
         estado: material.estado || "Activo",
@@ -108,6 +109,9 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
 
     // Si se selecciona una categoría VÁLIDA (no vacía), ocultar la advertencia Y limpiar errores
     if (name === "categoria") {
+      // Actualizar también el selectedCategoryId para mantener sincronización
+      setSelectedCategoryId(value ? parseInt(value) : null);
+      
       if (value && value !== "") {
         setShowCategoryWarning(false);
         setErrors((prev) => ({ ...prev, categoria: "" }));
@@ -302,14 +306,12 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                     }
                   >
                     <SearchableSelect
-                      name="categoria"
                       value={formData.categoria}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
+                      onChange={(value) => handleChange("categoria", value)}
                       options={[
                         { value: "", label: "Seleccione una categoría" },
                         ...categories.map((cat) => ({
-                          value: cat.id,
+                          value: String(cat.id),
                           label: cat.nombre,
                         })),
                       ]}
@@ -405,8 +407,15 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                   type="textarea"
                   placeholder="Información adicional del material (opcional)"
                   value={formData.descripcion}
-                  onChange={handleChange}
+                  onChange={(name, value) => {
+                    // Limitar a 500 caracteres
+                    if (value.length <= 500) {
+                      setFormData((prev) => ({ ...prev, [name]: value }));
+                    }
+                  }}
                   rows={3}
+                  maxLength={500}
+                  helperText={`${formData.descripcion.length}/500 caracteres`}
                 />
               </div>
 

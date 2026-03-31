@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../contexts/authContext";
 import permissionsService from "../services/permissionsService";
 import { generateAdminPermissions } from "../constants/modulePermissions";
@@ -8,9 +8,61 @@ import apiClient from "../services/apiClient";
  * Hook para gestionar permisos en componentes React
  */
 export const usePermissions = () => {
+  const PERMISSIONS_CACHE_KEY = "lastKnownPermissionsByUser";
   const { user, isAuthenticated, updateUser } = useAuth();
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
+  const hydrationAttemptRef = useRef("");
+
+  const getUserIdentity = useCallback((targetUser) => {
+    return String(
+      targetUser?.id ||
+        targetUser?.email ||
+        targetUser?.documentNumber ||
+        "unknown",
+    );
+  }, []);
+
+  const getCachedPermissions = useCallback((targetUser) => {
+    const userIdentity = getUserIdentity(targetUser);
+    if (userIdentity === "unknown") return {};
+
+    try {
+      const raw = localStorage.getItem(PERMISSIONS_CACHE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return {};
+      const scopedPermissions = parsed[userIdentity];
+      return scopedPermissions && typeof scopedPermissions === "object"
+        ? scopedPermissions
+        : {};
+    } catch {
+      return {};
+    }
+  }, [getUserIdentity]);
+
+  const saveCachedPermissions = useCallback((nextPermissions, targetUser) => {
+    const safePermissions =
+      nextPermissions && typeof nextPermissions === "object"
+        ? nextPermissions
+        : {};
+    const userIdentity = getUserIdentity(targetUser);
+
+    if (userIdentity === "unknown") return;
+
+    if (Object.keys(safePermissions).length > 0) {
+      try {
+        const raw = localStorage.getItem(PERMISSIONS_CACHE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        const nextCache =
+          parsed && typeof parsed === "object" ? { ...parsed } : {};
+        nextCache[userIdentity] = safePermissions;
+        localStorage.setItem(PERMISSIONS_CACHE_KEY, JSON.stringify(nextCache));
+      } catch {
+        // Ignore cache write errors and keep runtime permissions in memory.
+      }
+    }
+  }, [getUserIdentity]);
 
   /**
    * Refrescar permisos desde el servidor
@@ -27,36 +79,57 @@ export const usePermissions = () => {
         let userPermissions = {};
         let userRole =
           updatedUser.role?.name || updatedUser.rol || updatedUser.role;
+        const fallbackPermissions =
+          user?.role?.permissions ||
+          user?.permissions ||
+          getCachedPermissions(updatedUser);
 
         // Si es admin, dar todos los permisos
         if (userRole === "admin" || userRole === "Administrador" || userRole === "Administrador Sistema") {
           userPermissions = generateAdminPermissions();
         } else {
-          userPermissions = updatedUser.role?.permissions || {};
+          userPermissions =
+            updatedUser.role?.permissions ||
+            updatedUser.permissions ||
+            fallbackPermissions;
         }
 
         // Actualizar permisos en el servicio y estado
         permissionsService.setUserPermissions(updatedUser, userPermissions);
         setPermissions(userPermissions);
+        saveCachedPermissions(userPermissions, updatedUser);
 
         // Actualizar el usuario en el contexto de autenticación
         if (updateUser) {
           updateUser(updatedUser);
         }
+      } else {
+        const fallbackPermissions =
+          user?.role?.permissions ||
+          user?.permissions ||
+          getCachedPermissions(user);
+
+        permissionsService.setUserPermissions(user, fallbackPermissions);
+        setPermissions(fallbackPermissions);
+        saveCachedPermissions(fallbackPermissions, user);
       }
-    } catch (error) {
-      // Si el error es 403 (token expirado/inválido), el apiClient ya intentará refrescar
-      // Si falla el refresh, redirigirá al login automáticamente
-      // Solo logueamos errores que no sean de autenticación
-      if (
-        !error.message?.includes("Token") &&
-        !error.message?.includes("401") &&
-        !error.message?.includes("403")
-      ) {
-        console.error("Error al refrescar permisos:", error);
-      }
+    } catch (_error) {
+      const fallbackPermissions =
+        user?.role?.permissions ||
+        user?.permissions ||
+        getCachedPermissions(user);
+
+      permissionsService.setUserPermissions(user, fallbackPermissions);
+      setPermissions(fallbackPermissions);
+      saveCachedPermissions(fallbackPermissions, user);
     }
-  }, [isAuthenticated, user, updateUser]);
+  }, [
+    getCachedPermissions,
+    isAuthenticated,
+    saveCachedPermissions,
+    updateUser,
+    user,
+  ]);
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -69,19 +142,48 @@ export const usePermissions = () => {
         userPermissions = generateAdminPermissions();
       } else {
         // Para otros roles, usar los permisos del role si existen
-        userPermissions = user.role?.permissions || {};
+        userPermissions =
+          user.role?.permissions ||
+          user.permissions ||
+          getCachedPermissions(user);
+      }
+
+      const permissionsCount = Object.keys(userPermissions || {}).length;
+      const userIdentity = String(
+        user?.id || user?.email || user?.documentNumber || "unknown",
+      );
+
+      // Si llegan vacíos en una recarga, intentamos hidratar desde /auth/me una sola vez.
+      if (
+        permissionsCount === 0 &&
+        hydrationAttemptRef.current !== userIdentity
+      ) {
+        hydrationAttemptRef.current = userIdentity;
+        setLoading(true);
+        refreshPermissions().finally(() => {
+          setLoading(false);
+        });
+        return;
       }
 
       permissionsService.setUserPermissions(user, userPermissions);
       setPermissions(userPermissions);
+      saveCachedPermissions(userPermissions, user);
       setLoading(false);
     } else {
       // Limpiar permisos si no está autenticado
+      hydrationAttemptRef.current = "";
       permissionsService.clearPermissions();
       setPermissions(null);
       setLoading(false);
     }
-  }, [user, isAuthenticated]);
+  }, [
+    getCachedPermissions,
+    isAuthenticated,
+    refreshPermissions,
+    saveCachedPermissions,
+    user,
+  ]);
 
   // DESACTIVADO: Refrescar permisos periódicamente
   // Los permisos no cambian frecuentemente, solo se refrescan:
@@ -170,4 +272,3 @@ export const usePermissions = () => {
       user?.rol === "Administrador Sistema",
   };
 };
-

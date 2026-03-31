@@ -48,8 +48,6 @@ class DashboardService {
           }
         });
         
-        // console.log('Estadísticas reales de matrículas:', stats);
-        
         return {
           success: true,
           data: stats

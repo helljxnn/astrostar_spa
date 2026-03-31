@@ -319,19 +319,22 @@ const SportsCategory = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <ReportButton
-              dataProvider={getCompleteReportData}
-              fileName="CategoriasDeportivas"
-              columns={reportColumns}
-            />
-
-            <button
-              onClick={handleCreate}
-              disabled={loading}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FaPlus /> Crear Categoría
-            </button>
+            <PermissionGuard module={MODULE_NAME} action="Ver">
+              <ReportButton
+                dataProvider={getCompleteReportData}
+                fileName="CategoriasDeportivas"
+                columns={reportColumns}
+              />
+            </PermissionGuard>
+            <PermissionGuard module={MODULE_NAME} action="Crear">
+              <button
+                onClick={handleCreate}
+                disabled={loading}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-blue text-white rounded-lg shadow hover:bg-primary-purple transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FaPlus /> Crear Categoría
+              </button>
+            </PermissionGuard>
           </div>
         </div>
       </div>

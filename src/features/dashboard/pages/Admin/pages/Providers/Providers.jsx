@@ -18,16 +18,23 @@ import PermissionGuard from "../../../../../../shared/components/PermissionGuard
 import { usePermissions } from "../../../../../../shared/hooks/usePermissions.js";
 import { PAGINATION_CONFIG } from "../../../../../../shared/constants/paginationConfig.js";
 
+const DOCUMENT_TYPE_CODE_MAP = {
+  CC: "Cédula de Ciudadanía",
+  TI: "Tarjeta de Identidad",
+  CE: "Cédula de Extranjería",
+  PAS: "Pasaporte",
+  NIT: "NIT",
+};
+
+const normalizeDocumentTypeLabel = (value) => {
+  if (!value) return "";
+  return DOCUMENT_TYPE_CODE_MAP[value] || value;
+};
+
 const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Hook para obtener datos completos para reportes
-  const { getReportData } = useReportDataWithService(
-    providersService.getAllForReport.bind(providersService)
-  );
-  
-  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -38,10 +45,12 @@ const Providers = () => {
   const [currentPage, setCurrentPage] = useState(
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
-  const [totalPages, setTotalPages] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const { hasPermission } = usePermissions();
+  const { getReportData } = useReportDataWithService(
+    providersService.getAllForReport.bind(providersService),
+  );
   
   // Estado para datos filtrados localmente
   const [allData, setAllData] = useState([]);
@@ -49,19 +58,24 @@ const Providers = () => {
   const fetchProviders = async () => {
     try {
       setLoading(true);
-      // NO enviar búsqueda al backend, filtrar localmente
-      const response = await providersService.getProviders({
-        page: searchTerm ? 1 : currentPage, // Si hay búsqueda, traer página 1
-        limit: searchTerm ? 9999 : PAGINATION_CONFIG.ROWS_PER_PAGE, // Si hay búsqueda, traer todos
-      });
+      const isSearching = Boolean(searchTerm.trim());
+      const response = isSearching
+        ? await providersService.getAllForReport()
+        : await providersService.getProviders({
+            page: currentPage,
+            limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          });
       if (response.success) {
         // Enriquecer datos con nombres de tipos de documento
         const enrichedData = await enrichProvidersWithDocumentTypes(
           response.data || [],
         );
         setAllData(enrichedData); // Guardar todos los datos para filtrado local
-        setTotalPages(response.pagination?.pages || 1);
-        setTotalRows(response.pagination?.total || enrichedData.length);
+        setTotalRows(
+          isSearching
+            ? enrichedData.length
+            : response.pagination?.total || enrichedData.length,
+        );
         checkActivePurchasesForProviders(enrichedData);
       } else {
         showErrorAlert("Error", "No se pudieron cargar los proveedores");
@@ -75,43 +89,66 @@ const Providers = () => {
       setLoading(false);
     }
   };
+  const resolveProviderDocumentType = (provider, documentTypes = []) => {
+    if (provider.tipoEntidad === "juridica") {
+      return {
+        tipoDocumento: "NIT",
+        tipoDocumentoNombre: "NIT",
+        documentType: { name: "NIT", label: "NIT" },
+      };
+    }
+
+    const providerDocumentTypeId =
+      provider.documentTypeId ??
+      provider.documentType?.id ??
+      provider.documentType?.value ??
+      null;
+
+    const providerDocumentCode =
+      provider.tipoDocumento ||
+      provider.documentType?.name ||
+      null;
+
+    const docType = documentTypes.find((dt) => {
+      const dtId = dt.id?.toString();
+      const dtValue = dt.value?.toString();
+      const providerId = providerDocumentTypeId?.toString();
+      return (
+        (providerId && (dtId === providerId || dtValue === providerId)) ||
+        (providerDocumentCode &&
+          (dt.value === providerDocumentCode ||
+            dt.name === providerDocumentCode ||
+            dt.name === DOCUMENT_TYPE_CODE_MAP[providerDocumentCode]))
+      );
+    });
+
+    return {
+      tipoDocumentoNombre:
+        normalizeDocumentTypeLabel(docType?.name) ||
+        normalizeDocumentTypeLabel(docType?.label) ||
+        normalizeDocumentTypeLabel(provider.tipoDocumentoNombre) ||
+        normalizeDocumentTypeLabel(DOCUMENT_TYPE_CODE_MAP[providerDocumentCode]) ||
+        normalizeDocumentTypeLabel(providerDocumentCode) ||
+        "No especificado",
+      documentType: docType || provider.documentType || null,
+    };
+  };
+
   const enrichProvidersWithDocumentTypes = async (providers) => {
     try {
       const response = await providersService.getDocumentTypes();
       if (response.success && response.data) {
         const documentTypes = response.data;
-        return providers.map((provider) => {
-          if (provider.tipoEntidad === "natural" && provider.tipoDocumento) {
-            const docType = documentTypes.find(
-              (dt) =>
-                dt.id.toString() === provider.tipoDocumento.toString() ||
-                dt.value === provider.tipoDocumento.toString(),
-            );
-            return {
-              ...provider,
-              tipoDocumentoNombre: docType
-                ? docType.name || docType.label
-                : "No especificado",
-              documentType: docType || null,
-            };
-          }
-          return {
-            ...provider,
-            tipoDocumentoNombre: "NIT",
-            documentType: { name: "NIT", label: "NIT" },
-          };
-        });
+        return providers.map((provider) => ({
+          ...provider,
+          ...resolveProviderDocumentType(provider, documentTypes),
+        }));
       }
     } catch (error) {
     }
     return providers.map((provider) => ({
       ...provider,
-      tipoDocumentoNombre:
-        provider.tipoEntidad === "juridica" ? "NIT" : "No especificado",
-      documentType:
-        provider.tipoEntidad === "juridica"
-          ? { name: "NIT", label: "NIT" }
-          : null,
+      ...resolveProviderDocumentType(provider),
     }));
   };
   const checkActivePurchasesForProviders = async (providers) => {
@@ -206,22 +243,12 @@ const Providers = () => {
       };
       const response = await providersService.createProvider(providerData);
       if (response.success) {
-        showSuccessAlert(
-          "Proveedor creado",
-          "El proveedor se creó correctamente.",
-        );
         setIsModalOpen(false);
         fetchProviders();
         return response; // ← Retornar la respuesta exitosa
-      } else {
-        showErrorAlert(
-          "Error",
-          response.message || "No se pudo crear el proveedor",
-        );
-        return { success: false, message: response.message }; // ← Retornar error
       }
+      return { success: false, message: response.message }; // ← Retornar error
     } catch (error) {
-      showErrorAlert("Error", "Error al crear el proveedor en el servidor");
       throw error; // ← Lanzar el error para que el modal lo capture
     }
   };
@@ -243,25 +270,12 @@ const Providers = () => {
         providerData,
       );
       if (response.success) {
-        showSuccessAlert(
-          "Proveedor actualizado",
-          "El proveedor se actualizó correctamente.",
-        );
         setIsModalOpen(false);
         fetchProviders();
         return response;
-      } else {
-        showErrorAlert(
-          "Error",
-          response.message || "No se pudo actualizar el proveedor",
-        );
-        return { success: false, message: response.message }; // Retornar error
       }
+      return { success: false, message: response.message }; // Retornar error
     } catch (error) {
-      showErrorAlert(
-        "Error",
-        "Error al actualizar el proveedor en el servidor",
-      );
       throw error;
     }
   };
@@ -389,7 +403,7 @@ setProviderToEdit(response.data);
       show: hasPermission("providers", "Eliminar"),
       disabled: activePurchasesCheck[provider.id],
       title: activePurchasesCheck[provider.id]
-        ? "Proveedor está asociado a ingresos"
+        ? "Proveedor asociado a ingresos"
         : "Eliminar proveedor",
     }),
   };
@@ -397,16 +411,25 @@ setProviderToEdit(response.data);
   // Usar datos filtrados localmente
   const displayData = filteredData;
   const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  const useServerPagination = !searchTerm.trim();
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
-    return await getReportData(
-      { search: searchTerm }, // Filtros actuales
-      (providers) => providers.map((provider) => ({ // Mapper de datos
+    return await getReportData({ search: searchTerm }, (providers) =>
+      providers.map((provider) => ({
         razonSocial: provider.razonSocial,
         nit: provider.nit,
-        tipoEntidad: provider.tipoEntidad,
-        tipoDocumento: provider.tipoDocumento,
+        tipoEntidad:
+          provider.tipoEntidad === "juridica"
+            ? "Persona Jurídica"
+            : "Persona Natural",
+        tipoDocumento:
+          provider.tipoEntidad === "juridica"
+            ? "NIT"
+            : normalizeDocumentTypeLabel(provider.tipoDocumentoNombre) ||
+              normalizeDocumentTypeLabel(provider.documentType?.name) ||
+              normalizeDocumentTypeLabel(DOCUMENT_TYPE_CODE_MAP[provider.tipoDocumento]) ||
+              "No especificado",
         contactoPrincipal: provider.contactoPrincipal,
         correo: provider.correo,
         telefono: provider.telefono,
@@ -414,26 +437,27 @@ setProviderToEdit(response.data);
         ciudad: provider.ciudad,
         descripcion: provider.descripcion,
         estado: provider.estado,
-        fechaRegistro: provider.fechaRegistro,
-        updatedAt: provider.updatedAt,
-      }))
+        fechaRegistro: provider.fechaRegistro || provider.createdAt || "",
+        updatedAt:
+          provider.updatedAt ||
+          provider.ultimaActualizacion ||
+          provider.fechaActualizacion ||
+          "",
+      })),
     );
   };
 
   return (
-    <div className="p-6 font-montserrat w-full max-w-full">
+    <div className="p-6 font-montserrat w-full max-w-full overflow-x-hidden notranslate" translate="no">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-semibold text-gray-800">Proveedores</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 notranslate" translate="no">Proveedores</h1>
         <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
           <div className="w-full sm:w-64">
             <SearchInput
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  setCurrentPage(1);
-                }
+                setCurrentPage(1);
               }}
               placeholder="Buscar proveedor..."
             />
@@ -477,17 +501,7 @@ setProviderToEdit(response.data);
                 ]}
                 customDataTransform={(provider) => ({
                   ...provider,
-                  tipoEntidad:
-                    provider.tipoEntidad === "juridica"
-                      ? "Persona Jurídica"
-                      : "Persona Natural",
                   estado: provider.estado === "Activo" ? "Activo" : "Inactivo",
-                  tipoDocumento:
-                    provider.documentType?.name ||
-                    provider.tipoDocumentoNombre ||
-                    (provider.tipoEntidad === "juridica"
-                      ? "NIT"
-                      : "No especificado"),
                   descripcion: provider.descripcion || "Sin descripción",
                   correo: provider.correo || "No especificado",
                 })}
@@ -514,10 +528,9 @@ setProviderToEdit(response.data);
         </div>
       ) : displayTotalRows > 0 ? (
         <>
-          <div className="w-full overflow-x-auto bg-white rounded-lg">
-            <div className="min-w-full">
+          <div className="w-full bg-white rounded-lg">
               <Table
-                serverPagination={true}
+                serverPagination={useServerPagination}
                 currentPage={currentPage}
                 totalRows={displayTotalRows}
                 rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
@@ -543,6 +556,21 @@ setProviderToEdit(response.data);
                     "contactoPrincipal",
                   ],
                   state: true,
+                  customRenderers: {
+                    nit: (value) => (
+                      <span className="notranslate" translate="no">
+                        {value ?? "-"}
+                      </span>
+                    ),
+                  },
+                  cellClassNames: {
+                    razonSocial:
+                      "whitespace-normal break-words max-w-[220px]",
+                    correo: "whitespace-normal break-all max-w-[220px]",
+                    contactoPrincipal:
+                      "whitespace-normal break-words max-w-[180px]",
+                    nit: "whitespace-nowrap notranslate",
+                  },
                   stateMap: {
                     Activo: "bg-green-100 text-green-800",
                     Inactivo: "bg-red-100 text-red-800",
@@ -557,7 +585,6 @@ setProviderToEdit(response.data);
                 }
                 buttonConfig={buttonConfig}
               />
-            </div>
           </div>
         </>
       ) : (

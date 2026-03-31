@@ -169,15 +169,16 @@ function DynamicSideBar({
           </motion.div>
           <AnimatePresence mode="wait">
             {isExpanded && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                transition={{ duration: 0.2, ease: "easeInOut" }}
-                className="whitespace-nowrap overflow-hidden"
-              >
-                {module.name}
-              </motion.span>
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="whitespace-nowrap overflow-hidden notranslate"
+                  translate="no"
+                >
+                  {module.name}
+                </motion.span>
             )}
           </AnimatePresence>
         </Link>
@@ -232,7 +233,8 @@ function DynamicSideBar({
                   animate={{ opacity: 1, width: "auto" }}
                   exit={{ opacity: 0, width: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="whitespace-nowrap overflow-hidden"
+                  className="whitespace-nowrap overflow-hidden notranslate"
+                  translate="no"
                 >
                   {group.name}
                 </motion.span>
@@ -281,6 +283,7 @@ function DynamicSideBar({
                               ? "bg-indigo-100 text-primary-purple shadow-sm"
                               : "text-gray-700 hover:bg-indigo-50 hover:text-black"
                           }`}
+                          translate="no"
                         >
                           {childModule.name}
                         </Link>

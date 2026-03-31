@@ -41,8 +41,24 @@ const EventsSection = () => {
       if (response.success && response.data) {
         setStats(response.data);
       }
-    } catch (error) {
-      console.error("Error al cargar estadísticas de eventos:", error);
+    } catch (_error) {
+      setStats({
+        total: 0,
+        enrolledAthletes: 0,
+        enrolledTeams: 0,
+        upcoming: 0,
+        byStatus: {
+          completed: 0,
+          inProgress: 0,
+          scheduled: 0,
+        },
+        byType: [],
+        trends: {
+          total: 0,
+          enrolledAthletes: 0,
+          enrolledTeams: 0,
+        },
+      });
     } finally {
       setLoading(false);
     }

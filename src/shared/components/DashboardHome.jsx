@@ -1,6 +1,7 @@
 ﻿import { usePermissions } from "../hooks/usePermissions";
 import { useDynamicPermissions } from "../hooks/useDynamicPermissions";
 import { useAuth } from "../contexts/authContext";
+import { Navigate } from "react-router-dom";
 import SmartRedirect from "./SmartRedirect";
 import Dashboard from "../../features/dashboard/pages/Admin/pages/DashboardGraphics/Dashboard";
 
@@ -16,7 +17,7 @@ const DashboardHome = () => {
   } = usePermissions();
   const { hasModuleAccess: hasDynamicAccess, loading: dynamicLoading } =
     useDynamicPermissions();
-  const { user, userRole } = useAuth();
+  const { user, userRole, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Normalizar el rol del usuario
   const normalizedRole = (user?.role?.name || user?.rol || userRole || "")
@@ -33,6 +34,14 @@ const DashboardHome = () => {
     ? hasDynamicAccess
     : hasStaticAccess;
   const loading = isAthleteOrGuardian ? dynamicLoading : staticLoading;
+
+  if (authLoading) {
+    return <div>Cargando...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   // Mostrar loading mientras se cargan los permisos
   if (loading) {

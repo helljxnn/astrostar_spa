@@ -46,61 +46,64 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
   else if (esSalidaEvento) titulo = "Detalles de Salida por Evento";
 
   const modalContent = (
-    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col">
+    <div className="modal-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+      <div
+        translate="no"
+        className="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden relative flex flex-col notranslate"
+      >
         {/* Header */}
-        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 relative">
+        <div className="flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-3 sm:p-4 relative">
           <button
             className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
             onClick={onClose}
           >
             ✕
           </button>
-          <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
+          <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center">
             {titulo}
           </h2>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="space-y-3">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Fila 1: Material y Categoría */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Material
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words">
+                <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 min-h-[42px] break-words text-sm">
                   {movement.materialNombre}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Categoría
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm">
                   {movement.categoria}
                 </div>
               </div>
             </div>
 
             {/* Fila 2: Cantidad y Fecha */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   Cantidad
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold">
+                <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-semibold text-sm">
                   {formatStock(cantidad)}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                   {esIngreso ? "Fecha de Ingreso" : "Fecha de Salida"}
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm">
                   {formatDate(movement.fechaIngreso || movement.fecha)}
                 </div>
               </div>
@@ -108,12 +111,12 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
 
             {/* Fila 3: Destino y Proveedor (solo para ingresos) */}
             {esIngreso && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Inventario Destino
                   </label>
-                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm">
                     {movement.inventario_destino ||
                       movement.inventarioDestino ||
                       "No especificado"}
@@ -121,15 +124,15 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                     Proveedor
                   </label>
-                  <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                  <div className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 text-sm">
                     {movement.proveedor ? (
                       <div>
                         <p className="font-medium">{movement.proveedor}</p>
                         {movement.proveedorNit && (
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-xs text-gray-600 mt-1">
                             {movement.proveedorTipoEntidad === "Juridica"
                               ? `NIT: ${movement.proveedorNit}`
                               : movement.proveedorTipoDocumento
@@ -261,7 +264,10 @@ const MovementViewModal = ({ isOpen, onClose, movement }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Observaciones
                 </label>
-                <div className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap">
+                <div
+                  translate="no"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 whitespace-pre-wrap notranslate"
+                >
                   {movement.observaciones}
                 </div>
               </div>
