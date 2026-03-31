@@ -16,6 +16,9 @@ const normalizeKey = (value = "") =>
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]/g, "");
 
+const normalizeComparable = (value = "") =>
+  String(value || "").trim().toLowerCase();
+
 const resolveSpecialtyKey = (value) => {
   const key = normalizeKey(value);
   return key || "";
@@ -249,12 +252,34 @@ export const useAppointments = () => {
     const employeeIdFromUser =
       user?.employee?.id || user?.employeeId || user?.empleadoId || null;
     if (employeeIdFromUser) return employeeIdFromUser;
-    const userId = user?.id || user?.userId;
-    if (!userId) return null;
-    const match = specialists.find(
-      (s) => String(s.id) === String(userId) || String(s.specialistId) === String(userId)
-    );
-    return match ? match.id : null;
+    const userId = user?.id || user?.userId || null;
+    if (userId) {
+      const matchByUserId = specialists.find(
+        (s) =>
+          String(s.userId) === String(userId) ||
+          String(s.id) === String(userId) ||
+          String(s.specialistId) === String(userId),
+      );
+      if (matchByUserId) return matchByUserId.id;
+    }
+
+    const userEmail = normalizeComparable(user?.email);
+    if (userEmail) {
+      const matchByEmail = specialists.find(
+        (s) => normalizeComparable(s.email) === userEmail,
+      );
+      if (matchByEmail) return matchByEmail.id;
+    }
+
+    const userIdentification = normalizeComparable(user?.identification);
+    if (userIdentification) {
+      const matchByIdentification = specialists.find(
+        (s) => normalizeComparable(s.identification) === userIdentification,
+      );
+      if (matchByIdentification) return matchByIdentification.id;
+    }
+
+    return null;
   }, [isHealthEmployee, user, specialists]);
 
   const specialtyOptions = useMemo(
@@ -385,12 +410,16 @@ export const useAppointments = () => {
         return {
           id: spec.id || spec.specialistId,
           specialistId: spec.id || spec.specialistId,
+          userId: spec.userId || spec.user?.id || spec.usuarioId || null,
           label: spec.nombre || spec.name || "",
           nombre: spec.nombre || spec.name || "",
           cargo: spec.cargo || spec.role || "",
           specialty: specialtyKey,
           specialtyLabel:
             spec.specialtyLabel || resolveAppointmentSpecialtyLabel(specialtyKey),
+          email: spec.email || spec.user?.email || "",
+          identification:
+            spec.identification || spec.user?.identification || "",
         };
       }).filter(Boolean);
       setSpecialists(formatted);
@@ -477,9 +506,28 @@ export const useAppointments = () => {
     async (data) => {
       setLoading(true);
       try {
+        const resolvedSpecialistId =
+          isHealthEmployee && currentSpecialistId
+            ? currentSpecialistId
+            : data.specialistId;
+
+        if (isHealthEmployee && !resolvedSpecialistId) {
+          throw new Error(
+            "No se pudo identificar el especialista del usuario actual. Cierra sesión e ingresa nuevamente.",
+          );
+        }
+
+        const specialistFromScope = specialists.find(
+          (specialist) =>
+            String(specialist.id) === String(resolvedSpecialistId) ||
+            String(specialist.specialistId) === String(resolvedSpecialistId),
+        );
+
         const payload = serializePayload({
           ...data,
           athleteId: isAthleteScope ? athleteIdFromUser : data.athleteId,
+          specialistId: resolvedSpecialistId,
+          specialty: data.specialty || specialistFromScope?.specialty || "",
         });
         const response = await appointmentService.create(payload);
 
@@ -497,7 +545,14 @@ export const useAppointments = () => {
         setLoading(false);
       }
     },
-    [athleteIdFromUser, isAthleteScope, loadAppointments]
+    [
+      athleteIdFromUser,
+      currentSpecialistId,
+      isAthleteScope,
+      isHealthEmployee,
+      loadAppointments,
+      specialists,
+    ]
   );
 
   const updateAppointment = useCallback(
