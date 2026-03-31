@@ -103,18 +103,25 @@ export const usePermissions = () => {
         if (updateUser) {
           updateUser(updatedUser);
         }
+      } else {
+        const fallbackPermissions =
+          user?.role?.permissions ||
+          user?.permissions ||
+          getCachedPermissions(user);
+
+        permissionsService.setUserPermissions(user, fallbackPermissions);
+        setPermissions(fallbackPermissions);
+        saveCachedPermissions(fallbackPermissions, user);
       }
-    } catch (error) {
-      // Si el error es 403 (token expirado/inválido), el apiClient ya intentará refrescar
-      // Si falla el refresh, redirigirá al login automáticamente
-      // Solo logueamos errores que no sean de autenticación
-      if (
-        !error.message?.includes("Token") &&
-        !error.message?.includes("401") &&
-        !error.message?.includes("403")
-      ) {
-        console.error("Error al refrescar permisos:", error);
-      }
+    } catch (_error) {
+      const fallbackPermissions =
+        user?.role?.permissions ||
+        user?.permissions ||
+        getCachedPermissions(user);
+
+      permissionsService.setUserPermissions(user, fallbackPermissions);
+      setPermissions(fallbackPermissions);
+      saveCachedPermissions(fallbackPermissions, user);
     }
   }, [
     getCachedPermissions,

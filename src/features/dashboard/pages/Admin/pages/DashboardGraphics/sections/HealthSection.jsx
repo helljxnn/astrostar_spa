@@ -50,8 +50,8 @@ const HealthSection = () => {
       try {
         const allAppts = await fetchAllAppointments();
         setAppointments(Array.isArray(allAppts) ? allAppts : []);
-      } catch (e) {
-        console.error("Error cargando datos de salud:", e);
+      } catch (_error) {
+        setAppointments([]);
       } finally {
         setLoading(false);
       }

@@ -17,7 +17,7 @@ const SmartRedirect = () => {
   } = usePermissions();
   const { hasModuleAccess: hasDynamicAccess, loading: dynamicLoading } =
     useDynamicPermissions();
-  const { user, userRole } = useAuth();
+  const { user, userRole, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Normalizar el rol del usuario
   const normalizedRole = (user?.role?.name || user?.rol || userRole || "")
@@ -34,6 +34,14 @@ const SmartRedirect = () => {
     ? hasDynamicAccess
     : hasStaticAccess;
   const loading = isAthleteOrGuardian ? dynamicLoading : staticLoading;
+
+  if (authLoading) {
+    return <Loader isVisible={true} message="Verificando autenticación..." />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   // Mostrar loading mientras se cargan los permisos
   if (loading) {

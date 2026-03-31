@@ -102,6 +102,13 @@ export const getCurrentModuleFromPath = (pathname, moduleCatalog) => {
 
   const normalizedPath = String(pathname).replace(/\/+$/, "") || "/";
 
+  if (normalizedPath === "/dashboard") {
+    return (
+      moduleCatalog.find((moduleItem) => moduleItem.moduleId === "dashboard") ||
+      null
+    );
+  }
+
   return moduleCatalog
     .filter((moduleItem) => {
       const basePath = String(moduleItem.modulePath || "").replace(/\/+$/, "");

@@ -409,7 +409,6 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         );
       }
     } catch (error) {
-      console.error("Error:", error);
       showNotification(
         "error",
         "Error al enviar la inscripción. Por favor intenta de nuevo.",
@@ -456,22 +455,13 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
           await InscriptionsService.checkEmailExists(newEmail);
 
         if (inscriptionResult.exists) {
-          console.log(
-            "❌ [PreRegistrationModal] Email ya existe en inscripciones",
-          );
           setNewEmailError("Este correo ya está en otra inscripción pendiente");
           setIsValidatingNewEmail(false);
           return;
         }
 
-        console.log("✅ [PreRegistrationModal] Email disponible");
         setNewEmailError("");
-      } catch (error) {
-        console.error(
-          "❌ [PreRegistrationModal] Error validando email:",
-          error,
-        );
-        console.error("❌ [PreRegistrationModal] Stack:", error.stack);
+      } catch (_error) {
         setNewEmailError("");
       } finally {
         setIsValidatingNewEmail(false);
@@ -507,8 +497,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
       }
 
       // El endpoint de pre-registros ya valida en preinscripciones y usuarios del sistema
-    } catch (error) {
-      console.error("Error validando email:", error);
+    } catch (_error) {
       // Continuar con el envío si hay error en la validación
     }
 
@@ -526,7 +515,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         setSentEmail(newEmail);
         setNewEmail("");
 
-        // 🚀 NOTIFICAR INMEDIATAMENTE: Actualizar el email en el estado local
+        // Actualizar el email en el estado local
         notifyEmailUpdate(sentDocument, newEmail);
 
         showNotification("success", "¡Correo reenviado exitosamente!");
@@ -537,8 +526,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
             "Error al reenviar el correo. Por favor intenta de nuevo.",
         );
       }
-    } catch (error) {
-      console.error("Error:", error);
+    } catch (_error) {
       showNotification(
         "error",
         "Error al reenviar el correo. Por favor intenta de nuevo.",
@@ -634,7 +622,7 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         </AnimatePresence>
 
         <motion.div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] max-h-[90vh] overflow-hidden relative flex flex-col"
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden relative flex flex-col"
           initial={{ scale: 0.8, opacity: 0, y: 50 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.8, opacity: 0, y: 50 }}
