@@ -3,7 +3,7 @@
  * Proporciona funcionalidades completas para el manejo de roles
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import rolesService from '../services/rolesService';
 import { 
   showSuccessAlert, 
@@ -47,7 +47,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error fetching roles');
       }
     } catch (err) {
-      console.error('❌ Error fetching roles:', err);
       setError(err.message);
       showErrorAlert('Error', 'No se pudieron cargar los roles');
     } finally {
@@ -75,7 +74,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error creating role');
       }
     } catch (err) {
-      console.error('❌ Error creating role:', err);
       showErrorAlert('Error', err.message || 'No se pudo crear el rol');
       throw err;
     } finally {
@@ -104,7 +102,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error updating role');
       }
     } catch (err) {
-      console.error('❌ Error updating role:', err);
       showErrorAlert('Error', err.message || 'No se pudo actualizar el rol');
       throw err;
     } finally {
@@ -140,7 +137,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error deleting role');
       }
     } catch (err) {
-      console.error('❌ Error deleting role:', err);
       showErrorAlert('Error', err.message || 'No se pudo eliminar el rol');
       return false;
     } finally {
@@ -165,7 +161,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Role not found');
       }
     } catch (err) {
-      console.error('❌ Error getting role:', err);
       showErrorAlert('Error', err.message || 'No se pudo obtener el rol');
       throw err;
     } finally {
@@ -179,14 +174,8 @@ export const useRoles = () => {
    * @param {number} excludeId - ID a excluir (para edición)
    */
   const checkNameAvailability = async (name, excludeId = null) => {
-    try {
-
-      const response = await rolesService.checkRoleNameAvailability(name, excludeId);
-      return response;
-    } catch (err) {
-      console.error('❌ Error checking name availability:', err);
-      throw err;
-    }
+    const response = await rolesService.checkRoleNameAvailability(name, excludeId);
+    return response;
   };
 
   /**
@@ -198,7 +187,6 @@ export const useRoles = () => {
       const response = await rolesService.getRoleStats();
       return response.data;
     } catch (err) {
-      console.error('❌ Error getting role stats:', err);
       showErrorAlert('Error', 'No se pudieron obtener las estadísticas');
       throw err;
     }
@@ -213,7 +201,6 @@ export const useRoles = () => {
       const response = await rolesService.getAvailablePermissions();
       return response.data;
     } catch (err) {
-      console.error('❌ Error getting permissions:', err);
       showErrorAlert('Error', 'No se pudieron obtener los permisos');
       throw err;
     }
@@ -242,7 +229,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error duplicating role');
       }
     } catch (err) {
-      console.error('❌ Error duplicating role:', err);
       showErrorAlert('Error', err.message || 'No se pudo duplicar el rol');
       throw err;
     } finally {
@@ -268,7 +254,6 @@ export const useRoles = () => {
         throw new Error(response.message || 'Error searching roles');
       }
     } catch (err) {
-      console.error('❌ Error searching roles:', err);
       showErrorAlert('Error', 'No se pudieron buscar los roles');
       throw err;
     } finally {
@@ -303,7 +288,6 @@ export const useRoles = () => {
       
       showSuccessAlert('Éxito', 'Roles exportados correctamente');
     } catch (err) {
-      console.error('❌ Error exporting roles:', err);
       showErrorAlert('Error', 'No se pudieron exportar los roles');
       throw err;
     } finally {

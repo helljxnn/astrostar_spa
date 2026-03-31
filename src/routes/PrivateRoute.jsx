@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import { useAuth } from "../shared/contexts/authContext.jsx";
 import { usePermissions } from "../shared/hooks/usePermissions";
 import Loader from "../shared/components/Loader/Loader";
-import PaymentsService from "../features/dashboard/pages/Admin/pages/Athletes/Payments/services/PaymentsService";
+import { paymentsService } from "../features/dashboard/pages/Admin/pages/Athletes/Payments/services/PaymentsService";
 
 /**
  * Hook para verificar restricciones de acceso del atleta
@@ -22,7 +22,7 @@ const usePaymentAccessCheck = (athleteId, isAthleteOrGuardian, currentModule) =>
     }
 
     let cancelled = false;
-    PaymentsService.checkAthleteAccess(athleteId)
+    paymentsService.checkAthleteAccess(athleteId)
       .then((res) => {
         if (!cancelled) {
           setAccessData(res.data || res);
@@ -65,7 +65,7 @@ const PrivateRoute = ({
 
   // Hook de acceso pagos — SIEMPRE se llama, la lógica interna decide si hace fetch
   const { accessData, checkDone } = usePaymentAccessCheck(
-    user?.athleteId,
+    user?.athlete?.id || user?.athleteId,
     isAthleteOrGuardian,
     module
   );

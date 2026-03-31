@@ -1,5 +1,5 @@
 ﻿// src/features/dashboard/pages/Admin/pages/Users/Users.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import UserViewModal from "./components/UserViewModal.jsx";
 import SearchInput from "../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../shared/components/ReportButton";
@@ -75,7 +75,6 @@ const Users = () => {
         setTotalRows(response.pagination?.total || formattedUsers.length);
       }
     } catch (error) {
-      console.error("Error loading users:", error);
       showErrorAlert(
         "Error al cargar usuarios",
         error.message || "No se pudieron cargar los usuarios",
@@ -209,7 +208,7 @@ const Users = () => {
             rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}
             onPageChange={(page) => setCurrentPage(page)}
             thead={{
-              titles: ["Nombre", "Correo", "Identificación", "Rol", "Teléfono"],
+              titles: ["Nombre", "Correo", "Identificación", "Rol"],
               state: true,
               actions: true,
             }}
@@ -220,7 +219,6 @@ const Users = () => {
                 "correo",
                 "identificacion",
                 "rol",
-                "telefono",
               ],
               state: true,
               stateMap: {
@@ -252,4 +250,3 @@ const Users = () => {
 };
 
 export default Users;
-

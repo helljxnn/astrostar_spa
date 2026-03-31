@@ -1,9 +1,9 @@
 import apiClient from "../../../../../../../shared/services/apiClient";
 
 const DOCUMENT_TYPE_CODE_MAP = {
-  CC: "Cédula de Ciudadanía",
+  CC: "C\u00e9dula de Ciudadan\u00eda",
   TI: "Tarjeta de Identidad",
-  CE: "Cédula de Extranjería",
+  CE: "C\u00e9dula de Extranjer\u00eda",
   PAS: "Pasaporte",
   NIT: "NIT",
 };
@@ -292,7 +292,10 @@ class ProvidersService {
       descripcion: providerData.descripcion || "",
       description: providerData.descripcion || "",
       estado: providerData.estado || "Activo",
-      status: providerData.estado === "Activo" ? "Active" : "Inactive",
+      status:
+        providerData.status === "Inactive" || providerData.estado === "Inactivo"
+          ? "Inactive"
+          : "Active",
     };
 
     if (providerData.tipoEntidad === "natural" && providerData.tipoDocumento) {

@@ -194,9 +194,9 @@ class TeamsService {
         error: response?.message || "Error verificando nombre",
       };
     } catch (error) {
-      console.error("❌ Error verificando disponibilidad:", error);
+      console.error("Error checking availability:", error);
       console.error(
-        "   Error completo:",
+        "   Full error:",
         error.response?.data || error.message,
       );
       return {
@@ -217,10 +217,10 @@ class TeamsService {
       }
       return {
         success: false,
-        error: response?.message || "Error obteniendo estadísticas",
+        error: response?.message || "Error getting stats",
       };
     } catch (error) {
-      console.error("Error obteniendo estadísticas:", error);
+      console.error("Error getting stats", error);
       return {
         success: false,
         error: error.message,
@@ -236,7 +236,7 @@ class TeamsService {
           response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("❌ Error obteniendo entrenadores (ruta equipos):", error);
+      console.error("Error getting trainers (teams route):", error);
       return {
         success: false,
         data: [],
@@ -253,7 +253,7 @@ class TeamsService {
           response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("❌ Error obteniendo deportistas (ruta equipos):", error);
+      console.error("Error getting athletes (teams route):", error);
       return {
         success: false,
         data: [],
@@ -286,10 +286,10 @@ class TeamsService {
       return {
         success: false,
         data: [],
-        error: response?.message || "Error obteniendo categorías deportivas",
+        error: response?.message || "Error getting sports categories",
       };
     } catch (error) {
-      console.error("Error obteniendo categorías deportivas:", error);
+      console.error("Error getting sports categories:", error);
       return {
         success: false,
         data: [],
@@ -366,7 +366,7 @@ const response = await apiClient.get(
         error: response?.message || "Error verificando entrenador",
       };
     } catch (error) {
-      console.error("❌ Error verificando entrenador:", error);
+      console.error("Error checking trainer:", error);
       return {
         success: false,
         error: error.message,
@@ -401,12 +401,12 @@ const response = await apiClient.get(
       return {
         success: false,
         available: true,
-        error: response?.message || "Error verificando disponibilidad",
+        error: response?.message || "Error checking availability",
       };
     } catch (error) {
-      console.error("❌ Error verificando disponibilidad:", error);
+      console.error("Error checking availability:", error);
       console.error(
-        "   Error completo:",
+        "   Full error:",
         error.response?.data || error.message,
       );
       return {
@@ -435,10 +435,10 @@ const response = await apiClient.get(
         isAssigned: false,
         count: 0,
         events: [],
-        error: response?.message || "Error verificando asignación a eventos",
+        error: response?.message || "Error checking event assignment",
       };
     } catch (error) {
-      console.error("Error verificando asignación a eventos:", error);
+      console.error("Error checking event assignment:", error);
       return {
         success: false,
         isAssigned: false,

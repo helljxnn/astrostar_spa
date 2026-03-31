@@ -191,6 +191,7 @@ function DonorsSponsors() {
         ...donor,
         tipoIdentificacion,
         numeroIdentificacion,
+        identificacion: `${tipoIdentificacion} ${numeroIdentificacion}`.trim(),
       };
     });
   }, [donorsSponsors]);
@@ -265,15 +266,6 @@ function DonorsSponsors() {
               />
             </svg>
             <span>Todos</span>
-            <span
-              className={`px-1.5 py-0.5 rounded-md text-xs font-medium ${
-                statusFilter === ""
-                  ? "bg-primary-purple text-white"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {pagination.total || 0}
-            </span>
           </button>
           <button
             onClick={() => setStatusFilter("Por confirmar")}
@@ -315,39 +307,17 @@ function DonorsSponsors() {
           serverPagination={true}
           currentPage={pagination.page}
           totalRows={pagination.total || 0}
-          rowsPerPage={pagination.limit || 5}
+          rowsPerPage={pagination.limit || 7}
           onPageChange={(page) => loadDonorsSponsors({ page })}
           thead={{
-            titles: [
-              "Nombre",
-              "Tipo de Identificacion",
-              "Numero de Identificacion",
-              "Tel\u00e9fono",
-              "Correo",
-              "Tipo",
-            ],
+            titles: ["Nombre", "Identificacion", "Correo", "Tipo"],
             state: true,
             actions: true,
           }}
           tbody={{
             data: tableData,
-            dataPropertys: [
-              "nombre",
-              "tipoIdentificacion",
-              "numeroIdentificacion",
-              "telefono",
-              "correo",
-              "tipo",
-            ],
+            dataPropertys: ["nombre", "identificacion", "correo", "tipo"],
             state: true,
-            cellClassNames: {
-              nombre: "whitespace-normal break-words",
-              tipoIdentificacion: "whitespace-normal",
-              numeroIdentificacion: "whitespace-normal break-words",
-              telefono: "whitespace-normal",
-              correo: "whitespace-normal break-all",
-              tipo: "whitespace-normal",
-            },
           }}
           onEdit={hasPermission("donorsSponsors", "Editar") ? handleEdit : null}
           onDelete={

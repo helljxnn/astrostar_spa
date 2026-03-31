@@ -210,9 +210,35 @@ const DonationsForm = () => {
     const donationState = location.state?.donation;
     if (!donationState || prefilledFromState) return;
 
-    const paymentDetail = (donationState.details || []).find(
-      (detail) => detail.recordType === "payment",
+    const existingFiles = Array.isArray(donationState.files)
+      ? donationState.files
+      : [];
+    const getExistingFileByType = (fileType) =>
+      existingFiles.find((file) => file.fileType === fileType);
+    const toExistingFilePlaceholder = (file) =>
+      file
+        ? {
+            name: file.originalName || "Archivo existente",
+            size: file.size || 0,
+            type: file.mimeType || "",
+            url: file.url || "",
+            isExisting: true,
+          }
+        : null;
+
+    const econComprobanteFile = toExistingFilePlaceholder(
+      getExistingFileByType("comprobante"),
     );
+    const especieSoporteFile = toExistingFilePlaceholder(
+      getExistingFileByType("soporte"),
+    );
+    const foodFacturaFile = toExistingFilePlaceholder(
+      getExistingFileByType("factura"),
+    );
+    const foodEvidenceFiles = existingFiles
+      .filter((file) => file.fileType === "evidencia")
+      .map(toExistingFilePlaceholder)
+      .filter(Boolean);
 
     setIsEditing(Boolean(location.state?.isEditing));
     setEditingDonationId(donationState.id);
@@ -241,12 +267,12 @@ const DonationsForm = () => {
       isFoodPurchase: donationState.isFoodPurchase ?? false,
       foodItems: donationState.foodItems || [],
       especieItems: donationState.especieItems || [],
-      // Archivos existentes
+      // Archivos existentes (placeholders para no forzar re-upload en edición)
       econComprobante: econComprobanteFile || null,
       especieSoporte: especieSoporteFile || null,
       foodFactura: foodFacturaFile || null,
       foodEvidence: foodEvidenceFiles.length > 0 ? foodEvidenceFiles : [],
-      existingFiles: existingFiles, // Guardar todos los archivos para referencia
+      existingFiles,
     }));
 
     setPrefilledFromState(true);
@@ -697,8 +723,9 @@ const DonationsForm = () => {
     const uploads = [];
     const typeMeta = getTypeMeta(form.type);
     const isFood = typeMeta?.apiType === "ECONOMICA" && form.isFoodPurchase;
+    const isExistingFile = (file) => Boolean(file?.isExisting);
 
-    if (form.econComprobante) {
+    if (form.econComprobante && !isExistingFile(form.econComprobante)) {
       uploads.push(
         donationsService.uploadFiles(
           donationId,
@@ -708,7 +735,7 @@ const DonationsForm = () => {
       );
     }
 
-    if (form.especieSoporte) {
+    if (form.especieSoporte && !isExistingFile(form.especieSoporte)) {
       uploads.push(
         donationsService.uploadFiles(
           donationId,
@@ -718,20 +745,30 @@ const DonationsForm = () => {
       );
     }
 
-    if (isFood && form.foodFactura) {
+    if (isFood && form.foodFactura && !isExistingFile(form.foodFactura)) {
       uploads.push(
         donationsService.uploadFiles(donationId, [form.foodFactura], "factura"),
       );
     }
 
     if (isFood && form.foodEvidence && form.foodEvidence.length > 0) {
-      uploads.push(
-        donationsService.uploadFiles(
-          donationId,
-          Array.from(form.foodEvidence),
-          "evidencia",
-        ),
+      const newFoodEvidenceFiles = Array.from(form.foodEvidence).filter(
+        (file) => !isExistingFile(file),
       );
+
+      if (newFoodEvidenceFiles.length > 0) {
+        uploads.push(
+          donationsService.uploadFiles(
+            donationId,
+            newFoodEvidenceFiles,
+            "evidencia",
+          ),
+        );
+      }
+    }
+
+    if (uploads.length === 0) {
+      return [];
     }
 
     return Promise.all(uploads);

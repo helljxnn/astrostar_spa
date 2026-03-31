@@ -7,6 +7,7 @@ import SearchableSelect from "../../../../../../../../shared/components/Searchab
 import ProviderModal from "../../../Providers/components/ProviderModal";
 import materialsService from "../../Materials/services/MaterialsService";
 import providersService from "../../../Providers/services/ProvidersService";
+import { usePermissions } from "../../../../../../../../shared/hooks/usePermissions";
 import {
   calculateNewStock,
   validateMovementQuantity,
@@ -52,6 +53,7 @@ const MovementModal = ({
   const [providers, setProviders] = useState([]);
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     if (isOpen) {
@@ -123,7 +125,6 @@ const MovementModal = ({
         setProviders([]);
       }
     } catch (error) {
-      console.error("Error al cargar proveedores:", error);
       setProviders([]);
     } finally {
       setLoadingProviders(false);
@@ -358,6 +359,13 @@ const MovementModal = ({
   };
 
   const handleSaveProvider = async (providerData) => {
+    if (!hasPermission("providers", "Crear")) {
+      return {
+        success: false,
+        message: "No tienes permisos para crear proveedores",
+      };
+    }
+
     try {
       const response = await providersService.createProvider(providerData);
       if (response.success) {
@@ -598,14 +606,16 @@ const MovementModal = ({
                     loading={loadingProviders}
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsProviderModalOpen(true)}
-                  className="px-3 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors flex items-center justify-center gap-2 sm:self-auto"
-                  title="Crear nuevo proveedor"
-                >
-                  <FaPlus />
-                </button>
+                {hasPermission("providers", "Crear") && (
+                  <button
+                    type="button"
+                    onClick={() => setIsProviderModalOpen(true)}
+                    className="px-3 py-2 bg-primary-blue text-white rounded-lg hover:bg-primary-purple transition-colors flex items-center justify-center gap-2 sm:self-auto"
+                    title="Crear nuevo proveedor"
+                  >
+                    <FaPlus />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -661,11 +671,13 @@ const MovementModal = ({
       </div>
 
       {/* Modal de Proveedor */}
-      <ProviderModal
-        isOpen={isProviderModalOpen}
-        onClose={() => setIsProviderModalOpen(false)}
-        onSave={handleSaveProvider}
-      />
+      {hasPermission("providers", "Crear") && (
+        <ProviderModal
+          isOpen={isProviderModalOpen}
+          onClose={() => setIsProviderModalOpen(false)}
+          onSave={handleSaveProvider}
+        />
+      )}
     </div>
   );
 

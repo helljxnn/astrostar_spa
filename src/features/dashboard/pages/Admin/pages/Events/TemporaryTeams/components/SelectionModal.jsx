@@ -68,7 +68,7 @@ const SelectionModal = ({
         setData([]);
       }
     } catch (error) {
-      console.error("❌ Error cargando datos:", error);
+      console.error("Error loading data:", error);
       setData([]);
     } finally {
       setLoading(false);

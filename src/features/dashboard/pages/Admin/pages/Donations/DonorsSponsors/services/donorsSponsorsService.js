@@ -83,9 +83,6 @@ class DonorsSponsorsService {
       currentPage += 1;
 
       if (currentPage > MAX_REPORT_PAGES) {
-        console.warn(
-          "Se alcanzo el limite de seguridad de paginas en reporte de donantes."
-        );
         hasMorePages = false;
       }
     }

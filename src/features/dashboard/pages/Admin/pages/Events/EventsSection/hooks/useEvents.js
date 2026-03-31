@@ -244,7 +244,7 @@ export const useEvents = () => {
           throw new Error(response.message || "Error actualizando evento");
         }
       } catch (err) {
-        console.error("❌ Error en updateEvent:", err);
+        console.error("Error in updateEvent:", err);
         showErrorAlert(
           "Error",
           err.message || "No se pudo actualizar el evento",

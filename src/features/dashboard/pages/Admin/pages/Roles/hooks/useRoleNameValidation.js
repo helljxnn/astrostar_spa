@@ -24,8 +24,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
           setRolesLoaded(true);
 
         }
-      } catch (error) {
-        console.error('Error loading roles:', error);
+      } catch {
         setRolesLoaded(true); // Marcar como cargado aunque haya error
       }
     };
@@ -75,8 +74,7 @@ export const useRoleNameValidation = (currentRoleId = null) => {
           });
         }
       }
-    } catch (error) {
-      console.error('❌ Error validating role name:', error);
+    } catch {
       // Fallback a validación local si falla el endpoint
       if (rolesLoaded) {
         const existingRole = allRoles.find(role => 
@@ -140,8 +138,8 @@ export const useRoleNameValidation = (currentRoleId = null) => {
       if (response.success) {
         setAllRoles(response.data);
       }
-    } catch (error) {
-      console.error('Error reloading roles:', error);
+    } catch {
+      // No-op: fallback silencioso para no ensuciar consola en produccion.
     }
   };
 

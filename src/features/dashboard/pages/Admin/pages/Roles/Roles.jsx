@@ -63,24 +63,20 @@ const Roles = () => {
   const paginatedData = roles;
 
   const handleSave = async (newRole) => {
-    try {
-      const currentParams = {
-        page: currentPage,
-        limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-        search: searchTerm,
-      };
+    const currentParams = {
+      page: currentPage,
+      limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+      search: searchTerm,
+    };
 
-      if (modalMode === "create") {
-        await createRole(newRole, currentParams);
-      } else if (modalMode === "edit") {
-        await updateRole(selectedRole.id, newRole, currentParams);
-      }
-
-      setIsModalOpen(false);
-      setSelectedRole(null);
-    } catch (error) {
-      console.error("Error saving role:", error);
+    if (modalMode === "create") {
+      await createRole(newRole, currentParams);
+    } else if (modalMode === "edit") {
+      await updateRole(selectedRole.id, newRole, currentParams);
     }
+
+    setIsModalOpen(false);
+    setSelectedRole(null);
   };
 
   const handleEdit = (role) => {

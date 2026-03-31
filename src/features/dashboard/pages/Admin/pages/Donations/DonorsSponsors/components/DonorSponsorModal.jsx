@@ -100,11 +100,17 @@ const DonorSponsorModal = ({
                       key={option.value}
                       type="button"
                       onClick={() => {
-                        handleChange({ target: { name: "tipo", value: option.value } });
+                        handleChange({
+                          target: { name: "tipo", value: option.value },
+                        });
                         if (option.value === "Patrocinador") {
-                          handleChange({ target: { name: "tipoPersona", value: "Juridica" } });
+                          handleChange({
+                            target: { name: "tipoPersona", value: "Juridica" },
+                          });
                         } else if (option.value === "Donante") {
-                          handleChange({ target: { name: "tipoPersona", value: "Natural" } });
+                          handleChange({
+                            target: { name: "tipoPersona", value: "Natural" },
+                          });
                         }
                       }}
                       className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm transition-all relative ${
@@ -187,11 +193,23 @@ const DonorSponsorModal = ({
                         touched={touched.tipoDocumento}
                         options={[
                           { value: "", label: "Seleccione un tipo" },
-                          { value: "Cédula de Ciudadanía", label: "Cédula de Ciudadanía" },
-                          { value: "Cédula de Extranjería", label: "Cédula de Extranjería" },
-                          { value: "Tarjeta de Identidad", label: "Tarjeta de Identidad" },
+                          {
+                            value: "Cédula de Ciudadanía",
+                            label: "Cédula de Ciudadanía",
+                          },
+                          {
+                            value: "Cédula de Extranjería",
+                            label: "Cédula de Extranjería",
+                          },
+                          {
+                            value: "Tarjeta de Identidad",
+                            label: "Tarjeta de Identidad",
+                          },
                           { value: "Pasaporte", label: "Pasaporte" },
-                          { value: "Permiso de Permanencia", label: "Permiso de Permanencia" },
+                          {
+                            value: "Permiso de Permanencia",
+                            label: "Permiso de Permanencia",
+                          },
                         ]}
                       />
                       <FormField
@@ -203,9 +221,7 @@ const DonorSponsorModal = ({
                         value={formData.numeroDocumento}
                         onChange={handleChange}
                         onBlur={handleBlur}
-                        error={
-                          errors.numeroDocumento || errors.identificacion
-                        }
+                        error={errors.numeroDocumento || errors.identificacion}
                         touched={touched.numeroDocumento}
                         helperText={
                           checkingId
@@ -344,7 +360,6 @@ const DonorSponsorModal = ({
                       value={formData.direccion}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                      required
                       error={errors.direccion}
                       touched={touched.direccion}
                     />
@@ -431,4 +446,3 @@ const DonorSponsorModal = ({
 };
 
 export default DonorSponsorModal;
-

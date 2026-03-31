@@ -1,4 +1,3 @@
-﻿import React from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import {
@@ -26,7 +25,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
     if (!permissions || typeof permissions !== "object") return 0;
 
     let count = 0;
-    Object.entries(permissions).forEach(([module, modulePerms]) => {
+    Object.entries(permissions).forEach(([, modulePerms]) => {
       if (Array.isArray(modulePerms)) {
         count += modulePerms.length;
       } else if (typeof modulePerms === "object" && modulePerms !== null) {
@@ -45,7 +44,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
   const countActiveModules = (permissions) => {
     if (!permissions || typeof permissions !== "object") return 0;
 
-    return Object.entries(permissions).filter(([module, modulePerms]) => {
+    return Object.entries(permissions).filter(([, modulePerms]) => {
       if (Array.isArray(modulePerms)) {
         return modulePerms.length > 0;
       }
@@ -155,7 +154,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
 
     // Filtrar solo módulos que tienen al menos un permiso activo
     const activeModules = permissionEntries.filter(
-      ([module, modulePermissions]) => {
+      ([, modulePermissions]) => {
         if (Array.isArray(modulePermissions)) {
           return modulePermissions.length > 0;
         }
@@ -210,8 +209,8 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
               modulePermissions !== null ? (
               <div className="space-y-2">
                 {Object.entries(modulePermissions)
-                  .filter(([permKey, permValue]) => Boolean(permValue)) // Solo mostrar permisos activos
-                  .map(([permKey, permValue], pIdx) => (
+                  .filter(([, permValue]) => permValue === true) // Solo mostrar permisos activos
+                  .map(([permKey], pIdx) => (
                     <div key={pIdx} className="flex items-center gap-2 text-sm">
                       {getPermissionIcon(permKey)}
                       <span className="text-gray-700">
@@ -219,9 +218,7 @@ const RoleDetailModal = ({ isOpen, onClose, roleData }) => {
                       </span>
                     </div>
                   ))}
-                {Object.values(modulePermissions).every(
-                  (val) => !Boolean(val),
-                ) && (
+                {Object.values(modulePermissions).every((val) => val !== true) && (
                   <p className="text-gray-400 italic text-sm">
                     Sin permisos activos en este módulo
                   </p>

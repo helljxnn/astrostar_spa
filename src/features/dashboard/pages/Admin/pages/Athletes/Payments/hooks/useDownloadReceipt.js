@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { paymentsService } from '../services/PaymentsService.js';
-import { showSuccessAlert, showErrorAlert } from '../../../../../../../../shared/utils/alerts.js';
+import { useState } from "react";
+import { paymentsService } from "../services/PaymentsService.js";
+import {
+  showSuccessAlert,
+  showErrorAlert,
+} from "../../../../../../../../shared/utils/alerts.js";
 
 /**
  * Hook para manejar la descarga de comprobantes de pago
  * Proporciona funcionalidad para descargar archivos con nombres descriptivos
- * 
+ *
  * @returns {Object} Estado y funciones de descarga
  */
 export const useDownloadReceipt = () => {
@@ -18,40 +21,36 @@ export const useDownloadReceipt = () => {
   const downloadReceipt = async (payment) => {
     // Validación temprana
     if (!payment?.receiptUrl) {
-      showErrorAlert('Error', 'No hay comprobante disponible para descargar');
+      showErrorAlert("Error", "No hay comprobante disponible para descargar");
       return;
     }
 
     setDownloading(true);
-    
+
     try {
       showSuccessAlert("Descargando...", "Por favor espera un momento");
-      
-      const result = await paymentsService.downloadReceipt(payment);
-      
-      if (result.success) {
-        showSuccessAlert(
-          "Descarga completada", 
-          `Archivo guardado como "${result.fileName}"`
-        );
-      }
+
+      const result = await paymentsService.downloadReceiptLegacy(payment);
+
+      showSuccessAlert(
+        "Descarga completada",
+        `Archivo guardado como "${result.fileName}"`,
+      );
     } catch (error) {
-// Fallback: intentar descarga directa
+      // Fallback: intentar descarga directa
       try {
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = payment.receiptUrl;
-        link.download = 'comprobante-pago';
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
+        link.download = "comprobante-pago";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
-        // Sin alerta: abrir en nueva pestaña sin interrumpir
       } catch (fallbackError) {
-showErrorAlert(
-          'Error de descarga',
-          'No se pudo descargar el comprobante. Verifica tu conexión e intenta nuevamente.'
+        showErrorAlert(
+          "Error de descarga",
+          "No se pudo descargar el comprobante. Verifica tu conexión e intenta nuevamente.",
         );
       }
     } finally {
@@ -61,9 +60,8 @@ showErrorAlert(
 
   return {
     downloadReceipt,
-    downloading
+    downloading,
   };
 };
 
 export default useDownloadReceipt;
-

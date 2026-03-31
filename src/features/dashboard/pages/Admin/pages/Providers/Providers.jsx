@@ -35,7 +35,6 @@ const Providers = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -46,7 +45,6 @@ const Providers = () => {
   const [currentPage, setCurrentPage] = useState(
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
-  const [totalPages, setTotalPages] = useState(1);
   const [totalRows, setTotalRows] = useState(0);
   const [activePurchasesCheck, setActivePurchasesCheck] = useState({});
   const { hasPermission } = usePermissions();
@@ -60,19 +58,24 @@ const Providers = () => {
   const fetchProviders = async () => {
     try {
       setLoading(true);
-      // NO enviar búsqueda al backend, filtrar localmente
-      const response = await providersService.getProviders({
-        page: searchTerm ? 1 : currentPage, // Si hay búsqueda, traer página 1
-        limit: searchTerm ? 9999 : PAGINATION_CONFIG.ROWS_PER_PAGE, // Si hay búsqueda, traer todos
-      });
+      const isSearching = Boolean(searchTerm.trim());
+      const response = isSearching
+        ? await providersService.getAllForReport()
+        : await providersService.getProviders({
+            page: currentPage,
+            limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          });
       if (response.success) {
         // Enriquecer datos con nombres de tipos de documento
         const enrichedData = await enrichProvidersWithDocumentTypes(
           response.data || [],
         );
         setAllData(enrichedData); // Guardar todos los datos para filtrado local
-        setTotalPages(response.pagination?.pages || 1);
-        setTotalRows(response.pagination?.total || enrichedData.length);
+        setTotalRows(
+          isSearching
+            ? enrichedData.length
+            : response.pagination?.total || enrichedData.length,
+        );
         checkActivePurchasesForProviders(enrichedData);
       } else {
         showErrorAlert("Error", "No se pudieron cargar los proveedores");
@@ -240,22 +243,12 @@ const Providers = () => {
       };
       const response = await providersService.createProvider(providerData);
       if (response.success) {
-        showSuccessAlert(
-          "Proveedor creado",
-          "El proveedor se creó correctamente.",
-        );
         setIsModalOpen(false);
         fetchProviders();
         return response; // ← Retornar la respuesta exitosa
-      } else {
-        showErrorAlert(
-          "Error",
-          response.message || "No se pudo crear el proveedor",
-        );
-        return { success: false, message: response.message }; // ← Retornar error
       }
+      return { success: false, message: response.message }; // ← Retornar error
     } catch (error) {
-      showErrorAlert("Error", "Error al crear el proveedor en el servidor");
       throw error; // ← Lanzar el error para que el modal lo capture
     }
   };
@@ -277,25 +270,12 @@ const Providers = () => {
         providerData,
       );
       if (response.success) {
-        showSuccessAlert(
-          "Proveedor actualizado",
-          "El proveedor se actualizó correctamente.",
-        );
         setIsModalOpen(false);
         fetchProviders();
         return response;
-      } else {
-        showErrorAlert(
-          "Error",
-          response.message || "No se pudo actualizar el proveedor",
-        );
-        return { success: false, message: response.message }; // Retornar error
       }
+      return { success: false, message: response.message }; // Retornar error
     } catch (error) {
-      showErrorAlert(
-        "Error",
-        "Error al actualizar el proveedor en el servidor",
-      );
       throw error;
     }
   };
@@ -431,6 +411,7 @@ setProviderToEdit(response.data);
   // Usar datos filtrados localmente
   const displayData = filteredData;
   const displayTotalRows = searchTerm ? filteredData.length : totalRows;
+  const useServerPagination = !searchTerm.trim();
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
@@ -476,10 +457,7 @@ setProviderToEdit(response.data);
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
-                // Si limpia la búsqueda, resetear a página 1
-                if (!e.target.value) {
-                  setCurrentPage(1);
-                }
+                setCurrentPage(1);
               }}
               placeholder="Buscar proveedor..."
             />
@@ -552,7 +530,7 @@ setProviderToEdit(response.data);
         <>
           <div className="w-full bg-white rounded-lg">
               <Table
-                serverPagination={true}
+                serverPagination={useServerPagination}
                 currentPage={currentPage}
                 totalRows={displayTotalRows}
                 rowsPerPage={PAGINATION_CONFIG.ROWS_PER_PAGE}

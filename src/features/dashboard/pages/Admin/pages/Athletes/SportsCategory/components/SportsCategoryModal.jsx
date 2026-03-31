@@ -9,10 +9,7 @@ import {
 } from "../hooks/useFormSportsCategoryValidation";
 import useSportsCategoryNameValidation from "../hooks/useSportsCategoryNameValidation";
 import { useSportsCategories } from "../hooks/useSportsCategories";
-import {
-  showErrorAlert,
-  showSuccessAlert,
-} from "../../../../../../../../shared/utils/alerts.js";
+import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { fixMojibake } from "../../../../../../../../shared/utils/textEncoding.js";
 
 const AGE_MIN = 5;
@@ -46,7 +43,10 @@ const SportsCategoryModal = ({
     clearValidation,
     isSubmitting,
     setIsSubmitting,
-  } = useFormSportsCategoryValidation(initialForm, sportsCategoryValidationRules);
+  } = useFormSportsCategoryValidation(
+    initialForm,
+    sportsCategoryValidationRules,
+  );
 
   const {
     nameValidation,
@@ -141,7 +141,7 @@ const SportsCategoryModal = ({
     if (minA < AGE_MIN) {
       showErrorAlert(
         "Edad minima invalida",
-        `La edad minima debe ser mayor o igual a ${AGE_MIN} años.`
+        `La edad minima debe ser mayor o igual a ${AGE_MIN} años.`,
       );
       return;
     }
@@ -149,7 +149,7 @@ const SportsCategoryModal = ({
     if (maxA > AGE_MAX) {
       showErrorAlert(
         "Edad maxima invalida",
-        `La edad maxima debe ser menor o igual a ${AGE_MAX} años.`
+        `La edad maxima debe ser menor o igual a ${AGE_MAX} años.`,
       );
       return;
     }
@@ -197,7 +197,6 @@ const SportsCategoryModal = ({
         });
       }
 
-      showSuccessAlert(isNew ? "Categoria creada" : "Categoria actualizada");
       onClose();
     } catch (err) {
       const message =
@@ -229,10 +228,8 @@ const SportsCategoryModal = ({
   const maxAgeLimit = Number.isFinite(minAgeValue)
     ? Math.min(AGE_MAX, minAgeValue + 1)
     : AGE_MIN + 1;
-  const isMinTooLow =
-    Number.isFinite(minAgeValue) && minAgeValue < AGE_MIN;
-  const isMaxTooHigh =
-    Number.isFinite(maxAgeValue) && maxAgeValue > AGE_MAX;
+  const isMinTooLow = Number.isFinite(minAgeValue) && minAgeValue < AGE_MIN;
+  const isMaxTooHigh = Number.isFinite(maxAgeValue) && maxAgeValue > AGE_MAX;
   const nameStatus = (() => {
     if (nameValidation.isChecking) return "checking";
     if (errors.nombre || nameValidation.isDuplicate || isNameTooShort)
@@ -361,7 +358,9 @@ const SportsCategoryModal = ({
                   </label>
                   <textarea
                     value={values.descripcion}
-                    onChange={(e) => handleChange("descripcion", e.target.value)}
+                    onChange={(e) =>
+                      handleChange("descripcion", e.target.value)
+                    }
                     onBlur={() => handleBlur("descripcion")}
                     placeholder="Breve descripción..."
                     maxLength={200}
@@ -423,16 +422,13 @@ const SportsCategoryModal = ({
                       value={values.edadMinima ?? ""}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                    placeholder={`Mínimo ${AGE_MIN}`}
+                      placeholder={`Mínimo ${AGE_MIN}`}
                       className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
                         errors.edadMinima || isMinTooLow
                           ? "border-red-400 bg-red-50"
                           : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                       }`}
                     />
-                    <p className="text-xs text-gray-500">
-                      Mínimo permitido: {AGE_MIN} años
-                    </p>
                     {isMinTooLow && (
                       <p className="text-red-500 text-xs mt-1">
                         La edad mínima debe ser mayor o igual a {AGE_MIN} años.
@@ -458,16 +454,13 @@ const SportsCategoryModal = ({
                       value={values.edadMaxima ?? ""}
                       onChange={handleChange}
                       onBlur={handleBlur}
-                    placeholder={`Máximo ${AGE_MAX}`}
+                      placeholder={`Máximo ${AGE_MAX}`}
                       className={`w-full border rounded-xl px-3 py-3 text-sm bg-gray-50 ${
                         errors.edadMaxima || isMaxTooHigh
                           ? "border-red-400 bg-red-50"
                           : "border-gray-300 focus:border-[#7cafff] focus:ring-2 focus:ring-[#7cafff]/30"
                       }`}
                     />
-                    <p className="text-xs text-gray-500">
-                      Máximo permitido: {AGE_MAX} años
-                    </p>
                     {isMaxTooHigh && (
                       <p className="text-red-500 text-xs mt-1">
                         La edad máxima debe ser menor o igual a {AGE_MAX} años.
@@ -538,6 +531,3 @@ const SportsCategoryModal = ({
 };
 
 export default SportsCategoryModal;
-
-
-

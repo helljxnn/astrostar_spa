@@ -7,6 +7,20 @@ import { useFormScheduleValidation } from "../hooks/useFormSchedulealidation";
 import { showErrorAlert } from "../../../../../../../../shared/utils/alerts.js";
 import CustomRecurrenceModal from "./CustomRecurrenceModal";
 
+const timeToMinutes = (value) => {
+  if (!value) return null;
+  const match = String(value).match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+};
+
+const rangesOverlap = (startA, endA, startB, endB) => {
+  if (startA === null || endA === null || startB === null || endB === null) {
+    return true;
+  }
+  return startA < endB && endA > startB;
+};
+
 export default function ScheduleModal({
   onClose,
   onSave,
@@ -34,8 +48,15 @@ export default function ScheduleModal({
   });
   const [originalForm, setOriginalForm] = useState(null);
 
-  const { errors, touched, validate, handleBlur, handleChangeValidation, touchAllFields, hasChanges } =
-    useFormScheduleValidation();
+  const {
+    errors,
+    touched,
+    validate,
+    handleBlur,
+    handleChangeValidation,
+    touchAllFields,
+    hasChanges,
+  } = useFormScheduleValidation();
 
   const employeesMap = useMemo(() => {
     const map = {};
@@ -83,7 +104,8 @@ export default function ScheduleModal({
   useEffect(() => {
     if (!form.empleadoId) return;
     if (form.specialty && form.specialtyLabel) return;
-    const emp = employeesMap[form.empleadoId] || employeesMap[Number(form.empleadoId)];
+    const emp =
+      employeesMap[form.empleadoId] || employeesMap[Number(form.empleadoId)];
     if (!emp) return;
     setForm((prev) => ({
       ...prev,
@@ -103,7 +125,8 @@ export default function ScheduleModal({
       setForm((prev) => ({
         ...prev,
         repeticion: value,
-        customRecurrence: value === "personalizado" ? prev.customRecurrence : null,
+        customRecurrence:
+          value === "personalizado" ? prev.customRecurrence : null,
       }));
       handleChangeValidation(name, value, { ...form, repeticion: value });
       return;
@@ -125,7 +148,10 @@ export default function ScheduleModal({
       specialty: emp?.specialty || "",
       specialtyLabel: emp?.specialtyLabel || "",
     }));
-    handleChangeValidation("empleadoId", parsedValue, { ...form, empleadoId: parsedValue });
+    handleChangeValidation("empleadoId", parsedValue, {
+      ...form,
+      empleadoId: parsedValue,
+    });
   };
 
   const handleSubmit = async () => {
@@ -142,20 +168,34 @@ export default function ScheduleModal({
     if (isNew && form.empleadoId && form.fecha) {
       const employeeIdValue = String(form.empleadoId).trim();
       const targetDate = form.fecha;
+      const formStart = timeToMinutes(form.horaInicio);
+      const formEnd = timeToMinutes(form.horaFin);
+
       if (
         employeeIdValue &&
         existingSchedules.some((record) => {
-          const recordEmployeeId = String(record.empleadoId ?? record.employeeId ?? "").trim();
-          return (
-            recordEmployeeId &&
-            recordEmployeeId === employeeIdValue &&
-            (record.fecha === targetDate || record.scheduleDate === targetDate)
-          );
+          const recordEmployeeId = String(
+            record.empleadoId ?? record.employeeId ?? "",
+          ).trim();
+          if (
+            !(
+              recordEmployeeId &&
+              recordEmployeeId === employeeIdValue &&
+              (record.fecha === targetDate ||
+                record.scheduleDate === targetDate)
+            )
+          ) {
+            return false;
+          }
+
+          const recordStart = timeToMinutes(record.horaInicio);
+          const recordEnd = timeToMinutes(record.horaFin);
+          return rangesOverlap(formStart, formEnd, recordStart, recordEnd);
         })
       ) {
         showErrorAlert(
           "Horario duplicado",
-          "No se puede crear porque ese empleado ya está asociado a un horario ese día."
+          "No se puede crear porque ese empleado ya tiene un horario que se solapa en ese día.",
         );
         return;
       }
@@ -176,7 +216,7 @@ export default function ScheduleModal({
     try {
       await onSave(horarioFinal);
       onClose();
-    } catch (error) {
+    } catch {
       // Errores manejados por el padre
     }
   };
@@ -192,7 +232,10 @@ export default function ScheduleModal({
       .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .trim();
-    return cargoKey === "profesional de la salud" || cargoKey === "profesional de salud";
+    return (
+      cargoKey === "profesional de la salud" ||
+      cargoKey === "profesional de salud"
+    );
   }, [form.cargo]);
 
   const specialtyDisplay = useMemo(() => {
@@ -219,7 +262,11 @@ export default function ScheduleModal({
         >
           <div className="flex-shrink-0 relative px-6 py-5 border-b border-gray-200">
             <h2 className="text-2xl font-bold text-center bg-gradient-to-r from-primary-purple to-primary-blue text-transparent bg-clip-text">
-              {isNew ? "Crear Horario" : isReadOnly ? "Detalle del Horario" : "Editar Horario"}
+              {isNew
+                ? "Crear Horario"
+                : isReadOnly
+                  ? "Detalle del Horario"
+                  : "Editar Horario"}
             </h2>
             {isReadOnly && (
               <p className="text-sm text-gray-500 text-center mt-1">
@@ -248,10 +295,16 @@ export default function ScheduleModal({
                   onChange={(val) => handleEmployeeChange(val)}
                   loading={isLoadingEmployees}
                   disabled={
-                    disabledFields || isLoadingEmployees || lockEmployeeSelection
+                    disabledFields ||
+                    isLoadingEmployees ||
+                    lockEmployeeSelection
                   }
                   placeholder="Buscar empleado..."
-                  error={touched.empleadoId && errors.empleadoId ? errors.empleadoId : ""}
+                  error={
+                    touched.empleadoId && errors.empleadoId
+                      ? errors.empleadoId
+                      : ""
+                  }
                 />
                 {isLoadingEmployees && (
                   <p className="text-xs text-gray-500">Cargando empleados...</p>
@@ -288,7 +341,7 @@ export default function ScheduleModal({
 
               <div className="space-y-2">
                 <FormField
-                  label="Fecha *"
+                  label="Fecha"
                   name="fecha"
                   type="date"
                   value={form.fecha}
@@ -303,7 +356,7 @@ export default function ScheduleModal({
 
               <div className="space-y-2">
                 <FormField
-                  label="Hora inicio *"
+                  label="Hora inicio"
                   name="horaInicio"
                   type="time"
                   value={form.horaInicio}
@@ -318,7 +371,7 @@ export default function ScheduleModal({
 
               <div className="space-y-2">
                 <FormField
-                  label="Hora fin *"
+                  label="Hora fin"
                   name="horaFin"
                   type="time"
                   value={form.horaFin}
@@ -345,7 +398,6 @@ export default function ScheduleModal({
                   ]}
                 />
               </div>
-
             </div>
 
             {recurrenceLabel && (
@@ -418,4 +470,3 @@ export default function ScheduleModal({
     document.body,
   );
 }
-

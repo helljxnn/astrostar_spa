@@ -151,7 +151,7 @@ const ReceiptUploadModal = ({ isOpen, onClose, obligationId, onSuccess }) => {
             onClick={handleClose}
             disabled={uploading}
           >
-            ?
+            <FaTimes size={18} />
           </button>
           <h2 className="text-xl font-bold bg-gradient-to-r from-primary-purple to-primary-blue bg-clip-text text-transparent text-center pr-8">
             Subir Comprobante
@@ -339,7 +339,7 @@ setError('No se pudo cargar el historial de pagos');
       }
       
       await paymentsService.downloadReceiptLegacy(payment);
-      showSuccessAlert('?xito', 'Comprobante descargado correctamente');
+      showSuccessAlert('Exito', 'Comprobante descargado correctamente');
     } catch (error) {
 showErrorAlert('Error', 'No se pudo descargar el comprobante');
     }
@@ -1251,5 +1251,4 @@ setMonthlyHistory([]);
 };
 
 export default AthletePayments;
-
 
