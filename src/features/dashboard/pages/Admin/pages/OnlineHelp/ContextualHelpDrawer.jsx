@@ -6,7 +6,8 @@ import {
   buildHelpModuleCatalog,
   getCurrentModuleFromPath,
 } from "../../../../../../shared/constants/permissionStructure";
-import { buildHelpItemsForModule } from "./helpAdapter";
+import { usePermissions } from "../../../../../../shared/hooks/usePermissions";
+import { buildHelpItemsForModule, canAccessHelpItem } from "./helpAdapter";
 import EmptyHelpState from "./components/EmptyHelpState";
 import HelpDetailView from "./components/HelpDetailView";
 import HelpLauncher from "./components/HelpLauncher";
@@ -32,6 +33,7 @@ const OVERLAY_ANIMATION = {
 
 const ContextualHelpDrawer = () => {
   const location = useLocation();
+  const { hasPermission, hasModuleAccess, loading: permissionsLoading } = usePermissions();
   const searchInputRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedActionId, setSelectedActionId] = useState(null);
@@ -45,8 +47,15 @@ const ContextualHelpDrawer = () => {
   );
 
   const moduleHelpItems = useMemo(
-    () => buildHelpItemsForModule(currentModule),
-    [currentModule],
+    () => {
+      const helpItems = buildHelpItemsForModule(currentModule);
+      if (!currentModule || permissionsLoading) return [];
+
+      return helpItems.filter((item) =>
+        canAccessHelpItem(item, { hasPermission, hasModuleAccess }),
+      );
+    },
+    [currentModule, permissionsLoading, hasPermission, hasModuleAccess],
   );
 
   const selectedHelpItem = useMemo(
@@ -89,6 +98,16 @@ const ContextualHelpDrawer = () => {
     setSelectedActionId(null);
     setSearchTerm("");
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (!selectedActionId) return;
+    const stillVisible = moduleHelpItems.some(
+      (item) => item.actionId === selectedActionId,
+    );
+    if (!stillVisible) {
+      setSelectedActionId(null);
+    }
+  }, [moduleHelpItems, selectedActionId]);
 
   useEffect(() => {
     if (isOpen && !selectedActionId && searchInputRef.current) {
@@ -147,6 +166,8 @@ const ContextualHelpDrawer = () => {
                 <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
                   {!currentModule ? (
                     <EmptyHelpState message="No hay un módulo activo para mostrar ayuda contextual." />
+                  ) : permissionsLoading ? (
+                    <EmptyHelpState message="Cargando permisos de ayuda..." />
                   ) : (
                     <AnimatePresence mode="wait" initial={false}>
                       {!selectedHelpItem ? (

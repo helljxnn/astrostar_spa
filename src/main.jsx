@@ -7,6 +7,7 @@ import "@fontsource/montserrat/latin-400.css";
 import "@fontsource/montserrat/latin-500.css";
 import "@fontsource/montserrat/latin-600.css";
 import "@fontsource/montserrat/latin-700.css";
+import "sweetalert2/dist/sweetalert2.min.css";
 import "./index.css";
 
 import moment from "moment";

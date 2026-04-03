@@ -299,6 +299,24 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
     }, 4000);
   };
 
+  const getSubmissionErrorMessage = (errorLike) => {
+    const rawMessage =
+      typeof errorLike === "string"
+        ? errorLike
+        : errorLike?.message || "Error al enviar la inscripción. Por favor intenta de nuevo.";
+
+    const normalizedMessage = String(rawMessage).trim();
+    if (!normalizedMessage) {
+      return "Error al enviar la inscripción. Por favor intenta de nuevo.";
+    }
+
+    if (normalizedMessage.includes("Demasiadas solicitudes")) {
+      return "Has realizado varios intentos en poco tiempo. Por favor espera unos minutos y vuelve a intentarlo.";
+    }
+
+    return normalizedMessage;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -403,16 +421,10 @@ const PreRegistrationModal = ({ isOpen, onClose }) => {
         setErrors({});
         setTouched({});
       } else {
-        showNotification(
-          "error",
-          "Error al enviar la inscripción. Por favor intenta de nuevo.",
-        );
+        showNotification("error", getSubmissionErrorMessage(result.error));
       }
     } catch (error) {
-      showNotification(
-        "error",
-        "Error al enviar la inscripción. Por favor intenta de nuevo.",
-      );
+      showNotification("error", getSubmissionErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
