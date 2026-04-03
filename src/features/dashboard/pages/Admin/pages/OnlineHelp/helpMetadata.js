@@ -34,6 +34,13 @@ const DEFAULT_DURATION_BY_ACTION = {
   default: "0:30",
 };
 
+const formatActionNameFromId = (actionId = "") =>
+  String(actionId)
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
 // Sparse metadata layer indexed by moduleId + actionId.
 // Add or adjust only what you need. Everything else is derived.
 export const HELP_METADATA_OVERRIDES = {
@@ -63,6 +70,155 @@ export const HELP_METADATA_OVERRIDES = {
     crear: {
       title: "Cómo crear un usuario",
       description: "Registra un usuario y asigna su rol inicial.",
+    },
+  },
+  enrollments: {
+    ver: {
+      actionName: "Ver",
+      title: "Cómo ver matrículas",
+      description: "Consulta registros de matrícula y su estado actual.",
+    },
+    aceptar: {
+      actionName: "Matricular inscripción",
+      title: "Cómo matricular una inscripción",
+      description: "Acepta una inscripción para completar el proceso de matrícula.",
+    },
+    rechazar: {
+      actionName: "Rechazar inscripción",
+      title: "Cómo rechazar una inscripción",
+      description: "Rechaza una inscripción con validaciones del flujo.",
+    },
+    "rechazar-inscripcion": {
+      actionName: "Rechazar inscripción",
+      title: "Cómo rechazar una inscripción",
+      description: "Rechaza una inscripción de forma controlada.",
+    },
+    "migracion-masiva-matricula": {
+      actionName: "Migración masiva matrícula",
+      title: "Cómo hacer migración masiva de matrícula",
+      description: "Carga y procesa matrículas en bloque.",
+    },
+    "matricular-inscripcion": {
+      actionName: "Matricular inscripción",
+      title: "Cómo matricular una inscripción",
+      description: "Convierte una inscripción en matrícula activa.",
+    },
+    "historial-matricula": {
+      actionName: "Historial matrícula",
+      title: "Cómo consultar historial de matrícula",
+      description: "Revisa el historial y trazabilidad de una matrícula.",
+    },
+    "generar-reportes-matriculas": {
+      actionName: "Generar reportes matrículas",
+      title: "Cómo generar reportes de matrículas",
+      description: "Exporta reportes de la gestión de matrículas.",
+    },
+    "filtros-gestion-matriculas": {
+      actionName: "Filtros gestión matrículas",
+      title: "Cómo usar filtros en gestión de matrículas",
+      description: "Filtra la información para encontrar registros rápidamente.",
+    },
+    "crear-matricula": {
+      actionName: "Crear matrícula",
+      title: "Cómo crear una matrícula",
+      description: "Registra una nueva matrícula paso a paso.",
+    },
+    "buscar-matricula": {
+      actionName: "Buscar matrícula",
+      title: "Cómo buscar una matrícula",
+      description: "Encuentra matrículas por criterios clave.",
+    },
+    "buscar-inscripcion": {
+      actionName: "Buscar inscripción",
+      title: "Cómo buscar una inscripción",
+      description: "Ubica inscripciones para su gestión posterior.",
+    },
+  },
+  athletesSection: {
+    "ver-mensualidades-deportista": {
+      actionName: "Ver mensualidades deportista",
+      title: "Cómo ver mensualidades de un deportista",
+      description: "Consulta el estado de mensualidades del deportista.",
+    },
+    "ver-detalle-deportista": {
+      actionName: "Ver detalle deportista",
+      title: "Cómo ver detalle de deportista",
+      description: "Revisa la información detallada del deportista.",
+    },
+    "ver-detalle-acudiente": {
+      actionName: "Ver detalle acudiente",
+      title: "Cómo ver detalle de acudiente",
+      description: "Consulta los datos del acudiente asociado.",
+    },
+    "remover-acudiente": {
+      actionName: "Remover acudiente",
+      title: "Cómo remover un acudiente",
+      description: "Desasocia un acudiente del deportista seleccionado.",
+    },
+    "generar-reporte-deportistas": {
+      actionName: "Generar reporte deportistas",
+      title: "Cómo generar reporte de deportistas",
+      description: "Genera reportes del módulo de gestión de deportistas.",
+    },
+    "eliminar-acudiente": {
+      actionName: "Eliminar acudiente",
+      title: "Cómo eliminar un acudiente",
+      description: "Elimina el registro de un acudiente del sistema.",
+    },
+    "editar-deportista": {
+      actionName: "Editar deportista",
+      title: "Cómo editar un deportista",
+      description: "Actualiza los datos del deportista.",
+    },
+    "editar-acudiente": {
+      actionName: "Editar acudiente",
+      title: "Cómo editar un acudiente",
+      description: "Actualiza la información del acudiente.",
+    },
+    "buscar-deportista": {
+      actionName: "Buscar deportista",
+      title: "Cómo buscar un deportista",
+      description: "Encuentra deportistas con filtros y búsqueda.",
+    },
+    "rechazar-inscripcion": {
+      actionName: "Rechazar inscripción",
+      title: "Cómo rechazar una inscripción",
+      description: "Rechaza una inscripción desde gestión de deportistas.",
+    },
+    "migracion-masiva-matricula": {
+      actionName: "Migración masiva matrícula",
+      title: "Cómo hacer migración masiva de matrícula",
+      description: "Carga y procesa matrículas de forma masiva.",
+    },
+    "matricular-inscripcion": {
+      actionName: "Matricular inscripción",
+      title: "Cómo matricular una inscripción",
+      description: "Matricula una inscripción desde gestión de deportistas.",
+    },
+    "historial-matricula": {
+      actionName: "Historial matrícula",
+      title: "Cómo consultar historial de matrícula",
+      description: "Consulta trazabilidad e historial de matrículas.",
+    },
+    "generar-reportes-matriculas": {
+      actionName: "Generar reportes matrículas",
+      title: "Cómo generar reportes de matrículas",
+      description: "Genera reportes de matrículas del módulo.",
+    },
+    "filtros-gestion-matriculas": {
+      actionName: "Filtros gestión matrículas",
+      title: "Cómo usar filtros de gestión de matrículas",
+      description: "Filtra resultados para ubicar registros más rápido.",
+    },
+    "crear-matricula": {
+      actionName: "Crear matrícula",
+      title: "Cómo crear una matrícula",
+      description: "Registra una matrícula desde gestión de deportistas.",
+    },
+    "buscar-matricula": {
+      actionName: "Buscar matrícula",
+      title: "Cómo buscar una matrícula",
+      description: "Busca matrículas por criterios clave.",
     },
   },
   employees: {
@@ -144,6 +300,305 @@ export const HELP_METADATA_OVERRIDES = {
       ],
       tips: ["Verifica que sea el registro correcto antes de confirmar."],
     },
+    "generar-reporte-personas-temporales": {
+      actionName: "Generar reporte personas temporales",
+      title: "Cómo generar reporte de personas temporales",
+      description: "Genera reportes del módulo de personas temporales.",
+    },
+  },
+  temporaryTeams: {
+    crear: {
+      actionName: "Crear equipo",
+      title: "Cómo crear un equipo",
+      description: "Registra un equipo nuevo en el sistema.",
+    },
+    editar: {
+      actionName: "Editar equipo",
+      title: "Cómo editar un equipo",
+      description: "Actualiza la información de un equipo existente.",
+    },
+    eliminar: {
+      actionName: "Eliminar equipo",
+      title: "Cómo eliminar un equipo",
+      description: "Elimina un equipo de forma controlada.",
+    },
+    ver: {
+      actionName: "Ver detalle equipos",
+      title: "Cómo ver detalle de un equipo",
+      description: "Consulta la información detallada de un equipo.",
+    },
+    "generar-reporte-equipos": {
+      actionName: "Generar reporte equipos",
+      title: "Cómo generar reporte de equipos",
+      description: "Genera reportes del módulo de equipos.",
+    },
+    "buscar-equipo": {
+      actionName: "Buscar equipo",
+      title: "Cómo buscar un equipo",
+      description: "Encuentra equipos por criterios y filtros.",
+    },
+  },
+  myPayments: {
+    "ver-comprobante-historial-pagos": {
+      requiredPermission: "Ver",
+      actionName: "Ver comprobante historial pagos",
+      title: "Cómo ver comprobante en historial de pagos",
+      description: "Consulta comprobantes desde el historial de pagos de deportista.",
+    },
+    "ver-comprobante-deportista": {
+      requiredPermission: "Ver",
+      actionName: "Ver comprobante deportista",
+      title: "Cómo ver comprobante de deportista",
+      description: "Visualiza el comprobante de pago del deportista.",
+    },
+    "subir-comprobante": {
+      requiredPermission: "Ver",
+      actionName: "Subir comprobante",
+      title: "Cómo subir un comprobante",
+      description: "Carga el comprobante de pago desde la vista de deportista.",
+    },
+    "descargar-comprobante": {
+      requiredPermission: "Ver",
+      actionName: "Descargar comprobante",
+      title: "Cómo descargar un comprobante",
+      description: "Descarga el comprobante de pago en formato disponible.",
+    },
+    "buscar-historial-pagos-deportista": {
+      requiredPermission: "Ver",
+      actionName: "Buscar historial pagos deportista",
+      title: "Cómo buscar en historial de pagos",
+      description: "Encuentra pagos del deportista usando filtros y búsqueda.",
+    },
+  },
+  materials: {
+    crear: {
+      actionName: "Crear material",
+      title: "Cómo crear un material",
+      description: "Registra un material nuevo en el inventario.",
+    },
+    editar: {
+      actionName: "Editar material",
+      title: "Cómo editar un material",
+      description: "Actualiza la información de un material existente.",
+    },
+    eliminar: {
+      actionName: "Eliminar material",
+      title: "Cómo eliminar un material",
+      description: "Elimina un material de forma controlada.",
+    },
+    ver: {
+      actionName: "Ver detalle material",
+      title: "Cómo ver detalle de un material",
+      description: "Consulta el detalle de un material del inventario.",
+    },
+    "ver-asignaciones-del-material": {
+      actionName: "Ver asignación evento material",
+      title: "Cómo ver asignaciones de material en eventos",
+      description: "Consulta en qué eventos está asignado el material.",
+    },
+    "transferir-stock": {
+      actionName: "Transferencia stock material",
+      title: "Cómo transferir stock de material",
+      description: "Transfiere stock de material entre ubicaciones o contextos.",
+    },
+    "registrar-baja-de-material": {
+      actionName: "Dar baja material",
+      title: "Cómo dar de baja un material",
+      description: "Registra la baja de un material en el inventario.",
+    },
+    "generar-reporte-materiales": {
+      actionName: "Generar reporte materiales",
+      title: "Cómo generar reporte de materiales",
+      description: "Genera reportes del módulo de gestión de materiales.",
+    },
+    "buscar-material": {
+      actionName: "Buscar material",
+      title: "Cómo buscar un material",
+      description: "Encuentra materiales por criterios y filtros.",
+    },
+  },
+  providers: {
+    crear: {
+      actionName: "Crear proveedor",
+      title: "Cómo crear un proveedor",
+      description: "Registra un proveedor nuevo en el sistema.",
+    },
+    editar: {
+      actionName: "Editar proveedor",
+      title: "Cómo editar un proveedor",
+      description: "Actualiza la información de un proveedor existente.",
+    },
+    eliminar: {
+      actionName: "Eliminar proveedor",
+      title: "Cómo eliminar un proveedor",
+      description: "Elimina un proveedor de forma controlada.",
+    },
+    ver: {
+      actionName: "Ver detalle proveedor",
+      title: "Cómo ver detalle de un proveedor",
+      description: "Consulta la información detallada de un proveedor.",
+    },
+    "generar-reporte-proveedores": {
+      actionName: "Generar reporte proveedores",
+      title: "Cómo generar reporte de proveedores",
+      description: "Genera reportes del módulo de proveedores.",
+    },
+    "buscar-proveedor": {
+      actionName: "Buscar proveedor",
+      title: "Cómo buscar un proveedor",
+      description: "Encuentra proveedores por filtros y criterios.",
+    },
+  },
+  eventsManagement: {
+    crear: {
+      actionName: "Crear evento",
+      title: "Cómo crear un evento",
+      description: "Registra un evento nuevo en el sistema.",
+    },
+    editar: {
+      actionName: "Editar evento",
+      title: "Cómo editar un evento",
+      description: "Actualiza la información de un evento existente.",
+    },
+    eliminar: {
+      actionName: "Eliminar evento",
+      title: "Cómo eliminar un evento",
+      description: "Elimina un evento de forma controlada.",
+    },
+    ver: {
+      actionName: "Ver evento",
+      title: "Cómo ver un evento",
+      description: "Consulta el detalle de un evento.",
+    },
+    "generar-reporte-eventos": {
+      actionName: "Generar reporte eventos",
+      title: "Cómo generar reporte de eventos",
+      description: "Genera reportes del módulo de eventos.",
+    },
+    "filtros-eventos": {
+      actionName: "Filtros eventos",
+      title: "Cómo usar filtros de eventos",
+      description: "Filtra eventos para ubicar registros rápidamente.",
+    },
+    "buscar-evento": {
+      actionName: "Buscar evento",
+      title: "Cómo buscar un evento",
+      description: "Encuentra eventos por criterios de búsqueda.",
+    },
+    "materiales-usar": {
+      actionName: "Materiales usar",
+      title: "Cómo gestionar materiales por usar",
+      description: "Administra materiales de uso para el evento.",
+    },
+    "materiales-entregar": {
+      actionName: "Materiales entregar",
+      title: "Cómo gestionar materiales por entregar",
+      description: "Administra materiales para entrega en el evento.",
+    },
+    "ver-equipos-inscritos": {
+      actionName: "Ver equipos inscritos",
+      title: "Cómo ver equipos inscritos",
+      description: "Consulta los equipos inscritos en el evento.",
+    },
+    "ver-deportistas-inscritas": {
+      actionName: "Ver deportistas inscritas",
+      title: "Cómo ver deportistas inscritas",
+      description: "Consulta las deportistas inscritas en el evento.",
+    },
+    "inscribir-equipos": {
+      actionName: "Inscribir equipos",
+      title: "Cómo inscribir equipos",
+      description: "Registra equipos en el evento seleccionado.",
+    },
+    "inscribir-deportistas": {
+      actionName: "Inscribir deportistas",
+      title: "Cómo inscribir deportistas",
+      description: "Registra deportistas en el evento seleccionado.",
+    },
+  },
+  materialsRegistry: {
+    ver: {
+      actionName: "Ver detalle ingreso",
+      title: "Cómo ver detalle de un ingreso",
+      description: "Consulta el detalle de un ingreso de materiales.",
+    },
+    editar: {
+      actionName: "Editar ingresos",
+      title: "Cómo editar un ingreso",
+      description: "Actualiza la información de un ingreso de material.",
+    },
+    "ver-detalle-salidas": {
+      actionName: "Ver detalle salidas",
+      title: "Cómo ver detalle de salidas",
+      description: "Consulta el detalle de salidas de materiales.",
+    },
+    "generar-reporte-salidas": {
+      actionName: "Generar reporte salidas",
+      title: "Cómo generar reporte de salidas",
+      description: "Genera reportes de salidas de materiales.",
+    },
+    "generar-reporte-ingresos": {
+      actionName: "Generar reporte ingresos",
+      title: "Cómo generar reporte de ingresos",
+      description: "Genera reportes de ingresos de materiales.",
+    },
+    "filtros-salidas": {
+      actionName: "Filtros salidas",
+      title: "Cómo usar filtros de salidas",
+      description: "Filtra salidas para ubicar registros rápidamente.",
+    },
+    "filtros-ingresos": {
+      actionName: "Filtros ingresos",
+      title: "Cómo usar filtros de ingresos",
+      description: "Filtra ingresos para ubicar registros rápidamente.",
+    },
+    "crear-ingreso-material": {
+      actionName: "Crear ingreso material",
+      title: "Cómo crear un ingreso de material",
+      description: "Registra un nuevo ingreso de material.",
+    },
+    "buscar-salida": {
+      actionName: "Buscar salida",
+      title: "Cómo buscar una salida",
+      description: "Encuentra salidas de materiales por criterios.",
+    },
+    "buscar-ingreso-material": {
+      actionName: "Buscar ingreso material",
+      title: "Cómo buscar un ingreso de material",
+      description: "Encuentra ingresos de materiales por filtros.",
+    },
+  },
+  materialCategories: {
+    crear: {
+      actionName: "Crear categoría material",
+      title: "Cómo crear una categoría de material",
+      description: "Registra una categoría nueva para organizar materiales.",
+    },
+    editar: {
+      actionName: "Editar categoría material",
+      title: "Cómo editar una categoría de material",
+      description: "Actualiza la información de una categoría existente.",
+    },
+    eliminar: {
+      actionName: "Eliminar categoría material",
+      title: "Cómo eliminar una categoría de material",
+      description: "Elimina una categoría de material de forma controlada.",
+    },
+    ver: {
+      actionName: "Ver detalle categoría material",
+      title: "Cómo ver detalle de una categoría de material",
+      description: "Consulta el detalle de una categoría de material.",
+    },
+    "generar-reporte-categorias": {
+      actionName: "Generar reporte categorías",
+      title: "Cómo generar reporte de categorías",
+      description: "Genera reportes de categorías de materiales.",
+    },
+    "buscar-categoria-material": {
+      actionName: "Buscar categoría material",
+      title: "Cómo buscar una categoría de material",
+      description: "Encuentra categorías con filtros y búsqueda.",
+    },
   },
 };
 
@@ -153,11 +608,77 @@ export const HELP_VIDEO_URLS = {
   dashboard: {
     ver: "https://drive.google.com/file/d/1B5qw7sSsB9IAnM7O9ArgH3n-aL8FXTqT/view?usp=sharing",
   },
+  users: {
+    ver: "https://drive.google.com/file/d/1rwejLJ34Z_S-W4A7kkTNpibuDzhSk00x/view?usp=sharing",
+    buscar: "https://drive.google.com/file/d/1gTOFTrduRQmWefPhYMVN77Q4RWdZQY7D/view?usp=sharing",
+    "generar-reporte":
+      "https://drive.google.com/file/d/16L54VcCMjTah6APPmHLZBcKI-8eSAMBw/view?usp=sharing",
+  },
+  enrollments: {
+    rechazar: "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
+    aceptar: "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
+    "rechazar-inscripcion":
+      "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
+    "migracion-masiva-matricula":
+      "https://drive.google.com/file/d/1wlUllkr_wFDjG2Gm9y3KvrgFvINYZYYT/view?usp=sharing",
+    "matricular-inscripcion":
+      "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
+    "historial-matricula":
+      "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
+    "generar-reportes-matriculas":
+      "https://drive.google.com/file/d/1tlm5ZpXI1KOyfx794abOYB4h8LefQ7hu/view?usp=sharing",
+    "filtros-gestion-matriculas":
+      "https://drive.google.com/file/d/1c1ZVwPhBb1mpwRwjEvBvZi9-JIKJrgGX/view?usp=sharing",
+    "crear-matricula":
+      "https://drive.google.com/file/d/1vgNIm69BlH_TRHzG6c__2OQZxE4RwnkJ/view?usp=sharing",
+    "buscar-matricula":
+      "https://drive.google.com/file/d/1AoEvoEvCOkeUsKag8-RduGomyvbyHTw6/view?usp=sharing",
+    "buscar-inscripcion":
+      "https://drive.google.com/file/d/1HMxsBWrlBgBaVT3ayrWI7r46hh1Pb858/view?usp=sharing",
+  },
+  athletesSection: {
+    "ver-mensualidades-deportista":
+      "https://drive.google.com/file/d/1t4ovGLuDzz34cO9oDVGeJqoX3Ke0liaR/view?usp=sharing",
+    "ver-detalle-deportista":
+      "https://drive.google.com/file/d/16EZqy3OEm0RkgdpA0JkBp2loNwPTp9qr/view?usp=sharing",
+    "ver-detalle-acudiente":
+      "https://drive.google.com/file/d/179qPLHHKHvV1xzdciTzdFbr0YjGceDE3/view?usp=sharing",
+    "remover-acudiente":
+      "https://drive.google.com/file/d/1bLlzBILSJAxZAGD8xfqk42XnRPnODvEW/view?usp=sharing",
+    "generar-reporte-deportistas":
+      "https://drive.google.com/file/d/1hMSGymxfqVDoxAbVUXmSZ5pJQIkTtSq-/view?usp=sharing",
+    "eliminar-acudiente":
+      "https://drive.google.com/file/d/1jT69cGb_6efB9IYFnDWK70hgvSj3dOZQ/view?usp=sharing",
+    "editar-deportista":
+      "https://drive.google.com/file/d/11WLePkBysKQFmyySy7KVGMsrpuAPijxz/view?usp=sharing",
+    "editar-acudiente":
+      "https://drive.google.com/file/d/11HezvbaIzAwubKqAQSLdE-HB4v2GP60k/view?usp=sharing",
+    "buscar-deportista":
+      "https://drive.google.com/file/d/1RbaKuYlH3tVV3-7CXxGPlOLMWMzl5x4i/view?usp=sharing",
+    "rechazar-inscripcion":
+      "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
+    "migracion-masiva-matricula":
+      "https://drive.google.com/file/d/1wlUllkr_wFDjG2Gm9y3KvrgFvINYZYYT/view?usp=sharing",
+    "matricular-inscripcion":
+      "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
+    "historial-matricula":
+      "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
+    "generar-reportes-matriculas":
+      "https://drive.google.com/file/d/1tlm5ZpXI1KOyfx794abOYB4h8LefQ7hu/view?usp=sharing",
+    "filtros-gestion-matriculas":
+      "https://drive.google.com/file/d/1c1ZVwPhBb1mpwRwjEvBvZi9-JIKJrgGX/view?usp=sharing",
+    "crear-matricula":
+      "https://drive.google.com/file/d/1vgNIm69BlH_TRHzG6c__2OQZxE4RwnkJ/view?usp=sharing",
+    "buscar-matricula":
+      "https://drive.google.com/file/d/1AoEvoEvCOkeUsKag8-RduGomyvbyHTw6/view?usp=sharing",
+  },
   roles: {
     crear: "https://drive.google.com/file/d/18hcqrAIH7zS9Mn795lWmj00eJ9UPU6D3/view?usp=sharing",
     editar: "https://drive.google.com/file/d/1GxK9ak409cPj8NeV1nM6PZAXBUgwmPuo/view?usp=sharing",
     ver: "https://drive.google.com/file/d/1WRm1q7WOrvvgHpB8RxgPN37aayNp-iVz/view?usp=sharing",
     buscar: "https://drive.google.com/file/d/1tX-We-4U2SEOFKUoo8nrmHpoMn_WPNAL/view?usp=sharing",
+    eliminar: "https://drive.google.com/file/d/1Wern0Buiv08-WyZvat5qcwW-D2in9CNo/view?usp=sharing",
   },
   employees: {
     crear: "https://drive.google.com/file/d/1sbNchxoN6T3XmD2KbhqGyxLhMeI3r7Jv/view?usp=sharing",
@@ -165,6 +686,8 @@ export const HELP_VIDEO_URLS = {
     ver: "https://drive.google.com/file/d/1iAJ8FEzodH64CIUq-zRGpE0W5vlNhbC_/view?usp=sharing",
     eliminar: "https://drive.google.com/file/d/1ZSY3GmFlii7YmpWKAXxFb486WoYa84fq/view?usp=sharing",
     buscar: "https://drive.google.com/file/d/1VEHLVlw8FBvnNeA9IpJdSnch4tEDdsSL/view?usp=sharing",
+    "generar-reporte":
+      "https://drive.google.com/file/d/1unNxwlbrXmQdQZyGPG_leKzrBOkCXYOf/view?usp=sharing",
   },
   temporaryWorkers: {
     crear: "https://drive.google.com/file/d/1ildmWGv8gJHQT965hHGCCDXrnpQqiLr4/view?usp=sharing",
@@ -172,6 +695,126 @@ export const HELP_VIDEO_URLS = {
     ver: "https://drive.google.com/file/d/1mOdGzil9RPVzFmmdcnARXR22ngMiB4Kx/view?usp=sharing",
     eliminar: "https://drive.google.com/file/d/1BeD1CWoBpD76yTA1DZTg6EVyjissHH0a/view?usp=sharing",
     buscar: "https://drive.google.com/file/d/1kJIYEkP9R08-9zsQ_XFtLGwB1vycB7KV/view?usp=sharing",
+    "generar-reporte-personas-temporales":
+      "https://drive.google.com/file/d/1X9dD7X5poirifArnFNd7tooFhsAM34xJ/view?usp=sharing",
+  },
+  temporaryTeams: {
+    ver: "https://drive.google.com/file/d/1BIS-f1EXOdNaVJfAX5GjH_Pp82Z_UYyE/view?usp=sharing",
+    "generar-reporte-equipos":
+      "https://drive.google.com/file/d/1_jM2pMLjeHZ0WYNXKyeggGzjPiGm5b5A/view?usp=sharing",
+    eliminar:
+      "https://drive.google.com/file/d/1PTIskVPk2dWYSgYpFzsUnBL6OaBk3BUj/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/10PFHW53oWDuNstJNBBsSoSOBkyY27HPR/view?usp=sharing",
+    crear:
+      "https://drive.google.com/file/d/1xlRYgEmiE2dWmsZ_zUftIhA0VgIIa8py/view?usp=sharing",
+    "buscar-equipo":
+      "https://drive.google.com/file/d/1mrNAv4eyArGyVVGkvbfUK6ZKZJr8IlXG/view?usp=sharing",
+  },
+  myPayments: {
+    "ver-comprobante-historial-pagos":
+      "https://drive.google.com/file/d/1SdG4_AbeJCZBIzyew2msjf5BkThWsuf7/view?usp=sharing",
+    "ver-comprobante-deportista":
+      "https://drive.google.com/file/d/16WQOzmK8vzsbHA6g3WQjULoEv0d318bR/view?usp=sharing",
+    "subir-comprobante":
+      "https://drive.google.com/file/d/1THbbM4FLe6Jo60LH59E_D_hAJ2TedlPP/view?usp=sharing",
+    "descargar-comprobante":
+      "https://drive.google.com/file/d/1sYQ47h05CJwoKKSzET9KAG7So1WR4R8D/view?usp=sharing",
+    "buscar-historial-pagos-deportista":
+      "https://drive.google.com/file/d/1MyhQkXK7X5Uq_Vewo4C7B0nygq-yeuby/view?usp=sharing",
+  },
+  materials: {
+    ver: "https://drive.google.com/file/d/1HUsNXVOkXO0itOAehzEZjQGHA6zzZJKd/view?usp=sharing",
+    "ver-asignaciones-del-material":
+      "https://drive.google.com/file/d/147byOM0nvPFAf2y4uxhSu_g0Q5sOLxKO/view?usp=sharing",
+    "transferir-stock":
+      "https://drive.google.com/file/d/1vXntQmxPHzbwRmw6_3iRfrKNDK-fUEhp/view?usp=sharing",
+    "generar-reporte-materiales":
+      "https://drive.google.com/file/d/1kSjAKDOaWozciMlyUKHQFW3LvwEnfLPr/view?usp=sharing",
+    eliminar:
+      "https://drive.google.com/file/d/11F1q8ENEtTjpROFmnepBPyHvItuUNdZL/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/17rqkPhviZ0Gq0w9RAHnX5bW7WFTu3WVG/view?usp=sharing",
+    "registrar-baja-de-material":
+      "https://drive.google.com/file/d/1JsAzbHvYl1sb-Wt8vh-7k1a8zlYd5cOn/view?usp=sharing",
+    crear:
+      "https://drive.google.com/file/d/1Lba_qlPEK0GmHfIxg4bhd-qjJa6DZ9XU/view?usp=sharing",
+    "buscar-material":
+      "https://drive.google.com/file/d/17xaUbMPbBsf24GCz47fNamRK2pS_JM_S/view?usp=sharing",
+  },
+  providers: {
+    ver: "https://drive.google.com/file/d/1BcI7-OOnuivrE-pXdvsipdEEya9L9kVX/view?usp=sharing",
+    "generar-reporte-proveedores":
+      "https://drive.google.com/file/d/1AvHyCSxM0yN7moJJhl6-69d_BgxrDTWk/view?usp=sharing",
+    eliminar:
+      "https://drive.google.com/file/d/1sjLPx9YqBeHDcY-kH1OxfkUhx6yHo1TC/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/1PkIFkl4Vid9Oac6rSVd-TCtE2dqrywjj/view?usp=sharing",
+    crear:
+      "https://drive.google.com/file/d/1ct1aS-bh1WjFDj1OeJq1cEMIMEFtDBAs/view?usp=sharing",
+    "buscar-proveedor":
+      "https://drive.google.com/file/d/15_t_LAsKKV_afFbRBm7nIcLAz1fqpyCr/view?usp=sharing",
+  },
+  eventsManagement: {
+    ver: "https://drive.google.com/file/d/1qCNA_QkuBXfc9sO_Gt6DeaPLiZSvfz-T/view?usp=sharing",
+    "generar-reporte-eventos":
+      "https://drive.google.com/file/d/1xu4QJhKpD_zaemKT5AsAhC82hHP5i_OS/view?usp=sharing",
+    "filtros-eventos":
+      "https://drive.google.com/file/d/1LI_tMwYG0t2UFbSPoypaJs-CtiZtdBkJ/view?usp=sharing",
+    eliminar:
+      "https://drive.google.com/file/d/1nhI1weNEvby6B-ZBt09n8k1cZB-zRIAO/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/1ZqtwaYVKsVtws6s2Bj2lA9EwlcuYfceW/view?usp=sharing",
+    crear:
+      "https://drive.google.com/file/d/1wZKdxaeF7DH4lux8EvJhxsgN-Rt1-9Ps/view?usp=sharing",
+    "buscar-evento":
+      "https://drive.google.com/file/d/1yy3pqx4UPxtiNLkqvpLq_9dvbSqo3tXd/view?usp=sharing",
+    "materiales-usar":
+      "https://drive.google.com/file/d/1lyvcmSWFGOfhFMlqwVmnrkdx_NgDp3ZH/view?usp=sharing",
+    "materiales-entregar":
+      "https://drive.google.com/file/d/1BPuaahBOqPP-pN0Sqb66B3dBn2JBTl4d/view?usp=sharing",
+    "ver-equipos-inscritos":
+      "https://drive.google.com/file/d/1nmK8saJPst8O1tXYa2VhSByhAZPGFhcu/view?usp=sharing",
+    "ver-deportistas-inscritas":
+      "https://drive.google.com/file/d/1ZpvP0b2jkh5pfIbL3LqpKpZgEriefnKA/view?usp=sharing",
+    "inscribir-equipos":
+      "https://drive.google.com/file/d/1Ulkuap__qEAyqoX3Vps1LWV38C5tdUn3/view?usp=sharing",
+    "inscribir-deportistas":
+      "https://drive.google.com/file/d/1jAfwjH87FZ07gKKtVVqkocy2aFJjProw/view?usp=sharing",
+  },
+  materialsRegistry: {
+    ver: "https://drive.google.com/file/d/1eLg5uEozlcmOJg_v3Saf1_UcTe6o9AcR/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/1MXGDSmEiRWsh7CJnODTM_DZLYXpT8rE8/view?usp=sharing",
+    "ver-detalle-salidas":
+      "https://drive.google.com/file/d/1Snl1OM1kuQKdEGbYp6M-W7uRlGg6WTyy/view?usp=sharing",
+    "generar-reporte-salidas":
+      "https://drive.google.com/file/d/1MsSPASnh5nc3WnXHx98JTHjUaWDVKnmz/view?usp=sharing",
+    "generar-reporte-ingresos":
+      "https://drive.google.com/file/d/1p8y2sB5dfdlKWuFyfghhSiZ8ud9ZBL0N/view?usp=sharing",
+    "filtros-salidas":
+      "https://drive.google.com/file/d/1h58J-eCOTXU1tWP1itMsVNHzXxNr3sfd/view?usp=sharing",
+    "filtros-ingresos":
+      "https://drive.google.com/file/d/1qfAMRcl_xPpR-fuNTRBGYhbfEaYD5LxW/view?usp=sharing",
+    "crear-ingreso-material":
+      "https://drive.google.com/file/d/1A8n6FLmv4oPNbUro1t-cFpi-cGlXR6Gd/view?usp=sharing",
+    "buscar-salida":
+      "https://drive.google.com/file/d/10cU50QpaZM9yDUw0Ynm7GdqIhcVm1NaK/view?usp=sharing",
+    "buscar-ingreso-material":
+      "https://drive.google.com/file/d/1BSIImZzlcGp0rhBN_11dnqLpwzsLNoxM/view?usp=sharing",
+  },
+  materialCategories: {
+    ver: "https://drive.google.com/file/d/1YX47AUgZxZJNcAPXlTR42Mm_l37ut_DR/view?usp=sharing",
+    "generar-reporte-categorias":
+      "https://drive.google.com/file/d/17E4-q2f7LIZWUwneu96zq4moblgOmn1U/view?usp=sharing",
+    eliminar:
+      "https://drive.google.com/file/d/1qGHpmzC7Nw6nsheCmv3VkaR42DyKbkOt/view?usp=sharing",
+    editar:
+      "https://drive.google.com/file/d/1y3EOzf4JeTPHIQTpPSRdtGcTyeOwPFPZ/view?usp=sharing",
+    crear:
+      "https://drive.google.com/file/d/1d1O1de3jvuWcuhOD_FyxSzRbn_LPlvki/view?usp=sharing",
+    "buscar-categoria-material":
+      "https://drive.google.com/file/d/11S9JDhJD29tnSIELFhS98vHPWY5dr12I/view?usp=sharing",
   },
 };
 
@@ -209,23 +852,36 @@ export const buildHelpMetadataIndex = () => {
 
   moduleCatalog.forEach((moduleItem) => {
     index[moduleItem.moduleId] = {};
+    const overrideEntries = HELP_METADATA_OVERRIDES[moduleItem.moduleId] || {};
+    const videoEntries = HELP_VIDEO_URLS[moduleItem.moduleId] || {};
+    const actionMap = new Map(
+      moduleItem.actions.map((actionItem) => [actionItem.actionId, actionItem.actionName]),
+    );
+    const actionIds = [
+      ...new Set([
+        ...moduleItem.actions.map((actionItem) => actionItem.actionId),
+        ...Object.keys(overrideEntries),
+        ...Object.keys(videoEntries),
+      ]),
+    ];
 
-    moduleItem.actions.forEach((actionItem) => {
+    actionIds.forEach((actionId) => {
+      const overrideEntry = overrideEntries[actionId] || {};
+      const actionName =
+        actionMap.get(actionId) ||
+        overrideEntry.actionName ||
+        formatActionNameFromId(actionId);
       const baseEntry = buildDefaultHelpEntry({
         moduleName: moduleItem.moduleName,
-        actionId: actionItem.actionId,
-        actionName: actionItem.actionName,
+        actionId,
+        actionName,
       });
+      const videoUrlOverride = videoEntries[actionId] || "";
 
-      const overrideEntry =
-        HELP_METADATA_OVERRIDES[moduleItem.moduleId]?.[actionItem.actionId] || {};
-
-      const videoUrlOverride =
-        HELP_VIDEO_URLS[moduleItem.moduleId]?.[actionItem.actionId] || "";
-
-      index[moduleItem.moduleId][actionItem.actionId] = mergeHelpEntries(
+      index[moduleItem.moduleId][actionId] = mergeHelpEntries(
         baseEntry,
         {
+          actionName,
           ...overrideEntry,
           videoUrl: videoUrlOverride || overrideEntry.videoUrl || baseEntry.videoUrl,
         },
