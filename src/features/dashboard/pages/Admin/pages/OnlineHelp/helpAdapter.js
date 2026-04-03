@@ -7,6 +7,72 @@ const normalizeToken = (value = "") =>
     .toLowerCase();
 
 const unique = (items = []) => [...new Set(items.filter(Boolean))];
+const CORE_ACTION_ORDER = {
+  crear: 0,
+  ver: 1,
+  editar: 2,
+  eliminar: 3,
+};
+const MODULE_ACTION_BUCKET_OVERRIDES = {
+  materialsRegistry: {
+    filtro: 10,
+    buscar: 20,
+    "generar-reporte": 30,
+  },
+};
+const MODULE_EXACT_ACTION_ORDER = {
+  eventsManagement: {
+    crear: 0,
+    ver: 1,
+    editar: 2,
+    eliminar: 3,
+    "filtros-eventos": 10,
+    "buscar-evento": 20,
+    "generar-reporte-eventos": 30,
+    "materiales-usar": 40,
+    "materiales-entregar": 41,
+    "inscribir-equipos": 42,
+    "inscribir-deportistas": 43,
+    "ver-equipos-inscritos": 44,
+    "ver-deportistas-inscritas": 45,
+  },
+};
+
+const resolveCoreRank = (actionId) => {
+  const token = normalizeToken(actionId);
+
+  if (token === "crear" || token.startsWith("crear-")) return CORE_ACTION_ORDER.crear;
+  if (token === "ver" || token.startsWith("ver-")) return CORE_ACTION_ORDER.ver;
+  if (token === "editar" || token.startsWith("editar-")) return CORE_ACTION_ORDER.editar;
+  if (token === "eliminar" || token.startsWith("eliminar-")) return CORE_ACTION_ORDER.eliminar;
+
+  return 100;
+};
+
+const resolveModuleBucketRank = (moduleId, actionId) => {
+  const token = normalizeToken(actionId);
+  const moduleBuckets = MODULE_ACTION_BUCKET_OVERRIDES[moduleId];
+  if (!moduleBuckets) return 100;
+
+  if (token.startsWith("filtro-") || token.startsWith("filtros-")) {
+    return moduleBuckets.filtro ?? 100;
+  }
+  if (token.startsWith("buscar-")) return moduleBuckets.buscar ?? 100;
+  if (token.startsWith("generar-reporte-")) {
+    return moduleBuckets["generar-reporte"] ?? 100;
+  }
+
+  return 100;
+};
+
+const resolveModuleExactRank = (moduleId, actionId) => {
+  const moduleOrder = MODULE_EXACT_ACTION_ORDER[moduleId];
+  if (!moduleOrder) return 1000;
+
+  return Object.prototype.hasOwnProperty.call(moduleOrder, actionId)
+    ? moduleOrder[actionId]
+    : 1000;
+};
 
 const inferPermissionCandidates = (actionId) => {
   const token = normalizeToken(actionId);
@@ -101,7 +167,7 @@ export const buildHelpItemsForModule = (moduleItem) => {
   );
   const metadataEntries = Object.entries(moduleMetadata);
 
-  return metadataEntries.map(([actionId, metadata]) => {
+  const helpItems = metadataEntries.map(([actionId, metadata]) => {
     const fallbackActionName = actionNameById.get(actionId);
     const resolvedActionName =
       metadata.actionName || fallbackActionName || `Acción ${actionId}`;
@@ -128,6 +194,28 @@ export const buildHelpItemsForModule = (moduleItem) => {
       tips: Array.isArray(metadata.tips) ? metadata.tips : [],
       hasVideo: Boolean(metadata.videoUrl),
     };
+  });
+
+  return helpItems.sort((left, right) => {
+    const leftExactRank = resolveModuleExactRank(left.moduleId, left.actionId);
+    const rightExactRank = resolveModuleExactRank(right.moduleId, right.actionId);
+    if (leftExactRank !== rightExactRank) return leftExactRank - rightExactRank;
+
+    const leftCoreRank = resolveCoreRank(left.actionId);
+    const rightCoreRank = resolveCoreRank(right.actionId);
+
+    if (leftCoreRank !== rightCoreRank) return leftCoreRank - rightCoreRank;
+
+    const leftModuleRank = resolveModuleBucketRank(left.moduleId, left.actionId);
+    const rightModuleRank = resolveModuleBucketRank(right.moduleId, right.actionId);
+
+    if (leftModuleRank !== rightModuleRank) return leftModuleRank - rightModuleRank;
+
+    return String(left.actionName || "").localeCompare(
+      String(right.actionName || ""),
+      "es",
+      { sensitivity: "base" },
+    );
   });
 };
 
