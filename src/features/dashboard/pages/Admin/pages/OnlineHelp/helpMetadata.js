@@ -66,18 +66,7 @@ export const HELP_METADATA_OVERRIDES = {
       tips: ["Valida el alcance antes de confirmar."],
     },
   },
-  users: {
-    crear: {
-      title: "Cómo crear un usuario",
-      description: "Registra un usuario y asigna su rol inicial.",
-    },
-  },
   enrollments: {
-    ver: {
-      actionName: "Ver",
-      title: "Cómo ver matrículas",
-      description: "Consulta registros de matrícula y su estado actual.",
-    },
     aceptar: {
       actionName: "Matricular inscripción",
       title: "Cómo matricular una inscripción",
@@ -88,20 +77,10 @@ export const HELP_METADATA_OVERRIDES = {
       title: "Cómo rechazar una inscripción",
       description: "Rechaza una inscripción con validaciones del flujo.",
     },
-    "rechazar-inscripcion": {
-      actionName: "Rechazar inscripción",
-      title: "Cómo rechazar una inscripción",
-      description: "Rechaza una inscripción de forma controlada.",
-    },
     "migracion-masiva-matricula": {
       actionName: "Migración masiva matrícula",
       title: "Cómo hacer migración masiva de matrícula",
       description: "Carga y procesa matrículas en bloque.",
-    },
-    "matricular-inscripcion": {
-      actionName: "Matricular inscripción",
-      title: "Cómo matricular una inscripción",
-      description: "Convierte una inscripción en matrícula activa.",
     },
     "historial-matricula": {
       actionName: "Historial matrícula",
@@ -159,66 +138,6 @@ export const HELP_METADATA_OVERRIDES = {
       actionName: "Generar reporte deportistas",
       title: "Cómo generar reporte de deportistas",
       description: "Genera reportes del módulo de gestión de deportistas.",
-    },
-    "eliminar-acudiente": {
-      actionName: "Eliminar acudiente",
-      title: "Cómo eliminar un acudiente",
-      description: "Elimina el registro de un acudiente del sistema.",
-    },
-    "editar-deportista": {
-      actionName: "Editar deportista",
-      title: "Cómo editar un deportista",
-      description: "Actualiza los datos del deportista.",
-    },
-    "editar-acudiente": {
-      actionName: "Editar acudiente",
-      title: "Cómo editar un acudiente",
-      description: "Actualiza la información del acudiente.",
-    },
-    "buscar-deportista": {
-      actionName: "Buscar deportista",
-      title: "Cómo buscar un deportista",
-      description: "Encuentra deportistas con filtros y búsqueda.",
-    },
-    "rechazar-inscripcion": {
-      actionName: "Rechazar inscripción",
-      title: "Cómo rechazar una inscripción",
-      description: "Rechaza una inscripción desde gestión de deportistas.",
-    },
-    "migracion-masiva-matricula": {
-      actionName: "Migración masiva matrícula",
-      title: "Cómo hacer migración masiva de matrícula",
-      description: "Carga y procesa matrículas de forma masiva.",
-    },
-    "matricular-inscripcion": {
-      actionName: "Matricular inscripción",
-      title: "Cómo matricular una inscripción",
-      description: "Matricula una inscripción desde gestión de deportistas.",
-    },
-    "historial-matricula": {
-      actionName: "Historial matrícula",
-      title: "Cómo consultar historial de matrícula",
-      description: "Consulta trazabilidad e historial de matrículas.",
-    },
-    "generar-reportes-matriculas": {
-      actionName: "Generar reportes matrículas",
-      title: "Cómo generar reportes de matrículas",
-      description: "Genera reportes de matrículas del módulo.",
-    },
-    "filtros-gestion-matriculas": {
-      actionName: "Filtros gestión matrículas",
-      title: "Cómo usar filtros de gestión de matrículas",
-      description: "Filtra resultados para ubicar registros más rápido.",
-    },
-    "crear-matricula": {
-      actionName: "Crear matrícula",
-      title: "Cómo crear una matrícula",
-      description: "Registra una matrícula desde gestión de deportistas.",
-    },
-    "buscar-matricula": {
-      actionName: "Buscar matrícula",
-      title: "Cómo buscar una matrícula",
-      description: "Busca matrículas por criterios clave.",
     },
   },
   employees: {
@@ -344,30 +263,107 @@ export const HELP_METADATA_OVERRIDES = {
       actionName: "Ver comprobante historial pagos",
       title: "Cómo ver comprobante en historial de pagos",
       description: "Consulta comprobantes desde el historial de pagos de deportista.",
+      steps: [
+        "Abre el módulo Mis Pagos.",
+        "Ubica el pago en el historial.",
+        "Haz clic en ver comprobante para abrirlo.",
+      ],
+      tips: ["Verifica que el comprobante corresponda al pago seleccionado."],
     },
     "ver-comprobante-deportista": {
       requiredPermission: "Ver",
       actionName: "Ver comprobante deportista",
-      title: "Cómo ver comprobante de deportista",
-      description: "Visualiza el comprobante de pago del deportista.",
+      title: "Cómo ver mi comprobante",
+      description: "Visualiza el comprobante de pago.",
+      steps: [
+        "Abre el módulo Mis Pagos.",
+        "Selecciona el pago que quieres revisar.",
+        "Haz clic en ver comprobante.",
+      ],
+      tips: ["Confirma la fecha y valor antes de continuar."],
     },
     "subir-comprobante": {
       requiredPermission: "Ver",
       actionName: "Subir comprobante",
       title: "Cómo subir un comprobante",
       description: "Carga el comprobante de pago desde la vista de deportista.",
+      steps: [
+        "Abre el módulo Mis Pagos.",
+        "Selecciona la opción subir comprobante.",
+        "Adjunta el archivo y confirma el envío.",
+      ],
+      tips: ["Sube una imagen o PDF legible para evitar rechazos."],
     },
     "descargar-comprobante": {
       requiredPermission: "Ver",
       actionName: "Descargar comprobante",
       title: "Cómo descargar un comprobante",
       description: "Descarga el comprobante de pago en formato disponible.",
+      steps: [
+        "Abre el módulo Mis Pagos.",
+        "Ubica el comprobante que necesitas.",
+        "Haz clic en descargar comprobante.",
+      ],
+      tips: ["Guarda el archivo con un nombre fácil de identificar."],
     },
     "buscar-historial-pagos-deportista": {
       requiredPermission: "Ver",
       actionName: "Buscar historial pagos deportista",
-      title: "Cómo buscar en historial de pagos",
+      title: "Cómo buscar en Mis Pagos",
       description: "Encuentra pagos del deportista usando filtros y búsqueda.",
+      steps: [
+        "Abre el módulo Mis Pagos.",
+        "Escribe en el buscador del historial.",
+        "Revisa los resultados que se muestran en la lista.",
+      ],
+      tips: ["Usa un dato corto como mes o estado para encontrar más rápido."],
+    },
+  },
+  paymentsManagement: {
+    ver: {
+      actionName: "Ver pagos pendientes admin",
+      title: "Cómo ver pagos pendientes",
+      description: "Consulta los comprobantes pendientes por revisar.",
+    },
+    aprobar: {
+      actionName: "Aprobar comprobante pagos pendientes",
+      title: "Cómo aprobar comprobantes pendientes",
+      description: "Aprueba comprobantes de pago pendientes desde el panel admin.",
+    },
+    rechazar: {
+      actionName: "Rechazar comprobante pagos pendientes",
+      title: "Cómo rechazar comprobantes pendientes",
+      description: "Rechaza comprobantes de pago pendientes con validación.",
+    },
+    descargar: {
+      actionName: "Descargar comprobante",
+      title: "Cómo descargar un comprobante",
+      description: "Descarga comprobantes para validación o soporte.",
+    },
+    "ver-comprobante-historial-pagos": {
+      actionName: "Ver comprobante historial pagos",
+      title: "Cómo ver comprobantes en historial de pagos",
+      description: "Visualiza comprobantes dentro del historial de pagos.",
+    },
+    "buscar-historial-pagos": {
+      actionName: "Buscar historial pagos",
+      title: "Cómo buscar en historial de pagos",
+      description: "Encuentra registros en el historial de pagos.",
+    },
+    "buscar-pagos-pendientes": {
+      actionName: "Buscar pagos pendientes",
+      title: "Cómo buscar pagos pendientes",
+      description: "Filtra y ubica pagos pendientes rápidamente.",
+    },
+    "filtro-historial-pagos": {
+      actionName: "Filtro historial pagos",
+      title: "Cómo usar filtros en historial de pagos",
+      description: "Aplica filtros para segmentar el historial de pagos.",
+    },
+    "generar-reporte-historial-pagos": {
+      actionName: "Generar reporte historial pagos",
+      title: "Cómo generar reporte de historial de pagos",
+      description: "Genera reportes del historial de pagos desde admin.",
     },
   },
   materials: {
@@ -617,13 +613,8 @@ export const HELP_VIDEO_URLS = {
   enrollments: {
     rechazar: "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
     aceptar: "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
-    ver: "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
-    "rechazar-inscripcion":
-      "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
     "migracion-masiva-matricula":
       "https://drive.google.com/file/d/1wlUllkr_wFDjG2Gm9y3KvrgFvINYZYYT/view?usp=sharing",
-    "matricular-inscripcion":
-      "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
     "historial-matricula":
       "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
     "generar-reportes-matriculas":
@@ -648,30 +639,6 @@ export const HELP_VIDEO_URLS = {
       "https://drive.google.com/file/d/1bLlzBILSJAxZAGD8xfqk42XnRPnODvEW/view?usp=sharing",
     "generar-reporte-deportistas":
       "https://drive.google.com/file/d/1hMSGymxfqVDoxAbVUXmSZ5pJQIkTtSq-/view?usp=sharing",
-    "eliminar-acudiente":
-      "https://drive.google.com/file/d/1jT69cGb_6efB9IYFnDWK70hgvSj3dOZQ/view?usp=sharing",
-    "editar-deportista":
-      "https://drive.google.com/file/d/11WLePkBysKQFmyySy7KVGMsrpuAPijxz/view?usp=sharing",
-    "editar-acudiente":
-      "https://drive.google.com/file/d/11HezvbaIzAwubKqAQSLdE-HB4v2GP60k/view?usp=sharing",
-    "buscar-deportista":
-      "https://drive.google.com/file/d/1RbaKuYlH3tVV3-7CXxGPlOLMWMzl5x4i/view?usp=sharing",
-    "rechazar-inscripcion":
-      "https://drive.google.com/file/d/1KK2yBf2AmKwmY2RsCqtL-D9BiX0bsrFm/view?usp=sharing",
-    "migracion-masiva-matricula":
-      "https://drive.google.com/file/d/1wlUllkr_wFDjG2Gm9y3KvrgFvINYZYYT/view?usp=sharing",
-    "matricular-inscripcion":
-      "https://drive.google.com/file/d/1ofwoALPF6IQYJmhPYD8ZDVtupK6vijaX/view?usp=sharing",
-    "historial-matricula":
-      "https://drive.google.com/file/d/1KruDMZ9cyeuKHL111jL_yUHQy7mB3e4J/view?usp=sharing",
-    "generar-reportes-matriculas":
-      "https://drive.google.com/file/d/1tlm5ZpXI1KOyfx794abOYB4h8LefQ7hu/view?usp=sharing",
-    "filtros-gestion-matriculas":
-      "https://drive.google.com/file/d/1c1ZVwPhBb1mpwRwjEvBvZi9-JIKJrgGX/view?usp=sharing",
-    "crear-matricula":
-      "https://drive.google.com/file/d/1vgNIm69BlH_TRHzG6c__2OQZxE4RwnkJ/view?usp=sharing",
-    "buscar-matricula":
-      "https://drive.google.com/file/d/1AoEvoEvCOkeUsKag8-RduGomyvbyHTw6/view?usp=sharing",
   },
   roles: {
     crear: "https://drive.google.com/file/d/18hcqrAIH7zS9Mn795lWmj00eJ9UPU6D3/view?usp=sharing",
@@ -722,6 +689,25 @@ export const HELP_VIDEO_URLS = {
       "https://drive.google.com/file/d/1sYQ47h05CJwoKKSzET9KAG7So1WR4R8D/view?usp=sharing",
     "buscar-historial-pagos-deportista":
       "https://drive.google.com/file/d/1MyhQkXK7X5Uq_Vewo4C7B0nygq-yeuby/view?usp=sharing",
+  },
+  paymentsManagement: {
+    aprobar:
+      "https://drive.google.com/file/d/1H21eun0xIW6YmMSE0LbcGDXcrTRQOg3D/view?usp=sharing",
+    "buscar-historial-pagos":
+      "https://drive.google.com/file/d/1Ecm_v10OehXkl2T7E3bbnN0s-K0xOsnN/view?usp=sharing",
+    "buscar-pagos-pendientes":
+      "https://drive.google.com/file/d/1sCfTPEooFK14-SWqoy7QQdFnq2w9vZnf/view?usp=sharing",
+    descargar:
+      "https://drive.google.com/file/d/1dp03kulXasiqlP3HH49DRHV5-NsSu1Im/view?usp=sharing",
+    "filtro-historial-pagos":
+      "https://drive.google.com/file/d/1n9IZAHwV4s3avJluuVzd9OAWZSED1ZlP/view?usp=sharing",
+    "generar-reporte-historial-pagos":
+      "https://drive.google.com/file/d/1ObRx05EfA7exP2VjrG2T0XnGiGC1qx3R/view?usp=sharing",
+    rechazar:
+      "https://drive.google.com/file/d/15SxkWl6ZeSs3KYEW8Pt8iP8Or8PTsTfI/view?usp=sharing",
+    "ver-comprobante-historial-pagos":
+      "https://drive.google.com/file/d/1jDL7y46okFBwigvCIlhNdCvLy87Fdmnx/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1QB8a2QuPgm3IVcCKaL2UomJS-zF9Y0vw/view?usp=sharing",
   },
   materials: {
     ver: "https://drive.google.com/file/d/1HUsNXVOkXO0itOAehzEZjQGHA6zzZJKd/view?usp=sharing",
@@ -846,6 +832,13 @@ const mergeHelpEntries = (baseEntry, overrideEntry = {}) => ({
   tips: Array.isArray(overrideEntry.tips) ? overrideEntry.tips : baseEntry.tips,
 });
 
+const HELP_HIDDEN_ACTIONS_BY_MODULE = {
+  athletesSection: ["ver", "editar", "eliminar", "acudiente"],
+  myPayments: ["crear", "ver", "editar", "eliminar"],
+  enrollments: ["ver"],
+  eventsManagement: ["materiales", "inscribir", "ver-inscritos"],
+};
+
 export const buildHelpMetadataIndex = () => {
   const moduleCatalog = buildHelpModuleCatalog();
   const index = {};
@@ -857,13 +850,18 @@ export const buildHelpMetadataIndex = () => {
     const actionMap = new Map(
       moduleItem.actions.map((actionItem) => [actionItem.actionId, actionItem.actionName]),
     );
+    const hiddenActions = new Set(
+      (HELP_HIDDEN_ACTIONS_BY_MODULE[moduleItem.moduleId] || []).map((actionId) =>
+        String(actionId),
+      ),
+    );
     const actionIds = [
       ...new Set([
         ...moduleItem.actions.map((actionItem) => actionItem.actionId),
         ...Object.keys(overrideEntries),
         ...Object.keys(videoEntries),
       ]),
-    ];
+    ].filter((actionId) => !hiddenActions.has(actionId));
 
     actionIds.forEach((actionId) => {
       const overrideEntry = overrideEntries[actionId] || {};
