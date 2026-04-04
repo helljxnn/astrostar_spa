@@ -5,7 +5,7 @@ import { FiLock, FiEye, FiEyeOff, FiCheck, FiX } from 'react-icons/fi';
 import { showSuccessAlert, showErrorAlert } from '../../../shared/utils/alerts.js';
 import apiClient from '../../../shared/services/apiClient';
 
-const ChangePasswordModal = ({ isOpen, onClose, email }) => {
+const ChangePasswordModal = ({ isOpen, onClose }) => {
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');

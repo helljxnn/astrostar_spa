@@ -1,8 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import Swal from 'sweetalert2';
-import { FiKey, FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft } from 'react-icons/fi';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css"; // Importar los estilos del glow
 
@@ -117,8 +116,7 @@ const VerifyCode = () => {
                 setCode(['', '', '', '', '', '']);
                 inputRefs[0].current?.focus();
             }
-        } catch (error) {
-            console.error('Error:', error);
+        } catch (_error) {
             Toast.fire({ icon: 'error', title: 'Error al conectar con el servidor.' });
         } finally {
             setIsLoading(false);

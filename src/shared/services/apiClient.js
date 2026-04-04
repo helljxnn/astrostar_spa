@@ -278,6 +278,7 @@ class ApiClient {
   handleUnauthorized() {
     this.clearAccessToken();
     localStorage.removeItem("user");
+    localStorage.removeItem("lastKnownPermissionsByUser");
     clearDevRefreshToken();
     // Redirigir al login
     window.location.href = "/login";

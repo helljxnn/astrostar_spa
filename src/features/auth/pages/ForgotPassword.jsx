@@ -1,7 +1,7 @@
-﻿import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from "react-router-dom";
 import Swal from 'sweetalert2';
-import { FiMail, FiArrowLeft } from 'react-icons/fi';
+import { FiMail } from 'react-icons/fi';
 import bgImage from "../../../../public/assets/images/loginB.jpg";
 import "../Syles/LoginGlow.css";
 import logo from "../../../../public/assets/images/astrostar.png";
@@ -9,7 +9,6 @@ import logo from "../../../../public/assets/images/astrostar.png";
 function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
 
   const Toast = Swal.mixin({
@@ -62,8 +61,7 @@ function ForgotPassword() {
           title: data.message || 'Error al enviar el correo.' 
         });
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (_error) {
       Toast.fire({ 
         icon: 'error', 
         title: 'Error al conectar con el servidor.' 
