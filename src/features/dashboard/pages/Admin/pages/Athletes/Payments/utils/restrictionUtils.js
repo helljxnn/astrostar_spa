@@ -152,7 +152,7 @@ export const isCompletelyBlocked = (financialStatus, accessStatus) => {
 export const getAllowedModules = (financialStatus, accessStatus) => {
   const allModules = ['Perfil', 'Pagos', 'Citas', 'Eventos', 'Inscripciones', 'Materiales'];
 
-  // ✅ Prioridad: si el backend marca restricción por mora, limitar a Perfil + Pagos
+  // Prioridad: si el backend marca restriccion por mora, limitar a Perfil + Pagos
   if (accessStatus?.restricted && accessStatus?.reason === 'MONTHLY_OVERDUE') {
     return ['Perfil', 'Pagos'];
   }
@@ -238,13 +238,13 @@ export const getRestrictionMessage = (financialStatus, accessStatus) => {
 export const isModuleAllowed = (moduleId, financialStatus, accessStatus) => {
   const allowedModules = getAllowedModules(financialStatus, accessStatus);
   
-  // ✅ ARREGLADO: Mapeo completo de IDs de módulo
+  // Arreglado: mapeo completo de IDs de modulo
   const moduleMap = {
     'profile': 'Perfil',
     'payments': 'Pagos',
-    'myPayments': 'Pagos', // ✅ AGREGADO: Mapear myPayments a Pagos
+    'myPayments': 'Pagos', // Agregado: mapear myPayments a Pagos
     'appointments': 'Citas',
-    'appointmentManagement': 'Citas', // ✅ AGREGADO: Mapear appointmentManagement a Citas
+    'appointmentManagement': 'Citas', // Agregado: mapear appointmentManagement a Citas
     'events': 'Eventos',
     'inscriptions': 'Inscripciones',
     'materials': 'Materiales'
@@ -252,7 +252,7 @@ export const isModuleAllowed = (moduleId, financialStatus, accessStatus) => {
   
   const moduleName = moduleMap[moduleId] || moduleId;
   
-  // ✅ DEBUG: Log para diagnosticar problemas
+  // Debug: log para diagnosticar problemas
   
   return allowedModules.includes(moduleName);
 };

@@ -876,13 +876,13 @@ const Enrollments = () => {
               "Acudiente creado",
               "El acudiente ha sido creado exitosamente",
             );
-            return true; // ✅ Retornar true para que el modal sepa que fue exitoso
+            return true; // Retornar true para que el modal sepa que fue exitoso
           } else {
             showErrorAlert(
               "Error",
               result.error || "No se pudo crear el acudiente",
             );
-            return false; // ✅ Retornar false en caso de error
+            return false; // Retornar false en caso de error
           }
         }}
         mode="create"

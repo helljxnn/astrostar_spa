@@ -421,7 +421,7 @@ const Athletes = () => {
       return showErrorAlert("Error", "Acudiente no válido");
     }
 
-    // ✅ VALIDAR SI TIENE DEPORTISTAS MENORES ASIGNADOS ANTES DE ELIMINAR
+    // Validar si tiene deportistas menores asignados antes de eliminar
     const assignedAthletes = athletes.filter(
       a => a.acudiente?.toString() === guardian.id?.toString()
     );
@@ -890,5 +890,4 @@ const Athletes = () => {
 };
 
 export default Athletes;
-
 

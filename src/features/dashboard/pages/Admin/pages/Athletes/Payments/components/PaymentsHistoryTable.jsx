@@ -4,11 +4,7 @@ import { usePermissions } from "../../../../../../../../shared/hooks/usePermissi
 import { usePayments } from "../hooks/usePayments.js";
 import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
-import { 
-  calculateLateFee, 
-  calculateLateDays,
-  BUSINESS_CONSTANTS 
-} from "../constants/paymentConstants.js";
+import { calculateLateFee } from "../constants/paymentConstants.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
 
 const PaymentsHistoryTable = ({ 
@@ -34,7 +30,7 @@ const PaymentsHistoryTable = ({
     dateTo: dateToFilter
   });
   
-  const { downloadReceipt, downloading } = useDownloadReceipt();
+  const { downloadReceipt } = useDownloadReceipt();
 
   // ── Descargar comprobante ──
   const handleDownloadPayment = async (payment) => {
@@ -160,7 +156,7 @@ const PaymentsHistoryTable = ({
                 return <span className="font-semibold">{value}</span>;
               }
 
-              // ✅ SISTEMA EMPRESARIAL: Calcular mora usando funciones estándar
+              // Sistema empresarial: calcular mora usando funciones estandar
               const baseAmount = obligation.baseAmount || 0;
               let lateFeeAmount = 0;
               let totalAmount = baseAmount;
@@ -168,7 +164,7 @@ const PaymentsHistoryTable = ({
 
               // Si es mensualidad, calcular mora hasta la fecha de procesamiento
               if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
-                // ✅ CRÍTICO: Para historial, usar fecha de procesamiento, no fecha actual
+                // Critico: para historial, usar fecha de procesamiento, no fecha actual
                 const processedDate = new Date(payment.reviewedAt || payment.updatedAt);
                 const dueDate = new Date(obligation.dueEnd);
                 
