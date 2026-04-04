@@ -307,7 +307,7 @@ const AthleteModal = ({
     if (showGuardianSearch && loadGuardians && guardians.length === 0) {
       loadGuardians();
     }
-  }, [showGuardianSearch]); // ✅ SOLO depender de showGuardianSearch para evitar re-renders infinitos
+  }, [showGuardianSearch]); // Solo depender de showGuardianSearch para evitar re-renders infinitos
 
   // Re-validar el campo de identificación INSTANTÁNEAMENTE cuando cambia el tipo de documento
   useEffect(() => {
@@ -341,7 +341,7 @@ const AthleteModal = ({
 
     // Usar el hook de validación con debounce
     validateDocumentDebounced(values.identification, 6);
-  }, [values.identification, isEditing, isEnrollmentMode]); // ✅ Removidas dependencias problemáticas
+  }, [values.identification, isEditing, isEnrollmentMode]); // Removidas dependencias problematicas
 
   // Sincronizar el resultado de la validación con asyncErrors
   useEffect(() => {
@@ -377,7 +377,7 @@ const AthleteModal = ({
         return prev;
       });
     }
-  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // ✅ Removidas dependencias problemáticas
+  }, [documentExists, documentValidationMessage, isCheckingDocumentValidation, values.identification.length]); // Removidas dependencias problematicas
 
   // Validación instantánea de email
   useEffect(() => {
@@ -450,7 +450,7 @@ const AthleteModal = ({
 
     const timeoutId = setTimeout(checkEmail, delay);
     return () => clearTimeout(timeoutId);
-  }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // ✅ Removidas dependencias problemáticas
+  }, [values.email, isEditing, athleteToEdit?.email, athleteToEdit?.userId, isEnrollmentMode, touched.email]); // Removidas dependencias problematicas
 
   // VALIDACIÓN DE EDAD VS CATEGORÍA ELIMINADA
   // Ahora se permite seleccionar cualquier categoría sin importar la edad del deportista
@@ -527,7 +527,7 @@ const AthleteModal = ({
         setValues((prev) => ({ ...prev, parentesco: "Otro" }));
       }
 
-      // ✅ VALIDACIÓN AUTOMÁTICA: Marcar todos los campos como touched y validar
+      // Validacion automatica: marcar todos los campos como touched y validar
       if (isEnrollmentMode) {
         // Marcar todos los campos como touched INMEDIATAMENTE
         const allTouched = {
@@ -550,7 +550,7 @@ const AthleteModal = ({
 
         // Ejecutar validaciones asíncronas INMEDIATAMENTE (sin setTimeout)
         (async () => {
-          // Validar documento - Verificar en TODOS los usuarios
+          // Validar documento - verificar en todos los usuarios
           if (
             newValues.identification &&
             newValues.identification.length >= 6
@@ -576,7 +576,7 @@ const AthleteModal = ({
 }
           }
 
-          // Validar email - Verificar en TODOS los usuarios
+          // Validar email - verificar en todos los usuarios
           // Primero validar formato antes de consultar al backend
           // Regex más estricta: solo letras, números, puntos, guiones y guiones bajos
           const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -700,7 +700,7 @@ const AthleteModal = ({
         return prev;
       });
     }
-  }, [values.acudiente]); // ✅ Removida dependencia errors.acudiente
+  }, [values.acudiente]); // Removida dependencia errors.acudiente
 
 
   useEffect(() => {

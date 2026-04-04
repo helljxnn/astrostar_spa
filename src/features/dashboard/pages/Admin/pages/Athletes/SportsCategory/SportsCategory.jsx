@@ -135,7 +135,7 @@ const SportsCategory = () => {
     fechaActualizacion: cat.updatedAt || "",
   }));
 
-  // Funciï¿½n para obtener todos los datos para reporte
+  // Funcion para obtener todos los datos para reporte
   const getCompleteReportData = async () => {
     return await getReportData(
       { search: searchTerm }, // Filtros actuales

@@ -7,8 +7,7 @@ import { useDownloadReceipt } from "../hooks/useDownloadReceipt.js";
 import { formatCurrency } from "../utils/currencyUtils.js";
 import { 
   calculateLateFee, 
-  calculateLateDays,
-  BUSINESS_CONSTANTS 
+  calculateLateDays
 } from "../constants/paymentConstants.js";
 import { showConfirmAlert } from "../../../../../../../../shared/utils/alerts.js";
 import { PAGINATION_CONFIG } from "../../../../../../../../shared/constants/paginationConfig.js";
@@ -31,7 +30,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
     dateTo: dateToFilter
   });
   
-  const { downloadReceipt, downloading } = useDownloadReceipt();
+  const { downloadReceipt } = useDownloadReceipt();
 
   // ── Aprobar ──
   const handleApprove = async (payment) => {
@@ -58,7 +57,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
     await downloadReceipt(payment);
   };
 
-  // ✅ SISTEMA EMPRESARIAL ESTÁNDAR: Calcular mora usando funciones corregidas
+  // Sistema empresarial estandar: calcular mora usando funciones corregidas
   const getMoraInfoFromBackend = (payment) => {
     const obligation = payment.obligation;
     if (!obligation) {
@@ -76,13 +75,13 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
       };
     }
 
-    // ✅ SISTEMA EMPRESARIAL: Calcular mora desde vencimiento hasta HOY
+    // Sistema empresarial: calcular mora desde vencimiento hasta hoy
     let diasMora = 0;
     let lateFeeAmount = 0;
     const baseAmount = obligation.baseAmount || 0;
 
     if (obligation.type === 'MONTHLY' && obligation.dueEnd) {
-      // ✅ CRÍTICO: Usar fecha actual, NO fecha de subida
+      // Critico: usar fecha actual, no fecha de subida
       diasMora = calculateLateDays(obligation.dueEnd);
       lateFeeAmount = calculateLateFee(diasMora);
     }
@@ -231,7 +230,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
               
               const { diasMora, diasMoraTexto, isSuspended } = payment.moraInfo;
               
-              // ✅ Mostrar estado suspendido
+              // Mostrar estado suspendido
               if (isSuspended) {
                 return (
                   <span className="inline-flex items-center gap-1 text-gray-600 font-medium">
@@ -242,7 +241,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
               }
               
               if (diasMora > 0) {
-                // ✅ Indicadores visuales según rangos de mora
+                // Indicadores visuales segun rangos de mora
                 let colorClass = "text-red-600";
                 let bgDot = "bg-red-500";
                 
@@ -285,7 +284,7 @@ const PendingPaymentsTable = ({ onViewPayment, onRejectPayment, onPendingChanged
                 return <span className="font-semibold">{value}</span>;
               }
 
-              // ✅ SISTEMA EMPRESARIAL: Calcular mora usando funciones estándar
+              // Sistema empresarial: calcular mora usando funciones estandar
               const baseAmount = obligation.baseAmount || 0;
               let lateFeeAmount = 0;
               let totalAmount = baseAmount;

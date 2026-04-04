@@ -261,7 +261,7 @@ return 0;
     reader.readAsDataURL(file);
   };
 
-  // 🔄 NUEVA FUNCIÓN: Eliminar comprobante
+  // Nueva funcion: eliminar comprobante
   const handleRemoveComprobante = () => {
     setComprobanteFile(null);
     setComprobantePreview(null);

@@ -28,13 +28,13 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
 
   const { totalDebt, allMonthlyDebts = [] } = financialStatus;
   
-  // ✅ NUEVO: Detectar obligaciones suspendidas
+  // Nuevo: detectar obligaciones suspendidas
   const suspendedObligations = allMonthlyDebts.filter(
     obligation => obligation?.metadata?.suspended === true
   );
   const hasSuspendedObligations = suspendedObligations.length > 0;
   
-  // ✅ NUEVO: Detectar si está en el límite de mora
+  // Nuevo: detectar si esta en el limite de mora
   const isAtLateFeeLimit = totalDebt.maxDaysLate >= 90;
   
   const getDebtStatusColor = () => {
@@ -50,7 +50,7 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
 
   const getDebtStatusText = () => {
     if (totalDebt.totalAmount === 0) return "Al día";
-    if (totalDebt.maxDaysLate >= 15) return "Bloqueado por mora"; // ✅ Actualizado: 15 días
+    if (totalDebt.maxDaysLate >= 15) return "Bloqueado por mora"; // Actualizado: 15 dias
     if (totalDebt.maxDaysLate > 0) return "Con mora";
     return "Con deuda";
   };
@@ -66,7 +66,7 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
         </div>
       </div>
 
-      {/* ✅ NUEVO: Alerta de obligaciones suspendidas */}
+      {/* Nuevo: alerta de obligaciones suspendidas */}
       {hasSuspendedObligations && (
         <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
@@ -81,7 +81,7 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
         </div>
       )}
 
-      {/* ✅ NUEVO: Alerta de límite de mora alcanzado */}
+      {/* Nuevo: alerta de limite de mora alcanzado */}
       {isAtLateFeeLimit && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-start gap-2">
@@ -111,7 +111,7 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
           <div className="text-sm text-orange-600 font-medium mb-2">
             Mora Acumulada
           </div>
-          {/* ✅ Usar LateFeeDisplay para mostrar mora con indicadores visuales */}
+          {/* Usar LateFeeDisplay para mostrar mora con indicadores visuales */}
           <LateFeeDisplay 
             lateDays={totalDebt.maxDaysLate || 0}
             lateFeeAmount={totalDebt.lateFeeAmount || 0}
@@ -144,4 +144,3 @@ const FinancialSummaryCard = ({ financialStatus, loading = false }) => {
 };
 
 export default FinancialSummaryCard;
-

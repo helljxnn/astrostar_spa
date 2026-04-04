@@ -12,7 +12,7 @@ import {
 /**
  * Hook para gestionar el estado financiero completo de un atleta
  * Incluye renovación de matrículas, mensualidades y restricciones de acceso
- * ✅ ACTUALIZADO: Usa lógica centralizada de restricciones con prioridades
+ * Actualizado: usa logica centralizada de restricciones con prioridades
  */
 export const useAthleteFinancialStatus = (athleteId) => {
   const [financialStatus, setFinancialStatus] = useState(null);
@@ -36,7 +36,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
         paymentsService.checkAthleteAccess(athleteId)
       ]);
 
-      // ✅ NUEVO: Validar y normalizar respuesta del backend
+      // Nuevo: validar y normalizar respuesta del backend
       const normalizedFinancial = {
         ...financial,
         // Asegurar que allMonthlyDebts existe
@@ -63,7 +63,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
         } : null,
       };
 
-      // ✅ NUEVO: Validar estructura de accessStatus
+      // Nuevo: validar estructura de accessStatus
       const normalizedAccess = {
         restricted: access?.restricted || false,
         reason: access?.reason || null,
@@ -77,7 +77,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
       setError(err.message || 'Error al obtener estado financiero');
       showErrorAlert('Error', 'No se pudo cargar el estado financiero');
       
-      // ✅ NUEVO: Fallback con estructura completa
+      // Nuevo: fallback con estructura completa
       setFinancialStatus({
         allMonthlyDebts: [],
         totalDebt: {
@@ -106,7 +106,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
     fetchFinancialStatus();
   }, [fetchFinancialStatus]);
 
-  // ✅ NUEVO: Usar lógica centralizada de restricciones
+  // Nuevo: usar logica centralizada de restricciones
   const restrictions = financialStatus ? getActiveRestrictions(financialStatus, accessStatus) : [];
   const highestRestriction = getHighestPriorityRestriction(financialStatus, accessStatus);
   
@@ -149,13 +149,13 @@ export const useAthleteFinancialStatus = (athleteId) => {
     isAtLateFeeLimit: false,
   };
 
-  // ✅ NUEVO: Detectar obligaciones suspendidas
+  // Nuevo: detectar obligaciones suspendidas
   const suspendedObligations = pendingObligations.filter(
     obligation => obligation?.metadata?.suspended === true
   );
   const hasSuspendedObligations = suspendedObligations.length > 0;
 
-  // ✅ NUEVO: Detectar si está en el límite de mora
+  // Nuevo: detectar si esta en el limite de mora
   const isAtLateFeeLimit = totalDebt.isAtLateFeeLimit || totalDebt.maxDaysLate >= 90;
 
   return {
@@ -165,7 +165,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
     loading,
     error,
     
-    // ✅ NUEVO: Restricciones centralizadas
+    // Nuevo: restricciones centralizadas
     restrictions,
     highestRestriction,
     hasFullSystemAccess,
@@ -197,7 +197,7 @@ export const useAthleteFinancialStatus = (athleteId) => {
     hasDebt: totalDebt.totalAmount > 0,
     isBlocked: totalDebt.maxDaysLate >= 15, // 15 días según backend
     
-    // ✅ MEJORADO: Detección precisa usando campo isInitial
+    // Mejorado: deteccion precisa usando campo isInitial
     hasInitialEnrollmentPending: enrollmentObligation && (
       enrollmentObligation.isInitial === true ||
       enrollmentObligation.type === 'ENROLLMENT_INITIAL' ||
@@ -210,4 +210,3 @@ export const useAthleteFinancialStatus = (athleteId) => {
     )
   };
 };
-

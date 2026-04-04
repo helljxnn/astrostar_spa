@@ -37,7 +37,6 @@ const getAllPaginatedData = async (apiCall, params = {}) => {
       
       // Seguridad: evitar bucle infinito
       if (currentPage > 100) {
-        console.warn("⚠️ Deteniendo después de 100 páginas por seguridad");
         break;
       }
     } else {
@@ -105,7 +104,6 @@ export const useReportData = (service, endpoint = "getAll") => {
           throw new Error(response.message || "Error obteniendo datos para reporte");
         }
       } catch (error) {
-        console.error("Error en getReportData:", error);
         showErrorAlert("Error", "No se pudieron obtener los datos para el reporte");
         return [];
       }
@@ -148,7 +146,6 @@ export const useReportDataWithService = (serviceFunction) => {
           throw new Error(errorMsg);
         }
       } catch (error) {
-        console.error("Error en getReportData:", error);
         showErrorAlert("Error", "No se pudieron obtener los datos para el reporte");
         return [];
       }

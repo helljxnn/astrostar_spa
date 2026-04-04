@@ -6,10 +6,10 @@ import {
 
 /**
  * Componente de alerta para mostrar restricciones de acceso del atleta
- * ✅ ACTUALIZADO: Usa lógica centralizada de restricciones con prioridades
+ * Actualizado: usa logica centralizada de restricciones con prioridades
  */
 const BlockingAlert = ({ financialStatus, accessStatus, className = "" }) => {
-  // ✅ NUEVO: Usar lógica centralizada para obtener mensaje de restricción
+  // Nuevo: usar logica centralizada para obtener mensaje de restriccion
   const restrictionInfo = getRestrictionMessage(financialStatus, accessStatus);
   
   if (restrictionInfo.type === 'none') return null;
@@ -29,7 +29,7 @@ const BlockingAlert = ({ financialStatus, accessStatus, className = "" }) => {
     }
   };
 
-  // ✅ NUEVO: Usar colores centralizados
+  // Nuevo: usar colores centralizados
   const colors = getRestrictionBadgeColors(restrictionInfo.severity);
 
   return (
@@ -116,4 +116,3 @@ const BlockingAlert = ({ financialStatus, accessStatus, className = "" }) => {
 };
 
 export default BlockingAlert;
-

@@ -136,7 +136,7 @@ const GuardianModal = ({
     return () => clearTimeout(timeoutId);
   }, [values.identification, isEditing, guardianToEdit?.id, setErrors, setTouched]);
 
-  // ❌ VALIDACIÓN DE EMAIL ELIMINADA PARA ACUDIENTES
+  // Validacion de email eliminada para acudientes
   // Los acudientes pueden compartir email con deportistas o entre ellos
   // porque no tienen credenciales de acceso al sistema
 
@@ -285,11 +285,11 @@ const GuardianModal = ({
       const dataToSend = {
         nombreCompleto: values.nombreCompleto.trim(),
         documentTypeId: parseInt(values.documentTypeId), // Enviar el ID como número
-        identification: values.identification.trim(), // ✅ En inglés
-        email: values.email.trim(), // ✅ En inglés
-        phoneNumber: values.phoneNumber, // ✅ En inglés
-        address: values.address.trim(), // ✅ Dirección
-        birthDate: toISOString(values.fechaNacimiento), // ✅ Convertir a ISO para el backend
+        identification: values.identification.trim(),
+        email: values.email.trim(),
+        phoneNumber: values.phoneNumber,
+        address: values.address.trim(),
+        birthDate: toISOString(values.fechaNacimiento),
       };
       if (isEditing) {
         const updated = await onUpdate({
