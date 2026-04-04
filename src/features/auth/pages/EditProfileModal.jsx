@@ -107,7 +107,6 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
       setIsEmailVerificationModalOpen(true);
       return true;
     } catch (error) {
-      console.error("Error solicitando cambio de email:", error);
       showErrorAlert(
         "Error",
         error.message || "No se pudo enviar el código. Inténtalo de nuevo.",
@@ -140,8 +139,7 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
           phoneNumber: formData.telefono,
           address: formData.direccion || null,
         });
-      } catch (error) {
-        console.error("Error actualizando otros campos:", error);
+      } catch (_error) {
       }
 
       showSuccessAlert(
@@ -203,7 +201,6 @@ const EditProfileModal = ({ isOpen, onClose, user, onSave }) => {
             );
           }
         } catch (error) {
-          console.error("Error al actualizar el perfil:", error);
           showErrorAlert(
             "Error",
             error.message ||

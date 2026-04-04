@@ -4,6 +4,7 @@ import { showWarningAlert } from "../utils/alerts.js";
 
 const AuthContext = createContext();
 const DEV_REFRESH_TOKEN_KEY = "astrostar_dev_refresh_token";
+const USER_STORAGE_KEY = "user";
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,6 +48,63 @@ export const AuthProvider = ({ children }) => {
 
   const asPlainObject = (value) =>
     value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+  const pick = (source, keys) => {
+    const safeSource = asPlainObject(source);
+    return keys.reduce((acc, key) => {
+      if (safeSource[key] !== undefined && safeSource[key] !== null) {
+        acc[key] = safeSource[key];
+      }
+      return acc;
+    }, {});
+  };
+
+  const sanitizeUserForStorage = (value) => {
+    const safeUser = asPlainObject(value);
+    if (!safeUser.id) return null;
+
+    const safeRole = pick(safeUser.role, ["id", "name", "permissions"]);
+    const safeEmployee = pick(safeUser.employee, ["id", "status"]);
+    const safeAthlete = pick(safeUser.athlete, ["id", "status"]);
+
+    return {
+      ...pick(safeUser, [
+        "id",
+        "firstName",
+        "middleName",
+        "lastName",
+        "secondLastName",
+        "email",
+        "status",
+        "avatarColorIndex",
+      ]),
+      role: Object.keys(safeRole).length ? safeRole : undefined,
+      employee: Object.keys(safeEmployee).length ? safeEmployee : undefined,
+      athlete: Object.keys(safeAthlete).length ? safeAthlete : undefined,
+      permissions: safeUser.permissions,
+    };
+  };
+
+  const readStoredUser = () => {
+    try {
+      const raw = localStorage.getItem(USER_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return sanitizeUserForStorage(parsed);
+    } catch (_error) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return null;
+    }
+  };
+
+  const writeStoredUser = (value) => {
+    const safeUser = sanitizeUserForStorage(value);
+    if (!safeUser) {
+      localStorage.removeItem(USER_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(safeUser));
+  };
 
   const countKeys = (value) => Object.keys(asPlainObject(value)).length;
 
@@ -114,8 +172,7 @@ export const AuthProvider = ({ children }) => {
           const result = await response.json();
           const accessToken = result.data.accessToken;
           const userData = result.data.user;
-          const storedUserRaw = localStorage.getItem("user");
-          const storedUser = storedUserRaw ? JSON.parse(storedUserRaw) : null;
+          const storedUser = readStoredUser();
           const mergedUser = mergeUserWithStoredPermissions(userData, storedUser);
 
           // ✅ VALIDACIÓN: Verificar que el usuario siga activo
@@ -130,7 +187,7 @@ export const AuthProvider = ({ children }) => {
           // Actualizar datos del usuario si vienen en el refresh
           if (mergedUser) {
             setUser(mergedUser);
-            localStorage.setItem("user", JSON.stringify(mergedUser));
+            writeStoredUser(mergedUser);
           }
 
           // Programar el siguiente refresh
@@ -196,17 +253,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Intentar restaurar sesión desde el servidor usando refresh token (cookie)
     const restoreSession = async () => {
-      const storedUserRaw = localStorage.getItem("user");
-      let storedUserParsed = null;
-
-      if (storedUserRaw) {
-        try {
-          storedUserParsed = JSON.parse(storedUserRaw);
-        } catch (_error) {
-          storedUserParsed = null;
-          localStorage.removeItem("user");
-        }
-      }
+      const storedUserParsed = readStoredUser();
 
       try {
         // Intentar obtener un nuevo access token usando el refresh token (cookie)
@@ -261,20 +308,20 @@ export const AuthProvider = ({ children }) => {
           if (refreshedUser) {
             setIsAuthenticated(true);
             setUser(refreshedUser);
-            localStorage.setItem("user", JSON.stringify(refreshedUser));
+            writeStoredUser(refreshedUser);
 
             // Programar el próximo refresh automático
             scheduleTokenRefresh();
           } else {
             setIsAuthenticated(false);
             setUser(null);
-            localStorage.removeItem("user");
+            localStorage.removeItem(USER_STORAGE_KEY);
           }
         } else {
           // Si no hay sesión válida en cookie, limpiar datos locales.
           setIsAuthenticated(false);
           setUser(null);
-          localStorage.removeItem("user");
+          localStorage.removeItem(USER_STORAGE_KEY);
           localStorage.removeItem("authToken");
           localStorage.removeItem("userRole");
           clearDevRefreshToken();
@@ -282,7 +329,7 @@ export const AuthProvider = ({ children }) => {
       } catch (_error) {
         setIsAuthenticated(false);
         setUser(null);
-        localStorage.removeItem("user");
+        localStorage.removeItem(USER_STORAGE_KEY);
         localStorage.removeItem("authToken");
         localStorage.removeItem("userRole");
         clearDevRefreshToken();
@@ -340,7 +387,7 @@ export const AuthProvider = ({ children }) => {
           // Almacenar solo datos del usuario en localStorage
           setIsAuthenticated(true);
           setUser(userToStore);
-          localStorage.setItem("user", JSON.stringify(userToStore));
+          writeStoredUser(userToStore);
 
           // El refresh token ya está en una cookie HttpOnly
 
@@ -386,7 +433,7 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (updatedData) => {
     setUser((prevUser) => {
       const newUser = mergeUserWithStoredPermissions(updatedData, prevUser);
-      localStorage.setItem("user", JSON.stringify(newUser));
+      writeStoredUser(newUser);
       return newUser;
     });
   };
@@ -434,7 +481,7 @@ export const AuthProvider = ({ children }) => {
       apiClient.clearAccessToken();
       setIsAuthenticated(false);
       setUser(null);
-      localStorage.removeItem("user");
+      localStorage.removeItem(USER_STORAGE_KEY);
       localStorage.removeItem("authToken");
       localStorage.removeItem("userRole");
       localStorage.removeItem("lastKnownPermissionsByUser");

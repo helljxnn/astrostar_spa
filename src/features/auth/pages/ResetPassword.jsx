@@ -16,7 +16,6 @@ const ResetPassword = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const token = location.state?.token;
-    const email = location.state?.email;
 
     const Toast = Swal.mixin({
         toast: true,
@@ -120,8 +119,7 @@ const ResetPassword = () => {
                     title: data.message || 'Error al restablecer la contraseña.' 
                 });
             }
-        } catch (error) {
-            console.error('Error:', error);
+        } catch (_error) {
             Toast.fire({ 
                 icon: 'error', 
                 title: 'Error al conectar con el servidor.' 
