@@ -261,13 +261,13 @@ return guardians;
       // Usar el preRegistrationId que viene en los datos si existe, sino usar el parámetro
       const finalPreRegistrationId = enrollmentData.preRegistrationId || preRegistrationId;
       
-      // ⏳ NO ELIMINAR TODAVÍA - Esperar confirmación del backend
+      // NO ELIMINAR TODAVIA - Esperar confirmacion del backend
       
       // Pasar el preRegistrationId al servicio
       const result = await EnrollmentsService.createEnrollment(enrollmentData, finalPreRegistrationId);
 
       if (result.success) {
-        // ✅ AHORA SÍ: Eliminar la inscripción del estado local DESPUÉS del éxito
+        // AHORA SI: Eliminar la inscripcion del estado local despues del exito
         if (finalPreRegistrationId) {
           setInscriptions(prevInscriptions => {
             const filtered = prevInscriptions.filter(inscription => inscription.id !== finalPreRegistrationId);
@@ -290,7 +290,7 @@ return guardians;
           temporaryPassword: result.temporaryPassword
         };
       } else {
-        // ❌ NO ELIMINAR - La inscripción permanece en el estado
+        // NO ELIMINAR - La inscripcion permanece en el estado
         
         // Mensaje más específico para errores de timeout
         let errorTitle = "Error al crear matrícula";
@@ -298,14 +298,14 @@ return guardians;
         
         if (result.error && result.error.includes('servidor está procesando')) {
           errorTitle = "Servidor ocupado";
-          errorMessage = result.error + "\n\n💡 Tip: Espera unos segundos e intenta nuevamente.";
+          errorMessage = result.error + "\n\nTip: Espera unos segundos e intenta nuevamente.";
         }
         
         showErrorAlert(errorTitle, errorMessage);
         return null;
       }
     } catch (error) {
-// ❌ NO ELIMINAR - La inscripción permanece en el estado
+// NO ELIMINAR - La inscripcion permanece en el estado
       
       showErrorAlert("Error", "Ocurrió un error al crear la matrícula");
       return null;
@@ -374,7 +374,7 @@ showErrorAlert("Error", "Ocurrió un error al eliminar la deportista");
       );
 
       if (result.success) {
-        // 🚀 ELIMINACIÓN INSTANTÁNEA: Remover la inscripción del estado local inmediatamente
+        // Eliminacion instantanea: remover la inscripcion del estado local
 setInscriptions(prevInscriptions => 
           prevInscriptions.filter(inscription => inscription.id !== id)
         );

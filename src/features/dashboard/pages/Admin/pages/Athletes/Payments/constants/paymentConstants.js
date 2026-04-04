@@ -8,7 +8,7 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 export const BUSINESS_CONSTANTS = {
-  // ✅ SISTEMA EMPRESARIAL ESTÁNDAR (OPCIÓN A)
+  // Sistema empresarial estandar (opcion A)
   
   // Mora diaria por mensualidad (sin días de gracia)
   LATE_FEE_DAILY: 2000,
@@ -18,7 +18,7 @@ export const BUSINESS_CONSTANTS = {
   
   // Días de gracia: se reflejan en la fecha dueEnd enviada por backend
   
-  // ✅ Límite máximo de días de mora (90 días)
+  // Limite maximo de dias de mora (90 dias)
   // Protege a atletas de deudas desproporcionadas
   MAX_LATE_DAYS_CAP: 90,
   
@@ -135,10 +135,10 @@ export const ATHLETE_STATUS = {
 export const calculateLateFee = (lateDays, dailyFee = BUSINESS_CONSTANTS.LATE_FEE_DAILY) => {
   if (lateDays <= 0) return 0;
   
-  // ✅ SISTEMA EMPRESARIAL: NO aplicar días de gracia
+  // Sistema empresarial: no aplicar dias de gracia
   // La mora empieza desde el primer día de vencimiento
   
-  // ✅ Aplicar límite de 90 días para proteger a atletas
+  // Aplicar limite de 90 dias para proteger a atletas
   const cappedLateDays = Math.min(lateDays, BUSINESS_CONSTANTS.MAX_LATE_DAYS_CAP);
   
   return cappedLateDays * dailyFee;
@@ -153,7 +153,7 @@ export const calculateLateFee = (lateDays, dailyFee = BUSINESS_CONSTANTS.LATE_FE
 export const calculateLateDays = (dueDate) => {
   if (!dueDate) return 0;
   
-  // ✅ CRÍTICO: Siempre usar fecha actual (no fecha de subida)
+  // Critico: siempre usar fecha actual (no fecha de subida)
   const now = new Date();
   const due = new Date(dueDate);
   const diffTime = now - due;

@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { FaUpload, FaTrash, FaImage } from "react-icons/fa";
 
@@ -16,7 +16,7 @@ const SignatureUpload = ({
   const fileInputRef = useRef(null);
 
   // Update preview when currentSignatureUrl changes
-  useState(() => {
+  useEffect(() => {
     setPreviewUrl(currentSignatureUrl);
   }, [currentSignatureUrl]);
 

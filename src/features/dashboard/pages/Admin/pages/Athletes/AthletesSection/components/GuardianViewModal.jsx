@@ -204,7 +204,7 @@ const GuardianViewModal = ({ isOpen, onClose, guardian, athletes, onEdit, onDele
       return typeMap[guardian.tipoDocumento] || guardian.tipoDocumento;
     }
     
-    // ⚠️ TEMPORAL: El backend no está enviando documentTypeId
+    // Temporal: el backend no esta enviando documentTypeId
     // Mostrar "N/A" hasta que el backend lo incluya
     return "N/A (Pendiente del backend)";
   };

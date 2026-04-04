@@ -358,10 +358,11 @@ return this.handleError(error);
       
       // Usar el endpoint correcto del backend: /history/report
       const response = await apiClient.get(`${this.endpoint}/history/report`, { params: queryParams });
-      
+      const payload = response?.data;
+
       return {
-        success: true,
-        data: response.data || [],
+        success: payload?.success ?? true,
+        data: Array.isArray(payload?.data) ? payload.data : [],
       };
     } catch (error) {
 return { success: false, error: error.message, data: [] };
@@ -536,64 +537,12 @@ return {
   }
 
   /**
-   * Obtener texto del estado de pago
-   */
-  getPaymentStatusText(status) {
-    const statusMap = {
-      'PENDING': 'Pendiente',
-      'APPROVED': 'Aprobado',
-      'REJECTED': 'Rechazado',
-      null: 'Sin comprobante'
-    };
-    return statusMap[status] || 'Sin estado';
-  }
-
-  /**
-   * Obtener icono del estado de pago
-   */
-  getPaymentStatusIcon(status) {
-    const iconMap = {
-      'PENDING': '',
-      'APPROVED': '',
-      'REJECTED': '',
-      null: ''
-    };
-    return iconMap[status] || '❓';
-  }
-
-  /**
-   * Obtener texto del tipo de pago
-   */
-  getPaymentTypeText(type) {
-    const typeMap = {
-      'MONTHLY': 'Mensualidad',
-      'ENROLLMENT_RENEWAL': 'Renovación Matrícula',
-      'UNIFORM': 'Uniforme',
-      'EVENT': 'Evento'
-    };
-    return typeMap[type] || 'Otro';
-  }
-
-  /**
-   * Obtener icono del tipo de pago
-   */
-  getPaymentTypeIcon(type) {
-    const iconMap = {
-      'MONTHLY': '',
-      'ENROLLMENT_RENEWAL': '',
-      'UNIFORM': '',
-      'EVENT': ''
-    };
-    return iconMap[type] || '';
-  }
-
-  /**
    * Calcular color del badge según días de mora
    */
   getLateFeeColor(daysLate) {
     if (daysLate === 0) return 'green';
     if (daysLate <= 5) return 'yellow';
-    if (daysLate <= 15) return 'orange'; // ✅ Actualizado: 15 días según backend
+    if (daysLate <= 15) return 'orange'; // Actualizado: 15 dias segun backend
     return 'red';
   }
 
