@@ -110,7 +110,6 @@ const TemporaryTeams = () => {
         page: currentPage,
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
         search: searchTerm, // Enviar búsqueda al backend
-        teamType: "Temporal",
       });
 
       if (result.success) {
@@ -261,7 +260,6 @@ const TemporaryTeams = () => {
     return await getReportData(
       {
         search: searchTerm,
-        teamType: "Temporal",
       },
       (data) => data.map(team => ({
         nombre: team.nombre || team.name || "",

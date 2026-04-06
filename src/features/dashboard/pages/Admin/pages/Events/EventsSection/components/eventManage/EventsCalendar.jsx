@@ -426,6 +426,29 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     return "";
   }, []);
 
+  // Cerrar todos los modales
+  const closeAllModals = useCallback(() => {
+    setActionModal({ isOpen: false, position: null, event: null });
+    setRegistrationModal({ isOpen: false, position: null, event: null });
+    setInscriptionModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      action: "register",
+      eventId: null,
+    });
+    setRegistrationFormModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      eventType: "",
+      eventId: null,
+      eventSportsCategories: [],
+      mode: "register",
+    });
+    setDayEventsModal({ isOpen: false, date: null, events: [] });
+  }, []);
+
   // Manejar acciones CRUD
   const handleCrudAction = useCallback(
     async (action) => {
@@ -715,29 +738,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     },
     [isNew, onCreateEvent, onUpdateEvent, selectedEvent],
   );
-
-  // Cerrar todos los modales
-  const closeAllModals = useCallback(() => {
-    setActionModal({ isOpen: false, position: null, event: null });
-    setRegistrationModal({ isOpen: false, position: null, event: null });
-    setInscriptionModal({
-      isOpen: false,
-      eventName: "",
-      participantType: "",
-      action: "register",
-      eventId: null,
-    });
-    setRegistrationFormModal({
-      isOpen: false,
-      eventName: "",
-      participantType: "",
-      eventType: "",
-      eventId: null,
-      eventSportsCategories: [],
-      mode: "register",
-    });
-    setDayEventsModal({ isOpen: false, date: null, events: [] });
-  }, []);
 
   // Manejar creacion de evento desde el boton del calendario
   const handleCreate = useCallback(() => {

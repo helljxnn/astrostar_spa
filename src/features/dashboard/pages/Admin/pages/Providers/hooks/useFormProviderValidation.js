@@ -319,9 +319,9 @@ export const useFormProviderValidation = (initialValues, validationRules, isEdit
     setTouched({});
   };
 
-  const updateOriginalValues = (newValues) => {
+  const updateOriginalValues = useCallback((newValues) => {
     setOriginalValues(newValues);
-  };
+  }, []);
 
   const resetValidation = () => {
     setErrors({});

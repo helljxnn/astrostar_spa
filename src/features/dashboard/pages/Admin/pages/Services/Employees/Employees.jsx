@@ -119,6 +119,15 @@ const Employees = () => {
           return false;
         }
         await updateEmployee(editingEmployee.id, employeeData);
+
+        // Upload signature after role/data update to respect backend role validation.
+        if (signatureFile) {
+          await employeeService.uploadSignature(editingEmployee.id, signatureFile);
+          showSuccessAlert(
+            "Firma actualizada",
+            "La firma se guardó correctamente.",
+          );
+        }
       } else {
         // Crear - verificar permisos
         if (!hasPermission("employees", "Crear")) {
@@ -139,11 +148,15 @@ const Employees = () => {
           );
         }
       }
-
-      setEditingEmployee(null);
-      setIsModalOpen(false);
       return true;
-    } catch {
+    } catch (error) {
+      if (editingEmployee && signatureFile) {
+        showErrorAlert(
+          "Firma no actualizada",
+          error?.message ||
+            "El empleado se actualizó, pero no se pudo guardar la firma. Intenta nuevamente.",
+        );
+      }
       // El error ya se maneja en el hook
       return false;
     }

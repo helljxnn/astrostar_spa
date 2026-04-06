@@ -84,7 +84,9 @@ const CancelScheduleModal = ({ isOpen, onClose, onConfirm, employee }) => {
         cancelType === CANCEL_TYPES.TIME_RANGE
           ? `${timeRangeStart} - ${timeRangeEnd}`
           : "Todo el dia",
-      explicacionTiempo: cancelType === CANCEL_TYPES.TIME_RANGE ? explanation : "",
+      ...(cancelType === CANCEL_TYPES.TIME_RANGE
+        ? { explicacionTiempo: explanation }
+        : {}),
     };
 
     onConfirm({

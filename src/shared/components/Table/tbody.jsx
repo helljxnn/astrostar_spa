@@ -26,9 +26,13 @@ const Tbody = ({ options }) => {
     customRenderers = {}, // renderizadores personalizados
     buttonConfig = {}, // configuración de botones
     cellClassNames = {}, // clases personalizadas por columna
+    actionsCellClassName = "",
+    actionsContainerClassName = "",
+    compact = false,
   } = options.tbody || {};
 
   const hasActions = onEdit || onDelete || onView || onList || customActions;
+  const verticalPaddingClass = compact ? "py-3" : "py-4";
 
   /* --- Si no hay datos --- */
   if (!data || data.length === 0) {
@@ -72,7 +76,7 @@ const Tbody = ({ options }) => {
                 return (
                   <td
                     key={i}
-                    className={`px-6 py-4 ${customClass || "whitespace-nowrap"}`}
+                    className={`px-6 ${verticalPaddingClass} ${customClass || "whitespace-nowrap"}`}
                   >
                     {customRenderers[property](item[property], item)}
                   </td>
@@ -84,7 +88,7 @@ const Tbody = ({ options }) => {
                 return (
                   <td
                     key={i}
-                    className="px-6 py-4 whitespace-nowrap font-medium"
+                    className={`px-6 ${verticalPaddingClass} whitespace-nowrap font-medium`}
                   >
                     <span className={`font-semibold ${estadoClass}`}>
                       {estadoOriginal}
@@ -97,7 +101,7 @@ const Tbody = ({ options }) => {
               return (
                 <td
                   key={i}
-                  className={`px-6 py-4 text-gray-700 ${
+                  className={`px-6 ${verticalPaddingClass} text-gray-700 ${
                     customClass || "whitespace-nowrap"
                   }`}
                 >
@@ -109,7 +113,9 @@ const Tbody = ({ options }) => {
             {/*  Estado extra (si no está en dataPropertys) */}
             {state &&
               !dataPropertys.map((p) => p.toLowerCase()).includes("estado") && (
-                <td className="px-6 py-4 whitespace-nowrap font-medium">
+                <td
+                  className={`px-6 ${verticalPaddingClass} whitespace-nowrap font-medium`}
+                >
                   <span className={`font-semibold ${estadoClass}`}>
                     {estadoOriginal}
                   </span>
@@ -118,8 +124,12 @@ const Tbody = ({ options }) => {
 
             {/*  Acciones dinámicas */}
             {hasActions && (
-              <td className="px-4 py-4">
-                <div className="flex flex-wrap items-center justify-center gap-2">
+              <td
+                className={`px-4 ${verticalPaddingClass} ${actionsCellClassName}`}
+              >
+                <div
+                  className={`flex flex-wrap items-center justify-center gap-2 ${actionsContainerClassName}`}
+                >
                   {/* 1. Ver detalles */}
                   {onView &&
                     (() => {

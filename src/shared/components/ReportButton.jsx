@@ -125,11 +125,10 @@ const ReportButton = ({
       if (!reportData) return;
 
       const doc = new jsPDF({ orientation: "landscape" });
-      const rowsPerPage = 35; // Reduce rows per page for readability
-      const totalPages = Math.ceil(reportData.length / rowsPerPage);
       const generationDate = new Date().toLocaleDateString();
+      const tableStartY = 42;
 
-      const addHeader = (pageNumber) => {
+      const addHeader = () => {
         doc.setFontSize(16);
         doc.setFont(undefined, "bold");
         doc.text(fileName, 15, 15);
@@ -137,108 +136,100 @@ const ReportButton = ({
         doc.setFontSize(10);
         doc.setFont(undefined, "normal");
         doc.text(`Generado: ${generationDate}`, 15, 22);
-        doc.text(`P\u00e1gina ${pageNumber} de ${totalPages}`, 15, 29);
         doc.text(`Total de registros: ${reportData.length}`, 15, 36);
       };
 
-      const generatePage = (pageNumber) => {
-        doc.setPage(pageNumber);
-        addHeader(pageNumber);
-
-        const startIndex = (pageNumber - 1) * rowsPerPage;
-        const endIndex = Math.min(startIndex + rowsPerPage, reportData.length);
-        const pageData = reportData.slice(startIndex, endIndex);
-
-        const tableColumn = normalizedColumns.map((col) =>
-          normalizeExportText(col.header),
-        );
-        const tableRows = pageData.map((item) =>
-          normalizedColumns.map((col) => {
-            const header = normalizeExportText(col.header).toLowerCase();
-            const value = resolveColumnValue(item, col);
-            const maxLength = header.includes("descrip") ? 120 : 80;
-            return formatExportValue(value, maxLength);
-          }),
-        );
-
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const availableWidth = pageWidth - 20; // left + right margin
-        const columnWeights = normalizedColumns.map((col) => {
+      const tableColumn = normalizedColumns.map((col) =>
+        normalizeExportText(col.header),
+      );
+      const tableRows = reportData.map((item) =>
+        normalizedColumns.map((col) => {
           const header = normalizeExportText(col.header).toLowerCase();
-          if (
-            header.includes("descrip") ||
-            header.includes("observ") ||
-            header.includes("detalle")
-          ) {
-            return 1.6;
-          }
-          return 1;
-        });
-        const totalWeight = columnWeights.reduce(
-          (sum, weight) => sum + weight,
-          0,
-        );
-        const computedColumnStyles = {};
+          const value = resolveColumnValue(item, col);
+          const maxLength = header.includes("descrip") ? 120 : 80;
+          return formatExportValue(value, maxLength);
+        }),
+      );
 
-        normalizedColumns.forEach((_, index) => {
-          computedColumnStyles[index] = {
-            cellWidth: Math.max(
-              12,
-              (availableWidth * columnWeights[index]) / totalWeight,
-            ),
-          };
-        });
-
-        autoTable(doc, {
-          head: [tableColumn],
-          body: tableRows,
-          startY: 42,
-          margin: { left: 10, right: 10 },
-          styles: {
-            fontSize: 7, // Slightly reduce font size
-            cellPadding: 2,
-            lineColor: [200, 200, 200],
-            lineWidth: 0.3,
-            overflow: "linebreak", // Allow line wrapping
-            cellWidth: "wrap", // Ajustar ancho de celda
-            valign: "top", // Alinear texto arriba
-          },
-          headStyles: {
-            fillColor: [79, 70, 229],
-            textColor: 255,
-            fontStyle: "bold",
-            fontSize: 8,
-            cellPadding: 3,
-          },
-          alternateRowStyles: {
-            fillColor: [245, 245, 245],
-          },
-          columnStyles: computedColumnStyles,
-          // Automatic column width configuration
-          tableWidth: availableWidth,
-          horizontalPageBreak: true,
-          // Permitir que las celdas se expandan verticalmente
-          minCellHeight: 8,
-          // Configurar el comportamiento del texto largo
-          didParseCell: function (data) {
-            // Increase minimum height for cells with long text
-            if (data.cell.text && data.cell.text.length > 0) {
-              const textLength = data.cell.text.join("").length;
-              if (textLength > 20) {
-                data.cell.minCellHeight = 12;
-              }
-            }
-          },
-        });
-      };
-
-      generatePage(1);
-
-      if (totalPages > 1) {
-        for (let i = 2; i <= totalPages; i++) {
-          doc.addPage();
-          generatePage(i);
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const availableWidth = pageWidth - 20; // left + right margin
+      const columnWeights = normalizedColumns.map((col) => {
+        const header = normalizeExportText(col.header).toLowerCase();
+        if (
+          header.includes("descrip") ||
+          header.includes("observ") ||
+          header.includes("detalle")
+        ) {
+          return 1.6;
         }
+        return 1;
+      });
+      const totalWeight = columnWeights.reduce(
+        (sum, weight) => sum + weight,
+        0,
+      );
+      const computedColumnStyles = {};
+
+      normalizedColumns.forEach((_, index) => {
+        computedColumnStyles[index] = {
+          cellWidth: Math.max(
+            12,
+            (availableWidth * columnWeights[index]) / totalWeight,
+          ),
+        };
+      });
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: tableStartY,
+        margin: { top: tableStartY, left: 10, right: 10 },
+        styles: {
+          fontSize: 7, // Slightly reduce font size
+          cellPadding: 2,
+          lineColor: [200, 200, 200],
+          lineWidth: 0.3,
+          overflow: "linebreak", // Allow line wrapping
+          cellWidth: "wrap", // Ajustar ancho de celda
+          valign: "top", // Alinear texto arriba
+        },
+        headStyles: {
+          fillColor: [79, 70, 229],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: computedColumnStyles,
+        // Automatic column width configuration
+        tableWidth: availableWidth,
+        horizontalPageBreak: false,
+        // Permitir que las celdas se expandan verticalmente
+        minCellHeight: 8,
+        // Configurar el comportamiento del texto largo
+        didParseCell: function (data) {
+          // Increase minimum height for cells with long text
+          if (data.cell.text && data.cell.text.length > 0) {
+            const textLength = data.cell.text.join("").length;
+            if (textLength > 20) {
+              data.cell.minCellHeight = 12;
+            }
+          }
+        },
+        didDrawPage: function () {
+          addHeader();
+        },
+      });
+
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let pageNumber = 1; pageNumber <= totalPages; pageNumber += 1) {
+        doc.setPage(pageNumber);
+        doc.setFontSize(10);
+        doc.setFont(undefined, "normal");
+        doc.text(`P\u00e1gina ${pageNumber} de ${totalPages}`, 15, 29);
       }
 
       doc.save(`${fileName}_${generationDate.replace(/\//g, "-")}.pdf`);
