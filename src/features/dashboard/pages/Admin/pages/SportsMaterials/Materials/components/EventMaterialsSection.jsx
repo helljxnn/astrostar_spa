@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { FaTrash, FaCheckCircle } from 'react-icons/fa';
 import AssignMaterialModal from './AssignMaterialModal';
@@ -11,13 +11,7 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
   const [loading, setLoading] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
-  useEffect(() => {
-    if (eventoId) {
-      loadMaterials();
-    }
-  }, [eventoId]);
-
-  const loadMaterials = async () => {
+  const loadMaterials = useCallback(async () => {
     try {
       setLoading(true);
       const response = await eventMaterialsService.getEventMaterials(eventoId);
@@ -25,12 +19,18 @@ const EventMaterialsSection = ({ eventoId, eventoEstado }) => {
       if (response.success) {
         setMaterials(response.data || []);
       }
-    } catch (error) {
+    } catch {
       setMaterials([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventoId]);
+
+  useEffect(() => {
+    if (eventoId) {
+      loadMaterials();
+    }
+  }, [eventoId, loadMaterials]);
 
   const handleAssign = async (data) => {
     try {

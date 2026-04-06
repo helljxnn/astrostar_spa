@@ -1,5 +1,3 @@
-import React from "react";
-
 const AttendanceToggle = ({ checked, onChange, gradient, disabled = false }) => (
   <label
     className={`relative inline-flex items-center select-none ${

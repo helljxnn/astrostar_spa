@@ -14,7 +14,6 @@ import {
 } from "../../shared/utils/stockCalculations";
 import {
   formatStock,
-  formatNumber,
 } from "../../../../../../../../shared/utils/numberFormat";
 
 // Helper para obtener fecha local en formato YYYY-MM-DD
@@ -108,7 +107,7 @@ const MovementModal = ({
         );
         setMaterials(activeMaterials);
       }
-    } catch (error) {
+    } catch {
       setMaterials([]);
     } finally {
       setLoadingMaterials(false);
@@ -124,7 +123,7 @@ const MovementModal = ({
       } else {
         setProviders([]);
       }
-    } catch (error) {
+    } catch {
       setProviders([]);
     } finally {
       setLoadingProviders(false);
@@ -366,21 +365,17 @@ const MovementModal = ({
       };
     }
 
-    try {
-      const response = await providersService.createProvider(providerData);
-      if (response.success) {
-        // Recargar proveedores
-        await fetchProviders();
-        // Seleccionar el nuevo proveedor
-        if (response.data && response.data.id) {
-          setFormData((prev) => ({ ...prev, proveedor: String(response.data.id) }));
-        }
-        return response;
+    const response = await providersService.createProvider(providerData);
+    if (response.success) {
+      // Recargar proveedores
+      await fetchProviders();
+      // Seleccionar el nuevo proveedor
+      if (response.data && response.data.id) {
+        setFormData((prev) => ({ ...prev, proveedor: String(response.data.id) }));
       }
       return response;
-    } catch (error) {
-      throw error;
     }
+    return response;
   };
 
   if (!isOpen) return null;

@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Calendar, Package } from "lucide-react";
 import EventMaterialsService from "../services/EventMaterialsService";
@@ -12,13 +12,7 @@ const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
   const [consumableData, setConsumableData] = useState(EMPTY_DATA);
   const [reusableData, setReusableData] = useState(EMPTY_DATA);
 
-  useEffect(() => {
-    if (isOpen && material?.id) {
-      loadAssignments();
-    }
-  }, [isOpen, material?.id]);
-
-  const loadAssignments = async () => {
+  const loadAssignments = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -58,7 +52,7 @@ const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
           "No se pudieron cargar las asignaciones del material.",
         );
       }
-    } catch (error) {
+    } catch {
       showErrorAlert(
         "Error al cargar asignaciones",
         "No se pudieron cargar las asignaciones del material.",
@@ -66,7 +60,13 @@ const MaterialAssignmentsModal = ({ material, isOpen, onClose }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [material?.id]);
+
+  useEffect(() => {
+    if (isOpen && material?.id) {
+      loadAssignments();
+    }
+  }, [isOpen, material?.id, loadAssignments]);
 
   if (!isOpen) return null;
 

@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   FaArrowLeft,
@@ -148,7 +148,7 @@ const DonationsForm = () => {
         const data = resp?.data || resp?.data?.data || [];
         const list = Array.isArray(data) ? data : resp?.data?.data || [];
         setDonors(list);
-      } catch (error) {
+      } catch {
         showErrorAlert(
           "No se pudo cargar donantes/patrocinadores",
           "Revisa tu conexion o intenta mas tarde.",
@@ -170,7 +170,7 @@ const DonationsForm = () => {
         const resp = await employeeService.getAdministratorsWithSignature();
         const data = resp?.data || [];
         setAdministrators(data);
-      } catch (error) {
+      } catch {
         showErrorAlert(
           "No se pudo cargar administradores",
           "Revisa tu conexion o intenta mas tarde.",
@@ -194,7 +194,7 @@ const DonationsForm = () => {
         });
         const data = resp?.data || [];
         setMaterials(data);
-      } catch (error) {
+      } catch {
         showErrorAlert(
           "No se pudo cargar materiales",
           "Revisa tu conexion o intenta mas tarde.",
@@ -306,7 +306,7 @@ const DonationsForm = () => {
           ].includes(status);
         });
         setEvents(active.length ? active : list);
-      } catch (error) {
+      } catch {
         setEventsError("No se pudieron cargar los eventos activos.");
       } finally {
         setLoadingEvents(false);
@@ -822,6 +822,8 @@ const DonationsForm = () => {
     }
   };
 
+  const editingDonationCode = location.state?.donation?.code || "";
+
   const summary = useMemo(() => {
     const donorLabel =
       donors.find((d) => d.id === Number(form.donorSponsorId))?.nombre ||
@@ -845,8 +847,8 @@ const DonationsForm = () => {
       {
         label: "Codigo de donacion",
         value:
-          isEditing && location.state?.donation?.code
-            ? location.state.donation.code
+          isEditing && editingDonationCode
+            ? editingDonationCode
             : "Se genera automaticamente al guardar",
       },
       { label: "Donante", value: donorLabel },
@@ -937,7 +939,7 @@ const DonationsForm = () => {
     }
 
     return { general, details, files };
-  }, [form, donors, events, materials]);
+  }, [form, donors, events, materials, isEditing, editingDonationCode]);
 
   const selectedType = getTypeMeta(form.type);
   const isEconomicType = selectedType?.apiType === "ECONOMICA";

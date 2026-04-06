@@ -6,7 +6,7 @@ import { FormField } from '../../../../../../../../shared/components/FormField';
 import { formatStock } from '../../../../../../../../shared/utils/numberFormat';
 import materialsService from '../services/MaterialsService';
 
-const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
+const AssignMaterialModal = ({ isOpen, onClose, onSave }) => {
   const [materials, setMaterials] = useState([]);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
         });
         setMaterials(materialsWithStock);
       }
-    } catch (error) {
+    } catch {
       setMaterials([]);
     } finally {
       setLoadingMaterials(false);
@@ -269,7 +269,6 @@ const AssignMaterialModal = ({ isOpen, onClose, eventoId, onSave }) => {
 AssignMaterialModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  eventoId: PropTypes.number.isRequired,
   onSave: PropTypes.func.isRequired,
 };
 

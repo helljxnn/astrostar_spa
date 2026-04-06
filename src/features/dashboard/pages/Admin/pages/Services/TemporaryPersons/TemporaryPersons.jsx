@@ -72,31 +72,11 @@ const TemporaryPersons = () => {
       limit: pagination.limit,
       search: searchTerm, // Buscar por nombre completo, identificación, tipo y estado
     });
-  }, [pagination.page, searchTerm]);
+  }, [pagination.page, pagination.limit, searchTerm, loadTemporaryPersons]);
 
   // Usar datos del servidor directamente (ya vienen filtrados y paginados)
   const totalRows = pagination.total;
   const displayData = temporaryPersons;
-
-  // Preparar datos para reporte
-  const reportData = displayData.map((person) => ({
-    tipoDocumento: person.documentType?.name || "",
-    identificacion: person.identification || "",
-    primerNombre: person.firstName || "",
-    segundoNombre: person.middleName || "",
-    primerApellido: person.lastName || "",
-    segundoApellido: person.secondLastName || "",
-    correo: person.email || "",
-    telefono: person.phone || "",
-    fechaNacimiento: person.birthDate || "",
-    edad: person.age || "",
-    direccion: person.address || "",
-    equipo: person.team || "(no asignado)",
-    categoria: person.category || "(no asignado)",
-    tipoPersona: translatePersonType(person.personType) || "",
-    estado: translateStatus(person.status) || "",
-    fechaCreacion: person.createdAt || "",
-  }));
 
   // Función para obtener todos los datos para reporte
   const getCompleteReportData = async () => {

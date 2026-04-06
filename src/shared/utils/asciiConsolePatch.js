@@ -8,15 +8,33 @@ const isPlainObject = (value) =>
   typeof value === "object" &&
   Object.getPrototypeOf(value) === Object.prototype;
 
+const isAllowedAsciiCode = (code) =>
+  code === 9 ||
+  code === 10 ||
+  code === 13 ||
+  (code >= 32 && code <= 126);
+
+const stripToAscii = (value) => {
+  let sanitized = "";
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (isAllowedAsciiCode(code)) {
+      sanitized += char;
+    }
+  }
+  return sanitized;
+};
+
 const sanitizeAsciiText = (value) => {
   if (typeof value !== "string") {
     return value;
   }
 
-  return fixMojibake(value)
+  const normalized = fixMojibake(value)
     .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "");
+    .replace(/[\u0300-\u036f]/g, "");
+  // Keep output ASCII-safe for logs while preserving line breaks and tabs.
+  return stripToAscii(normalized);
 };
 
 const sanitizeLogValue = (value, seen = new WeakSet()) => {

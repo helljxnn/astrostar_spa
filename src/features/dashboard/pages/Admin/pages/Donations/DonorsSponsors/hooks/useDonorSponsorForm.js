@@ -193,7 +193,8 @@ export const useDonorSponsorForm = ({
       }
 
       if (name === "direccion") {
-        if (val && val.length < 4) return "Debe tener al menos 4 caracteres.";
+        if (!val) return "La direccion es obligatoria.";
+        if (val.length < 4) return "Debe tener al menos 4 caracteres.";
         if (val && val.length > 200)
           return "La direccion debe tener m\u00e1ximo 200 caracteres.";
       }
@@ -209,7 +210,7 @@ export const useDonorSponsorForm = ({
     } else {
       fieldsToCheck.push("razonSocial", "nit", "personaContacto");
     }
-    fieldsToCheck.push("telefono", "correo", "ciudad", "pais");
+    fieldsToCheck.push("telefono", "correo", "direccion", "ciudad", "pais");
 
     const aggregatedErrors = {};
     fieldsToCheck.forEach((field) => {

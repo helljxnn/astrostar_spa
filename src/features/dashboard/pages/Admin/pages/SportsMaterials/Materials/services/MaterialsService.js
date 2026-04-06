@@ -91,17 +91,13 @@ class MaterialsService {
       descripcion: materialData.descripcion?.trim() || "",
     };
 
-    try {
-      const response = await apiClient.post(this.endpoint, payload);
+    const response = await apiClient.post(this.endpoint, payload);
 
-      if (response.success && response.data) {
-        response.data = this.transformFromBackend(response.data);
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (response.success && response.data) {
+      response.data = this.transformFromBackend(response.data);
     }
+
+    return response;
   }
 
   async updateMaterial(id, materialData) {
@@ -136,44 +132,36 @@ class MaterialsService {
   }
 
   async checkNameAvailability(nombre, categoriaId, excludeId = null) {
-    try {
-      const params = {
-        nombre: nombre.trim(),
-        categoriaId: categoriaId,
-      };
+    const params = {
+      nombre: nombre.trim(),
+      categoriaId: categoriaId,
+    };
 
-      if (excludeId) {
-        params.excludeId = excludeId;
-      }
-
-      const response = await apiClient.get(
-        `${this.endpoint}/check-name`,
-        params,
-      );
-      return response;
-    } catch (error) {
-      throw error;
+    if (excludeId) {
+      params.excludeId = excludeId;
     }
+
+    const response = await apiClient.get(
+      `${this.endpoint}/check-name`,
+      params,
+    );
+    return response;
   }
 
   async checkMaterialExists(nombre, excludeId = null) {
-    try {
-      const params = {
-        nombre: nombre.trim(),
-      };
+    const params = {
+      nombre: nombre.trim(),
+    };
 
-      if (excludeId) {
-        params.excludeId = excludeId;
-      }
-
-      const response = await apiClient.get(
-        `${this.endpoint}/check-name`,
-        params,
-      );
-      return response;
-    } catch (error) {
-      throw error;
+    if (excludeId) {
+      params.excludeId = excludeId;
     }
+
+    const response = await apiClient.get(
+      `${this.endpoint}/check-name`,
+      params,
+    );
+    return response;
   }
 
   async deleteMaterial(id) {
@@ -210,15 +198,11 @@ class MaterialsService {
       descripcion: dischargeData.descripcion.trim(),
     };
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${id}/discharge`,
-        payload,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(
+      `${this.endpoint}/${id}/discharge`,
+      payload,
+    );
+    return response;
   }
 
   async checkFutureAssignments(id) {
@@ -226,14 +210,10 @@ class MaterialsService {
       throw new Error("ID del material es requerido");
     }
 
-    try {
-      const response = await apiClient.get(
-        `${this.endpoint}/${id}/future-assignments`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(
+      `${this.endpoint}/${id}/future-assignments`,
+    );
+    return response;
   }
 
   async transferStock(id, transferData) {
@@ -274,20 +254,16 @@ class MaterialsService {
       observaciones: transferData.observaciones?.trim() || "",
     };
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${id}/transfer`,
-        payload,
-      );
+    const response = await apiClient.post(
+      `${this.endpoint}/${id}/transfer`,
+      payload,
+    );
 
-      if (response.success && response.data) {
-        response.data = this.transformFromBackend(response.data);
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (response.success && response.data) {
+      response.data = this.transformFromBackend(response.data);
     }
+
+    return response;
   }
 
   async getMaterialHistory(id) {

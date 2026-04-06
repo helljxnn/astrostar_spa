@@ -249,7 +249,7 @@ const CloudinaryUpload = ({
           "Descarga alternativa", 
           "El archivo se abrira en una nueva pestana. Usa 'Guardar como' para elegir el nombre."
         );
-      } catch (fallbackError) {
+      } catch {
         showErrorAlert("Error al descargar", "No se pudo descargar el archivo. Usa el boton 'Ver' para abrirlo.");
       }
     }

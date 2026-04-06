@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, Package, Recycle } from "lucide-react";
 import {
   showSuccessAlert,
@@ -25,17 +25,7 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
     (event?.estado || event?.status || "").toLowerCase(),
   );
 
-  useEffect(() => {
-    if (isOpen && event?.id) {
-      loadSummary();
-      // Limpiar pendientes al abrir
-      setPendingDeliverables([]);
-      setPendingUsables([]);
-      setHasChanges(false);
-    }
-  }, [isOpen, event?.id]);
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -61,7 +51,17 @@ const EventMaterialsModal = ({ isOpen, onClose, event }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [event?.id]);
+
+  useEffect(() => {
+    if (isOpen && event?.id) {
+      loadSummary();
+      // Limpiar pendientes al abrir
+      setPendingDeliverables([]);
+      setPendingUsables([]);
+      setHasChanges(false);
+    }
+  }, [isOpen, event?.id, loadSummary]);
 
   const handleClose = () => {
     if (hasChanges) {

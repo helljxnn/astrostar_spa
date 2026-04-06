@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import CategoryModal from "./components/CategoryModal";
@@ -29,7 +29,6 @@ const MaterialCategories = () => {
   const [currentPage, setCurrentPage] = useState(
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
-  const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
 
   // Hook para reportes
@@ -46,14 +45,8 @@ const MaterialCategories = () => {
     }
   }, [location, navigate]);
 
-  useEffect(() => {
-    fetchCategories();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
-      setLoading(true);
-
       const response = await categoriesService.getCategories({
         page: currentPage,
         limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
@@ -65,13 +58,15 @@ const MaterialCategories = () => {
         const total = parseInt(response.pagination?.total) || response.data?.length || 0;
         setTotalRows(total);
       }
-    } catch (error) {
+    } catch {
       setCategories([]);
       setTotalRows(0);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = categories;

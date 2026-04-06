@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   FaPlus,
   FaMinusCircle,
@@ -52,11 +52,7 @@ const MaterialsCatalog = () => {
   const [loading, setLoading] = useState(false);
   const [totalRows, setTotalRows] = useState(0);
 
-  useEffect(() => {
-    fetchMaterials();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
-
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -72,13 +68,17 @@ const MaterialsCatalog = () => {
           parseInt(response.pagination?.total) || response.data?.length || 0;
         setTotalRows(total);
       }
-    } catch (error) {
+    } catch {
       setMaterials([]);
       setTotalRows(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm]);
+
+  useEffect(() => {
+    fetchMaterials();
+  }, [fetchMaterials]); // Recargar cuando cambia la página o la búsqueda
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = materials;

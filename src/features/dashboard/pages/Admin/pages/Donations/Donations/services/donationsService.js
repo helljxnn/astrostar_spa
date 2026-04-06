@@ -14,6 +14,11 @@ class DonationsService {
     return apiClient.put(`/donations/${id}`, data);
   }
 
+  async changeStatus(id, status, reason = "") {
+    if (!id) return null;
+    return apiClient.patch(`/donations/${id}/status`, { status, reason });
+  }
+
   async uploadFiles(donationId, files = [], fileType = "soporte") {
     if (!donationId || files.length === 0) return null;
     const formData = new FormData();
@@ -34,17 +39,10 @@ class DonationsService {
    * @returns {Promise<Blob>} PDF file
    */
   async downloadCertificate(donationId) {
-    try {
-      const response = await apiClient.get(
-        `/donations/${donationId}/certificate`,
-        {
-          responseType: "blob",
-        },
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`/donations/${donationId}/certificate`, {
+      responseType: "blob",
+    });
+    return response;
   }
 
   /**
@@ -53,15 +51,11 @@ class DonationsService {
    * @returns {Promise} Lista completa de donaciones
    */
   async getAllForReport(params = {}) {
-    try {
-      const response = await apiClient.get("/donations", {
-        ...params,
-        limit: 10000, // Límite alto para obtener todos los datos
-      });
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get("/donations", {
+      ...params,
+      limit: 10000, // Límite alto para obtener todos los datos
+    });
+    return response;
   }
 }
 

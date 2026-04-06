@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { motion } from "framer-motion";
 import {
   FaArrowLeft,
   FaUsers,
@@ -7,7 +7,6 @@ import {
   FaSearch,
   FaTrophy,
   FaUserFriends,
-  FaChartBar,
 } from "react-icons/fa";
 import { createPortal } from "react-dom";
 import RegistrationsService from "../../services/RegistrationsService";
@@ -27,7 +26,6 @@ const ViewRegistrationsModal = ({
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   // Helper para obtener estado RSVP
   const getRSVPStatus = (registration) => {
@@ -83,6 +81,24 @@ const ViewRegistrationsModal = ({
     onClose();
   };
 
+  const loadRegistrations = useCallback(async () => {
+    try {
+      let response;
+      if (isTeamType) {
+        response = await RegistrationsService.getEventRegistrations(eventId);
+      } else {
+        response =
+          await RegistrationsService.getEventAthleteRegistrations(eventId);
+      }
+
+      if (response.success && response.data) {
+        setRegistrations(response.data);
+      }
+    } catch {
+      showErrorAlert("Error", "No se pudieron cargar las inscripciones");
+    }
+  }, [eventId, isTeamType]);
+
   // Cargar inscripciones cuando se abre el modal
   useEffect(() => {
     if (isOpen && eventId) {
@@ -98,75 +114,42 @@ const ViewRegistrationsModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, eventId]); // ✅ Removido isTeamType para evitar doble carga
+  }, [isOpen, eventId, loadRegistrations]);
 
-  const loadRegistrations = async () => {
-    setLoading(true);
-    try {
-      let response;
-      if (isTeamType) {
-        response = await RegistrationsService.getEventRegistrations(eventId);
-      } else {
-        response =
-          await RegistrationsService.getEventAthleteRegistrations(eventId);
-      }
-
-      if (response.success && response.data) {
-        setRegistrations(response.data);
-      }
-    } catch (error) {
-      console.error("Error cargando inscripciones:", error);
-      showErrorAlert("Error", "No se pudieron cargar las inscripciones");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (!isOpen) return null;
-
-  // Si no es tipo Equipos, mostrar el modal de deportistas
-  if (!isTeamType) {
-    return (
-      <ViewAthletesModal
-        isOpen={isOpen}
-        onClose={onClose}
-        eventName={eventName}
-        eventId={eventId}
-      />
-    );
-  }
-
-  // Transformar inscripciones a formato del componente
-  const allItems = isTeamType
-    ? registrations
-        .filter((reg) => reg.team)
-        .map((reg) => ({
-          id: reg.team.id,
-          nombre: reg.team.name || "Sin nombre",
-          categoria: reg.team.category || "Sin categoría",
-          miembros: reg.team._count?.members || 0,
-          teamType: reg.team.teamType || "Fundacion",
-          registrationId: reg.id,
-          status: reg.status,
-          eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
-        }))
-    : registrations
-        .filter((reg) => reg.athlete)
-        .map((reg) => ({
-          id: reg.athlete.id,
-          nombre:
-            `${reg.athlete.user?.firstName || ""} ${reg.athlete.user?.lastName || ""}`.trim() ||
-            "Sin nombre",
-          identificacion: reg.athlete.user?.identification || "N/A",
-          edad: reg.athlete.user?.age || "N/A",
-          categorias:
-            reg.athlete.inscriptions
-              ?.map((i) => i.sportsCategory?.nombre)
-              .filter(Boolean) || [],
-          registrationId: reg.id,
-          status: reg.status,
-          eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
-        }));
+  const allItems = useMemo(
+    () =>
+      isTeamType
+        ? registrations
+            .filter((reg) => reg.team)
+            .map((reg) => ({
+              id: reg.team.id,
+              nombre: reg.team.name || "Sin nombre",
+              categoria: reg.team.category || "Sin categoría",
+              miembros: reg.team._count?.members || 0,
+              teamType: reg.team.teamType || "Fundacion",
+              registrationId: reg.id,
+              status: reg.status,
+              eventInvitations: reg.eventInvitations || [],
+            }))
+        : registrations
+            .filter((reg) => reg.athlete)
+            .map((reg) => ({
+              id: reg.athlete.id,
+              nombre:
+                `${reg.athlete.user?.firstName || ""} ${reg.athlete.user?.lastName || ""}`.trim() ||
+                "Sin nombre",
+              identificacion: reg.athlete.user?.identification || "N/A",
+              edad: reg.athlete.user?.age || "N/A",
+              categorias:
+                reg.athlete.inscriptions
+                  ?.map((i) => i.sportsCategory?.nombre)
+                  .filter(Boolean) || [],
+              registrationId: reg.id,
+              status: reg.status,
+              eventInvitations: reg.eventInvitations || [],
+            })),
+    [isTeamType, registrations],
+  );
 
   // Filtrar por sección (fundación o temporal para equipos, todos para deportistas)
   const filteredBySection = isTeamType
@@ -200,6 +183,20 @@ const ViewRegistrationsModal = ({
       }
     });
   }, [filteredBySection, searchTerm, isTeamType]);
+
+  if (!isOpen) return null;
+
+  // Si no es tipo Equipos, mostrar el modal de deportistas
+  if (!isTeamType) {
+    return (
+      <ViewAthletesModal
+        isOpen={isOpen}
+        onClose={onClose}
+        eventName={eventName}
+        eventId={eventId}
+      />
+    );
+  }
 
   // Estadísticas
   const stats = {

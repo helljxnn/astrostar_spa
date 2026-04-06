@@ -1,5 +1,5 @@
 ﻿import { motion } from "framer-motion";
-import { FaUserPlus, FaEdit, FaEye } from "react-icons/fa";
+import { FaUserPlus, FaEye } from "react-icons/fa";
 import { createPortal } from "react-dom";
 
 const EventRegistrationOptionsModal = ({
@@ -8,7 +8,6 @@ const EventRegistrationOptionsModal = ({
   onAction,
   position,
   eventType,
-  hasRegistrations = false,
   eventStatus = "",
 }) => {
   if (!isOpen) {

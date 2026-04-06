@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IoClose } from "react-icons/io5";
 import { FaHandHoldingHeart } from "react-icons/fa";
@@ -360,6 +360,7 @@ const DonorSponsorModal = ({
                       value={formData.direccion}
                       onChange={handleChange}
                       onBlur={handleBlur}
+                      required
                       error={errors.direccion}
                       touched={touched.direccion}
                     />
