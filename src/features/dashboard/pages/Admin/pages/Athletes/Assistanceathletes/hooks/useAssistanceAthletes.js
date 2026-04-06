@@ -67,8 +67,9 @@ export const useAssistanceAthletes = () => {
           );
           setCategories([ALL_CATEGORIES, ...unique]);
         }
-      } catch (error) {
-}
+      } catch {
+        setCategories([ALL_CATEGORIES]);
+      }
     };
 
     loadCategories();
@@ -109,8 +110,8 @@ export const useAssistanceAthletes = () => {
           setAttendance([]);
           setTotalCount(0);
         }
-      } catch (error) {
-setAttendance([]);
+      } catch {
+        setAttendance([]);
         setTotalCount(0);
       } finally {
         setLoading(false);
@@ -118,6 +119,8 @@ setAttendance([]);
     };
 
     loadAttendance();
+    // Evitar refetch en cada actualización de cache local.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, currentPage, searchTerm, categoryFilter, rowsPerPage]);
 
   useEffect(() => {

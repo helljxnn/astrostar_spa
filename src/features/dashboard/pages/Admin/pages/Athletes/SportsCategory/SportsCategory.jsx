@@ -130,7 +130,6 @@ const SportsCategory = () => {
     edadMinima: cat.edadMinima ?? "",
     edadMaxima: cat.edadMaxima ?? "",
     estado: cat.estado || "",
-    publicar: cat.publicar ? "Si" : "No",
     fechaCreacion: cat.createdAt || "",
     fechaActualizacion: cat.updatedAt || "",
   }));
@@ -145,7 +144,6 @@ const SportsCategory = () => {
         edadMinima: cat.edadMinima ?? cat.minAge ?? "",
         edadMaxima: cat.edadMaxima ?? cat.maxAge ?? "",
         estado: cat.estado || cat.status || "",
-        publicar: (cat.publicar ?? cat.publish) ? "Si" : "No",
         fechaCreacion: cat.createdAt || "",
         fechaActualizacion: cat.updatedAt || "",
       }))
@@ -158,7 +156,6 @@ const SportsCategory = () => {
     { header: "Edad mínima", accessor: "edadMinima" },
     { header: "Edad máxima", accessor: "edadMaxima" },
     { header: "Estado", accessor: "estado" },
-    { header: "Publicar", accessor: "publicar" },
     { header: "Fecha creación", accessor: "fechaCreacion" },
     { header: "Fecha actualización", accessor: "fechaActualizacion" },
   ];

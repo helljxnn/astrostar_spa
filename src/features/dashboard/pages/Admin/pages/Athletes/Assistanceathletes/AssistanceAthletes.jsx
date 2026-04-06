@@ -1,13 +1,10 @@
-import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 
 
 import AttendanceHeader from "./components/AttendanceHeader";
 import AttendanceTable from "./components/AttendanceTable";
-import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
 import { useAssistanceAthletes } from "./hooks/useAssistanceAthletes";
-import assistanceathletesService from "./services/AssistanceathletesService";
 import { usePermissions } from "../../../../../../../shared/hooks/usePermissions.js";
 
 const GRADIENT = "linear-gradient(90deg, #b595ff 0%, #9be9ff 100%)";
@@ -17,10 +14,6 @@ export default function AssistanceAthletes() {
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
   const canEditAttendance = hasPermission("athletesAssistance", "Editar");
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyData, setHistoryData] = useState([]);
-  const [historyAthlete, setHistoryAthlete] = useState(null);
 
   const {
     selectedDate,
@@ -46,30 +39,6 @@ export default function AssistanceAthletes() {
 
   const goToHistory = () => {
     navigate("/dashboard/athletes-assistance/history");
-  };
-
-  const handleViewHistory = async (athlete) => {
-    const athleteId = athlete?.athleteId ?? athlete?.id;
-    if (!athleteId) return;
-
-    setHistoryAthlete(athlete);
-    setHistoryOpen(true);
-    setHistoryLoading(true);
-
-    try {
-      const response = await assistanceathletesService.getAthleteHistory(
-        athleteId
-      );
-      if (response && response.success) {
-        setHistoryData(response.data || []);
-      } else {
-        setHistoryData([]);
-      }
-    } catch (error) {
-setHistoryData([]);
-    } finally {
-      setHistoryLoading(false);
-    }
   };
 
   return (
@@ -101,15 +70,14 @@ setHistoryData([]);
         </div>
       ) : (
         <>
-          <AttendanceTable
-            paginatedData={paginatedData}
-            startIndex={startIndex}
-            gradient={GRADIENT}
-            onAttendanceChange={handleAttendanceChange}
-            onObservationChange={handleObservationChange}
-            onViewHistory={handleViewHistory}
-            canEdit={canEditAttendance}
-          />
+            <AttendanceTable
+              paginatedData={paginatedData}
+              startIndex={startIndex}
+              gradient={GRADIENT}
+              onAttendanceChange={handleAttendanceChange}
+              onObservationChange={handleObservationChange}
+              canEdit={canEditAttendance}
+            />
           <div className="mt-4">
             <Pagination
               currentPage={currentPage}
@@ -122,18 +90,6 @@ setHistoryData([]);
           </div>
         </>
       )}
-
-      <AthleteAttendanceHistoryModal
-        isOpen={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        athleteName={historyAthlete?.nombre || ""}
-        history={historyData}
-        loading={historyLoading}
-      />
     </div>
   );
 }
-
-
-
-

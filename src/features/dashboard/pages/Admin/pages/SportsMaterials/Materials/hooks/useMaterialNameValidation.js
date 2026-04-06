@@ -74,7 +74,7 @@ export const useMaterialNameValidation = (materialId = null) => {
         }
 
         return { available: true, message: '' };
-      } catch (err) {
+      } catch {
         setNameValidation({
           isChecking: false,
           isDuplicate: false,

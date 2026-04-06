@@ -656,6 +656,48 @@ export const HELP_VIDEO_URLS = {
     "generar-reporte":
       "https://drive.google.com/file/d/1unNxwlbrXmQdQZyGPG_leKzrBOkCXYOf/view?usp=sharing",
   },
+  employeesSchedule: {
+    crear: "https://drive.google.com/file/d/1fEYRqXl_FhiitpJCxlMDefhF3wpGYlwo/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/187POYxqHKFPnHCcF9WNJF30lTlW6fzxd/view?usp=sharing",
+    editar: "https://drive.google.com/file/d/1F1r4zHqZLp6BYWSteQ5HSY5ZHpyQVyQ-/view?usp=sharing",
+    eliminar: "https://drive.google.com/file/d/1wxJqQI5Rx1kpyoQXTbQYUlAptv8ErGIS/view?usp=sharing",
+  },
+  appointmentManagement: {
+    crear: "https://drive.google.com/file/d/11UG4JSdIH2zvEcCEt2Z1U8kMNwRWlgiI/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1Y8trO9oCofZodxkIhFm_ax1qc_KwPDcR/view?usp=sharing",
+    editar: "https://drive.google.com/file/d/1hXaMlWfWfWEdkzkmhlmyGHwDz-dkNj7B/view?usp=sharing",
+    completar: "https://drive.google.com/file/d/1dL5K14mIjtLvg4zfTgZbAM598N0fWB-X/view?usp=sharing",
+    cancelar: "https://drive.google.com/file/d/1aD-_3DuhClpZ3nGEs9Wv5CCPmALi4sNk/view?usp=sharing",
+  },
+  sportsCategory: {
+    crear: "https://drive.google.com/file/d/1x9hH24_KMPXc5yg78Dk52JNI-PmtlNXC/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1ASwWMKJOHfL5bhJK6wM-Ef-ZlYxObYAy/view?usp=sharing",
+    editar: "https://drive.google.com/file/d/1aYsBCCu-jH03g6KKgLShyx9TggzZbvwL/view?usp=sharing",
+    eliminar: "https://drive.google.com/file/d/1zqAhEJSyzpP9PSEsktxJixhfKQrDEMLt/view?usp=sharing",
+    buscar: "https://drive.google.com/file/d/1aL8A8oIHJKeKJTVdf5pG4j3KUQH8iAme/view?usp=sharing",
+    listar: "https://drive.google.com/file/d/1X9XcVFYk4DI_qrCWOaU-kBqqNc36gx93/view?usp=sharing",
+  },
+  athletesAssistance: {
+    crear: "https://drive.google.com/file/d/1BFSK8VUthQgME2RMZkfETQd1V2TEAPHt/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/10xW8TUplcNUvz19CnqMF5FksP5RIGNJj/view?usp=sharing",
+    editar: "https://drive.google.com/file/d/1yLtbTb-ZZcTBwgDbuc_opsSHQDIYr8Jx/view?usp=sharing",
+  },
+  donorsSponsors: {
+    crear: "https://drive.google.com/file/d/1VRTa732Y3xJ4hd_8P-WJtiKE0f2AJ4H0/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1JftTmNkrdL3QSL5ZsIISZZh0ftKoRfOC/view?usp=sharing",
+    editar: "https://drive.google.com/file/d/174Iv3i5sFr0j07csJxdn17uKb-sltsAq/view?usp=sharing",
+    eliminar: "https://drive.google.com/file/d/1MQXQuEE0s0YalH6DlcfC8JotfYz31Sji/view?usp=sharing",
+  },
+  donationsManagement: {
+    crear: "https://drive.google.com/file/d/1-6DkuzbXedUqobVD-AaiJjOtoR9SP_e3/view?usp=sharing",
+    ver: "https://drive.google.com/file/d/1NYQRNIbwPDQe1l9Tsuj0VCQH0hpSkpWz/view?usp=sharing",
+    "descargar-certificado-de-donacion":
+      "https://drive.google.com/file/d/1W14LP5QASEYCrHtzeJ8Man6EN3n-C8IH/view?usp=sharing",
+    "cambiar-estado":
+      "https://drive.google.com/file/d/1gCYNOypX0aMdl4hUjldQoXIwOSqFLBiJ/view?usp=sharing",
+    "filtrar-donaciones":
+      "https://drive.google.com/file/d/1NfawH6CSPnUaH3hmhe84ZxhitlfCZswc/view?usp=sharing",
+  },
   temporaryWorkers: {
     crear: "https://drive.google.com/file/d/1ildmWGv8gJHQT965hHGCCDXrnpQqiLr4/view?usp=sharing",
     editar: "https://drive.google.com/file/d/10xzo559nZ1kqbTaCxrGu6WrwlRTh-Em2/view?usp=sharing",

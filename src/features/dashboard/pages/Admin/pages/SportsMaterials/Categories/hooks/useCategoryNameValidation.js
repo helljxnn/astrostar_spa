@@ -33,7 +33,7 @@ export const useCategoryNameValidation = (currentCategoryId = null) => {
         }
         
         return { available: true, message: 'Nombre disponible' };
-      } catch (err) {
+      } catch {
         return { available: true, message: '' };
       }
     },

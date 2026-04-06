@@ -1,4 +1,3 @@
-import React from "react";
 import AttendanceToggle from "./AttendanceToggle";
 
 const AttendanceTable = ({
@@ -7,7 +6,6 @@ const AttendanceTable = ({
   gradient,
   onAttendanceChange,
   onObservationChange,
-  onViewHistory,
   canEdit = true,
 }) => (
   <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">

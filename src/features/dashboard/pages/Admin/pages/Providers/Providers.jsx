@@ -1,5 +1,5 @@
 ﻿// src/features/dashboard/pages/Admin/pages/Providers/Providers.jsx
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaPlus } from "react-icons/fa";
 import ProviderModal from "./components/ProviderModal.jsx";
@@ -55,41 +55,7 @@ const Providers = () => {
   // Estado para datos filtrados localmente
   const [allData, setAllData] = useState([]);
   
-  const fetchProviders = async () => {
-    try {
-      setLoading(true);
-      const isSearching = Boolean(searchTerm.trim());
-      const response = isSearching
-        ? await providersService.getAllForReport()
-        : await providersService.getProviders({
-            page: currentPage,
-            limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
-          });
-      if (response.success) {
-        // Enriquecer datos con nombres de tipos de documento
-        const enrichedData = await enrichProvidersWithDocumentTypes(
-          response.data || [],
-        );
-        setAllData(enrichedData); // Guardar todos los datos para filtrado local
-        setTotalRows(
-          isSearching
-            ? enrichedData.length
-            : response.pagination?.total || enrichedData.length,
-        );
-        checkActivePurchasesForProviders(enrichedData);
-      } else {
-        showErrorAlert("Error", "No se pudieron cargar los proveedores");
-      }
-    } catch (error) {
-      showErrorAlert(
-        "Error",
-        "Error al cargar los proveedores desde el servidor",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-  const resolveProviderDocumentType = (provider, documentTypes = []) => {
+  const resolveProviderDocumentType = useCallback((provider, documentTypes = []) => {
     if (provider.tipoEntidad === "juridica") {
       return {
         tipoDocumento: "NIT",
@@ -132,26 +98,34 @@ const Providers = () => {
         "No especificado",
       documentType: docType || provider.documentType || null,
     };
-  };
+  }, []);
 
-  const enrichProvidersWithDocumentTypes = async (providers) => {
-    try {
-      const response = await providersService.getDocumentTypes();
-      if (response.success && response.data) {
-        const documentTypes = response.data;
+  const enrichProvidersWithDocumentTypes = useCallback(
+    async (providers) => {
+      try {
+        const response = await providersService.getDocumentTypes();
+        if (response.success && response.data) {
+          const documentTypes = response.data;
+          return providers.map((provider) => ({
+            ...provider,
+            ...resolveProviderDocumentType(provider, documentTypes),
+          }));
+        }
+      } catch {
         return providers.map((provider) => ({
           ...provider,
-          ...resolveProviderDocumentType(provider, documentTypes),
+          ...resolveProviderDocumentType(provider),
         }));
       }
-    } catch (error) {
-    }
-    return providers.map((provider) => ({
-      ...provider,
-      ...resolveProviderDocumentType(provider),
-    }));
-  };
-  const checkActivePurchasesForProviders = async (providers) => {
+      return providers.map((provider) => ({
+        ...provider,
+        ...resolveProviderDocumentType(provider),
+      }));
+    },
+    [resolveProviderDocumentType],
+  );
+
+  const checkActivePurchasesForProviders = useCallback(async (providers) => {
     const purchasesCheck = {};
     // Usar Promise.all para llamadas paralelas en lugar de secuenciales
     const promises = providers.map(async (provider) => {
@@ -163,7 +137,7 @@ const Providers = () => {
           id: provider.id,
           hasActivePurchases: response.hasActivePurchases,
         };
-      } catch (error) {
+      } catch {
         return { id: provider.id, hasActivePurchases: false };
       }
     });
@@ -172,10 +146,50 @@ const Providers = () => {
       purchasesCheck[result.id] = result.hasActivePurchases;
     });
     setActivePurchasesCheck(purchasesCheck);
-  };
+  }, []);
+
+  const fetchProviders = useCallback(async () => {
+    try {
+      setLoading(true);
+      const isSearching = Boolean(searchTerm.trim());
+      const response = isSearching
+        ? await providersService.getAllForReport()
+        : await providersService.getProviders({
+            page: currentPage,
+            limit: PAGINATION_CONFIG.ROWS_PER_PAGE,
+          });
+      if (response.success) {
+        // Enriquecer datos con nombres de tipos de documento
+        const enrichedData = await enrichProvidersWithDocumentTypes(
+          response.data || [],
+        );
+        setAllData(enrichedData); // Guardar todos los datos para filtrado local
+        setTotalRows(
+          isSearching
+            ? enrichedData.length
+            : response.pagination?.total || enrichedData.length,
+        );
+        checkActivePurchasesForProviders(enrichedData);
+      } else {
+        showErrorAlert("Error", "No se pudieron cargar los proveedores");
+      }
+    } catch {
+      showErrorAlert(
+        "Error",
+        "Error al cargar los proveedores desde el servidor",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    currentPage,
+    searchTerm,
+    enrichProvidersWithDocumentTypes,
+    checkActivePurchasesForProviders,
+  ]);
 
   // Filtrado local para TODOS los campos
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     if (!searchTerm) return allData;
 
     const searchLower = searchTerm.toLowerCase().trim();
@@ -214,7 +228,7 @@ const Providers = () => {
 
   useEffect(() => {
     fetchProviders();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
+  }, [fetchProviders]); // Recargar cuando cambia la página o la búsqueda
   useEffect(() => {
     if (location.state?.openCreateModal) {
       setModalMode("create");
@@ -226,7 +240,7 @@ const Providers = () => {
   const formatPhoneNumber = (phone) => {
     if (!phone) return phone;
     // Solo limpiar espacios, guiones y paréntesis, mantener el número completo
-    return phone.replace(/[\s\-\(\)]/g, "");
+    return phone.replace(/[\s-()]/g, "");
   };
   const handleSave = async (newProvider) => {
     if (!hasPermission("providers", "Crear")) {
@@ -236,21 +250,17 @@ const Providers = () => {
       );
       return { success: false }; // ← Retornar objeto con success: false
     }
-    try {
-      const providerData = {
-        ...newProvider,
-        telefono: formatPhoneNumber(newProvider.telefono),
-      };
-      const response = await providersService.createProvider(providerData);
-      if (response.success) {
-        setIsModalOpen(false);
-        fetchProviders();
-        return response; // ← Retornar la respuesta exitosa
-      }
-      return { success: false, message: response.message }; // ← Retornar error
-    } catch (error) {
-      throw error; // ← Lanzar el error para que el modal lo capture
+    const providerData = {
+      ...newProvider,
+      telefono: formatPhoneNumber(newProvider.telefono),
+    };
+    const response = await providersService.createProvider(providerData);
+    if (response.success) {
+      setIsModalOpen(false);
+      fetchProviders();
+      return response; // ← Retornar la respuesta exitosa
     }
+    return { success: false, message: response.message }; // ← Retornar error
   };
   const handleUpdate = async (updatedProvider) => {
     if (!hasPermission("providers", "Editar")) {
@@ -260,24 +270,20 @@ const Providers = () => {
       );
       return { success: false }; // ← Retornar objeto con success: false
     }
-    try {
-      const providerData = {
-        ...updatedProvider,
-        telefono: formatPhoneNumber(updatedProvider.telefono),
-      };
-      const response = await providersService.updateProvider(
-        updatedProvider.id,
-        providerData,
-      );
-      if (response.success) {
-        setIsModalOpen(false);
-        fetchProviders();
-        return response;
-      }
-      return { success: false, message: response.message }; // Retornar error
-    } catch (error) {
-      throw error;
+    const providerData = {
+      ...updatedProvider,
+      telefono: formatPhoneNumber(updatedProvider.telefono),
+    };
+    const response = await providersService.updateProvider(
+      updatedProvider.id,
+      providerData,
+    );
+    if (response.success) {
+      setIsModalOpen(false);
+      fetchProviders();
+      return response;
     }
+    return { success: false, message: response.message }; // Retornar error
   };
   const handleEdit = async (provider) => {
     if (!hasPermission("providers", "Editar")) {
@@ -301,7 +307,7 @@ setProviderToEdit(response.data);
           "No se pudieron cargar los datos del proveedor",
         );
       }
-    } catch (error) {
+    } catch {
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
@@ -326,7 +332,7 @@ setProviderToEdit(response.data);
           "No se pudieron cargar los datos del proveedor",
         );
       }
-    } catch (error) {
+    } catch {
       showErrorAlert("Error", "Error al cargar los datos del proveedor");
     }
   };
@@ -355,13 +361,18 @@ setProviderToEdit(response.data);
       const purchasesCheck = await providersService.checkActivePurchases(provider.id);
       if (purchasesCheck.hasActivePurchases) {
         // Actualizar el estado local
-        setActivePurchasesCheck(prev => ({ ...prev, [provider.id]: true }));
+        setActivePurchasesCheck((prev) => ({ ...prev, [provider.id]: true }));
         return showErrorAlert(
           "No se puede eliminar",
           `No se puede eliminar el proveedor "${provider.razonSocial}" porque está asociado a ingresos.`,
         );
       }
-    } catch (error) {
+    } catch {
+      showErrorAlert(
+        "Error",
+        "No se pudo verificar si el proveedor tiene ingresos asociados.",
+      );
+      return;
     }
     
     const confirmResult = await showDeleteAlert(
@@ -384,7 +395,7 @@ setProviderToEdit(response.data);
           response.message || "No se pudo eliminar el proveedor",
         );
       }
-    } catch (error) {
+    } catch {
       showErrorAlert("Error", "Error al eliminar el proveedor en el servidor");
     }
   };
@@ -394,7 +405,7 @@ setProviderToEdit(response.data);
       disabled: false,
       title: "Ver detalles",
     }),
-    edit: (provider) => ({
+    edit: () => ({
       show: hasPermission("providers", "Editar"),
       disabled: false,
       title: "Editar proveedor",

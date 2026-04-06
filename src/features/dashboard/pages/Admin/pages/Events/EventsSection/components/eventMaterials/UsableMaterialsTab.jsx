@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Trash2, Recycle, X, AlertCircle, Lock, Edit } from "lucide-react";
 import {
   showSuccessAlert,
@@ -39,39 +39,7 @@ const UsableMaterialsTab = ({
     );
   }, [event]);
 
-  useEffect(() => {
-    if (event?.id) {
-      loadAvailableMaterials();
-    }
-  }, [event?.id]);
-
-  const loadAvailableMaterials = async () => {
-    const startDate = event?.startDate || event?.start;
-    const endDate = event?.endDate || event?.end;
-
-    try {
-      setLoadingMaterials(true);
-      const response = await MaterialsService.getMaterials({ page: 1, limit: 1000, estado: "Activo" });
-
-      if (response.success && response.data) {
-        const materialsFiltered = response.data.filter(
-          (m) => m.estado === "Activo" && (m.stockFundacion || 0) > 0,
-        );
-        setMaterials(materialsFiltered);
-
-        if (startDate && endDate) {
-          await loadMaterialsAvailability(materialsFiltered, startDate, endDate);
-        }
-      }
-    } catch (error) {
-      console.error("Error loading materials:", error);
-      showErrorAlert("Error", "No se pudieron cargar los materiales disponibles");
-    } finally {
-      setLoadingMaterials(false);
-    }
-  };
-
-  const loadMaterialsAvailability = async (materialsList, startDate, endDate) => {
+  const loadMaterialsAvailability = useCallback(async (materialsList, startDate, endDate) => {
     if (!startDate || !endDate) return;
 
     try {
@@ -116,7 +84,39 @@ const UsableMaterialsTab = ({
     } finally {
       setLoadingAvailability(false);
     }
-  };
+  }, [event?.id]);
+
+  const loadAvailableMaterials = useCallback(async () => {
+    const startDate = event?.startDate || event?.start;
+    const endDate = event?.endDate || event?.end;
+
+    try {
+      setLoadingMaterials(true);
+      const response = await MaterialsService.getMaterials({ page: 1, limit: 1000, estado: "Activo" });
+
+      if (response.success && response.data) {
+        const materialsFiltered = response.data.filter(
+          (m) => m.estado === "Activo" && (m.stockFundacion || 0) > 0,
+        );
+        setMaterials(materialsFiltered);
+
+        if (startDate && endDate) {
+          await loadMaterialsAvailability(materialsFiltered, startDate, endDate);
+        }
+      }
+    } catch (error) {
+      console.error("Error loading materials:", error);
+      showErrorAlert("Error", "No se pudieron cargar los materiales disponibles");
+    } finally {
+      setLoadingMaterials(false);
+    }
+  }, [event?.startDate, event?.start, event?.endDate, event?.end, loadMaterialsAvailability]);
+
+  useEffect(() => {
+    if (event?.id) {
+      loadAvailableMaterials();
+    }
+  }, [event?.id, loadAvailableMaterials]);
 
   const selectedMaterialData = useMemo(() => {
     if (!selectedMaterial) return null;

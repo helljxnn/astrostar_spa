@@ -162,7 +162,8 @@ const CategoryModal = ({ isOpen, onClose, onSave, category = null }) => {
       if (success) {
         handleClose();
       }
-    } catch (error) {
+    } catch {
+      setErrors((prev) => ({ ...prev }));
     } finally {
       setLoading(false);
     }

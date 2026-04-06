@@ -8,7 +8,6 @@ import { toast } from "react-toastify";
 export const useRegistrations = () => {
   const [loading, setLoading] = useState(false);
   const [registrations, setRegistrations] = useState([]);
-  const [registration, setRegistration] = useState(null);
 
   /**
    * Inscribir múltiples equipos a evento
@@ -110,7 +109,6 @@ export const useRegistrations = () => {
   return {
     loading,
     registrations,
-    registration,
     registerMultipleTeams,
     fetchEventRegistrations,
     fetchTeamsByEventCategories,

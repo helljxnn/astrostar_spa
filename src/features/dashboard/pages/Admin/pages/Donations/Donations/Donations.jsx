@@ -6,7 +6,6 @@ import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
-import CancelDonationModal from "./components/CancelDonationModal";
 import DonationViewModal from "./components/DonationViewModal";
 import StatusSelector from "./components/StatusSelector";
 import donationsService from "./services/donationsService";
@@ -101,7 +100,6 @@ const Donations = () => {
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
   const [totalRows, setTotalRows] = useState(0);
-  const [cancelingDonation, setCancelingDonation] = useState(null);
   const [viewingDonation, setViewingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [donorsMap, setDonorsMap] = useState({});
@@ -141,7 +139,7 @@ const Donations = () => {
           if (d.id && name) map[String(d.id)] = name;
         });
         setDonorsMap(map);
-      } catch (error) {
+      } catch {
         // Error loading donors for table
       }
     };
@@ -254,7 +252,7 @@ const Donations = () => {
                   .join(" ")
                   .trim();
               if (name) fetched[id] = name;
-            } catch (e) {
+            } catch {
               // Could not fetch donor
             }
           }
@@ -282,7 +280,6 @@ const Donations = () => {
 
   /* ------------------- Paginación ------------------- */
   // Usar datos directamente del backend (ya filtrados y paginados)
-  const displayData = data;
   const paginatedData = data;
 
   const reportColumns = [
@@ -293,81 +290,6 @@ const Donations = () => {
     { key: "status", label: "Estado" },
     { key: "donationDate", label: "Fecha de Donación" },
   ];
-
-  const mapDonationToFormState = (raw) => {
-    const details = raw.details || raw.detalles || [];
-    const payment = details.find(
-      (d) =>
-        (d.kind === "ECONOMICA" || d.kind === "ALIMENTOS") &&
-        d.recordType === "payment",
-    );
-    const specieItems = details
-      .filter((d) => d.kind === "ESPECIE" && d.recordType === "item")
-      .map((item) => ({
-        description: item.description ?? "",
-        quantity: item.quantity ?? item.amount ?? "",
-        classification: item.classification ?? "",
-        channel: item.channel || item.metodo || item.method || "",
-      }));
-    const foodItems = details
-      .filter((d) => d.kind === "ALIMENTOS" && d.recordType === "food")
-      .map((item) => ({
-        quantity: item.quantity ?? "",
-        classification: item.classification ?? "",
-      }));
-    const foodDetail = details.find(
-      (d) => d.kind === "ALIMENTOS" && d.recordType === "food",
-    );
-    const firstDetailKind =
-      details.find((d) => d.kind)?.kind || details[0]?.tipo || null;
-
-    const isFoodPurchase =
-      raw.type === "ALIMENTOS" ||
-      details.some((d) => d.kind === "ALIMENTOS" && d.recordType === "food");
-
-    return {
-      id: raw.id,
-      donorSponsorId: raw.donorSponsorId || "",
-      anonymous: raw.anonymous || false,
-      type:
-        (isFoodPurchase ? "ECONOMICA" : raw.type) ||
-        (firstDetailKind === "ESPECIE" ? "ESPECIE" : firstDetailKind) ||
-        "ECONOMICA",
-      status: raw.status || "Recibida",
-      program: raw.program || raw.programa || "",
-      eventId: raw.eventId ? String(raw.eventId) : "",
-      specificDestination:
-        raw.specificDestination || raw.destinoEspecifico || "",
-      donationAt: raw.donationAt
-        ? new Date(raw.donationAt).toISOString().slice(0, 16)
-        : new Date().toISOString().slice(0, 16),
-      econAmount:
-        payment?.amount ?? raw.econAmount ?? raw.amount ?? raw.valor ?? "",
-      econChannel: payment?.channel ?? raw.econChannel ?? raw.canal ?? "",
-      econModality:
-        payment?.classification ?? raw.econModality ?? raw.modalidad ?? "",
-      isFoodPurchase,
-      foodQty:
-        foodDetail?.quantity ?? raw.foodQty ?? raw.cantidadAlimentos ?? "",
-      foodClass:
-        foodDetail?.classification ??
-        raw.foodClass ??
-        raw.clasificacionAlimentos ??
-        "",
-      especieItems: raw.especieItems || specieItems,
-      details,
-      files:
-        raw.files ||
-        raw.archivos ||
-        raw.attachments ||
-        raw.soportes ||
-        raw.evidencias ||
-        raw.supports ||
-        raw.documents ||
-        raw.documentos ||
-        [],
-    };
-  };
 
   /* ------------------- Handlers ------------------- */
   const handleCreate = () => {
@@ -399,9 +321,7 @@ const Donations = () => {
       return;
     }
     try {
-      const response = await donationsService.update(donationId, {
-        status: newStatus,
-      });
+      await donationsService.changeStatus(donationId, newStatus);
 
       // Actualizar el estado local
       setData((prev) =>
@@ -423,35 +343,6 @@ const Donations = () => {
       showErrorAlert(
         "Error al actualizar",
         error?.response?.data?.message || "No se pudo actualizar el estado.",
-      );
-    }
-  };
-
-  const handleCancel = (donation) => setCancelingDonation(donation);
-
-  const handleConfirmCancel = (reason) => {
-    try {
-      setData((prev) =>
-        prev.map((d) =>
-          d.id === cancelingDonation.id
-            ? {
-                ...d,
-                status: "Anulado",
-                cancelReason: reason,
-                cancelDate: new Date().toLocaleDateString("es-CO"),
-              }
-            : d,
-        ),
-      );
-      showSuccessAlert(
-        "Donación anulada",
-        `La donación de ${cancelingDonation.donorName} fue anulada correctamente.`,
-      );
-      setCancelingDonation(null);
-    } catch {
-      showErrorAlert(
-        "Error al anular",
-        "No se pudo anular la donación. Intenta de nuevo.",
       );
     }
   };
@@ -495,15 +386,6 @@ const Donations = () => {
   };
 
   /* ------------------- Render ------------------- */
-  const statusColorMap = {
-    Recibida: "bg-primary-blue/10 text-primary-blue",
-    "En proceso": "bg-primary-purple/10 text-primary-purple",
-    EnProceso: "bg-primary-purple/10 text-primary-purple",
-    Verificada: "bg-primary-purple/10 text-primary-purple",
-    Ejecutada: "bg-primary-purple/10 text-primary-purple",
-    Anulada: "bg-rose-100 text-rose-700",
-  };
-
   const renderStatusChip = (value, row) => {
     const statusKey = value === "En proceso" ? "EnProceso" : value;
     const donationId = row.id || row._original?.id;
@@ -621,80 +503,73 @@ const Donations = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table
-          thead={{
-            titles: [
-              "Código",
-              "Donante",
-              "Tipo de Donación",
-              "Programa / Destino",
-              "Fecha de Donación",
-              "Estado",
-            ],
-          }}
-          tbody={{
-            data: paginatedData.map((donation) => ({
-              ...donation,
-              donationType: donation.typeLabel || "Sin tipos",
-              status: donation.status,
-              _original: donation,
-            })),
-            dataPropertys: [
-              "code",
-              "donorName",
-              "donationType",
-              "programLabel",
-              "donationDate",
-              "status",
-            ],
-            customRenderers: {
-              status: (value, row) => renderStatusChip(value, row),
-            },
-            cellClassNames: {
-              status: "whitespace-nowrap",
-            },
-          }}
-          serverPagination
-          totalRows={totalRows}
-          currentPage={currentPage}
-          onPageChange={(page) => setCurrentPage(page)}
-          onView={
-            hasPermission("donationsManagement", "Ver")
-              ? (row) => handleView(row._original || row)
-              : null
-          }
-          customActions={
-            hasPermission("donationsManagement", "Ver")
-              ? [
-                  {
-                    icon: FaDownload,
-                    onClick: (row) =>
-                      handleDownloadCertificate(row._original || row),
-                    className:
-                      "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
-                    title: "Descargar Certificado",
-                  },
-                ]
-              : []
-          }
-          buttonConfig={{
-            view: () => ({
-              show: hasPermission("donationsManagement", "Ver"),
+      <Table
+        enableHorizontalScroll={false}
+        thead={{
+          titles: [
+            "Código",
+            "Donante",
+            "Tipo de Donación",
+            "Fecha de Donación",
+            "Estado",
+          ],
+          actionsHeaderClassName: "w-[160px] min-w-[160px]",
+        }}
+        tbody={{
+          data: paginatedData.map((donation) => ({
+            ...donation,
+            donationType: donation.typeLabel || "Sin tipos",
+            status: donation.status,
+            _original: donation,
+          })),
+          actionsCellClassName: "w-[160px] min-w-[160px]",
+          actionsContainerClassName: "flex-nowrap",
+          dataPropertys: [
+            "code",
+            "donorName",
+            "donationType",
+            "donationDate",
+            "status",
+          ],
+          customRenderers: {
+            status: (value, row) => renderStatusChip(value, row),
+          },
+          cellClassNames: {
+            status: "whitespace-nowrap",
+          },
+        }}
+        serverPagination
+        totalRows={totalRows}
+        currentPage={currentPage}
+        onPageChange={(page) => setCurrentPage(page)}
+        onView={
+          hasPermission("donationsManagement", "Ver")
+            ? (row) => handleView(row._original || row)
+            : null
+        }
+        customActions={[
+          {
+            icon: FaDownload,
+            onClick: (row) => handleDownloadCertificate(row._original || row),
+            className:
+              "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
+            title: "Descargar Certificado",
+            show: () => hasPermission("donationsManagement", "Ver"),
+          },
+        ]}
+        buttonConfig={{
+          view: () => ({
+            show: hasPermission("donationsManagement", "Ver"),
+            disabled: false,
+            title: "Ver detalles",
+          }),
+          customActions: [
+            () => ({
               disabled: false,
-              title: "Ver detalles",
             }),
-          }}
-        />
-      </div>
-
-      {cancelingDonation && (
-        <CancelDonationModal
-          donation={cancelingDonation}
-          onClose={() => setCancelingDonation(null)}
-          onConfirm={handleConfirmCancel}
-        />
-      )}
+          ],
+        }}
+      />
 
       {viewingDonation && (
         <DonationViewModal

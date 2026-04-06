@@ -176,6 +176,13 @@ const toDateKey = (value) => {
   return format(date, "yyyy-MM-dd");
 };
 
+const formatScheduleDateLabel = (value) => {
+  if (!value) return "";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return format(date, "dd/MM/yyyy");
+};
+
 const getScheduleStartDate = (schedule = {}) => {
   if (schedule.start) {
     return new Date(schedule.start);
@@ -755,6 +762,9 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
   const renderSidebarItem = (event, actions) => {
     const schedule = event?.extendedProps || event;
     const recurrenceLabel = buildRecurrenceLabel(schedule);
+    const scheduleDateLabel = formatScheduleDateLabel(
+      schedule.fecha || event.date || event.start,
+    );
     const visibleActions = filterActionsForSchedule(schedule, actions);
 
     return (
@@ -785,6 +795,12 @@ const EmployeeSchedule = ({ disabled = false, initialSchedules = [] }) => {
             )}
             {event.time && (
               <div className="text-xs text-gray-600">{event.time}</div>
+            )}
+            {scheduleDateLabel && (
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <FaCalendarAlt className="h-3 w-3" />
+                <span>Fecha: {scheduleDateLabel}</span>
+              </div>
             )}
             <div className="text-xs text-gray-700">{recurrenceLabel}</div>
           </div>

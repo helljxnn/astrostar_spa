@@ -136,7 +136,6 @@ function Gallery() {
                     className="absolute -left-px -top-[56px] w-[calc(100%+2px)] h-[calc(100%+190px)] border-0"
                     loading="lazy"
                     scrolling="no"
-                    allowTransparency
                     allowFullScreen
                   />
                   <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-white" />

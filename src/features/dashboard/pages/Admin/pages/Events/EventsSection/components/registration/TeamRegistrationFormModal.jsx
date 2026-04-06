@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { createPortal } from "react-dom";
@@ -80,7 +80,7 @@ const TeamRegistrationFormModal = ({
   };
 
   // Cargar equipos disponibles filtrados por categoría del evento
-  const loadAvailableTeams = async () => {
+  const loadAvailableTeams = useCallback(async () => {
     if (!eventId) {
       return;
     }
@@ -104,10 +104,10 @@ const TeamRegistrationFormModal = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
   // Cargar categorías deportivas desde el módulo de categorías
-  const loadEventSportsCategories = () => {
+  const loadEventSportsCategories = useCallback(() => {
     if (
       !Array.isArray(eventSportsCategories) ||
       eventSportsCategories.length === 0
@@ -125,9 +125,9 @@ const TeamRegistrationFormModal = ({
     ];
 
     setAvailableCategories(categories);
-  };
+  }, [eventSportsCategories]);
 
-  const searchTeams = async (term) => {
+  const searchTeams = useCallback(async (term) => {
     if (!term || term.trim().length < 2) {
       setSearchResults([]);
       return;
@@ -154,9 +154,9 @@ const TeamRegistrationFormModal = ({
     } finally {
       setSearching(false);
     }
-  };
+  }, [availableTeams, selectedTeams]);
 
-  const loadRegisteredTeams = async () => {
+  const loadRegisteredTeams = useCallback(async () => {
     if (!eventId) {
       return;
     }
@@ -184,7 +184,7 @@ const TeamRegistrationFormModal = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
   useEffect(() => {
     // Limpiar búsqueda al abrir modal y controlar scroll del body
@@ -208,7 +208,7 @@ const TeamRegistrationFormModal = ({
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, isTeamType, eventId, eventSportsCategories]);
+  }, [isOpen, isTeamType, loadAvailableTeams, loadEventSportsCategories]);
 
   const handleLoadMore = () => {
     setDisplayLimit((prev) => prev + 6);
@@ -297,7 +297,7 @@ const TeamRegistrationFormModal = ({
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchTerm, availableTeams, selectedTeams]);
+  }, [searchTerm, searchTeams]);
 
   useEffect(() => {
     // Modo unificado: siempre cargar equipos inscritos cuando se abre el modal
@@ -306,7 +306,7 @@ const TeamRegistrationFormModal = ({
         loadRegisteredTeams();
       }, 200);
     }
-  }, [isOpen, eventId, isTeamType]);
+  }, [isOpen, eventId, isTeamType, loadRegisteredTeams]);
 
   if (!isOpen) return null;
 

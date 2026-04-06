@@ -14,126 +14,85 @@ class EventsService {
    * Obtener todos los eventos con paginación y filtros
    */
   async getAll(params = {}) {
-    try {
-      const response = await apiClient.get(this.endpoint, params);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(this.endpoint, params);
+    return response;
   }
 
   /**
    * Obtener un evento por ID
    */
   async getById(id) {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/${id}`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.endpoint}/${id}`);
+    return response;
   }
 
   /**
    * Crear un nuevo evento
    */
   async create(eventData) {
-    try {
-      const response = await apiClient.post(this.endpoint, eventData);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(this.endpoint, eventData);
+    return response;
   }
 
   /**
    * Actualizar un evento existente
    */
   async update(id, eventData) {
-    try {
-      const response = await apiClient.put(`${this.endpoint}/${id}`, eventData);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.put(`${this.endpoint}/${id}`, eventData);
+    return response;
   }
 
   /**
    * Eliminar un evento
    */
   async delete(id) {
-    try {
-      const response = await apiClient.delete(`${this.endpoint}/${id}`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.delete(`${this.endpoint}/${id}`);
+    return response;
   }
 
   /**
    * Obtener estadísticas de eventos
    */
   async getStats() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/stats`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.endpoint}/stats`);
+    return response;
   }
 
   /**
    * Obtener eventos agrupados por trimestre
    */
   async getByQuarter() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/by-quarter`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.endpoint}/by-quarter`);
+    return response;
   }
 
   /**
    * Obtener datos de referencia (categorías, tipos y patrocinadores)
    */
   async getReferenceData() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/reference-data`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.endpoint}/reference-data`);
+    return response;
   }
 
   /**
    * Obtener eventos activos (para asignación de materiales)
    */
   async getActiveEvents() {
-    try {
-      const response = await apiClient.get(`${this.endpoint}`, {
-        estado: "Activo",
-        limit: 1000,
-      });
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(`${this.endpoint}`, {
+      limit: 1000,
+    });
+    return response;
   }
 
   /**
    * Verificar inscripciones afectadas por cambio de categorías
    */
   async checkAffectedRegistrations(eventId, categoryIds) {
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${eventId}/check-affected-registrations`,
-        { categoryIds },
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(
+      `${this.endpoint}/${eventId}/check-affected-registrations`,
+      { categoryIds },
+    );
+    return response;
   }
 }
 

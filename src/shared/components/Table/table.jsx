@@ -20,6 +20,8 @@ const Table = ({
   buttonConfig = {}, // configuración de botones
   enableHorizontalScroll = true,
   tableClassName = "",
+  containerClassName = "",
+  paginationClassName = "",
   desktopBreakpoint = "sm",
 }) => {
   const [internalPage, setInternalPage] = useState(1);
@@ -94,7 +96,9 @@ const Table = ({
   };
 
   return (
-    <div className="shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full">
+    <div
+      className={`shadow-lg rounded-2xl bg-white flex flex-col border border-gray-200 overflow-hidden max-w-full ${containerClassName}`}
+    >
       {/* Tabla desktop */}
       <div
         className={
@@ -263,7 +267,9 @@ const Table = ({
       </div>
 
       {/* Paginación - Siempre visible */}
-      <div className="w-full border-t border-gray-100 bg-gray-50">
+      <div
+        className={`w-full border-t border-gray-100 bg-gray-50 ${paginationClassName}`}
+      >
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

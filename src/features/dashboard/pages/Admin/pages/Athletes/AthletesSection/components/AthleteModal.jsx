@@ -1403,7 +1403,12 @@ showErrorAlert("Error", error.message);
                 </div>
               )}
 
-              <div className={isEditing ? "" : "md:col-span-2"}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.95 }}
+                className={isEditing ? "" : "md:col-span-2"}
+              >
                 <div className="rounded-xl border border-[#ddd1ff] bg-[#f7f3ff] px-3 py-2.5">
                   <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
@@ -1426,7 +1431,7 @@ showErrorAlert("Error", error.message);
                     </div>
                   </label>
                 </div>
-              </div>
+              </motion.div>
 
             </div>
           </div>

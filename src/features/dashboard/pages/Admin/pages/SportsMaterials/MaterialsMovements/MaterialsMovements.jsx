@@ -17,7 +17,6 @@ import { useMovements } from "./hooks/useMovements";
 import { formatDate, formatDateTime } from "../shared/utils/stockCalculations";
 import { formatStock } from "../../../../../../../shared/utils/numberFormat";
 import { getTipoBajaLabel } from "../shared/utils/tipoBajaLabels";
-import { PAGINATION_CONFIG } from "../../../../../../../shared/constants/paginationConfig";
 
 const MaterialsMovements = () => {
   const { hasPermission } = usePermissions();

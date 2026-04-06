@@ -6,7 +6,6 @@ import {
   useImperativeHandle,
 } from "react";
 import { AnimatePresence } from "framer-motion";
-import { FaPlus } from "react-icons/fa";
 import { Users, MapPin, Clock, Edit, Eye, Trash2, Package } from "lucide-react";
 import BaseCalendar from "../../../../../../../../../shared/components/Calendar/BaseCalendar/BaseCalendar";
 import { DashboardEventComponent } from "./DashboardEventComponent";
@@ -110,7 +109,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
   // Exponer funciones al componente padre mediante ref
   useImperativeHandle(ref, () => ({
-    changeMonth: (newDate) => {
+    changeMonth: () => {
       // Esta funcionalidad ser" manejada por el BaseCalendar internamente
     },
     getCurrentDate: () => new Date(), // El BaseCalendar maneja esto internamente
@@ -427,6 +426,29 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     return "";
   }, []);
 
+  // Cerrar todos los modales
+  const closeAllModals = useCallback(() => {
+    setActionModal({ isOpen: false, position: null, event: null });
+    setRegistrationModal({ isOpen: false, position: null, event: null });
+    setInscriptionModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      action: "register",
+      eventId: null,
+    });
+    setRegistrationFormModal({
+      isOpen: false,
+      eventName: "",
+      participantType: "",
+      eventType: "",
+      eventId: null,
+      eventSportsCategories: [],
+      mode: "register",
+    });
+    setDayEventsModal({ isOpen: false, date: null, events: [] });
+  }, []);
+
   // Manejar acciones CRUD
   const handleCrudAction = useCallback(
     async (action) => {
@@ -445,7 +467,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       };
 
       switch (action) {
-        case "edit":
+        case "edit": {
           if (!hasPermission("eventsManagement", "Editar")) {
             showErrorAlert(
               "Sin permisos",
@@ -529,8 +551,9 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             setIsModalOpen(true);
           }, 100);
           break;
+        }
 
-        case "delete":
+        case "delete": {
           if (!hasPermission("eventsManagement", "Eliminar")) {
             showErrorAlert(
               "Sin permisos",
@@ -571,10 +594,11 @@ const EventsCalendar = forwardRef(function EventsCalendar(
                 await onDeleteEvent(eventId, eventTitle);
               }
             }
-          } catch (error) {
+          } catch {
             // El error ya se maneja en el hook
           }
           break;
+        }
 
         case "materials":
           setMaterialsModal({
@@ -624,6 +648,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     },
     [
       actionModal.event,
+      closeAllModals,
       hasPermission,
       onDeleteEvent,
       canDeleteEvent,
@@ -680,7 +705,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         }, 100);
       }
     },
-    [registrationModal.event],
+    [registrationModal.event, closeAllModals],
   );
 
   // Guardar evento
@@ -703,7 +728,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
 
         // Cerrar modal solo si no hubo errores
         setIsModalOpen(false);
-      } catch (error) {
+      } catch {
         // El modal permanece abierto para que el usuario pueda corregir o intentar de nuevo
         showErrorAlert(
           "Error al guardar",
@@ -713,29 +738,6 @@ const EventsCalendar = forwardRef(function EventsCalendar(
     },
     [isNew, onCreateEvent, onUpdateEvent, selectedEvent],
   );
-
-  // Cerrar todos los modales
-  const closeAllModals = useCallback(() => {
-    setActionModal({ isOpen: false, position: null, event: null });
-    setRegistrationModal({ isOpen: false, position: null, event: null });
-    setInscriptionModal({
-      isOpen: false,
-      eventName: "",
-      participantType: "",
-      action: "register",
-      eventId: null,
-    });
-    setRegistrationFormModal({
-      isOpen: false,
-      eventName: "",
-      participantType: "",
-      eventType: "",
-      eventId: null,
-      eventSportsCategories: [],
-      mode: "register",
-    });
-    setDayEventsModal({ isOpen: false, date: null, events: [] });
-  }, []);
 
   // Manejar creacion de evento desde el boton del calendario
   const handleCreate = useCallback(() => {
@@ -896,7 +898,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
             await onDeleteEvent(eventId, eventTitle);
           }
         }
-      } catch (error) {
+      } catch {
         // El error ya se maneja en el hook
       }
     },
@@ -1042,7 +1044,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
         </div>
       );
     },
-    [canDeleteEvent, getDeleteDisabledReason],
+    [],
   );
 
   // Configuracin de acciones de la barra lateral
@@ -1220,6 +1222,7 @@ const EventsCalendar = forwardRef(function EventsCalendar(
       handleEditEvent,
       handleDeleteEvent,
       canDeleteEvent,
+      getDeleteDisabledReason,
     ],
   );
 

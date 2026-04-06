@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaEye } from "react-icons/fa";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import Pagination from "../../../../../../../shared/components/Table/Pagination";
 import AthleteAttendanceHistoryModal from "./components/AthleteAttendanceHistoryModal";
-import DateRangePickerCalendar from "./components/DateRangePickerCalendar";
 import assistanceathletesService from "./services/AssistanceathletesService";
 import { useReportDataWithService } from "../../../../../../../shared/hooks/useReportData";
 import { showWarningAlert } from "../../../../../../../shared/utils/alerts.js";
@@ -130,20 +129,6 @@ export default function AssistanceHistory() {
     []
   );
 
-  const reportData = useMemo(
-    () =>
-      historyRows.map((item) => ({
-        documento: item.documento,
-        nombre: item.nombre,
-        categoria: item.categoria || "Sin categoría",
-        present: item.present,
-        absent: item.absent,
-        total: item.total,
-        percentDisplay: `${item.percent}%`,
-      })),
-    [historyRows]
-  );
-
   const fetchSummary = async (page = 1, override = {}) => {
     setLoading(true);
     setError("");
@@ -203,8 +188,8 @@ export default function AssistanceHistory() {
         });
         setError(response?.message || "No se pudo cargar el historial.");
       }
-    } catch (errorCaught) {
-setHistoryRows([]);
+    } catch {
+      setHistoryRows([]);
       setPagination((prev) => ({ ...prev, page, total: 0, pages: 0 }));
       setRange({
         startDate: override.startDate !== undefined ? override.startDate : startDate,
@@ -218,6 +203,8 @@ setHistoryRows([]);
 
   useEffect(() => {
     fetchSummary(1);
+    // Mantener carga inicial manual para evitar refetch automático.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -236,8 +223,9 @@ setHistoryRows([]);
           );
           setCategories([ALL_CATEGORIES, ...unique]);
         }
-      } catch (errorCaught) {
-}
+      } catch {
+        setCategories([ALL_CATEGORIES]);
+      }
     };
 
     loadCategories();
@@ -307,8 +295,8 @@ setHistoryRows([]);
       } else {
         setDetailHistory([]);
       }
-    } catch (errorCaught) {
-setDetailHistory([]);
+    } catch {
+      setDetailHistory([]);
     } finally {
       setDetailLoading(false);
     }

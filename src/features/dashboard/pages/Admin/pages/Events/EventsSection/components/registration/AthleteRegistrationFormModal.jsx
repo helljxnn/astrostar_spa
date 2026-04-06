@@ -13,7 +13,6 @@ const AthleteRegistrationFormModal = ({
   onClose,
   event,
   onSuccess,
-  mode = "register", // 'register' o 'edit'
 }) => {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -227,6 +226,7 @@ const AthleteRegistrationFormModal = ({
     };
   }, [
     isOpen,
+    event,
     event?.id,
     loadRegisteredAthletes,
     loadAvailableAthletes,

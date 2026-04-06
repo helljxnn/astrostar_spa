@@ -76,6 +76,7 @@ const ProviderModal = ({
     isEditing,
     filteredDocumentTypes,
   );
+  const valuesRef = React.useRef(values);
   // HandleChange personalizado
   const handleChange = (name, value) => {
     if (name === "tipoEntidad") {
@@ -186,7 +187,9 @@ const ProviderModal = ({
             return nextErrors;
           });
         }
-      } catch (error) {}
+      } catch {
+        return;
+      }
     },
     [
       values,
@@ -195,6 +198,7 @@ const ProviderModal = ({
       providerToEdit,
       setErrors,
       setTouched,
+      setAsyncErrors,
     ],
   );
 
@@ -261,8 +265,8 @@ const ProviderModal = ({
               return nextErrors;
             });
           }
-        } catch (error) {
-          // Continuar sin bloquear si hay error en la validación
+        } catch {
+          setAsyncErrors((prev) => prev);
         }
       }
     }
@@ -321,7 +325,16 @@ const ProviderModal = ({
       setErrors({});
       setTouched({});
     }
-  }, [isOpen, isEditing, providerToEdit, setValues, setErrors, setTouched]);
+  }, [
+    isOpen,
+    isEditing,
+    providerToEdit,
+    setValues,
+    setErrors,
+    setTouched,
+    updateOriginalValues,
+    setAsyncErrors,
+  ]);
 
   useEffect(() => {
     const wasOpen = wasOpenRef.current;
@@ -350,7 +363,15 @@ const ProviderModal = ({
       setErrors({});
       setTouched({});
     }
-  }, [isOpen, isEditing, setValues, setErrors, setTouched]);
+  }, [
+    isOpen,
+    isEditing,
+    setValues,
+    setErrors,
+    setTouched,
+    updateOriginalValues,
+    setAsyncErrors,
+  ]);
   const handleSubmit = async () => {
     // Marcar todos los campos como tocados para mostrar errores
     touchAllFields();
@@ -383,7 +404,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, nit: true }));
           return;
         }
-      } catch (error) {}
+      } catch {
+        setAsyncErrors((prev) => prev);
+      }
     }
 
     // Validar unicidad de razón social/nombre antes del envío (solo para jurídicas)
@@ -409,7 +432,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, razonSocial: true }));
           return;
         }
-      } catch (error) {}
+      } catch {
+        setAsyncErrors((prev) => prev);
+      }
     }
 
     // Validar unicidad de email antes del envío
@@ -426,7 +451,9 @@ const ProviderModal = ({
           setTouched((prev) => ({ ...prev, correo: true }));
           return;
         }
-      } catch (error) {}
+      } catch {
+        setAsyncErrors((prev) => prev);
+      }
     }
 
     if (isEditing) {
@@ -545,7 +572,9 @@ const ProviderModal = ({
         if (response.success && response.data) {
           setEmployeeDocumentTypes(response.data);
         }
-      } catch (error) {}
+      } catch {
+        return;
+      }
     };
     // Cargar tipos de documento si es natural O si estamos editando un proveedor natural
     // Cargar inmediatamente cuando se abre el modal si es necesario
@@ -557,6 +586,10 @@ const ProviderModal = ({
       fetchDocumentTypes();
     }
   }, [isOpen, values.tipoEntidad, isEditing, providerToEdit?.tipoEntidad]);
+
+  React.useEffect(() => {
+    valuesRef.current = values;
+  }, [values]);
   // Efecto para restaurar tipoDocumento cuando se cargan los tipos de documento en edición
   React.useEffect(() => {
     if (!isOpen || isClosingRef.current) {
@@ -569,7 +602,7 @@ const ProviderModal = ({
     }
 
     const timeoutId = setTimeout(() => {
-      validateNitAvailability(normalizedNit, values);
+      validateNitAvailability(normalizedNit, valuesRef.current);
     }, 350);
 
     return () => clearTimeout(timeoutId);
@@ -614,6 +647,8 @@ const ProviderModal = ({
     isEditing,
     originalTipoDocumento,
     values.tipoEntidad,
+    values.tipoDocumento,
+    setValues,
   ]);
   if (!isOpen) return null;
 

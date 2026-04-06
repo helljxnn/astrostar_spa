@@ -72,6 +72,7 @@ function Appointments() {
     loadSpecialists,
     loadSportsCategories,
     createAppointment,
+    updateAppointment,
     cancelAppointment,
     completeAppointment,
     isAthleteScope,
@@ -235,7 +236,12 @@ function Appointments() {
 
   const handleCreateSubmit = async (formValues) => {
     try {
-      await createAppointment(formValues);
+      const appointmentId = initialSlot?.id || formValues?.id;
+      if (appointmentId) {
+        await updateAppointment(appointmentId, formValues);
+      } else {
+        await createAppointment(formValues);
+      }
     } catch (error) {
       // errores manejados por el hook
     }

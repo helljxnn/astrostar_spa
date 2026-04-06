@@ -15,14 +15,10 @@ class EventMaterialsService {
       throw new Error("ID del evento es requerido");
     }
 
-    try {
-      const response = await apiClient.get(
-        `${this.endpoint}/${eventoId}/materials-summary`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get(
+      `${this.endpoint}/${eventoId}/materials-summary`,
+    );
+    return response;
   }
 
   // ==================== CONSUMIBLES ====================
@@ -35,21 +31,17 @@ class EventMaterialsService {
       throw new Error("ID del evento es requerido");
     }
 
-    try {
-      const response = await apiClient.get(
-        `${this.endpoint}/${eventoId}/consumables`,
+    const response = await apiClient.get(
+      `${this.endpoint}/${eventoId}/consumables`,
+    );
+
+    if (response.success && response.data) {
+      response.data = response.data.map((item) =>
+        this.transformConsumableFromBackend(item),
       );
-
-      if (response.success && response.data) {
-        response.data = response.data.map((item) =>
-          this.transformConsumableFromBackend(item),
-        );
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
     }
+
+    return response;
   }
 
   /**
@@ -60,21 +52,17 @@ class EventMaterialsService {
       throw new Error("ID del evento es requerido");
     }
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${eventoId}/consumables/load-donations`,
+    const response = await apiClient.post(
+      `${this.endpoint}/${eventoId}/consumables/load-donations`,
+    );
+
+    if (response.success && response.data) {
+      response.data = response.data.map((item) =>
+        this.transformConsumableFromBackend(item),
       );
-
-      if (response.success && response.data) {
-        response.data = response.data.map((item) =>
-          this.transformConsumableFromBackend(item),
-        );
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
     }
+
+    return response;
   }
 
   /**
@@ -99,20 +87,16 @@ class EventMaterialsService {
       observaciones: data.observaciones?.trim() || "",
     };
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${eventoId}/consumables`,
-        payload,
-      );
+    const response = await apiClient.post(
+      `${this.endpoint}/${eventoId}/consumables`,
+      payload,
+    );
 
-      if (response.success && response.data) {
-        response.data = this.transformConsumableFromBackend(response.data);
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (response.success && response.data) {
+      response.data = this.transformConsumableFromBackend(response.data);
     }
+
+    return response;
   }
 
   /**
@@ -123,14 +107,10 @@ class EventMaterialsService {
       throw new Error("ID de la asignación es requerido");
     }
 
-    try {
-      const response = await apiClient.delete(
-        `${this.endpoint}/consumables/${assignmentId}`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.delete(
+      `${this.endpoint}/consumables/${assignmentId}`,
+    );
+    return response;
   }
 
   /**
@@ -141,14 +121,10 @@ class EventMaterialsService {
       throw new Error("ID del evento es requerido");
     }
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${eventoId}/finalize-consumables`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(
+      `${this.endpoint}/${eventoId}/finalize-consumables`,
+    );
+    return response;
   }
 
   // ==================== REUTILIZABLES ====================
@@ -161,21 +137,17 @@ class EventMaterialsService {
       throw new Error("ID del evento es requerido");
     }
 
-    try {
-      const response = await apiClient.get(
-        `${this.endpoint}/${eventoId}/reusables`,
+    const response = await apiClient.get(
+      `${this.endpoint}/${eventoId}/reusables`,
+    );
+
+    if (response.success && response.data) {
+      response.data = response.data.map((item) =>
+        this.transformReusableFromBackend(item),
       );
-
-      if (response.success && response.data) {
-        response.data = response.data.map((item) =>
-          this.transformReusableFromBackend(item),
-        );
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
     }
+
+    return response;
   }
 
   /**
@@ -200,20 +172,16 @@ class EventMaterialsService {
       observaciones: data.observaciones?.trim() || "",
     };
 
-    try {
-      const response = await apiClient.post(
-        `${this.endpoint}/${eventoId}/reusables`,
-        payload,
-      );
+    const response = await apiClient.post(
+      `${this.endpoint}/${eventoId}/reusables`,
+      payload,
+    );
 
-      if (response.success && response.data) {
-        response.data = this.transformReusableFromBackend(response.data);
-      }
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (response.success && response.data) {
+      response.data = this.transformReusableFromBackend(response.data);
     }
+
+    return response;
   }
 
   /**
@@ -224,14 +192,10 @@ class EventMaterialsService {
       throw new Error("ID de la asignación es requerido");
     }
 
-    try {
-      const response = await apiClient.delete(
-        `${this.endpoint}/reusables/${assignmentId}`,
-      );
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.delete(
+      `${this.endpoint}/reusables/${assignmentId}`,
+    );
+    return response;
   }
 
   /**
@@ -246,24 +210,20 @@ class EventMaterialsService {
       throw new Error("Fechas de inicio y fin son requeridas");
     }
 
-    try {
-      const params = new URLSearchParams({
-        startDate: startDate,
-        endDate: endDate,
-      });
+    const params = new URLSearchParams({
+      startDate: startDate,
+      endDate: endDate,
+    });
 
-      if (excludeEventoId) {
-        params.append("excludeEventoId", excludeEventoId);
-      }
-
-      const response = await apiClient.get(
-        `${this.endpoint}/reusables/${materialId}/availability?${params.toString()}`,
-      );
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (excludeEventoId) {
+      params.append("excludeEventoId", excludeEventoId);
     }
+
+    const response = await apiClient.get(
+      `${this.endpoint}/reusables/${materialId}/availability?${params.toString()}`,
+    );
+
+    return response;
   }
 
   /**
@@ -287,26 +247,22 @@ class EventMaterialsService {
       throw new Error("Fechas de inicio y fin son requeridas");
     }
 
-    try {
-      const payload = {
-        materialIds,
-        startDate,
-        endDate,
-      };
+    const payload = {
+      materialIds,
+      startDate,
+      endDate,
+    };
 
-      if (excludeEventoId) {
-        payload.excludeEventoId = excludeEventoId;
-      }
-
-      const response = await apiClient.post(
-        `${this.endpoint}/reusables/bulk-availability`,
-        payload,
-      );
-
-      return response;
-    } catch (error) {
-      throw error;
+    if (excludeEventoId) {
+      payload.excludeEventoId = excludeEventoId;
     }
+
+    const response = await apiClient.post(
+      `${this.endpoint}/reusables/bulk-availability`,
+      payload,
+    );
+
+    return response;
   }
 
   /**
@@ -317,31 +273,27 @@ class EventMaterialsService {
       throw new Error("ID del material es requerido");
     }
 
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (options.includeCompleted !== undefined) {
-        params.append("includeCompleted", options.includeCompleted);
-      }
-
-      if (options.startDate) {
-        params.append("startDate", options.startDate);
-      }
-
-      if (options.endDate) {
-        params.append("endDate", options.endDate);
-      }
-
-      const queryString = params.toString();
-      const url = queryString
-        ? `${this.endpoint}/consumables/${materialId}/assignments?${queryString}`
-        : `${this.endpoint}/consumables/${materialId}/assignments`;
-
-      const response = await apiClient.get(url);
-      return response;
-    } catch (error) {
-      throw error;
+    if (options.includeCompleted !== undefined) {
+      params.append("includeCompleted", options.includeCompleted);
     }
+
+    if (options.startDate) {
+      params.append("startDate", options.startDate);
+    }
+
+    if (options.endDate) {
+      params.append("endDate", options.endDate);
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${this.endpoint}/consumables/${materialId}/assignments?${queryString}`
+      : `${this.endpoint}/consumables/${materialId}/assignments`;
+
+    const response = await apiClient.get(url);
+    return response;
   }
 
   /**
@@ -352,31 +304,27 @@ class EventMaterialsService {
       throw new Error("ID del material es requerido");
     }
 
-    try {
-      const params = new URLSearchParams();
+    const params = new URLSearchParams();
 
-      if (options.includeCompleted !== undefined) {
-        params.append("includeCompleted", options.includeCompleted);
-      }
-
-      if (options.startDate) {
-        params.append("startDate", options.startDate);
-      }
-
-      if (options.endDate) {
-        params.append("endDate", options.endDate);
-      }
-
-      const queryString = params.toString();
-      const url = queryString
-        ? `${this.endpoint}/reusables/${materialId}/assignments?${queryString}`
-        : `${this.endpoint}/reusables/${materialId}/assignments`;
-
-      const response = await apiClient.get(url);
-      return response;
-    } catch (error) {
-      throw error;
+    if (options.includeCompleted !== undefined) {
+      params.append("includeCompleted", options.includeCompleted);
     }
+
+    if (options.startDate) {
+      params.append("startDate", options.startDate);
+    }
+
+    if (options.endDate) {
+      params.append("endDate", options.endDate);
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${this.endpoint}/reusables/${materialId}/assignments?${queryString}`
+      : `${this.endpoint}/reusables/${materialId}/assignments`;
+
+    const response = await apiClient.get(url);
+    return response;
   }
 
   // ==================== TRANSFORMERS ====================
