@@ -1,12 +1,11 @@
 ﻿import { useState, useEffect, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaRegCalendarAlt, FaDownload, FaBan } from "react-icons/fa";
+import { FaPlus, FaRegCalendarAlt, FaDownload } from "react-icons/fa";
 
 import Table from "../../../../../../../shared/components/Table/table";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
 import ReportButton from "../../../../../../../shared/components/ReportButton";
 import PermissionGuard from "../../../../../../../shared/components/PermissionGuard";
-import CancelDonationModal from "./components/CancelDonationModal";
 import DonationViewModal from "./components/DonationViewModal";
 import StatusSelector from "./components/StatusSelector";
 import donationsService from "./services/donationsService";
@@ -101,7 +100,6 @@ const Donations = () => {
     PAGINATION_CONFIG.DEFAULT_PAGE,
   );
   const [totalRows, setTotalRows] = useState(0);
-  const [cancelingDonation, setCancelingDonation] = useState(null);
   const [viewingDonation, setViewingDonation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [donorsMap, setDonorsMap] = useState({});
@@ -349,44 +347,6 @@ const Donations = () => {
     }
   };
 
-  const handleCancel = (donation) => setCancelingDonation(donation);
-
-  const handleConfirmCancel = async (reason) => {
-    try {
-      const response = await donationsService.changeStatus(
-        cancelingDonation.id,
-        "Anulada",
-        reason,
-      );
-      const updated = response?.data || response?.data?.data;
-
-      setData((prev) =>
-        prev.map((d) =>
-          d.id === cancelingDonation.id
-            ? {
-                ...d,
-                status: "Anulada",
-                cancelReason: reason,
-                cancelDate:
-                  updated?.cancelAt || new Date().toLocaleDateString("es-CO"),
-              }
-            : d,
-        ),
-      );
-      showSuccessAlert(
-        "Donación anulada",
-        `La donación de ${cancelingDonation.donorName} fue anulada correctamente.`,
-      );
-      setCancelingDonation(null);
-    } catch (error) {
-      showErrorAlert(
-        "Error al anular",
-        error?.response?.data?.message ||
-          "No se pudo anular la donación. Intenta de nuevo.",
-      );
-    }
-  };
-
   const handleDownloadCertificate = async (donation) => {
     if (!hasPermission("donationsManagement", "Ver")) {
       showErrorAlert(
@@ -543,95 +503,73 @@ const Donations = () => {
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table
-          thead={{
-            titles: [
-              "Código",
-              "Donante",
-              "Tipo de Donación",
-              "Programa / Destino",
-              "Fecha de Donación",
-              "Estado",
-            ],
-          }}
-          tbody={{
-            data: paginatedData.map((donation) => ({
-              ...donation,
-              donationType: donation.typeLabel || "Sin tipos",
-              status: donation.status,
-              _original: donation,
-            })),
-            dataPropertys: [
-              "code",
-              "donorName",
-              "donationType",
-              "programLabel",
-              "donationDate",
-              "status",
-            ],
-            customRenderers: {
-              status: (value, row) => renderStatusChip(value, row),
-            },
-            cellClassNames: {
-              status: "whitespace-nowrap",
-            },
-          }}
-          serverPagination
-          totalRows={totalRows}
-          currentPage={currentPage}
-          onPageChange={(page) => setCurrentPage(page)}
-          onView={
-            hasPermission("donationsManagement", "Ver")
-              ? (row) => handleView(row._original || row)
-              : null
-          }
-          customActions={[
-            {
-              icon: FaDownload,
-              onClick: (row) => handleDownloadCertificate(row._original || row),
-              className:
-                "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
-              title: "Descargar Certificado",
-              show: () => hasPermission("donationsManagement", "Ver"),
-            },
-            {
-              icon: FaBan,
-              onClick: (row) => handleCancel(row._original || row),
-              className:
-                "p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition-all duration-200",
-              title: "Anular Donación",
-              show: (item) =>
-                hasPermission("donationsManagement", "Editar") &&
-                !["Anulada", "Anulado"].includes(item?.status),
-            },
-          ]}
-          buttonConfig={{
-            view: () => ({
-              show: hasPermission("donationsManagement", "Ver"),
+      <Table
+        enableHorizontalScroll={false}
+        thead={{
+          titles: [
+            "Código",
+            "Donante",
+            "Tipo de Donación",
+            "Fecha de Donación",
+            "Estado",
+          ],
+          actionsHeaderClassName: "w-[160px] min-w-[160px]",
+        }}
+        tbody={{
+          data: paginatedData.map((donation) => ({
+            ...donation,
+            donationType: donation.typeLabel || "Sin tipos",
+            status: donation.status,
+            _original: donation,
+          })),
+          actionsCellClassName: "w-[160px] min-w-[160px]",
+          actionsContainerClassName: "flex-nowrap",
+          dataPropertys: [
+            "code",
+            "donorName",
+            "donationType",
+            "donationDate",
+            "status",
+          ],
+          customRenderers: {
+            status: (value, row) => renderStatusChip(value, row),
+          },
+          cellClassNames: {
+            status: "whitespace-nowrap",
+          },
+        }}
+        serverPagination
+        totalRows={totalRows}
+        currentPage={currentPage}
+        onPageChange={(page) => setCurrentPage(page)}
+        onView={
+          hasPermission("donationsManagement", "Ver")
+            ? (row) => handleView(row._original || row)
+            : null
+        }
+        customActions={[
+          {
+            icon: FaDownload,
+            onClick: (row) => handleDownloadCertificate(row._original || row),
+            className:
+              "p-2 rounded-full bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:text-green-700 transition-all duration-200",
+            title: "Descargar Certificado",
+            show: () => hasPermission("donationsManagement", "Ver"),
+          },
+        ]}
+        buttonConfig={{
+          view: () => ({
+            show: hasPermission("donationsManagement", "Ver"),
+            disabled: false,
+            title: "Ver detalles",
+          }),
+          customActions: [
+            () => ({
               disabled: false,
-              title: "Ver detalles",
             }),
-            customActions: [
-              () => ({
-                disabled: false,
-              }),
-              (item) => ({
-                disabled: ["Anulada", "Anulado"].includes(item?.status),
-                title: "Anular Donación",
-              }),
-            ],
-          }}
-        />
-      </div>
-
-      {cancelingDonation && (
-        <CancelDonationModal
-          donation={cancelingDonation}
-          onClose={() => setCancelingDonation(null)}
-          onConfirm={handleConfirmCancel}
-        />
-      )}
+          ],
+        }}
+      />
 
       {viewingDonation && (
         <DonationViewModal

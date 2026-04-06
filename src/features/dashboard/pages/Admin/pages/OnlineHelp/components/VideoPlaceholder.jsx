@@ -37,7 +37,7 @@ const VideoPlaceholder = ({ hasVideo, videoUrl, title }) => {
               src={embedUrl}
               title={title}
               className="absolute inset-x-0 -top-8 w-full h-[calc(100%+64px)] border-0"
-              allow="autoplay; fullscreen"
+              allow="autoplay"
               allowFullScreen
             />
           </div>

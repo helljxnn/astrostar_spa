@@ -253,46 +253,25 @@ const EmployeeModal = ({
   }, [employee, isOpen, mode, resetForm, resetValidation, setFormData]);
 
   const handleSignatureSelect = (file) => {
-    // For create mode, just store the file locally
-    if (mode === "create") {
-      setSignatureFile(file);
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLocalSignaturePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    // For edit mode, upload immediately
-    handleSignatureUpload(file);
-  };
-
-  const handleSignatureUpload = async (file) => {
-    if (!employee?.id) {
-      showErrorAlert(
-        "Error",
-        "Debe guardar el empleado antes de subir la firma",
-      );
-      return;
-    }
-
-    try {
-      const response = await employeeService.uploadSignature(employee.id, file);
-      if (response.success) {
-        setSignatureUrl(response.data.signatureUrl);
-        showSuccessAlert("Firma subida", "La firma se ha subido correctamente");
-      }
-    } catch (error) {
-      showErrorAlert("Error", "No se pudo subir la firma");
-      throw error;
-    }
+    // Store signature locally and defer upload until submit.
+    setSignatureFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setLocalSignaturePreview(reader.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSignatureDelete = async () => {
     // For create mode, just clear local state
     if (mode === "create") {
+      setSignatureFile(null);
+      setLocalSignaturePreview(null);
+      return;
+    }
+
+    // If there is a pending local signature (not uploaded yet), just clear it.
+    if (signatureFile || localSignaturePreview) {
       setSignatureFile(null);
       setLocalSignaturePreview(null);
       return;
@@ -689,7 +668,7 @@ const EmployeeModal = ({
               <SignatureUpload
                 mode={mode}
                 employeeId={employee?.id}
-                currentSignatureUrl={signatureUrl || localSignaturePreview}
+                currentSignatureUrl={localSignaturePreview || signatureUrl}
                 onFileSelect={handleSignatureSelect}
                 onDeleteSuccess={handleSignatureDelete}
                 disabled={mode === "view"}

@@ -24,8 +24,6 @@ class CategoriesService {
       response.data = response.data.map((cat) =>
         this.transformFromBackend(cat),
       );
-      // Ordenar alfabéticamente
-      response.data.sort((a, b) => a.nombre.localeCompare(b.nombre));
     }
 
     return response;

@@ -265,6 +265,22 @@ const Event = () => {
               </div>
             ))}
           </div>
+
+          {(selectedFilters.status || selectedFilters.type) && (
+            <div className="mt-4">
+              <button
+                onClick={() =>
+                  setSelectedFilters({
+                    status: "",
+                    type: "",
+                  })
+                }
+                className="text-xs font-semibold text-gray-600 px-3 py-1 rounded-full border border-gray-200 hover:bg-gray-100 transition"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          )}
         </motion.div>
       )}
 
@@ -329,5 +345,4 @@ const Event = () => {
 };
 
 export default Event;
-
 

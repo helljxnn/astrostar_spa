@@ -297,10 +297,14 @@ const AppointmentForm = ({
   const parseSchedules = useCallback(
     (schedules) => {
       if (!Array.isArray(schedules)) return [];
-      return schedules.map((schedule) => ({
-        ...schedule,
-        customRecurrence: parseCustomRecurrence(schedule.customRecurrence),
-      }));
+      return schedules
+        .filter(
+          (schedule) => normalizeText(schedule?.status || "") !== "cancelado",
+        )
+        .map((schedule) => ({
+          ...schedule,
+          customRecurrence: parseCustomRecurrence(schedule.customRecurrence),
+        }));
     },
     [parseCustomRecurrence],
   );
@@ -844,6 +848,46 @@ const AppointmentForm = ({
     [formData.specialistId, specialistSchedules, isScheduleActiveOnDate],
   );
 
+  const doesSlotFitSchedule = useCallback(
+    (schedule, startDate, durationMinutes) => {
+      if (!schedule?.startTime || !schedule?.endTime || !startDate) return false;
+
+      const selected =
+        startDate instanceof Date ? startDate : new Date(startDate);
+      if (Number.isNaN(selected.getTime())) return false;
+
+      const duration = Number(durationMinutes);
+      if (!Number.isFinite(duration) || duration <= 0) return false;
+
+      if (!isScheduleActiveOnDate(schedule, selected)) return false;
+
+      const [startHour, startMin] = String(schedule.startTime)
+        .split(":")
+        .map(Number);
+      const [endHour, endMin] = String(schedule.endTime).split(":").map(Number);
+
+      if (
+        [startHour, startMin, endHour, endMin].some((value) =>
+          Number.isNaN(value),
+        )
+      ) {
+        return false;
+      }
+
+      const scheduleStartInMinutes = startHour * 60 + startMin;
+      const scheduleEndInMinutes = endHour * 60 + endMin;
+      const appointmentStartInMinutes =
+        selected.getHours() * 60 + selected.getMinutes();
+      const appointmentEndInMinutes = appointmentStartInMinutes + duration;
+
+      return (
+        appointmentStartInMinutes >= scheduleStartInMinutes &&
+        appointmentEndInMinutes <= scheduleEndInMinutes
+      );
+    },
+    [isScheduleActiveOnDate],
+  );
+
   // Filtrar horas disponibles según horarios del especialista
   const filterAvailableTimes = useCallback(
     (time) => {
@@ -852,40 +896,18 @@ const AppointmentForm = ({
       }
 
       const timeDate = new Date(time);
-      const selectedDate = timeDate;
+      if (Number.isNaN(timeDate.getTime())) return false;
 
-      // Verificar si hay algún horario activo para esta fecha y hora
-      const hasActiveSchedule = specialistSchedules.some((schedule) => {
-        // Verificar si el horario aplica para esta fecha (considerando recurrencias)
-        const isActive = isScheduleActiveOnDate(schedule, selectedDate);
-
-        if (!isActive) {
-          return false;
-        }
-
-        // Verificar si la hora está dentro del rango del horario
-        if (!schedule.startTime || !schedule.endTime) {
-          return false;
-        }
-
-        const [startHour, startMin] = schedule.startTime.split(":").map(Number);
-        const [endHour, endMin] = schedule.endTime.split(":").map(Number);
-
-        const timeHours = timeDate.getHours();
-        const timeMinutes = timeDate.getMinutes();
-        const timeInMinutes = timeHours * 60 + timeMinutes;
-        const startInMinutes = startHour * 60 + startMin;
-        const endInMinutes = endHour * 60 + endMin;
-
-        const isInRange =
-          timeInMinutes >= startInMinutes && timeInMinutes < endInMinutes;
-
-        return isInRange;
-      });
-
-      return hasActiveSchedule;
+      return specialistSchedules.some((schedule) =>
+        doesSlotFitSchedule(schedule, timeDate, formData.durationMinutes),
+      );
     },
-    [formData.specialistId, specialistSchedules, isScheduleActiveOnDate],
+    [
+      doesSlotFitSchedule,
+      formData.durationMinutes,
+      formData.specialistId,
+      specialistSchedules,
+    ],
   );
 
   const validateField = useCallback(
@@ -946,13 +968,18 @@ const AppointmentForm = ({
         }
 
         if (data.specialistId) {
-          if (specialistSchedules.length === 0) {
+          const selectedSchedules =
+            specialistSchedulesCache[String(data.specialistId)] ||
+            specialistSchedules;
+
+          if (selectedSchedules.length === 0) {
             return "El especialista no tiene horarios configurados";
           }
 
-          const isAvailableDate = filterAvailableDates(selected);
-          const isAvailableTime = filterAvailableTimes(selected);
-          if (!isAvailableDate || !isAvailableTime) {
+          const hasSlot = selectedSchedules.some((schedule) =>
+            doesSlotFitSchedule(schedule, selected, data.durationMinutes),
+          );
+          if (!hasSlot) {
             return "El especialista no tiene disponibilidad en esa fecha y hora";
           }
         }
@@ -964,12 +991,10 @@ const AppointmentForm = ({
     },
     [
       athleteDateWarning,
-      filterAvailableDates,
-      filterAvailableTimes,
+      doesSlotFitSchedule,
       formData,
-      hasAvailabilityOnDate,
+      specialistSchedules,
       specialistSchedulesCache,
-      specialistSchedules.length,
     ],
   );
 
@@ -1008,7 +1033,7 @@ const AppointmentForm = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Marcar todos como touched
@@ -1031,14 +1056,18 @@ const AppointmentForm = ({
     const duration = Number(formData.durationMinutes);
     const end = addMinutes(formData.start, duration);
 
-    onSave({
-      ...formData,
-      athleteId: Number(formData.athleteId),
-      specialistId: Number(formData.specialistId),
-      durationMinutes: duration,
-      end,
-    });
-    onClose();
+    try {
+      await onSave({
+        ...formData,
+        athleteId: Number(formData.athleteId),
+        specialistId: Number(formData.specialistId),
+        durationMinutes: duration,
+        end,
+      });
+      onClose();
+    } catch {
+      // El hook ya muestra el error al usuario.
+    }
   };
 
   if (!isOpen) return null;

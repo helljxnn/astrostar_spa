@@ -35,7 +35,6 @@ const ProviderModal = ({
   const nitValidationRequestRef = React.useRef(0);
   const wasOpenRef = React.useRef(false);
   const [asyncErrors, setAsyncErrors] = React.useState({});
-  const valuesRef = React.useRef(values);
   const initialValues = {
     tipoEntidad: "juridica",
     razonSocial: "",
@@ -77,6 +76,7 @@ const ProviderModal = ({
     isEditing,
     filteredDocumentTypes,
   );
+  const valuesRef = React.useRef(values);
   // HandleChange personalizado
   const handleChange = (name, value) => {
     if (name === "tipoEntidad") {

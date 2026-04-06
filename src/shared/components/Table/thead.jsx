@@ -2,6 +2,8 @@
 import React from "react";
 
 const Thead = ({ options }) => {
+  const actionsHeaderClassName = options?.thead?.actionsHeaderClassName || "";
+
   return (
     <thead
       id="thead"
@@ -21,7 +23,9 @@ const Thead = ({ options }) => {
             Estado
           </th>
         )}
-        <th className="px-6 py-4 text-center font-semibold text-white">
+        <th
+          className={`px-6 py-4 text-center font-semibold text-white ${actionsHeaderClassName}`}
+        >
           Acciones
         </th>
       </tr>
