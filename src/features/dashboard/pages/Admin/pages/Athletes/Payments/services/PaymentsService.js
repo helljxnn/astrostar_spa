@@ -357,8 +357,7 @@ return this.handleError(error);
       });
       
       // Usar el endpoint correcto del backend: /history/report
-      const response = await apiClient.get(`${this.endpoint}/history/report`, { params: queryParams });
-      const payload = response?.data;
+      const payload = await apiClient.get(`${this.endpoint}/history/report`, { params: queryParams });
 
       return {
         success: payload?.success ?? true,
