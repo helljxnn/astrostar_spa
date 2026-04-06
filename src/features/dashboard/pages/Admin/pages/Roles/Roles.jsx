@@ -28,6 +28,19 @@ const normalizeRoleName = (value = "") =>
 const isProtectedRole = (roleName = "") =>
   PROTECTED_SYSTEM_ROLES.has(normalizeRoleName(roleName));
 
+const renderTruncatedDescription = (value) => {
+  const description = value || "-";
+
+  return (
+    <span
+      className="block max-w-[520px] truncate"
+      title={description}
+    >
+      {description}
+    </span>
+  );
+};
+
 const Roles = () => {
   const { roles, pagination, fetchRoles, createRole, updateRole, deleteRole } =
     useRoles();
@@ -165,6 +178,12 @@ const Roles = () => {
             data: paginatedData,
             dataPropertys: ["name", "description"],
             state: false,
+            customRenderers: {
+              description: renderTruncatedDescription,
+            },
+            cellClassNames: {
+              description: "max-w-[520px]",
+            },
           }}
           onEdit={hasPermission("roles", "Editar") ? handleEdit : null}
           onDelete={hasPermission("roles", "Eliminar") ? handleDelete : null}
