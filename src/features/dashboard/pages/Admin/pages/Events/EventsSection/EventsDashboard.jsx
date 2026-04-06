@@ -1,16 +1,12 @@
-﻿import { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { Plus, Filter } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { EventModal } from "./components/eventManage/EventModal";
 import EventsCalendar from "./components/eventManage/EventsCalendar";
 import { TeamRegistrationFormModal } from "./components/registration";
 import ViewRegistrationsModal from "./components/registration/ViewRegistrationsModal";
 import { CalendarReportGenerator } from "../../../../../../../shared/components/Calendar";
 import SearchInput from "../../../../../../../shared/components/SearchInput";
-import {
-  showDeleteAlert,
-  showErrorAlert,
-} from "../../../../../../../shared/utils/alerts.js";
 import { useEvents } from "./hooks/useEvents";
 
 // Importaciones para permisos
@@ -20,7 +16,6 @@ const Event = () => {
   const { hasPermission } = usePermissions();
   const {
     events,
-    loading,
     referenceData,
     createEvent,
     updateEvent,
@@ -63,15 +58,6 @@ const Event = () => {
   const canExportEvents = hasPermission("eventsManagement", "Ver");
 
   /**
-   * Manejar creacion exitosa de evento
-   */
-  const handleEventCreated = () => {
-    setIsModalOpen(false);
-    // Trigger refresh para que el calendario se actualice
-    setRefreshTrigger((prev) => prev + 1);
-  };
-
-  /**
    * Manejar apertura del modal de creacion desde el calendario
    */
   const handleCreateFromCalendar = () => {
@@ -97,13 +83,6 @@ const Event = () => {
   };
 
   /**
-   * Manejar generacin de reportes
-   */
-  const handleGenerateReport = (reportData) => {
-    // Aqu" se implementara la lgica de generacin de reportes
-  };
-
-  /**
    * Manejar guardado de evento
    */
   const handleSave = async (eventData) => {
@@ -111,14 +90,12 @@ const Event = () => {
       if (isNew) {
         await createEvent(eventData);
       } else {
-        // Pasar las categorias originales para verificar cambios
-        const originalCategoryIds = selectedEvent?.categoryIds || [];
-        await updateEvent(eventData.id, eventData, originalCategoryIds);
+        await updateEvent(eventData.id, eventData);
       }
       setIsModalOpen(false);
       // Trigger refresh para que el calendario se actualice
       setRefreshTrigger((prev) => prev + 1);
-    } catch (error) {
+    } catch {
       // Error guardando evento
     }
   };
@@ -352,6 +329,5 @@ const Event = () => {
 };
 
 export default Event;
-
 
 

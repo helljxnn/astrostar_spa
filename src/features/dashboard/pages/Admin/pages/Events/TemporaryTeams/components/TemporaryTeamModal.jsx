@@ -159,8 +159,8 @@ const TemporaryTeamModal = ({
         } else {
           setDuplicateWarnings((prev) => ({ ...prev, trainer: null }));
         }
-      } catch (error) {
-        console.error("Error validating trainer:", error);
+      } catch {
+        return;
       }
     };
 
@@ -222,8 +222,8 @@ const TemporaryTeamModal = ({
             return newErrors;
           });
         }
-      } catch (error) {
-        console.error("Error validating name:", error);
+      } catch {
+        return;
       }
     };
 
@@ -322,8 +322,8 @@ const TemporaryTeamModal = ({
           setUnavailableAthleteIds([]);
           setDuplicateWarnings((prev) => ({ ...prev, athletes: null }));
         }
-      } catch (error) {
-        console.error("Error validating athletes:", error);
+      } catch {
+        return;
       }
     };
 
@@ -343,11 +343,9 @@ const TemporaryTeamModal = ({
           const result = await TeamsService.getSportsCategories();
           if (result.success) {
             setCategories(result.data || []);
-          } else {
-            console.error("Error loading categories:", result.error);
           }
-        } catch (error) {
-          console.error("Error loading categories:", error);
+        } catch {
+          return;
         } finally {
           setLoadingCategories(false);
         }
@@ -735,7 +733,6 @@ const TemporaryTeamModal = ({
 
       onClose();
     } catch (error) {
-      console.error("Error saving team:", error);
       showErrorAlert("Error", error.message || "No se pudo guardar el equipo");
     }
   };

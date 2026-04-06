@@ -209,20 +209,11 @@ export const useEvents = () => {
     [loadEvents],
   );
 
-  // Función auxiliar para comparar arrays
-  const arraysEqual = (a, b) => {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  };
-
   /**
    * Actualizar evento
    */
   const updateEvent = useCallback(
-    async (id, eventData, originalCategoryIds = []) => {
+    async (id, eventData) => {
       setLoading(true);
 
       try {
@@ -244,7 +235,6 @@ export const useEvents = () => {
           throw new Error(response.message || "Error actualizando evento");
         }
       } catch (err) {
-        console.error("Error in updateEvent:", err);
         showErrorAlert(
           "Error",
           err.message || "No se pudo actualizar el evento",
@@ -261,7 +251,7 @@ export const useEvents = () => {
    * Eliminar evento
    */
   const deleteEvent = useCallback(
-    async (id, eventName) => {
+    async (id) => {
       setLoading(true);
 
       try {
@@ -306,7 +296,7 @@ export const useEvents = () => {
     try {
       const response = await eventsService.getStats();
       return response.data;
-    } catch (err) {
+    } catch {
       return null;
     }
   }, []);
@@ -348,8 +338,7 @@ export const useEvents = () => {
           setReferenceData(data);
           setDataLoaded(true);
         }
-      } catch (err) {
-        console.error("Error cargando datos de referencia:", err);
+      } catch {
         // En caso de error, al menos marcar como cargado para no bloquear la app
         if (isMounted) {
           setDataLoaded(true);
@@ -364,7 +353,7 @@ export const useEvents = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [dataLoaded]);
 
   // Cargar eventos solo si está autenticado
   useEffect(() => {

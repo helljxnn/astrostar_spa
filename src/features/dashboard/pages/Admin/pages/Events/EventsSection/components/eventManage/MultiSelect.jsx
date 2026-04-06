@@ -77,15 +77,6 @@ export const MultiSelect = ({
     return option ? option.label : optionValue;
   };
 
-  // Seleccionar todas las opciones
-  const selectAll = () => {
-    if (disabled) return;
-    onChange(
-      name,
-      filteredOptions.map((opt) => opt.value)
-    );
-  };
-
   // Limpiar todas las selecciones
   const clearAll = () => {
     if (disabled) return;

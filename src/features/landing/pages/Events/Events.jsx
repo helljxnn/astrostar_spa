@@ -42,12 +42,6 @@ const viewModes = [
   { id: "agenda", label: "Agenda", icon: CalendarRange },
   { id: "galeria", label: "Galería", icon: Grid2x2 },
 ];
-const statusModes = [
-  { id: "todos", label: "Todos" },
-  { id: "programado", label: "Programado" },
-  { id: "en_curso", label: "En Curso" },
-  { id: "finalizado", label: "Finalizado" },
-];
 const statusSelectOptions = [
   { id: "todos", label: "Estado: Todos" },
   { id: "programado", label: "Estado: Programado" },
@@ -118,17 +112,75 @@ const normalizeToDay = (value) => {
   return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
 };
 
+const parseTimeToMinutes = (value) => {
+  if (!value) return null;
+
+  const rawValue = String(value).trim().toUpperCase();
+  const amPmMatch = rawValue.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (amPmMatch) {
+    const hours = Number(amPmMatch[1]);
+    const minutes = Number(amPmMatch[2]);
+    const period = amPmMatch[3];
+
+    if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes > 59 || hours < 1 || hours > 12) {
+      return null;
+    }
+
+    const normalizedHours = period === "PM" && hours !== 12
+      ? hours + 12
+      : period === "AM" && hours === 12
+      ? 0
+      : hours;
+    return normalizedHours * 60 + minutes;
+  }
+
+  const twentyFourHourMatch = rawValue.match(/^(\d{1,2}):(\d{2})$/);
+  if (!twentyFourHourMatch) return null;
+
+  const hours = Number(twentyFourHourMatch[1]);
+  const minutes = Number(twentyFourHourMatch[2]);
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || hours > 23 || minutes > 59) {
+    return null;
+  }
+
+  return hours * 60 + minutes;
+};
+
 const getEventTimelineStatus = (event) => {
-  const today = normalizeToDay(new Date());
+  const now = new Date();
+  const today = normalizeToDay(now);
   const start = normalizeToDay(event.date);
   const end = normalizeToDay(event.endDate || event.date);
 
   if (event.status === "cancelado") return "cancelado";
   if (!today || !start || !end) return event.status || "programado";
-  if (event.status === "finalizado" || end < today) return "finalizado";
-  if (event.status === "en_curso") return "en_curso";
-  if (start <= today && end >= today) return "en_curso";
-  return "programado";
+  if (event.status === "finalizado") return "finalizado";
+  if (end < today) return "finalizado";
+  if (start > today) return "programado";
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = parseTimeToMinutes(event.time);
+  const endMinutes = parseTimeToMinutes(event.endTime || event.time);
+  const startsToday = start.getTime() === today.getTime();
+  const endsToday = end.getTime() === today.getTime();
+
+  if (startsToday && endsToday) {
+    if (startMinutes !== null && currentMinutes < startMinutes) return "programado";
+    if (endMinutes !== null && currentMinutes > endMinutes) return "finalizado";
+    return "en_curso";
+  }
+
+  if (startsToday && !endsToday) {
+    if (startMinutes !== null && currentMinutes < startMinutes) return "programado";
+    return "en_curso";
+  }
+
+  if (!startsToday && endsToday) {
+    if (endMinutes !== null && currentMinutes > endMinutes) return "finalizado";
+    return "en_curso";
+  }
+
+  return "en_curso";
 };
 
 const groupEventsByMonth = (events) => {
@@ -1215,20 +1267,17 @@ export const Events = () => {
     }),
     [dateFilteredBaseEvents],
   );
-  const availableStatusMode =
-    statusModes.find((mode) => eventsByStatus[mode.id].length > 0)?.id || "programado";
   const calendarNextEvent = eventsByStatus.programado[0] || null;
-
-  useEffect(() => {
-    if (eventsByStatus[statusMode]?.length > 0) return;
-    setStatusMode(availableStatusMode);
-  }, [availableStatusMode, eventsByStatus, statusMode]);
 
   useEffect(() => {
     setVisibleCount(EVENTS_PAGE_SIZE);
   }, [selectedYear, statusMode, viewMode, selectedDate, selectedEventType]);
 
   const scopedEvents = eventsByStatus[statusMode] || [];
+  const hasPublishedEvents = visibleEvents.length > 0;
+  const activeStatusLabel = (
+    statusSelectOptions.find((option) => option.id === statusMode)?.label || "Estado: Todos"
+  ).replace("Estado: ", "");
   const selectedScopedEvent = useMemo(
     () => scopedEvents.find((event) => event.id === selectedEventId) || null,
     [scopedEvents, selectedEventId],
@@ -1477,12 +1526,14 @@ export const Events = () => {
                     Eventos
                   </p>
                   <h3 className="mt-3 font-montserrat text-2xl font-bold text-slate-900">
-                    No hay eventos publicados para mostrar
+                    {hasPublishedEvents
+                      ? `No hay eventos ${activeStatusLabel.toLowerCase()} para mostrar`
+                      : "No hay eventos publicados para mostrar"}
                   </h3>
                   <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                    Esta vista ahora refleja directamente los eventos publicados desde el
-                    módulo de gestión. Si un evento no aparece aquí, revisa en el dashboard
-                    que esté creado correctamente y con publicación activa.
+                    {hasPublishedEvents
+                      ? "Prueba con otro estado, tipo, ano o fecha para ver mas resultados."
+                      : "Esta vista ahora refleja directamente los eventos publicados desde el modulo de gestion. Si un evento no aparece aqui, revisa en el dashboard que este creado correctamente y con publicacion activa."}
                   </p>
                 </Surface>
               ) : null}

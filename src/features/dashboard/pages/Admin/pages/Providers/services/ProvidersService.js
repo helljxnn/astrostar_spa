@@ -240,7 +240,7 @@ class ProvidersService {
         ...provider,
         ...this.resolveProviderDocumentType(provider, documentTypes),
       }));
-    } catch (error) {
+    } catch {
       return providers.map((provider) => ({
         ...provider,
         ...this.resolveProviderDocumentType(provider),

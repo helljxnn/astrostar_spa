@@ -29,7 +29,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
   // Estados para el selector de categorías
   const [categories, setCategories] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
 
   const { nameValidation, validateMaterialName, resetNameValidation } =
     useMaterialNameValidation(material?.id || null);
@@ -63,7 +62,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
         descripcion: material.descripcion || "",
         estado: material.estado || "Activo",
       });
-      setSelectedCategoryId(material.categoriaId || null);
       setInitialName(incomingName);
     } else {
       setFormData({
@@ -73,7 +71,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
         descripcion: "",
         estado: "Activo",
       });
-      setSelectedCategoryId(null);
       setInitialName("");
     }
 
@@ -97,7 +94,7 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
       if (response.success && response.data) {
         setCategories(response.data);
       }
-    } catch (error) {
+    } catch {
       setCategories([]);
     } finally {
       setLoadingCategories(false);
@@ -109,9 +106,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
 
     // Si se selecciona una categoría VÁLIDA (no vacía), ocultar la advertencia Y limpiar errores
     if (name === "categoria") {
-      // Actualizar también el selectedCategoryId para mantener sincronización
-      setSelectedCategoryId(value ? parseInt(value) : null);
-      
       if (value && value !== "") {
         setShowCategoryWarning(false);
         setErrors((prev) => ({ ...prev, categoria: "" }));
@@ -242,7 +236,8 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
       if (success) {
         handleClose();
       }
-    } catch (error) {
+    } catch {
+      setErrors((prev) => ({ ...prev }));
     } finally {
       setLoading(false);
     }
@@ -256,7 +251,6 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
       descripcion: "",
       estado: "Activo",
     });
-    setSelectedCategoryId(null);
     setErrors({});
     setTouched({});
     onClose();
@@ -429,7 +423,9 @@ const MaterialModal = ({ isOpen, onClose, onSave, material = null }) => {
                     className="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 cursor-not-allowed"
                     title="El stock solo se modifica desde Ingresos de Materiales"
                   >
-                    {material.stock || 0} unidades
+                    {(material.stockTotal ??
+                      (material.stockFundacion || 0) +
+                        (material.stockEventos || 0))} unidades
                   </div>
                 </div>
               )}

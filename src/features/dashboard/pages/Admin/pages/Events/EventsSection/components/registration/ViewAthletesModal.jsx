@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaSearch } from "react-icons/fa";
 import { createPortal } from "react-dom";
@@ -8,7 +8,6 @@ import { showErrorAlert } from "../../../../../../../../../shared/utils/alerts.j
 const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   // Helper para obtener estado RSVP
   const getRSVPStatus = (registration) => {
@@ -78,10 +77,9 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
     return () => {
       document.body.classList.remove("events-modal-open");
     };
-  }, [isOpen, eventId]);
+  }, [isOpen, eventId, loadRegistrations]);
 
-  const loadRegistrations = async () => {
-    setLoading(true);
+  const loadRegistrations = useCallback(async () => {
     try {
       const response =
         await RegistrationsService.getEventAthleteRegistrations(eventId);
@@ -89,35 +87,33 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
       if (response.success && response.data) {
         setRegistrations(response.data);
       }
-    } catch (error) {
-      console.error("Error cargando inscripciones:", error);
+    } catch {
       showErrorAlert("Error", "No se pudieron cargar las inscripciones");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [eventId]);
 
-  if (!isOpen) return null;
-
-  // Transformar inscripciones a formato del componente
-  const allAthletes = registrations
-    .filter((reg) => reg.athlete)
-    .map((reg) => ({
-      id: reg.athlete.id,
-      nombre:
-        `${reg.athlete.user?.firstName || ""} ${
-          reg.athlete.user?.lastName || ""
-        }`.trim() || "Sin nombre",
-      identificacion: reg.athlete.user?.identification || "N/A",
-      edad: reg.athlete.user?.age || "N/A",
-      categorias:
-        reg.athlete.inscriptions
-          ?.map((i) => i.sportsCategory?.nombre)
-          .filter(Boolean) || [],
-      registrationId: reg.id,
-      status: reg.status,
-      eventInvitations: reg.eventInvitations || [], // ✅ Incluir invitaciones
-    }));
+  const allAthletes = useMemo(
+    () =>
+      registrations
+        .filter((reg) => reg.athlete)
+        .map((reg) => ({
+          id: reg.athlete.id,
+          nombre:
+            `${reg.athlete.user?.firstName || ""} ${
+              reg.athlete.user?.lastName || ""
+            }`.trim() || "Sin nombre",
+          identificacion: reg.athlete.user?.identification || "N/A",
+          edad: reg.athlete.user?.age || "N/A",
+          categorias:
+            reg.athlete.inscriptions
+              ?.map((i) => i.sportsCategory?.nombre)
+              .filter(Boolean) || [],
+          registrationId: reg.id,
+          status: reg.status,
+          eventInvitations: reg.eventInvitations || [],
+        })),
+    [registrations],
+  );
 
   // Filtrar por búsqueda
   const filteredAthletes = useMemo(() => {
@@ -135,6 +131,8 @@ const ViewAthletesModal = ({ isOpen, onClose, eventName, eventId }) => {
       return matchesName || matchesId || matchesCategory;
     });
   }, [allAthletes, searchTerm]);
+
+  if (!isOpen) return null;
 
   // Renderizar el modal usando un portal para evitar problemas de z-index
   const modalContent = (

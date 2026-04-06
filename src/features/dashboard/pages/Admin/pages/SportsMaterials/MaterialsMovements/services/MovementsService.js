@@ -85,12 +85,8 @@ class MovementsService {
       stock_nuevo: movementData.stockNuevo,
     };
 
-    try {
-      const response = await apiClient.post(this.endpoint, payload);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.post(this.endpoint, payload);
+    return response;
   }
 
   async updateMovement(id, movementData) {
@@ -105,12 +101,8 @@ class MovementsService {
       observaciones: movementData.observaciones?.trim() || null,
     };
 
-    try {
-      const response = await apiClient.put(`${this.endpoint}/${id}`, payload);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.put(`${this.endpoint}/${id}`, payload);
+    return response;
   }
 
   async getMovementsByMaterial(materialId) {

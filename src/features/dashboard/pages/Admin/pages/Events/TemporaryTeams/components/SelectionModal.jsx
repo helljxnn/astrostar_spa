@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, UserCheck, X, Check } from "lucide-react";
@@ -39,20 +39,7 @@ const SelectionModal = ({
       <Users className="w-6 h-6" />
     );
 
-  // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
-  useEffect(() => {
-    if (isOpen) {
-      loadData();
-    } else {
-      // Limpiar datos cuando se cierra
-      setData([]);
-      setSearchTerm("");
-      setCurrentPage(1);
-      setActiveTab(0);
-    }
-  }, [isOpen, mode]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       let response;
@@ -67,13 +54,25 @@ const SelectionModal = ({
       } else {
         setData([]);
       }
-    } catch (error) {
-      console.error("Error loading data:", error);
+    } catch {
       setData([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [mode]);
+
+  // ✅ CORRECCIÓN: Cargar datos cuando se abre el modal
+  useEffect(() => {
+    if (isOpen) {
+      loadData();
+    } else {
+      // Limpiar datos cuando se cierra
+      setData([]);
+      setSearchTerm("");
+      setCurrentPage(1);
+      setActiveTab(0);
+    }
+  }, [isOpen, loadData]);
 
   const currentTeamType = useMemo(() => {
     if (forceFoundationType) return "fundacion";

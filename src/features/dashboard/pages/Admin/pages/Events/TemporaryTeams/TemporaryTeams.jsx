@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { FaPlus } from "react-icons/fa";
 import TemporaryTeamModal from "./components/TemporaryTeamModal.jsx";
 import TemporaryTeamViewModal from "./components/TemporaryTeamViewModal.jsx";
@@ -26,7 +26,6 @@ const TemporaryTeams = () => {
     TeamsService.getAllForReport.bind(TeamsService)
   );
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
@@ -80,7 +79,7 @@ const TemporaryTeams = () => {
           events: response.events || [],
           message: response.message,
         };
-      } catch (error) {
+      } catch {
         return {
           id: team.id,
           isAssigned: false,
@@ -105,8 +104,7 @@ const TemporaryTeams = () => {
   };
 
   // Cargar equipos TEMPORALES
-  const loadTeams = async () => {
-    setLoading(true);
+  const loadTeams = useCallback(async () => {
     try {
       const result = await TeamsService.getTeams({
         page: currentPage,
@@ -135,17 +133,15 @@ const TemporaryTeams = () => {
           showErrorAlert("Error", result.error);
         }
       }
-    } catch (error) {
+    } catch {
       showErrorAlert("Error", "No se pudieron cargar los equipos");
       setData([]);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm]);
 
   useEffect(() => {
     loadTeams();
-  }, [currentPage, searchTerm]); // Recargar cuando cambia la página o la búsqueda
+  }, [loadTeams]); // Recargar cuando cambia la página o la búsqueda
 
   // Usar datos directamente del backend (ya filtrados y paginados)
   const displayData = data;
@@ -339,7 +335,7 @@ const TemporaryTeams = () => {
           deleteResult.error || "No se pudo eliminar el equipo",
         );
       }
-    } catch (error) {
+    } catch {
       showErrorAlert("Error", "Error al eliminar el equipo en el servidor");
     }
   };
@@ -440,7 +436,7 @@ const TemporaryTeams = () => {
             }
             onView={hasPermission("temporaryTeams", "Ver") ? handleView : null}
             buttonConfig={{
-              edit: (item) => ({
+              edit: () => ({
                 show: hasPermission("temporaryTeams", "Editar"),
                 disabled: false,
                 title: "Editar equipo",
@@ -450,7 +446,7 @@ const TemporaryTeams = () => {
                 disabled: eventAssignmentsCheck[item.id]?.isAssigned,
                 title: generateTooltipMessage(item.id),
               }),
-              view: (item) => ({
+              view: () => ({
                 show: hasPermission("temporaryTeams", "Ver"),
                 disabled: false,
                 title: "Ver detalles",

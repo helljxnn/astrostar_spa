@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { FormField } from "../../../../../../../../shared/components/FormField";
@@ -23,35 +23,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
     availableForDischarge: 0,
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        cantidad: "",
-        inventarioOrigen: "FUNDACION",
-        tipo_baja: "",
-        descripcion: "",
-      });
-      setErrors({});
-      setTouched({});
-      checkFutureAssignments();
-    }
-  }, [isOpen, material?.id]);
-
-  // Verificar asignaciones futuras cuando cambia el origen
-  useEffect(() => {
-    if (isOpen && formData.inventarioOrigen === "FUNDACION") {
-      checkFutureAssignments();
-    } else {
-      setAssignmentInfo({
-        hasAssignments: false,
-        count: 0,
-        totalPlanned: 0,
-        availableForDischarge: 0,
-      });
-    }
-  }, [formData.inventarioOrigen, isOpen, material?.id]);
-
-  const checkFutureAssignments = async () => {
+  const checkFutureAssignments = useCallback(async () => {
     if (!material?.id) return;
 
     try {
@@ -67,7 +39,7 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
           availableForDischarge: response.data.availableForDischarge || 0,
         });
       }
-    } catch (error) {
+    } catch {
       // En caso de error, asumir que no hay asignaciones
       setAssignmentInfo({
         hasAssignments: false,
@@ -76,7 +48,35 @@ const MaterialDischargeModal = ({ isOpen, onClose, onSave, material }) => {
         availableForDischarge: material?.stockFundacion || 0,
       });
     }
-  };
+  }, [material?.id, material?.stockFundacion]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        cantidad: "",
+        inventarioOrigen: "FUNDACION",
+        tipo_baja: "",
+        descripcion: "",
+      });
+      setErrors({});
+      setTouched({});
+      checkFutureAssignments();
+    }
+  }, [isOpen, material?.id, checkFutureAssignments]);
+
+  // Verificar asignaciones futuras cuando cambia el origen
+  useEffect(() => {
+    if (isOpen && formData.inventarioOrigen === "FUNDACION") {
+      checkFutureAssignments();
+    } else {
+      setAssignmentInfo({
+        hasAssignments: false,
+        count: 0,
+        totalPlanned: 0,
+        availableForDischarge: 0,
+      });
+    }
+  }, [formData.inventarioOrigen, isOpen, material?.id, checkFutureAssignments]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -413,4 +413,3 @@ MaterialDischargeModal.propTypes = {
 };
 
 export default MaterialDischargeModal;
-

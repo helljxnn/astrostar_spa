@@ -78,7 +78,6 @@ class TeamsService {
         error: response?.message || "Error obteniendo equipo",
       };
     } catch (error) {
-      console.error(`Error obteniendo equipo ${id}:`, error);
       return {
         success: false,
         error: error.message,
@@ -121,7 +120,6 @@ class TeamsService {
         error: response?.message || "Error actualizando equipo",
       };
     } catch (error) {
-      console.error(`Error actualizando equipo ${id}:`, error);
       return {
         success: false,
         error: error.response?.data?.message || error.message,
@@ -142,7 +140,6 @@ class TeamsService {
         error: response?.message || "Error eliminando equipo",
       };
     } catch (error) {
-      console.error(`Error eliminando equipo ${id}:`, error);
       return {
         success: false,
         error: error.response?.data?.message || error.message,
@@ -166,7 +163,6 @@ class TeamsService {
         error: response?.message || "Error cambiando estado",
       };
     } catch (error) {
-      console.error(`Error cambiando estado del equipo ${id}:`, error);
       return {
         success: false,
         error: error.response?.data?.message || error.message,
@@ -182,9 +178,13 @@ class TeamsService {
       const url = `${this.endpoint}/check-name?${params}`;
       const response = await apiClient.get(url);
       if (response && response.success !== undefined) {
+        const isDuplicate = Boolean(response.data?.isDuplicate);
         return {
           success: true,
-          available: response.available,
+          available: !isDuplicate,
+          isDuplicate,
+          existingTeamId: response.data?.existingTeamId,
+          existingTeamName: response.data?.existingTeamName,
           message: response.message,
         };
       }
@@ -194,11 +194,6 @@ class TeamsService {
         error: response?.message || "Error verificando nombre",
       };
     } catch (error) {
-      console.error("Error checking availability:", error);
-      console.error(
-        "   Full error:",
-        error.response?.data || error.message,
-      );
       return {
         success: false,
         available: true,
@@ -220,7 +215,6 @@ class TeamsService {
         error: response?.message || "Error getting stats",
       };
     } catch (error) {
-      console.error("Error getting stats", error);
       return {
         success: false,
         error: error.message,
@@ -236,7 +230,6 @@ class TeamsService {
           response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("Error getting trainers (teams route):", error);
       return {
         success: false,
         data: [],
@@ -253,7 +246,6 @@ class TeamsService {
           response?.success && Array.isArray(response.data) ? response.data : [],
       };
     } catch (error) {
-      console.error("Error getting athletes (teams route):", error);
       return {
         success: false,
         data: [],
@@ -289,7 +281,6 @@ class TeamsService {
         error: response?.message || "Error getting sports categories",
       };
     } catch (error) {
-      console.error("Error getting sports categories:", error);
       return {
         success: false,
         data: [],
@@ -325,9 +316,13 @@ const response = await apiClient.get(
         `${this.endpoint}/check-duplicate-temporal?${queryParams.toString()}`,
       );
       if (response && response.success !== undefined) {
+        const isDuplicate = Boolean(response.data?.isDuplicate);
         return {
           success: true,
-          available: response.available,
+          available: !isDuplicate,
+          isDuplicate,
+          existingTeamId: response.data?.existingTeamId,
+          existingTeamName: response.data?.existingTeamName,
           message: response.message,
         };
       }
@@ -336,7 +331,6 @@ const response = await apiClient.get(
         error: response?.message || "Error verificando equipo duplicado",
       };
     } catch (error) {
-      console.error("Error verificando equipo duplicado:", error);
       return {
         success: false,
         error: error.message,
@@ -366,7 +360,6 @@ const response = await apiClient.get(
         error: response?.message || "Error verificando entrenador",
       };
     } catch (error) {
-      console.error("Error checking trainer:", error);
       return {
         success: false,
         error: error.message,
@@ -404,11 +397,6 @@ const response = await apiClient.get(
         error: response?.message || "Error checking availability",
       };
     } catch (error) {
-      console.error("Error checking availability:", error);
-      console.error(
-        "   Full error:",
-        error.response?.data || error.message,
-      );
       return {
         success: false,
         available: true,
@@ -438,7 +426,6 @@ const response = await apiClient.get(
         error: response?.message || "Error checking event assignment",
       };
     } catch (error) {
-      console.error("Error checking event assignment:", error);
       return {
         success: false,
         isAssigned: false,
@@ -462,7 +449,6 @@ const response = await apiClient.get(
         data: response.data || response,
       };
     } catch (error) {
-      console.error('Error fetching teams report:', error);
       return { success: false, error: error.message, data: [] };
     }
   }

@@ -93,7 +93,7 @@ const StatusSelector = ({
       if (result.isConfirmed) {
         onStatusChange(donationId, newStatus);
       }
-    } catch (error) {
+    } catch {
       if (window.confirm(`¿Cambiar estado a "${newStatusInfo.label}"?`)) {
         onStatusChange(donationId, newStatus);
       }
