@@ -1,15 +1,15 @@
 # AstroStar SPA
 
-Aplicación web de AstroStar desarrollada con React y Vite. Este proyecto consume la API del backend para autenticación, gestión administrativa y consultas operativas de la plataforma.
+AstroStar web application built with React and Vite. This project consumes the backend API for authentication, administrative management, and operational queries across the platform.
 
-## Qué incluye
+## What It Includes
 
-- Interfaz web tipo SPA para los módulos principales de AstroStar.
-- Integración con la API REST del backend.
-- Configuración con Vite para desarrollo local y build de producción.
-- Organización por `features`, `routes`, `shared` y estilos globales.
+- A single-page application interface for AstroStar's main modules.
+- Integration with the backend REST API.
+- Vite configuration for local development and production builds.
+- Project organization based on `features`, `routes`, `shared`, and global styles.
 
-## Tecnologías principales
+## Main Technologies
 
 - React 18
 - Vite
@@ -17,59 +17,59 @@ Aplicación web de AstroStar desarrollada con React y Vite. Este proyecto consum
 - Axios
 - Styled Components
 - Tailwind CSS
-- Jest y Testing Library
+- Jest and Testing Library
 
-## Requisitos previos
+## Prerequisites
 
 - Node.js `22.15.0`
-- npm `8` o superior
-- Backend de AstroStar disponible en `http://localhost:4000/api` o en una URL equivalente
+- npm `8` or later
+- AstroStar Backend available at `http://localhost:4000/api` or an equivalent URL
 
-## Instalación
+## Installation
 
 ```bash
 npm install
 ```
 
-## Variables de entorno
+## Environment Variables
 
-El proyecto usa `VITE_API_URL` para definir la URL base del backend.
+The project uses `VITE_API_URL` to define the backend's base URL.
 
-Ejemplo de archivo `.env`:
+Example `.env` file:
 
 ```env
 VITE_API_URL=http://localhost:4000/api
 ```
 
-Si no se define esta variable, varias partes de la aplicación usan `http://localhost:4000/api` como valor por defecto.
+If this variable is not defined, several parts of the application use `http://localhost:4000/api` as the default value.
 
-## Ejecución en desarrollo
+## Running in Development
 
 ```bash
 npm run dev
 ```
 
-Por defecto, Vite levanta la aplicación en:
+By default, Vite serves the application at:
 
 - `http://localhost:5173`
 
-La configuración actual también permite acceso desde la red local porque el servidor corre con `host: 0.0.0.0`.
+The current configuration also allows access from the local network because the server runs with `host: 0.0.0.0`.
 
-## Build de producción
+## Production Build
 
 ```bash
 npm run build
 ```
 
-Los archivos generados quedan en la carpeta `dist/`.
+The generated files are placed in the `dist/` directory.
 
-Para previsualizar el build:
+To preview the production build:
 
 ```bash
 npm run preview
 ```
 
-## Scripts disponibles
+## Available Scripts
 
 ```bash
 npm run dev
@@ -81,7 +81,7 @@ npm run test:watch
 npm run test:coverage
 ```
 
-## Estructura general
+## Project Structure
 
 ```text
 astrostar_spa/
@@ -99,10 +99,10 @@ astrostar_spa/
 `- vite.config.js
 ```
 
-## Relación con el backend
+## Backend Integration
 
-Para que la aplicación funcione correctamente en local:
+For the application to work correctly in a local environment:
 
-1. El backend debe estar corriendo.
-2. La variable `VITE_API_URL` debe apuntar a la API correcta.
-3. Si vas a probar desde otra máquina en la red, usa una URL accesible desde ese entorno.
+1. The backend must be running.
+2. The `VITE_API_URL` variable must point to the correct API.
+3. If you are testing from another machine on the network, use a URL that is accessible from that environment.
